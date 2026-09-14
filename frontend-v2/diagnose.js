@@ -88,7 +88,10 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // Everywhere else `seated` is false here (mount's own branches own the apply).
       if (seated && root.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
       // Retry resolved off-screen: seated but detached. Record it rather than
-      // painting against a detached root; the next return applies it.
+      // painting against a detached root; the next return that re-seats THIS
+      // read applies it (mount's wasDetached arm). A re-read in between
+      // (leave(); read()) discards it instead — leave() clears the flag,
+      // because that read's own completion, not this stale one, now decides.
       else if (seated) { deferredApply = true; }
     }).catch((cause) => {
       error = cause;
@@ -319,6 +322,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // before its no-payload return. No private renderer cleanup is copied here.
     workstation.setData(null);
     root.remove();
+    // A recorded off-screen completion belongs to the read this teardown just
+    // discarded; leave() always precedes a fresh read() (a changed entry, a
+    // moved revision, Retry), whose own completion — not this stale flag —
+    // decides what the next mount applies.
+    deferredApply = false;
   }
 
   // Retention (ADR 414): leaving TO ANOTHER DESTINATION detaches only what a
@@ -383,6 +391,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // return that skipped the re-read, not a fresh seat and not an in-place render.
     const wasDetached = seated && !root.isConnected;
     host.replaceChildren(root);
+    // deferredApply is never true here: it is set only under `seated` (:92),
+    // and leave() — the only place `seated` turns false again — clears it in
+    // the same breath. This cold seat's own read() completion already applied
+    // (or, off-screen, is a contradiction: `!seated` and the completion's
+    // `seated` gate cannot both hold), so there is nothing to consume.
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
     else if (wasDetached && deferredApply) {
       // A Retry finished off-screen: apply the completion it recorded, restoration included.

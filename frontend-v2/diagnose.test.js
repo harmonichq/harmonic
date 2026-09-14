@@ -282,6 +282,86 @@ test('the workstation\'s own Retry finishing off-screen is recorded, not painted
   } finally { globalThis.MutationObserver = previousMO; }
 });
 
+test('a re-read between an off-screen Retry completion and the next return discards the stale completion, not restoreEntry() on a plain round trip', async () => {
+  const served = source();
+  let resolveAnalysis;
+
+  let observerCount = 0;
+  const previousMO = globalThis.MutationObserver;
+  globalThis.MutationObserver = class { constructor() { observerCount += 1; } observe() {} disconnect() {} };
+
+  let rowClicks = 0;
+  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
+  const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
+  const seat = host(); seat.ownerDocument.createElement = () => root;
+
+  const setDataCalls = [];
+  let refreshCalls = 0;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+
+  try {
+    await destination.read();
+    let held;
+    destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+    setDataCalls.length = 0; rowClicks = 0; observerCount = 0; refreshCalls = 0;
+
+    // The workstation's own Retry: starts while seated and attached, held open.
+    served.api.fetchAnalysis = async () => {
+      served.requests.push('analysis');
+      return new Promise((resolve) => { resolveAnalysis = () => resolve({ marker: 'retried' }); });
+    };
+    const retried = destination.read();
+
+    // Leave to another destination before the Retry resolves.
+    seat.isConnected = false;
+    held(false);
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+
+    // The Retry resolves off-screen: recorded (deferredApply), not applied.
+    resolveAnalysis();
+    await retried;
+    assert.equal(setDataCalls.length, 0, 'the off-screen Retry completion is recorded, not painted');
+
+    // Back to a plain, immediately-resolving read for the moved-revision re-read.
+    served.api.fetchAnalysis = async () => { served.requests.push('analysis'); return { marker: 'reread' }; };
+    served.setRevision(2);
+
+    // Return with a MOVED revision: mount's status check finds it moved and
+    // runs leave(); read() — a full re-read that must discard the stale
+    // off-screen completion, not carry it into the next seat. leave() itself
+    // legitimately calls setData(null) as part of its own full teardown; only
+    // the payload applications are this test's concern.
+    destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+    for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    // render() re-entry, driven explicitly as elsewhere in this file.
+    destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+    const payloadApplications = setDataCalls.filter((data) => data !== null);
+    assert.equal(payloadApplications.length, 1, 'the moved-revision re-read seats cold, once');
+    assert.equal(payloadApplications[0].analyze.marker, 'reread', 'the applied payload is the re-read\'s own, not the stale Retry payload');
+    assert.equal(rowClicks, 1, 'the cold re-seat restores the entry, as every cold seat does');
+    setDataCalls.length = 0; rowClicks = 0; observerCount = 0; refreshCalls = 0;
+
+    // A further, ordinary round trip: same entry, unmoved revision. If the
+    // discarded off-screen completion leaked into this return, it would run
+    // setData/restoreEntry here — exactly what retention must not do on a
+    // plain round trip (ORDER.md: "Never run restoreEntry() on that path").
+    let held2;
+    destination.mount(seat, { navigation: 1, hold: fn => { held2 = fn; }, context: { subject: 'finding:served' } });
+    seat.isConnected = false;
+    held2(false);
+    destination.mount(seat, { navigation: 2, hold() {}, context: { subject: 'finding:served' } });
+    for (let i = 0; i < 6; i += 1) await Promise.resolve();
+    destination.mount(seat, { navigation: 2, hold() {}, context: { subject: 'finding:served' } });
+
+    assert.equal(setDataCalls.length, 0, 'a plain round trip after the re-read never re-applies a stale off-screen completion');
+    assert.equal(rowClicks, 0, 'a plain round trip never runs restoreEntry()');
+    assert.equal(observerCount, 0, 'a plain round trip never builds a restoration observer');
+    assert.equal(refreshCalls, 1, 'a plain round trip only resizes the carried charts');
+    destination.leave();
+  } finally { globalThis.MutationObserver = previousMO; }
+});
+
 test('the held cleanup invoked with pagehide runs the full teardown', async () => {
   const served = source(); const seat = host();
   const calls = [];

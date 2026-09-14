@@ -18,8 +18,10 @@ fetch-status write counts are not an instant and do not move on in-app writes,
 so they are not the signal. Leaving to another destination detaches the root, keeps the workstation's
 reading-pane stack, drilled chart and case context (they are the drill the
 return preserves), and still disconnects the entry-restoration observer, which
-is restoration machinery rather than retained state. The pagehide arm keeps
-today's full teardown (S84). A retained return runs only the focus-action
+is restoration machinery rather than retained state. The workstation stays
+seated while detached; a read that completes off-screen applies its data when
+the root is next seated and never restores against a detached root. The
+pagehide arm keeps today's full teardown (S84). A retained return runs only the focus-action
 repaint; entry restoration runs only after a read. A contextual entry whose subject, occurrence or window differs
 from the retained entry is a different subject.
 

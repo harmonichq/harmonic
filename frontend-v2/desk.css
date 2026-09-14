@@ -203,6 +203,10 @@
 .gf-status .gf-error { padding:0; font-size:var(--ck-body); }
 .gf-table td.gf-changed { color:var(--mk-text); font-weight:600; }
 .gf-table td.gf-changed s { color:var(--mk-muted); font-weight:400; margin-right:4px; }
+/* ADR 414: an Edit's own summary row leads its members, which sit indented
+   beneath it in the same table rather than looking like separate records. */
+.gf-table tr.gf-edit-row td { font-weight:600; }
+.gf-table tr[data-edit-member] td:first-child { padding-left:24px; }
 .gf .gf-pill { display:inline-block; margin-left:6px; padding:1px 6px; border:1px solid var(--wk-rule); border-radius:999px; font:600 10px/1.5 Inter,system-ui,sans-serif; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
 
 /* ---- round 4: the Focus and Trial stages. The progress figure and the shipped

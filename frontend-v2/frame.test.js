@@ -40,6 +40,13 @@ test('the loading frame carries no count and the error frame offers its retry', 
   assert.match(errorFrame('Day', 'This day'), /data-retry>Retry</);
 });
 
+test('the loading frame names what it is reading when a caller supplies the text', () => {
+  assert.doesNotMatch(loadingFrame('Diagnose'), /<p>/, 'no message: no empty <p>');
+  const named = loadingFrame('Changes', 'Reading change records');
+  assert.match(named, /<p>Reading change records<\/p>/);
+  assert.match(loadingFrame('Reassessment', 'Computing reassessment'), /<p>Computing reassessment<\/p>/);
+});
+
 test('interpolated text is escaped, including into attributes', () => {
   assert.equal(escapeText('<b>&"x"</b>'), '&lt;b&gt;&amp;&quot;x&quot;&lt;/b&gt;');
   assert.equal(escapeText(null), '');

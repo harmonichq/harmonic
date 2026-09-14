@@ -2563,10 +2563,10 @@ S109 · The reading pane's scroll position survives the same Diagnose round trip
   data:     showcase; select 24 h with no row drilled (the undrilled factors
             roster overflows its pane; a drilled pane does not), scroll #level
             by a bounded offset that fits inside its own overflow, return
-  evidence: C4_STORIES.S109; waits for the desk's own post-load focus/plan
-            reads to have answered (they repaint the roster and would wipe
-            an early scroll) before scrolling, then compares #level.scrollTop
-            before and after the round trip
+  evidence: C4_STORIES.S109; settles the network (the rail's own tile reads
+            are the desk's last arrival traffic, and each repaints the roster
+            to its remembered drill position) before scrolling, then compares
+            #level.scrollTop before and after the round trip
   status:   browser fail-first pending coordinator; base build resets the
             reading pane scroll to 0 on return
 ```

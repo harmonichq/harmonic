@@ -128,6 +128,7 @@ function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
     locator: node,
     getByRole: (_role, { name }) => node(String(name)),
     waitForFunction: async () => { actions.push('waitForFunction'); },
+    waitForLoadState: async state => { actions.push(`waitForLoadState:${state}`); },
     route: async (pattern, handler) => { routes.set(pattern, handler); },
     unroute: async pattern => { routes.delete(pattern); },
     on: (type, listener) => { if (type === 'request') requestListeners.add(listener); },
@@ -171,21 +172,16 @@ test('S108 surfaces a lost status response as its own assertion, never an unhand
   }
 });
 
-const S109_READS = ['/api/focus', '/api/plan', '/api/plan/history', '/api/pump-settings'];
-
-test('S109 preserves the reading pane scroll position across the held round trip', async () => {
+test('S109 settles the network before scrolling, then preserves the offset across the held round trip', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   const page = qa414Page();
-  const ctx = { requests: S109_READS.map(path => ({ path, status: 200 })) };
-  await C4_STORIES.S109(page, ctx);
-});
-
-test('S109 tolerates a post-load read that only answers after the wait starts', async () => {
-  const { C4_STORIES } = await import('./c4.replay.mjs');
-  const page = qa414Page();
-  const ctx = { requests: S109_READS.slice(0, 3).map(path => ({ path, status: 200 })) };
-  setTimeout(() => ctx.requests.push({ path: S109_READS[3], status: 200 }), 10);
-  await C4_STORIES.S109(page, ctx);
+  await C4_STORIES.S109(page);
+  assert.equal(page._actions.filter(action => action === 'waitForLoadState:networkidle').length, 1,
+    'S109 must settle on the network before reading #level');
+  const waitIndex = page._actions.indexOf('waitForLoadState:networkidle');
+  const scrollWaitIndex = page._actions.indexOf('wait:#level');
+  assert.ok(waitIndex >= 0 && scrollWaitIndex > waitIndex,
+    'S109 must wait for the settled network before touching the reading pane');
 });
 
 function qa414EditChainPage({ summary = '3 setting changes · Basal · Sep 8 – Sep 10', editKey = 'edit-1',

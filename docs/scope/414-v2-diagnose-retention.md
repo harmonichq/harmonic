@@ -13,6 +13,15 @@ Scope ledger. Opened 2026-09-14 by triage; route: interview mode.
 
 - none
 
+## Spikes
+
+- `docs/scope/414-episode-chain.spike.py`: the ADR 414 chaining rule as a table test (six cases, passing).
+- Local only (snapshot, counts only): a bounded per-record CGM read returns identical roster rows to the unbounded read for 79 records and is about ten times faster. Not committed.
+
+## Review rounds
+
+- (filled by plan review)
+
 ## Spawned tasks
 
 - none yet

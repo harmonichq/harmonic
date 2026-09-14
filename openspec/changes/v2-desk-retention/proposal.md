@@ -1,4 +1,4 @@
-# #414 v2 desk retention, record-open cost and roster episodes
+# #414 v2 desk retention, record-open cost and roster edits
 
 ## Status
 
@@ -14,7 +14,7 @@ falls back to Overnight. Opening the change records is slow enough on the
 self-hosted host to read as a hang: the roster read re-reads the whole CGM
 table once per retained record, and the desk shows an empty block meanwhile.
 The record list then prints one row per per-slot change, dozens from one
-editing episode, with a raw token under "Still open".
+editing edit, with a raw token under "Still open".
 
 ## What changes
 
@@ -25,10 +25,10 @@ editing episode, with a raw token under "Still open".
   when the server's last write moved.
 - The trials roster read reads only the readings inside each retained record's
   own window, once per record, instead of the whole table.
-- The record roster serves one episode key per retained trial record, chaining
+- The record roster serves one edit key per retained trial record, chaining
   records whose change instants fall within the detector's existing one-day
-  profile tolerance; Changes lists one entry per episode with its member rows
-  beneath, and a served word replaces the raw watch-disposition token.
+  profile tolerance; Changes lists one entry per edit with its member rows
+  beneath, and the raw watch-disposition token gets its entry in the desk's existing status word table.
 - Reading the roster and computing a reassessment each show named loading text
   in the existing loading frame.
 

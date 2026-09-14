@@ -10,7 +10,13 @@ its charts. No served read is issued on return. The reader's window, drilled
 subject and reading scroll are retained as a consequence of the node surviving,
 not as a second state store. A read is re-issued only on Retry, on a contextual
 entry naming a different subject, or when the server's last written instant
-differs from the one read at the last Diagnose read.
+differs from the one read at the last Diagnose read. The scalar compared is the
+store's input data revision, served on `/api/status` as `input_revision` and
+already carried by the guidance payload; the fetch-status write counts are not
+an instant and do not move on in-app writes, so they are not the signal. A
+retained return runs only the focus-action repaint; entry restoration runs only
+after a read. A contextual entry whose subject, occurrence or window differs
+from the retained entry is a different subject.
 
 ### Authority
 
@@ -25,28 +31,31 @@ frame across a selected-day read. The failed-read frames (S19, S20) and the
 no-stale-result rule (HV2-29) are unchanged: a failed re-read still replaces
 the retained desk with the error frame. No served contract changes.
 
-## ADR 414 — The record roster groups retained trials into episodes
+## ADR 414 — The record roster groups retained trials into edits
 
 ### Decision
 
-The trials roster serves one episode key per retained trial record. Records are
-chained in time order when each `changed_at` lies within the detector's existing
-one-day profile tolerance of the previous record; a chain is one episode. The
-roster response carries an `episodes` summary. Changes lists one entry per
-episode with member rows beneath. The episode is a grouping of retained records
-for reading; it is not a trial identity, an ending, a watch, or an admission
-input.
+The trials roster serves one edit key per retained trial record. Retained
+records are chained in time order when each `changed_at` lies within the
+detector's existing one-day profile tolerance of the previous retained record;
+a chain is one edit, named after the glossary's "one coherent profile edit".
+Detected-but-unretained trial candidates and Focus records carry no key and do
+not chain. The roster response carries an `edits` summary. Changes lists one
+entry per edit, titled by its member count, with member rows beneath. The edit
+is a grouping of retained records for reading; it is not a trial identity, an
+ending, a watch, or an admission input. "Episode" is not used: the glossary
+reserves it for a cluster of glucose anchors.
 
 ### Authority
 
 Connor Griffin, 2026-09-14, answered triage Q2: fold per-slot rows from one
-editing episode into one entry, in this ticket.
+editing edit into one entry, in this ticket.
 
 ### Grounding
 
 On a read-only snapshot of the operator's own store, 79 retained records
 reconcile to no plan application, so the plan is not a usable key; their change
-instants chain into 8 episodes at the one-day tolerance, none spanning more than
+instants chain into 8 edits at the one-day tolerance, none spanning more than
 two days. Counts only; no record-level value was read out.
 
 ### Consequences
@@ -69,12 +78,13 @@ serve a stronger key; this rule is the fallback when none exists.
   the named loading text stands until it answers. The 503 after three crossed
   writes remains a clear stop with Retry.
 - **Unsupported:** grouping records across more than the one-day tolerance;
-  inferring an episode for records with no `changed_at`.
+  inferring an edit for records with no `changed_at`.
 - **Evidence owed:** bounded-read equivalence of maturity and gap facts;
-  episode chaining at the boundary (exactly one day apart chains, one day plus
-  one minute does not); zero served reads on a tab round trip; window, drill
-  and scroll retention; failed re-read frames; the roster entry and member
-  rows; the disposition word; the named loading text.
+  edit chaining at the boundary (exactly one day apart chains, one day plus
+  one minute does not); zero guidance or evidence reads on a tab round trip (one status read is
+  allowed); an in-app write on Changes followed by a return triggers one re-read; window, drill
+  and scroll retention; failed re-read frames; the roster entry title and member
+  rows; unkeyed rows staying flat; the disposition word; the named loading text.
 
 Why: the roster read and retention are state-machine changes whose failure
 mode is silent staleness. Disposition: copied into the #414 execution lock.

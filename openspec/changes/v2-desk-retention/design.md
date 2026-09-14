@@ -6,9 +6,10 @@
 
 The Diagnose destination keeps its mounted workstation across navigation to
 Changes and Day. Leaving detaches the root; returning re-seats it and resizes
-its charts. No served read is issued on return. The reader's window, drilled
-subject and reading scroll are retained as a consequence of the node surviving,
-not as a second state store. A read is re-issued only on Retry, on a contextual
+its charts. The only request a return issues is one status read; no guidance
+or evidence read runs. The reader's window and drilled subject are retained
+as a consequence of the node surviving, not as a second state store; the
+reading scroll is the one offset carried explicitly (see Consequences). A read is re-issued only on Retry, on a contextual
 entry naming a different subject, or when the server's last written instant
 differs from the one read at the last Diagnose read. The scalar compared is the
 store's input data revision, served on `/api/status` as `input_revision`: the

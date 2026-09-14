@@ -19,8 +19,9 @@ editing pass on the pump, with a raw token under "Still open".
 ## What changes
 
 - Diagnose stays alive across destination changes: its mounted workstation is
-  detached and re-seated rather than torn down and re-read, so a return fires
-  no served reads and keeps the reader's window, drill and scroll. A read is
+  detached and re-seated rather than torn down and re-read, so a return makes
+  one status read and no guidance or evidence read, and keeps the reader's
+  window, drill and scroll. A read is
   re-issued only on Retry, on a contextual entry naming a different subject, or
   when the server's last write moved.
 - The trials roster read reads only the readings inside each retained record's

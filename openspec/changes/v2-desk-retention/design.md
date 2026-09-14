@@ -21,7 +21,9 @@ return preserves), and still disconnects the entry-restoration observer, which
 is restoration machinery rather than retained state. The workstation stays
 seated while detached; a read that completes off-screen is discarded before it
 records an input revision or a payload, so the next return re-reads through the
-normal path rather than presenting pre-write data as current. The
+normal path rather than presenting pre-write data as current, and while that
+re-read is pending every render shows the loading frame, never the retained
+payload (HV2-29). The
 pagehide arm keeps today's full teardown (S84). A retained return runs only the focus-action
 repaint; entry restoration runs only after a read. A contextual entry whose subject, occurrence or window differs
 from the retained entry is a different subject.

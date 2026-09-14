@@ -47,7 +47,8 @@
   coverage through the destination's mount and held cleanup: the pagehide arm
   runs the full teardown; an off-screen read completion advances neither the recorded input revision
   nor the payload and does not restore; a cold first read and a Retry after a
-  failed first read still reach the desk.
+  failed first read still reach the desk; a render during a pending re-read
+  shows the loading frame, never the retained desk.
 
 ## 3. Changes roster and loading text (desk)
 

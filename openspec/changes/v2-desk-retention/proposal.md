@@ -14,7 +14,7 @@ falls back to Overnight. Opening the change records is slow enough on the
 self-hosted host to read as a hang: the roster read re-reads the whole CGM
 table once per retained record, and the desk shows an empty block meanwhile.
 The record list then prints one row per per-slot change, dozens from one
-editing edit, with a raw token under "Still open".
+editing pass on the pump, with a raw token under "Still open".
 
 ## What changes
 
@@ -27,8 +27,8 @@ editing edit, with a raw token under "Still open".
   own window, once per record, instead of the whole table.
 - The record roster serves one edit key per retained trial record, chaining
   records whose change instants fall within the detector's existing one-day
-  profile tolerance; Changes lists one entry per edit with its member rows
-  beneath, and the raw watch-disposition token gets its entry in the desk's existing status word table.
+  profile tolerance; Changes lists one entry per multi-record edit with its
+  member rows beneath and leaves single records as flat rows, and the raw watch-disposition token gets its entry in the desk's existing status word table.
 - Reading the roster and computing a reassessment each show named loading text
   in the existing loading frame.
 

@@ -72,7 +72,7 @@
 
 ## 4. Behavior ledger and replay
 
-- [ ] 4.1 Add fail-first app-only stories S108–S112 to
+- [x] 4.1 Add fail-first app-only stories S108–S112 to
   `mockups/harmonic-v2-desktop.behavior.md`, move the sweep's inventory
   literals (137 / 119 / 18 → 142 / 124 / 18), and register them in the v2 replay:
   during a tab round trip the only request Diagnose issues is one status read,

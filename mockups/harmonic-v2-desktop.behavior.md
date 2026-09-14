@@ -2414,7 +2414,7 @@ path. They are not passing browser evidence. Browser execution belongs to the
 coordinator at 1280x720 and 1440x900; the worker order prohibits build, serve and
 browser execution. The original freeze results above remain historical.
 
-Current inventory: **137 issued = 119 active + 18 retired**. S101–S107 are
+Current inventory: **142 issued = 124 active + 18 retired**. S101–S112 are
 app-opener-only. No earlier ID or lock term is retired or re-settled by this QA
 pass. The design and expiry decisions were unresolved at this QA amendment;
 the final #404 triage disposition supersedes that historical status.
@@ -2525,6 +2525,86 @@ Additional handler inventory for this amendment:
 | Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |
 | Pattern tile, occurrence selection and focal ECharts option | frontend-v2/diagnose.js, frontend/diagnose-event-comparison.js | S106 |
 | Destination navigation, All charts/Close and long cohort rows | frontend-v2/diagnose.js, day.js, plan-view.js, frontend/diagnose-workstation.css | S107 |
+| Destination round trip: held status read, retained drill and scroll | frontend-v2/diagnose.js | S108, S109 |
+| Edit-grouped record roster and its member addresses | frontend-v2/history.js | S110 |
+| Still open disposition word | frontend-v2/history.js | S111 |
+| Named roster/reassessment loading frames | frontend-v2/history.js | S112 |
+
+## #414 chunk 3 amendment — 2026-09-14, issue #414
+
+S108–S112 are the fail-first obligations for ADR 414's Diagnose retention and
+edit-chaining app work (chunks 1 and 2). They are app-opener-only, like
+S101–S107. Browser execution belongs to the coordinator at 1280x720 and
+1440x900; the worker order prohibits build, serve and browser execution.
+
+```
+S108 · Returning to Diagnose from Changes issues exactly one GET /api/status;
+       the loading frame stands until it answers, and the 24 h window and the
+       drilled reading-pane subject are both still current once it does.
+  element:  nav.v2-nav [data-destination], .gf-loading, #seg-window button,
+            #crumb-trail .here
+  source:   frontend-v2/diagnose.js mount / read (the ADR 414 status-check branch)
+  lock:     HV2-34; extends S104's held-read pattern to the destination round trip
+  data:     showcase; select 24 h, drill the first ranked row, open Changes, return
+  evidence: C4_STORIES.S108; holds /api/status, asserts no other request fires,
+            then compares the pre- and post-return crumb and window state
+  status:   browser fail-first pending coordinator; base build has no retained
+            desk to return to, so the round trip re-reads everything instead
+```
+
+```
+S109 · The reading pane's scroll position survives the same Diagnose round trip.
+  element:  #level
+  source:   frontend-v2/diagnose.js detach / mount (root retained, not rebuilt)
+  lock:     HV2-34
+  data:     showcase; drill the first ranked row, scroll the reading pane, return
+  evidence: C4_STORIES.S109; compares #level.scrollTop before and after the round trip
+  status:   browser fail-first pending coordinator; base build tears the desk
+            down on every navigation, so no scroll position has anywhere to survive
+```
+
+```
+S110 · The record roster groups a served multi-member Edit into one titled entry
+       ("<count> setting changes") with its member rows beneath, while the one
+       lone-record Edit stays a flat row; opening a member addresses that exact
+       record, and reloading the address reopens it.
+  element:  tr.gf-edit-row, [data-edit-member], [data-record]
+  source:   frontend-v2/history.js editEntryHtml / recordRoster
+  lock:     HV2-28; ADR 414 (openspec/changes/v2-desk-retention/design.md) is the
+            chaining rule itself
+  data:     edit-chain; three records within a day of each other chain into one
+            Edit, a fourth a week earlier stays its own
+  evidence: C4_STORIES.S110; counts the titled entry and its members, then opens
+            a member and reloads its address as S105 does
+  status:   browser fail-first pending coordinator; base build has no Edit grouping
+            at all, so every record renders as its own flat row
+```
+
+```
+S111 · Every Still open cell names the served watch disposition as a word,
+       never the raw backend token — including a grouped Edit's shared cell.
+  element:  [data-record-open="true"]
+  source:   frontend-v2/history.js openCell / editEndingCell
+  lock:     HV2-28
+  data:     edit-chain; every retained record is unwatched (not_selected_for_watch)
+  evidence: C4_STORIES.S111; reads every Still open cell's disposition word
+  status:   browser fail-first pending coordinator; base build's edit-summary cell
+            defaulted to a hardcoded "Active" word regardless of the served status
+```
+
+```
+S112 · The roster read and a requested reassessment each show their own named
+       loading frame while pending.
+  element:  .gf-loading
+  source:   frontend-v2/history.js mount (loadRoster / loadRecord)
+  lock:     HV2-28
+  data:     edit-chain; a retained record with no ending, so opening it and
+            requesting a reassessment are both live reads
+  evidence: C4_STORIES.S112; holds the roster read, the record read and the
+            reassessment read in turn, and reads the loading frame's text at each
+  status:   browser fail-first pending coordinator; base build's loading frame
+            carried no message, so a reader could not tell which read was pending
+```
 
 ### Coordinator amendment 1 — 2026-09-10
 

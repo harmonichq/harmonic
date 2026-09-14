@@ -63,6 +63,147 @@ test('S107 keeps a grouped comparison heading distinct from readable mixed-tier 
   }), /columns overlap/);
 });
 
+test('S108–S112 are unique app-only C4 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase, term] of [
+    ['S108', 'showcase', 'HV2-34'], ['S109', 'showcase', 'HV2-34'],
+    ['S110', 'edit-chain', 'HV2-28'], ['S111', 'edit-chain', 'HV2-28'], ['S112', 'edit-chain', 'HV2-28'],
+  ]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// A minimal fake page for the #414 chunk 3 stories. `click` on the Diagnose nav
+// button simulates the one GET /api/status the retained desk issues by routing
+// it through any registered `**/api/status*` handler, so the held-request
+// control flow runs without a real browser or server.
+function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
+  const actions = [];
+  const routes = new Map();
+  const requestListeners = new Set();
+  let url = 'http://synthetic.invalid/v2/?to=diagnose';
+  let level = { scrollTop: 0, scrollHeight: 400, clientHeight: 100 };
+  const fireRequest = pathname => {
+    const request = { url: () => `http://synthetic.invalid${pathname}` };
+    for (const listener of requestListeners) listener(request);
+    for (const [pattern, handler] of routes) {
+      if (pattern.replace('**', '').replace('*', '') && pathname.startsWith(pattern.replace('**', '').replace('*', ''))) {
+        handler({ request: () => request, continue: async () => { actions.push(`continued:${pathname}`); } });
+      }
+    }
+  };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => { actions.push(`wait:${selector}`); },
+    click: async () => {
+      actions.push(`click:${selector}`);
+      if (selector === 'nav.v2-nav [data-destination="diagnose"]') {
+        if (extraRequest) fireRequest(extraRequest);
+        fireRequest('/api/status');
+      }
+    },
+    getAttribute: async name => {
+      if (selector.includes('qrow') && name === 'data-id') return 'finding:x';
+      if (name === 'aria-pressed') return 'true';
+      return null;
+    },
+    innerText: async () => selector.includes('crumb-trail') ? crumb : '',
+    evaluate: async fn => {
+      if (selector !== '#level') return null;
+      if (fn.toString().includes('node.scrollTop = Math.max')) {
+        level.scrollTop = Math.max(20, level.scrollHeight - level.clientHeight - 4);
+        return level.scrollTop;
+      }
+      return level.scrollTop;
+    },
+    count: async () => 1,
+  });
+  return {
+    _actions: actions,
+    url: () => url,
+    goto: async target => { url = target; actions.push(`goto:${target}`); },
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    waitForFunction: async () => { actions.push('waitForFunction'); },
+    route: async (pattern, handler) => { routes.set(pattern, handler); },
+    unroute: async pattern => { routes.delete(pattern); },
+    on: (type, listener) => { if (type === 'request') requestListeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') requestListeners.delete(listener); },
+    waitForResponse: () => Promise.resolve({ ok: () => true, url: () => 'http://synthetic.invalid/api/status' }),
+  };
+}
+
+test('S108 reaches its held-return assertions after a clean round trip through Changes', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa414Page();
+  await C4_STORIES.S108(page);
+  assert.ok(page._actions.includes('click:[data-destination="diagnose"]'));
+  assert.ok(page._actions.includes('click:nav.v2-nav [data-destination="diagnose"]'));
+  assert.ok(page._actions.includes('continued:/api/status'), 'the held status read must be released and continued');
+});
+
+test('S108 fails when the return issues more than the held status check', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa414Page({ extraRequest: '/api/diagnose/findings' });
+  await assert.rejects(C4_STORIES.S108(page), /no request besides the held status check/);
+});
+
+test('S109 preserves the reading pane scroll position across the held round trip', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa414Page();
+  await C4_STORIES.S109(page);
+});
+
+function qa414EditChainPage({ summary = '3 setting changes · Basal · Sep 8 – Sep 10', editKey = 'edit-1',
+  memberRecord = 'trial:member-1', memberCount = 3, flatCount = 1, cellWord = 'Not watched', cellCount = 4 } = {}) {
+  let url = 'http://synthetic.invalid/v2/?to=changes&subject=history';
+  const node = selector => ({
+    filter() { return this; }, first() { return this; }, nth() { return this; },
+    waitFor: async () => {},
+    click: async () => { if (selector.startsWith('[data-record')) url += `&occurrence=record:${memberRecord}`; },
+    count: async () => {
+      if (selector.includes('gf-edit-row')) return 1;
+      if (selector.includes(`data-edit-member="${editKey}"`)) return memberCount;
+      if (selector.includes(':not(.gf-edit-row):not([data-edit-member])')) return flatCount;
+      if (selector === '[data-record-open="true"]') return cellCount;
+      return 1;
+    },
+    getAttribute: async name => {
+      if (name === 'data-edit') return editKey;
+      if (name === 'data-record') return memberRecord;
+      return null;
+    },
+    innerText: async () => selector.includes('gf-edit-summary') ? summary
+      : selector.includes('following-sibling::small') ? cellWord : '',
+    locator: nested => node(nested),
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; },
+    locator: node,
+  };
+}
+
+test('S110 counts the titled Edit entry and its members, then addresses and reloads the exact member record', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S110(qa414EditChainPage());
+});
+
+test('S110 fails when the served Edit entry does not name its member count', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S110(qa414EditChainPage({ summary: 'Basal changed' })),
+    /must name its member count/);
+});
+
+test('S111 fails on a raw disposition token, and passes on the served word', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S111(qa414EditChainPage());
+  await assert.rejects(C4_STORIES.S111(qa414EditChainPage({ cellWord: 'not_selected_for_watch' })),
+    /never a raw disposition token/);
+});
+
 test('R18 fails before touching the UI when historical input is absent', async () => {
   await assert.rejects(historicalAbsence(inputPage([{ kind: 'setting', register: 'assert' }])), /actual register=history/);
 });

@@ -276,7 +276,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 137)
+            self.assertEqual(plan['count'], 142)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -343,11 +343,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 120)] + [f"R{i}" for i in range(1, 19)])
+        self.inventory([f"S{i}" for i in range(1, 125)] + [f"R{i}" for i in range(1, 19)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 119)] + [f"R{i}" for i in range(1, 20)]
-        self.assertEqual(len(ids), 137)
+        ids = [f"S{i}" for i in range(1, 124)] + [f"R{i}" for i in range(1, 20)]
+        self.assertEqual(len(ids), 142)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 
@@ -488,9 +488,9 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
 
     def test_fixed_slice_is_pinned_and_covers_every_real_replay_case(self):
         import hashlib
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 20)
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 21)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '01b990c54f14c457825fa57b458f0f8a6b6ba93bb62419346599083b7b3c534b')
+                         '7fa3c3c90c282c85cf5ac282fbd841cb06a3184bfa34eedf9efbc1b3b5833956')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

@@ -2,14 +2,17 @@
 
 ## 1. Roster read cost and edit key (backend)
 
-- [ ] 1.1 Bound the retained-record reading read to each record's own window
-  (`changed_at` to `min(now, changed_at + mature window)`), once per record,
-  through the store's existing bounded read; `_maturing` and `_data_gaps`
-  receive the same in-window times they use today. The single whole-table read
-  in `_reviewable_trials` (candidate detection) stays. Public-interface test:
-  on a store with several retained records the per-record reads carry bounded
-  start/end, one per retained record, and the roster returns the same maturity
-  and gap facts as before.
+- [ ] 1.1 Bound the retained-record reading read to each record's own window,
+  once per record, through the store's existing bounded read. The store's read
+  is half-open `[start, end)` while the maturity and gap filters are
+  `(changed_at, end]`, so request `[changed_at, end + 1 s)` with
+  `end = min(now, changed_at + mature window)`; `_maturing` and `_data_gaps`
+  receive the same in-window times they use today, including a reading at
+  exactly `end`. The single whole-table read in `_reviewable_trials` (candidate
+  detection) stays. Public-interface test: on a store with several retained
+  records and one fixture reading placed exactly at a record's `end`, the
+  per-record reads carry bounded start/end, one per retained record, and the
+  roster returns the same maturity and gap facts as before.
 - [ ] 1.2 Serve `edit` on every retained trial roster row and an `edits`
   summary (key, first and last change instants, member count, parameters) on
   the roster response, chaining retained records whose `changed_at` are within
@@ -28,8 +31,10 @@
 ## 2. Diagnose retention (desk)
 
 - [ ] 2.1 Keep the Diagnose workstation alive across destination changes:
-  detach its root on leave, re-seat it on return, resize its charts, run only
-  the focus-action repaint, and issue no served read on return. Retain the
+  on leaving to another destination only detach its root (no surface reset,
+  no case-context reset, no observer disconnect); the pagehide arm keeps
+  today's full teardown; on return re-seat the root, resize its charts, run
+  only the focus-action repaint, and issue no served read. Retain the
   reader's window, drilled subject and reading scroll. Re-read (and then run the
   entry restoration as today) only on Retry, on a contextual entry whose
   subject, occurrence or window differs from the retained entry, or when one
@@ -58,8 +63,8 @@
 - [ ] 4.1 Add fail-first app-only stories S108–S112 to
   `mockups/harmonic-v2-desktop.behavior.md` and register them in the v2 replay:
   during a tab round trip the only request Diagnose issues is one status read,
-  and the 24 h window stays; the drilled subject and reading scroll survive a
-  round trip; the record roster shows one titled entry for the two-day chain
+  and the 24 h window stays; the drilled subject (reading-pane stack) and
+  reading scroll survive a round trip; the record roster shows one titled entry for the two-day chain
   with members beneath and one flat row for the lone record; the Still open
   cell carries a word;
   the roster and reassessment loading frames carry their named text.

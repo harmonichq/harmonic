@@ -20,7 +20,8 @@ SHALL NOT present the retained result as new.
 
 - **GIVEN** Diagnose is open on the 24 h window with a drilled finding
 - **WHEN** the reader opens Changes and returns to Diagnose
-- **THEN** the only request issued is one status read
+- **THEN** the only request issued is one status read, and the loading frame
+  stands until it answers
 - **AND** the 24 h window, the drilled finding and the reading scroll are as left
 
 #### Scenario: A store write since the last read triggers one re-read

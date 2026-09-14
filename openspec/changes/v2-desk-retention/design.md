@@ -15,7 +15,10 @@ store's input data revision, served on `/api/status` as `input_revision`: the
 Diagnose read records it with one status read issued before its payload reads
 (no payload carries it; `input_data_age` is attached only to a labelled stale
 predecessor), and one status read on return is the only request a retained
-return makes. The
+return makes. Until that read answers the return shows the loading frame, never
+the retained desk (Connor, Q4, 2026-09-14: the freshness check is visible, so a
+write that landed while away is never shown as current, not even for one round
+trip). The
 fetch-status write counts are not an instant and do not move on in-app writes,
 so they are not the signal. Leaving to another destination detaches the root, keeps the workstation's
 reading-pane stack, drilled chart and case context (they are the drill the
@@ -91,7 +94,8 @@ serve a stronger key; this rule is the fallback when none exists.
 - **Must recover:** a failed re-read on return shows the error frame with Retry
   (S19/S20); a roster read that crosses a write retries within its existing
   three snapshots.
-- **Accepted failure:** a cold roster read on a slow host still takes seconds;
+- **Accepted failure:** every return to Diagnose shows the loading frame for
+  one status round trip before the retained desk re-seats; a cold roster read on a slow host still takes seconds;
   the named loading text stands until it answers. The 503 after three crossed
   writes remains a clear stop with Retry.
 - **Unsupported:** grouping records across more than the one-day tolerance;

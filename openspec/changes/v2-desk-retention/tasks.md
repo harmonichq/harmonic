@@ -35,8 +35,9 @@
   entry-restoration observer only (no surface reset, no case-context reset);
   the pagehide arm keeps today's full teardown; a read completing while the
   root is detached is recorded but not applied, and the next return applies it
-  with its restoration; on return re-seat the root, resize its charts, run
-  only the focus-action repaint, and issue no served read. Retain the
+  with its restoration; on return show the loading frame until one status read answers, then
+  re-seat the root, resize its charts, run only the focus-action repaint, and
+  issue no other served read. Retain the
   reader's window, drilled subject and reading scroll. Re-read (and then run the
   entry restoration as today) only on Retry, on a contextual entry whose
   subject, occurrence or window differs from the retained entry, or when one

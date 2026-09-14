@@ -64,7 +64,8 @@ const ENDING_NOTE = {
   user_finished: 'You recorded this ending. Harmonic did not program the pump; the change was entered by hand.',
 };
 const KIND_WORD = { trial: 'Setting change', focus: 'Focus' };
-const STATUS_WORD = { active: 'Active', resolved: 'Resolved', dropped: 'Dropped' };
+const STATUS_WORD = { active: 'Active', resolved: 'Resolved', dropped: 'Dropped',
+  not_selected_for_watch: 'Not watched' };
 const SETTING_NAME = {
   basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'Correction factor',
   target_bg: 'Target glucose', profile: 'Whole profile',
@@ -138,6 +139,7 @@ async function loadRoster(token = readGeneration) {
     admission: roster.admission,
     trials: roster.trials || [],
     focuses: roster.focuses || [],
+    edits: roster.edits || [],
   };
 }
 
@@ -161,33 +163,94 @@ async function loadRecord({ kind, id }, mode, token) {
 const endingOf = (row) => row.ending || {};
 const isEnded = (row) => Boolean(endingOf(row).kind);
 
-/** One row per retained record, newest first, naming how each one ended. */
-export function recordRoster({ trials, focuses }) {
-  const rows = [
-    ...trials.map((row) => ({
-      kind: 'trial', id: row.id, at: row.changed_at,
-      title: `${SETTING_NAME[row.parameter] || row.parameter}${row.slot ? ` ${row.slot}` : ''}`,
-      detail: row.before == null
-        ? settingValue(row.parameter, row.after)
-        : `${settingValue(row.parameter, row.before)} → ${settingValue(row.parameter, row.after)}`,
-      ending: endingOf(row), status: row.watch_disposition || null,
-    })),
-    ...focuses.map((row) => ({
-      kind: 'focus', id: row.id, at: row.pinned_at,
-      title: row.title || 'Focus',
-      detail: `pinned ${stamp(row.pinned_at)}`,
-      ending: endingOf(row), status: row.status || null,
-    })),
+// A dropped (preempted) habit keeps the prototype's own way in, so it stays
+// reachable in Changes as history rather than only through the generic roster
+// (HV2-27, and the ledger's `[data-focus="dropped"]`).
+const dropped = (row) => (row.kind === 'focus' && row.ending.kind === 'trial_preempted'
+  ? ' data-focus="dropped"' : '');
+
+const openCell = (status) =>
+  `<span data-record-open="true">Still open</span><small>${e(STATUS_WORD[status] || status || 'active')}</small>`;
+const endedCell = (ending) =>
+  `${e(ENDING_WORD[ending.kind] || ending.kind)}<small>${e(stamp(ending.effective_at))}</small>`;
+
+/** One record row, as the prototype rendered it. `editKey` marks it as a
+    member beneath a titled Edit entry, for the roster's indentation. */
+function recordRowHtml(row, editKey = null) {
+  return `<tr${editKey ? ` data-edit-member="${e(editKey)}"` : ''}><td><button class="gf-row gf-record-row" data-record="${e(row.kind)}:${e(row.id)}"${dropped(row)} aria-pressed="false">${e(row.title)}<small>${e(KIND_WORD[row.kind])} · ${e(row.detail)}</small></button></td><td class="v">${isEnded(row) ? endedCell(row.ending) : openCell(row.status)}</td></tr>`;
+}
+
+/** The Ended cell an Edit entry shows for its members: the shared ending when
+    every member agrees, otherwise how many of each. */
+function editEndingCell(members) {
+  const endedMembers = members.filter(isEnded);
+  if (endedMembers.length === members.length) {
+    const [first, ...rest] = endedMembers;
+    if (rest.every((m) => m.ending.kind === first.ending.kind && m.ending.effective_at === first.ending.effective_at)) {
+      return endedCell(first.ending);
+    }
+  } else if (endedMembers.length === 0) {
+    return openCell('active');
+  }
+  return `${endedMembers.length} ended · ${members.length - endedMembers.length} open`;
+}
+
+/** One titled entry for a served Edit with two or more members: its own
+    summary row, then its member rows in the same table. */
+function editEntryHtml(edit, members) {
+  const parameters = (edit.parameters || [])
+    .map((p) => `${e(SETTING_NAME[p.parameter] || p.parameter)}${p.count > 1 ? ` ×${p.count}` : ''}`)
+    .join(' · ');
+  const span = edit.first_changed_at === edit.last_changed_at
+    ? stamp(edit.first_changed_at)
+    : `${stamp(edit.first_changed_at)} – ${stamp(edit.last_changed_at)}`;
+  const summary = `<tr class="gf-edit-row" data-edit="${e(edit.key)}"><td><span class="gf-row gf-edit-summary">${e(`${edit.count} setting changes`)}<small>${parameters}${parameters ? ' · ' : ''}${e(span)}</small></span></td><td class="v">${editEndingCell(members)}</td></tr>`;
+  return summary + members.map((row) => recordRowHtml(row, edit.key)).join('');
+}
+
+/** One row per retained record, newest first, naming how each one ended. Two
+    or more retained trials chained into one served Edit (ADR 414) render as
+    one titled entry with their rows beneath; a one-member edit and every row
+    with no served edit key (unretained candidates, Focus records) keep the
+    flat row form in the same time order. */
+export function recordRoster({ trials, focuses, edits = [] }) {
+  const editByKey = new Map(edits.map((edit) => [edit.key, edit]));
+  const trialRows = trials.map((row) => ({
+    kind: 'trial', id: row.id, at: row.changed_at, edit: row.edit || null,
+    title: `${SETTING_NAME[row.parameter] || row.parameter}${row.slot ? ` ${row.slot}` : ''}`,
+    detail: row.before == null
+      ? settingValue(row.parameter, row.after)
+      : `${settingValue(row.parameter, row.before)} → ${settingValue(row.parameter, row.after)}`,
+    ending: endingOf(row), status: row.watch_disposition || null,
+  }));
+  const focusRows = focuses.map((row) => ({
+    kind: 'focus', id: row.id, at: row.pinned_at, edit: null,
+    title: row.title || 'Focus',
+    detail: `pinned ${stamp(row.pinned_at)}`,
+    ending: endingOf(row), status: row.status || null,
+  }));
+
+  const grouped = new Map();
+  const flatRows = [];
+  for (const row of trialRows) {
+    const edit = row.edit ? editByKey.get(row.edit) : null;
+    if (edit && edit.count >= 2) {
+      if (!grouped.has(row.edit)) grouped.set(row.edit, []);
+      grouped.get(row.edit).push(row);
+    } else {
+      flatRows.push(row);
+    }
+  }
+
+  const entries = [
+    ...flatRows.map((row) => ({ at: row.at, html: recordRowHtml(row) })),
+    ...focusRows.map((row) => ({ at: row.at, html: recordRowHtml(row) })),
+    ...[...grouped.entries()].map(([key, members]) =>
+      ({ at: editByKey.get(key).last_changed_at, html: editEntryHtml(editByKey.get(key), members) })),
   ].sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  if (!rows.length) return '<p class="gf-meta">No change has been recorded on this store yet.</p>';
-  // A dropped (preempted) habit keeps the prototype's own way in, so it stays
-  // reachable in Changes as history rather than only through the generic roster
-  // (HV2-27, and the ledger's `[data-focus="dropped"]`).
-  const dropped = (row) => (row.kind === 'focus' && row.ending.kind === 'trial_preempted'
-    ? ' data-focus="dropped"' : '');
-  return `<table class="gf-table"><thead><tr><th scope="col">Record</th><th scope="col">Ended</th></tr></thead><tbody>${rows.map((row) => `<tr><td><button class="gf-row gf-record-row" data-record="${e(row.kind)}:${e(row.id)}"${dropped(row)} aria-pressed="false">${e(row.title)}<small>${e(KIND_WORD[row.kind])} · ${e(row.detail)}</small></button></td><td class="v">${isEnded(row)
-    ? `${e(ENDING_WORD[row.ending.kind] || row.ending.kind)}<small>${e(stamp(row.ending.effective_at))}</small>`
-    : `<span data-record-open="true">Still open</span><small>${e(STATUS_WORD[row.status] || row.status || 'active')}</small>`}</td></tr>`).join('')}</tbody></table>`;
+
+  if (!entries.length) return '<p class="gf-meta">No change has been recorded on this store yet.</p>';
+  return `<table class="gf-table"><thead><tr><th scope="col">Record</th><th scope="col">Ended</th></tr></thead><tbody>${entries.map((entry) => entry.html).join('')}</tbody></table>`;
 }
 
 /* --------------------------------------------------------- the record's parts */
@@ -459,7 +522,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
   }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
-  if (!memory.roster) { load('roster', loadRoster); host.innerHTML = loadingFrame('Changes'); return; }
+  if (!memory.roster) { load('roster', loadRoster); host.innerHTML = loadingFrame('Changes', 'Reading change records'); return; }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
   if (!memory.open) {
     if (!memory.roster.trials.length && !memory.roster.focuses.length) {
@@ -477,7 +540,9 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   if (!memory.record || memory.record.mode !== memory.mode
       || memory.record.id !== memory.open.id || memory.record.kind !== memory.open.kind) {
     load(key, token => loadRecord(memory.open, memory.mode, token));
-    host.innerHTML = loadingFrame(memory.mode === 'original' ? 'Changes' : 'Reassessment');
+    host.innerHTML = memory.mode === 'original'
+      ? loadingFrame('Changes', 'Reading change records')
+      : loadingFrame('Reassessment', 'Computing reassessment');
     return;
   }
   host.innerHTML = recordFrame({ ...memory.record });

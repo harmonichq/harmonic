@@ -38,6 +38,10 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let payload = null;
   let error = null;
   let pending = null;
+  // Retention (ADR 414): a status read on return, gated separately from `pending`
+  // — the payload read the desk already holds must not be disturbed while it runs.
+  let checking = false;
+  let readRevision = null;
   let seated = false;
   let arrival = null;
   let entry = {};
@@ -46,26 +50,42 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let activeSubject = null;
   let restoreObserver = null;
 
+  // Context names a served identity or an explicit slot; the window is the
+  // route's own string coordinate. Equal on all three means "the same return".
+  function sameEntry(a, b) {
+    return (a?.subject || null) === (b?.subject || null)
+      && (a?.occurrence || null) === (b?.occurrence || null)
+      && (a?.window || null) === (b?.window || null);
+  }
+
   async function read() {
     if (pending) return pending;
     error = null;
-    readFocusOptions().then(() => { if (seated) showFocusAction(); });
-    loadPlanState().then(() => { if (seated) workstation.refresh(); }).catch(() => {});
-    pending = Promise.all([
-      api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
-      api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
-      api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
-    ]).then(([a, s, e, x, preparation, outcomes]) => {
+    readFocusOptions().then(() => { if (seated && root?.isConnected) showFocusAction(); });
+    loadPlanState().then(() => { if (seated && root?.isConnected) workstation.refresh(); }).catch(() => {});
+    // The one status read this call owns: recorded before the payload reads so a
+    // write landing during them is never swallowed into a stale revision.
+    pending = api.fetchStatus().then((status) => {
+      readRevision = status.input_revision;
+      return Promise.all([
+        api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
+        api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
+        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
+      ]);
+    }).then(([a, s, e, x, preparation, outcomes]) => {
       const values = [a, s, e, x, outcomes].map((value, i) =>
         recordDiagnoseAge(ages, ['analysis', 'scenarios', 'time_of_day', 'exposures', 'trend'][i], value));
       if (values.some((value) => value === null)) throw new Error('Diagnose received invalid input-data age.');
       payload = { analyze: values[0], scenarios: values[1], evidence: values[2], exposures: values[3],
         casePreparation: preparation, findings: { ...preparation.findings, rows: preparation.rendered_rows },
         watched: values[4]?.watched_change || null };
-      if (seated) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      // seated && root.isConnected: the one live path where this can fire mid-read
+      // is the workstation's own Retry, which starts seated with the root attached.
+      // Everywhere else `seated` is false here (mount's own branches own the apply).
+      if (seated && root?.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
     }).catch((cause) => {
       error = cause;
-      if (seated) workstation.setError(cause);
+      if (seated && root?.isConnected) workstation.setError(cause);
     }).finally(() => { pending = null; render(); });
     return pending;
   }
@@ -279,6 +299,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.querySelector('header.crumb')?.append(button);
   }
 
+  // The full teardown: every guidance completion mid-read becomes a no-op
+  // (seated is false), and a return re-seats from scratch. Owns pagehide (S84)
+  // and every re-read (a changed entry, a moved revision, Retry).
   function leave() {
     if (!seated) return;
     seated = false;
@@ -291,15 +314,45 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.remove();
   }
 
+  // Retention (ADR 414): leaving TO ANOTHER DESTINATION detaches only what a
+  // return repaint must not inherit stale — the observer that would re-click a
+  // row — and the root itself, so nothing paints against a detached surface.
+  // `seated` stays true: the workstation keeps its drill, its scroll and its
+  // canvas layout, none of which this discards.
+  function detach() {
+    restoreObserver?.disconnect(); restoreObserver = null;
+    root?.remove();
+  }
+
   function mount(host, deps = {}) {
+    const previousEntry = entry;
     entry = deps.context || {};
-    if (payload && arrival !== null && deps.navigation !== arrival) {
+
+    // A return: the desk was seated and a navigation moved since. A changed
+    // subject/occurrence/window always re-reads; the same entry only checks
+    // whether the store moved, and the loading frame stands for either.
+    if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
-      leave();
+      if (!sameEntry(previousEntry, entry)) {
+        leave();
+        host.innerHTML = loadingFrame('Diagnose');
+        read();
+        return;
+      }
+      checking = true;
       host.innerHTML = loadingFrame('Diagnose');
-      read();
+      api.fetchStatus().then((status) => {
+        checking = false;
+        if (status.input_revision !== readRevision) { leave(); read(); }
+        else render();
+      }).catch(() => { checking = false; leave(); read(); });
       return;
     }
+
+    // A render arriving mid-read (the status check, or the guidance read
+    // itself) must not re-seat the pre-write desk over its own loading frame.
+    if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
+
     if (!payload && !error) {
       host.innerHTML = loadingFrame('Diagnose');
       read();
@@ -319,11 +372,19 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       return;
     }
     ensureView(host);
+    // Set before reattaching: a seated desk whose root is still detached is a
+    // return that skipped the re-read, not a fresh seat and not an in-place render.
+    const wasDetached = seated && root && !root.isConnected;
     host.replaceChildren(root);
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
-    else if (deps.navigation !== arrival) { workstation.leaveSurface(); workstation.refresh(); restoreEntry(); }
+    // Never restoreEntry() here: the drill and scroll retention preserves are
+    // exactly what restoreEntry()'s row/occurrence clicks would disturb.
+    else if (wasDetached) { workstation.refresh(); showFocusAction(); }
     arrival = deps.navigation;
-    (deps.hold || hold)((pagehide) => { if (pagehide || currentDestination() !== 'diagnose' || !host.isConnected) leave(); });
+    (deps.hold || hold)((pagehide) => {
+      if (pagehide) { leave(); return; }
+      if (currentDestination() !== 'diagnose' || !host.isConnected) detach();
+    });
   }
   return { mount, read, leave };
 }

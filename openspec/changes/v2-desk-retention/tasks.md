@@ -30,7 +30,7 @@
 
 ## 2. Diagnose retention (desk)
 
-- [ ] 2.1 Keep the Diagnose workstation alive across destination changes:
+- [x] 2.1 Keep the Diagnose workstation alive across destination changes:
   on leaving to another destination detach its root and disconnect the
   entry-restoration observer only (no surface reset, no case-context reset);
   the pagehide arm keeps today's full teardown; a read completing while the
@@ -47,7 +47,7 @@
   `input_data_age` is attached only to a labelled stale predecessor). The
   re-read path renders immediately after leaving so the loading frame, never a
   blank desk, stands until the guidance read answers.
-- [ ] 2.2 Failed reads keep their existing frames (S19, S20): a retained desk
+- [x] 2.2 Failed reads keep their existing frames (S19, S20): a retained desk
   never presents a stale result as a new one after a failed re-read. Unit
   coverage through the destination's mount and held cleanup: the pagehide arm
   runs the full teardown; an off-screen read completion does not restore and reaches the desk with
@@ -57,7 +57,7 @@
 
 ## 3. Changes roster and loading text (desk)
 
-- [ ] 3.1 List one entry per served edit with two or more members, its member
+- [x] 3.1 List one entry per served edit with two or more members, its member
   rows beneath. The entry's title is "<count> setting changes", its detail line
   the served parameters rendered through the setting names with counts
   ("Basal ×11 · Carb ratio"), its stamp the first-to-last change span; its Ended
@@ -65,9 +65,9 @@
   <m> open" otherwise; each member row keeps its exact record route. A
   one-member edit and every row with no served key (unretained detected
   trials, Focus records) keep today's flat row form in the same time order.
-- [ ] 3.2 Add `not_selected_for_watch: 'Not watched'` to the desk's existing
+- [x] 3.2 Add `not_selected_for_watch: 'Not watched'` to the desk's existing
   status word table; the token never prints.
-- [ ] 3.3 Name the loading frame's text for the roster read and for a
+- [x] 3.3 Name the loading frame's text for the roster read and for a
   reassessment through the existing loading frame seam.
 
 ## 4. Behavior ledger and replay

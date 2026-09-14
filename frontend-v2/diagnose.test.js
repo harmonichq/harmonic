@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 
 let fetchReply = async () => ({ ok: true, json: async () => ({ items: [], history: [] }) });
 globalThis.fetch = (...args) => fetchReply(...args);
+// A no-op default: most tests below name a subject in their contextual entry
+// (so restoreEntry() constructs one), but do not themselves exercise the
+// observer's restoration walk. Tests that DO care replace this locally.
+if (!globalThis.MutationObserver) {
+  globalThis.MutationObserver = class { observe() {} disconnect() {} };
+}
 const { createDiagnoseDestination, outcomeWindowForCase } = await import('./diagnose.js');
 
 test('an unscoped case-file WindowQuery preserves the explicit 24 h Focus scope', () => {
@@ -13,22 +19,49 @@ test('an unscoped case-file WindowQuery preserves the explicit 24 h Focus scope'
   assert.equal(outcomeWindowForCase({ window: { scoped: true, start_min: null, end_min: null } }), null);
 });
 
+// A node-mocked element that tracks `isConnected` the way a real DOM node does:
+// true once a host attaches it, false once it (or the host) removes it. The
+// retention lifecycle reads this property directly (ADR 414), so a mock that
+// does not track it would let a bug in the gate pass silently.
+function makeRoot(overrides = {}) {
+  const root = {
+    dataset: {}, className: '', isConnected: false,
+    addEventListener() {}, querySelectorAll: () => [], querySelector: () => null,
+    remove() { root.isConnected = false; },
+    ...overrides,
+  };
+  return root;
+}
+
 function host() {
   const controls = new Map();
-  const root = { dataset: {}, className: '', addEventListener() {}, querySelectorAll: () => [], querySelector: () => null, remove() {} };
-  return { innerHTML: '', isConnected: true, ownerDocument: { createElement: () => root },
-    replaceChildren(node) { this.node = node; },
-    querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); } };
+  return {
+    innerHTML: '', isConnected: true,
+    ownerDocument: { createElement: () => makeRoot() },
+    replaceChildren(node) { this.node = node; node.isConnected = true; },
+    querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
+  };
 }
 function source() {
   let fail = false;
+  let statusFail = false;
+  let revision = 1;
+  const requests = [];
   const api = {
-    fetchAnalysis: async () => { if (fail) throw new Error('synthetic read failure'); return { marker: 'analysis' }; },
-    fetchScenarios: async () => ({}), fetchExploreTimeOfDay: async () => ({}), fetchExploreExposures: async () => ({}),
-    fetchDiagnoseFindingCasePreparation: async () => ({ findings: { schema: 'served' }, rendered_rows: [{ id: 'pattern:served' }] }),
-    fetchOutcomesTrend: async () => ({}),
+    fetchStatus: async () => { requests.push('status'); if (statusFail) throw new Error('synthetic status failure'); return { input_revision: revision }; },
+    fetchAnalysis: async () => { requests.push('analysis'); if (fail) throw new Error('synthetic read failure'); return { marker: 'analysis' }; },
+    fetchScenarios: async () => { requests.push('scenarios'); return {}; },
+    fetchExploreTimeOfDay: async () => { requests.push('time_of_day'); return {}; },
+    fetchExploreExposures: async () => { requests.push('exposures'); return {}; },
+    fetchDiagnoseFindingCasePreparation: async () => { requests.push('preparation'); return { findings: { schema: 'served' }, rendered_rows: [{ id: 'pattern:served' }] }; },
+    fetchOutcomesTrend: async () => { requests.push('trend'); return {}; },
   };
-  return { api, fail: value => { fail = value; } };
+  return {
+    api, requests,
+    fail: value => { fail = value; },
+    statusFail: value => { statusFail = value; },
+    setRevision: value => { revision = value; },
+  };
 }
 
 test('one shared composition delegates case loads and releases each mounted entry', async () => {
@@ -54,7 +87,7 @@ test('one shared composition delegates case loads and releases each mounted entr
   assert.ok(calls.some(value => value?.findings?.rows[0].id === 'pattern:served'));
 });
 
-test('initial and failed current reads own distinct Diagnose frames and retry', async () => {
+test('a cold first read reaches the desk, and a Retry after a failed first read reaches it too', async () => {
   const served = source(); const seat = host();
   const destination = createDiagnoseDestination({ api: served.api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
@@ -63,8 +96,17 @@ test('initial and failed current reads own distinct Diagnose frames and retry', 
   assert.doesNotMatch(seat.innerHTML, /No priority needs action/);
   served.fail(false); await seat.querySelector('[data-action="retry"]').onclick();
   destination.mount(seat, { navigation: 0, hold() {} });
-  served.fail(true); destination.mount(seat, { navigation: 1, hold() {} }); await destination.read();
-  destination.mount(seat, { navigation: 1, hold() {} });
+  assert.ok(seat.node, 'a successful cold read seats the composition');
+  destination.leave();
+});
+
+test('an initial read failure and a current-read failure own distinct Diagnose frames', async () => {
+  const served = source(); const seat = host();
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  served.fail(false); await destination.read(); destination.mount(seat, { navigation: 0, hold() {} });
+  served.fail(true); destination.mount(seat, { navigation: 1, context: { subject: 'other' }, hold() {} }); await destination.read();
+  destination.mount(seat, { navigation: 1, context: { subject: 'other' }, hold() {} });
   assert.match(seat.innerHTML, /Current read failed/);
   assert.match(seat.innerHTML, /last read that answered/);
   assert.match(seat.innerHTML, /Open Diagnose/);
@@ -77,8 +119,137 @@ test('initial and failed current reads own distinct Diagnose frames and retry', 
     await seat.querySelector('[data-action="open-diagnose"]').onclick();
     assert.deepEqual(addresses, ['/v2/diagnose'], 'Open Diagnose discards the contextual entry');
   } finally { globalThis.window = previous; }
-  destination.mount(seat, { navigation: 1, hold() {} });
+  destination.mount(seat, { navigation: 1, context: { subject: 'other' }, hold() {} });
   assert.ok(seat.node, 'successful retry seats the carried composition');
+  destination.leave();
+});
+
+test('a navigation round trip to the same entry issues one status read, no more, and never restores entry', async () => {
+  const served = source(); const seat = host();
+  let refreshCalls = 0; let setDataCalls = 0;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  assert.ok(seat.node, 'first seat reaches the desk');
+  served.requests.length = 0;
+  setDataCalls = 0;
+
+  // Leave to another destination: the hold cleanup detaches, keeps seated.
+  // The cleanup is captured by re-mounting with a spying `hold`.
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+  seat.isConnected = false; // the next destination's render replaced this host
+  held(false);
+  assert.equal(seat.node.isConnected, false, 'detach removes the root from the host');
+
+  // Return with the same entry, same revision: exactly one request (status),
+  // and the loading frame stands until it answers.
+  let resolveStatus;
+  const originalFetchStatus = served.api.fetchStatus;
+  served.api.fetchStatus = () => new Promise(resolve => { resolveStatus = resolve; served.requests.push('status'); });
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.match(seat.innerHTML, /gf-loading/, 'the loading frame stands while the status check is open');
+  assert.deepEqual(served.requests, ['status']);
+  resolveStatus({ input_revision: 1 });
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+  served.api.fetchStatus = originalFetchStatus;
+  assert.deepEqual(served.requests, ['status'], 'no payload read runs when the entry and the revision are unchanged');
+  // The status check's completion calls render(); this harness drives that
+  // re-entry into mount() explicitly, the same way every other test here does.
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(setDataCalls, 0, 'a same-entry return never re-applies the payload (no restoreEntry path)');
+  assert.equal(refreshCalls, 1, 'the return re-seat resizes the carried charts');
+  assert.equal(seat.node.isConnected, true, 'the return reattaches the retained root');
+  destination.leave();
+});
+
+test('a moved input_revision on return re-reads behind the loading frame, never the retained desk', async () => {
+  const served = source(); const seat = host();
+  let setDataCalls = 0;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  served.requests.length = 0;
+  setDataCalls = 0;
+
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+  seat.isConnected = false;
+  held(false);
+
+  served.setRevision(2);
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.match(seat.innerHTML, /gf-loading/, 'the moved-revision re-read shows the loading frame, not the retained desk');
+  assert.notEqual(seat.innerHTML, '', 'the desk never stands blank mid re-read');
+  // Let the status check and the subsequent re-read settle.
+  for (let i = 0; i < 10; i += 1) await Promise.resolve();
+  assert.ok(served.requests.includes('status') && served.requests.includes('analysis'),
+    'a moved revision re-reads the payload rather than only checking status');
+  assert.equal(setDataCalls, 1, 'the re-read reaches the desk exactly once, through the ordinary cold-seat path');
+  destination.leave();
+});
+
+test('a same-subject entry with a different occurrence re-reads on return', async () => {
+  const served = source(); const seat = host();
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served', occurrence: 'a' } });
+  served.requests.length = 0;
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served', occurrence: 'a' } });
+  seat.isConnected = false;
+  held(false);
+
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served', occurrence: 'b' } });
+  // A changed occurrence re-reads immediately: no status check first, straight to read().
+  assert.equal(served.requests[0], 'status', 'read() issues its own status read first');
+  for (let i = 0; i < 6; i += 1) await Promise.resolve();
+  assert.ok(served.requests.includes('analysis'), 'a changed occurrence re-reads the payload');
+  destination.leave();
+});
+
+test('a read completing while Diagnose is off-screen does not restore or build an observer, and reaches the desk on return', async () => {
+  const served = source(); const seat = host();
+  let setDataCalls = 0; let refreshCalls = 0;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+  seat.isConnected = false;
+  held(false);
+  assert.equal(seat.node.isConnected, false);
+
+  setDataCalls = 0;
+  // A read that resolves while off-screen (e.g. a stray retry) must not apply.
+  await destination.read();
+  assert.equal(setDataCalls, 0, 'an off-screen completion does not paint against the detached root');
+
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  await new Promise(resolve => setImmediate(resolve));
+  for (let i = 0; i < 6; i += 1) await Promise.resolve();
+  // The status check's completion calls render(); driven explicitly here.
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.ok(refreshCalls >= 1 || setDataCalls >= 1, 'the return applies the retained or re-read result to the desk');
+  destination.leave();
+});
+
+test('the held cleanup invoked with pagehide runs the full teardown', async () => {
+  const served = source(); const seat = host();
+  const calls = [];
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData: data => calls.push(data), leaveSurface: () => calls.push('leave'), refresh() {}, setError() {} }) });
+  await destination.read();
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+  calls.length = 0;
+  held(true);
+  assert.ok(calls.includes('leave'), 'pagehide runs leaveSurface, unlike the detach-only arm');
+  assert.ok(calls.includes(null), 'pagehide runs setData(null), unlike the detach-only arm');
 });
 
 test('return restoration requests its occurrence once while shared paints are pending', async () => {
@@ -88,8 +259,8 @@ test('return restoration requests its occurrence once while shared paints are pe
   try {
     const member = { dataset: { occurrenceId: 'opaque' }, getAttribute: () => String(selected), click: () => { clicks += 1; }, focus() {} };
     const row = { dataset: { id: 'finding:served' }, click() {} };
-    const root = { dataset: {}, addEventListener() {}, remove() {}, querySelector: () => null,
-      querySelectorAll: selector => selector === '.qrow[data-id]' ? [row] : selector === '.case-occurrence' ? [member] : [] };
+    const root = makeRoot({ querySelector: () => null,
+      querySelectorAll: selector => selector === '.qrow[data-id]' ? [row] : selector === '.case-occurrence' ? [member] : [] });
     const seat = host(); seat.ownerDocument.createElement = () => root;
     const destination = createDiagnoseDestination({ api: source().api,
       createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
@@ -109,11 +280,11 @@ test('the v2 adapter wraps lane keys through the carried buttons and retains nig
     closest: selector => selector === '#lane > button.lane-cell' ? cells[index] : null,
     click() { selected = index; }, focus() { focused = index; },
   }));
-  const root = { dataset: {}, remove() {},
+  const root = makeRoot({
     addEventListener(type, run, capture) { handlers.push({ type, run, capture: capture === true }); },
     querySelectorAll: selector => selector === '#lane > button.lane-cell' ? cells : [],
     querySelector: selector => selector === '#level' ? level : null,
-  };
+  });
   const seat = host(); seat.ownerDocument.createElement = () => root;
   const destination = createDiagnoseDestination({ api: source().api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
@@ -146,7 +317,7 @@ test('S129/S131 tile activation replaces the Focus drill, while same-chart picks
   const handlers = []; const pending = []; let callbacks; let button = null;
   const header = { append(node) { button = node; } };
   const document = { createElement() { return { dataset: {}, remove() { if (button === this) button = null; } }; } };
-  const root = { dataset: {}, ownerDocument: document, remove() {}, querySelectorAll: () => [],
+  const root = { dataset: {}, ownerDocument: document, isConnected: false, remove() { root.isConnected = false; }, querySelectorAll: () => [],
     addEventListener(type, run, capture) { handlers.push({ type, run, capture }); },
     querySelector: selector => selector === 'header.crumb' ? header : selector === '[data-start-focus]' ? button : null };
   const seat = host(); seat.ownerDocument.createElement = () => root;

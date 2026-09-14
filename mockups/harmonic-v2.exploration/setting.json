@@ -2820,6 +2820,20 @@
         "reason": "active_trial",
         "state": "available"
       },
+      "edits": [
+        {
+          "count": 1,
+          "first_changed_at": "2024-06-13 03:00:00",
+          "key": "edit-basal_rate-03-00-20240613030000",
+          "last_changed_at": "2024-06-13 03:00:00",
+          "parameters": [
+            {
+              "count": 1,
+              "parameter": "basal_rate"
+            }
+          ]
+        }
+      ],
       "focuses": [],
       "input_revision": 8,
       "selected": {
@@ -3665,6 +3679,7 @@
           "after": 0.48,
           "before": 0.6,
           "changed_at": "2024-06-13 03:00:00",
+          "edit": "edit-basal_rate-03-00-20240613030000",
           "ending": {
             "reason": "not_recorded",
             "state": "unavailable",
@@ -3708,6 +3723,20 @@
         "reason": "active_trial",
         "state": "available"
       },
+      "edits": [
+        {
+          "count": 1,
+          "first_changed_at": "2024-06-13 03:00:00",
+          "key": "edit-basal_rate-03-00-20240613030000",
+          "last_changed_at": "2024-06-13 03:00:00",
+          "parameters": [
+            {
+              "count": 1,
+              "parameter": "basal_rate"
+            }
+          ]
+        }
+      ],
       "focuses": [],
       "input_revision": 8,
       "selected": {
@@ -4634,6 +4663,7 @@
           "after": 0.48,
           "before": 0.6,
           "changed_at": "2024-06-13 03:00:00",
+          "edit": "edit-basal_rate-03-00-20240613030000",
           "ending": {
             "reason": "not_recorded",
             "state": "unavailable",

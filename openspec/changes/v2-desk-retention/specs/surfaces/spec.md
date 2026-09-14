@@ -10,9 +10,9 @@ unchanged. A return to Diagnose SHALL issue no guidance or evidence read and
 SHALL retain the reader's selected window, drilled subject and reading scroll. The desk SHALL
 re-read only on Retry, on a contextual entry whose subject, occurrence or window
 differs from the retained entry, or when one status read on return shows
-`/api/status.input_revision` differing from the `input_data_age.revision` the
-retained analysis payload carried. That status read SHALL be the only request a
-retained return issues. A
+`/api/status.input_revision` differing from the input revision the Diagnose
+read recorded through its own status read issued before its payload reads.
+That status read SHALL be the only request a retained return issues. A
 failed re-read SHALL replace the retained desk with the existing error frame and
 SHALL NOT present the retained result as new.
 

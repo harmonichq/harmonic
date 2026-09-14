@@ -22,8 +22,8 @@
   Fixture coverage for a chain that spans two days, two chains one day apart,
   and a single record.
 - [ ] 1.3 Serve `input_revision` on `/api/status` (the store's input data
-  revision, the same scalar the fixed Diagnose payloads carry as
-  `input_data_age.revision`), with its API test.
+  revision, the scalar the result cache validates fixed results against), with
+  its API test.
 - [ ] 1.4 Add an **Edit** entry to `CONTEXT.md`: a run of retained setting
   changes within a day of each other, grouped for reading in Changes; not a
   Plan, not a Trial identity. Avoid: episode, session, batch.
@@ -41,7 +41,11 @@
   entry restoration as today) only on Retry, on a contextual entry whose
   subject, occurrence or window differs from the retained entry, or when one
   status read on return shows `/api/status.input_revision` differing from the
-  `input_data_age.revision` the retained analysis payload carried.
+  revision the read recorded: the read issues one status read before its
+  payload reads and keeps that `input_revision` (no payload field carries it;
+  `input_data_age` is attached only to a labelled stale predecessor). The
+  re-read path renders immediately after leaving so the loading frame, never a
+  blank desk, stands until the guidance read answers.
 - [ ] 2.2 Failed reads keep their existing frames (S19, S20): a retained desk
   never presents a stale result as a new one after a failed re-read. Unit
   coverage through the destination's mount and held cleanup: the pagehide arm
@@ -68,7 +72,8 @@
 ## 4. Behavior ledger and replay
 
 - [ ] 4.1 Add fail-first app-only stories S108–S112 to
-  `mockups/harmonic-v2-desktop.behavior.md` and register them in the v2 replay:
+  `mockups/harmonic-v2-desktop.behavior.md`, move the sweep's inventory
+  literals (137 / 119 / 18 → 142 / 124 / 18), and register them in the v2 replay:
   during a tab round trip the only request Diagnose issues is one status read,
   and the 24 h window stays; the drilled subject (reading-pane stack) and
   reading scroll survive a round trip; the record roster shows one titled entry for the two-day chain
@@ -76,4 +81,5 @@
   cell carries a word;
   the roster and reassessment loading frames carry their named text.
 - [ ] 4.2 Replay the touched stories at 1280×720 and 1440×900 while iterating;
-  run the complete v2 ledger once per size on the commit to be pushed.
+  run the complete v2 ledger once per size on the commit to be pushed, and
+  the Verify behaviour ledger leg once, since its stub payload is regenerated.

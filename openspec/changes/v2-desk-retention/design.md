@@ -11,18 +11,23 @@ subject and reading scroll are retained as a consequence of the node surviving,
 not as a second state store. A read is re-issued only on Retry, on a contextual
 entry naming a different subject, or when the server's last written instant
 differs from the one read at the last Diagnose read. The scalar compared is the
-store's input data revision: the fixed Diagnose payloads already carry it as
-`input_data_age.revision`, and `/api/status` serves it as `input_revision`; one
-status read on return is the only request a retained return makes. The
+store's input data revision, served on `/api/status` as `input_revision`: the
+Diagnose read records it with one status read issued before its payload reads
+(no payload carries it; `input_data_age` is attached only to a labelled stale
+predecessor), and one status read on return is the only request a retained
+return makes. The
 fetch-status write counts are not an instant and do not move on in-app writes,
 so they are not the signal. Leaving to another destination detaches the root, keeps the workstation's
 reading-pane stack, drilled chart and case context (they are the drill the
 return preserves), and still disconnects the entry-restoration observer, which
 is restoration machinery rather than retained state. The workstation stays
 seated while detached; a read that completes off-screen is recorded but not applied
-until the next return seats the root, which applies it with its restoration;
+until the next return seats the root, which applies it with its restoration
+(the one read that starts seated, the workstation's own Retry, applies in its
+completion behind a seated-and-attached gate);
 while any guidance read is pending every render shows the loading frame, never
-the retained payload (HV2-29), so pre-write data is never presented as current. The
+the retained payload (HV2-29), so pre-write data is never presented as current, and the re-read path renders
+immediately after leaving so no blank desk stands in between. The
 pagehide arm keeps today's full teardown (S84). A retained return runs only the focus-action
 repaint; entry restoration runs only after a read. A contextual entry whose subject, occurrence or window differs
 from the retained entry is a different subject.

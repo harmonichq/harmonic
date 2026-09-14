@@ -835,6 +835,12 @@ export const C2_STORIES = {
       check(next, 'the roster offers no second subject to open');
       return { next };
     }, "S81");
+    // The roster itself is scrolled before the new subject opens, so the head
+    // assertion below proves a reset and not a pane that was already at 0.
+    await page.locator('#level').evaluate(n => { n.scrollTop = Math.min(40, n.scrollHeight - n.clientHeight); });
+    await waitForReplayAssertion(async seen => {
+      check(seen(await page.locator('#level').evaluate(n => n.scrollTop)) > 0, 'the roster pane must be scrolled before the subject changes');
+    }, "S81");
     await page.locator(`#level .qrow[data-id="${next}"]`).click();
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), 0, 'a new subject arrives at its head');

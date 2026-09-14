@@ -50,6 +50,10 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // the teardown every re-read starts with, because a re-read's own completion
   // decides what the next mount applies and the recorded one is stale.
   let deferredApply = false;
+  // The reading pane's scroll offset at detach. A browser resets a removed
+  // element's scroll offset on re-insertion, so the surviving node alone does
+  // not carry it; the retained re-seat puts it back.
+  let levelScroll = null;
   let seated = false;
   let arrival = null;
   let entry = {};
@@ -333,6 +337,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function detach() {
     restoreObserver?.disconnect(); restoreObserver = null;
     // Only ever called after ensureView() has run (seated implies root is set).
+    levelScroll = root.querySelector('#level')?.scrollTop ?? null;
     root.remove();
   }
 
@@ -396,7 +401,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       workstation.setData(payload); restoreEntry(); showFocusAction();
     // Never restoreEntry() here: the drill and scroll retention preserves are
     // exactly what restoreEntry()'s row/occurrence clicks would disturb.
-    } else if (wasDetached) { workstation.refresh(); showFocusAction(); }
+    } else if (wasDetached) {
+      workstation.refresh(); showFocusAction();
+      const level = root.querySelector('#level');
+      if (level && levelScroll !== null) level.scrollTop = levelScroll;
+    }
     arrival = deps.navigation;
     (deps.hold || hold)((pagehide) => {
       if (pagehide) { leave(); return; }

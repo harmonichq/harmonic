@@ -44,7 +44,10 @@ same window, same drilled finding, same scroll, no requests fired."
 
 The desk's render lifecycle (routes.js: one teardown per render, HV2-34) gains
 one destination that opts out of teardown, the way Day already retains its
-frame across a selected-day read. The failed-read frames (S19, S20) and the
+frame across a selected-day read. One offset is carried explicitly: a browser
+resets a removed element's scroll offset on re-insertion, so the reading
+pane's scroll is captured at detach and reapplied on the retained re-seat
+(S109 found this against the built app; the surviving node alone lost it). The failed-read frames (S19, S20) and the
 no-stale-result rule (HV2-29) are unchanged: a failed re-read still replaces
 the retained desk with the error frame. No served contract changes.
 

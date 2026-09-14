@@ -164,6 +164,32 @@ test('a navigation round trip to the same entry issues one status read, no more,
   destination.leave();
 });
 
+test('a same-entry return puts the reading pane scroll back where the reader left it', async () => {
+  const served = source(); const seat = host();
+  // A real pane: the browser resets scrollTop to 0 when the node is removed
+  // and re-inserted, which is what the detach/re-seat cycle does.
+  const level = { scrollTop: 0 };
+  const root = makeRoot({ querySelector: selector => (selector === '#level' ? level : null),
+    remove() { root.isConnected = false; level.scrollTop = 0; } });
+  seat.ownerDocument.createElement = () => root;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  level.scrollTop = 54;
+  let held;
+  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+  seat.isConnected = false;
+  held(false);
+  assert.equal(level.scrollTop, 0, 'premise: detaching the root drops the pane scroll, as a browser does');
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  for (let i = 0; i < 4; i += 1) await Promise.resolve();
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(seat.node.isConnected, true, 'the return reattaches the retained root');
+  assert.equal(level.scrollTop, 54, 'the retained re-seat restores the reading pane scroll');
+  destination.leave();
+});
+
 test('a moved input_revision on return re-reads behind the loading frame, never the retained desk', async () => {
   const served = source(); const seat = host();
   let setDataCalls = 0;

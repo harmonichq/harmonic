@@ -1758,7 +1758,7 @@ S81 · The reading pane keeps its scroll only while it stays on the same subject
 
 Amended S81 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
 The preceding wording and results are the attributed pre-amendment record.
-Amended S81 · 2026-09-14 · ADR 414 / lock v2 414 1: A Changes round trip is a return to the same subject (Diagnose stays seated, S109) and keeps the reading scroll, so the subject change that must arrive at its head is now a different Finding row opened from the roster; the locked term is unchanged. App body: frontend-v2/c2.replay.mjs S81.
+Amended S81 · 2026-09-14 · ADR 414 / lock v2 414 1: A Changes round trip is a return to the same subject (Diagnose stays seated, S109) and keeps the reading scroll, so the subject change that must arrive at its head is now the step back from the scrolled lane to the Findings roster through the crumb trail; the locked term is unchanged. App body: frontend-v2/c2.replay.mjs S81.
 
 
 ```

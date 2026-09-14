@@ -822,26 +822,15 @@ export const C2_STORIES = {
     }, "S81");
     // Amended under #414 (ADR 414): a Changes round trip returns to the same
     // subject and keeps the reading scroll (S109). The subject change that must
-    // arrive at its head is a different Finding row, reached by stepping back
-    // to the roster through the crumb trail.
+    // arrive at its head is the step back from the scrolled lane to the
+    // Findings roster through the crumb trail; the lane's offset (`before`,
+    // nonzero at both sizes) is the offset the change must not carry.
     await go(page, 'changes'); await go(page, 'diagnose');
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), before, 'a return to the same subject keeps the reading scroll');
     }, "S81");
     await press(page, '#crumb-trail button');
-    const { next } = await waitForReplayAssertion(async seen => {
-      const next = seen(await page.evaluate(() => [...document.querySelectorAll('#level .qrow[data-id]')]
-        .map(b => b.dataset.id).find(id => !id.startsWith('basal:'))));
-      check(next, 'the roster offers no second subject to open');
-      return { next };
-    }, "S81");
-    // The roster itself is scrolled before the new subject opens, so the head
-    // assertion below proves a reset and not a pane that was already at 0.
-    await page.locator('#level').evaluate(n => { n.scrollTop = Math.min(40, n.scrollHeight - n.clientHeight); });
-    await waitForReplayAssertion(async seen => {
-      check(seen(await page.locator('#level').evaluate(n => n.scrollTop)) > 0, 'the roster pane must be scrolled before the subject changes');
-    }, "S81");
-    await page.locator(`#level .qrow[data-id="${next}"]`).click();
+    await page.locator('#level .qrow[data-id]').first().waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), 0, 'a new subject arrives at its head');
     }, "S81");

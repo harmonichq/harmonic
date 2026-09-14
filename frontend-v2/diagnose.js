@@ -355,6 +355,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function mount(host, deps = {}) {
     const previousEntry = entry;
     entry = deps.context || {};
+    // Only the error branch below re-marks the host; every other frame clears it.
+    const standingFrame = host.dataset.diagnoseFrame;
+    delete host.dataset.diagnoseFrame;
 
     // A return: the desk was seated and a navigation moved since. A changed
     // subject/occurrence/window always re-reads; the same entry only checks
@@ -386,6 +389,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       return;
     }
     if (error) {
+      // A render that arrives while this frame already stands (the focus
+      // options read's own change notification lands a beat after the failed
+      // guidance read's) must not rebuild it: rebuilding replaces the Retry
+      // control under the reader's press and moves focus a second time.
+      const frame = payload ? 'current-read-failed' : 'evidence-unavailable';
+      host.dataset.diagnoseFrame = frame;
+      if (standingFrame === frame && host.querySelector('[data-action="retry"]')) return;
       host.innerHTML = emptyFrame('Diagnose', payload ? 'Current read failed' : 'Evidence unavailable',
         payload ? 'The current read failed. The last read that answered is not a new result.' : 'The evidence read could not load.',
         '<button class="gf-btn primary" data-action="retry">Retry</button><button class="gf-btn" data-action="open-diagnose">Open Diagnose</button>');

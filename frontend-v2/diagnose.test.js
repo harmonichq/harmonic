@@ -40,7 +40,7 @@ function host() {
   const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } } };
   ownerDocument.createElement = () => Object.assign(makeRoot(), { ownerDocument });
   return {
-    innerHTML: '', isConnected: true,
+    innerHTML: '', isConnected: true, dataset: {},
     ownerDocument,
     replaceChildren(node) { this.node = node; node.isConnected = true; node.parked = false; },
     querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
@@ -219,6 +219,29 @@ test('re-pressing Diagnose while on Diagnose re-reads and restores the index, ne
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
   assert.equal(setDataCalls, 1, 'the fresh seat applies the re-read payload');
   assert.equal(rowClicks, 1, 'the fresh seat runs entry restoration');
+  destination.leave();
+});
+
+test('a render arriving while the failed frame stands leaves its Retry control in place', async () => {
+  const served = source(); const seat = host();
+  let writes = 0;
+  Object.defineProperty(seat, 'innerHTML', { get() { return this._html || ''; }, set(v) { writes += 1; this._html = v; } });
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  served.fail(true);
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  for (let i = 0; i < 10; i += 1) await Promise.resolve();
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.match(seat.innerHTML, /Current read failed/, 'the failed re-read shows its frame');
+  const retry = seat.querySelector('[data-action="retry"]');
+  const before = writes;
+  // The focus-options module's change notification re-enters mount here.
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(writes, before, 'a second render of the same failed frame rewrites nothing');
+  assert.equal(seat.querySelector('[data-action="retry"]'), retry, 'the Retry control keeps its identity');
+  served.fail(false);
   destination.leave();
 });
 

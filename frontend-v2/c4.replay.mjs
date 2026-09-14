@@ -647,11 +647,15 @@ export const C4_STORIES = {
       'S108 the drilled row must remain open after the held return');
   },
   async S109(page) {
-    await drilledDiagnose414(page);
+    // Undrilled: a drilled pane fits its viewport exactly at 1440x900 (the
+    // overflow is on the factors roster itself, not every level), so this
+    // scrolls #level before any row is picked, at whatever bounded offset its
+    // own overflow allows.
+    await fullDayDiagnose(page);
     const level = page.locator('#level');
     await level.waitFor({ timeout: 30000 });
     const scrolled = await level.evaluate(node => {
-      node.scrollTop = Math.max(20, node.scrollHeight - node.clientHeight - 4);
+      node.scrollTop = Math.min(40, node.scrollHeight - node.clientHeight);
       return node.scrollTop;
     });
     assert.ok(scrolled > 0, 'S109 premise: the reading pane must actually be scrollable');

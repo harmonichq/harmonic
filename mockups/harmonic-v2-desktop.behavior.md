@@ -2560,10 +2560,12 @@ S109 · The reading pane's scroll position survives the same Diagnose round trip
   element:  #level
   source:   frontend-v2/diagnose.js detach / mount (root retained, not rebuilt)
   lock:     HV2-34
-  data:     showcase; drill the first ranked row, scroll the reading pane, return
+  data:     showcase; select 24 h with no row drilled (the undrilled factors
+            roster overflows its pane; a drilled pane does not), scroll #level
+            by a bounded offset that fits inside its own overflow, return
   evidence: C4_STORIES.S109; compares #level.scrollTop before and after the round trip
-  status:   browser fail-first pending coordinator; base build tears the desk
-            down on every navigation, so no scroll position has anywhere to survive
+  status:   browser fail-first pending coordinator; base build resets the
+            reading pane scroll to 0 on return
 ```
 
 ```

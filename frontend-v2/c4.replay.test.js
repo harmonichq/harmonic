@@ -113,8 +113,8 @@ function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
       : selector.includes('seg-window') ? 'Slot 03:00' : '',
     evaluate: async fn => {
       if (selector !== '#level') return null;
-      if (fn.toString().includes('node.scrollTop = Math.max')) {
-        level.scrollTop = Math.max(20, level.scrollHeight - level.clientHeight - 4);
+      if (fn.toString().includes('node.scrollTop = Math.min')) {
+        level.scrollTop = Math.min(40, level.scrollHeight - level.clientHeight);
         return level.scrollTop;
       }
       return level.scrollTop;

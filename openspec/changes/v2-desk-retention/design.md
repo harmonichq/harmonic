@@ -17,9 +17,11 @@ reading scroll is the one offset carried explicitly (see Consequences). A read i
 entry naming a different subject, or when the server's last written instant
 differs from the one read at the last Diagnose read. The scalar compared is the
 store's input data revision, served on `/api/status` as `input_revision`: the
-Diagnose read records it with one status read issued before its payload reads
-(no payload carries it; `input_data_age` is attached only to a labelled stale
-predecessor), and one status read on return is the only request a retained
+Diagnose read records it with one status read issued first, alongside its
+payload reads (no payload carries it; `input_data_age` is attached only to a
+labelled stale predecessor; a write racing the reads either shows in the
+payload too or moves the revision the next return compares, so the race errs
+toward a re-read), and one status read on return is the only request a retained
 return makes. Until that read answers the return shows the loading frame, never
 the retained desk (Connor, Q4, 2026-09-14: the freshness check is visible, so a
 write that landed while away is never shown as current, not even for one round

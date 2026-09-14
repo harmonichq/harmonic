@@ -79,16 +79,20 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     error = null;
     readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); });
     loadPlanState().then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
-    // The one status read this call owns: recorded before the payload reads so a
-    // write landing during them is never swallowed into a stale revision.
-    pending = api.fetchStatus().then((status) => {
+    // The one status read this call owns: issued first, alongside the payload
+    // reads rather than ahead of their round trip, so a write landing during
+    // them either shows in the payload too or moves the revision the next
+    // return compares (a re-read, never a stale desk). Serialising it in front
+    // lengthened every read by one round trip, which let the focus options
+    // completion of the previous read land mid-read and swap the failed frame
+    // for the loading frame under the reader's Retry press (S20b).
+    pending = Promise.all([
+      api.fetchStatus(),
+      api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
+      api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
+      api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
+    ]).then(([status, a, s, e, x, preparation, outcomes]) => {
       readRevision = status.input_revision;
-      return Promise.all([
-        api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
-        api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
-        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
-      ]);
-    }).then(([a, s, e, x, preparation, outcomes]) => {
       const values = [a, s, e, x, outcomes].map((value, i) =>
         recordDiagnoseAge(ages, ['analysis', 'scenarios', 'time_of_day', 'exposures', 'trend'][i], value));
       if (values.some((value) => value === null)) throw new Error('Diagnose received invalid input-data age.');
@@ -392,8 +396,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // control under the reader's press and moves focus a second time.
       // The mark lives on the frame element itself, never on the shared
       // surface: another destination's failure frame carries its own Retry but
-      // not this mark, and the surface sweep between destinations takes the
-      // marked frame away with it.
+      // not this mark, and the next destination's own write takes the marked
+      // frame away with it.
       const frame = payload ? 'current-read-failed' : 'evidence-unavailable';
       if (host.firstElementChild?.dataset?.diagnoseFrame === frame) return;
       host.innerHTML = emptyFrame('Diagnose', payload ? 'Current read failed' : 'Evidence unavailable',

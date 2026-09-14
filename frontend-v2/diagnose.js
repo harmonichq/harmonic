@@ -43,17 +43,21 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let checking = false;
   let readRevision = null;
   // The one statement of this flag's lifecycle. Set when a guidance read
-  // completes seated but detached (the workstation's own Retry resolving
-  // off-screen), because nothing may paint against a detached root. Consumed
+  // completes seated but parked (the workstation's own Retry resolving
+  // off-screen), because a parked desk must not be re-seated by a completion. Consumed
   // by the return that re-seats that same read: mount applies the payload
   // with its restoration. Cleared by leave(), both the pagehide teardown and
   // the teardown every re-read starts with, because a re-read's own completion
   // decides what the next mount applies and the recorded one is stale.
   let deferredApply = false;
-  // The reading pane's scroll offset at detach. A browser resets a removed
-  // element's scroll offset on re-insertion, so the surviving node alone does
-  // not carry it; the retained re-seat puts it back.
+  // The reading pane's scroll offset when the root is parked. A browser
+  // drops the scroll offset of an element it no longer lays out, so the
+  // surviving node alone does not carry it; the retained re-seat puts it back.
   let levelScroll = null;
+  // The root is parked hidden at the end of the document while another
+  // destination holds the surface (see detach()). While parked, nothing
+  // paints it from here; the workstation's own in-flight reads may.
+  let parked = false;
   let seated = false;
   let arrival = null;
   let entry = {};
@@ -73,8 +77,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   async function read() {
     if (pending) return pending;
     error = null;
-    readFocusOptions().then(() => { if (seated && root.isConnected) showFocusAction(); });
-    loadPlanState().then(() => { if (seated && root.isConnected) workstation.refresh(); }).catch(() => {});
+    readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); });
+    loadPlanState().then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
     // The one status read this call owns: recorded before the payload reads so a
     // write landing during them is never swallowed into a stale revision.
     pending = api.fetchStatus().then((status) => {
@@ -91,15 +95,15 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       payload = { analyze: values[0], scenarios: values[1], evidence: values[2], exposures: values[3],
         casePreparation: preparation, findings: { ...preparation.findings, rows: preparation.rendered_rows },
         watched: values[4]?.watched_change || null };
-      // seated && root.isConnected: the one live path where this can fire mid-read
-      // is the workstation's own Retry, which starts seated with the root attached.
+      // seated && !parked: the one live path where this can fire mid-read is
+      // the workstation's own Retry, which starts seated on the surface.
       // Everywhere else `seated` is false here (mount's own branches own the apply).
-      if (seated && root.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      if (seated && !parked) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
       // Retry resolved off-screen: record it (see deferredApply's lifecycle).
       else if (seated) { deferredApply = true; }
     }).catch((cause) => {
       error = cause;
-      if (seated && root.isConnected) workstation.setError(cause);
+      if (seated && !parked) workstation.setError(cause);
     }).finally(() => { pending = null; render(); });
     return pending;
   }
@@ -326,19 +330,26 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // before its no-payload return. No private renderer cleanup is copied here.
     workstation.setData(null);
     root.remove();
+    root.style.display = ''; parked = false;
     deferredApply = false;  // the recorded completion died with this read
   }
 
-  // Retention (ADR 414): leaving TO ANOTHER DESTINATION detaches only what a
-  // return repaint must not inherit stale — the observer that would re-click a
-  // row — and the root itself, so nothing paints against a detached surface.
-  // `seated` stays true: the workstation keeps its drill, its scroll and its
-  // canvas layout, none of which this discards.
+  // Retention (ADR 414): leaving TO ANOTHER DESTINATION disconnects only what
+  // a return repaint must not inherit stale — the observer that would re-click
+  // a row — and parks the root. `seated` stays true: the workstation keeps its
+  // drill, its scroll and its canvas layout, none of which this discards.
+  // Parked, not removed: the workstation resolves its elements by document id,
+  // and a rail read that completes while the reader is away paints into them.
+  // Hidden but in the document, that paint lands harmlessly; removed, it would
+  // throw. The park is the end of the body, so an on-screen element that
+  // shares an id always wins a lookup (S83).
   function detach() {
     restoreObserver?.disconnect(); restoreObserver = null;
     // Only ever called after ensureView() has run (seated implies root is set).
     levelScroll = root.querySelector('#level')?.scrollTop ?? null;
-    root.remove();
+    root.style.display = 'none';
+    root.ownerDocument.body.append(root);
+    parked = true;
   }
 
   function mount(host, deps = {}) {
@@ -349,11 +360,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // subject/occurrence/window always re-reads; the same entry only checks
     // whether the store moved, and the loading frame stands for either. A
     // repeated press of Diagnose while on Diagnose is not a return: the root
-    // was never detached by leaving, and re-pressing the destination restores
+    // was never parked by leaving, and re-pressing the destination restores
     // the shipped Findings index the way it always has (S3), by re-reading.
     if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
-      if (root.isConnected || !sameEntry(previousEntry, entry)) {
+      if (!parked || !sameEntry(previousEntry, entry)) {
         leave();
         host.innerHTML = loadingFrame('Diagnose');
         read();
@@ -391,20 +402,21 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // itself) must not re-seat the pre-write desk over its own loading frame.
     if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
     ensureView(host);
-    // Set before reattaching: a seated desk whose root is still detached is a
-    // return that skipped the re-read, not a fresh seat and not an in-place render.
-    const wasDetached = seated && !root.isConnected;
+    // Read before re-seating: a seated desk whose root is parked is a return
+    // that skipped the re-read, not a fresh seat and not an in-place render.
+    const wasParked = seated && parked;
+    if (wasParked) { root.style.display = ''; parked = false; }
     host.replaceChildren(root);
     // A cold seat never has a deferred completion to consume: the flag is set
     // only while seated, and leave() is the one place seated turns false.
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
-    else if (wasDetached && deferredApply) {
+    else if (wasParked && deferredApply) {
       // A Retry finished off-screen: apply the completion it recorded, restoration included.
       deferredApply = false;
       workstation.setData(payload); restoreEntry(); showFocusAction();
     // Never restoreEntry() here: the drill and scroll retention preserves are
     // exactly what restoreEntry()'s row/occurrence clicks would disturb.
-    } else if (wasDetached) {
+    } else if (wasParked) {
       workstation.refresh(); showFocusAction();
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;

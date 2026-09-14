@@ -2600,8 +2600,17 @@ export const S81 = async (page) => {
         'the reading pane lost its scroll while its subject was unchanged');
     }, "S81");
   }
-  await goto(page, 'changes');
-  await goto(page, 'explore');
+  // Amended under #414: a Changes round trip returns to the same subject and
+  // keeps the scroll (S109). The subject change is a different Finding row,
+  // reached by stepping back to the roster through the crumb trail.
+  await activate(page, '#crumb-trail button');
+  const { next } = await waitForReplayAssertion(async seen => {
+    const next = seen(await page.evaluate(() => [...document.querySelectorAll('#level .qrow[data-id]')]
+      .map((b) => b.dataset.id).find((id) => !id.startsWith('basal:'))));
+    ok(next, 'the roster offers no second subject to open');
+    return { next };
+  }, "S81");
+  await activate(page, `#level .qrow[data-id="${next}"]`);
   await waitForReplayAssertion(async seen => {
     ok(seen(await page.evaluate(() => document.querySelector('.gf-pane-body')?.scrollTop ?? 0)) === 0,
       'the reading pane kept its scroll across a subject change');

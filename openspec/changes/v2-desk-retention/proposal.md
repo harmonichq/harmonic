@@ -19,7 +19,7 @@ editing pass on the pump, with a raw token under "Still open".
 ## What changes
 
 - Diagnose stays alive across destination changes: its mounted workstation is
-  detached and re-seated rather than torn down and re-read, so a return makes
+  parked hidden and re-seated rather than torn down and re-read, so a return makes
   one status read and no guidance or evidence read, and keeps the reader's
   window, drill and scroll. A read is
   re-issued only on Retry, on a contextual entry naming a different subject, or

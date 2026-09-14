@@ -3,14 +3,15 @@
 ### Requirement: Diagnose is retained across destination changes
 
 The v2 desk SHALL keep the Diagnose workstation mounted across navigation to
-Changes and Day, detaching and re-seating its root rather than tearing it down.
-Leaving to another destination SHALL detach the root and disconnect the
+Changes and Day, parking and re-seating its root rather than tearing it down.
+Leaving to another destination SHALL park the root hidden at the end of the
+document and disconnect the
 entry-restoration observer and nothing else; the pagehide teardown is
 unchanged. A return to Diagnose SHALL show the loading frame until its one
 status read answers, SHALL issue no guidance or evidence read, and SHALL then
 retain the reader's selected window, drilled subject and reading scroll. The desk SHALL
 re-read only on Retry, on a repeated press of Diagnose while already on
-Diagnose (which is not a return: nothing detached the root), on a contextual
+Diagnose (which is not a return: nothing parked the root), on a contextual
 entry whose subject, occurrence or window differs from the retained entry, or
 when one status read on return shows
 `/api/status.input_revision` differing from the input revision the Diagnose

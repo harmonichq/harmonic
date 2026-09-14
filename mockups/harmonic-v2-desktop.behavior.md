@@ -1756,6 +1756,7 @@ S81 · The reading pane keeps its scroll only while it stays on the same subject
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S81 · 2026-09-14 · ADR 414 / lock v2 414 1: A Changes round trip is a return to the same subject (Diagnose stays seated, S109), so the subject change that must arrive at its head is now a different Finding row opened from the roster; the locked term is unchanged.
 Amended S81 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
 The preceding wording and results are the attributed pre-amendment record.
 
@@ -2560,7 +2561,7 @@ S108 · Returning to Diagnose from Changes issues exactly one GET /api/status;
 ```
 S109 · The reading pane's scroll position survives the same Diagnose round trip.
   element:  #level
-  source:   frontend-v2/diagnose.js detach / mount (root retained, not rebuilt)
+  source:   frontend-v2/diagnose.js detach / mount (root parked, not rebuilt)
   lock:     HV2-34
   data:     showcase; select 24 h with no row drilled (the undrilled factors
             roster overflows its pane; a drilled pane does not), scroll #level

@@ -25,7 +25,7 @@ test('an unscoped case-file WindowQuery preserves the explicit 24 h Focus scope'
 // does not track it would let a bug in the gate pass silently.
 function makeRoot(overrides = {}) {
   const root = {
-    dataset: {}, className: '', isConnected: false,
+    dataset: {}, className: '', isConnected: false, style: {},
     addEventListener() {}, querySelectorAll: () => [], querySelector: () => null,
     remove() { root.isConnected = false; },
     ...overrides,
@@ -33,12 +33,16 @@ function makeRoot(overrides = {}) {
   return root;
 }
 
+// The park is the document body: a parked root stays connected (it is in the
+// document) but off the surface and hidden, which is what the desk keys on.
 function host() {
   const controls = new Map();
+  const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } } };
+  ownerDocument.createElement = () => Object.assign(makeRoot(), { ownerDocument });
   return {
     innerHTML: '', isConnected: true,
-    ownerDocument: { createElement: () => makeRoot() },
-    replaceChildren(node) { this.node = node; node.isConnected = true; },
+    ownerDocument,
+    replaceChildren(node) { this.node = node; node.isConnected = true; node.parked = false; },
     querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
   };
 }
@@ -141,7 +145,8 @@ test('a navigation round trip to the same entry issues one status read, no more,
   destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
   seat.isConnected = false; // the next destination's render replaced this host
   held(false);
-  assert.equal(seat.node.isConnected, false, 'detach removes the root from the host');
+  assert.equal(seat.node.parked, true, 'leaving parks the root off the surface');
+  assert.equal(seat.node.style.display, 'none', 'the parked root is hidden');
 
   // Return with the same entry, same revision: exactly one request (status),
   // and the loading frame stands until it answers.
@@ -160,7 +165,8 @@ test('a navigation round trip to the same entry issues one status read, no more,
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
   assert.equal(setDataCalls, 0, 'a same-entry return never re-applies the payload (no restoreEntry path)');
   assert.equal(refreshCalls, 1, 'the return re-seat resizes the carried charts');
-  assert.equal(seat.node.isConnected, true, 'the return reattaches the retained root');
+  assert.equal(seat.node.parked, false, 'the return re-seats the retained root');
+  assert.equal(seat.node.style.display, '', 'the re-seated root is shown again');
   destination.leave();
 });
 
@@ -169,9 +175,10 @@ test('a same-entry return puts the reading pane scroll back where the reader lef
   // A real pane: the browser resets scrollTop to 0 when the node is removed
   // and re-inserted, which is what the detach/re-seat cycle does.
   const level = { scrollTop: 0 };
-  const root = makeRoot({ querySelector: selector => (selector === '#level' ? level : null),
-    remove() { root.isConnected = false; level.scrollTop = 0; } });
-  seat.ownerDocument.createElement = () => root;
+  const root = makeRoot({ querySelector: selector => (selector === '#level' ? level : null) });
+  root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
+  // Parking hides the root; an element the browser no longer lays out reads 0.
+  seat.ownerDocument.body.append = node => { node.isConnected = true; node.parked = true; level.scrollTop = 0; };
   const destination = createDiagnoseDestination({ api: served.api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
   await destination.read();
@@ -181,11 +188,12 @@ test('a same-entry return puts the reading pane scroll back where the reader lef
   destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
   seat.isConnected = false;
   held(false);
-  assert.equal(level.scrollTop, 0, 'premise: detaching the root drops the pane scroll, as a browser does');
+  assert.equal(level.scrollTop, 0, 'premise: parking the root drops the pane scroll, as a browser does');
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
   for (let i = 0; i < 4; i += 1) await Promise.resolve();
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
-  assert.equal(seat.node.isConnected, true, 'the return reattaches the retained root');
+  assert.equal(seat.node.parked, false, 'the return re-seats the retained root');
+  assert.equal(seat.node.style.display, '', 'the re-seated root is shown again');
   assert.equal(level.scrollTop, 54, 'the retained re-seat restores the reading pane scroll');
   destination.leave();
 });
@@ -195,7 +203,7 @@ test('re-pressing Diagnose while on Diagnose re-reads and restores the index, ne
   let rowClicks = 0;
   const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
   const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
-  seat.ownerDocument.createElement = () => root;
+  root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   let setDataCalls = 0; let leaveSurfaceCalls = 0;
   const destination = createDiagnoseDestination({ api: served.api,
     createView: () => ({ setData(data) { if (data) setDataCalls += 1; }, leaveSurface() { leaveSurfaceCalls += 1; }, refresh() {}, setError() {} }) });
@@ -272,7 +280,7 @@ test('the workstation\'s own Retry finishing off-screen is recorded, not painted
   let rowClicks = 0;
   const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
   const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
-  const seat = host(); seat.ownerDocument.createElement = () => root;
+  const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
 
   const setDataCalls = [];
   let refreshCalls = 0;
@@ -305,7 +313,7 @@ test('the workstation\'s own Retry finishing off-screen is recorded, not painted
     // detaches (observer + root), and stays seated.
     seat.isConnected = false;
     held(false);
-    assert.equal(seat.node.isConnected, false, 'the root is detached while the Retry is in flight');
+    assert.equal(seat.node.parked, true, 'the root is parked while the Retry is in flight');
 
     // Let the Retry's own fetchStatus() settle so fetchAnalysis() actually starts.
     await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
@@ -343,7 +351,7 @@ test('a re-read between an off-screen Retry completion and the next return disca
   let rowClicks = 0;
   const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
   const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
-  const seat = host(); seat.ownerDocument.createElement = () => root;
+  const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
 
   const setDataCalls = [];
   let refreshCalls = 0;
@@ -435,7 +443,7 @@ test('return restoration requests its occurrence once while shared paints are pe
     const row = { dataset: { id: 'finding:served' }, click() {} };
     const root = makeRoot({ querySelector: () => null,
       querySelectorAll: selector => selector === '.qrow[data-id]' ? [row] : selector === '.case-occurrence' ? [member] : [] });
-    const seat = host(); seat.ownerDocument.createElement = () => root;
+    const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
     const destination = createDiagnoseDestination({ api: source().api,
       createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
     await destination.read();
@@ -459,7 +467,7 @@ test('the v2 adapter wraps lane keys through the carried buttons and retains nig
     querySelectorAll: selector => selector === '#lane > button.lane-cell' ? cells : [],
     querySelector: selector => selector === '#level' ? level : null,
   });
-  const seat = host(); seat.ownerDocument.createElement = () => root;
+  const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   const destination = createDiagnoseDestination({ api: source().api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
   await destination.read(); destination.mount(seat, { navigation: 0, hold() {} });
@@ -490,8 +498,9 @@ test('S129/S131 tile activation replaces the Focus drill, while same-chart picks
     : { input_revision: 7, candidates: [], items: [], history: [] } });
   const handlers = []; const pending = []; let callbacks; let button = null;
   const header = { append(node) { button = node; } };
-  const document = { createElement() { return { dataset: {}, remove() { if (button === this) button = null; } }; } };
-  const root = { dataset: {}, ownerDocument: document, isConnected: false, remove() { root.isConnected = false; }, querySelectorAll: () => [],
+  const document = { createElement() { return { dataset: {}, remove() { if (button === this) button = null; } }; },
+    body: { append(node) { node.isConnected = true; node.parked = true; } } };
+  const root = { dataset: {}, ownerDocument: document, isConnected: false, style: {}, remove() { root.isConnected = false; }, querySelectorAll: () => [],
     addEventListener(type, run, capture) { handlers.push({ type, run, capture }); },
     querySelector: selector => selector === 'header.crumb' ? header : selector === '[data-start-focus]' ? button : null };
   const seat = host(); seat.ownerDocument.createElement = () => root;

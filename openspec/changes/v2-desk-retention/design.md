@@ -6,10 +6,10 @@
 
 The Diagnose destination keeps its mounted workstation across navigation to
 Changes and Day. A repeated press of Diagnose while already on Diagnose is
-not a return (nothing detached the root) and re-reads as it always has,
+not a return (nothing parked the root) and re-reads as it always has,
 restoring the shipped Findings index (S3). A press that lands while a return's
 status check is still open joins that return: the check answers and the
-retained desk re-seats, with no second read started for the press. Leaving detaches the root; returning re-seats it and resizes
+retained desk re-seats, with no second read started for the press. Leaving parks the root hidden at the end of the document; returning re-seats it and resizes
 its charts. The only request a return issues is one status read; no guidance
 or evidence read runs. The reader's window and drilled subject are retained
 as a consequence of the node surviving, not as a second state store; the
@@ -25,11 +25,11 @@ the retained desk (Connor, Q4, 2026-09-14: the freshness check is visible, so a
 write that landed while away is never shown as current, not even for one round
 trip). The
 fetch-status write counts are not an instant and do not move on in-app writes,
-so they are not the signal. Leaving to another destination detaches the root, keeps the workstation's
+so they are not the signal. Leaving to another destination parks the root, keeps the workstation's
 reading-pane stack, drilled chart and case context (they are the drill the
 return preserves), and still disconnects the entry-restoration observer, which
 is restoration machinery rather than retained state. The workstation stays
-seated while detached; a read that completes off-screen is recorded but not applied
+seated while parked; a read that completes off-screen is recorded but not applied
 until the next return seats the root, which applies it with its restoration
 (the one read that starts seated, the workstation's own Retry, applies in its
 completion behind a seated-and-attached gate);
@@ -51,8 +51,14 @@ The desk's render lifecycle (routes.js: one teardown per render, HV2-34) gains
 one destination that opts out of teardown, the way Day already retains its
 frame across a selected-day read. One offset is carried explicitly: a browser
 resets a removed element's scroll offset on re-insertion, so the reading
-pane's scroll is captured at detach and reapplied on the retained re-seat
-(S109 found this against the built app; the surviving node alone lost it). The failed-read frames (S19, S20) and the
+pane's scroll is captured when the root is parked and reapplied on the retained re-seat
+(S109 found this against the built app; the surviving node alone lost it).
+The root is parked in the document rather than removed because the
+workstation resolves its elements by document id and a rail read that
+completes after the reader has left paints into them: hidden but present,
+that paint lands harmlessly; removed, it threw (S83 in the complete ledger).
+Parking at the end of the body keeps any on-screen element that shares an id
+(the Verify workstation's readout clock) first for a lookup. The failed-read frames (S19, S20) and the
 no-stale-result rule (HV2-29) are unchanged: a failed re-read still replaces
 the retained desk with the error frame. No served contract changes.
 

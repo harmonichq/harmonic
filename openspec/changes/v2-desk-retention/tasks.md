@@ -31,10 +31,10 @@
 ## 2. Diagnose retention (desk)
 
 - [x] 2.1 Keep the Diagnose workstation alive across destination changes:
-  on leaving to another destination detach its root and disconnect the
+  on leaving to another destination park its root hidden in the document and disconnect the
   entry-restoration observer only (no surface reset, no case-context reset);
   the pagehide arm keeps today's full teardown; a read completing while the
-  root is detached is recorded but not applied, and the next return applies it
+  root is parked is recorded but not applied, and the next return applies it
   with its restoration; on return show the loading frame until one status read answers, then
   re-seat the root, resize its charts, run only the focus-action repaint, and
   issue no other served read. Retain the

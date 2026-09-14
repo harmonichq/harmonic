@@ -103,8 +103,8 @@ class _FakeStore:
             events = [e for e in events if e.t < end]
         return events
 
-    def basal_events(self, start=None, end=None):
-        return self._bounded(list(self._basal), start, end)
+    def basal_events(self):
+        return list(self._basal)
 
     def bolus_events(self, start=None, end=None):
         return self._bounded(list(self._bolus), start, end)

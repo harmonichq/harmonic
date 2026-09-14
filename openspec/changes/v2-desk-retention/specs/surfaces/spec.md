@@ -15,7 +15,7 @@ Diagnose (which is not a return: nothing parked the root), on a contextual
 entry whose subject, occurrence or window differs from the retained entry, or
 when one status read on return shows
 `/api/status.input_revision` differing from the input revision the Diagnose
-read recorded through its own status read issued first, alongside its payload reads.
+read recorded through its own status read issued before its payload reads.
 That status read SHALL be the only request a retained return issues. A
 failed re-read SHALL replace the retained desk with the existing error frame and
 SHALL NOT present the retained result as new.

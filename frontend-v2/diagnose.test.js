@@ -253,6 +253,35 @@ test('a render arriving while the failed frame stands leaves its Retry control i
   destination.leave();
 });
 
+test('a render arriving during a Retry read leaves the failed frame and its Retry standing', async () => {
+  const served = source(); const seat = host();
+  let writes = 0;
+  const write = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(seat), 'innerHTML') || Object.getOwnPropertyDescriptor(seat, 'innerHTML');
+  Object.defineProperty(seat, 'innerHTML', { get() { return this._html || ''; }, set(v) { writes += 1; write.set.call(this, v); } });
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  served.fail(true);
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  for (let i = 0; i < 10; i += 1) await Promise.resolve();
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.match(seat.innerHTML, /Current read failed/, 'the failed re-read shows its frame');
+  const retry = seat.querySelector('[data-action="retry"]');
+  const before = writes;
+  // The reader presses Retry (the read is now pending) and an unrelated
+  // completion re-enters mount before it answers.
+  const retrying = retry.onclick();
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(writes, before, 'the failed frame stands while its own Retry read is pending');
+  assert.equal(seat.querySelector('[data-action="retry"]'), retry, 'the Retry control keeps its identity mid-read');
+  served.fail(false);
+  await retrying;
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.ok(seat.node, 'the successful Retry reaches the desk');
+  destination.leave();
+});
+
 test('a moved input_revision on return re-reads behind the loading frame, never the retained desk', async () => {
   const served = source(); const seat = host();
   let setDataCalls = 0;

@@ -79,20 +79,20 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     error = null;
     readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); });
     loadPlanState().then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
-    // The one status read this call owns: issued first, alongside the payload
-    // reads rather than ahead of their round trip, so a write landing during
-    // them either shows in the payload too or moves the revision the next
-    // return compares (a re-read, never a stale desk). Serialising it in front
-    // lengthened every read by one round trip, which let the focus options
-    // completion of the previous read land mid-read and swap the failed frame
-    // for the loading frame under the reader's Retry press (S20b).
-    pending = Promise.all([
-      api.fetchStatus(),
-      api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
-      api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
-      api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
-    ]).then(([status, a, s, e, x, preparation, outcomes]) => {
+    // The one status read this call owns: answered before the payload reads
+    // are issued, so the recorded revision is at or before every payload
+    // snapshot and a write landing during them always moves the revision the
+    // next return compares. Issued concurrently it could record a post-write
+    // revision against a pre-write payload, and the return would seat a
+    // stale desk as current.
+    pending = api.fetchStatus().then((status) => {
       readRevision = status.input_revision;
+      return Promise.all([
+        api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
+        api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
+        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
+      ]);
+    }).then(([a, s, e, x, preparation, outcomes]) => {
       const values = [a, s, e, x, outcomes].map((value, i) =>
         recordDiagnoseAge(ages, ['analysis', 'scenarios', 'time_of_day', 'exposures', 'trend'][i], value));
       if (values.some((value) => value === null)) throw new Error('Diagnose received invalid input-data age.');
@@ -415,6 +415,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     }
     // A render arriving mid-read (the status check, or the guidance read
     // itself) must not re-seat the pre-write desk over its own loading frame.
+    // A Retry pressed on the failed frame starts a read while that frame
+    // stands; a render arriving mid-read (the focus options completion of the
+    // previous cycle, S20b) leaves it standing: it is still the truthful
+    // state, and swapping it for the loading frame would pull the Retry out
+    // from under the reader's press. Every other mid-read render shows the
+    // loading frame, never the retained desk.
+    if (pending && host.firstElementChild?.dataset?.diagnoseFrame) return;
     if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
     ensureView(host);
     // Read before re-seating: a seated desk whose root is parked is a return

@@ -701,13 +701,47 @@ def _review_focus_title(record):
     return _focus_meta(record["lever"])[0] if is_pinnable(record["lever"]) else "Focus"
 
 
+def _group_edits(retained_records: List[dict]) -> tuple:
+    """Chain RETAINED trial records into Edits (ADR 414).
+
+    Sorted by ``changed_at``, a record joins the previous retained record's edit
+    when the gap is at most ``_PROFILE_TOLERANCE`` (one day); otherwise it starts a
+    new edit, keyed off its own id. Returns ``(id -> edit key, edits summary
+    list)``; ``parameters`` on each summary is ordered by first occurrence within
+    the edit (sub-order 2 renders "Basal ×11 · Carb ratio" from that order).
+    """
+    ordered = sorted(retained_records, key=lambda r: datetime.fromisoformat(r["changed_at"]))
+    id_to_key: Dict[str, str] = {}
+    edits: List[dict] = []
+    current = None
+    previous_at = None
+    for record in ordered:
+        changed_at = datetime.fromisoformat(record["changed_at"])
+        if current is None or (changed_at - previous_at) > _PROFILE_TOLERANCE:
+            current = {"key": f"edit-{record['id']}", "first_changed_at": record["changed_at"],
+                      "last_changed_at": record["changed_at"], "count": 0, "parameters": []}
+            edits.append(current)
+        current["last_changed_at"] = record["changed_at"]
+        current["count"] += 1
+        entry = next((p for p in current["parameters"] if p["parameter"] == record["parameter"]), None)
+        if entry is None:
+            current["parameters"].append({"parameter": record["parameter"], "count": 1})
+        else:
+            entry["count"] += 1
+        id_to_key[record["id"]] = current["key"]
+        previous_at = changed_at
+    return id_to_key, edits
+
+
 def review_trials(store, *, now: datetime, selected=None, kind="trial", assessment="original"):
     """Read retained history and optional reassessment without resolving a watch."""
     from .follow_up_comparison import compare_follow_up
     trials = _reviewable_trials(store, now)
     by_id = {_review_id(t.view, t.block): t for t in trials}
-    for record in store.follow_up_records("trial"):
+    retained_records = store.follow_up_records("trial")
+    for record in retained_records:
         by_id[record["id"]] = _retained_trial(store, record, now)
+    edit_by_id, edits = _group_edits(retained_records)
     ordered = sorted(by_id.values(), key=lambda t: (
         0 if t.view.maturing.is_maturing else 1,
         -datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
@@ -719,10 +753,12 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         row.update(ending=record["ending"] if record else _unavailable("not_recorded"),
                    watch_disposition=("active" if admission["active_kind"] == "trial"
                                       and admission["active_id"] == row["id"] else "not_selected_for_watch"))
+        if row["id"] in edit_by_id:
+            row["edit"] = edit_by_id[row["id"]]
         roster.append(row)
     focuses = [{**record, "title": _review_focus_title(record)}
                for record in store.follow_up_records("focus")]
-    result = {"trials": roster, "focuses": focuses, "selected": None,
+    result = {"trials": roster, "focuses": focuses, "selected": None, "edits": edits,
               "input_revision": store.input_data_revision(), "admission": admission}
     if selected is None:
         return result
@@ -1348,11 +1384,17 @@ def _retained_trial(store, record, now):
     target = _PROFILE_TARGET if parameter == "profile" else _TARGET_METRIC[parameter]
     start = datetime.fromisoformat(record["changed_at"])
     block = record.get("block")
-    if target[0] == "arc":
-        times = [b.t for b in store.bolus_events() if _is_meal(b) and (block is None or _in_block(b.t, block))]
-    else:
-        times = [r.t for r in store.cgm_readings()]
     end = min(now, start + _MATURE_WINDOW)
+    # Store._select is half-open [start, end); _maturing/_data_gaps filter the
+    # open-start, closed-end (changed_at, end]. Request [start, end + 1s) so the
+    # store's exclusive end can't silently drop a reading landing exactly on end.
+    read_start = start.strftime(_DT_FMT)
+    read_end = (end + timedelta(seconds=1)).strftime(_DT_FMT)
+    if target[0] == "arc":
+        times = [b.t for b in store.bolus_events(start=read_start, end=read_end)
+                 if _is_meal(b) and (block is None or _in_block(b.t, block))]
+    else:
+        times = [r.t for r in store.cgm_readings(start=read_start, end=read_end)]
     return _ReviewTrial(TrialView(parameter, record["changed_at"], target,
                                   _maturing(start, end, TRIAL_WINDOW_DAYS, times),
                                   slot=record["slot"], before=record["before"], after=record["after"],

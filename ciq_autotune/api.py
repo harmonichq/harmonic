@@ -1251,9 +1251,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             status = store.fetch_status()
             earliest_day, latest_day = store.cgm_day_bounds()
+            input_revision = store.input_data_revision()
         base = status or {"last_attempt_at": None, "last_success_at": None,
                           "last_error": None, "last_written": None}
-        return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day}
+        return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day,
+                "input_revision": input_revision}
 
     @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:

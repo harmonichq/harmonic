@@ -2,7 +2,7 @@
 
 ## 1. Roster read cost and edit key (backend)
 
-- [ ] 1.1 Bound the retained-record reading read to each record's own window,
+- [x] 1.1 Bound the retained-record reading read to each record's own window,
   once per record, through the store's existing bounded read. The store's read
   is half-open `[start, end)` while the maturity and gap filters are
   `(changed_at, end]`, so request `[changed_at, end + 1 s)` with
@@ -13,7 +13,7 @@
   records and one fixture reading placed exactly at a record's `end`, the
   per-record reads carry bounded start/end, one per retained record, and the
   roster returns the same maturity and gap facts as before.
-- [ ] 1.2 Serve `edit` on every retained trial roster row and an `edits`
+- [x] 1.2 Serve `edit` on every retained trial roster row and an `edits`
   summary (key, first and last change instants, member count, parameters) on
   the roster response, chaining retained records whose `changed_at` are within
   the existing one-day profile tolerance of the previous retained record in
@@ -21,10 +21,10 @@
   do not chain. `parameters` is an ordered list of `{parameter, count}`.
   Fixture coverage for a chain that spans two days, two chains one day apart,
   and a single record.
-- [ ] 1.3 Serve `input_revision` on `/api/status` (the store's input data
+- [x] 1.3 Serve `input_revision` on `/api/status` (the store's input data
   revision, the scalar the result cache validates fixed results against), with
   its API test.
-- [ ] 1.4 Add an **Edit** entry to `CONTEXT.md`: a run of retained setting
+- [x] 1.4 Add an **Edit** entry to `CONTEXT.md`: a run of retained setting
   changes within a day of each other, grouped for reading in Changes; not a
   Plan, not a Trial identity. Avoid: episode, session, batch.
 

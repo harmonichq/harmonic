@@ -75,6 +75,7 @@
   ],
   "focuses": [],
   "selected": null,
+  "edits": [],
   "input_revision": 35,
   "admission": {
    "state": "unavailable",
@@ -1238,6 +1239,7 @@
     },
     "reassessment": null
    },
+   "edits": [],
    "input_revision": 35,
    "admission": {
     "state": "unavailable",
@@ -2456,6 +2458,7 @@
     },
     "reassessment": null
    },
+   "edits": [],
    "input_revision": 35,
    "admission": {
     "state": "unavailable",
@@ -3661,6 +3664,7 @@
     },
     "reassessment": null
    },
+   "edits": [],
    "input_revision": 35,
    "admission": {
     "state": "unavailable",

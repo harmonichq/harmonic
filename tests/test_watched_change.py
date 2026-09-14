@@ -618,5 +618,89 @@ class SwitchStartsTrialImmediatelyTest(unittest.TestCase):
         self.assertIsNone(wc.detect_trial([], [], snaps, now=_day(9)))
 
 
+class _SpyStore(Store):
+    """A Store that records the ``start``/``end`` every read call receives."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cgm_calls = []
+        self.bolus_calls = []
+
+    def cgm_readings(self, start=None, end=None):
+        self.cgm_calls.append((start, end))
+        return super().cgm_readings(start, end)
+
+    def bolus_events(self, start=None, end=None):
+        self.bolus_calls.append((start, end))
+        return super().bolus_events(start, end)
+
+
+def _save_retained_trial(store, *, record_id, parameter, slot, changed_at, before, after):
+    with store.follow_up_transaction():
+        store.save_follow_up_record({
+            "kind": "trial", "id": record_id, "version": "386:1",
+            "parameter": parameter, "slot": slot, "changed_at": changed_at,
+            "before": before, "after": after,
+            "first_observed_at": changed_at,
+            "observed_context": wc._unavailable("not_recorded"),
+        })
+
+
+class BoundedRetainedReadTest(unittest.TestCase):
+    """#414 1.1: `_retained_trial`'s per-record store reads are bounded to the
+    record's own ``[changed_at, end + 1s)`` window, never a whole-table scan —
+    and the +1s pad keeps a reading landing exactly on the boundary in."""
+
+    def setUp(self):
+        self.store = _SpyStore.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def test_reads_are_bounded_per_retained_record_and_keep_the_boundary_reading(self):
+        changed_1 = datetime(2024, 1, 1, 0, 0, 0)
+        changed_2 = datetime(2024, 1, 1, 2, 0, 0)
+        # `now` lands exactly on both records' own bounded-window end (`min(now,
+        # changed_at + _MATURE_WINDOW)` caps at `now` for both), an exact reading
+        # instant (`_latest_instant`).
+        latest_instant = changed_1 + wc._MATURE_WINDOW
+        # Retained trial record ids are always the parameter/slot/changed_at
+        # `_review_id` stamp (watched_change.py:1508) — mirror that format here so
+        # the roster row this test looks up actually matches its saved record.
+        id_1 = f"isf-all-{changed_1.strftime('%Y%m%d%H%M%S')}"
+        id_2 = f"isf-all-{changed_2.strftime('%Y%m%d%H%M%S')}"
+        _save_retained_trial(self.store, record_id=id_1, parameter="isf",
+                             slot=None, changed_at=changed_1.strftime(wc._DT_FMT),
+                             before=30.0, after=40.0)
+        _save_retained_trial(self.store, record_id=id_2, parameter="isf",
+                             slot=None, changed_at=changed_2.strftime(wc._DT_FMT),
+                             before=40.0, after=45.0)
+        # A single CGM reading exactly at `end` — the store's own read is half-open
+        # [start, end) while `_maturing`/`_data_gaps` accept (changed_at, end], so
+        # without the +1s pad this reading falls right outside the store's window.
+        self.store.upsert_cgm([{
+            "EventDateTime": latest_instant.strftime("%Y-%m-%dT%H:%M:%S"),
+            "Readings (CGM / BGM)": 120, "Description": "Synthetic EGV",
+        }])
+
+        result = wc.review_trials(self.store, now=latest_instant)
+
+        unbounded = [c for c in self.store.cgm_calls if c == (None, None)]
+        bounded = [c for c in self.store.cgm_calls if c != (None, None)]
+        # Exactly one whole-table read: `_reviewable_trials`'s candidate detection.
+        self.assertEqual(len(unbounded), 1)
+        # One bounded read per retained record — never the whole table.
+        self.assertEqual(len(bounded), 2)
+        read_end = (latest_instant + timedelta(seconds=1)).strftime(wc._DT_FMT)
+        self.assertIn((changed_1.strftime(wc._DT_FMT), read_end), bounded)
+        self.assertIn((changed_2.strftime(wc._DT_FMT), read_end), bounded)
+
+        row = next(r for r in result["trials"] if r["id"] == id_1)
+        # The boundary reading is not dropped: it lands inside the bounded window,
+        # so maturity and the gap count read exactly as an unbounded scan would.
+        self.assertEqual(row["maturing"]["days_elapsed"], 1)
+        self.assertEqual(row["maturing"]["gap_count"], 14)
+
+
 if __name__ == "__main__":
     unittest.main()

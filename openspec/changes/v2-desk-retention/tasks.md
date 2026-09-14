@@ -76,7 +76,7 @@
   `mockups/harmonic-v2-desktop.behavior.md`, move the sweep's inventory
   literals (137 / 119 / 18 → 142 / 124 / 18), and register them in the v2 replay:
   during a tab round trip the only request Diagnose issues is one status read,
-  and the 24 h window stays; the drilled subject (reading-pane stack) and
+  the loading frame stands until it answers, and the 24 h window then stays; the drilled subject (reading-pane stack) and
   reading scroll survive a round trip; the record roster shows one titled entry for the two-day chain
   with members beneath and one flat row for the lone record; the Still open
   cell carries a word;

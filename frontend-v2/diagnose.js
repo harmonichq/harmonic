@@ -42,6 +42,10 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // — the payload read the desk already holds must not be disturbed while it runs.
   let checking = false;
   let readRevision = null;
+  // A read that finished while seated but detached (the workstation's own
+  // Retry, resolving off-screen) is recorded here rather than applied; the
+  // next return that reattaches the root applies it, with its restoration.
+  let deferredApply = false;
   let seated = false;
   let arrival = null;
   let entry = {};
@@ -61,8 +65,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   async function read() {
     if (pending) return pending;
     error = null;
-    readFocusOptions().then(() => { if (seated && root?.isConnected) showFocusAction(); });
-    loadPlanState().then(() => { if (seated && root?.isConnected) workstation.refresh(); }).catch(() => {});
+    readFocusOptions().then(() => { if (seated && root.isConnected) showFocusAction(); });
+    loadPlanState().then(() => { if (seated && root.isConnected) workstation.refresh(); }).catch(() => {});
     // The one status read this call owns: recorded before the payload reads so a
     // write landing during them is never swallowed into a stale revision.
     pending = api.fetchStatus().then((status) => {
@@ -82,10 +86,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // seated && root.isConnected: the one live path where this can fire mid-read
       // is the workstation's own Retry, which starts seated with the root attached.
       // Everywhere else `seated` is false here (mount's own branches own the apply).
-      if (seated && root?.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      if (seated && root.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      // Retry resolved off-screen: seated but detached. Record it rather than
+      // painting against a detached root; the next return applies it.
+      else if (seated) { deferredApply = true; }
     }).catch((cause) => {
       error = cause;
-      if (seated && root?.isConnected) workstation.setError(cause);
+      if (seated && root.isConnected) workstation.setError(cause);
     }).finally(() => { pending = null; render(); });
     return pending;
   }
@@ -321,7 +328,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // canvas layout, none of which this discards.
   function detach() {
     restoreObserver?.disconnect(); restoreObserver = null;
-    root?.remove();
+    // Only ever called after ensureView() has run (seated implies root is set).
+    root.remove();
   }
 
   function mount(host, deps = {}) {
@@ -349,10 +357,6 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       return;
     }
 
-    // A render arriving mid-read (the status check, or the guidance read
-    // itself) must not re-seat the pre-write desk over its own loading frame.
-    if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
-
     if (!payload && !error) {
       host.innerHTML = loadingFrame('Diagnose');
       read();
@@ -371,15 +375,22 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       view.focusAfterRender = '[data-action="retry"]';
       return;
     }
+    // A render arriving mid-read (the status check, or the guidance read
+    // itself) must not re-seat the pre-write desk over its own loading frame.
+    if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
     ensureView(host);
     // Set before reattaching: a seated desk whose root is still detached is a
     // return that skipped the re-read, not a fresh seat and not an in-place render.
-    const wasDetached = seated && root && !root.isConnected;
+    const wasDetached = seated && !root.isConnected;
     host.replaceChildren(root);
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
+    else if (wasDetached && deferredApply) {
+      // A Retry finished off-screen: apply the completion it recorded, restoration included.
+      deferredApply = false;
+      workstation.setData(payload); restoreEntry(); showFocusAction();
     // Never restoreEntry() here: the drill and scroll retention preserves are
     // exactly what restoreEntry()'s row/occurrence clicks would disturb.
-    else if (wasDetached) { workstation.refresh(); showFocusAction(); }
+    } else if (wasDetached) { workstation.refresh(); showFocusAction(); }
     arrival = deps.navigation;
     (deps.hold || hold)((pagehide) => {
       if (pagehide) { leave(); return; }

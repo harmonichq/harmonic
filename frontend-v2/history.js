@@ -180,8 +180,9 @@ function recordRowHtml(row, editKey = null) {
   return `<tr${editKey ? ` data-edit-member="${e(editKey)}"` : ''}><td><button class="gf-row gf-record-row" data-record="${e(row.kind)}:${e(row.id)}"${dropped(row)} aria-pressed="false">${e(row.title)}<small>${e(KIND_WORD[row.kind])} · ${e(row.detail)}</small></button></td><td class="v">${isEnded(row) ? endedCell(row.ending) : openCell(row.status)}</td></tr>`;
 }
 
-/** The Ended cell an Edit entry shows for its members: the shared ending when
-    every member agrees, otherwise how many of each. */
+/** The Ended cell an Edit entry shows for its members: the shared ending or
+    the shared open disposition when every member agrees, otherwise how many
+    of each — never a status no member actually holds. */
 function editEndingCell(members) {
   const endedMembers = members.filter(isEnded);
   if (endedMembers.length === members.length) {
@@ -190,7 +191,8 @@ function editEndingCell(members) {
       return endedCell(first.ending);
     }
   } else if (endedMembers.length === 0) {
-    return openCell('active');
+    const [first, ...rest] = members;
+    if (rest.every((m) => m.status === first.status)) return openCell(first.status);
   }
   return `${endedMembers.length} ended · ${members.length - endedMembers.length} open`;
 }

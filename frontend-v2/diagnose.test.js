@@ -211,31 +211,75 @@ test('a same-subject entry with a different occurrence re-reads on return', asyn
   destination.leave();
 });
 
-test('a read completing while Diagnose is off-screen does not restore or build an observer, and reaches the desk on return', async () => {
-  const served = source(); const seat = host();
-  let setDataCalls = 0; let refreshCalls = 0;
+test('the workstation\'s own Retry finishing off-screen is recorded, not painted, and applied with its restoration on return', async () => {
+  const served = source();
+  let resolveAnalysis;
+
+  let observerCount = 0;
+  const previousMO = globalThis.MutationObserver;
+  globalThis.MutationObserver = class { constructor() { observerCount += 1; } observe() {} disconnect() {} };
+
+  let rowClicks = 0;
+  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
+  const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
+  const seat = host(); seat.ownerDocument.createElement = () => root;
+
+  const setDataCalls = [];
+  let refreshCalls = 0;
   const destination = createDiagnoseDestination({ api: served.api,
-    createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
-  await destination.read();
-  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
-  let held;
-  destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
-  seat.isConnected = false;
-  held(false);
-  assert.equal(seat.node.isConnected, false);
+    createView: () => ({ setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
 
-  setDataCalls = 0;
-  // A read that resolves while off-screen (e.g. a stray retry) must not apply.
-  await destination.read();
-  assert.equal(setDataCalls, 0, 'an off-screen completion does not paint against the detached root');
+  try {
+    await destination.read();
+    // The hold callback captured here is the one routes.js would still be
+    // holding when the reader navigates away mid-Retry: mount() is not called
+    // again between the initial seat and starting the Retry below.
+    let held;
+    destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
+    assert.equal(setDataCalls.length, 1, 'the initial cold seat applies the first payload');
+    assert.equal(rowClicks, 1, 'the initial seat restores the entry');
+    assert.equal(observerCount, 1, 'the initial seat builds one restoration observer');
+    const firstPayload = setDataCalls[0];
+    setDataCalls.length = 0; rowClicks = 0; observerCount = 0; refreshCalls = 0;
 
-  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
-  await new Promise(resolve => setImmediate(resolve));
-  for (let i = 0; i < 6; i += 1) await Promise.resolve();
-  // The status check's completion calls render(); driven explicitly here.
-  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
-  assert.ok(refreshCalls >= 1 || setDataCalls >= 1, 'the return applies the retained or re-read result to the desk');
-  destination.leave();
+    // From here on, fetchAnalysis is held open so the test controls exactly
+    // when the Retry's read resolves.
+    served.api.fetchAnalysis = async () => {
+      served.requests.push('analysis');
+      return new Promise((resolve) => { resolveAnalysis = () => resolve({ marker: 'retried' }); });
+    };
+    // The workstation's own Retry: starts while seated and the root is attached.
+    const retried = destination.read();
+
+    // Leave to another destination before the Retry resolves: the hold cleanup
+    // detaches (observer + root), and stays seated.
+    seat.isConnected = false;
+    held(false);
+    assert.equal(seat.node.isConnected, false, 'the root is detached while the Retry is in flight');
+
+    // Let the Retry's own fetchStatus() settle so fetchAnalysis() actually starts.
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    // The Retry resolves off-screen.
+    resolveAnalysis();
+    await retried;
+    assert.equal(setDataCalls.length, 0, 'an off-screen completion does not call setData against the detached root');
+    assert.equal(rowClicks, 0, 'an off-screen completion runs no entry restoration');
+    assert.equal(observerCount, 0, 'an off-screen completion builds no MutationObserver');
+
+    // Return: same entry, unmoved revision — mount's status check finds nothing
+    // moved, and the recorded completion (not a fresh re-read) applies now.
+    destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+    for (let i = 0; i < 6; i += 1) await Promise.resolve();
+    // The status check's completion calls render(); driven explicitly here,
+    // the same way every other test in this file drives it.
+    destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+
+    assert.equal(setDataCalls.length, 1, 'the return applies the completed read exactly once');
+    assert.notEqual(setDataCalls[0], firstPayload, 'the applied payload is the Retry\'s own, not the stale pre-Retry object');
+    assert.equal(rowClicks, 1, 'the return restores the entry, since a real completion was recorded');
+    assert.equal(observerCount, 1, 'the return builds exactly one restoration observer for the applied completion');
+    destination.leave();
+  } finally { globalThis.MutationObserver = previousMO; }
 });
 
 test('the held cleanup invoked with pagehide runs the full teardown', async () => {

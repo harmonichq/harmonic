@@ -146,6 +146,24 @@ test('a mixed-ending Edit shows how many of each rather than a false shared endi
   assert.match(html, /1 ended · 1 open/);
 });
 
+test('an all-open Edit shows the disposition its members actually share, not a fabricated Active', () => {
+  const edits = [{ key: 'edit-isf-all-1', first_changed_at: '2026-06-01 00:00:00',
+    last_changed_at: '2026-06-02 00:00:00', count: 2, parameters: [{ parameter: 'isf', count: 2 }] }];
+  const html = recordRoster({
+    edits,
+    trials: [
+      { id: 'isf-all-1', parameter: 'isf', slot: null, changed_at: '2026-06-01 00:00:00',
+        before: 40, after: 36, edit: 'edit-isf-all-1', ending: {}, watch_disposition: 'not_selected_for_watch' },
+      { id: 'isf-all-2', parameter: 'isf', slot: null, changed_at: '2026-06-02 00:00:00',
+        before: 36, after: 34, edit: 'edit-isf-all-1', ending: {}, watch_disposition: 'not_selected_for_watch' },
+    ],
+    focuses: [],
+  });
+  assert.match(html, /Still open/);
+  assert.match(html, /Not watched/);
+  assert.doesNotMatch(html, />Active</, 'no member is watch-active, so the entry must not claim Active');
+});
+
 test('the not-watched status word prints, never the served token', () => {
   const html = recordRoster({
     trials: [{ id: 'isf-all-1', parameter: 'isf', slot: null, changed_at: '2026-06-01 00:00:00',

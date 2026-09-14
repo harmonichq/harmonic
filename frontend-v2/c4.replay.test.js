@@ -151,6 +151,26 @@ test('S108 fails when the return issues more than the held status check', async 
   await assert.rejects(C4_STORIES.S108(page), /no request besides the held status check/);
 });
 
+test('S108 surfaces a lost status response as its own assertion, never an unhandled rejection', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa414Page();
+  // Playwright's own waitForResponse can reject on its own clock, independent
+  // of the held-request wait. Before the fix, a bare unattached promise like
+  // this crashed the whole runner instead of failing this one story.
+  page.waitForResponse = () => Promise.reject(new Error('synthetic Playwright response timeout'));
+  const unhandled = [];
+  const onUnhandledRejection = reason => unhandled.push(reason);
+  process.on('unhandledRejection', onUnhandledRejection);
+  try {
+    await assert.rejects(C4_STORIES.S108(page),
+      /S108 the return must issue GET \/api\/status; none arrived within 30 s/);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(unhandled, [], 'the lost response must never escape as an unhandled rejection');
+  } finally {
+    process.off('unhandledRejection', onUnhandledRejection);
+  }
+});
+
 test('S109 preserves the reading pane scroll position across the held round trip', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   const page = qa414Page();

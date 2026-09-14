@@ -424,15 +424,23 @@ async function heldReturnToDiagnose414(page) {
   const arrived = new Promise(resolve => { arrive = resolve; });
   const handler = async route => { arrive(); await gate; await route.continue(); };
   await page.route('**/api/status*', handler);
+  const STATUS_TIMEOUT = 'S108 the return must issue GET /api/status; none arrived within 30 s';
   const completion = page.waitForResponse(r => new URL(r.url()).pathname === '/api/status' && r.ok());
+  // Playwright's own wait races the held-request wait below on the same
+  // 30 s clock and can reject first. A bare promise like this one is flagged
+  // as an unhandled rejection — aborting the whole runner, not just this
+  // story — the instant it rejects with nothing yet awaiting it. Attach a
+  // swallowing handler immediately, and surface the real failure as this
+  // story's own assertion instead of letting it escape as a crash.
+  const settled = completion.catch(() => null);
   try {
     await press(page, 'nav.v2-nav [data-destination="diagnose"]');
-    await boundedWait(arrived, 'S108 held status re-check on return to Diagnose');
+    await boundedWait(arrived, STATUS_TIMEOUT);
     await page.locator('.gf-loading[aria-label="Loading Diagnose"]').waitFor({ timeout: 30000 });
     release();
-    await completion;
+    assert.ok(await settled, STATUS_TIMEOUT);
   } finally {
-    release(); await completion.catch(() => {});
+    release(); await settled;
     await page.unroute('**/api/status*', handler); page.off('request', onRequest);
   }
   await waitForDesk(page);

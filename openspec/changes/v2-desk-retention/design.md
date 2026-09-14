@@ -58,7 +58,7 @@ workstation resolves its elements by document id and a rail read that
 completes after the reader has left paints into them: hidden but present,
 that paint lands harmlessly; removed, it threw (S83 in the complete ledger).
 Parking at the end of the body keeps any on-screen element that shares an id
-(the Verify workstation's readout clock) first for a lookup. The failed-read frames (S19, S20) and the
+first for a lookup; no v2 module shares one today. The failed-read frames (S19, S20) and the
 no-stale-result rule (HV2-29) are unchanged: a failed re-read still replaces
 the retained desk with the error frame. No served contract changes.
 

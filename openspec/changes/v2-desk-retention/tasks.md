@@ -82,6 +82,6 @@
   with members beneath and one flat row for the lone record; the Still open
   cell carries a word;
   the roster and reassessment loading frames carry their named text.
-- [ ] 4.2 Replay the touched stories at 1280×720 and 1440×900 while iterating;
+- [x] 4.2 Replay the touched stories at 1280×720 and 1440×900 while iterating;
   run the complete v2 ledger once per size on the commit to be pushed, and
   the Verify behaviour ledger leg once, since its stub payload is regenerated.

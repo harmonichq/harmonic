@@ -342,7 +342,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // and a rail read that completes while the reader is away paints into them.
   // Hidden but in the document, that paint lands harmlessly; removed, it would
   // throw. The park is the end of the body, so an on-screen element that
-  // shares an id always wins a lookup (S83).
+  // shared an id would win a lookup (S83).
   function detach() {
     restoreObserver?.disconnect(); restoreObserver = null;
     // Only ever called after ensureView() has run (seated implies root is set).

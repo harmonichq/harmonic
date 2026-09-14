@@ -460,8 +460,11 @@ async function cleanup(page, ctx, pagehide = false) {
     });
   } else {
     for (let i = 0; i < 3; i += 1) {
+      // Amended under #414 (ADR 414): Diagnose stays seated off-screen, parked
+      // hidden in the document; leaving must take it off the surface, not out
+      // of the document.
       await go(page, 'changes'); await waitForReplayAssertion(async seen => {
-        assert.equal(seen(await page.locator('[data-v2-diagnose]').count()), 0);
+        assert.equal(seen(await page.locator('[data-v2-diagnose]:visible').count()), 0);
       }, "cleanup");
       await go(page, 'diagnose');
       await waitForCharts(page);
@@ -817,7 +820,22 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), before, 'same-subject night selection retains reading scroll');
     }, "S81");
+    // Amended under #414 (ADR 414): a Changes round trip returns to the same
+    // subject and keeps the reading scroll (S109). The subject change that must
+    // arrive at its head is a different Finding row, reached by stepping back
+    // to the roster through the crumb trail.
     await go(page, 'changes'); await go(page, 'diagnose');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), before, 'a return to the same subject keeps the reading scroll');
+    }, "S81");
+    await press(page, '#crumb-trail button');
+    const { next } = await waitForReplayAssertion(async seen => {
+      const next = seen(await page.evaluate(() => [...document.querySelectorAll('#level .qrow[data-id]')]
+        .map(b => b.dataset.id).find(id => !id.startsWith('basal:'))));
+      check(next, 'the roster offers no second subject to open');
+      return { next };
+    }, "S81");
+    await page.locator(`#level .qrow[data-id="${next}"]`).click();
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), 0, 'a new subject arrives at its head');
     }, "S81");

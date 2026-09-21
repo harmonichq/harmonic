@@ -247,4 +247,26 @@ record `openspec/changes/v2-desk-design-completion` if one is on main.
 
 ## Triage review rounds
 
-Recorded by triage below as each `/plan-review` round completes.
+Three cold Opus panels, each fresh, each BLOCKED; the three-panel cap is reached
+and no lock is posted.
+
+| Panel | Commit | Blockers | Authoring | Injected | State |
+|---|---|---|---|---|---|
+| 1 | 55e28f37 | 5 (+3 notes) | 5 | 0 | all reproduced, folded in |
+| 2 | f4b9a906 | 5 (+4 notes) | 3 | 2 | all reproduced, folded in |
+| 3 | ac03c160 | 5 (+1 note) | 5 | 0 | all reproduced, **not folded in** |
+
+Panel 3's open blockers: the disk-serving mirror fails closed through v1's arm
+and its own environment variable, so task 1.6 breaks the fail-closed regression
+inside group 1; `R19` must name `/v2/...` addresses inside a file
+`name-boundary.sh` searches; `frontend/diagnose-workstation.test.js` imports
+three more exports from, and reads the source text of, the v1 workstation replay;
+`frontend/tab-routing.js` carries v1's router half, which no task deletes and
+whose names collide with task 3.2's renames; task 1.4's rewrite drops the
+router, server and mirror agreement check that the surfaces requirement owes.
+Note: CI's no-fetch server step loses its only selecting matrix entry.
+
+None of the fifteen blockers was a product decision. Each was a coupling between
+the shared tree and v1 that reading did not find. That is the signal to discover
+the closure by executing the deletion against the build and the gates before
+writing the lock, not to patch the prose a fourth time.

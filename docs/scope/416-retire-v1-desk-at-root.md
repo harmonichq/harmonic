@@ -66,7 +66,9 @@ Routed by `/scope` to interview mode on 2026-09-21, during `/ticket triage 416`.
 
 ## Open questions
 
-None.
+- Q10. Three plan-review panels blocked the order; the cap is reached. How the
+  work proceeds (spike the deletion first, split the ticket, or override the
+  cap) is Connor's call. See design.md "Triage review rounds".
 
 ## Spawned tasks
 

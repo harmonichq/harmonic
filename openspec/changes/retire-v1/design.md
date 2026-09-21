@@ -77,54 +77,30 @@ desk story, filed when found.
 ## What survives, and the rule that decides it
 
 A file under today's `frontend/` survives only if the desk's build, the desk's
-tests and replays, a surviving generator, or a surviving backend test reaches it.
-Grounding on origin/main 6821bbf6 found:
+tests and replays, a surviving generator, or a surviving test reaches it, by
+import or by filesystem path. The same rule applies inside a surviving shared
+module: an export only v1 called goes with v1.
 
-- **Desk runtime closure in `frontend/`:** `data.js`, `tab-routing.js`, `plan.js`,
-  `diagnose-event-comparison.js`, `diagnose-data-age.js`,
-  `diagnose-workspaces.js`, `verify-workstation-chart.js`, `chart-builders.js`,
-  `day-chart.js`, `day-hero-chart.js`, `nav-chart.js`, `daily-nav.js`,
-  `carb-log.js`, `prompt-queue.js`, `kb.js`, `guide.js`, and transitively
-  `diagnose-workstation.js`, `diagnose-workstation-chart.js`,
-  `diagnose-workstation-data.js`, `diagnose-canvas-layout.js`,
-  `diagnose-canvas-state.js`, `diagnose-eating-sequences.js`,
-  `diagnose-evidence-charts.js`, `diagnose-findings-queue.js`,
-  `diagnose-load-failure.js`, `finding-case-file-validation.js`,
-  `occurrence-roster.js`, `watched-change-dock.js`; the stylesheets `shell.css`,
-  `diagnose-workstation.css`, `diagnose-event-comparison.css`, `theme.css`; and
-  `favicon.svg`. Each surviving module keeps its unit test.
-- **Desk test and replay closure in `frontend/`:** `replay-assertions.mjs`,
-  `harmonic-v2-desktop-behavior.replay.mjs`, `browser-fixture-population.js`,
-  `browser-runner.js`, `built-shell.js`, `eating-sequence-fixture.js`,
-  `__fixtures__/basal-night-evidence.json`, `__fixtures__/findings-projection.json`,
-  with their tests, plus `browser-runner.browser.test.mjs`,
-  `browser-gates-fail-closed.test.js` and `findings-projection-mirror.test.js`.
-  The surviving desk tree also imports from the two v1 replay files, which are
-  otherwise v1-only. From `diagnose-workstation-behavior.replay.mjs`:
-  `waitForLevelAnimations` (`frontend-v2/c2.replay.mjs`), the story body `S03`
-  (`frontend-v2/c3.replay.test.js`), and nine helpers imported by the desk browser
-  suite `frontend-v2/desk.browser.test.mjs`: `assertCompactSequenceDetail`,
-  `captureEvidence`, `openAllCharts`, `assertResponseAnchorGeometry`,
-  `highCarbFailureScenario`, `assertHighCarbFailure`, `assertSequenceResponse`,
-  `assertSequenceSelection`, `assertSequenceFullscreen`. From
-  `diagnose-event-comparison-behavior.replay.mjs`: the story body `S8`. The rule
-  is every export the surviving desk tree imports from those two files, with
-  whatever each calls; this list is its grounding. Group 1 copies them into the
-  desk's replay source unchanged and re-points the importers; group 2's deletion
-  removes the originals. A missed import cannot hide until the browser run: the
-  fail-closed regression spawns the desk suite in the fast gate, and a dangling
-  import exits with a module error instead of the preflight message it asserts.
-- **Generator inputs:** `scripts/gen_findings_projection_fixtures.py` reads
-  `mockups/diagnose-workstation.synthetic/payload.json` and
-  `mockups/diagnose-event-comparison.synthetic/capture.json`;
-  `frontend/browser-fixture-population.js` reads that capture too; and
-  `scripts/check_demo_fixtures.py` guards the demo sets. So the event-comparison
-  capture, its generator and its `--check` step in CI all survive. A synthetic
-  set is deleted only when no surviving generator, drift check, test or module
-  reads it, and a set that survives keeps its generator and its `--check`.
+Triage executed this rule on a throwaway branch; `spike.md` is the record and
+`spike/frontend-survivors.txt` (83 files) and `spike/deleted.txt` (51 paths) are
+its result. Three things the spike proved that reading had not: three fixtures
+are reached only by filesystem path, so an import search alone deletes them;
+fifteen exports, not three, are imported from the two v1 replay files, one set of
+them by a surviving unit test; and the full backend suite loses only nine tests
+in four files. Group 1 copies those fifteen exports into the desk's replay source
+and group 2 deletes the two replay files. A missed import cannot hide until the
+browser run: the fail-closed regression spawns the desk suite in the fast gate,
+and a dangling import exits with a module error instead of the preflight message
+it asserts.
 
-This list is grounding, not the authority. The authority is the rule in the
-first sentence, proved by the build, the fast gate, the drift checks and pytest
+Two generators lose their last reader and retire with v1, fixture and CI step
+together (`gen_ic_block_fixtures.py`, `gen_annotation_fixtures.py`). The
+event-comparison capture keeps its generator and its `--check`: a surviving
+generator and a surviving module read it. A synthetic set or fixture is deleted
+only when no surviving generator, drift check, test or module reads it, and one
+that survives keeps its generator and its `--check`.
+
+The spike's lists are grounding, not the authority. The authority is the rule, proved by the build, the fast gate, the drift checks and pytest
 all passing with the file gone. `frontend/index.html` is imported by no node
 test, so an extension-filtered search can certify live code dead; the deletion
 task uses the desk build and gates as its proof, never a search alone.
@@ -164,8 +140,9 @@ The v2 name leaves everything a contributor or the running system touches:
 
 The boundary is checked by an executed script, `name-boundary.sh` beside this
 file, not by judgment. It fails when the v2 name survives in a tracked path, in
-one of the enumerated code identifiers, or as a served address outside the two
-files that assert `/v2/...` answers 404. It excludes `openspec/changes/**`,
+one of the enumerated code identifiers, or as a served address outside the four
+files that assert `/v2/...` answers 404: the route test, the acceptance driver
+and its test, and the desk ledger replay, where `R19` lives. It excludes `openspec/changes/**`,
 `docs/scope/**`, `.impeccable/**` and `mockups/**`. It was run at triage: it
 exits 1 on origin/main 6821bbf6 with 281 offending lines, 0 on a tree holding
 only kept kinds, and 1 on a tree with one stray `/v2/day`.
@@ -227,7 +204,11 @@ job on the pull request; locally, the driver's own test covers its expectations.
 must-prevent "a gate that passes while running zero assertions". Its suite list
 is all v1 today. It ends naming the one surviving shell-serving leg, the desk
 suite, and asserts the list is not empty. The follow-up suite and the
-browser-runner regression serve no built shell and were never in that list.
+browser-runner regression serve no built shell and were never in that list. The
+regression drives each suite through `HARMONIC_DIST` and expects the
+build-command message, which today comes from the mirror's v1 arm; so the
+mirror's surviving arm takes that variable and that message, and the
+regression's rewrite lands in the same group as the mirror's.
 
 Workers under a seatbelt sandbox cannot launch Chromium. The browser legs are
 therefore their own last task group, run by whoever can launch a browser, on the
@@ -247,16 +228,18 @@ record `openspec/changes/v2-desk-design-completion` if one is on main.
 
 ## Triage review rounds
 
-Three cold Opus panels, each fresh, each BLOCKED; the three-panel cap is reached
-and no lock is posted.
+Three cold Opus panels, each fresh, each BLOCKED; the three-panel cap was
+reached with no lock posted. Connor, 2026-09-21, chose to spike the deletion
+before a further review ("A, spike it"); `spike.md` is the result, the tasks
+were rewritten clean from it, and one further cold review follows.
 
 | Panel | Commit | Blockers | Authoring | Injected | State |
 |---|---|---|---|---|---|
 | 1 | 55e28f37 | 5 (+3 notes) | 5 | 0 | all reproduced, folded in |
 | 2 | f4b9a906 | 5 (+4 notes) | 3 | 2 | all reproduced, folded in |
-| 3 | ac03c160 | 5 (+1 note) | 5 | 0 | all reproduced, **not folded in** |
+| 3 | ac03c160 | 5 (+1 note) | 5 | 0 | all reproduced, folded in with the spike |
 
-Panel 3's open blockers: the disk-serving mirror fails closed through v1's arm
+Panel 3's blockers, now resolved in tasks.md: the disk-serving mirror fails closed through v1's arm
 and its own environment variable, so task 1.6 breaks the fail-closed regression
 inside group 1; `R19` must name `/v2/...` addresses inside a file
 `name-boundary.sh` searches; `frontend/diagnose-workstation.test.js` imports

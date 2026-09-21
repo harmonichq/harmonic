@@ -14,10 +14,11 @@ idents=$(git grep -n -F \
   -e 'rootV2' -e 'indexV2' -e 'dev:v2' -e 'config.v2' \
   -- . ':!openspec/changes' ':!docs/scope' ':!.impeccable' ':!mockups' || true)
 if [ -n "$idents" ]; then echo "IDENTIFIERS:"; echo "$idents"; status=1; fi
-# A /v2 address may appear only where the closed route set asserts it answers 404.
+# A /v2 address may appear only where something asserts it answers 404: the
+# route test, the package proof and its test, and the ledger replay's R19.
 addrs=$(git grep -n -e '/v2/' -e '/v2"' -e "/v2'" \
   -- . ':!openspec/changes' ':!docs/scope' ':!.impeccable' ':!mockups' \
      ':!tests/test_frontend_asset_routes.py' ':!scripts/desk_acceptance.py' \
-     ':!scripts/desk_acceptance.test.py' || true)
+     ':!scripts/desk_acceptance.test.py' ':!frontend/desk-behavior.replay.mjs' || true)
 if [ -n "$addrs" ]; then echo "ADDRESSES:"; echo "$addrs"; status=1; fi
 exit $status

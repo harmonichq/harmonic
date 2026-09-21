@@ -66,9 +66,10 @@ Routed by `/scope` to interview mode on 2026-09-21, during `/ticket triage 416`.
 
 ## Open questions
 
-- Q10. Three plan-review panels blocked the order; the cap is reached. How the
-  work proceeds (spike the deletion first, split the ticket, or override the
-  cap) is Connor's call. See design.md "Triage review rounds".
+None. Q10: Connor chose to spike the deletion first (2026-09-21, "A, spike it");
+the result is `openspec/changes/retire-v1/spike.md`. Q11: Connor approved posting
+the order after the post-spike review's findings were folded in ("A, post it").
+Every `→ ADR` decision above is recorded as ADR 416 in the change's design.md.
 
 ## Spawned tasks
 

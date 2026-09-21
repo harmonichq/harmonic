@@ -177,6 +177,17 @@ therefore their own last task group, run by whoever can launch a browser, on the
 commit that will be pushed, once: the desk suite, the follow-up suite, the
 browser-runner regression, and the complete desk ledger at both sizes.
 
+## Sequencing against #413
+
+#413 (desk design completion) is triaged and unstarted on 2026-09-21, with no
+branch pushed and no pull request. Its lock orders a desk-only path through the
+shared rail and lane code so that v1 renders unchanged, and its verification runs
+v1's three ledger replays. Both exist only because v1 is still served. This
+change lands first. #413's lock then names paths and gates that no longer exist,
+so #413 is re-triaged against the single root before it starts, and it no longer
+needs the desk-only path. This change does not touch #413's lock or its change
+record `openspec/changes/v2-desk-design-completion` if one is on main.
+
 ## Triage review rounds
 
 Recorded by triage below as each `/plan-review` round completes.

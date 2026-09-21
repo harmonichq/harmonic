@@ -37,6 +37,12 @@ Routed by `/scope` to interview mode on 2026-09-21, during `/ticket triage 416`.
   Why: delegated by Connor; four is the slicing ceiling, every decision is
   settled, and the live run is its own boundary here. Disposition: inline
 
+- Q9. #416 lands before #413. #413 is triaged and unstarted; its desk-only path
+  and its v1 ledger runs exist only to protect v1, so it is re-triaged against
+  the single root after this merges. Why: triage's call under Connor's
+  delegation; building v1 protection for an app that dies next is waste.
+  Disposition: inline (design.md "Sequencing against #413")
+
 ### Risk contract
 
 - **Must prevent:** secret exposure; any change to the store, analyzers, safety
@@ -64,4 +70,4 @@ None.
 
 ## Spawned tasks
 
-None.
+- After #416 merges: `/ticket triage 413` again, superseding its lock.

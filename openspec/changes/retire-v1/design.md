@@ -26,10 +26,13 @@ end. There's no V2 anywhere."
    the fetch status panel and Fetch now button, audit-item dismissal, the topbar
    range indicator, the Day model view log, dose focus, settling and scenario
    chart, and the v1 Verify workstation renderer.
-4. Every v1 gate is deleted, including the workstation ledger, the
-   event-comparison replay and support audit, the Verify ledger, and the
+4. Every v1 gate is deleted: nine browser legs, namely the workstation ledger,
+   the event-comparison replay, its support audit, the Verify ledger, and the
    workstation, canvas-composition, cockpit-shell, Day lifecycle and first-plan
-   browser legs. The desk ledger, the desk and follow-up suites, the shared
+   legs. The source check that pinned ADR 215's retired Explore-mode guard reads
+   the deleted canvas-composition suite and retires with it, as does the
+   v1-against-desk clinical-pairs comparison, which has only one app left to
+   open. The desk ledger, the desk and follow-up suites, the shared
    browser-runner regression and the fail-closed regression are the browser
    contract. Coverage those v1 gates gave the embedded Diagnose workstation is
    knowingly dropped.
@@ -60,7 +63,9 @@ desk story, filed when found.
 - **Unsupported:** any v1 page, any `/v2` path, restoring v1 other than from Git
   history.
 - **Evidence owed:** the closed non-API route set through the HTTP interface,
-  including the 404 list; the packaged-runtime proof at root; the complete desk
+  including the 404 list; the packaged-runtime proof at root, carried by CI's
+  image job on the pull request because the operator's machine has no Docker;
+  the complete desk
   ledger at both sizes against the built root-served app; the desk and follow-up
   browser suites; the fast gate; every surviving drift check; the fail-closed
   gate regression test.
@@ -137,13 +142,34 @@ The v2 name leaves everything a contributor or the running system touches:
 - `vite.config.v2.mjs` becomes the one `vite.config.mjs` with `base: '/'`; the
   `dev:v2` script becomes `dev`; `npm run build` runs one build.
 - `frontend/harmonic-v2-desktop-behavior.replay.mjs` becomes
-  `frontend/desk-behavior.replay.mjs`. The acceptance driver, its test and
-  `clinical-pairs.mjs` move from `mockups/sweep/harmonic-v2-desktop/` to
-  `scripts/desk_acceptance.py`, `scripts/desk_acceptance.test.py` and
-  `scripts/desk-clinical-pairs.mjs`; CI job ids and step names drop the name.
+  `frontend/desk-behavior.replay.mjs`. The acceptance driver and its test move
+  from `mockups/sweep/harmonic-v2-desktop/` to `scripts/desk_acceptance.py` and
+  `scripts/desk_acceptance.test.py`; CI job ids and step names drop the name.
 - Router and server identifiers (`V2_PAGE`, `parseV2Route`, `index_v2`,
   `_FRONTEND_V2_DIST`, the `frontend-v2-assets` mount name) lose the prefix.
 - Living documents and baseline specifications say "the desk" or "the app".
+
+The boundary is checked by two searches, not by judgment. Both return nothing
+outside the excluded paths below:
+
+- paths: `git ls-files | grep -i v2`
+- identifiers: `git grep -n -e 'frontend-v2' -e '/v2/' -e '/v2"' -e "/v2'" -e
+  'V2_PAGE' -e 'V2_ASSET' -e 'V2_DESTINATION' -e 'V2Route' -e 'index_v2' -e
+  '_FRONTEND_V2' -e 'dev:v2' -e 'config.v2'`
+
+Excluded paths: `openspec/changes/**` other than `openspec/changes/retire-v1/**`,
+`docs/scope/**`, `.impeccable/**`, `mockups/harmonic-v2-*`,
+`mockups/harmonic-v2.exploration/**`, `mockups/harmonic-v2.archive/**` and
+`mockups/sweep/harmonic-v2-desktop/**`. The one permitted hit inside living files
+is the closed-route test and the package proof naming `/v2/...` addresses in
+their 404 lists. `mockups/harmonic-v2.exploration/` stays where it is even though
+its generator is live: the frozen ledger and lock cite its fixtures by path.
+
+Three kinds of "v2" are deliberately kept and are not searched for: wire schema
+versions (`diagnose-findings-v2`, `evidence-v2`), which number a contract and do
+not name the app; the desk's DOM class names (`.v2-content`, `.v2-nav` and their
+family), which the locked prototype shares and the frozen ledger cites by
+selector; and comments that cite a historical record by its filename.
 
 Historical records keep their names and bytes, because renaming a frozen record
 rewrites history: `openspec/changes/**` other than this change and the
@@ -160,7 +186,10 @@ serves `/v2/` and `/v2/assets/`) and S87 (v1 and `/v2/` coexist). Under Connor's
 2026-09-21 sanction, S86 is amended to assert `/`, the three page paths and
 `/assets/`; S87 is retired, and its retirement record cites ADR 416. Every other
 story changes only the address its opener navigates to. No story is weakened, and
-no other story is added or retired. The rendered surface is unchanged, so this
+no other story is added or retired. The acceptance driver pins the ledger's
+inventory as literals (142 issued, 124 active, 18 retired) and its test pins the
+issued count; retiring S87 moves them to 142, 123 and 19, which is this
+amendment and not a broken record. The rendered surface is unchanged, so this
 change carries no visual lock and no new fidelity evidence.
 
 ## Verification design
@@ -171,6 +200,16 @@ policy, the Vite base, and the browser router with its disk-serving mirror.
 equals the router's pages and names the complete non-API route set; it is
 rewritten first, fails against the unchanged server, then passes. The package
 proof in the acceptance driver asserts the same set against the built image.
+
+The packaged-runtime proof (`package` in the acceptance driver) builds and runs
+a Docker image. The operator's machine has no Docker, so that proof is CI's image
+job on the pull request; locally, the driver's own test covers its expectations.
+
+`frontend/browser-gates-fail-closed.test.js` is the regression for the
+must-prevent "a gate that passes while running zero assertions". Its suite list
+is all v1 today. It ends naming the one surviving shell-serving leg, the desk
+suite, and asserts the list is not empty. The follow-up suite and the
+browser-runner regression serve no built shell and were never in that list.
 
 Workers under a seatbelt sandbox cannot launch Chromium. The browser legs are
 therefore their own last task group, run by whoever can launch a browser, on the

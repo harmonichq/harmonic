@@ -14,8 +14,10 @@ group names; the complete pull-request gate runs once, in group 4.
       (glossary, chart key, combined stylesheet) from v1's page to the rehomed
       desk source. Its `--check` must pass with byte-identical outputs, or with
       a diff explained line by line under `evidence/`.
-- [ ] 1.3 Move `waitForLevelAnimations`, `S03` and `S8`, with whatever they call,
-      into the desk's replay source unchanged, and re-point their importers.
+- [ ] 1.3 Copy every export the surviving desk tree imports from the two v1
+      replay files (design.md lists twelve), with whatever each calls, into the
+      desk's replay source unchanged, and re-point the importers. Leave the two
+      v1 replay files untouched; group 2 deletes them.
 - [ ] 1.4 Rewrite `tests/test_frontend_asset_routes.py` first, to the closed
       non-API route set `/`, `/diagnose`, `/changes`, `/day`, `/assets`, with
       `/v2`, `/v2/`, `/v2/diagnose`, `/v2/assets/x.js`, `/verify`, `/plan`,
@@ -32,10 +34,11 @@ group names; the complete pull-request gate runs once, in group 4.
       the mirror's v1 arm and the v1 cases in both unit tests go with it.
 - [ ] 1.7 Re-point every desk test, browser suite and replay opener from `/v2/...`
       to the root address. Amend the desk ledger per design.md "Ledger
-      amendment": S86 asserts the root address set; S87 is retired citing
-      ADR 416; no other story's assertions change. Move the frozen inventory
-      literal in the acceptance driver and its test with it: 142 issued stays,
-      active goes 124 to 123, retired goes 18 to 19.
+      amendment": S86 asserts the root address set; S87 is retired
+      as `R19` with an executable registry body, exactly as design.md says; no
+      other story's assertions change. Move the frozen inventory literal in the
+      acceptance driver and its test with it: 142 issued stays, active goes 124
+      to 123, retired goes 18 to 19.
 - [ ] 1.8 Delete the v1-against-desk comparison driver
       `mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs` and its two tests in
       `frontend-v2/c4.replay.test.js`; it opens both apps and one is gone.
@@ -60,8 +63,9 @@ group names; the complete pull-request gate runs once, in group 4.
       lifecycle; Diagnose workstation; Diagnose canvas composition; Cockpit
       shell; First-plan reconcile; Diagnose workstation behaviour ledger;
       Diagnose event comparisons; Diagnose comparison support audit; Verify
-      behaviour ledger. Delete the v1 event-comparison capture `--check` step
-      when no surviving generator reads that capture's generator. Keep Browser
+      behaviour ledger. The event-comparison capture, its generator and its
+      `--check` step stay: a surviving generator and a surviving module read the
+      capture. Keep Browser
       runner lifecycle, V2 desk, V2 Trial and Pattern Focus and the desk ledger
       jobs.
 - [ ] 2.3 In `frontend/browser-gates-fail-closed.test.js`, the suite list becomes
@@ -76,7 +80,9 @@ group names; the complete pull-request gate runs once, in group 4.
       the acceptance driver: `mockups/finding-evidence-routing.exploration/`
       (with `mockups/finding-evidence-routing.behavior.md`),
       `mockups/diagnose-evidence-canvas.exploration/` and
-      `mockups/clock-window-wrap.exploration/`. Delete a synthetic set under
+      `mockups/clock-window-wrap.exploration/`. Delete
+      `mockups/explore-investigation.fixture.js`, whose only reader is the
+      deleted cockpit-shell suite, with its allowlist entry. Delete a synthetic set under
       `mockups/` only when no surviving generator, drift check or backend test
       reads it.
 - [ ] 2.5 Re-point `scripts/check_owned_identifiers.py`: the browser title rule at
@@ -106,8 +112,10 @@ group names; the complete pull-request gate runs once, in group 4.
       to the root address with no v1, tick tasks 3.5, 4.2 and 4.3 citing ADR 416,
       and add one line to its design step 5 naming the supersession.
 - [ ] 3.5 Group gate: the group 2 gate again, plus `npx --yes
-      @fission-ai/openspec@1 validate --all --strict`, plus the name search in
-      design.md "Naming boundary" returning nothing outside its excluded paths.
+      @fission-ai/openspec@1 validate --all --strict`, plus
+      `sh openspec/changes/retire-v1/name-boundary.sh` exiting 0, plus
+      `uv run python mockups/harmonic-v2.exploration/generate.py --check` after
+      regenerating its outputs for the moved source paths.
 
 ## 4. Live browser run, corrections, and the complete gate
 

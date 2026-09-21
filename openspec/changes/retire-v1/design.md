@@ -99,16 +99,29 @@ Grounding on origin/main 6821bbf6 found:
   `__fixtures__/basal-night-evidence.json`, `__fixtures__/findings-projection.json`,
   with their tests, plus `browser-runner.browser.test.mjs`,
   `browser-gates-fail-closed.test.js` and `findings-projection-mirror.test.js`.
-  The desk replays also import from the two v1 replay files: `waitForLevelAnimations`
-  and the story body `S03` from `diagnose-workstation-behavior.replay.mjs`, and
-  the story body `S8` from `diagnose-event-comparison-behavior.replay.mjs`. The
-  deletion task moves exactly those three exports, with whatever they call, into
-  the desk's replay source unchanged, so the two v1 replays can go.
+  The surviving desk tree also imports from the two v1 replay files, which are
+  otherwise v1-only. From `diagnose-workstation-behavior.replay.mjs`:
+  `waitForLevelAnimations` (`frontend-v2/c2.replay.mjs`), the story body `S03`
+  (`frontend-v2/c3.replay.test.js`), and nine helpers imported by the desk browser
+  suite `frontend-v2/desk.browser.test.mjs`: `assertCompactSequenceDetail`,
+  `captureEvidence`, `openAllCharts`, `assertResponseAnchorGeometry`,
+  `highCarbFailureScenario`, `assertHighCarbFailure`, `assertSequenceResponse`,
+  `assertSequenceSelection`, `assertSequenceFullscreen`. From
+  `diagnose-event-comparison-behavior.replay.mjs`: the story body `S8`. The rule
+  is every export the surviving desk tree imports from those two files, with
+  whatever each calls; this list is its grounding. Group 1 copies them into the
+  desk's replay source unchanged and re-points the importers; group 2's deletion
+  removes the originals. A missed import cannot hide until the browser run: the
+  fail-closed regression spawns the desk suite in the fast gate, and a dangling
+  import exits with a module error instead of the preflight message it asserts.
 - **Generator inputs:** `scripts/gen_findings_projection_fixtures.py` reads
   `mockups/diagnose-workstation.synthetic/payload.json` and
-  `mockups/diagnose-event-comparison.synthetic/capture.json`, and
-  `scripts/check_demo_fixtures.py` guards the demo sets. A synthetic set survives
-  exactly when a surviving generator, drift check or backend test reads it.
+  `mockups/diagnose-event-comparison.synthetic/capture.json`;
+  `frontend/browser-fixture-population.js` reads that capture too; and
+  `scripts/check_demo_fixtures.py` guards the demo sets. So the event-comparison
+  capture, its generator and its `--check` step in CI all survive. A synthetic
+  set is deleted only when no surviving generator, drift check, test or module
+  reads it, and a set that survives keeps its generator and its `--check`.
 
 This list is grounding, not the authority. The authority is the rule in the
 first sentence, proved by the build, the fast gate, the drift checks and pytest
@@ -149,27 +162,24 @@ The v2 name leaves everything a contributor or the running system touches:
   `_FRONTEND_V2_DIST`, the `frontend-v2-assets` mount name) lose the prefix.
 - Living documents and baseline specifications say "the desk" or "the app".
 
-The boundary is checked by two searches, not by judgment. Both return nothing
-outside the excluded paths below:
+The boundary is checked by an executed script, `name-boundary.sh` beside this
+file, not by judgment. It fails when the v2 name survives in a tracked path, in
+one of the enumerated code identifiers, or as a served address outside the two
+files that assert `/v2/...` answers 404. It excludes `openspec/changes/**`,
+`docs/scope/**`, `.impeccable/**` and `mockups/**`. It was run at triage: it
+exits 1 on origin/main 6821bbf6 with 281 offending lines, 0 on a tree holding
+only kept kinds, and 1 on a tree with one stray `/v2/day`.
 
-- paths: `git ls-files | grep -i v2`
-- identifiers: `git grep -n -e 'frontend-v2' -e '/v2/' -e '/v2"' -e "/v2'" -e
-  'V2_PAGE' -e 'V2_ASSET' -e 'V2_DESTINATION' -e 'V2Route' -e 'index_v2' -e
-  '_FRONTEND_V2' -e 'dev:v2' -e 'config.v2'`
-
-Excluded paths: `openspec/changes/**` other than `openspec/changes/retire-v1/**`,
-`docs/scope/**`, `.impeccable/**`, `mockups/harmonic-v2-*`,
-`mockups/harmonic-v2.exploration/**`, `mockups/harmonic-v2.archive/**` and
-`mockups/sweep/harmonic-v2-desktop/**`. The one permitted hit inside living files
-is the closed-route test and the package proof naming `/v2/...` addresses in
-their 404 lists. `mockups/harmonic-v2.exploration/` stays where it is even though
-its generator is live: the frozen ledger and lock cite its fixtures by path.
-
-Three kinds of "v2" are deliberately kept and are not searched for: wire schema
-versions (`diagnose-findings-v2`, `evidence-v2`), which number a contract and do
-not name the app; the desk's DOM class names (`.v2-content`, `.v2-nav` and their
+Everything the script does not search for is out of this change's scope and
+stays as it is: the `HV2-NN` lock requirement ids, which cite the frozen
+prototype lock; the desk's DOM class names (`.v2-content`, `.v2-nav` and their
 family), which the locked prototype shares and the frozen ledger cites by
-selector; and comments that cite a historical record by its filename.
+selector; wire schema versions (`diagnose-findings-v2`, `guidance-v2`,
+`evidence-v2`), which number a contract; and comments or test titles that
+mention v1 or v2 in passing. Living documents are reworded by task 3.3, where
+`mockups/INDEX.md` and `mockups/SCAFFOLD.md` still name historical records by
+their names. `mockups/harmonic-v2.exploration/` stays where it is even though
+its generator is live: the frozen ledger and lock cite its fixtures by path.
 
 Historical records keep their names and bytes, because renaming a frozen record
 rewrites history: `openspec/changes/**` other than this change and the
@@ -184,7 +194,15 @@ captures and runs), and schema strings such as `eating-sequence-report-v1`.
 The desk's frozen ledger asserts the old address in two stories: S86 (Python
 serves `/v2/` and `/v2/assets/`) and S87 (v1 and `/v2/` coexist). Under Connor's
 2026-09-21 sanction, S86 is amended to assert `/`, the three page paths and
-`/assets/`; S87 is retired, and its retirement record cites ADR 416. Every other
+`/assets/`. S87 is retired the way the ledger retires every story: it becomes
+`R19`, a ledger entry in the form `R18` has (predecessor S87, verdict retired,
+sanction `Connor Griffin · 2026-09-21 · "Kill all the V1 stuff."`, premise) and
+a registry entry in the replay with an executable body, because the acceptance
+driver requires the ledger's id set to equal the registry's and every selected
+story to execute and pass. `R19` asserts the retirement's premise against the
+served app: each old v1 page path and each `/v2/...` path answers 404 with no
+redirect. It also takes a case mapping wherever the replay maps an id to a
+case. Every other
 story changes only the address its opener navigates to. No story is weakened, and
 no other story is added or retired. The acceptance driver pins the ledger's
 inventory as literals (142 issued, 124 active, 18 retired) and its test pins the

@@ -47,6 +47,6 @@ surface does not change; only its address does.
 
 - Capabilities: `surfaces`, `http-api`.
 - Decision: ADR 416 in `design.md` supersedes `harmonic-v2` design step 5.
-- Gates: eight v1-only browser legs leave CI; the desk suite, the follow-up suite,
+- Gates: nine v1-only browser legs leave CI; the desk suite, the follow-up suite,
   the desk ledger, the shared browser-runner regression and the fail-closed
   regression remain.

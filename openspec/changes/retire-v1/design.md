@@ -131,9 +131,16 @@ The v2 name leaves everything a contributor or the running system touches:
 - `vite.config.v2.mjs` becomes the one `vite.config.mjs` with `base: '/'`; the
   `dev:v2` script becomes `dev`; `npm run build` runs one build.
 - `frontend/harmonic-v2-desktop-behavior.replay.mjs` becomes
-  `frontend/desk-behavior.replay.mjs`. The acceptance driver and its test move
-  from `mockups/sweep/harmonic-v2-desktop/` to `scripts/desk_acceptance.py` and
-  `scripts/desk_acceptance.test.py`; CI job ids and step names drop the name.
+  `frontend/desk-behavior.replay.mjs`, and it keeps its private disposition:
+  its deny line in `scripts/public_allowlist.txt` moves to the new path, as do
+  the deny lines for the desk tests that import or launch it. CI job ids and
+  step names drop the name.
+- The acceptance driver and its test stay at
+  `mockups/sweep/harmonic-v2-desktop/`. It is CI's central runner (backend
+  shards, nightly, replay plan, package proof) and the allowlist rules it
+  private; `scripts/**` is published, so moving it there would publish it, and
+  it resolves the repository root from its own depth. Its path is a historical
+  directory name, excluded with the rest of `mockups/`.
 - Router and server identifiers (`V2_PAGE`, `parseV2Route`, `index_v2`,
   `_FRONTEND_V2_DIST`, the `frontend-v2-assets` mount name) lose the prefix.
 - Living documents and baseline specifications say "the desk" or "the app".
@@ -141,8 +148,9 @@ The v2 name leaves everything a contributor or the running system touches:
 The boundary is checked by an executed script, `name-boundary.sh` beside this
 file, not by judgment. It fails when the v2 name survives in a tracked path, in
 one of the enumerated code identifiers, or as a served address outside the four
-files that assert `/v2/...` answers 404: the route test, the acceptance driver
-and its test, and the desk ledger replay, where `R19` lives. It excludes `openspec/changes/**`,
+places that assert `/v2/...` answers 404: the route test, the desk ledger
+replay where `R19` lives, and the acceptance driver's package proof, which sits
+under the excluded `mockups/`. It excludes `openspec/changes/**`,
 `docs/scope/**`, `.impeccable/**` and `mockups/**`. It was run at triage: it
 exits 1 on origin/main 6821bbf6 with 281 offending lines, 0 on a tree holding
 only kept kinds, and 1 on a tree with one stray `/v2/day`.
@@ -183,7 +191,9 @@ case. Every other
 story changes only the address its opener navigates to. No story is weakened, and
 no other story is added or retired. The acceptance driver pins the ledger's
 inventory as literals (142 issued, 124 active, 18 retired) and its test pins the
-issued count; retiring S87 moves them to 142, 123 and 19, which is this
+issued count; retiring S87 moves them to 142, 123 and 19. The driver's frozen
+smoke slice also names `S87`: it becomes `R19` there, and the test's pinned
+SHA-256 of that list is regenerated from the new list. All of that is this
 amendment and not a broken record. The rendered surface is unchanged, so this
 change carries no visual lock and no new fidelity evidence.
 
@@ -209,6 +219,13 @@ regression drives each suite through `HARMONIC_DIST` and expects the
 build-command message, which today comes from the mirror's v1 arm; so the
 mirror's surviving arm takes that variable and that message, and the
 regression's rewrite lands in the same group as the mirror's.
+
+The acceptance driver is a consumer in its own right, and only its `replay`
+leg runs in the browser phase. Its drift-check list, its two-shell build
+requirement, its input and story-root path lists, its `node-v2` glob and its
+public-tree assertion all name things this change deletes or moves. Its own
+test and `case-cache --check` are not pytest-discoverable and run as separate
+CI steps, so groups 1, 2 and 3 each run both in their gate.
 
 Workers under a seatbelt sandbox cannot launch Chromium. The browser legs are
 therefore their own last task group, run by whoever can launch a browser, on the
@@ -238,6 +255,7 @@ were rewritten clean from it, and one further cold review follows.
 | 1 | 55e28f37 | 5 (+3 notes) | 5 | 0 | all reproduced, folded in |
 | 2 | f4b9a906 | 5 (+4 notes) | 3 | 2 | all reproduced, folded in |
 | 3 | ac03c160 | 5 (+1 note) | 5 | 0 | all reproduced, folded in with the spike |
+| 4 (post-spike) | 42e9d725 | 6 (+1 note) | 5 | 1 | all reproduced, folded in |
 
 Panel 3's blockers, now resolved in tasks.md: the disk-serving mirror fails closed through v1's arm
 and its own environment variable, so task 1.6 breaks the fail-closed regression
@@ -249,7 +267,13 @@ whose names collide with task 3.2's renames; task 1.4's rewrite drops the
 router, server and mirror agreement check that the surfaces requirement owes.
 Note: CI's no-fetch server step loses its only selecting matrix entry.
 
-None of the fifteen blockers was a product decision. Each was a coupling between
+Panel 4 found the one consumer the spike never exercised: the acceptance driver,
+CI's central runner. Five of its six blockers were the driver's internals (its
+smoke slice naming S87, its drift-check list, its two-shell build requirement,
+its path lists), and one was injected by triage's own plan to move the driver
+into the published `scripts/` tree. The driver now stays where it is.
+
+None of the twenty-one blockers was a product decision. Each was a coupling between
 the shared tree and v1 that reading did not find. That is the signal to discover
 the closure by executing the deletion against the build and the gates before
 writing the lock, not to patch the prose a fourth time.

@@ -57,7 +57,9 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
       amendment": S86 asserts the root address set; S87 is retired as `R19` with
       an executable registry body; no other story's assertions change. Move the
       frozen inventory literal in the acceptance driver and its test with it: 142
-      issued stays, active goes 124 to 123, retired goes 18 to 19.
+      issued stays, active goes 124 to 123, retired goes 18 to 19. The driver's
+      frozen smoke slice names `S87`; it becomes `R19`, and the test's pinned
+      SHA-256 of that list is regenerated from the new list.
 - [ ] 1.9 Delete the v1-against-desk comparison driver
       `mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs` and its two tests in
       `frontend-v2/c4.replay.test.js`.
@@ -70,7 +72,9 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
 - [ ] 1.11 Group gate: `npm ci && npm run build`; `uv run python -m pytest
       tests/test_frontend_asset_routes.py tests/test_api.py
       tests/test_deploy_assets.py`; the fast-gate node line;
-      `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`; and
+      `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`;
+      `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache
+      --check --out <a fresh directory outside the checkout>`; and
       `uv run python mockups/harmonic-v2.exploration/generate.py --check`.
 
 ## 2. Delete v1
@@ -82,7 +86,9 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
       `frontend/tab-routing.js`, `TABS`, `resolveTab`, `routeState`, `parseRoute`
       and `serializeRoute` with their cases in `frontend/tab-routing.test.js`
       (the desk imports only the desk route functions, `subscribeRoute`,
-      `writeRoute` and `resolveDestination`), and in `frontend/data.js` and the
+      `writeRoute` and `resolveDestination`; `subscribeRoute` and `writeRoute`
+      default a parameter to the deleted v1 functions, so those defaults become
+      the desk's), and in `frontend/data.js` and the
       desk's client re-export, every export no surviving caller uses. Remove
       `vue` and `@vitejs/plugin-vue` from `package.json` and the lockfile;
       `npm run build` runs the one desk build.
@@ -100,7 +106,8 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
 - [ ] 2.3 Retire the two generators whose fixture has no surviving reader, with
       fixture and CI step together: `scripts/gen_ic_block_fixtures.py`
       (`ic-blocks.json`) and `scripts/gen_annotation_fixtures.py`
-      (`engine-annotations.json`), and their backend tests if any. Drop the
+      (`engine-annotations.json`), their backend tests if any, and their entries
+      in the acceptance driver's drift-check list. Drop the
       readerless `episode.carb-undercount.json` output from
       `scripts/gen_chart_builder_fixtures.py`. Confirm each "no reader" with an
       executed search before deleting.
@@ -108,31 +115,41 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
       design explorations that read v1's source and that nothing surviving reads,
       with their `--check` steps in CI, their backend tests
       (`tests/test_evidence_canvas_generator.py`) and their entries in the
-      acceptance driver: `mockups/finding-evidence-routing.exploration/` (with
+      acceptance driver (its drift-check list and its routing-drift check):
+      `mockups/finding-evidence-routing.exploration/` (with
       `mockups/finding-evidence-routing.behavior.md`),
       `mockups/diagnose-evidence-canvas.exploration/` and
       `mockups/clock-window-wrap.exploration/`. Delete
       `mockups/cockpit-shell.behavior.md` and
       `mockups/explore-investigation.fixture.js`. Delete a synthetic set under
       `mockups/` only when no surviving generator, drift check, test or module
-      reads it.
+      reads it. The acceptance driver's build requirement names both shells;
+      it becomes the one desk build.
 - [ ] 2.5 Re-point `scripts/check_owned_identifiers.py`: the browser title rule at
       the desk's page, the favicon rule at the surviving favicon, and the header
       wordmark rule at the desk's chrome module, where the wordmark is emitted
       mid-line, so its pattern moves with it. Prove once that the guard still
       fails on a misspelled wordmark. Remove every reference to a deleted file
-      from the living files spike.md lists, including
+      from the living code, test and script files spike.md lists (`AGENTS.md`,
+      `README.md` and `PRODUCT.md` are task 3.3's, not this task's), including
       `scripts/public_allowlist.txt`, `scripts/public_scan_config.txt`,
       `scripts/check_public_links.py` and the four backend tests.
 - [ ] 2.6 Group gate: `npm ci && npm run build`, the fast-gate node line, full
       `uv run python -m pytest` (about 5 minutes on this Mac), every surviving
-      drift check, and the three guard scripts all pass.
+      drift check, the three guard scripts, and the acceptance driver's own test
+      and `case-cache --check` as in 1.11 all pass.
 
 ## 3. One frontend root, and the v2 name leaves the living system
 
 - [ ] 3.1 Merge `frontend-v2/` into `frontend/` and apply every rename in
       design.md "Naming boundary", using `git mv` so history follows. Fix every
-      import, config path, tsconfig input, Dockerfile COPY and allowlist entry.
+      import, config path, tsconfig input, Dockerfile COPY and allowlist entry,
+      carrying every private deny line in `scripts/public_allowlist.txt` to its
+      file's new path. The acceptance driver stays where it is, but it names
+      moved paths as data: its input list, its smoke-selection global files and
+      symbols, its story roots, its replay module path, its `node-v2` glob, its
+      case-cache import and its public-tree assertion. Updating those path
+      strings is part of this task.
 - [ ] 3.2 Rename router, server and CI identifiers per the naming boundary.
 - [ ] 3.3 Reconcile the living documents to one shell at root: `AGENTS.md`
       (install, gate list, drift-check count, browser legs, ledger story counts,
@@ -143,7 +160,8 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
       to the root address with no v1, tick tasks 3.5, 4.2 and 4.3 citing ADR 416,
       and add one line to its design step 5 naming the supersession.
 - [ ] 3.5 Group gate: the group 2 gate again, plus `npx --yes
-      @fission-ai/openspec@1 validate --all --strict`, plus
+      @fission-ai/openspec@1 validate --all --strict`, plus the acceptance
+      driver's own test and `case-cache --check` as in 1.11, plus
       `sh openspec/changes/retire-v1/name-boundary.sh` exiting 0, plus
       `uv run python mockups/harmonic-v2.exploration/generate.py --check` after
       regenerating its outputs for the moved source paths.

@@ -15,10 +15,9 @@ idents=$(git grep -n -F \
   -- . ':!openspec/changes' ':!docs/scope' ':!.impeccable' ':!mockups' || true)
 if [ -n "$idents" ]; then echo "IDENTIFIERS:"; echo "$idents"; status=1; fi
 # A /v2 address may appear only where something asserts it answers 404: the
-# route test, the package proof and its test, and the ledger replay's R19.
+# route test and the ledger replay's R19 (the package proof is under mockups/).
 addrs=$(git grep -n -e '/v2/' -e '/v2"' -e "/v2'" \
   -- . ':!openspec/changes' ':!docs/scope' ':!.impeccable' ':!mockups' \
-     ':!tests/test_frontend_asset_routes.py' ':!scripts/desk_acceptance.py' \
-     ':!scripts/desk_acceptance.test.py' ':!frontend/desk-behavior.replay.mjs' || true)
+     ':!tests/test_frontend_asset_routes.py' ':!frontend/desk-behavior.replay.mjs' || true)
 if [ -n "$addrs" ]; then echo "ADDRESSES:"; echo "$addrs"; status=1; fi
 exit $status

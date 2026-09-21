@@ -33,9 +33,13 @@ the desk branch lives inside the existing modules.
 
 ### Decision
 
-The findings projection serves one count sentence per count-bearing Pattern and
-Cause row, beside the `headline` it already owns, from one closed
-family-to-outcome table. The desk prints it. The frontend's Pattern word
+The findings projection serves count sentences beside the `headline` it already
+owns, from one closed outcome table: one per count-bearing Pattern row, keyed by
+the Pattern's served key, and one per served family appearance of a Cause row,
+keyed by the lever and that appearance's family. A family cannot be the key:
+highs after meals and lows after meals are both counted in meals and end in
+opposite words, and a Cause in two families keeps both counts, never a merged
+total (glossary term 35). The desk prints them in served order. The frontend's Pattern word
 constant stays only on the v1 path and goes with v1.
 
 ### Authority
@@ -61,8 +65,8 @@ new field.
 
 ### Consequences
 
-A family added later without outcome words fails the projection's tests and
-cannot merge, so the desk carries no fallback wording. Setting rows keep their
+A Pattern key or lever-and-family pair added later without outcome words fails
+the projection's tests and cannot merge, so the desk carries no fallback wording. Setting rows keep their
 now-to-then figures; they carry no count sentence.
 
 ## Revise preparation
@@ -107,8 +111,9 @@ now-to-then figures; they carry no count sentence.
   success); any staging, verdict, floor or ranking decision moving into the
   frontend; any change to what v1 renders.
 - **Must recover:** none.
-- **Accepted failure:** a family added later without outcome words fails the
-  backend test and cannot merge; nothing degrades at run time.
+- **Accepted failure:** a Pattern key or lever-and-family pair added later
+  without outcome words fails the backend test and cannot merge; nothing degrades
+  at run time.
 - **Unsupported:** v1; viewports other than the two supported desktop sizes.
 - **Evidence owed:** rendered checks at both desktop sizes that fail on the base
   for the clipped lane key, unpainted hold cells, sibling member rows, the

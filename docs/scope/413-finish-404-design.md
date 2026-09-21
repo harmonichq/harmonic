@@ -29,8 +29,8 @@ remains untested is how it lands in the code that exists.
   that it supersedes task 3.3's completion claim in `v2-findings-ledger`, which
   is left as written. Why: Connor delegated it; one ticket, one change.
   Disposition: inline.
-- **A finding family with no served outcome words cannot ship.** The projection
-  owns the words for its closed family set and a backend test pins that every
+- **A row identity with no served outcome words cannot ship.** The projection
+  owns the words for its closed sets of Pattern keys and lever-and-family pairs and a backend test pins that every
   ranked row carries them, so the desk carries no fallback. Why: the charter's
   earn-every-guard rule; defaulted, not asked. Disposition: inline.
 
@@ -42,8 +42,9 @@ remains untested is how it lands in the code that exists.
   success); any staging, verdict, floor or ranking decision moving into the
   frontend; any change to what v1 renders.
 - **Must recover:** none.
-- **Accepted failure:** a family added later without outcome words fails the
-  backend test and cannot merge; nothing degrades at run time.
+- **Accepted failure:** a Pattern key or lever-and-family pair added later
+  without outcome words fails the backend test and cannot merge; nothing degrades
+  at run time.
 - **Unsupported:** v1; viewports other than the two supported desktop sizes.
 - **Evidence owed:** rendered checks at both desktop sizes that fail on today's
   main for the clipped lane key, unpainted hold cells, sibling member rows and
@@ -73,6 +74,20 @@ remains untested is how it lands in the code that exists.
 - The cold loading frame is an empty field-coloured block.
 - `openspec/changes/v2-findings-ledger` (#404) is still active and unarchived
   with task 3.3 checked; #404 is closed but was never finalized.
+
+## Review rounds
+
+- **Panel 1, 2026-09-21, cold Opus at high effort: BLOCKED, four blockers, one
+  note, all reproduced against the tree before acting.** (1) authoring: outcome
+  words cannot be keyed by family, two meals Patterns end in opposite words;
+  re-keyed to the Pattern key and the lever-and-family pair. (2) authoring: a
+  Cause serves one count per family appearance, so the served shape is one
+  sentence per appearance, never merged. (3) authoring: the desk ledger's story
+  counts are pinned in the acceptance wrapper, which the evidence sub-order could
+  not touch; allowlist widened and the counts named in tasks 2.4, 3.6, 4.4.
+  (4) authoring: the full desk ledger command was cited to a block that does not
+  hold it; the wrapper's replay leg is now named. Note: the two parallel
+  sub-orders both listed the task checklist; it now has one owner.
 
 ## Open questions
 

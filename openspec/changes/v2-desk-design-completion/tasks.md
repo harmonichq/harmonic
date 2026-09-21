@@ -2,14 +2,17 @@
 
 ## 1. Served count sentence (backend)
 
-- [ ] 1.1 Serve the count sentence on every count-bearing Pattern and Cause row
-  of the findings projection, beside `headline`, from one closed
-  family-to-outcome table in `ciq_autotune/findings_projection.py`: the whole
-  sentence plus its count, denominator, noun and outcome as separate values.
-  Rows with counts under review or no denominator serve none. Tests through the
-  projection's public read: a Cause row's sentence agrees with its served
-  support; every family in the closed set has exactly one entry; tier, rank,
-  priority and register are byte-identical to the base for the fixture windows.
+- [ ] 1.1 Serve count sentences from one closed outcome table in
+  `ciq_autotune/findings_projection.py`: one on every count-bearing Pattern row,
+  keyed by the Pattern's served key, and one on each served family appearance of
+  every Cause row, keyed by the lever and that appearance's family; each is the
+  whole sentence plus its count, denominator, noun and outcome as separate
+  values. Rows with counts under review or no denominator serve none. Tests
+  through the projection's public read: a two-family Cause serves two sentences
+  that agree with its served appearances; every Pattern key and every emittable
+  lever-and-family pair has exactly one entry; the two meals Patterns serve
+  different outcomes; tier, rank, priority and register are byte-identical to the
+  base for the fixture windows.
 - [ ] 1.2 Regenerate the three generators that drift and nothing else
   (`scripts/gen_findings_projection_fixtures.py`,
   `scripts/gen_eating_sequence_fixtures.py`,
@@ -36,7 +39,9 @@
   a setup error: the key lies inside the visible lane above the cells and its
   marks match the cells' computed paint for every verdict, selected and staged
   included; the cold frame shows text-free skeleton rows and instruments and is
-  still under reduced motion. Register both in the ledger's handler inventory.
+  still under reduced motion. Register both in the ledger's handler inventory,
+  and move the ledger inventory's pinned story counts in
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py` with its test to match.
   Manufacture any lane state the showcase lacks as a `QaCase` recipe per
   `AGENTS.md`, never by hand-setting `asserts_move`.
 
@@ -52,7 +57,9 @@
 - [ ] 3.5 Implement surfaces **The desk opens Diagnose on the 24 h window**,
   leaving contextual-entry and retained windows to win as they do today.
 - [ ] 3.6 Add the rail and default-window stories to the desk behavior ledger
-  with replay functions and node regression tests, amend under the frozen header
+  with replay functions and node regression tests, move the ledger inventory's
+  pinned story counts in `mockups/sweep/harmonic-v2-desktop/acceptance.py` with
+  its test to match, amend under the frozen header
   the stories whose facts Connor ruled changed (member minis, sibling cause rows,
   the Overnight arrival) with his dated quotes from `design.md`, and re-read for
   intent every existing desk replay and test that names a claimed row, the
@@ -76,7 +83,9 @@
 - [ ] 4.4 Update `DESIGN.md`'s v2 desk section and `mockups/INDEX.md`'s desk row
   for the rail fold, urgency, one mini, lane key and paint, 24 h arrival and
   skeleton; re-freeze the desk ledger's header with this base and the story
-  counts.
-- [ ] 4.5 Run the complete desk ledger at both sizes and v1's three ledgers once
-  each, serially, on the commit that will be pushed, with the fast gate, pytest
+  counts, which must equal the inventory's pinned counts in
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py`.
+- [ ] 4.5 Run the complete desk ledger at both sizes through
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py replay`, which checks the
+  ledger inventory before any story, and v1's three ledgers once each, serially, on the commit that will be pushed, with the fast gate, pytest
   over the built shells, the OpenSpec strict validation and every drift check.

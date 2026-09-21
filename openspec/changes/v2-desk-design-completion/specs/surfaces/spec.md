@@ -17,8 +17,9 @@ ledgers SHALL pass without amendment.
 ### Requirement: A Pattern owns its causes in the desk rail
 
 In the v2 desk rail, a Pattern row SHALL hold its claimed causes beneath it on
-the Pattern's own spine, one line per cause carrying the cause's name, its
-served count sentence's count, denominator and noun, and a drill chevron. A
+the Pattern's own spine, one line per cause carrying the cause's name, the
+count, denominator and noun of each of its served count sentences in served
+order, never merged, and a drill chevron. A
 toggle on the Pattern row SHALL name the number of causes, SHALL be open on the
 first ranked row and closed on every later one on arrival, and SHALL be operable
 by pointer and keyboard with its state exposed to assistive technology. Cause
@@ -71,8 +72,9 @@ honest unavailable state rather than a second instrument.
 
 ### Requirement: Desk rail rows print the served count sentence
 
-Every count-bearing rail row in the v2 desk SHALL print the projection's served
-count sentence, with its count and denominator emphasised. The desk SHALL hold no
+Every count-bearing rail row in the v2 desk SHALL print each of the projection's
+served count sentences for that row, in served order and never merged, with each
+count and denominator emphasised. The desk SHALL hold no
 noun or outcome word list of its own.
 
 #### Scenario: One grammar
@@ -80,6 +82,7 @@ noun or outcome word list of its own.
 - **GIVEN** a synthetic window holding a Pattern row and a Cause row
 - **WHEN** the rail renders
 - **THEN** both rows read `n of d noun outcome` with the served words
+- **AND** a Cause appearing in two families prints both served sentences
 
 ### Requirement: The desk basal lane names and paints every verdict
 

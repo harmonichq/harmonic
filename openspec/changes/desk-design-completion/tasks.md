@@ -52,14 +52,18 @@
   line prints every served count sentence, so the parent-family lookup goes; the
   Pattern mini's cohort label takes its outcome from the row's served count
   sentence, and the Pattern case-file check stops testing the lever against a
-  word table; the `pattern-unknown` detail goes, because 1.1's test makes every
+  word table (the case file's lever is the `pattern_chart.key` coordinate, whose
+  key space is the server's Pattern roster); the `pattern-unknown` detail goes, because 1.1's test makes every
   Pattern key carry an entry, and a Pattern row with no count sentence prints its
   served status words as today.
 - [ ] 3.4 Implement surfaces **Every ranked rail row draws one mini
   instrument**, settling mini width and placement with the fold at both desktop
   sizes.
 - [ ] 3.5 Implement surfaces **Diagnose opens on the 24 h window**, leaving
-  contextual-entry and retained windows to win as they do today.
+  contextual-entry and retained windows to win as they do today. Only the cold
+  arrival's window changes: the workstation's `isf`, `drill`, `occurrence` and
+  `drawn` presets keep `overnight`, because ISF is measured in the overnight
+  fasting window.
 - [ ] 3.6 Add the rail and default-window stories to the desk behavior ledger
   with replay functions and node regression tests, move the ledger inventory's
   pinned story counts in `mockups/sweep/harmonic-v2-desktop/acceptance.py` with

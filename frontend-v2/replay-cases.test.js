@@ -9,7 +9,7 @@ test('S37b waits for the retained basal drill without a URL subject', async () =
   const pageFor = ids => {
     let reads = 0;
     return {
-      url: () => 'http://127.0.0.1:8765/v2/?to=diagnose',
+      url: () => 'http://127.0.0.1:8765/?to=diagnose',
       request: { get: async () => ({ ok: () => true, status: () => 200,
         json: async () => ({ rendered_rows: [row] }) }) },
       waitForFunction: async () => {},
@@ -39,7 +39,7 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
   const saved = { id: 7, pattern_key: offered.key, subject: offered.subject };
   const title = 'Served Pattern title';
   const pageFor = stageText => {
-    let reloaded = false; let location = 'http://127.0.0.1:8765/v2/?to=diagnose';
+    let reloaded = false; let location = 'http://127.0.0.1:8765/?to=diagnose';
     const scope = { start_min: 0, end_min: 1440 };
     const seenResponses = [];
     const preparation = {
@@ -81,8 +81,8 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
       locator: selector => ({
         filter() { return this; }, first() { return this; },
         waitFor: async () => {}, click: async () => {
-          if (selector.startsWith('[data-start-focus=')) location = 'http://127.0.0.1:8765/v2/changes?window=0-1440';
-          if (selector === '[data-follow-up-inspect]') location = 'http://127.0.0.1:8765/v2/diagnose?window=0-1440';
+          if (selector.startsWith('[data-start-focus=')) location = 'http://127.0.0.1:8765/changes?window=0-1440';
+          if (selector === '[data-follow-up-inspect]') location = 'http://127.0.0.1:8765/diagnose?window=0-1440';
         }, count: async () => 0,
         innerText: async () => {
           assert.equal(selector, '.gf-stage-focus');
@@ -116,7 +116,7 @@ test('one invocation selects the generated case each story needs', () => {
 test('S7 distinguishes the carried Diagnose rail from the paired Changes reading pane', async () => {
   const { C2_STORIES } = await import('./c2.replay.mjs');
   const pageFor = (inspectorWidth, readingWidth) => ({
-    url: () => 'http://127.0.0.1:8765/v2/',
+    url: () => 'http://127.0.0.1:8765/',
     request: { get: async () => ({ ok: () => true, status: () => 200,
       json: async () => ({ admission: { active_kind: 'trial' } }) }) },
     waitForFunction: async () => {},
@@ -309,7 +309,7 @@ test('draft retry waits for the PUT, not the disappearing error control', async 
   let items = []; let listen;
   const response = { ok: () => true, url: () => 'http://127.0.0.1:8765/api/plan', request: () => ({ method: () => 'PUT' }) };
   const page = {
-    url: () => 'http://127.0.0.1:8765/v2/?to=changes', waitForFunction: async () => {},
+    url: () => 'http://127.0.0.1:8765/?to=changes', waitForFunction: async () => {},
     request: { get: async url => {
       const snapshot = new URL(url).pathname === '/api/plan' ? { items: [...items] } : { history: [] };
       return { ok: () => true, status: () => 200, json: async () => snapshot };
@@ -348,7 +348,7 @@ test('S99 reads the full-width unavailable stage without requiring a two-pane wr
     },
   });
   const page = {
-    url: () => 'http://127.0.0.1:8765/v2/?to=changes',
+    url: () => 'http://127.0.0.1:8765/?to=changes',
     request: { get: async () => ({ ok: () => true, status: () => 200, json: async () => guidance }) },
     locator, getByRole: () => locator('button'), getByText: () => locator('text'),
     waitForFunction: async () => {}, route: async () => {}, unroute: async () => {}, goto: async () => {},

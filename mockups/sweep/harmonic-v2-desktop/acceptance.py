@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 from html.parser import HTMLParser
@@ -23,7 +22,6 @@ import subprocess
 import sys
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -34,7 +32,7 @@ TOKEN = "synthetic-replay-token"
 # and the Guide, Settings, Carb questions and Pump settings entry points.
 SMOKE_STORIES = (
     "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
-    "S74", "S76", "S77", "S87", "S91", "S98", "S99", "S110", "R8", "R18",
+    "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "R8", "R18",
 )
 DRIFTS = [
     "scripts/gen_ic_block_fixtures.py", "scripts/gen_annotation_fixtures.py",
@@ -203,35 +201,8 @@ def free_port(port):
             raise RuntimeError(f"Port {port} is occupied; refusing to start or reuse a server") from error
 
 
-def stop_server(child, *, grace=10):
-    """Reap the launcher AND stop its owned session, even if uv exited first."""
-    def signal_group(sig):
-        try:
-            os.killpg(child.pid, sig)
-            return True
-        except ProcessLookupError:
-            return False
-
-    signal_group(signal.SIGTERM)
-    deadline = time.monotonic() + grace
-    while time.monotonic() < deadline:
-        child.poll()  # Reap uv; its exit alone says nothing about its server.
-        if not signal_group(0):
-            break
-        time.sleep(.05)
-    # A launcher can exit on TERM while its child keeps the port bound. Always
-    # address the original process group; never discover/kill a process by port.
-    signal_group(signal.SIGKILL)
-    child.wait(timeout=5)
-    deadline = time.monotonic() + 5
-    while signal_group(0) and time.monotonic() < deadline:
-        time.sleep(.05)
-
-
-def wait_ready(base, process=None):
+def wait_ready(base):
     for _ in range(120):
-        if process is not None:
-            require(process.poll() is None, "synthetic server exited before readiness")
         try:
             if request(base, "/api/health")[0] == 200:
                 return
@@ -239,23 +210,6 @@ def wait_ready(base, process=None):
             pass
         time.sleep(.25)
     raise RuntimeError(f"synthetic server did not become ready at {base}")
-
-
-@contextmanager
-def auth_server(run):
-    free_port(8766)
-    db = run.out / "auth.sqlite"
-    shutil.copyfile(SHOWCASE, db)
-    with (run.out / "auth-server.log").open("w") as log:
-        child = subprocess.Popen(["uv", "run", "harmonic", "serve", "--no-fetch",
-                                  "--token", TOKEN, "--db", str(db), "--port", "8766"],
-                                 cwd=REPO, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
-        try:
-            wait_ready("http://127.0.0.1:8766", child)
-            yield
-        finally:
-            stop_server(child)
-            free_port(8766)
 
 
 def shard_arg(value):
@@ -503,8 +457,7 @@ def replay(run, viewport, shard=None, base=None):
     require(os.environ.get("PLAYWRIGHT_MODULE"), "PLAYWRIGHT_MODULE is required")
     free_port(8765)
     env = {**os.environ, "TARGET": "app", "VIEWPORT": viewport,
-           "BASE_URL": "http://127.0.0.1:8765", "AUTH_BASE_URL": "http://127.0.0.1:8766",
-           "AUTH_TOKEN": TOKEN, "CASE_STORE_DIR": str(run.out / "cases"),
+           "BASE_URL": "http://127.0.0.1:8765", "CASE_STORE_DIR": str(run.out / "cases"),
            "CAPTURE_DIR": str(run.out / "captures"),
            "CAPTURE_ONLY": "S1,S3,S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S36,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77,S93,S99"}
     # S100 delegates to Event S8, whose use() closes its page after asserting.
@@ -515,9 +468,8 @@ def replay(run, viewport, shard=None, base=None):
     env.pop("STORY_CASES", None)
     if shard or base:
         env["ONLY"] = ",".join(selected_ids)
-    with auth_server(run):
-        # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
+    # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
+    _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
@@ -540,7 +492,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 142, "active": 124, "retired": 18}
+    require(counts == {"issued": 142, "active": 123, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")
@@ -696,32 +648,27 @@ class ShellAssets(HTMLParser):
 
 
 def probe(base, token):
-    """Request both packaged shells and their real assets; no source-text stand-in."""
+    """Request the packaged shell and its real assets; no source-text stand-in."""
+    prefix = "/assets/"
     rows = []
-    for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/"),
-                         ("/v2/diagnose", "/v2/assets/"), ("/v2/changes", "/v2/assets/"),
-                         ("/v2/day", "/v2/assets/")]:
+    for page in ["/", "/diagnose", "/changes", "/day"]:
         status, body, headers = request(base, page)
         require(status == 200, f"{page}: {status}")
         require(headers.get("cache-control") == "no-cache", f"{page}: shell cache policy")
         parser = ShellAssets()
         parser.feed(body.decode())
         require(parser.paths, f"{page}: no packaged assets")
-        packaged = [asset for asset in parser.paths if asset.startswith(prefix)]
-        require(packaged, f"{page}: no local packaged assets")
         for asset in parser.paths:
-            url = urllib.parse.urlsplit(asset)
-            if page == "/" and url.scheme == "https" and url.netloc in {"fonts.googleapis.com", "fonts.gstatic.com"}:
-                rows.append({"path": asset, "scope": "carried-v1-font-reference", "requested": False})
-                continue
             require(asset.startswith(prefix), f"{page} references an external or misplaced asset: {asset}")
             code, content, cache = request(base, asset)
             require(code == 200 and content, f"{asset}: absent packaged bytes ({code})")
             require(cache.get("cache-control") == "public, max-age=31536000, immutable", f"{asset}: cache policy")
             rows.append({"path": asset, "status": code, "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()})
         rows.append({"path": page, "status": status})
-    for path in ["/unlisted", "/v2/unlisted", "/v2/index.html", "/v1",
-                 "/v2/assets/no-such.js", "/assets/no-such.js"]:
+    # ADR 416: every retired address answers 404, and none redirects.
+    for path in ["/unlisted", "/index.html", "/v1", "/v2", "/v2/", "/v2/diagnose",
+                 "/v2/changes", "/v2/day", "/v2/assets/no-such.js",
+                 "/verify", "/plan", "/settings", "/guide", "/assets/no-such.js"]:
         code = request(base, path)[0]
         require(code == 404, f"closed route {path}: expected 404, got {code}")
         rows.append({"path": path, "status": code})

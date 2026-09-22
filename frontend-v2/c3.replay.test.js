@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
 import { openApp, REGISTRY, goto, harnessCheck, harnessSelect, S24 } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
 import { C3_CASES, C3_STORIES } from './c3.replay.mjs';
-import { S03 } from '../frontend/diagnose-workstation-behavior.replay.mjs';
+import { S03 } from './diagnose-replay.mjs';
 
 const refused = ['S45', 'S45b', 'S46', 'S47', 'S48', 'S50', 'S51', 'S52', 'S54', 'S54b', 'S55'];
 function appBrowser() {
@@ -35,7 +35,7 @@ test('a prototype-only nondefault state still refuses without an app story', asy
 function apiPage(data) {
   const reads = [];
   return {
-    reads, url: () => 'http://127.0.0.1:8765/v2/',
+    reads, url: () => 'http://127.0.0.1:8765/',
     request: { get: async (url, options) => {
       assert.equal(options.timeout, 30000);
       reads.push(new URL(url));
@@ -236,7 +236,7 @@ function trialPage() {
   let baselineReads = 0;
   let changedDay = false;
   const page = {
-    url: () => 'http://127.0.0.1:8765/v2/', goto: async () => {},
+    url: () => 'http://127.0.0.1:8765/', goto: async () => {},
     request: { get: async () => ({ status: () => 200, text: async () => '', json: async () => ({ ...roster, selected: detail }) }) },
     selectOption: async (selector, value) => {
       if (selector.includes('evidence-day')) {

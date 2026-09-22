@@ -35,20 +35,22 @@ class DeployAssetsTest(unittest.TestCase):
             "are read from ../docs/kb at runtime; without it every authored Guide "
             "article 404s ('unknown article') in the deployed app.",
         )
-        self.assertRegex(text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\s+./frontend/dist")
         self.assertIn("FROM node:22", text)
 
-    def test_dockerfile_ships_both_built_surfaces_and_their_build_inputs(self):
-        # #389 (HV2-01/HV2-02): v1 and /v2/ are served together by the packaged
-        # runtime. api.py resolves the v2 shell as ../frontend-v2/dist, so that
-        # build must be COPY'd in exactly as v1's is — and the builder needs the
-        # second source root and its config to produce it at all.
+    def test_dockerfile_ships_the_one_built_shell_and_its_build_inputs(self):
+        # ADR 416: the desk is the only shell. api.py resolves it as
+        # ../frontend-v2/dist, so that build must be COPY'd in — and the builder
+        # needs both source roots and the build config to produce it at all,
+        # because the desk imports shared modules out of frontend/.
         text = (_REPO / "Dockerfile").read_text()
         self.assertRegex(
             text, r"COPY\s+--from=frontend-builder\s+/app/frontend-v2/dist\s+./frontend-v2/dist",
-            "Dockerfile must COPY the built v2 desk into the image; without it /v2/ "
-            "answers 503 in the deployed app while v1 keeps working.",
+            "Dockerfile must COPY the built desk into the image; without it every "
+            "page answers 503 in the deployed app.",
         )
+        self.assertNotRegex(
+            text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\b",
+            "the retired v1 build must not ship (ADR 416)")
         self.assertRegex(text, r"COPY\s+vite\.config\.mjs\s+vite\.config\.v2\.mjs\b")
         self.assertRegex(text, r"(?m)^COPY\s+frontend-v2\s+\./frontend-v2$")
 

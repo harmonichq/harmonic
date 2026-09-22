@@ -33,7 +33,7 @@ async function retained(page) {
   // periods and bootstrapping mean glucose/variability exceeded 30 s in CI.
   const detail = (await read(page, '/api/verify/trials', { selected: id, assessment: 'retained' },
     roster.trials.some(trial => trial.id === id && trial.parameter === 'profile') ? 120000 : undefined)).selected;
-  await page.goto(new URL(`/v2/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
+  await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
   await press(page, '[data-assessment="retained"]');
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   return detail.reassessment.comparison;
@@ -449,7 +449,7 @@ async function heldReturnToDiagnose414(page, storyId) {
   return requests;
 }
 async function editChainRoster414(page) {
-  await page.goto(new URL('/v2/?to=changes&subject=history', page.url()).href);
+  await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
   await page.locator('.gf-stage-table[aria-label="Change records"] table.gf-table').waitFor({ timeout: 30000 });
 }
 // Holds the next request matching `pattern` that also satisfies `matches`
@@ -496,7 +496,7 @@ export const C4_STORIES = {
     // Separate from S102: a graph failure must not mask the lost-window proof.
     const failures = [];
     for (const mode of ['24 h', 'Morning', 'drawn']) {
-      await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
+      await page.goto(new URL('/?to=diagnose', page.url()).href);
       await fullDayDiagnose(page);
       if (mode === 'drawn') await drawnWindow404(page);
       else if (mode !== '24 h') {
@@ -576,7 +576,7 @@ export const C4_STORIES = {
     // 'mismatch' captures the existing source profile without an IDP switch;
     // it matches this deliberately unchanged draft and creates no new Trial.
     await ctx.capturePump('mismatch');
-    await page.goto(new URL('/v2/?to=changes&subject=plan', page.url()).href);
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
     await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
     assert.equal((await read(page, '/api/verify/trials')).admission.active_kind, null,
       'S105 premise: confirmed Plan with no active watch');
@@ -722,7 +722,7 @@ export const C4_STORIES = {
   async S112(page) {
     const rosterHold = await heldRequest414(page, '**/api/verify/trials*',
       request => !new URL(request.url()).searchParams.has('selected'));
-    await page.goto(new URL('/v2/?to=changes&subject=history', page.url()).href);
+    await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
     await rosterHold.wait('S112 held roster read');
     await page.locator('.gf-loading', { hasText: 'Reading change records' }).waitFor({ timeout: 30000 });
     rosterHold.release(); await rosterHold.close();
@@ -825,7 +825,7 @@ export async function historicalAbsence(page) {
   }, "historicalAbsence");
   await press(page, '#explorer-trigger'); await absent();
   for (const row of historical) {
-    await page.goto(new URL(`/v2/?to=diagnose&subject=${encodeURIComponent(row.id)}`, page.url()).href);
+    await page.goto(new URL(`/?to=diagnose&subject=${encodeURIComponent(row.id)}`, page.url()).href);
     await settled(page); await absent();
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level [data-register="history"]').count()), 0);
@@ -833,7 +833,7 @@ export async function historicalAbsence(page) {
   }
   for (const kind of ['trial', 'focus']) {
     const record = roster[kind === 'trial' ? 'trials' : 'focuses'][0];
-    await page.goto(new URL(`/v2/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:${kind}:${record.id}`)}`, page.url()).href);
+    await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:${kind}:${record.id}`)}`, page.url()).href);
     await page.locator('[data-record-part="original"]').waitFor({ timeout: 30000 });
     const detail = await read(page, '/api/verify/trials', { kind, selected: record.id });
     assert.equal(detail.selected.id, record.id);

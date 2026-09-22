@@ -86,7 +86,7 @@ test('set-aside Escape follows the frozen order without opening a sheet', async 
   };
   const field = { value: '' };
   globalThis.document = { activeElement: { tagName: 'BODY' }, querySelectorAll: () => [] };
-  const browser = { location: { pathname: '/v2/', search: '?to=changes', hash: '' },
+  const browser = { location: { pathname: '/', search: '?to=changes', hash: '' },
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     addEventListener: (name, listener) => listeners.set(name, listener) };
   globalThis.window = browser;

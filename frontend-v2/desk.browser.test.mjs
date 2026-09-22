@@ -1,4 +1,4 @@
-import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
+import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from './diagnose-replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -209,7 +209,7 @@ const capture = async (page, name) => {
 };
 
 /** The built desk, served from disk with its API answered above. */
-async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate,
+async function openDesk({ viewport = '1280x720', address = '/', beforeNavigate,
   sequenceState = null, caseScenario = null } = {}) {
   const browser = await runner.browser();
   const [width, height] = viewport.split('x').map(Number);
@@ -527,7 +527,7 @@ test(`a pending Plan keeps its reason and a compact View Plan route visible at $
       'the compact Plan action must be fully readable in the Findings header');
     await action.click();
     await page.waitForFunction(() => document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination === 'changes');
-    assert.equal(new URL(page.url()).pathname, '/v2/changes');
+    assert.equal(new URL(page.url()).pathname, '/changes');
   } finally { await desk.close(); }
 });
 }
@@ -647,7 +647,7 @@ const expiredTrialRoster = {
 };
 for (const viewport of ['1280x720', '1440x900']) {
 test(`an expired Trial distinguishes its Later conclusion input from the immutable ending at ${viewport}`, async () => {
-  const desk = await openDesk({ viewport, address: `/v2/changes?subject=history&occurrence=record%3Atrial%3A${EXPIRED_TRIAL_ID}`,
+  const desk = await openDesk({ viewport, address: `/changes?subject=history&occurrence=record%3Atrial%3A${EXPIRED_TRIAL_ID}`,
     beforeNavigate: async page => {
       await page.route('**/api/verify/trials*', route => {
         const selected = new URL(route.request().url()).searchParams.get('selected');
@@ -700,7 +700,7 @@ for (const [viewport, rows] of [['1280x720', [38, 24]], ['1440x900', [42, 26]]])
 }
 
 test('Day owns its chronology, its week ribbon, its month and the Episode Log', async () => {
-  const { page, close } = await openDesk({ address: '/v2/?to=day' });
+  const { page, close } = await openDesk({ address: '/?to=day' });
   try {
     assert.equal(await countOf(page, '.gf-stage-day'), 1);
     assert.equal(await countOf(page, '.gf-reading'), 1, 'Day is a paired state');
@@ -743,7 +743,7 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
 
 for (const viewport of ['1280x720', '1440x900']) {
 test(`a retained Day frame visibly marks its own loading work without unmounting the reading context at ${viewport}`, async () => {
-  const { page, close } = await openDesk({ address: '/v2/day', viewport });
+  const { page, close } = await openDesk({ address: '/day', viewport });
   try {
     await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     const previous = page.locator('[data-day="prev"]');
@@ -802,12 +802,12 @@ test(`a retained Day frame visibly marks its own loading work without unmounting
 }
 
 test('a canonical Day address reloads through the built shell and returns through its canonical Diagnose door', async () => {
-  const address = `/v2/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
+  const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
   const { page, close } = await openDesk({ address });
   try {
     assert.equal(await currentDestination(page), 'day');
     assert.equal(await countOf(page, '[data-day="return"]'), 1);
-    assert.equal(await page.evaluate(() => location.pathname), '/v2/day');
+    assert.equal(await page.evaluate(() => location.pathname), '/day');
     await page.reload();
     await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
     assert.equal(await currentDestination(page), 'day');
@@ -815,7 +815,7 @@ test('a canonical Day address reloads through the built shell and returns throug
       'reload retains the contextual return rather than falling back to a bare Day');
     await press(page, '[data-day="return"]');
     assert.equal(await currentDestination(page), 'diagnose');
-    assert.equal(await page.evaluate(() => location.pathname), '/v2/diagnose');
+    assert.equal(await page.evaluate(() => location.pathname), '/diagnose');
     const returned = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
     assert.equal(returned.subject, 'pattern:served-pattern');
     assert.equal(returned.window, '1320-120');
@@ -823,7 +823,7 @@ test('a canonical Day address reloads through the built shell and returns throug
 });
 
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
-  const { page, close } = await openDesk({ address: '/v2/?to=day' });
+  const { page, close } = await openDesk({ address: '/?to=day' });
   try {
     await press(page, '.cockpit-utilities [data-utility="guide"]');
     assert.equal(await countOf(page, '.gf-utility[data-utility="guide"]'), 1);
@@ -881,7 +881,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     assert.equal(await currentDestination(page), 'day');
     assert.equal(await countOf(page, '.gf-utility[data-utility="questions"]'), 1);
     const address = await page.evaluate(() => location.pathname + location.search);
-    assert.match(address, /^\/v2\/day/);
+    assert.match(address, /^\/day/);
     assert.match(address, /date=2024-06-26/);
     assert.match(address, /from=diagnose\.questions/);
 
@@ -898,7 +898,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
 });
 
 test('repeated entry and exit leaves no duplicate chart, pane or utility behind', async () => {
-  const { page, close } = await openDesk({ address: '/v2/?to=day' });
+  const { page, close } = await openDesk({ address: '/?to=day' });
   try {
     const counts = () => page.evaluate(() => ({
       canvases: document.querySelectorAll('canvas').length,

@@ -1827,14 +1827,11 @@ page-memory assertion is not persistence evidence.** Until `/v2/` exists the app
 opener fails loudly and these do not pass.
 
 ```
-S86 · Python serves /v2/ and its packaged assets beneath /v2/assets/, with no
-      Node runtime and no CDN in production.
+S86 · Python serves the desk at / and at the page paths /diagnose, /changes and
+      /day, with its packaged assets beneath /assets/, no Node runtime and no
+      CDN in production.
   lock:     HV2-01          evidence: app opener only
-  status:   app opener only — owed by the build, never passed
-```
-```
-S87 · V1 and /v2/ coexist against the same authenticated Python API and database.
-  lock:     HV2-02          evidence: app opener only
+  amended:  2026-09-21, issue #416 — see "Added retirement" below
   status:   app opener only — owed by the build, never passed
 ```
 ```
@@ -2693,3 +2690,34 @@ loading, served selected Pattern trace/markers, exact record doors, readable v2
 paths, and backend-withheld Focus parent context. The operator requested Filter
 match the resized Window controls. This frozen historical prose remains baseline
 evidence rather than a replacement lock.
+
+## Added retirement — 2026-09-21, issue #416
+
+The desk is the only shell, served at the root page, and v1 is retired outright
+(ADR 416). Two stories asserted the old address and no others do, so exactly two
+change here.
+
+S86 is amended, not weakened: it asserted that Python served `/v2/` and
+`/v2/assets/`; it now asserts the same delivery at `/`, the three page paths and
+`/assets/`. Every other assertion it carries — no Node runtime, no CDN, the
+shell's revalidating cache policy, the assets' immutable one, and the closed
+non-API route set — is unchanged.
+
+S87 asserted that v1 and `/v2/` coexisted. That premise is what ADR 416 removed,
+so the story is retired rather than rewritten, and its retirement carries the
+proof that the premise is gone.
+
+```
+R19 · No retired address is served, and none is redirected: every old v1 page
+      path and every /v2/... path answers 404.
+  predecessor: S87
+  lock:     HV2-02
+  verdict:  retired
+  sanction: Connor Griffin · 2026-09-21 · "Kill all the V1 stuff."
+  premise:  the desk itself still answers at / and at its three page paths, so
+            the 404s below are a closed route set rather than a dead server
+  replay:   fn R19 requests each retired address through the served app, asserts
+            404 with no redirect for every one, asserts the desk's own pages
+            still answer 200, and prints the sanction
+  status:   owed by the build — no passing result recorded
+```

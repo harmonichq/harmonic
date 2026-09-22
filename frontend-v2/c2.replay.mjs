@@ -3,7 +3,7 @@
 // their original replay. No fixture projection or chart painter is duplicated.
 import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { waitForLevelAnimations } from '../frontend/diagnose-workstation-behavior.replay.mjs';
+import { waitForLevelAnimations } from './diagnose-replay.mjs';
 
 // Bare coordination promises do not inherit Playwright's action deadlines.
 export async function boundedWait(promise, description, timeout = 30000) {
@@ -438,7 +438,7 @@ async function permittedActions(page) {
   await page.route('**/api/guidance', route => route.fulfill({ status: 200, json: {
     ...guidance, selected: null, disposition: 'unavailable', unavailable: 'reconciliation_required',
   } }));
-  await page.goto(new URL('/v2/?to=changes', page.url()).href);
+  await page.goto(new URL('/?to=changes', page.url()).href);
   await page.getByText('No action from this read', { exact: true }).waitFor();
   await waitForReplayAssertion(async seen => {
     check(/reconcil/i.test(seen(await page.locator('.gf-stage[aria-label="Changes"]').innerText())), 'the unavailable reason remains visible');
@@ -757,7 +757,7 @@ export const C2_STORIES = {
       check(/Re-key the flagged values on your pump/.test(seen(await page.locator('.gf-desk').innerText())));
     }, "S42");
     await ctx.capturePump('match');
-    await page.goto(new URL('/v2/?to=changes&subject=plan', page.url()).href);
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
     await page.getByText(/On pump as of/).waitFor();
     const record = (await read(page, '/api/plan/history')).history.at(-1);
     assert.equal(record.reconciliation.state, 'available', 'the Store, not the browser, observes the match');

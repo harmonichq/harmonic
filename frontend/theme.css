@@ -4,7 +4,7 @@
  * The lock was settled against a five-file REFERENCE overlay, applied in
  * filename order, which is a design-time record and does not ship. This file is
  * where those five files resolve to in the app's own tree: the token values
- * landed in the single :root block of frontend/index.html (#304 retired the
+ * landed in the single :root block of frontend/material.css (#304 retired the
  * light theme's separate block), and every rule
  * below is one of the overlay's rules with its cascade already collapsed — a
  * declaration a later overlay file overwrote is simply absent here, rather than
@@ -32,7 +32,7 @@
  * silent third material. Renaming `.dw` so the roles read off the class names is
  * deferred to its own pass by the lock itself.
  *
- * This file is loaded LAST by index.html. It has to be: a theme rule and a
+ * This file is imported LAST by frontend/main.js. It has to be: a theme rule and a
  * surface rule collide at equal specificity, so ordering, not specificity, is
  * what decides. Adding a stylesheet after this one puts the surface back on top.
  */

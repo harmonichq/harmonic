@@ -1,12 +1,11 @@
 /* =========================================================================
    #128 CARB-LOG PROMPT QUEUE — pure logic for the ribbon review overlay.
 
-   Vue-free and DOM-free at import time (same seam discipline as
-   scenario-chart.js / carb-log.js, the #100 harness) so `node --test` imports
-   it with no importmap and no DOM. The Vue overlay in index.html is a thin
-   shell over these: it owns the refs, the fetch calls, and the echarts.init
-   handles; the ECharts option builders + the small date/label helpers — the
-   parts worth testing — live here.
+   DOM-free at import time (same seam discipline as carb-log.js) so
+   `node --test` imports it with no DOM. The Carb questions overlay the desk's
+   utility layer renders is a thin shell over these: it owns the seat, the fetch
+   calls, and the echarts.init handles; the ECharts option builders + the small
+   date/label helpers — the parts worth testing — live here.
 
    The chart builders are lifted verbatim from the LOCKED visual spec
    (the archived prompt-queue ribbon mock, #128): the week ribbon (typed pins

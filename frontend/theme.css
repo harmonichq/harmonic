@@ -12,24 +12,25 @@
  *
  * WHY THIS FILE EXISTS AT ALL, RATHER THAN EDITS INSIDE THE SURFACE FILES:
  * the single most expensive defect of the lock round was a theme rule wearing a
- * surface's selector. The docked workspace was scoped to `.dw`, so Verify (.vw)
- * kept rendering as two floating cards; and Verify's `.verify-strip` was missed
- * even though verify-workstation.css calls it "the shipped .instruments row,
- * exact values", so its Trial line rendered dark-on-dark and vanished in BOTH
- * themes. Neither was visible until a POPULATED render of a second surface.
+ * surface's selector. The docked workspace was scoped to one surface's class, so
+ * the second surface kept rendering as two floating cards; and that surface's
+ * own instrument rail was missed entirely, so its Trial line rendered
+ * dark-on-dark and vanished in BOTH themes. Neither was visible until a
+ * POPULATED render of the second surface. #416 retired that second surface, so
+ * every role below now has exactly one realiser — which is the condition under
+ * which this defect returns unnoticed, not the condition under which it cannot.
  *
  * So the shell is themed by ROLE, and the roles are:
  *
  *   chrome bar         .cockpit-topbar, .cockpit-footer
- *   instrument rail    :is(.dw, .vw) :is(.instruments, .ec-coordinates),
-                      .vw .verify-strip
- *   pane header rail   :is(.dw, .vw) .pane > header
- *   pane body          :is(.dw, .vw) .pane
- *   dock floor         :is(.dw, .vw) .inspector > .watch
+ *   instrument rail    .dw :is(.instruments, .ec-coordinates)
+ *   pane header rail   .dw .pane > header
+ *   pane body          .dw .pane
+ *   dock floor         .dw .inspector > .watch
  *
  * A new surface either realises a role above, or it is a recorded gap. Never a
- * silent third material. Renaming `.dw` / `.vw` / `.verify-strip` so the roles
- * read off the class names is deferred to its own pass by the lock itself.
+ * silent third material. Renaming `.dw` so the roles read off the class names is
+ * deferred to its own pass by the lock itself.
  *
  * This file is loaded LAST by index.html. It has to be: a theme rule and a
  * surface rule collide at equal specificity, so ordering, not specificity, is
@@ -135,24 +136,24 @@
    Term 1. The panes lose their gutters, radii and shadows; one hairline divides
    canvas from inspector, and the sheet becomes the working surface itself.
    This is the rule that was scoped to `.dw`. */
-:is(.dw, .vw) .panes {
+.dw .panes {
   gap: 0;
   padding: 0;
   background: var(--wk-surface);
   border-top: 1px solid var(--wk-rule-strong);
 }
-:is(.dw, .vw) .pane {
+.dw .pane {
   border: 0;
   border-radius: 0;
   background: var(--wk-surface);
   box-shadow: none;
 }
-:is(.dw, .vw) .panes > .pane + .pane { border-left: 1px solid var(--wk-rule); }
+.dw .panes > .pane + .pane { border-left: 1px solid var(--wk-rule); }
 
 /* ---- ROLE: pane header rail ---------------------------------------------
    Pane headers become dock rails rather than card captions, and both share one
    height so the divider reads as a single seam. */
-:is(.dw, .vw) .pane > header {
+.dw .pane > header {
   min-height: 30px;
   align-items: center;
   padding-top: 4px;
@@ -166,22 +167,21 @@
    field, inspector wall, dock floor — and no jump big enough to band (term 13). */
 /* #215 — the Diagnose inspector joins the canvas on that ground. With the two
    anchors abutting as one docked surface, the wall/field step reads as two
-   materials, and the darker chart ground is the one worth keeping. Verify's
-   `.vw` dock is untouched, and the values stay single-sourced here rather than
-   restated in the Diagnose adapter. */
-:is(.dw, .vw) .panes,
-:is(.dw, .vw) .canvas-pane,
+   materials, and the darker chart ground is the one worth keeping. The values
+   stay single-sourced here rather than restated in the Diagnose adapter. */
+.dw .panes,
+.dw .canvas-pane,
 .dw .inspector { background: var(--wk-field); }
-:is(.dw, .vw) .canvas-pane > header,
+.dw .canvas-pane > header,
 .dw .inspector > header { background: var(--wk-surface-rail); }
-:is(.dw, .vw) .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
+.dw .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
 
 /* ---- ROLE: dock floor ----------------------------------------------------
    The pinned watched-change slot. Its markup belongs to the dock re-settle
    (#662); the material it sits on belongs to the theme, so the role is styled
    here and the surface inherits it the moment the markup lands. */
-:is(.dw, .vw) .inspector > .watch { background: #36312e; }
-:is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623; }
+.dw .inspector > .watch { background: #36312e; }
+.dw .watch .go { border-color: #68605a; background: #2a2623; }
 
 /* ---- ROLE: instrument rail ----------------------------------------------
    Term 7. The controls that scope the surface below them belong to the SHEET,
@@ -191,47 +191,44 @@
    instrument. They drive the plot, so they join the plot's material and become
    the workspace's top rail.
 
-   THREE classes realise this ONE role, and all three are named here on purpose.
-   `.verify-strip` is Verify's, and missing it made the Trial line vanish.
-   `.ec-coordinates` is the event comparison's, and missing IT is measurable
+   TWO classes realise this ONE role, and both are named here on purpose.
+   `.ec-coordinates` is the event comparison's, and missing it is measurable
    rather than merely visible: the Glucose lens renders `.dw .instruments` while
    Meals and Lows render `.ec-coordinates`, and the behaviour ledger asserts the
    two rails are pixel-identical across the three lenses — so theming one and
    not the other moved the cap half a pixel and failed the gate. Same anatomy
-   (`.instrument`, `.cap`, `.seg`), same element, same material. */
-:is(.dw, .vw) :is(.instruments, .ec-coordinates),
-.vw .verify-strip {
+   (`.instrument`, `.cap`, `.seg`), same element, same material. A third class,
+   Verify's own strip, realised this role until #416 retired that surface; the
+   defect it taught is recorded in this file's header. */
+.dw :is(.instruments, .ec-coordinates) {
   background: var(--wk-surface-rail);
   color: var(--wk-ink);
   border-bottom: 1px solid var(--wk-rule);
 }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg {
+.dw :is(.instruments, .ec-coordinates) .seg {
   border-color: var(--wk-rule);
   background: var(--wk-surface-sunken);
 }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button .x { color: var(--wk-ink-meta); }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+.dw :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+.dw :is(.instruments, .ec-coordinates) .seg button .x { color: var(--wk-ink-meta); }
+.dw :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
   background: var(--wk-surface);
   color: var(--wk-ink);
   box-shadow: 0 1px 2px rgba(8, 18, 13, .18),
               inset 0 0 0 1px color-mix(in srgb, var(--primary) 46%, transparent);
 }
-.vw .verify-strip .strip-note { color: var(--wk-ink-meta); }
-
 /* In dark the rail descends INTO the plot instead of sitting continuous with
    the sheet: chrome -> rail -> chart header -> field, each step slightly
    deeper. Lit the other way it was lighter than both its neighbours and the top
    of the surface stacked as three warm-grey stripes. */
-:is(.dw, .vw) :is(.instruments, .ec-coordinates),
-.vw .verify-strip {
+.dw :is(.instruments, .ec-coordinates) {
   background: var(--wk-surface-rail);
   color: var(--wk-ink);
   border-bottom-color: var(--wk-rule);
 }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
-:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+.dw :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
+.dw :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+.dw :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
   background: var(--wk-surface);
   color: var(--wk-ink);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
@@ -240,55 +237,54 @@
 /* ---- type is split by KIND, not by rank (term 3) -------------------------
    UI sans for chrome, labels, prose and conclusions; tabular mono reserved for
    readings, times, units and counts. */
-:is(.dw, .vw) .pane > header h2,
-:is(.dw, .vw) .instrument > .cap,
-:is(.dw, .vw) .lane-key .t,
-:is(.dw, .vw) .lvl-cap .meta,
-:is(.dw, .vw) .slot-stats,
-:is(.dw, .vw) .ev-row button,
-:is(.dw, .vw) .head-live .rd-note {
+.dw .pane > header h2,
+.dw .instrument > .cap,
+.dw .lane-key .t,
+.dw .lvl-cap .meta,
+.dw .slot-stats,
+.dw .ev-row button,
+.dw .head-live .rd-note {
   font-family: Inter, system-ui, sans-serif;
   letter-spacing: normal;
 }
-:is(.dw, .vw) .slot-head .time,
-:is(.dw, .vw) .clock .axis,
-:is(.dw, .vw) .clock .bars .n,
-:is(.dw, .vw) .numrow b,
-:is(.dw, .vw) .statline b,
-:is(.dw, .vw) .ev-group .n,
-:is(.dw, .vw) .occ-head .when,
-:is(.dw, .vw) .occ-nums,
-:is(.dw, .vw) .head-live .rd-time,
-:is(.dw, .vw) .head-live .rd-pair .v {
+.dw .slot-head .time,
+.dw .clock .axis,
+.dw .clock .bars .n,
+.dw .numrow b,
+.dw .statline b,
+.dw .ev-group .n,
+.dw .occ-head .when,
+.dw .occ-nums,
+.dw .head-live .rd-time,
+.dw .head-live .rd-pair .v {
   font-family: var(--ck-mono);
   font-variant-numeric: tabular-nums;
 }
 /* A pane's own metadata is a sentence about the reading, not a reading. */
-:is(.dw, .vw) .pane > header .meta,
-:is(.dw, .vw) #crumb-meta,
-:is(.dw, .vw) .canvas-head .persist {
+.dw .pane > header .meta,
+.dw #crumb-meta,
+.dw .canvas-head .persist {
   font-family: Inter, system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
 }
 /* Lift the micro band off the 10px floor so labels stop impersonating data. */
-:is(.dw, .vw) { --ck-micro: 11px; }
+.dw { --ck-micro: 11px; }
 
 /* ---- structural labels tie to the chrome by INK, not by ground (term 7) --
    The rails keep the sheet's material so the docked workspace stays one
    surface; only the labels take the brand's evergreen, and that is what relates
    them to the chrome above. */
-:is(.dw, .vw) .lane-key { color: var(--mk-secondary); }
+.dw .lane-key { color: var(--mk-secondary); }
 /* The labels take the topbar's own ink, one clear step above body text, so
    structure reads as chrome-family, by value instead of by colour. */
-:is(.dw, .vw) .pane > header h2,
-:is(.dw, .vw) .instrument > .cap,
-.vw .verify-strip .cap { color: var(--wk-ink-nav); }
+.dw .pane > header h2,
+.dw .instrument > .cap { color: var(--wk-ink-nav); }
 
 /* ---- orange means interaction and high/attention, and nothing else ------- */
 /* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
    takes neutral ink plus a structural tell. */
-:is(.dw, .vw) {
+.dw {
   --ck-rail: var(--wk-surface-sunken);
   --ck-inset: var(--wk-surface-sunken);
   --ck-manual: #d9b568;
@@ -297,29 +293,28 @@
   --ck-insuff: #8d8579;
   --ck-up: #86ad78;
 }
-:is(.dw, .vw) [data-safety="insufficient"],
-:is(.dw, .vw) [data-verdict="insufficient"] {
+.dw [data-safety="insufficient"],
+.dw [data-verdict="insufficient"] {
   outline: 1px dashed color-mix(in srgb, var(--wk-rule-strong) 90%, transparent);
   outline-offset: -1px;
 }
 /* Adverse states keep a structural tell even though the palette is simpler:
    a full rule, never a colour patch alone. */
-:is(.dw, .vw) [data-verdict="low"],
-:is(.dw, .vw) [data-verdict="adverse"] {
+.dw [data-verdict="low"],
+.dw [data-verdict="adverse"] {
   outline: 1px solid var(--low);
   outline-offset: -1px;
 }
 /* A median reading above target is attention, not insufficiency, so it leaves
    `--ck-insuff` for the attention token — which term 4 already made text-safe. */
-:is(.dw, .vw) .head-live #rd-med[data-verdict="above"] { color: var(--warn); }
+.dw .head-live #rd-med[data-verdict="above"] { color: var(--warn); }
 /* The share bar is a neutral PROPORTION, so it leaves the interaction hue. */
-:is(.dw, .vw) .factor .track i { background: var(--ck-up); }
+.dw .factor .track i { background: var(--ck-up); }
 
 /* Diagnose's chart plane, specifically: `--ck-accent` is the interaction hue
    everywhere in the workstation, and orange is forbidden from the plot, so
    `#chart` re-points `--primary` at the measured signal for the rules inside
-   it. Verify's `.vw` keeps `--ck-accent` on `--mk-primary` already, so its hero
-   chart needs no equivalent — this is an element rule, not a role rule. */
+   it. This is an element rule, not a role rule. */
 .dw {
   --ck-accent: var(--primary);
   --ck-sel: color-mix(in srgb, var(--primary) 16%, transparent);
@@ -335,15 +330,15 @@
    or as clinical attention — the exact collision term 36 forbids. Warm
    graphite is on-theme and is shared with no chart mark and no clinical token;
    the glyph carries the differentiation. */
-:is(.dw, .vw) .qrow .tag.setting,
-:is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
-:is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
-:is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
+.dw .qrow .tag.setting,
+.dw .qrow .tag.habit { color: #b3a48d; }
+.dw .qrow[data-tier="noted"] .tag.setting,
+.dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
 /* One phrase, one ink: a bright value beside a dim noun inside four words read
    as two colours arguing, so the noun comes up to meet it. */
-:is(.dw, .vw) .qrow .den { color: #bdb1a0; }
-:is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
+.dw .qrow .den { color: #bdb1a0; }
+.dw .qrow .den .v { color: #f0e6d6; }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.dw, .vw) .panes { transition: none; }
+  .dw .panes { transition: none; }
 }

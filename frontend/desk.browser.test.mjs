@@ -20,12 +20,12 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingsProjectionInput, populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
+import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
-import { expandSequenceFixture } from '../frontend/eating-sequence-fixture.js';
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 
 const require = createRequire(import.meta.url);
-const { createBuiltShell } = require('../frontend/built-shell.js');
+const { createBuiltShell } = require('./built-shell.js');
 
 const missing = [];
 let chromium = null;
@@ -46,9 +46,9 @@ if (chromium && !process.env.PLAYWRIGHT_EXECUTABLE_PATH && !existsSync(chromium.
 let shell;
 try { shell = createBuiltShell(); } catch (error) { missing.push(error.message); }
 if (missing.length) {
-  throw new Error(`frontend-v2/desk.browser.test.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
+  throw new Error(`frontend/desk.browser.test.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 }
-const { createBrowserRunner } = require('../frontend/browser-runner.js');
+const { createBrowserRunner } = require('./browser-runner.js');
 
 /* ------------------------------------------------------ manufactured reads */
 
@@ -132,7 +132,7 @@ const evidence = generated('../mockups/diagnose-workstation.synthetic/payload.js
 const caseFiles = generated('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
 const sequenceFixture = expandSequenceFixture(generated('../mockups/eating-sequence-findings.synthetic/payload.json'));
 const patternCapture = generated('../mockups/diagnose-event-comparison.synthetic/capture.json');
-const basalEvidence = generated('../frontend/__fixtures__/basal-night-evidence.json').expected;
+const basalEvidence = generated('./__fixtures__/basal-night-evidence.json').expected;
 const isfEvidence = generated('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
 const icEvidence = generated('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
 // The generated roster has no Focus and withholds pin admission. Keep those

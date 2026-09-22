@@ -6,7 +6,7 @@
 //
 // Every string here is in the lock's "Verbatim strings" list, including the
 // fullwidth plus (U+FF0B) on Log carbs, so drift is a diff rather than a
-// judgment call. frontend-v2/chrome.test.js reads them back.
+// judgment call. frontend/chrome.test.js reads them back.
 import { e } from './frame.js';
 
 export const DESTINATIONS = [

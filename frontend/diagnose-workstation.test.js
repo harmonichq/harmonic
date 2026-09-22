@@ -10,7 +10,7 @@ import {
   patternCaseResponse,
   generatedFindingPose,
   generatedFindingProjection,
-} from '../frontend-v2/diagnose-replay.mjs';
+} from './diagnose-replay.mjs';
 
 test('queryState reads Diagnose state from the canonical route query', () => {
   const original = globalThis.window;

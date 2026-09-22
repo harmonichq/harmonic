@@ -120,7 +120,7 @@ class TestCheckAgainstRealRepo(unittest.TestCase):
             "CLAUDE.md",
             "ciq_autotune/model.py",
             "tests/test_store.py",
-            "frontend-v2/index.html",
+            "frontend/index.html",
             "scripts/check_public_allowlist.py",
             "scripts/public_allowlist.txt",
             "scripts/public_scan_config.txt",

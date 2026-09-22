@@ -1,12 +1,12 @@
 # Shared Harmonic mockup scaffold
 
 The shipped app is the material authority. `_theme.css` imports `_theme-app.css`,
-which `harmonic-v2.exploration/generate.py` extracts from `frontend/index.html`,
+which `harmonic-v2.exploration/generate.py` extracts from `frontend/material.css`,
 `shell.css`, and `theme.css`. Dark is the only shipped theme. Do not add palettes.
 
 Import `_shell.js` and use `renderShell`, `renderMockBar`, `loadCapture`, and
-`resolveColors`. The shell retains the shipped brand and control material;
-v2's proposed destination names are an intentional navigation change. Its
+`resolveColors`. The shell retains the shipped brand and control material; the
+desk's destination names were an intentional navigation change. Its
 utility buttons are visible context only in this first concept round; do not
 present this as a complete interaction lock.
 

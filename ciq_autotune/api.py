@@ -5,7 +5,7 @@ prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch``
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the one built browser shell (``frontend-v2/dist/index.html``) at ``/``
+It also serves the one built browser shell (``frontend/dist/index.html``) at ``/``
 and its explicit page paths, alongside the ``/api`` routes on the same port — there is
 no separate frontend server and no login screen (#10): the shell itself loads
 unauthenticated, then makes bearer-token-gated API calls.
@@ -92,13 +92,13 @@ _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
 # browser router (frontend/tab-routing.js) and by the disk-serving mirror the
 # browser gates run against (frontend/built-shell.js). Every retired address —
 # the whole `/v2` prefix and v1's own page paths — answers 404, never a redirect.
-_FRONTEND_V2_DIST = Path(__file__).resolve().parent.parent / "frontend-v2" / "dist"
-_FRONTEND_V2_INDEX = _FRONTEND_V2_DIST / "index.html"
-_FRONTEND_V2_ASSETS = _FRONTEND_V2_DIST / "assets"
-V2_PAGE = "/"
-V2_ASSETS = "/assets"
-V2_DESTINATIONS = ("diagnose", "changes", "day")
-V2_DESTINATION_PAGES = tuple(f"{V2_PAGE}{destination}" for destination in V2_DESTINATIONS)
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
+_FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
+PAGE = "/"
+ASSETS = "/assets"
+DESTINATIONS = ("diagnose", "changes", "day")
+DESTINATION_PAGES = tuple(f"{PAGE}{destination}" for destination in DESTINATIONS)
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -193,7 +193,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             reconcile_ingested_follow_up(store)
     if migrated_patterns:
         cache.bump()
-    if not _FRONTEND_V2_INDEX.is_file():
+    if not _FRONTEND_INDEX.is_file():
         logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
 
     class _FrontendAssets(StaticFiles):
@@ -563,19 +563,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def built_shell():
         # A missing build fails closed — 503 naming the build command — rather
         # than serving a blank or partial page, and it never hides the API.
-        if not _FRONTEND_V2_INDEX.is_file():
+        if not _FRONTEND_INDEX.is_file():
             return PlainTextResponse(
                 f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
                 status_code=503,
             )
-        return FileResponse(_FRONTEND_V2_INDEX)
+        return FileResponse(_FRONTEND_INDEX)
 
-    @app.get(V2_PAGE)
-    def index_v2():
+    @app.get(PAGE)
+    def index():
         return built_shell()
 
-    for _page in V2_DESTINATION_PAGES:
-        app.add_api_route(_page, index_v2, methods=["GET"])
+    for _page in DESTINATION_PAGES:
+        app.add_api_route(_page, index, methods=["GET"])
 
     # The shell has one stable URL, so it revalidates on every load. Vite
     # fingerprints assets, so they can stay immutable until their names change.
@@ -583,16 +583,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == V2_PAGE or path in V2_DESTINATION_PAGES:
+        if path == PAGE or path in DESTINATION_PAGES:
             response.headers["Cache-Control"] = "no-cache"
-        elif path.startswith(f"{V2_ASSETS}/") and response.status_code == 200:
+        elif path.startswith(f"{ASSETS}/") and response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
     # One prefix-scoped build directory route serves the shell's fingerprinted
     # assets; it can claim no page or API path outside its own prefix.
-    app.mount(V2_ASSETS, _FrontendAssets(directory=_FRONTEND_V2_ASSETS, check_dir=False),
-              name="frontend-v2-assets")
+    app.mount(ASSETS, _FrontendAssets(directory=_FRONTEND_ASSETS, check_dir=False),
+              name="frontend-assets")
 
     @app.get("/api/health")
     def health() -> dict:

@@ -35,8 +35,8 @@ from ciq_autotune.outcomes_trend import summarize_trend
 # The three facts this exploration lifts out of the shipped app. They used to
 # come from v1's page; with v1 retired (#416) they are the desk's own committed
 # source, and the lifts below read them there.
-DESK_GLOSSARY = "frontend-v2/glossary.js"
-DESK_MATERIAL = "frontend-v2/material.css"
+DESK_GLOSSARY = "frontend/glossary.js"
+DESK_MATERIAL = "frontend/material.css"
 
 def _reconcile(store, now):
     with store.follow_up_transaction():

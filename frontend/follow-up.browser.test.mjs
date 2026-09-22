@@ -14,7 +14,7 @@ if (!process.env.PLAYWRIGHT_MODULE) throw new Error('PLAYWRIGHT_MODULE is requir
 for (const viewport of ['1280x720', '1440x900']) {
   test(`Trial and Pattern Focus journeys at ${viewport}`, { timeout: 1200000 }, async () => {
     const directory = await mkdtemp(join(tmpdir(), 'harmonic-c3-browser-'));
-    const child = spawn(process.execPath, ['frontend/harmonic-v2-desktop-behavior.replay.mjs'], {
+    const child = spawn(process.execPath, ['frontend/desk-behavior.replay.mjs'], {
       detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env,
         TARGET: 'app', VIEWPORT: viewport, BASE_URL: 'http://127.0.0.1:8765',
         CASE_STORE_DIR: directory, ONLY: Object.keys(C3_STORIES).join(',') },

@@ -57,9 +57,9 @@ class Run:
         self.out.mkdir(parents=True, exist_ok=True)
         self.records = []
         inputs = ["mockups/harmonic-v2-desktop.lock.md", "mockups/harmonic-v2-desktop.behavior.md",
-                  "frontend/harmonic-v2-desktop-behavior.replay.mjs", "frontend-v2/c2.replay.mjs",
-                  "frontend-v2/c3.replay.mjs", "frontend-v2/c4.replay.mjs", "frontend-v2/replay-cases.mjs",
-                  "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
+                  "frontend/desk-behavior.replay.mjs", "frontend/c2.replay.mjs",
+                  "frontend/c3.replay.mjs", "frontend/c4.replay.mjs", "frontend/replay-cases.mjs",
+                  "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend/capture.mjs", "scripts/qa_e2e_cases.py",
                   "scripts/gen_qa_e2e_db.py", "mockups/qa-e2e.synthetic/harmonic.sqlite"]
         (self.out / "inputs.json").write_text(json.dumps({
             "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
@@ -377,8 +377,8 @@ def smoke_selection(run, base, ids):
     sources = []
     recipes = []
     for ref in [base, "HEAD"]:
-        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend", "frontend-v2").splitlines()
-        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend-v2/replay-cases.mjs"]
+        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend").splitlines()
+        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend/replay-cases.mjs"]
         sources.append({path: git("show", f"{ref}:{path}") for path in paths})
         recipes.append(recipe_graph(git("show", f"{ref}:scripts/qa_e2e_cases.py")))
     before, after = replay_graph(run, sources)
@@ -387,8 +387,8 @@ def smoke_selection(run, base, ids):
     changed_recipes = {key for key in recipes[0].keys() | recipes[1].keys()
                        if recipes[0].get(key) != recipes[1].get(key)}
     _, output = run.command("story-cases", ["node", "--input-type=module", "-e",
-        "import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';"
-        "import {storyCase} from './frontend-v2/replay-cases.mjs';"
+        "import {REGISTRY} from './frontend/desk-behavior.replay.mjs';"
+        "import {storyCase} from './frontend/replay-cases.mjs';"
         "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
     defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
     require(len(SMOKE_STORIES) == 21 and len(set(SMOKE_STORIES)) == 21
@@ -397,18 +397,18 @@ def smoke_selection(run, base, ids):
     selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}
     # Changes to the runner itself, registry, transport or generator can affect
     # every story. They must not disappear behind a function-only comparison.
-    global_files = {"scripts/gen_qa_e2e_db.py", "frontend-v2/replay-cases.mjs",
-                    "frontend-v2/capture.mjs", "frontend/browser-runner.js",
+    global_files = {"scripts/gen_qa_e2e_db.py", "frontend/replay-cases.mjs",
+                    "frontend/capture.mjs", "frontend/browser-runner.js",
                     "mockups/sweep/harmonic-v2-desktop/acceptance.py", "package-lock.json"}
-    global_symbols = {"frontend/harmonic-v2-desktop-behavior.replay.mjs::" + name
+    global_symbols = {"frontend/desk-behavior.replay.mjs::" + name
                       for name in ["REGISTRY", "main", "openApp", "requireEnvironment", "requireAssets"]}
     global_change = bool(changed_files & global_files or changed & global_symbols)
     for identity in ids:
         touched, used_cases, visited = set(), {defaults[identity]}, set()
         for graph in [before, after]:
-            roots = [f"frontend-v2/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
+            roots = [f"frontend/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
             root = next((key for key in roots if key in graph),
-                        f"frontend/harmonic-v2-desktop-behavior.replay.mjs::{identity}")
+                        f"frontend/desk-behavior.replay.mjs::{identity}")
             dependencies = closure(graph, [root])
             touched.update(dependencies & changed)
             visited.update(value for key in dependencies for value in graph[key].get("destinations", []))
@@ -467,7 +467,7 @@ def replay(run, viewport, shard=None, base=None):
     if shard or base:
         env["ONLY"] = ",".join(selected_ids)
     # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-    _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
+    _, output = run.command("complete-replay", ["node", "frontend/desk-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
@@ -480,7 +480,7 @@ def replay(run, viewport, shard=None, base=None):
 
 def inventory(run):
     _, output = run.command("registry", ["node", "--input-type=module", "-e",
-        "import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';"
+        "import {REGISTRY} from './frontend/desk-behavior.replay.mjs';"
         "console.log(JSON.stringify(REGISTRY.map(([id])=>id)))"])
     ids = json.loads(next(line for line in output.splitlines() if line.startswith('["')))
     ledger = (REPO / "mockups/harmonic-v2-desktop.behavior.md").read_text()
@@ -508,8 +508,8 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { copyFile, readFile, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { REGISTRY } from './frontend/harmonic-v2-desktop-behavior.replay.mjs';
-import { createCaseServer, storyCase } from './frontend-v2/replay-cases.mjs';
+import { REGISTRY } from './frontend/desk-behavior.replay.mjs';
+import { createCaseServer, storyCase } from './frontend/replay-cases.mjs';
 const directory = process.env.CACHE_OUT;
 const checking = process.env.CACHE_CHECK === '1';
 const benchmarking = process.env.CACHE_BENCHMARK === '1';
@@ -593,8 +593,7 @@ if (benchmarking) {
 def checks(run):
     run.command("npm-ci", ["npm", "ci"])
     run.command("build", ["npm", "run", "build"])
-    run.command("node", ["node", "--test", "frontend/**/*.test.js", "frontend-v2/**/*.test.js"])
-    run.command("node-v2", ["node", "--test", "frontend-v2/**/*.test.js"])
+    run.command("node", ["node", "--test", "frontend/**/*.test.js"])
     run.command("openspec", ["npx", "--yes", "@fission-ai/openspec@1", "validate", "--all", "--strict"])
     for guard in ["check_adr_numbers", "check_owned_identifiers", "check_public_allowlist"]:
         run.command(guard, [sys.executable, f"scripts/{guard}.py"])
@@ -607,7 +606,7 @@ def checks(run):
 
 def budget(run):
     # The desk must already be built. No concurrent suites on this machine.
-    require((REPO / "frontend-v2" / "dist/index.html").is_file(),
+    require((REPO / "frontend" / "dist/index.html").is_file(),
             "run npm ci && npm run build first")
     before = hashlib.sha256(SHOWCASE.read_bytes()).hexdigest()
     full, _ = run.command("pytest", ["uv", "run", "python", "-m", "pytest"])
@@ -681,8 +680,8 @@ def public_tree(run):
     tree = run.out / "public-tree"
     require(not tree.exists(), "use a fresh --out; materialized tree must start empty")
     run.command("public-tree", [sys.executable, "scripts/build_public_tree.py", str(tree)])
-    require((tree / "frontend-v2/main.js").is_file(), "public tree omitted v2 source")
-    require((tree / "vite.config.v2.mjs").is_file(), "public tree omitted v2 build config")
+    require((tree / "frontend/main.js").is_file(), "public tree omitted the desk source")
+    require((tree / "vite.config.mjs").is_file(), "public tree omitted the build config")
     # Some synthetic fixtures intentionally publish; private design material must not.
     for private in ["harmonic-v2-glucose.html", "harmonic-v2.archive", "harmonic-v2.exploration", "sweep"]:
         require(not (tree / "mockups" / private).exists(), f"public tree exposed private mockups/{private}")

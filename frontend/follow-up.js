@@ -40,7 +40,7 @@
 //   readinessSection, comparisonTables,            the comparison renderers one
 //   evidenceFigure, figureColors,                  record read shares
 //   mountComparisonChart, dailyEvidence
-import { heroOption } from '../frontend/verify-workstation-chart.js';
+import { heroOption } from './verify-workstation-chart.js';
 import {
   fetchVerifyTrials, finishTrial, resolveFocus,
 } from './client.js';

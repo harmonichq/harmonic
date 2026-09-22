@@ -3,7 +3,7 @@
   "_note": "SYNTHETIC static source capture. Glossary wording is preserved verbatim from the desk's committed source; presentation labels remain governed by CONTEXT.md.",
   "glossary": {
     "module_path": "mockups/harmonic-v2.exploration/glossary.js",
-    "source_path": "frontend-v2/glossary.js",
+    "source_path": "frontend/glossary.js",
     "start_line": 9
   },
   "guide": {

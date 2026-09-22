@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import * as client from './client.js';
-import * as data from '../frontend/data.js';
+import * as data from './data.js';
 
 // frontend/data.js is the ONE authenticated client for v1 and v2 alike. This
 // module re-exports the part of it this surface uses so a component imports one
@@ -21,10 +21,10 @@ test('every name this surface uses is the identical function frontend/data.js ow
 
 test('the re-export adds no fetching of its own', () => {
   const source = readFileSync(new URL('./client.js', import.meta.url), 'utf8');
-  // One statement: `export { ... } from '../frontend/data.js'`. No function
+  // One statement: `export { ... } from './data.js'`. No function
   // body, no second transport, no second token read.
   assert.ok(!/\bfunction\b|=>|globalThis\.fetch|localStorage/.test(source),
-    'frontend-v2/client.js declares behaviour; it must only re-export');
+    'frontend/client.js declares behaviour; it must only re-export');
   assert.equal((source.match(/from '/g) || []).length, 1, 'the client re-exports from exactly one module');
 });
 

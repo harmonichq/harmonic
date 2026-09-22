@@ -7,42 +7,42 @@
 // destination in the path. Old `?to=` links stay readable; an explicit path
 // wins when both are present.
 // ---------------------------------------------------------------------------
-export const V2_PAGE = '/';
-export const V2_DESTINATIONS = ['diagnose', 'changes', 'day'];
-const V2_DEFAULT_DESTINATION = 'diagnose';
+export const PAGE = '/';
+export const DESTINATIONS = ['diagnose', 'changes', 'day'];
+const DEFAULT_DESTINATION = 'diagnose';
 // A contextual Day entry carries all of these; a direct one carries none
 // (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
 // target within it — "restore the exact target" is what makes the return a
 // return rather than a second arrival.
-export const V2_CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
+export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
 
 export function resolveDestination(destination) {
-  return V2_DESTINATIONS.includes(destination) ? destination : V2_DEFAULT_DESTINATION;
+  return DESTINATIONS.includes(destination) ? destination : DEFAULT_DESTINATION;
 }
 
-export function parseV2Route({ pathname = V2_PAGE, search = '' } = {}) {
+export function parseRoute({ pathname = PAGE, search = '' } = {}) {
   const params = new URLSearchParams(search);
   const context = {};
-  for (const key of V2_CONTEXT_KEYS) {
+  for (const key of CONTEXT_KEYS) {
     const value = params.get(key);
     if (value) context[key] = value;
   }
-  const pathDestination = pathname.startsWith(V2_PAGE)
-    ? pathname.slice(V2_PAGE.length).replace(/\/$/, '') : '';
+  const pathDestination = pathname.startsWith(PAGE)
+    ? pathname.slice(PAGE.length).replace(/\/$/, '') : '';
   return { destination: resolveDestination(pathDestination || params.get('to')), context };
 }
 
-export function serializeV2Route({ destination, context = {} } = {}) {
+export function serializeRoute({ destination, context = {} } = {}) {
   const params = new URLSearchParams();
-  for (const key of V2_CONTEXT_KEYS) {
+  for (const key of CONTEXT_KEYS) {
     if (context[key]) params.set(key, context[key]);
   }
   const query = params.toString();
-  return `${V2_PAGE}${resolveDestination(destination)}${query ? `?${query}` : ''}`;
+  return `${PAGE}${resolveDestination(destination)}${query ? `?${query}` : ''}`;
 }
 
 export function writeRoute(route, { location = window.location, history = window.history,
-  replace = false, serialize = serializeV2Route } = {}) {
+  replace = false, serialize = serializeRoute } = {}) {
   const address = serialize(route);
   // The comparison spans the fragment even though nothing routes on it: an
   // address that still carries one differs from its canonical form, so the
@@ -53,7 +53,7 @@ export function writeRoute(route, { location = window.location, history = window
   return address;
 }
 
-export function subscribeRoute(listener, browser = window, parse = parseV2Route) {
+export function subscribeRoute(listener, browser = window, parse = parseRoute) {
   let previous = null;
   const notify = () => {
     const address = `${browser.location.pathname}${browser.location.search}${browser.location.hash}`;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildEpisodeLedger, dayStats } from '../frontend/day-chart.js';
+import { buildEpisodeLedger, dayStats } from './day-chart.js';
 import { dayFrame, dayReturnTarget } from './day.js';
 
 // A manufactured week: the navigator's own served shape, with one day of no

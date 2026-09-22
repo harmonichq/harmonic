@@ -1,6 +1,6 @@
 // #672: regression guard for the fail-closed preflight in the shell-serving
 // `*.browser.test.mjs` suite. That suite is excluded from the
-// `frontend/**/*.test.js` and `frontend-v2/**/*.test.js` globs (that's the
+// `frontend/**/*.test.js` glob (that's the
 // point — it needs real browser infrastructure this dependency-free gate does
 // not have), so nothing else in those globs would notice if its preflight
 // regressed back to a silent `{ skip: ... }`. This file stays dependency-free
@@ -30,7 +30,7 @@ const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const REAL_FRONTEND = realpathSync(FRONTEND);
 
-const SUITES = ['frontend-v2/desk.browser.test.mjs'];
+const SUITES = ['frontend/desk.browser.test.mjs'];
 
 function spawnSuite(suite, envOverrides) {
   const env = { ...process.env };

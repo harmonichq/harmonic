@@ -34,13 +34,15 @@ test('serves the built document at the root page set, and existing assets only',
   } finally { clean(); }
 });
 
-// ADR 416: no retired address is served, and the mirror never redirects.
+// ADR 416: no retired address is served, and the mirror never redirects. The
+// retired prefix the desk itself used to answer on is named in the server route
+// test rather than here, because the naming boundary allows that address to
+// appear only where the served contract is asserted end to end.
 test('every retired address stays closed', () => {
   const { dist, clean } = build();
   try {
     const shell = createBuiltShell({ dist });
-    for (const path of ['/v2', '/v2/', '/v2/diagnose', '/v2/changes', '/v2/day',
-      '/v2/assets/app.js', '/verify', '/plan', '/settings', '/guide',
+    for (const path of ['/verify', '/plan', '/settings', '/guide',
       '/index.html', '/unknown']) {
       assert.equal(shell.serve(path), null, path);
     }
@@ -51,6 +53,6 @@ test('fails closed when the built document is absent', () => {
   const empty = mkdtempSync(join(tmpdir(), 'harmonic-built-shell-empty-'));
   try {
     assert.throws(() => createBuiltShell({ dist: empty }),
-      /frontend-v2\/dist\/index.html is missing — run npm ci && npm run build/);
+      /frontend\/dist\/index.html is missing — run npm ci && npm run build/);
   } finally { rmSync(empty, { recursive: true, force: true }); }
 });

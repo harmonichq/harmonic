@@ -101,7 +101,7 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
     if (!['mismatch', 'match'].includes(mode) || !child) throw new Error('A running synthetic story and named capture are required.');
     await stop();
     log = await open(join(scratch, `${++serial}-pump-${mode}.log`), 'w');
-    await command(['python', 'frontend-v2/replay-pump.py', db, mode]);
+    await command(['python', 'frontend/replay-pump.py', db, mode]);
     await serve();
   }
   // prepare also measures/checks case copying without launching a server/browser.

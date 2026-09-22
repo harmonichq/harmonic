@@ -40,11 +40,9 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.v2.mjs tsconfig.json ./
-# Both source roots: the desk is built from frontend-v2/, and it imports shared
-# modules and stylesheets out of frontend/.
+COPY vite.config.mjs tsconfig.json ./
+# The one source root: the desk's page, its modules and its stylesheets.
 COPY frontend ./frontend
-COPY frontend-v2 ./frontend-v2
 RUN npm run build
 
 # ---- runtime: venv + source, non-root -------------------------------------
@@ -63,12 +61,12 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 
 # The app source. The built shell must sit beside ciq_autotune/ — api.py resolves
-# it as ../frontend-v2/dist/index.html and serves it at /. docs/kb/ likewise:
+# it as ../frontend/dist/index.html and serves it at /. docs/kb/ likewise:
 # the #269 Guide-KB serves the authored how-tos as raw markdown from
 # ../docs/kb/<slug>.md, so those files must ship in the image too — without this
 # COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
 COPY ciq_autotune ./ciq_autotune
-COPY --from=frontend-builder /app/frontend-v2/dist ./frontend-v2/dist
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 COPY docs/kb ./docs/kb
 COPY pyproject.toml README.md ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

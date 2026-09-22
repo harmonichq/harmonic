@@ -10,13 +10,13 @@
 // rather than declared and then fallen back from (HV2-08). Vendored, because
 // the packaged runtime may reach no CDN (HV2-01).
 import './fonts/inter.css';
-import '../frontend/shell.css';
-import './material.css';
 import './shell.css';
-import '../frontend/diagnose-workstation.css';
-import '../frontend/diagnose-event-comparison.css';
+import './material.css';
+import './chrome.css';
+import './diagnose-workstation.css';
+import './diagnose-event-comparison.css';
 import './desk.css';
-import '../frontend/theme.css';
+import './theme.css';
 
 import * as echarts from 'echarts';
 import { glossaryGroups } from './glossary.js';

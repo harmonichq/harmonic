@@ -260,7 +260,7 @@ class ApiTest(unittest.TestCase):
         # The bundle carries every former per-surface module; a referenced asset
         # must therefore load with its browser-recognized type.
         index = (Path(__file__).resolve().parent.parent
-                 / "frontend-v2" / "dist" / "index.html").read_text()
+                 / "frontend" / "dist" / "index.html").read_text()
         assets = sorted(set(re.findall(r'''["'](/assets/[^"']+)["']''', index)))
         self.assertTrue(assets, "built index must name fingerprinted assets")
         content_types = {

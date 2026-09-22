@@ -2,8 +2,8 @@
 // approved labels.
 //
 // #416 — THIS IS THE ONE HOME. Until the v1 page was retired, the desk's build
-// read these definitions out of frontend/index.html at build time (the retired
-// frontend-v2/app-source.mjs). With v1 retired the desk is the only shell, so
+// read these definitions out of v1's page at build time (through a retired
+// build-time lift). With v1 retired the desk is the only shell, so
 // they are simply the desk's own source. The literal below is what that lift
 // emitted on origin/main, unchanged.
 export const glossaryGroups = [

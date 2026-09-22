@@ -30,8 +30,8 @@
 import {
   buildDeliverable, collapseDeliverable, effectivePlanItems, formatStartMin,
   reconcileDeliverable, segmentCapacity, PLAN_PARAMS, PLAN_PARAM_FAMILY, isStageableIsf,
-} from '../frontend/plan.js';
-import { stageItemsFor } from '../frontend/diagnose-workspaces.js';
+} from './plan.js';
+import { stageItemsFor } from './diagnose-workspaces.js';
 import {
   applyPlan, fetchPumpSettings, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
 } from './client.js';

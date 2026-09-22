@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
+import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import { storyCase, createCaseServer } from './replay-cases.mjs';
 
 test('S37b waits for the retained basal drill without a URL subject', async () => {

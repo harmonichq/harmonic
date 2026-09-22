@@ -39,23 +39,22 @@ class DeployAssetsTest(unittest.TestCase):
 
     def test_dockerfile_ships_the_one_built_shell_and_its_build_inputs(self):
         # ADR 416: the desk is the only shell. api.py resolves it as
-        # ../frontend-v2/dist, so that build must be COPY'd in — and the builder
-        # needs both source roots and the build config to produce it at all,
-        # because the desk imports shared modules out of frontend/.
+        # ../frontend/dist, so that build must be COPY'd in — and the builder
+        # needs the one source root and the one build config to produce it.
         text = (_REPO / "Dockerfile").read_text()
         self.assertRegex(
-            text, r"COPY\s+--from=frontend-builder\s+/app/frontend-v2/dist\s+./frontend-v2/dist",
+            text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\s+./frontend/dist",
             "Dockerfile must COPY the built desk into the image; without it every "
             "page answers 503 in the deployed app.",
         )
-        self.assertNotRegex(
-            text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\b",
-            "the retired v1 build must not ship (ADR 416)")
-        self.assertRegex(text, r"COPY\s+vite\.config\.v2\.mjs\s+tsconfig\.json\b")
-        self.assertNotRegex(
-            text, r"COPY\s+vite\.config\.mjs\b",
-            "the retired v1 build config must not ship (ADR 416)")
-        self.assertRegex(text, r"(?m)^COPY\s+frontend-v2\s+\./frontend-v2$")
+        # One shell means one build copied out of the frontend builder. The
+        # count is the assertion, because a second shell would now be a second
+        # path under the same root rather than a differently named one.
+        self.assertEqual(
+            len(re.findall(r"COPY\s+--from=frontend-builder\b", text)), 1,
+            "exactly one built shell ships (ADR 416)")
+        self.assertRegex(text, r"COPY\s+vite\.config\.mjs\s+tsconfig\.json\b")
+        self.assertRegex(text, r"(?m)^COPY\s+frontend\s+\./frontend$")
 
 
     def test_runtime_copies_only_the_built_frontend_without_node(self):

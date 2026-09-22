@@ -17,16 +17,16 @@
 // A supporting night, an occurrence, a follow-up or a utility calls openDay (or
 // navigate('day', context), which is the same door); none of them re-implements
 // this desk.
-import { buildLanesOption, LANE_SPAN } from '../frontend/chart-builders.js';
+import { buildLanesOption, LANE_SPAN } from './chart-builders.js';
 import {
   buildEpisodeLedger, buildRows, dayStats, focusUpdate, preemptedTimes,
   KIND_GLYPH, KIND_LABEL,
-} from '../frontend/day-chart.js';
-import { buildHeroOption, HERO } from '../frontend/day-hero-chart.js';
+} from './day-chart.js';
+import { buildHeroOption, HERO } from './day-hero-chart.js';
 import {
   fmtISO, monthCells, monthOf, navDaySummary, navSeverity, sparkGeom, washOpacity, weekOf, weekRibbonGeom,
-} from '../frontend/nav-chart.js';
-import { canStepNext, canStepPrev, clampDay, coldArrivalDay, dayBounds, weekdayLabel } from '../frontend/daily-nav.js';
+} from './nav-chart.js';
+import { canStepNext, canStepPrev, clampDay, coldArrivalDay, dayBounds, weekdayLabel } from './daily-nav.js';
 import {
   fetchCarbs, fetchDayNavigator, fetchModelView, fetchStatus, fetchTimeline,
 } from './client.js';

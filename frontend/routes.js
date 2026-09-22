@@ -24,8 +24,8 @@
 // THE ADDRESS IS frontend/tab-routing.js's. There is no second router: this
 // module holds the desk's state and asks that owner to parse and serialize.
 import {
-  parseV2Route, serializeV2Route, subscribeRoute, writeRoute, resolveDestination,
-} from '../frontend/tab-routing.js';
+  parseRoute, serializeRoute, subscribeRoute, writeRoute, resolveDestination,
+} from './tab-routing.js';
 import { emptyFrame } from './frame.js';
 
 /* ------------------------------------------------------------ desk state */
@@ -140,7 +140,7 @@ export function navigate(next, entryContext = {}) {
   navigation += 1;
   destination = resolveDestination(next);
   context = { ...entryContext };
-  writeRoute({ destination, context }, { serialize: serializeV2Route });
+  writeRoute({ destination, context }, { serialize: serializeRoute });
   // Arriving at a destination puts the hand on its subject: the reading pane's
   // head, else the stage's title.
   if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '#crumb-trail', '.gf-stage .gf-title'];
@@ -304,8 +304,8 @@ export function startDesk(element, { browser = window } = {}) {
     destination = route.destination;
     context = route.context;
     render();
-  }, browser, parseV2Route);
-  const opened = parseV2Route(browser.location);
+  }, browser, parseRoute);
+  const opened = parseRoute(browser.location);
   destination = opened.destination;
   context = opened.context;
   render();

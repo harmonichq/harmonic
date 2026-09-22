@@ -48,22 +48,20 @@ scripts below are the **fast gate**. Its backend delivery leg needs a built shel
 ```sh
 npm ci && npm run build                    # required before backend delivery tests
 uv run python -m pytest                    # backend, stdlib unittest over the built shell
-node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'  # fast gate: both source roots
+node --test 'frontend/**/*.test.js'        # fast gate: the one source root
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs fourteen **drift checks**, so a committed
+The backend job also runs eleven **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator.
-Twelve are listed below; the evidence-canvas and v2 explorations' generators
-cover private design artifacts the public tree excludes, so their `--check`
-commands live in `.github/workflows/ci.yml`:
+Ten are listed below; the design exploration's generator covers a private
+design artifact the public tree excludes, so its `--check` command lives in
+`.github/workflows/ci.yml`:
 
 ```sh
-uv run python scripts/gen_ic_block_fixtures.py --check
-uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
 uv run python scripts/gen_qa_e2e_db.py --check
@@ -76,11 +74,8 @@ uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 uv run python scripts/gen_eating_sequence_fixtures.py --check
 ```
 
-The frontend job runs two drift checks in Node: the event-comparison synthetic
-capture and the design exploration's build script. The latter is the one
-generator here that is not a fixture builder; its command lives in
-`.github/workflows/ci.yml`, and the exploration itself is a private design
-artifact that does not ship.
+The frontend job runs one drift check in Node: the event-comparison synthetic
+capture.
 
 ```sh
 node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
@@ -88,9 +83,9 @@ node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
 
 **A mockup that extracts from the app is a generated artifact, and the same
 `--check` rule binds it.** Such a build typically commits a stylesheet lifted
-verbatim out of `frontend/index.html`, a component lifted out of a shipped
-module, and a data file run through the shipped producers — all three move when
-the app moves. When the app's light theme was relit (decision record 37) one
+verbatim out of the app's own material (`frontend/material.css`), a module
+lifted out of a shipped source file (`frontend/glossary.js`), and a data file
+run through the shipped producers — all three move when the app moves. When the app's light theme was relit (decision record 37) one
 such extract was not regenerated, and that exploration's own contrast guard went
 on measuring the retired palette for an entire round, reporting zero failures
 the whole time. The guard was sound; its input was stale, which is a failure no
@@ -116,10 +111,9 @@ fixture without a generator is how real data gets committed.
 
 **This is not the whole merge bar.** A separate `browser gates` CI job runs the
 browser-dependent work the fast gate cannot: the `*.browser.test.mjs` suites
-(cockpit shell, Diagnose workstation, the v2 desk, the shared browser-runner
-lifecycle regression), the Day lifecycle and first-plan-reconcile drivers, three
-behaviour-ledger replays against the built app, and the event-comparison
-support audit. Browser suites are **never discovered by a glob** here — each is
+(the desk, its Trial and Pattern Focus follow-up, and the shared browser-runner
+lifecycle regression), and the desk's behaviour-ledger replay against the built
+app. Browser suites are **never discovered by a glob** here — each is
 a hand-listed matrix entry, so a new one that is not added to `ci.yml` is a
 suite no runner ever looks at. Reproduce it locally:
 
@@ -134,26 +128,19 @@ PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
 
-# Rebuild BOTH shells after any frontend/ or frontend-v2/ change, before the
-# eleven CI legs. `npm run build` runs the two Vite builds in sequence.
+# Rebuild the shell after any frontend/ change, before the three CI legs.
 npm ci && npm run build
 
-# The eleven gate legs, as CI runs them.
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
+# Two of the three gate legs, as CI runs them. The third — the desk's Trial and
+# Pattern Focus follow-up suite — reads private design inputs, so it is a file
+# the public tree excludes and its command lives in
+# `.github/workflows/ci.yml`. It drives a real no-fetch server, so it also needs
+# `uv sync --frozen --extra api`.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-# In another terminal, start the QA copy-then-serve command documented below.
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/desk.browser.test.mjs
 ```
 
-**2026-09-10 — #406 gate scheduling.** On pull requests, the v2 ledger runs the
+**2026-09-10 — #406 gate scheduling.** On pull requests, the desk ledger runs the
 fixed smoke slice and stories affected by replay/helper or case-recipe changes,
 at both sizes. A PR selecting the complete ledger uses the same shards as main
 and nightly runs; smaller selections use one job per size. The other explicit
@@ -169,19 +156,18 @@ while a separate generator job checks drift. The CI workflow owns the matrices
 and commands; the private acceptance record states the selection rules and
 measured ceilings.
 
-All eleven **fail closed**: a missing driver, built shell or fixture exits
+All three **fail closed**: a missing driver, built shell or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a
 dependency-free regression test for it.
 
 **Run only what a change touches; run the whole ledger once, before the push.**
-A full frozen-ledger replay is 130 stories at each of two sizes, each story on a
-fresh synthetic store and a fresh server: about 13 minutes per size on a fast
-Mac and 35 on a CI runner. The v1 workstation ledger is 168 more. Running that
+A full frozen-ledger replay is the whole registry — 142 stories — at each of two
+sizes, each story on a fresh synthetic store and a fresh server. Running that
 after every commit turns a one-line story fix into an hour, and running it in
 parallel with itself on one machine only collides on the case-store port. So,
-while iterating: run the stories the change touches (`ONLY=S20b,S32` on the v2
+while iterating: run the stories the change touches (`ONLY=S20b,S32` on the desk
 replay; the wrapper's `--story` selection; a single `--test-name-pattern` on a
 browser suite), at the one size that reproduces the problem. Run each complete
 ledger exactly once per push, on the commit that will be pushed, and never two
@@ -232,16 +218,10 @@ your own database — never a published one, and never a live pull.**
   
   Exercise every other model path through tests and fixtures instead.
 
-  For chart-level UI revision rounds, the preferred safe surface is the
-  component harness: `npm install && npm run dev` inside `harness/`, in
-  manufactured mode (its default — served from committed synthetic fixtures,
-  no app process needed). It opens one shipped chart at a time through the
-  real Diagnose composition, so a chart revised there is the shipped chart.
-  Live mode only forwards to a `serve` the operator already started, and is
-  never used in automated work. One coupling to watch: the harness names app
-  API paths as hand-written strings; `frontend/harness-api-paths.test.js`
-  checks those paths, so an endpoint rename must update the harness in the
-  same change.
+  For chart-level UI revision rounds, that same no-fetch serve of the built
+  desk is the safe surface (ADR 416). The dev-only component harness it
+  replaced is deleted: a chart revised in the served desk is the shipped
+  chart, with no second composition to drift from.
 - **Committed fixtures come from a committed generator**, and carry a
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.
@@ -272,9 +252,8 @@ uv run python scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>
 Use that path as the `cp` source in the QA copy-then-serve command above; keep
 `--no-fetch` and `--token ''`. Never commit an emitted case store. Use the
 showcase for whole-app layout, dense chronology, navigation, and mixed-state
-composition. Use a named case store for one exact analyzer or Finding state.
-For isolated chart layout or interaction, start with the component harness's
-manufactured stories, then use the full no-fetch app as the integration proof.
+composition. Use a named case store for one exact analyzer or Finding state,
+including for isolated chart layout or interaction.
 
 ## Layout
 
@@ -299,24 +278,18 @@ manufactured stories, then use the full no-fetch app as the integration proof.
 - `ciq_autotune/fetch_loop.py` — the hourly background fetch loop `serve` runs.
 - `ciq_autotune/result_cache.py` — the in-process cache the heavy read
   endpoints answer from.
-- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves both
-  built shells on the same port: `frontend/dist/index.html` at `/` and its
-  page paths, and `frontend-v2/dist/index.html` at `/v2/`. The non-API route
+- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves the one
+  built shell on the same port: `frontend/dist/index.html` at `/` and its three
+  page paths, with its fingerprinted assets under `/assets`. The non-API route
   set is closed — every served page path is named, and any other path is a 404.
-- `frontend/` — a single-page Vue 3 app built with Vite. ECharts renders the
-  Day chart.
-- `frontend-v2/` — the second Vite root: the v2 desk, built with `base: '/v2/'`
-  so its fingerprinted assets land under `/v2/assets/`, and served beside v1 by
-  the same Python process. It is plain DOM rather than Vue, ported from the
-  locked desktop prototype. It shares v1's one authenticated client
-  (`frontend/data.js`, re-exported by `frontend-v2/client.js`) and v1's one
-  router (`frontend/tab-routing.js`); a second client or router here is a
+- `frontend/` — the one Vite source root: the desk, built with `base: '/'` and
+  served by the Python process (ADR 416). It is plain DOM rather than a
+  framework app, ported from the locked desktop prototype. ECharts renders the
+  Day chart. One authenticated client (`data.js`, re-exported by `client.js`)
+  and one router (`tab-routing.js`); a second client or router here is a
   duplicate implementation, not a convenience. Its material, Day legend and
-  glossary are lifted out of `frontend/index.html` at build time
-  (`frontend-v2/app-source.mjs`), so no copy of them exists to go stale.
-- `harness/` — a dev-only Vite page that opens one shipped chart at a time on
-  manufactured data or a running `harmonic serve`. Node 22 is required but not
-  enforced; the harness never enters the production app and never gates.
+  glossary are committed source (`material.css`, `glossary.js`), read by the
+  design exploration's generator rather than lifted at build time.
 - `openspec/specs/` — twelve capability specifications: what each part of the
   system is required to do, and why. The public "why" lives here.
 
@@ -485,12 +458,9 @@ Hard-won, and expensive to re-derive.
 - **Backend tests** use stdlib `unittest`, run under pytest.
 - **Frontend tests** use Node's built-in runner and take no npm dependency; CI's
   frontend job runs them without an install. Backend pytest delivery tests need
-  `npm ci && npm run build` first. Pure logic lives in **vue-free** `.js`
-  modules so tests import them with no importmap and no DOM. Vue components
-  import `vue` plus those modules and are not node-tested, because the bare
-  `vue` specifier resolves through Vite. The dev-only
-  `harness/` has its own manifest and lockfile; it is never a gate and never
-  runs in CI.
+  `npm ci && npm run build` first. Pure logic lives in `.js` modules with no
+  DOM dependency, so tests import them directly; the modules that touch the
+  document are exercised by the browser suites instead.
 - **Browser-driven suites are named `*.browser.test.mjs`**, never `*.test.js`,
   so the fast gate's glob can never discover them.
 - **New behavior ships with a test through the public interface**, and — where

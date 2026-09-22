@@ -1,5 +1,5 @@
 // #389 — tests for the Plan surface's own decisions (plan-view.js).
-//   node --test 'frontend-v2/**/*.test.js'
+//   node --test 'frontend/**/*.test.js'
 //
 // The schedule itself belongs to frontend/plan.js and is tested there. What is
 // this module's own is narrower and is what is asserted here: which concerns can

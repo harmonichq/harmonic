@@ -39,4 +39,4 @@ export {
   applyPlan, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
   fetchGuidance, setGuidancePreference, restoreGuidancePreference,
   fetchVerifyTrials, finishTrial, concludeTrial, fetchFocuses, pinFocus, resolveFocus,
-} from '../frontend/data.js';
+} from './data.js';

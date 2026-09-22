@@ -29,8 +29,10 @@ from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
+    _CAUSE_OUTCOME,
     _EVENT_CHART_FAMILIES,
     _PATTERN_CHIPS,
+    _PATTERN_OUTCOME,
     _chips_for,
     _row as projection_row,
     FindingsProjection,
@@ -273,6 +275,67 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
                 for appearance in row["appearances"] or []:
                     self.assertLessEqual(appearance["n"], appearance["m"],
                                          f"{row['title']} in {bounds}")
+
+
+class CountSentenceTest(unittest.TestCase):
+    """#413: the served count sentence beside ``headline``, from one closed
+    outcome table — a new field, never a rebuild of ``headline`` (#413 ADR "The
+    backend serves the count sentence")."""
+
+    def setUp(self):
+        self.projection = gen.projection()
+
+    def test_every_pattern_key_has_exactly_one_outcome_entry(self):
+        roster_keys = {row[0] for row in _ROSTER}
+        self.assertEqual(set(_PATTERN_OUTCOME), roster_keys)
+
+    def test_the_two_meals_patterns_serve_different_outcomes(self):
+        # highs_after_meals and lows_after_meals are both counted in meals and
+        # must not share a word: a family cannot be the key.
+        self.assertNotEqual(_PATTERN_OUTCOME["highs_after_meals"],
+                            _PATTERN_OUTCOME["lows_after_meals"])
+
+    def test_a_two_family_cause_serves_two_sentences_agreeing_with_its_appearances(self):
+        rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        row = next(r for r in rows if r.get("lever") == "carb_undercount")
+        self.assertEqual(len(row["appearances"]), 2)
+        self.assertEqual(len(row["count_sentences"]), 2)
+        for appearance, sentence in zip(row["appearances"], row["count_sentences"]):
+            self.assertEqual(sentence["count"], appearance["n"])
+            self.assertEqual(sentence["denominator"], appearance["m"])
+            self.assertEqual(sentence["noun"], appearance["noun"])
+            outcome = _CAUSE_OUTCOME[(row["lever"], appearance["family"])]
+            self.assertEqual(sentence["outcome"], outcome)
+            self.assertEqual(
+                sentence["sentence"],
+                f"{appearance['n']} of {appearance['m']} {appearance['noun']} {outcome}",
+            )
+
+    def test_every_pattern_key_and_emittable_lever_family_pair_serves_one_entry(self):
+        # A missing entry is a KeyError inside `project`, never a silent blank —
+        # exercised across the whole window ledger so a pair that only shows up
+        # under one clock scope still gets caught.
+        for bounds in (None, LOW_BLOCK, REBOUND, MORNING, AFTERNOON, (22 * 60, 2 * 60)):
+            query = (WindowQuery.whole_day() if bounds is None
+                     else WindowQuery.clock(*bounds))
+            for row in self.projection.project(query)["rows"]:
+                if row["kind"] == "pattern" and row["pattern"]["admission_route"] != "none" \
+                        and not row["pattern"].get("count_status"):
+                    self.assertEqual(len(row["count_sentences"]), 1, row["title"])
+                if row["kind"] == "habit":
+                    sentences = row.get("count_sentences") or []
+                    self.assertEqual(len(sentences), len(row["appearances"] or []),
+                                     row["lever"])
+
+    def test_tier_rank_priority_register_and_headline_are_unaffected(self):
+        # The count sentence rides beside `headline`; it must never move any of
+        # the fields the queue's ranking and rendering already depend on.
+        rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        for row in rows:
+            self.assertIn("tier", row)
+            self.assertIn("headline", row)
+            self.assertIsNotNone(row["headline"])
+            self.assertNotIn("count_sentences", row["headline"])
 
 
 class GroundedWindowTest(unittest.TestCase):

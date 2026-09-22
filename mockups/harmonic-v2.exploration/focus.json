@@ -87789,6 +87789,15 @@
             "lows"
           ],
           "claimed_by": "pattern:lows_after_correcting_highs",
+          "count_sentences": [
+            {
+              "count": 1,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "followed a correction on active insulin",
+              "sentence": "1 of 6 lows followed a correction on active insulin"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 1,
@@ -89911,6 +89920,15 @@
               "highs"
             ],
             "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "2 of 6 lows rebounded high"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 2,
@@ -90023,6 +90041,7 @@
               "meals"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -90159,6 +90178,7 @@
               "corrections"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -90286,6 +90306,15 @@
               "lows"
             ],
             "claimed_by": "pattern:lows_after_correcting_highs",
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -90398,6 +90427,7 @@
               "meals"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -90510,6 +90540,7 @@
               "lows"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -90622,6 +90653,15 @@
         "highs"
       ],
       "claimed_by": null,
+      "count_sentences": [
+        {
+          "count": 2,
+          "denominator": 6,
+          "noun": "lows",
+          "outcome": "rebounded high",
+          "sentence": "2 of 6 lows rebounded high"
+        }
+      ],
       "current": null,
       "direction": null,
       "episodes": 2,
@@ -92744,6 +92784,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -92856,6 +92905,7 @@
           "meals"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -92992,6 +93042,7 @@
           "corrections"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -93119,6 +93170,15 @@
           "lows"
         ],
         "claimed_by": "pattern:lows_after_correcting_highs",
+        "count_sentences": [
+          {
+            "count": 1,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "followed a correction on active insulin",
+            "sentence": "1 of 6 lows followed a correction on active insulin"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 1,
@@ -93231,6 +93291,7 @@
           "meals"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -93343,6 +93404,7 @@
           "lows"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -101648,6 +101710,15 @@
         "highs"
       ],
       "claimed_by": null,
+      "count_sentences": [
+        {
+          "count": 2,
+          "denominator": 6,
+          "noun": "lows",
+          "outcome": "rebounded high",
+          "sentence": "2 of 6 lows rebounded high"
+        }
+      ],
       "current": null,
       "direction": null,
       "episodes": 2,
@@ -103820,7 +103891,7 @@
         {
           "comparison_context": {
             "captured_at": "2024-05-30 12:00:00",
-            "code_version": "5f82211a109910e3964079c8b713cf11c8b683ac6e341ff2acbd143c49b721e5",
+            "code_version": "e2ddaf1941b55bb287a33e3729ae2df4bf96e1ae0e825895fbec5a44b050bcbb",
             "configuration": {
               "anchor_high_mgdl": 250.0,
               "anchor_meal_min_carbs": 10.0,
@@ -103912,7 +103983,7 @@
               "user_override_harm_low_mgdl": 80.0,
               "user_override_pump_zero_rec_u": 0.2
             },
-            "id": "adfa055f8c96bc756f2ede10eaf7124df93a6e605965dbc9066d52e6fce0c599",
+            "id": "050b0589abe5ea0c39f1347fb7a0117bf30fabd8dd5b4be79fbfbcc39d35f1fa",
             "input_revision": 5,
             "policy": "340:1/386:1/387:1",
             "programmed_isf": {
@@ -104000,7 +104071,7 @@
               },
               "comparison_context": {
                 "captured_at": "2024-05-30 12:00:00",
-                "code_version": "5f82211a109910e3964079c8b713cf11c8b683ac6e341ff2acbd143c49b721e5",
+                "code_version": "e2ddaf1941b55bb287a33e3729ae2df4bf96e1ae0e825895fbec5a44b050bcbb",
                 "configuration": {
                   "anchor_high_mgdl": 250.0,
                   "anchor_meal_min_carbs": 10.0,
@@ -104092,7 +104163,7 @@
                   "user_override_harm_low_mgdl": 80.0,
                   "user_override_pump_zero_rec_u": 0.2
                 },
-                "id": "adfa055f8c96bc756f2ede10eaf7124df93a6e605965dbc9066d52e6fce0c599",
+                "id": "050b0589abe5ea0c39f1347fb7a0117bf30fabd8dd5b4be79fbfbcc39d35f1fa",
                 "input_revision": 5,
                 "policy": "340:1/386:1/387:1",
                 "programmed_isf": {

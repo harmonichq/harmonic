@@ -119,12 +119,12 @@ test('an initial read failure and a current-read failure own distinct Diagnose f
   assert.match(seat.innerHTML, /Open Diagnose/);
   const previous = globalThis.window;
   const addresses = [];
-  globalThis.window = { location: { pathname: '/v2/', search: '?to=diagnose&subject=retained' },
+  globalThis.window = { location: { pathname: '/', search: '?to=diagnose&subject=retained' },
     history: { pushState: (_state, _title, address) => addresses.push(address) } };
   try {
     served.fail(false);
     await seat.querySelector('[data-action="open-diagnose"]').onclick();
-    assert.deepEqual(addresses, ['/v2/diagnose'], 'Open Diagnose discards the contextual entry');
+    assert.deepEqual(addresses, ['/diagnose'], 'Open Diagnose discards the contextual entry');
   } finally { globalThis.window = previous; }
   destination.mount(seat, { navigation: 1, context: { subject: 'other' }, hold() {} });
   assert.ok(seat.node, 'successful retry seats the carried composition');

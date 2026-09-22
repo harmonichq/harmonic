@@ -30,12 +30,12 @@
 //   TARGET=mock  the ★ LOCKED prototype, served over HTTP from the REPOSITORY
 //                ROOT. Not from mockups/: the mock links ../frontend/*.css by
 //                relative path, which a server rooted at mockups/ cannot resolve.
-//   TARGET=app   the built, Python-served /v2/, at BASE_URL. The desk chunk of
+//   TARGET=app   the built, Python-served desk at BASE_URL. The desk chunk of
 //                #389 replaced the stub opener with the real one: the page, its
 //                assets and every API read come from that server, and any
 //                request that does not go to it fails the run with its URL
-//                printed. A /v2/ that does not answer 200 fails loudly, naming
-//                the missing surface and the build command. It never skips.
+//                printed. A root page that does not answer 200 fails loudly,
+//                naming the missing surface and the build command. It never skips.
 //                An entry marked app-opener-only still reports DEFERRED under
 //                TARGET=mock, whether or not its body has been converted.
 //
@@ -60,7 +60,7 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
+import { S8 as sharedEventSpeech } from '../frontend-v2/diagnose-replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
 import { C4_STORIES, C4_RETIREMENTS, historicalAbsence } from '../frontend-v2/c4.replay.mjs';
@@ -93,13 +93,9 @@ function playwright() {
 const TARGET = process.env.TARGET || '';
 const MOCK_BASE_URL = (process.env.MOCK_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
 const APP_BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8765').replace(/\/$/, '');
-// HV2-02 says v1 and /v2/ coexist against the same AUTHENTICATED API. The
-// declared QA server runs with an empty token, so it can show the two surfaces
-// sharing one API and one database but cannot show the boundary refusing an
-// unauthenticated read. A second server, started with a token, is what proves
-// that half; S87 names the exact command when these are unset.
-const AUTH_BASE_URL = (process.env.AUTH_BASE_URL || '').replace(/\/$/, '');
-const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
+
+// The desk's page paths beside the root page the opener itself loads (ADR 416).
+const DESK_PAGE_PATHS = ['/diagnose', '/changes', '/day'];
 
 // The lock's own target viewports (HV2-03, HV2-04). Never a driver default.
 const VIEWPORTS = { '1280x720': { width: 1280, height: 720 }, '1440x900': { width: 1440, height: 900 } };
@@ -336,7 +332,7 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
 }
 
 /**
- * The built, Python-served `/v2/`.
+ * The built, Python-served desk at the root page.
  *
  * Unlike the mock opener this serves NOTHING itself: the page, its assets and
  * every API read come from the declared no-fetch server at BASE_URL. That is the
@@ -349,8 +345,8 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
  * URL printed, which is how "no CDN in production" is observed rather than
  * asserted about the source.
  *
- * Fail-closed: a `/v2/` that does not answer 200 names the missing surface and
- * the build command; a desk still on its loading frame, with no pane, or on a
+ * Fail-closed: a root page that does not answer 200 names the missing surface
+ * and the build command; a desk still on its loading frame, with no pane, or on a
  * destination other than the requested one fails before any story runs.
  */
 export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'diagnose', storyId = null, caseName = null } = {}) {
@@ -364,11 +360,9 @@ export async function openApp(browser, { source = null, state = 'investigate', v
       + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
   }
 
-  for (const origin of [APP_BASE_URL, AUTH_BASE_URL].filter(Boolean)) {
-    const hostname = new URL(origin).hostname;
-    if (!['127.0.0.1', 'localhost'].includes(hostname)) {
-      fail(`a declared base URL must name localhost, got ${hostname}`);
-    }
+  const hostname = new URL(APP_BASE_URL).hostname;
+  if (!['127.0.0.1', 'localhost'].includes(hostname)) {
+    fail(`a declared base URL must name localhost, got ${hostname}`);
   }
 
   const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
@@ -389,9 +383,7 @@ export async function openApp(browser, { source = null, state = 'investigate', v
     requests.push({ path: url.pathname, status: response.status(), headers: response.headers() });
   });
 
-  const declared = (url) => [APP_BASE_URL, AUTH_BASE_URL]
-    .filter(Boolean)
-    .some((origin) => url === origin || url.startsWith(`${origin}/`));
+  const declared = (url) => url === APP_BASE_URL || url.startsWith(`${APP_BASE_URL}/`);
 
   await page.route('**/*', async (route) => {
     const url = route.request().url();
@@ -412,12 +404,12 @@ export async function openApp(browser, { source = null, state = 'investigate', v
     return route.continue();
   });
 
-  const target = `${APP_BASE_URL}/v2/${destination === 'diagnose' ? '' : `?to=${destination}`}`;
+  const target = `${APP_BASE_URL}/${destination === 'diagnose' ? '' : `?to=${destination}`}`;
   const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
   ok(response, `no response from ${target}`);
   ok(response.status() !== 404 && response.status() !== 503,
-    `${target} answered ${response.status()} — the v2 build is missing or unserved.\n`
-    + '  owed by: LOCK:harmonic-v2-desktop:HV2-01 (Python serves /v2/ and /v2/assets/)\n'
+    `${target} answered ${response.status()} — the desk build is missing or unserved.\n`
+    + '  owed by: LOCK:harmonic-v2-desktop:HV2-01 (Python serves / and /assets/)\n'
     + '  run `npm ci && npm run build`, then start the declared no-fetch server.');
   ok(response.ok(), `${target} answered ${response.status()}`);
 
@@ -2701,21 +2693,21 @@ const appOnly = (term, what, fn) => {
 };
 
 // Converted by the desk chunk (#389 chunk 1). Both run on the app opener only.
-export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no Node runtime or CDN',
+export const S86 = appOnly('HV2-01', 'Python serves / and /assets/ with no Node runtime or CDN',
   async (page, ctx) => {
     // Everything the surface loaded came from the packaged runtime, at the two
     // paths it declares. The opener already aborts any off-origin request; this
     // reads back that nothing tried.
     const { shell, assets } = await waitForReplayAssertion(async seen => {
       ok(ctx.unrouted.length === 0, `the built app reached off-origin: ${ctx.unrouted.join(', ')}`);
-      const shell = ctx.requests.filter((request) => request.path === '/v2/');
-      ok(shell.length > 0 && shell[0].status === 200, 'the desk was not served from /v2/');
+      const shell = ctx.requests.filter((request) => request.path === '/');
+      ok(shell.length > 0 && shell[0].status === 200, 'the desk was not served from /');
       ok(shell[0].headers['cache-control'] === 'no-cache',
         `the shell must revalidate, not cache: ${shell[0].headers['cache-control']}`);
-      const assets = ctx.requests.filter((request) => request.path !== '/v2/' && !request.path.startsWith('/api/'));
+      const assets = ctx.requests.filter((request) => request.path !== '/' && !request.path.startsWith('/api/'));
       ok(assets.length > 0, 'the desk loaded no packaged asset at all');
       for (const asset of assets) {
-        ok(asset.path.startsWith('/v2/assets/'), `${asset.path} is served outside /v2/assets/`);
+        ok(asset.path.startsWith('/assets/'), `${asset.path} is served outside /assets/`);
         ok(asset.status === 200, `${asset.path} answered ${asset.status}`);
         ok(asset.headers['cache-control'] === 'public, max-age=31536000, immutable',
           `${asset.path} is fingerprinted but not immutable: ${asset.headers['cache-control']}`);
@@ -2731,120 +2723,22 @@ export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no
     }, "S86");
     // The non-API route set is closed: a path the server never declared is a
     // 404, not the shell.
-    const routes = await page.evaluate(async () => {
+    const routes = await page.evaluate(async (pages) => {
       const out = {};
-      for (const path of ['/v2/diagnose', '/v2/changes', '/v2/day', '/v2/overview', '/v2/index.html', '/v2/assets/no-such.js']) {
+      for (const path of [...pages, '/overview', '/index.html', '/assets/no-such.js']) {
         out[path] = (await fetch(path)).status;
       }
       return out;
-    });
-    for (const path of ['/v2/diagnose', '/v2/changes', '/v2/day']) {
+    }, DESK_PAGE_PATHS);
+    for (const path of DESK_PAGE_PATHS) {
       ok(routes[path] === 200, `the canonical desk path ${path} returned ${routes[path]}, not 200`);
     }
-    const closed = Object.fromEntries(Object.entries(routes).filter(([path]) => !['/v2/diagnose', '/v2/changes', '/v2/day'].includes(path)));
+    const closed = Object.fromEntries(Object.entries(routes).filter(([path]) => !DESK_PAGE_PATHS.includes(path)));
     for (const [path, status] of Object.entries(closed)) {
       ok(status === 404, `${path} answered ${status}; the non-API route set is not closed`);
     }
   });
 
-export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authenticated API and database',
-  async (page) => {
-    // Revised. The first version proved nothing: it stored a token, loaded the
-    // desk on a destination that reads NOTHING, and then called the browser's
-    // own fetch() — which bypasses frontend/data.js entirely, so it exercised
-    // neither the client nor its token. This drives the surfaces' OWN reads,
-    // through that client, against a server that actually enforces a token.
-    if (!AUTH_BASE_URL || !AUTH_TOKEN) {
-      fail('S87 needs a token-protected synthetic server: the declared QA server runs '
-        + "with --token '' and so cannot refuse an unauthenticated read.\n"
-        + '  start a second one against its own copy of the same synthetic database:\n'
-        + "    cp mockups/qa-e2e.synthetic/harmonic.sqlite \"$TMPDIR/harmonic-qa-auth.sqlite\"\n"
-        + "    uv run harmonic serve --no-fetch --token 'synthetic-replay-token' \\\n"
-        + "      --db \"$TMPDIR/harmonic-qa-auth.sqlite\" --port 8766\n"
-        + '  then re-run with AUTH_BASE_URL=http://127.0.0.1:8766 '
-        + "AUTH_TOKEN=synthetic-replay-token");
-    }
-
-    // Every /api/ read either surface makes, with the header it carried and the
-    // body it received. Read off the network, so it sees the client's real
-    // requests rather than anything installed into the page.
-    const reads = [];
-    page.on('response', async (response) => {
-      const url = new URL(response.url());
-      // Only the token server's answers count: a late read still settling from
-      // the previous story's token-less case server is not this boundary.
-      if (url.origin !== new URL(AUTH_BASE_URL).origin) return;
-      const path = url.pathname;
-      if (!path.startsWith('/api/')) return;
-      const entry = {
-        path, status: response.status(),
-        authorization: response.request().headers().authorization || null,
-        body: null,
-      };
-      reads.push(entry);
-      try { entry.body = await response.text(); } catch { /* a redirect or an abort has none */ }
-    });
-    const since = (mark) => reads.slice(mark);
-    const settle = async () => page.waitForTimeout(2500);
-
-    // 1. The boundary refuses an unauthenticated read, on the desk's own Day —
-    //    a destination that actually reads.
-    await page.evaluate(() => localStorage.removeItem('ciq_token'));
-    let mark = reads.length;
-    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.gf .pane', { timeout: 20000 });
-    await settle();
-    await waitForReplayAssertion(async seen => {
-      const anonymous = seen(since(mark));
-      ok(anonymous.length > 0, 'the v2 desk made no API read at all on Day; it cannot show an authenticated boundary');
-      ok(anonymous.every((read) => !read.authorization),
-        'a read carried an Authorization header before any token was stored');
-      ok(anonymous.every((read) => read.status === 401),
-        `the token-protected API admitted an unauthenticated v2 read: ${JSON.stringify(anonymous.map((r) => [r.path, r.status]))}`);
-    }, 'S87 anonymous reads');
-
-    // 2. With the token stored, the desk's own client reads succeed and carry it.
-    await page.evaluate((value) => localStorage.setItem('ciq_token', value), AUTH_TOKEN);
-    mark = reads.length;
-    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
-    await settle();
-    const v2Status = await waitForReplayAssertion(async seen => {
-      const v2Reads = seen(since(mark));
-      ok(v2Reads.length > 0, 'the v2 desk made no API read with a token stored');
-      ok(v2Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
-        `the v2 desk did not send the stored token: ${JSON.stringify(v2Reads.map((r) => [r.path, r.authorization]))}`);
-      ok(v2Reads.every((read) => read.status === 200),
-        `an authenticated v2 read was refused: ${JSON.stringify(v2Reads.map((r) => [r.path, r.status]))}`);
-      const v2Status = v2Reads.find((read) => read.path === '/api/status');
-      ok(v2Status, 'the v2 desk did not read /api/status, so there is no shared read to compare');
-      ok(v2Status.body !== null, 'S87 the shared v2 status body has arrived');
-      return v2Status;
-    }, 'S87 authenticated v2 reads');
-
-    // 3. V1 is still served on its own routes, is a different shell, and reads
-    //    the same API and the same database with the same stored token.
-    mark = reads.length;
-    const v1 = await page.goto(`${AUTH_BASE_URL}/`, { waitUntil: 'domcontentloaded' });
-    await waitForReplayAssertion(async seen => {
-      ok(v1 && v1.ok(), `v1 is no longer served: ${v1 && v1.status()}`);
-      const v1Html = seen(await v1.text());
-      ok(!v1Html.includes('/v2/assets/'), 'the root path served the v2 shell; this change admits no cutover');
-      ok(v1Html.includes('/assets/'), 'the root path did not serve the v1 shell');
-    }, "S87");
-    await settle();
-    await waitForReplayAssertion(async seen => {
-      const v1Reads = seen(since(mark));
-      ok(v1Reads.length > 0, 'v1 made no API read');
-      ok(v1Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
-        `v1 did not send the same stored token: ${JSON.stringify(v1Reads.map((r) => [r.path, r.authorization]))}`);
-      const v1Status = v1Reads.find((read) => read.path === '/api/status' && read.status === 200);
-      ok(v1Status, `v1 did not read /api/status successfully: ${JSON.stringify(v1Reads.map((r) => [r.path, r.status]))}`);
-      ok(v1Status.body !== null, 'S87 the shared v1 status body has arrived');
-      ok(v1Status.body === v2Status.body,
-        `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
-    }, 'S87 shared authenticated database');
-  });
 export const S88 = appOnly('HV2-16', 'Set aside and Restore are durable Store writes surviving reload', async (page) => {
   await goto(page, 'changes');
   const before = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
@@ -3008,6 +2902,7 @@ const SANCTIONS = {
   R15: 'ADR 215 amendment · 2026-08-26 · "The dock is the whole ordered set, spotlight included."',
   R16: 'Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."',
   R17: 'ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)',
+  R19: 'Connor Griffin · 2026-09-21 · "Kill all the V1 stuff."',
 };
 
 const printSanction = (id) => {
@@ -3282,6 +3177,41 @@ export const R17 = async (page) => {
 
 export const R18 = appOnly('HV2-31', 'historical input absent while current evidence and retained records remain', historicalAbsence);
 
+// RETIRED:Connor Griffin:2026-09-21 — S87's premise was that v1 and /v2/ coexist.
+// ADR 416 removed it, so the story is retired and this is the proof the premise
+// is gone. `redirect: 'manual'` is what makes "not a redirect" observable: a
+// browser fetch that follows redirects would report the destination's status,
+// so a 307 to a served page would read as a pass. An opaque redirect is
+// reported as such, and it fails here.
+const RETIRED_ADDRESSES = [
+  '/v2', '/v2/', '/v2/diagnose', '/v2/changes', '/v2/day', '/v2/index.html',
+  '/v2/assets/no-such.js', '/verify', '/plan', '/settings', '/guide', '/index.html',
+];
+const DESK_PAGES_WITH_ROOT = ['/', ...DESK_PAGE_PATHS];
+export const R19 = appOnly('HV2-02', 'every retired v1 and /v2/ address answers 404 with no redirect',
+  async (page) => {
+    printSanction('R19');
+    const answers = await page.evaluate(async (paths) => {
+      const out = {};
+      for (const path of paths) {
+        const response = await fetch(path, { redirect: 'manual' });
+        out[path] = { status: response.status, type: response.type };
+      }
+      return out;
+    }, [...RETIRED_ADDRESSES, ...DESK_PAGES_WITH_ROOT]);
+    for (const path of RETIRED_ADDRESSES) {
+      ok(answers[path].type !== 'opaqueredirect',
+        `${path} redirected; ADR 416 admits no redirect from a retired address`);
+      ok(answers[path].status === 404,
+        `R19 replayed-fail: ${path} answered ${answers[path].status}, not 404`);
+    }
+    // The premise, without which every 404 above is just a dead server.
+    for (const path of DESK_PAGES_WITH_ROOT) {
+      ok(answers[path].status === 200,
+        `R19 premise failed: the desk's own page ${path} answered ${answers[path].status} — re-settle, not a fail`);
+    }
+  });
+
 // STORY:harmonic-v2-desktop:S101
 export const S101 = appOnly('HV2-11', '#404 custom Window chip contains only the span', C4_STORIES.S101);
 // STORY:harmonic-v2-desktop:S102
@@ -3345,7 +3275,7 @@ export const REGISTRY = [
   ['S73c', S73c, J()], ['S76', S76, J()], ['S77', S77, SET()],
   ['S78', S78, J()], ['S79', S79, J()], ['S80', S80, J()], ['S81', S81, J()],
   ['S82', S82, M()], ['S83', S83, J()], ['S84', S84, M()], ['S85', S85, J()],
-  ['S86', S86, J()], ['S87', S87, J()], ['S88', S88, J()], ['S89', S89, J()],
+  ['S86', S86, J()], ['S88', S88, J()], ['S89', S89, J()],
   ['S90', S90, J()], ['S91', S91, J()], ['S92', S92, J()], ['S93', S93, J()],
   ['S94', S94, J()], ['S95', S95, J()], ['S96', S96, J()], ['S97', S97, J()],
   ['S98', S98, J()], ['S99', S99, J()], ['S100', S100, J()],
@@ -3357,7 +3287,7 @@ export const REGISTRY = [
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],
   ['R9', R9, M()], ['R10', R10, J()], ['R11', R11, M()], ['R12', R12, M()],
   ['R13', R13, M()], ['R14', R14, J()], ['R15', R15, J()], ['R16', R16, J()],
-  ['R17', R17, M('ready')], ['R18', R18, J()],
+  ['R17', R17, M('ready')], ['R18', R18, J()], ['R19', R19, J()],
 ];
 
 /* ------------------------------------------------------------------- runner */

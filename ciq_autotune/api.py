@@ -5,10 +5,10 @@ prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch``
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the built frontend SPA (``frontend/dist/index.html``) at ``/`` and its explicit
-page paths, alongside the ``/api`` routes on the same port — there is no separate frontend server and
-no login screen (#10): the SPA shell itself loads unauthenticated, then makes
-bearer-token-gated API calls.
+It also serves the one built browser shell (``frontend-v2/dist/index.html``) at ``/``
+and its explicit page paths, alongside the ``/api`` routes on the same port — there is
+no separate frontend server and no login screen (#10): the shell itself loads
+unauthenticated, then makes bearer-token-gated API calls.
 
 Single-user posture (ROADMAP S1): bind localhost and gate on one static bearer
 token from ``HARMONIC_API_TOKEN``. If no token is set the API stays open — fine on a
@@ -83,23 +83,22 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 RECOMPUTE_PACE_SECONDS = 0.1
 
-_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-_FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
-_FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
 _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
-SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
-# #389 (HV2-01/HV2-02): the v2 desktop is a SECOND ahead-of-time build served by
-# this same process, at its own page path and its own fingerprinted asset prefix.
-# One page path, because the desk's four destinations are query state, not paths
-# (frontend/tab-routing.js) — which is what keeps the non-API route set closed.
-# V1 keeps every route it had; this change admits no cutover and no retirement.
+# The desk is the only browser shell (ADR 416), built ahead of time and served
+# at the root page with its three destinations as page paths and its
+# fingerprinted assets under one prefix. That closed set is what keeps a file on
+# disk from ever shadowing an API route or the shell, and it is mirrored by the
+# browser router (frontend/tab-routing.js) and by the disk-serving mirror the
+# browser gates run against (frontend/built-shell.js). Every retired address —
+# the whole `/v2` prefix and v1's own page paths — answers 404, never a redirect.
 _FRONTEND_V2_DIST = Path(__file__).resolve().parent.parent / "frontend-v2" / "dist"
 _FRONTEND_V2_INDEX = _FRONTEND_V2_DIST / "index.html"
 _FRONTEND_V2_ASSETS = _FRONTEND_V2_DIST / "assets"
-V2_PAGE = "/v2/"
-V2_ASSETS = "/v2/assets"
-V2_DESTINATION_PAGES = tuple(f"{V2_PAGE}{destination}" for destination in ("diagnose", "changes", "day"))
+V2_PAGE = "/"
+V2_ASSETS = "/assets"
+V2_DESTINATIONS = ("diagnose", "changes", "day")
+V2_DESTINATION_PAGES = tuple(f"{V2_PAGE}{destination}" for destination in V2_DESTINATIONS)
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -194,11 +193,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             reconcile_ingested_follow_up(store)
     if migrated_patterns:
         cache.bump()
-    frontend_built = _FRONTEND_INDEX.is_file()
-    if not frontend_built:
-        logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
     if not _FRONTEND_V2_INDEX.is_file():
-        logger.error("Frontend v2 build is missing; run %s", _FRONTEND_BUILD_COMMAND)
+        logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
 
     class _FrontendAssets(StaticFiles):
         """Serve assets that appear after an in-place frontend build."""
@@ -564,30 +560,22 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ADR 94 publishes it at ``/api/openapi.json``, and
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
-    def built_shell(index=None):
-        # Each surface fails closed on its OWN build: a missing v2 build must not
-        # make v1 unreachable, and neither may hide the API.
-        index = _FRONTEND_INDEX if index is None else index
-        if not index.is_file():
+    def built_shell():
+        # A missing build fails closed — 503 naming the build command — rather
+        # than serving a blank or partial page, and it never hides the API.
+        if not _FRONTEND_V2_INDEX.is_file():
             return PlainTextResponse(
                 f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
                 status_code=503,
             )
-        return FileResponse(index)
-
-    @app.get("/")
-    def index():
-        return built_shell()
-
-    for _page in SPA_PAGES:
-        app.add_api_route(f"/{_page}", index, methods=["GET"])
+        return FileResponse(_FRONTEND_V2_INDEX)
 
     @app.get(V2_PAGE)
-    @app.get("/v2/diagnose")
-    @app.get("/v2/changes")
-    @app.get("/v2/day")
     def index_v2():
-        return built_shell(_FRONTEND_V2_INDEX)
+        return built_shell()
+
+    for _page in V2_DESTINATION_PAGES:
+        app.add_api_route(_page, index_v2, methods=["GET"])
 
     # The shell has one stable URL, so it revalidates on every load. Vite
     # fingerprints assets, so they can stay immutable until their names change.
@@ -595,18 +583,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path == V2_PAGE or path in V2_DESTINATION_PAGES or path.lstrip("/") in SPA_PAGES:
+        if path == V2_PAGE or path in V2_DESTINATION_PAGES:
             response.headers["Cache-Control"] = "no-cache"
-        elif (path.startswith("/assets/") or path.startswith(f"{V2_ASSETS}/")) \
-                and response.status_code == 200:
+        elif path.startswith(f"{V2_ASSETS}/") and response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
-    # One prefix-scoped build directory route per surface serves only that
-    # surface's fingerprinted assets; neither can claim page or API paths outside
-    # its own prefix.
-    app.mount("/assets", _FrontendAssets(directory=_FRONTEND_ASSETS, check_dir=False),
-              name="frontend-assets")
+    # One prefix-scoped build directory route serves the shell's fingerprinted
+    # assets; it can claim no page or API path outside its own prefix.
     app.mount(V2_ASSETS, _FrontendAssets(directory=_FRONTEND_V2_ASSETS, check_dir=False),
               name="frontend-v2-assets")
 

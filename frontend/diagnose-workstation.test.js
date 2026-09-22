@@ -10,7 +10,7 @@ import {
   patternCaseResponse,
   generatedFindingPose,
   generatedFindingProjection,
-} from './diagnose-workstation-behavior.replay.mjs';
+} from '../frontend-v2/diagnose-replay.mjs';
 
 test('queryState reads Diagnose state from the canonical route query', () => {
   const original = globalThis.window;
@@ -83,20 +83,6 @@ test('#404 · grouped comparison names its cohort once while case rosters keep t
     'comparison rows do not repeat the cohort that their heading already names');
   assert.match(cases, /<span class="tier">\$\{label\}<\/span>/,
     'case rows keep their row-varying tier label');
-});
-
-test('C44/C56 replay poses enter the existing Findings queue once', () => {
-  const source = readFileSync(new URL('./diagnose-workstation-behavior.replay.mjs', import.meta.url), 'utf8');
-  for (const story of ['C44', 'C56']) {
-    const body = source.match(new RegExp(`export const ${story} = async \\(page\\) => \\{([\\s\\S]*?)\\n\\};`));
-    assert.ok(body, `${story} story exists`);
-    assert.match(body[1], /await openWholeDay\(page\);\s*await clickQueueRow\(page, 'Missed \/ unannounced meal'\);/,
-      `${story} reaches the queue from the 24-hour surface`);
-    assert.doesNotMatch(body[1], /getByRole\('button', \{ name: 'Findings'/,
-      `${story} does not wait for a retired second Findings control`);
-  }
-  assert.match(source, /\['C56', C56, 'typical', \{ findingsProjectionInputs: generatedFindingProjection\('finding:missed_meal'\),\s*caseScenario:/,
-    'C56 passes its generated queue pose to the app opener, not only to the case handler');
 });
 
 test('generated finding story pose preserves a ready id already in its preparation', () => {

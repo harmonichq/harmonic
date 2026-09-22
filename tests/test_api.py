@@ -251,7 +251,7 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(len(isf), 1)
         self.assertEqual(isf[0]["start_min"], 0)
 
-    def test_root_serves_frontend(self):
+    def test_root_serves_the_shell(self):
         r = self.client.get("/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers["content-type"], "text/html; charset=utf-8")
@@ -260,7 +260,7 @@ class ApiTest(unittest.TestCase):
         # The bundle carries every former per-surface module; a referenced asset
         # must therefore load with its browser-recognized type.
         index = (Path(__file__).resolve().parent.parent
-                 / "frontend" / "dist" / "index.html").read_text()
+                 / "frontend-v2" / "dist" / "index.html").read_text()
         assets = sorted(set(re.findall(r'''["'](/assets/[^"']+)["']''', index)))
         self.assertTrue(assets, "built index must name fingerprinted assets")
         content_types = {
@@ -1226,7 +1226,7 @@ class ApiAuthTest(unittest.TestCase):
         self.assertEqual(authenticated.json()["detail"]["code"], "invalid_history_id")
 
     def test_root_does_not_require_token(self):
-        # No login screen (#10): the SPA shell itself must load unauthenticated.
+        # No login screen (#10): the shell itself must load unauthenticated.
         r = self.client.get("/", headers={"Authorization": "Bearer nope"})
         self.assertEqual(r.status_code, 200)
 

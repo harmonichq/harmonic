@@ -1,8 +1,8 @@
 /* The v2 desk's scaffold rules, ported verbatim from the ★ LOCKED desktop
    prototype's shared sheet minus its mock bar. That sheet also imported a
    GENERATED copy of the app's own material; the port drops that copy and takes
-   the material from frontend/index.html itself at build time
-   (frontend-v2/app-source.mjs), so the ladder has one home.
+   the material from frontend-v2/material.css, the one home for the ladder
+   (#416).
 
    Kept whole rather than pruned to what the desk visibly consumes: these are the
    computed values the frozen fidelity evidence was recorded against, and a rule

@@ -11,7 +11,7 @@
 // the packaged runtime may reach no CDN (HV2-01).
 import './fonts/inter.css';
 import '../frontend/shell.css';
-import 'virtual:harmonic/app-material.css';
+import './material.css';
 import './shell.css';
 import '../frontend/diagnose-workstation.css';
 import '../frontend/diagnose-event-comparison.css';
@@ -19,7 +19,7 @@ import './desk.css';
 import '../frontend/theme.css';
 
 import * as echarts from 'echarts';
-import { glossaryGroups } from 'virtual:harmonic/glossary';
+import { glossaryGroups } from './glossary.js';
 
 import { renderShell } from './shell.js';
 import { startDesk } from './routes.js';

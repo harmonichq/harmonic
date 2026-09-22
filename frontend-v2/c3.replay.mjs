@@ -23,7 +23,7 @@ const press = async (page, selector) => {
   await control.waitFor({ state: 'visible', timeout: 30000 }); await control.click();
 };
 const changes = async page => {
-  await page.goto(new URL('/v2/?to=changes', page.url()).href);
+  await page.goto(new URL('/?to=changes', page.url()).href);
   await page.locator('.gf-loading').waitFor({ state: 'hidden', timeout: 30000 });
 };
 async function active(page, kind = 'trial') {
@@ -40,7 +40,7 @@ async function active(page, kind = 'trial') {
   return { id, roster, detail: response.selected, comparison: response.selected.reassessment.comparison };
 }
 async function record(page, kind, id) {
-  await page.goto(new URL(`/v2/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:${kind}:${id}`)}`, page.url()).href);
+  await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:${kind}:${id}`)}`, page.url()).href);
   await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
 }
 async function ending(page) {
@@ -99,7 +99,7 @@ async function startForm(page, selection = 'afternoon') {
           : url.searchParams.get('start_min') === '720' && url.searchParams.get('end_min') === '1080')
         && response.ok();
     }, { timeout: 30000 });
-    await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
+    await page.goto(new URL('/?to=diagnose', page.url()).href);
     if (!wholeDay) await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
     const selectedPreparation = await boundedWait(preparation,
       wholeDay ? 'selected 24 h preparation' : 'selected Afternoon preparation').then(response => response.json());

@@ -85,14 +85,15 @@ export function writeRoute(route, { location = window.location, history = window
 }
 
 // ---------------------------------------------------------------------------
-// The v2 desk's address (#389). It extends this module rather than forking it:
-// one owner parses and serializes every address the app answers.
+// The desk's address (#389, rehomed to the root page by ADR 416). It extends
+// this module rather than forking it: one owner parses and serializes every
+// address the app answers.
 //
-// The v2 desk keeps its contextual entry in the query, but names the current
+// The desk keeps its contextual entry in the query, but names the current
 // destination in the path. Old `?to=` links stay readable; an explicit path
 // wins when both are present.
 // ---------------------------------------------------------------------------
-export const V2_PAGE = '/v2/';
+export const V2_PAGE = '/';
 export const V2_DESTINATIONS = ['diagnose', 'changes', 'day'];
 const V2_DEFAULT_DESTINATION = 'diagnose';
 // A contextual Day entry carries all of these; a direct one carries none

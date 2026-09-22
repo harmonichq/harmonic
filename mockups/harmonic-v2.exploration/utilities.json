@@ -1,10 +1,10 @@
 {
   "_generated_by": "mockups/harmonic-v2.exploration/generate.py",
-  "_note": "SYNTHETIC static source capture. Glossary wording is preserved verbatim from v1; presentation labels remain governed by CONTEXT.md.",
+  "_note": "SYNTHETIC static source capture. Glossary wording is preserved verbatim from the desk's committed source; presentation labels remain governed by CONTEXT.md.",
   "glossary": {
     "module_path": "mockups/harmonic-v2.exploration/glossary.js",
-    "source_path": "frontend/index.html",
-    "start_line": 3757
+    "source_path": "frontend-v2/glossary.js",
+    "start_line": 9
   },
   "guide": {
     "articles": {

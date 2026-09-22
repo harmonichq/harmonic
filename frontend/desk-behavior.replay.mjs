@@ -21,27 +21,22 @@
 // subject is unchanged, or that a Trial's Inspect nights opens the evidence that
 // Trial was decided from rather than the current read's first-ranked concern.
 //
-//   PLAYWRIGHT_MODULE=<playwright> MOCK_BASE_URL=http://127.0.0.1:8080 \
-//   [FONT_ASSETS=<font-assets.json>] TARGET=mock [ONLY=S1,S24] \
-//   [VIEWPORT=1280x720] node frontend/desk-behavior.replay.mjs
+//   PLAYWRIGHT_MODULE=<playwright> TARGET=app [BASE_URL=http://127.0.0.1:8765] \
+//   [ONLY=S1,S24] [VIEWPORT=1280x720] node frontend/desk-behavior.replay.mjs
 //
-// TARGET is required and explicit — `mock` or `app`. There is no default.
+// TARGET is required and explicit, and `app` is its only value: the built,
+// Python-served desk at BASE_URL. The desk chunk of #389 replaced the stub
+// opener with the real one: the page, its assets and every API read come from
+// that server, and any request that does not go to it fails the run with its
+// URL printed. A root page that does not answer 200 fails loudly, naming the
+// missing surface and the build command. It never skips. The prototype opener
+// (`TARGET=mock`) went with v1 (#416): the locked prototype linked v1 modules
+// that no longer exist, so the arm could only fail, and a fail-closed arm with
+// no passing run is not evidence.
 //
-//   TARGET=mock  the ★ LOCKED prototype, served over HTTP from the REPOSITORY
-//                ROOT. Not from mockups/: the mock links ../frontend/*.css by
-//                relative path, which a server rooted at mockups/ cannot resolve.
-//   TARGET=app   the built, Python-served desk at BASE_URL. The desk chunk of
-//                #389 replaced the stub opener with the real one: the page, its
-//                assets and every API read come from that server, and any
-//                request that does not go to it fails the run with its URL
-//                printed. A root page that does not answer 200 fails loudly,
-//                naming the missing surface and the build command. It never skips.
-//                An entry marked app-opener-only still reports DEFERRED under
-//                TARGET=mock, whether or not its body has been converted.
-//
-// FAILS CLOSED. A missing driver, ECharts bundle, mock file or fixture exits
-// nonzero. An unroutable external request exits nonzero with its URL printed. A
-// run that executed zero stories exits nonzero.
+// FAILS CLOSED. A missing driver or fixture exits nonzero. An unroutable
+// external request exits nonzero with its URL printed. A run that executed zero
+// stories exits nonzero.
 //
 // TWO RULES THIS REVISION EXISTS TO ENFORCE, both learned from the run:
 //
@@ -57,7 +52,7 @@
 //      VISIBLE match and fail loudly when every match is hidden.
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-replay.mjs';
@@ -91,7 +86,6 @@ function playwright() {
 // Validated inside main(), so a bare run prints one clean FATAL line instead of
 // a module-evaluation stack trace. It still fails closed either way.
 const TARGET = process.env.TARGET || '';
-const MOCK_BASE_URL = (process.env.MOCK_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
 const APP_BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8765').replace(/\/$/, '');
 
 // The desk's page paths beside the root page the opener itself loads (ADR 416).
@@ -102,8 +96,8 @@ const VIEWPORTS = { '1280x720': { width: 1280, height: 720 }, '1440x900': { widt
 const DEFAULT_VIEWPORT = process.env.VIEWPORT || '1280x720';
 
 function requireEnvironment() {
-  if (TARGET !== 'mock' && TARGET !== 'app') {
-    fail(`TARGET is required and must be "mock" or "app", not ${JSON.stringify(TARGET)} — there is no default opener`);
+  if (TARGET !== 'app') {
+    fail(`TARGET is required and must be "app", not ${JSON.stringify(TARGET)} — there is no default opener`);
   }
   if (!VIEWPORTS[DEFAULT_VIEWPORT]) {
     fail(`VIEWPORT must be one of ${Object.keys(VIEWPORTS).join(', ')} — the lock names no others`);
@@ -117,8 +111,6 @@ const STATES = ['investigate', 'active', 'ready', 'history', 'quiet', 'error']; 
 
 /* ------------------------------------------------- required local assets */
 
-const ECHARTS_FILE = join(REPO, 'node_modules', 'echarts', 'dist', 'echarts.min.js');
-const MOCK_FILE = join(REPO, 'mockups', 'harmonic-v2-glucose.html');
 const FIXTURES = [
   'mockups/harmonic-v2.exploration/evidence.json',
   'mockups/harmonic-v2.exploration/workstation.json',
@@ -131,52 +123,10 @@ const FIXTURES = [
 
 function requireAssets() {
   const missing = [];
-  if (!existsSync(ECHARTS_FILE)) missing.push(`${ECHARTS_FILE} — run npm ci`);
-  // The accepted app replay survives the bounded prototype archive move.
-  // TARGET=mock still fails closed without its original executable source.
-  if (TARGET === 'mock' && !existsSync(MOCK_FILE)) missing.push(MOCK_FILE);
   for (const relative of FIXTURES) {
     if (!existsSync(join(REPO, relative))) missing.push(relative);
   }
   if (missing.length) fail(`required assets are absent:\n  ${missing.join('\n  ')}`);
-}
-
-/* ------------------------------------------------ exact external-URL policy */
-
-const ECHARTS_URL = 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js';
-const FONTS_CSS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
-const FONTS_CSS_STUB = '/* Inter stubbed: computed type values are asserted, glyph rasterisation is not */';
-
-// Font policy has two modes, and the run header prints which one ran.
-//
-//   real      FONT_ASSETS names a manifest of {url: {path, type}} — root's
-//             first-hour probe produced exactly this shape by fetching the
-//             locked HTML's own Inter CSS URL and its 7 font files once. Each
-//             listed URL is fulfilled from its cached file, by EXACT match.
-//   behaviour no manifest: the Inter stylesheet is served EMPTY, so it declares
-//             no @font-face and fonts.gstatic.com is never requested. Computed
-//             type values (family string, size, weight, line-height, tracking,
-//             variant-numeric) are unaffected; glyph rasterisation falls back.
-//
-// Neither mode is fidelity evidence. Pixel fidelity belongs to the build's
-// paired renders at both viewports, and production font/asset packaging belongs
-// to the build brief — not to this opener.
-export function loadFontAssets() {
-  const manifest = process.env.FONT_ASSETS;
-  if (!manifest) return { mode: 'behaviour', map: new Map() };
-  if (!existsSync(manifest)) fail(`FONT_ASSETS names a manifest that does not exist: ${manifest}`);
-  let parsed;
-  try { parsed = JSON.parse(readFileSync(manifest, 'utf8')); }
-  catch (error) { fail(`FONT_ASSETS is not readable JSON: ${manifest} — ${error.message}`); }
-  const map = new Map();
-  for (const [url, entry] of Object.entries(parsed)) {
-    const path = entry && entry.path;
-    if (!path) fail(`FONT_ASSETS entry for ${url} names no path`);
-    if (!existsSync(path)) fail(`FONT_ASSETS entry for ${url} points at a missing file: ${path}`);
-    map.set(url, { path, type: (entry && entry.type) || 'application/octet-stream' });
-  }
-  ok(map.size > 0, 'FONT_ASSETS is empty — a manifest with no URLs cannot supply fonts');
-  return { mode: 'real', map };
 }
 
 /* ------------------------------------------------------------ mock harness */
@@ -245,91 +195,6 @@ export async function harnessCheck(page, key, on) {
 }
 
 /* --------------------------------------------------------------- the openers */
-
-/** The ★ LOCKED prototype, served from the repository root. */
-export async function openMock(browser, { source = 'journey', state = 'investigate', viewport = DEFAULT_VIEWPORT, fonts } = {}) {
-  if (!SOURCES.includes(source)) fail(`unsupported mock source ${JSON.stringify(source)} — the capture serves ${SOURCES.join(', ')}`);
-  if (!STATES.includes(state)) fail(`unsupported mock state ${JSON.stringify(state)} — the scaffold serves ${STATES.join(', ')}`);
-  if (!VIEWPORTS[viewport]) fail(`unsupported viewport ${JSON.stringify(viewport)}`);
-  // ?state= is the MEALS source's own control. Its Scenario and Input selects
-  // carry .gf-meals-control, which harmonic-v2-glucose.css:179,:186,:264 hides
-  // for setting, focus and journey — those sources own their frame through
-  // their own clock instead. Asking for a scenario they do not honour produced
-  // a silently cosmetic setup, so it is refused here and stories establish the
-  // source-owned checkpoint with harnessSelect().
-  if (source !== 'meals' && state !== 'investigate') {
-    fail(`unsupported combination source=${source} state=${state}: the scenario select belongs to the meals source `
-      + '(.gf-meals-control is hidden for the others). Open this source at its default and move its own clock instead.');
-  }
-
-  const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
-  const page = await context.newPage();
-
-  const unrouted = [];
-  const consoleErrors = [];
-  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  page.on('pageerror', (error) => consoleErrors.push(String(error)));
-
-  await page.route('**/*', async (route) => {
-    const url = route.request().url();
-    if (url.startsWith(MOCK_BASE_URL + '/')) return route.continue();
-    if (url === ECHARTS_URL) {
-      return route.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(ECHARTS_FILE) });
-    }
-    const cached = fonts.map.get(url);
-    if (cached) {
-      return route.fulfill({ status: 200, contentType: cached.type, body: readFileSync(cached.path) });
-    }
-    if (url === FONTS_CSS_URL && fonts.mode === 'behaviour') {
-      return route.fulfill({ status: 200, contentType: 'text/css', body: FONTS_CSS_STUB });
-    }
-    unrouted.push(url);
-    return route.abort();
-  });
-
-  const target = `${MOCK_BASE_URL}/mockups/harmonic-v2-glucose.html?source=${source}&state=${state}`;
-  const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
-  ok(response && response.ok(), `the mock did not load from ${target} — is a static server running at the repository ROOT?`);
-
-  // The desk renders only after six fixture fetches resolve.
-  await page.waitForSelector('.gf .pane', { timeout: 20000 });
-
-  if (unrouted.length) fail(`unrouted external request(s): ${[...new Set(unrouted)].join(', ')}`);
-  await waitForReplayAssertion(async seen => {
-    ok(!consoleErrors.length, `the mock logged console errors: ${consoleErrors.join(' | ')}`);
-
-    // §4: the opener asserts the RENDERED state equals the REQUESTED one — and
-    // reads that from the SERVED MARKUP, not only from the toolbar. Checking the
-    // mockbar's source and the scenario select's value alone was cosmetic: they
-    // both agreed while the desk showed something else entirely.
-    const rendered = seen(await page.evaluate(() => {
-      const desk = document.querySelector('.gf');
-      return {
-        source: document.querySelector('.mockbar')?.dataset.source ?? null,
-        state: document.querySelector('[aria-label="Prototype scenario"]')?.value ?? null,
-        destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
-        currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
-        panes: desk ? desk.querySelectorAll('.pane').length : 0,
-        loading: Boolean(desk && desk.querySelector('.gf-loading')),
-      };
-    }));
-    ok(rendered.source === source, `requested source=${source} but the mock rendered ${rendered.source}`);
-    ok(rendered.state === state, `requested state=${state} but the mock rendered ${rendered.state}`);
-
-    // The frame itself, from the markup the desk actually served.
-    ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
-    ok(rendered.panes > 0, 'the desk rendered no pane');
-    ok(rendered.currentCount === 1,
-      `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
-    // glucose.js:144 seats the initial destination, and the journey source's
-    // arrive() re-seats Overview; only the meals history scenario opens Changes.
-    const expected = source === 'meals' && state === 'history' ? 'changes' : 'overview';
-    ok(rendered.destination === expected,
-      `source=${source} state=${state} should arrive on ${expected}, but the served markup shows ${rendered.destination}`);
-  }, "openMock");
-
-  return { page, context, consoleErrors, unrouted, target: 'mock', source, state, fonts };
-}
 
 /**
  * The built, Python-served desk at the root page.
@@ -2682,11 +2547,10 @@ const deferred = (id, term, what) => {
   return fn;
 };
 
-// A converted entry: the body is real and runs on the APP opener, and the entry
-// keeps its app-opener-only marker so a TARGET=mock run still reports it as
-// deferred rather than failing it against a prototype that never could pass it.
-// Converting a deferred entry this way fulfils it; the story is not weakened,
-// renamed or deleted.
+// A converted entry: the body is real and runs on the app opener, and the entry
+// keeps its app-opener-only marker as the record that the prototype never could
+// pass it. Converting a deferred entry this way fulfils it; the story is not
+// weakened, renamed or deleted.
 const appOnly = (term, what, fn) => {
   fn.deferred = { term, what };
   return fn;
@@ -3295,7 +3159,6 @@ export const REGISTRY = [
 async function main() {
   requireEnvironment();
   requireAssets();
-  const fonts = loadFontAssets();
   const { chromium } = playwright();
   const runner = createBrowserRunner(() => chromium.launch());
 
@@ -3309,32 +3172,26 @@ async function main() {
   ok(selected.length > 0, 'no applicable stories were selected — a run that executes nothing is a failure');
 
   const viewport = DEFAULT_VIEWPORT;
-  const caseServer = TARGET === 'app' && process.env.CASE_STORE_DIR
+  const caseServer = process.env.CASE_STORE_DIR
     ? createCaseServer({ directory: process.env.CASE_STORE_DIR, repo: REPO, baseURL: APP_BASE_URL }) : null;
   const open = async (options) => {
-    if (TARGET === 'app' && options.nestedCase) {
+    if (options.nestedCase) {
       ok(caseServer, 'A story selecting multiple generated stores requires CASE_STORE_DIR.');
       await caseServer.start(`source-${options.source}`, options.caseName);
       process.stdout.write(`# source=${options.source} synthetic case=${options.caseName}\n`);
     }
     const browser = await runner.browser();
-    return TARGET === 'app' ? openApp(browser, options) : openMock(browser, { ...options, fonts });
+    return openApp(browser, options);
   };
 
   let executed = 0;
-  let deferredCount = 0;
   const failures = [];
 
-  process.stdout.write(`# harmonic-v2-desktop behaviour replay — TARGET=${TARGET} viewport=${viewport} fonts=${fonts.mode}\n`);
+  process.stdout.write(`# harmonic-v2-desktop behaviour replay — TARGET=${TARGET} viewport=${viewport}\n`);
   process.stdout.write('# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md\n');
 
   for (const [id, fn, state] of selected) {
     const started = performance.now();
-    if (fn.deferred && TARGET === 'mock') {
-      deferredCount += 1;
-      process.stdout.write(`DEFERRED ${id} — app opener only · LOCK:harmonic-v2-desktop:${fn.deferred.term} · ${fn.deferred.what}\n`);
-      continue;
-    }
     let opened = null;
     try {
       const caseName = storyCase(id, process.env.STORY_CASES || '');
@@ -3344,7 +3201,7 @@ async function main() {
         process.stdout.write(`# ${id} synthetic case=${caseName} (fresh copy)\n`);
       }
       opened = await open({ ...state, viewport, storyId: id, caseName });
-      const body = TARGET === 'app' ? (C4_STORIES[id] || C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
+      const body = C4_STORIES[id] || C3_STORIES[id] || C2_STORIES[id] || fn;
       await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump,
         withCase: async (name, prove) => {
           ok(caseServer, `${id} requires CASE_STORE_DIR for its manufactured acceptance cases`);
@@ -3359,7 +3216,7 @@ async function main() {
       if (process.env.CAPTURE_DIR && (!process.env.CAPTURE_ONLY
           || process.env.CAPTURE_ONLY.split(',').includes(id))) {
         await captureStory(opened.page, { directory: process.env.CAPTURE_DIR, id,
-          target: TARGET, viewport, caseName: TARGET === 'app' ? shownCaseName : state.source });
+          target: TARGET, viewport, caseName: shownCaseName });
       }
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);
@@ -3375,7 +3232,7 @@ async function main() {
 
   await runner.close();
 
-  process.stdout.write(`\n# executed ${executed} · failed ${failures.length} · deferred ${deferredCount}`
+  process.stdout.write(`\n# executed ${executed} · failed ${failures.length} · deferred 0`
     + ` · selected ${selected.length} · chromium launches ${runner.launches}\n`);
 
   if (executed === 0) {

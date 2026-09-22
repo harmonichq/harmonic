@@ -185,15 +185,15 @@ class TestModuleImports(_Tree):
                 self.assertIn("missing.js", failures[0])
 
     def test_html_inline_module_imports_are_resolved(self) -> None:
-        """The SPA is one HTML file with its module inline, so its imports are
-        the same build dependency an .mjs file's are."""
-        self.write("frontend/index.html",
+        """A page may carry its module inline, so those imports are the same
+        build dependency an .mjs file's are."""
+        self.write("frontend/page.html",
                    "<script type='module'>\n"
-                   "import { TABS } from './tab-routing.js';\n"
+                   "import { start } from './boot.js';\n"
                    "</script>\n")
-        failures = self.check({"frontend/index.html"})
+        failures = self.check({"frontend/page.html"})
         self.assertEqual(len(failures), 1, failures)
-        self.assertIn("tab-routing.js", failures[0])
+        self.assertIn("boot.js", failures[0])
 
     def test_an_ordinary_string_is_not_a_specifier(self) -> None:
         """A relative URL passed to fetch is a runtime route, not a module."""

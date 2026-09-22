@@ -4,8 +4,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { makeDeps } from './data.js';
-
 import {
   adaptEatingSequenceReport,
   matrixSeries,
@@ -15,18 +13,6 @@ import {
 const report = JSON.parse(readFileSync(
   new URL('./__fixtures__/eating-sequence-report.json', import.meta.url), 'utf8',
 ));
-
-test('the fetch helper requests the API-declared fixed Diagnose route', async () => {
-  const calls = [];
-  const fetch = async (url) => {
-    calls.push(url);
-    return { ok: true, json: async () => report };
-  };
-  await makeDeps({ fetch }).fetchEatingSequences();
-  assert.deepEqual(calls, ['/api/diagnose/eating-sequences']);
-  const api = readFileSync(new URL('../ciq_autotune/api.py', import.meta.url), 'utf8');
-  assert.match(api, /@app\.get\("\/api\/diagnose\/eating-sequences"\)/);
-});
 
 test('the adapter carries the report skeleton and served rows field-for-field', () => {
   const adapted = adaptEatingSequenceReport(report);

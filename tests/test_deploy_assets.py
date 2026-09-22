@@ -51,7 +51,10 @@ class DeployAssetsTest(unittest.TestCase):
         self.assertNotRegex(
             text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\b",
             "the retired v1 build must not ship (ADR 416)")
-        self.assertRegex(text, r"COPY\s+vite\.config\.mjs\s+vite\.config\.v2\.mjs\b")
+        self.assertRegex(text, r"COPY\s+vite\.config\.v2\.mjs\s+tsconfig\.json\b")
+        self.assertNotRegex(
+            text, r"COPY\s+vite\.config\.mjs\b",
+            "the retired v1 build config must not ship (ADR 416)")
         self.assertRegex(text, r"(?m)^COPY\s+frontend-v2\s+\./frontend-v2$")
 
 

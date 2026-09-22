@@ -35,13 +35,11 @@ SMOKE_STORIES = (
     "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "R8", "R18",
 )
 DRIFTS = [
-    "scripts/gen_ic_block_fixtures.py", "scripts/gen_annotation_fixtures.py",
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
     "scripts/gen_qa_e2e_db.py", "scripts/gen_findings_projection_fixtures.py",
     "scripts/gen_ic_history_event_fixtures.py", "scripts/gen_ic_block_evidence_fixtures.py",
     "scripts/gen_basal_night_evidence_fixtures.py", "scripts/gen_isf_rest_window_evidence_fixtures.py",
     "scripts/gen_missed_meal_comparison_fixtures.py", "scripts/gen_eating_sequence_fixtures.py",
-    "mockups/diagnose-evidence-canvas.exploration/generate.py",
     "mockups/harmonic-v2.exploration/generate.py",
 ]
 
@@ -603,15 +601,14 @@ def checks(run):
     for number, path in enumerate(DRIFTS, 1):
         run.command(f"drift-{number:02}", ["uv", "run", "python", path]
                     + ([] if path.endswith("check_demo_fixtures.py") else ["--check"]))
-    for name, path in [("event-drift", "mockups/diagnose-event-comparison.synthetic/generate.mjs"),
-                       ("routing-drift", "mockups/finding-evidence-routing.exploration/build.mjs")]:
-        run.command(name, ["node", path, "--check"])
+    run.command("event-drift", ["node", "mockups/diagnose-event-comparison.synthetic/generate.mjs",
+                                "--check"])
 
 
 def budget(run):
-    # Both shells must already be built. No concurrent suites on this machine.
-    for root in ["frontend", "frontend-v2"]:
-        require((REPO / root / "dist/index.html").is_file(), "run npm ci && npm run build first")
+    # The desk must already be built. No concurrent suites on this machine.
+    require((REPO / "frontend-v2" / "dist/index.html").is_file(),
+            "run npm ci && npm run build first")
     before = hashlib.sha256(SHOWCASE.read_bytes()).hexdigest()
     full, _ = run.command("pytest", ["uv", "run", "python", "-m", "pytest"])
     drift, _ = run.command("qa-drift", ["uv", "run", "python", "scripts/gen_qa_e2e_db.py", "--check"])

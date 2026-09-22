@@ -40,7 +40,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.mjs vite.config.v2.mjs tsconfig.json ./
+COPY vite.config.v2.mjs tsconfig.json ./
 # Both source roots: the desk is built from frontend-v2/, and it imports shared
 # modules and stylesheets out of frontend/.
 COPY frontend ./frontend

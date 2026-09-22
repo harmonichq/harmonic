@@ -177,3 +177,13 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
 - [x] 4.3 Run the complete pull-request gate from `AGENTS.md` once and record the
       outputs under `evidence/`. The image package proof is not run locally; it
       is CI's image job on the pull request (design.md "Verification design").
+
+## 5. Routes with no shipped caller (#417, ADR 417)
+
+- [x] 5.1 Retire `POST /api/fetch`, `GET /api/backtest`,
+      `GET /api/diagnose/eating-sequences` and `GET`/`POST /api/audit/dismissals`
+      with the backtest pre-warm, the store's dismissal methods and their tests;
+      keep the eating-sequence report as the case files' cached input.
+- [x] 5.2 Delete the desk replay's prototype opener (`TARGET=mock`), whose only
+      executable source linked v1 modules this change deleted.
+- [x] 5.3 Re-run the desk browser legs once on the commit to be pushed.

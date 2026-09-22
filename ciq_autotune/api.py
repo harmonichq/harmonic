@@ -1,9 +1,10 @@
 """FastAPI HTTP surface (the ``api`` extra) — S1.
 
 A thin renderer over the same :class:`~ciq_autotune.result.AnalysisResult` the CLI
-prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch`` triggers a
-live pull. The result schema *is* the contract a frontend builds on, so the API
-adds no analysis of its own.
+prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON. The result schema *is*
+the contract a frontend builds on, so the API adds no analysis of its own. The
+live pull has no route: the hourly loop and the ``harmonic fetch`` command are its
+only callers (#417).
 
 It also serves the one built browser shell (``frontend/dist/index.html``) at ``/``
 and its explicit page paths, alongside the ``/api`` routes on the same port — there is
@@ -26,7 +27,7 @@ import logging
 import re
 import sqlite3
 import threading
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -513,6 +514,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise ValueError("window coordinates must be decimal minutes")
         return WindowQuery.clock(int(start), int(end)), selected_id, lever
 
+    # The report has no route of its own since #417; the finding case files
+    # carry it as their `projection.report`, which is where the desk reads it.
     def eating_sequence_result(window):
         return fixed(
             ("eating-sequences", window), "eating-sequences-v1",
@@ -937,34 +940,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except IncompleteBasalNightEvidence as error:
             raise HTTPException(status_code=500, detail="basal night evidence is incomplete") from error
 
-    @app.get("/api/diagnose/eating-sequences")
-    def diagnose_eating_sequences_endpoint(
-        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
-        analysis_generation: Optional[str] = None,
-        _: None = Depends(require_token),
-    ) -> dict:
-        """Fixed-source sequence evidence, optionally bound to a Finding generation."""
-        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
-            raise HTTPException(status_code=400, detail=(
-                "eating sequences requires its fixed "
-                f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day source window"))
-        try:
-            generation, result = cache.stable_read(
-                ("eating-sequences-snapshot", window), lambda: eating_sequence_result(window),
-                validate=current_fixed_result,
-            )
-            if analysis_generation is not None and analysis_generation != generation:
-                raise HTTPException(status_code=409, detail={
-                    "code": "analysis_generation_mismatch",
-                    "message": "Refresh the finding before loading its sequence evidence."})
-            return fixed_response(result, lambda report: {
-                **report, "analysis_generation": generation,
-            })
-        except ResultCache.GenerationChanged as error:
-            raise HTTPException(status_code=409, detail={
-                "code": "analysis_generation_mismatch",
-                "message": "Input data changed while loading sequence evidence."}) from error
-
     @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(
         history_id: Optional[str] = None,
@@ -1084,31 +1059,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         finally:
             cache.release_preparation(prepared)
 
-    @app.get("/api/audit/dismissals")
-    def audit_dismissals_endpoint(_: None = Depends(require_token)) -> dict:
-        with Store.open(db_path) as store:
-            return {"dismissals": store.audit_dismissals()}
-
-    @app.post("/api/audit/dismissals")
-    def dismiss_audit_item_endpoint(payload: dict = Body(...),
-                                    _: None = Depends(require_token)) -> dict:
-        item_id = payload.get("item_id")
-        fingerprint = payload.get("evidence_fingerprint")
-        if (not isinstance(item_id, str) or not re.fullmatch(r"[a-z0-9:_-]{1,160}", item_id)
-                or not isinstance(fingerprint, str) or not fingerprint
-                or len(fingerprint) > 250_000):
-            raise HTTPException(
-                status_code=400,
-                detail="item_id and evidence_fingerprint are required",
-            )
-        try:
-            with Store.open(db_path) as store:
-                store.dismiss_audit_item(item_id, fingerprint)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-        cache.bump()  # dismissal changes the Audit read (#586)
-        return {"item_id": item_id, "evidence_fingerprint": fingerprint}
-
     @app.get("/api/pattern-sweep")
     def pattern_sweep_endpoint(_: None = Depends(require_token)) -> dict:
         """The pattern-sweep payload (#378): every generated candidate cell priced
@@ -1185,32 +1135,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=404, detail="unknown article")
         return PlainTextResponse(path.read_text(encoding="utf-8"),
                                  media_type="text/markdown")
-
-    @app.post("/api/fetch")
-    def fetch_endpoint(days: int = 120, _: None = Depends(require_token)) -> dict:
-        from . import sync as sync_mod
-        end = date.today()
-        start = end - timedelta(days=days)
-        with Store.open(db_path) as store:
-            # The pull commits window by window, so a fetch that failed part-way
-            # still leaves rows behind. Invalidate on what was committed — read
-            # off the store's durable revision — rather than on whether the pull
-            # returned (#146). A partial fetch is not a RuntimeError, so it used
-            # to escape this handler entirely: it skipped the bump AND surfaced
-            # as an unhandled 500. It now joins RuntimeError at 503, carrying how
-            # far the pull got; every other failure keeps propagating as itself.
-            baseline = store.input_data_revision()
-            try:
-                written = sync_mod.pull_from_tconnect(store, start=start, end=end,
-                                                       key_path=key_path)
-            except Exception as e:
-                if store.input_data_revision() > baseline:
-                    cache.bump()
-                if isinstance(e, (RuntimeError, sync_mod.PartialFetchError)):
-                    raise HTTPException(status_code=503, detail=str(e))
-                raise
-        cache.bump()  # a manual fetch is an out-of-loop write path (#267)
-        return {"pulled": written, "window": {"start": str(start), "end": str(end)}}
 
     @app.get("/api/credentials")
     def get_credentials_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1485,49 +1409,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                              carb_entries=store.carb_entries(),
                              prompt_responses=store.prompt_responses())
         return {"text": render_text(result)}
-
-    @app.get("/api/backtest")
-    def backtest_endpoint(holdout_days: int = 2,
-                          _: None = Depends(require_token)) -> dict:
-        """Run the held-out backtest and return a JSON-serialisable result.
-
-        Scores the suggested basal profile (trained on all days except the most
-        recent ``holdout_days``) against what Control-IQ actually delivered on
-        those held-out days — head-to-head with the current programmed profile.
-        """
-        from .backtest import backtest as run_backtest
-
-        def result(bt) -> dict:
-            return {
-                "holdout_days": bt.holdout_days,
-                "train_days": bt.train_days,
-                "test_clean_minutes": bt.test_clean_minutes,
-                "mae_suggested": bt.mae_suggested,
-                "n_suggested": bt.n_suggested,
-                "mae_current": bt.mae_current,
-                "n_current": bt.n_current,
-                "mae_suggested_matched": bt.mae_suggested_matched,
-                "mae_current_matched": bt.mae_current_matched,
-                "n_matched": bt.n_matched,
-                "improvement": bt.improvement,
-            }
-
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                basal = store.basal_events()
-                cgm = store.cgm_readings()
-                bolus = store.bolus_events()
-                pump = store.pump_events()
-            bt = run_backtest(basal, cgm, bolus, pump, holdout_days=holdout_days)
-            return result(bt)
-
-        key = ("backtest", holdout_days)
-        def snapshot_compute(store):
-            bt = run_backtest(store.basal_events(), store.cgm_readings(),
-                              store.bolus_events(), store.pump_events(), holdout_days=holdout_days)
-            return result(bt)
-        return (fixed_response(fixed(key, "backtest-v1", snapshot_compute)) if holdout_days == 2
-                else cache.get_or_compute(key, compute))
 
     def follow_up_read(store):
         from .watched_change import follow_up_admission
@@ -1932,7 +1813,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def warm_roster():
         return (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("backtest", lambda: backtest_endpoint(holdout_days=2)),
             ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),

@@ -111,14 +111,13 @@ uv run harmonic backtest                # score basal on held-out days
 uv run harmonic report --plot           # markdown advisory + why-plot
 ```
 
-The most-used routes are GET `/api/analyze`, POST `/api/fetch`, GET/POST
+The most-used routes are GET `/api/analyze`, GET/POST
 `/api/credentials`, GET `/api/status`, GET `/api/pump-settings`, GET
 `/api/report`, and GET `/api/health`, plus the UI at `/diagnose`.
 They are a small sample. The server registers roughly seventy routes, about half
 of them data endpoints — the Diagnose findings queue, event comparisons,
 scenarios, the Plan draft and its history, Verify trials, outcomes and their
-trend, the carb log, prompts, focus, the timeline, backtests, the model view and
-more — and the rest the static files the UI loads. The complete list is
+trend, the carb log, prompts, focus, the timeline, the model view and more — and the rest the static files the UI loads. The complete list is
 browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
 
 `fetch` is idempotent: re-pulling an overlapping window merges rather than

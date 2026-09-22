@@ -50,6 +50,33 @@ the hourly loop and the CLI remain. A defect in embedded Diagnose behavior that
 only a deleted v1 story exercised will no longer fail a gate; the remedy is a new
 desk story, filed when found.
 
+## ADR 417 — Four routes with no shipped caller are retired, and the live pull has no endpoint
+
+**Status:** accepted, Connor Griffin, 2026-09-22 ("just fix it all", folding #417
+into #416's pull request rather than a follow-up).
+
+**Context.** Retiring v1 removed the last callers of `POST /api/fetch`,
+`GET /api/backtest`, `GET /api/diagnose/eating-sequences` and
+`GET`/`POST /api/audit/dismissals`. #417's review also read the eating-sequence
+`fixed()` call as a wasted pre-warm; it is not. The finding case-file preparation
+reads that cached report and the desk draws the eating-sequence chart from the case
+file's `projection.report`, so the compute keeps its reader. The backtest pre-warm
+had none.
+
+**Decision.** The four routes, the backtest pre-warm, the store's audit-dismissal
+methods and table DDL, and their tests are deleted. The eating-sequence report keeps
+its cache key and shape as a case-file input. The manual pull is not given a desk
+control: the hourly loop and the `harmonic fetch` command are the live pull's only
+callers. The v1 "fetch now" control was already accepted as lost by ADR 416; a route
+with no caller is not a replacement for it.
+
+**Consequences.** A self-hosted install that needs a pull between hourly cycles
+runs `harmonic fetch` out of process, which does not invalidate a running
+`serve`'s cache (the "result cache is coarse" rule in `AGENTS.md`); the next
+scheduled fetch does. Existing databases keep their `audit_dismissals` table with
+nothing reading it; dropping it is a data migration and is not done here. The CLI
+`harmonic backtest` is unchanged.
+
 ## Risk contract
 
 - **Must prevent:** secret exposure; any change to the store, analyzers, safety

@@ -1115,7 +1115,6 @@ class PromptQueueTest(unittest.TestCase):
             self.client.get("/api/analyze", params=window),
             self.client.get("/api/scenarios", params=window),
             self.client.get("/api/outcomes", params=window),
-            self.client.get("/api/backtest", params=window),
             self.client.get("/api/model-view", params={"date": "2026-06-03"}),
             self.client.get("/api/catalog"),
             self.client.get("/api/report", params=window),
@@ -1158,10 +1157,6 @@ class ApiAuthTest(unittest.TestCase):
         r = self.client.get("/api/kb/start-here",
                             headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
-
-    def test_fetch_requires_token_before_any_pull(self):
-        # Wrong token must 401 before the route ever attempts a live fetch.
-        self.assertEqual(self.client.post("/api/fetch").status_code, 401)
 
     def test_credentials_get_requires_token(self):
         self.assertEqual(self.client.get("/api/credentials").status_code, 401)
@@ -1552,88 +1547,6 @@ class CacheInvalidationTest(unittest.TestCase):
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
-class FetchEndpointCacheInvalidationTest(unittest.TestCase):
-    """#146: the pull commits window by window, so a fetch that failed part-way
-    still leaves rows in the store. What decides invalidation is whether anything
-    was committed, not whether the pull returned.
-
-    Observed on the cache's public ``version``: the endpoint's error paths return
-    no body to read the invalidation through, and the app is built with
-    ``enable_fetch_loop=False``, so nothing else bumps between two readings.
-    """
-
-    def setUp(self):
-        from ciq_autotune.api import create_app
-        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
-        _seed(self.tmp.name)
-        self.app = create_app(db_path=self.tmp.name, token=None,
-                              enable_fetch_loop=False)
-
-    def tearDown(self):
-        self.tmp.close()
-
-    @staticmethod
-    def _commits_then_raises(error):
-        """A window's upserts land through the real Store, then a later one fails."""
-        def pull(store, **kwargs):
-            store.upsert_basal([{"seq_num": 987654, "time": "2026-06-04 00:00:00",
-                                 "delivery_type": "algorithmDelivery",
-                                 "duration_mins": 5, "basal_rate": 0.8,
-                                 "profile_basal_rate": 0.6}])
-            raise error
-        return pull
-
-    def _post_fetch(self, side_effect, *, raise_server_exceptions=False):
-        """POST /api/fetch with the pull replaced; returns (response, version delta)."""
-        client = TestClient(self.app, raise_server_exceptions=raise_server_exceptions)
-        before = self.app.state.result_cache.version
-        with patch("ciq_autotune.sync.pull_from_tconnect", side_effect=side_effect):
-            r = client.post("/api/fetch")
-        return r, self.app.state.result_cache.version - before
-
-    def _partial(self):
-        from ciq_autotune.sync import PartialFetchError
-        return PartialFetchError(RuntimeError("network blip"),
-                                 written={"basal_events": 1},
-                                 windows_completed=2, windows_total=5,
-                                 failed_window=("2026-02-01", "2026-03-03"))
-
-    def test_partial_fetch_that_committed_invalidates_and_answers_503(self):
-        r, bumped = self._post_fetch(self._commits_then_raises(self._partial()))
-        self.assertEqual(r.status_code, 503)
-        self.assertIn("2 of 5 windows", r.json()["detail"])
-        self.assertEqual(bumped, 1)
-
-    def test_partial_fetch_that_committed_nothing_does_not_invalidate(self):
-        r, bumped = self._post_fetch(self._partial())
-        self.assertEqual(r.status_code, 503)
-        self.assertEqual(bumped, 0)
-
-    def test_runtime_error_after_a_committed_write_invalidates(self):
-        r, bumped = self._post_fetch(
-            self._commits_then_raises(RuntimeError("network blip")))
-        self.assertEqual(r.status_code, 503)
-        self.assertEqual(bumped, 1)
-
-    def test_runtime_error_that_committed_nothing_does_not_invalidate(self):
-        r, bumped = self._post_fetch(RuntimeError("no creds"))
-        self.assertEqual(r.status_code, 503)
-        self.assertEqual(bumped, 0)
-
-    def test_other_failure_invalidates_but_keeps_propagating(self):
-        # An ingest bug (a KeyError out of events_to_rows, a TimezoneNotConfigured)
-        # must not start reading as a vendor outage just because the handler now
-        # catches everything to invalidate. It still escapes the endpoint.
-        before = self.app.state.result_cache.version
-        client = TestClient(self.app, raise_server_exceptions=True)
-        with patch("ciq_autotune.sync.pull_from_tconnect",
-                   side_effect=self._commits_then_raises(KeyError("carbAmount"))):
-            with self.assertRaises(KeyError):
-                client.post("/api/fetch")
-        self.assertEqual(self.app.state.result_cache.version - before, 1)
-
-
-@unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
 class CachePreWarmTest(unittest.TestCase):
     """#424: after the hourly fetch writes, the app clears the cache and then
     pre-warms the fixed shapes the initial Diagnose load asks for, so the first
@@ -1646,7 +1559,6 @@ class CachePreWarmTest(unittest.TestCase):
     #: The builders behind the landing set, patched to count recomputes.
     _BUILDERS = (
         ("analyze", "ciq_autotune.api", "analyze"),
-        ("backtest", "ciq_autotune.backtest", "backtest"),
         ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
@@ -1688,7 +1600,6 @@ class CachePreWarmTest(unittest.TestCase):
         """Exactly what the browser asks for on the initial Diagnose load."""
         for path, params in (
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
-            ("/api/backtest", {"holdout_days": 2}),
             ("/api/outcomes/trend", {"window": 30}),
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
@@ -2038,14 +1949,14 @@ class CachePreWarmTest(unittest.TestCase):
             # Exactly the landing shapes and nothing else — both /api/analyze modes
             # included. Findings consumers share the canonical pooled analysis,
             # scenario report, and exposure feed.
-            self.assertEqual(after_warm, {"analyze": 2, "backtest": 1,
+            self.assertEqual(after_warm, {"analyze": 2,
                                           "outcomes-trend": 1, "scenarios": 1,
                                           "exposures": 1,
                                           "explore-time-of-day": 1,
                                           "isf-rest-window-evidence": 1,
                                           "finding-case-file": 1})
             expected_keys = (
-                ("analyze", 30, False, False), ("backtest", 2),
+                ("analyze", 30, False, False),
                 ("outcomes-trend", 30), ("explore-time-of-day",),
                 ("analyze", 30, False, True), ("scenarios", 30),
                 ("exposures",),
@@ -2119,24 +2030,23 @@ class CachePreWarmTest(unittest.TestCase):
 
     def test_one_failing_shape_is_contained_and_the_rest_still_warm(self):
         # The witness must be a shape the warm pass reaches *after* the failing one,
-        # or containment isn't what's being proved. Backtest warms second, the
-        # finding-case preparation last, so a blown-up backtest leaves later
+        # or containment isn't what's being proved. The outcomes trend warms second,
+        # the finding-case preparation last, so a blown-up trend leaves later
         # shapes to observe.
-        import ciq_autotune.backtest as backtest_mod
+        import ciq_autotune.outcomes_trend as trend_mod
 
         def boom(*args, **kwargs):
-            raise RuntimeError("backtest blew up")
+            raise RuntimeError("outcomes trend blew up")
 
         with self._counting_builders() as counts:
-            with patch.object(backtest_mod, "backtest", boom):
+            with patch.object(trend_mod, "summarize_trend", boom):
                 with self._run_worker():
-                    self.assertEqual(counts["backtest"], 0)
-                    self.assertEqual(counts["outcomes-trend"], 1)
+                    self.assertEqual(counts["outcomes-trend"], 0)
                     self.assertEqual(counts["analyze"], 2)
                     self.assertEqual(counts["scenarios"], 1)
-            self.assertEqual(self.client.get("/api/backtest",
-                                             params={"holdout_days": 2}).status_code, 200)
-            self.assertEqual(counts["backtest"], 1)
+            self.assertEqual(self.client.get("/api/outcomes/trend",
+                                             params={"window": 30}).status_code, 200)
+            self.assertEqual(counts["outcomes-trend"], 1)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

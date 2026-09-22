@@ -11,6 +11,13 @@ at root".
 **Reason:** The cockpit shell is retired with v1 (ADR 416). The desk's persistent
 chrome and its three destinations are specified by the desk requirements.
 
+### Requirement: Diagnose hosts a non-advisory aggregate-evidence section outside Audit and Watching
+
+**Reason:** Two of its scenarios specified v1's data helper requesting
+`/api/diagnose/eating-sequences` and recording that response's age; the route is
+retired (ADR 417). The requirement continues as "Diagnose draws eating-sequence
+evidence from the finding case file".
+
 ## ADDED Requirements
 
 ### Requirement: The desk is the only shell, built ahead of time and served at root
@@ -57,3 +64,37 @@ a missing route.
 
 - **WHEN** the closed-set route assertion runs
 - **THEN** it names the complete non-API route set, so a route cannot be added or kept without updating it
+
+### Requirement: Diagnose draws eating-sequence evidence from the finding case file
+
+Diagnose SHALL nest supported eating-sequence lever findings as habit causes under
+Highs after meals in its existing queue. They SHALL have their own sequence counts
+and no rank numeral or extra Findings/Sift count. The eating-sequence descriptor
+SHALL bring the registry to six entries; the parent SHALL retain pattern-case-file. It SHALL NOT
+create a separate aggregate section or new stage, drawer or dock behavior. Neither
+finding SHALL stage a Plan change. Its adapter SHALL reshape
+served aggregates without deriving a verdict, median, difference, or status. An
+insufficient cell SHALL remain visible as insufficient rather than numeric. The
+report reaches Diagnose inside the finding case file it opens, as that case's
+`projection.report`; it has no route of its own (ADR 417).
+
+#### Scenario: An insufficient served aggregate remains insufficient in the adapter
+
+- **GIVEN** an eating-sequence report cell with insufficient status and null metric
+- **WHEN** Diagnose adapts it for aggregate evidence
+- **THEN** the chart-ready cell retains that status and null value
+- **AND** it is neither dropped nor zero-filled
+
+#### Scenario: The adapter does not re-derive an eating-sequence judgment
+
+- **GIVEN** served aggregates, comparisons, statuses, findings, and exclusions
+- **WHEN** Diagnose adapts the report
+- **THEN** its outputs use those values field-for-field
+- **AND** no frontend threshold, median, difference, or verdict is calculated
+
+#### Scenario: The section reads the report from the case file
+
+- **GIVEN** Diagnose opens an eating-sequence finding's case file
+- **WHEN** it draws that finding's aggregate evidence
+- **THEN** the report is the case file's own `projection.report`, prepared for the server-owned fixed Diagnose source window
+- **AND** Diagnose makes no separate report request

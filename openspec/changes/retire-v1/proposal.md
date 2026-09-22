@@ -36,11 +36,16 @@ deletes the rest.
   address or v1 coexistence, under Connor's 2026-09-21 sanction.
 - The `harmonic-v2` plan's serving requirement and its tasks 3.5, 4.2 and 4.3 are
   reconciled to this decision.
+- Four JSON routes whose only callers were v1 are retired with their backtest
+  pre-warm and audit-dismissal storage (ADR 417, folded in from #417): the manual
+  pull, the backtest read, the standalone eating-sequence report and audit
+  dismissals. The live pull's callers are the hourly loop and the `harmonic fetch`
+  command. The desk replay's prototype opener goes with them.
 
 ## What does not change
 
-The store, the analyzers, the safety caps, the HTTP API's JSON endpoints, the
-result cache, authentication, and every advisory output. The desk's rendered
+The store's data, the analyzers, the safety caps, every JSON endpoint the desk
+calls, the result cache, authentication, and every advisory output. The desk's rendered
 surface does not change; only its address does.
 
 ## Impact

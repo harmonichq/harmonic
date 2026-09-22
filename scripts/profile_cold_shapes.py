@@ -44,14 +44,6 @@ from ciq_autotune.store import Store  # noqa: E402
 DIAGNOSE_WINDOW_DAYS = 30
 
 
-def _backtest(store):
-    """`/api/backtest` (holdout 2): the SPA's first heavy read."""
-    from ciq_autotune.backtest import backtest
-
-    backtest(store.basal_events(), store.cgm_readings(), store.bolus_events(),
-             store.pump_events(), holdout_days=2)
-
-
 def _analyze(store, *, pool: bool):
     """`/api/analyze`: unpooled for the landing read, pooled for Diagnose (ADR 0032)."""
     from ciq_autotune.analyze import analyze
@@ -104,7 +96,6 @@ def _outcomes_trend(store, *, window: int):
 
 # Cold-arrival shapes in the order the SPA requests them, then the warm-set-only ones.
 SHAPES = (
-    ("backtest", "cold", _backtest),
     ("analyze", "cold", lambda store: _analyze(store, pool=False)),
     ("analyze-pooled", "cold", lambda store: _analyze(store, pool=True)),
     ("scenarios", "cold", _scenarios),

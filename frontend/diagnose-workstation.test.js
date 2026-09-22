@@ -27,6 +27,38 @@ test('queryState reads Diagnose state from the canonical route query', () => {
   }
 });
 
+/* #255 split two roles that a single grey had been doing both jobs for: the
+   quiet grid ink a chart's gridlines recede into, and the stronger edge a chart
+   vessel is cut with. They are separate tokens because they must be free to
+   move apart. #416 deleted frontend/index.test.js with the rest of v1; the two
+   stylesheets are still shipped and still imported by main.js, so the coupling
+   is pinned here, beside the sheet's other rules. */
+test('#255 · grid ink and vessel edge stay two roles, derived not literal', () => {
+  const css = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+  const theme = readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
+  assert.match(theme, /--mk-line: var\(--wk-rule\);/,
+    'chart grid ink derives from the quiet rule role');
+  assert.match(css, /--ck-tile-edge: var\(--wk-rule-strong\);/,
+    'chart vessel edges derive from the strong edge role, not grid ink');
+});
+
+/* ADR 341 retired the dock: All charts opens the complete catalog directly,
+   with no dock mode and no drag handle. A dormant selector for the retired
+   strip is how it comes back — the markup returns and the sheet still styles
+   it — so the stylesheet is pinned clean of all three. */
+test('#341 · the retired dock leaves no dormant selector behind', () => {
+  const css = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /data-dock|data-raised|dock-handle/,
+    'the retired strip has no dormant selector that can resurrect it');
+});
+
+test('#341 · All charts visibly marks the current chart without changing geometry', () => {
+  const css = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+  assert.match(css,
+    /\.tile-field\[data-explorer\] > \.tile-row > \.evidence-tile\[data-selected\] \{\s*box-shadow: inset 0 0 0 2px var\(--ck-focus-mark\), var\(--ck-cell-shadow\);\s*\}/,
+    'the current catalog chart has a token-owned inset mark distinct from an ordinary cell');
+});
+
 test('#302 · a settled tile refreshes the mounted findings-row mini', () => {
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   const fetchTile = source.match(/async function fetchTile\([\s\S]*?\n  \}/);

@@ -13,12 +13,13 @@
 // AMENDED 2026-09-10 · #408: bounded waits and observation timing only;
 // story claims, tolerances and actions remain unchanged. The original frozen
 // runs remain historical evidence; the amended replay requires fresh runs.
-// AMENDED 2026-09-22 · #416: R6 waits for the Diagnose composition to finish
-// rendering before it focuses a segment. The instrument row is rebuilt from
-// scratch on every render (diagnose-workstation.js renderInstruments), so on a
-// slow runner the button R6 had focused was detached by a render that landed
-// after the focus, and the story timed out on three of main's last six runs.
-// Claim, tolerance and actions remain unchanged.
+// AMENDED 2026-09-22 · #416: R6 settles on the desk's reads and composition,
+// then retries its focus-and-Home probe against the mounted segment. The
+// instrument row is rebuilt from scratch on every render
+// (diagnose-workstation.js renderInstruments), so on a slow runner a completion
+// landing after the focus detached or moved it, and the story timed out on
+// three of main's last six runs. Claim and tolerance remain unchanged; the
+// probe's two idempotent actions repeat per attempt.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
@@ -2876,20 +2877,26 @@ export const R5 = async (page) => {
 export const R6 = async (page) => {
   printSanction('R6');
   await goto(page, 'explore');
-  // The row is rebuilt on each render; wait for the composition that render
-  // finishes with, so the button focused below is the one that stays mounted.
+  // Re-pressing Diagnose re-reads and re-seats the surface, and the instrument
+  // row is rebuilt on every render; completions landing after the focus below
+  // (the re-seat, the Plan-state refresh, arrival focus) detached or moved it
+  // on slow runners. Settle on the desk's reads and its composition first, then
+  // probe against whichever segment is mounted on each attempt: focus and Home
+  // are idempotent and are exactly the claim, so repeating them cannot pass a
+  // story that should fail, and a probe interrupted by a late render retries.
+  await page.waitForLoadState('networkidle', { timeout: 30000 });
   await waitForCharts(page);
   const seg = await visible(page, '.seg[role="group"]');
   await waitForReplayAssertion(async seen => {
     ok(seen(await seg.locator('button').count()) > 0, 'R6 premise failed: the segmented control has no Tab stops — re-settle, not a fail');
   }, "R6");
-  const first = seg.locator('button').first();
-  await first.focus();
-  await page.waitForFunction((button) => document.activeElement === button,
-    await first.elementHandle(), { timeout: 10000 });
-  await page.keyboard.press('Home');
-  await page.waitForTimeout(150);
   await waitForReplayAssertion(async seen => {
+    const first = seg.locator('button').first();
+    await first.focus();
+    ok(seen(await first.evaluate((button) => document.activeElement === button)),
+      'R6 premise failed: the first segment did not take focus');
+    await page.keyboard.press('Home');
+    await page.waitForTimeout(150);
     ok(seen(await first.evaluate((button) => document.activeElement === button)),
       'R6 replayed-fail: installSegKeys-style Home/End navigation is back');
   }, "R6");

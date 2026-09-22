@@ -51,3 +51,17 @@ focusing; claim and actions unchanged.
 1280x720: complete-replay: exit 0, 806.354 s   # executed 142 · failed 0 · deferred 0 · selected 142
 1440x900: complete-replay: exit 0, 882.542 s   # executed 142 · failed 0 · deferred 0 · selected 142
 ```
+
+## R6 second amendment
+
+CI on 1d9f7427 failed R6 again, on the 1440x900 4/4 shard, with the same
+message: waiting for the composition was not enough, because re-pressing
+Diagnose re-reads and re-seats the surface and later completions (the Plan-state
+refresh, arrival focus) can still move or detach the focused segment. R6 now
+settles on network idle and the composition, then retries its focus-and-Home
+probe against the mounted segment; both actions are idempotent and are the
+claim itself. Complete ledger on the amended file, both sizes:
+```
+1280x720: # executed 142 · failed 0 · deferred 0 · selected 142   (R6 7404 ms)
+1440x900: # executed 142 · failed 0 · deferred 0 · selected 142   (R6 7841 ms)
+```

@@ -201,10 +201,8 @@ def free_port(port):
             raise RuntimeError(f"Port {port} is occupied; refusing to start or reuse a server") from error
 
 
-def wait_ready(base, process=None):
+def wait_ready(base):
     for _ in range(120):
-        if process is not None:
-            require(process.poll() is None, "synthetic server exited before readiness")
         try:
             if request(base, "/api/health")[0] == 200:
                 return

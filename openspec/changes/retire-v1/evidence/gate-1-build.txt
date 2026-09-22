@@ -12,7 +12,7 @@ frontend/dist/index.html                     169.69 kB │ gzip:  38.07 kB
 frontend/dist/assets/index-IwSoGBKQ.css      183.85 kB │ gzip:  51.16 kB
 frontend/dist/assets/index-DYIETf6j.js     3,347.80 kB │ gzip: 809.74 kB
 
-✓ built in 217ms
+✓ built in 214ms
 vite v8.2.2 building client environment for production...
 transforming...
 ✓ 611 modules transformed.

@@ -23,6 +23,8 @@ _TAB_ROUTING = _REPO / "frontend" / "tab-routing.js"
 _BUILT_SHELL = _REPO / "frontend" / "built-shell.js"
 _DESTINATIONS = re.compile(r"V2_DESTINATIONS = [\(\[]([^\)\]]*)[\)\]]")
 _MIRROR_PAGES = re.compile(r"V2_PAGE_PATHS = new Set\(\[([^\]]*)\]\)")
+_MIRROR_ROOT = re.compile(r"""const V2_PAGE = ['"]([^'"]*)['"]""")
+_JS_STRING = re.compile(r"""^(['"])([^'"]*)\1$""")
 _ASSET_REF = re.compile(r'''(?:src|href)=["'](/assets/[^"']+)["']''')
 # The complete non-API route set, named here so a new one cannot be added
 # without this test being updated to say so.
@@ -52,23 +54,51 @@ def _quoted(text: str) -> set[str]:
 
 
 class FrontendAssetRoutesTest(unittest.TestCase):
+    def _mirror_pages(self) -> set[str]:
+        """Every page path the disk-serving mirror serves, enumerated.
+
+        Each element of its page set is READ BACK, never filtered. A filter that
+        matched only the paths this test already expects would pass while the
+        mirror served `/day2`, `/Day`, `/day-old` or a double-quoted `"/day"` —
+        exactly the divergence this check exists to catch, because a mirror that
+        serves a path the server does not is structurally blind to a missing
+        route. An element this test cannot resolve fails here rather than being
+        skipped.
+        """
+        source = _BUILT_SHELL.read_text()
+        mirror = _MIRROR_PAGES.search(source)
+        self.assertIsNotNone(mirror, "built-shell.js must carry the desk's page-path set")
+        root = _MIRROR_ROOT.search(source)
+        self.assertIsNotNone(root, "built-shell.js must declare the mirror's root page")
+        pages = set()
+        for element in (part.strip() for part in mirror.group(1).split(",")):
+            if not element:
+                continue
+            if element == "V2_PAGE":
+                pages.add(root.group(1))
+                continue
+            literal = _JS_STRING.match(element)
+            self.assertIsNotNone(
+                literal, f"the mirror's page set names {element!r}, which this test cannot "
+                         "resolve to a served path")
+            pages.add(literal.group(2))
+        return pages
+
     def test_server_router_and_disk_mirror_name_the_same_pages(self):
-        # A mirror that serves a path the server does not is structurally blind
-        # to a missing route, so the three owners of the page set are compared
-        # rather than trusted: the Python route policy, the browser router, and
-        # the disk-serving mirror the browser gates run against.
+        # The three owners of the page set are compared rather than trusted: the
+        # Python route policy, the browser router, and the disk-serving mirror
+        # the browser gates run against.
         served = _DESTINATIONS.search(_API.read_text())
         self.assertIsNotNone(served, "api.py must carry the explicit desk page tuple")
         router = _DESTINATIONS.search(_TAB_ROUTING.read_text())
         self.assertIsNotNone(router, "tab-routing.js must carry the desk's destination list")
-        mirror = _MIRROR_PAGES.search(_BUILT_SHELL.read_text())
-        self.assertIsNotNone(mirror, "built-shell.js must carry the desk's page-path set")
-        self.assertEqual(_quoted(served.group(1)), {"diagnose", "changes", "day"})
-        self.assertEqual(_quoted(router.group(1)), _quoted(served.group(1)))
-        self.assertEqual({path.lstrip("/") for path in re.findall(r"'(/[a-z]+)'", mirror.group(1))},
-                         _quoted(served.group(1)))
-        # …and all three serve the shell itself at the root page.
-        self.assertIn("V2_PAGE", mirror.group(1))
+        server_pages = _quoted(served.group(1))
+        self.assertEqual(server_pages, {"diagnose", "changes", "day"})
+        self.assertEqual(_quoted(router.group(1)), server_pages)
+        # The mirror's expectation is derived from the server's own page tuple,
+        # so the two cannot drift apart in either direction.
+        self.assertEqual(self._mirror_pages(),
+                         {"/", *(f"/{page}" for page in server_pages)})
 
     def test_built_shell_exists_and_names_no_cdn_host_at_all(self):
         # The packaged runtime needs no Node runtime and no CDN, so this scan is

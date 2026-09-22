@@ -10,4 +10,4 @@ tests/test_api.py: 26 warnings
     return self.conn.execute(sql, params).fetchall()
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-135 passed, 27 warnings, 5 subtests passed in 8.65s
+135 passed, 27 warnings, 5 subtests passed in 8.58s

@@ -2,12 +2,12 @@
 pytest: exit 5, 0.000 s
 .RUN pytest: uv run python -m pytest tests/test_one.py tests/test_two.py
 pytest: exit 0, 0.000 s
-.RUN case-cache: node /private/tmp/claude-501/tmp68v_luj9/out/case-cache.mjs
-case-cache: exit 1, 0.034 s
-RUN case-cache: node /private/tmp/claude-501/tmp3m_ubgar/out/case-cache.mjs
-case-cache: exit 1, 0.037 s
-.RUN case-cache: node /private/tmp/claude-501/tmpd06f0o58/out/case-cache.mjs
-case-cache: exit 0, 0.705 s
+.RUN case-cache: node /private/tmp/claude-501/tmpqmhpo30_/out/case-cache.mjs
+case-cache: exit 1, 0.048 s
+RUN case-cache: node /private/tmp/claude-501/tmpszmd52tc/out/case-cache.mjs
+case-cache: exit 1, 0.048 s
+.RUN case-cache: node /private/tmp/claude-501/tmp3urg359y/out/case-cache.mjs
+case-cache: exit 0, 0.640 s
 ...........................Eledger inventory: {'issued': 142, 'active': 124, 'retired': 18}
 ledger inventory: {'issued': 142, 'active': 123, 'retired': 19}
 ledger=142 registry=142 missing=[] extra=[]
@@ -115,10 +115,10 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmp3wwh_b9s/replay-sources.json
-replay-graph: exit 0, 0.034 s
+ /private/tmp/claude-501/tmpt_dw58nm/replay-sources.json
+replay-graph: exit 0, 0.048 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.039 s
+story-cases: exit 0, 0.048 s
 .RUN replay-graph: node --input-type=module -e 
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -203,186 +203,186 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmpepfnklf6/replay-sources.json
+ /private/tmp/claude-501/tmp_2dtai44/replay-sources.json
+replay-graph: exit 0, 0.045 s
+RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
+story-cases: exit 0, 0.043 s
+.RUN replay-graph: node --input-type=module -e 
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+const require = createRequire(process.cwd() + '/package.json');
+const { parse } = require('@babel/parser');
+const snapshots = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+function graph(files) {
+  const result = {};
+  for (const [file, source] of Object.entries(files)) {
+    const ast = parse(source, { sourceType: 'module' });
+    const nodes = Object.create(null), imports = Object.create(null), shared = [];
+    const add = (name, node, comments = []) => {
+      nodes[name] = { node, tags: comments.flatMap(c => [...c.value.matchAll(/STORY:([\w-]+:[SR]\d+[a-z]?)/g)].map(m => m[1])) };
+    };
+    for (const top of ast.program.body) {
+      const node = top.type === 'ExportNamedDeclaration' ? top.declaration : top;
+      if (node?.type === 'ImportDeclaration') {
+        const target = posix.normalize(posix.join(posix.dirname(file), node.source.value));
+        if (files[target]) for (const spec of node.specifiers) {
+          imports[spec.local.name] = [target, spec.imported?.name || '*'];
+          add(spec.local.name, node);
+        }
+      } else if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
+        add(node.id.name, node, top.leadingComments || []);
+      } else if (node?.type === 'VariableDeclaration') {
+        for (const decl of node.declarations) {
+          if (decl.id.type !== 'Identifier') { shared.push(source.slice(top.start, top.end)); continue; }
+          add(decl.id.name, decl, top.leadingComments || []);
+          if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
+            const name = prop.key?.name || prop.key?.value;
+            if (name) add(`${decl.id.name}.${name}`, prop, prop.leadingComments || []);
+          }
+        }
+      } else shared.push(source.slice(top.start, top.end));
+    }
+    const full = name => `${file}::${name}`;
+    const ref = name => {
+      const [first, ...tail] = name.split('.');
+      if (imports[first]) {
+        const [target, imported] = imports[first];
+        return `${target}::${[imported === '*' ? '' : imported, ...tail].filter(Boolean).join('.')}`;
+      }
+      return nodes[name] ? full(name) : nodes[first] ? full(first) : null;
+    };
+    function member(node) {
+      if (node.type === 'Identifier') return node.name;
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const base = member(node.object);
+        const field = node.computed ? node.property.value : node.property.name;
+        return base && typeof field === 'string' ? `${base}.${field}` : null;
+      }
+      return null;
+    }
+    function references(node, refs, strings, destinations) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'StringLiteral') strings.add(node.value);
+      if (node.type === 'CallExpression' && ['go', 'goto'].includes(node.callee?.name)
+          && node.arguments[1]?.type === 'StringLiteral') {
+        const destination = node.arguments[1].value;
+        if (['diagnose', 'explore', 'changes', 'day'].includes(destination))
+          destinations.add(destination === 'explore' ? 'diagnose' : destination);
+      }
+      if (node.type === 'Identifier') { refs.add(node.name); return; }
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const name = member(node);
+        if (name) { refs.add(name); return; }
+      }
+      for (const [key, value] of Object.entries(node)) {
+        if (['loc', 'start', 'end', 'leadingComments', 'trailingComments', 'innerComments'].includes(key)) continue;
+        if (Array.isArray(value)) value.forEach(child => references(child, refs, strings, destinations));
+        else if (value && typeof value === 'object') references(value, refs, strings, destinations);
+      }
+    }
+    result[full('@module')] = { text: shared.join('\n'), deps: [], strings: [], tags: [] };
+    for (const [name, { node, tags }] of Object.entries(nodes)) {
+      const refs = new Set(), strings = new Set(), destinations = new Set(); references(node, refs, strings, destinations);
+      result[full(name)] = { text: source.slice(node.start, node.end) + tags.join(','),
+        deps: [...new Set([...refs].map(ref).filter(Boolean)), full('@module')], strings: [...strings], destinations: [...destinations], tags };
+    }
+  }
+  return result;
+}
+console.log(JSON.stringify(snapshots.map(graph)));
+ /private/tmp/claude-501/tmpo0ibknzb/replay-sources.json
+replay-graph: exit 0, 0.043 s
+RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
+story-cases: exit 0, 0.046 s
+.RUN replay-graph: node --input-type=module -e 
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+const require = createRequire(process.cwd() + '/package.json');
+const { parse } = require('@babel/parser');
+const snapshots = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+function graph(files) {
+  const result = {};
+  for (const [file, source] of Object.entries(files)) {
+    const ast = parse(source, { sourceType: 'module' });
+    const nodes = Object.create(null), imports = Object.create(null), shared = [];
+    const add = (name, node, comments = []) => {
+      nodes[name] = { node, tags: comments.flatMap(c => [...c.value.matchAll(/STORY:([\w-]+:[SR]\d+[a-z]?)/g)].map(m => m[1])) };
+    };
+    for (const top of ast.program.body) {
+      const node = top.type === 'ExportNamedDeclaration' ? top.declaration : top;
+      if (node?.type === 'ImportDeclaration') {
+        const target = posix.normalize(posix.join(posix.dirname(file), node.source.value));
+        if (files[target]) for (const spec of node.specifiers) {
+          imports[spec.local.name] = [target, spec.imported?.name || '*'];
+          add(spec.local.name, node);
+        }
+      } else if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
+        add(node.id.name, node, top.leadingComments || []);
+      } else if (node?.type === 'VariableDeclaration') {
+        for (const decl of node.declarations) {
+          if (decl.id.type !== 'Identifier') { shared.push(source.slice(top.start, top.end)); continue; }
+          add(decl.id.name, decl, top.leadingComments || []);
+          if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
+            const name = prop.key?.name || prop.key?.value;
+            if (name) add(`${decl.id.name}.${name}`, prop, prop.leadingComments || []);
+          }
+        }
+      } else shared.push(source.slice(top.start, top.end));
+    }
+    const full = name => `${file}::${name}`;
+    const ref = name => {
+      const [first, ...tail] = name.split('.');
+      if (imports[first]) {
+        const [target, imported] = imports[first];
+        return `${target}::${[imported === '*' ? '' : imported, ...tail].filter(Boolean).join('.')}`;
+      }
+      return nodes[name] ? full(name) : nodes[first] ? full(first) : null;
+    };
+    function member(node) {
+      if (node.type === 'Identifier') return node.name;
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const base = member(node.object);
+        const field = node.computed ? node.property.value : node.property.name;
+        return base && typeof field === 'string' ? `${base}.${field}` : null;
+      }
+      return null;
+    }
+    function references(node, refs, strings, destinations) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'StringLiteral') strings.add(node.value);
+      if (node.type === 'CallExpression' && ['go', 'goto'].includes(node.callee?.name)
+          && node.arguments[1]?.type === 'StringLiteral') {
+        const destination = node.arguments[1].value;
+        if (['diagnose', 'explore', 'changes', 'day'].includes(destination))
+          destinations.add(destination === 'explore' ? 'diagnose' : destination);
+      }
+      if (node.type === 'Identifier') { refs.add(node.name); return; }
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const name = member(node);
+        if (name) { refs.add(name); return; }
+      }
+      for (const [key, value] of Object.entries(node)) {
+        if (['loc', 'start', 'end', 'leadingComments', 'trailingComments', 'innerComments'].includes(key)) continue;
+        if (Array.isArray(value)) value.forEach(child => references(child, refs, strings, destinations));
+        else if (value && typeof value === 'object') references(value, refs, strings, destinations);
+      }
+    }
+    result[full('@module')] = { text: shared.join('\n'), deps: [], strings: [], tags: [] };
+    for (const [name, { node, tags }] of Object.entries(nodes)) {
+      const refs = new Set(), strings = new Set(), destinations = new Set(); references(node, refs, strings, destinations);
+      result[full(name)] = { text: source.slice(node.start, node.end) + tags.join(','),
+        deps: [...new Set([...refs].map(ref).filter(Boolean)), full('@module')], strings: [...strings], destinations: [...destinations], tags };
+    }
+  }
+  return result;
+}
+console.log(JSON.stringify(snapshots.map(graph)));
+ /private/tmp/claude-501/tmp1cgtbulx/replay-sources.json
 replay-graph: exit 0, 0.040 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.038 s
-.RUN replay-graph: node --input-type=module -e 
-import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
-import { posix } from 'node:path';
-const require = createRequire(process.cwd() + '/package.json');
-const { parse } = require('@babel/parser');
-const snapshots = JSON.parse(readFileSync(process.argv[1], 'utf8'));
-function graph(files) {
-  const result = {};
-  for (const [file, source] of Object.entries(files)) {
-    const ast = parse(source, { sourceType: 'module' });
-    const nodes = Object.create(null), imports = Object.create(null), shared = [];
-    const add = (name, node, comments = []) => {
-      nodes[name] = { node, tags: comments.flatMap(c => [...c.value.matchAll(/STORY:([\w-]+:[SR]\d+[a-z]?)/g)].map(m => m[1])) };
-    };
-    for (const top of ast.program.body) {
-      const node = top.type === 'ExportNamedDeclaration' ? top.declaration : top;
-      if (node?.type === 'ImportDeclaration') {
-        const target = posix.normalize(posix.join(posix.dirname(file), node.source.value));
-        if (files[target]) for (const spec of node.specifiers) {
-          imports[spec.local.name] = [target, spec.imported?.name || '*'];
-          add(spec.local.name, node);
-        }
-      } else if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
-        add(node.id.name, node, top.leadingComments || []);
-      } else if (node?.type === 'VariableDeclaration') {
-        for (const decl of node.declarations) {
-          if (decl.id.type !== 'Identifier') { shared.push(source.slice(top.start, top.end)); continue; }
-          add(decl.id.name, decl, top.leadingComments || []);
-          if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
-            const name = prop.key?.name || prop.key?.value;
-            if (name) add(`${decl.id.name}.${name}`, prop, prop.leadingComments || []);
-          }
-        }
-      } else shared.push(source.slice(top.start, top.end));
-    }
-    const full = name => `${file}::${name}`;
-    const ref = name => {
-      const [first, ...tail] = name.split('.');
-      if (imports[first]) {
-        const [target, imported] = imports[first];
-        return `${target}::${[imported === '*' ? '' : imported, ...tail].filter(Boolean).join('.')}`;
-      }
-      return nodes[name] ? full(name) : nodes[first] ? full(first) : null;
-    };
-    function member(node) {
-      if (node.type === 'Identifier') return node.name;
-      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
-        const base = member(node.object);
-        const field = node.computed ? node.property.value : node.property.name;
-        return base && typeof field === 'string' ? `${base}.${field}` : null;
-      }
-      return null;
-    }
-    function references(node, refs, strings, destinations) {
-      if (!node || typeof node !== 'object') return;
-      if (node.type === 'StringLiteral') strings.add(node.value);
-      if (node.type === 'CallExpression' && ['go', 'goto'].includes(node.callee?.name)
-          && node.arguments[1]?.type === 'StringLiteral') {
-        const destination = node.arguments[1].value;
-        if (['diagnose', 'explore', 'changes', 'day'].includes(destination))
-          destinations.add(destination === 'explore' ? 'diagnose' : destination);
-      }
-      if (node.type === 'Identifier') { refs.add(node.name); return; }
-      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
-        const name = member(node);
-        if (name) { refs.add(name); return; }
-      }
-      for (const [key, value] of Object.entries(node)) {
-        if (['loc', 'start', 'end', 'leadingComments', 'trailingComments', 'innerComments'].includes(key)) continue;
-        if (Array.isArray(value)) value.forEach(child => references(child, refs, strings, destinations));
-        else if (value && typeof value === 'object') references(value, refs, strings, destinations);
-      }
-    }
-    result[full('@module')] = { text: shared.join('\n'), deps: [], strings: [], tags: [] };
-    for (const [name, { node, tags }] of Object.entries(nodes)) {
-      const refs = new Set(), strings = new Set(), destinations = new Set(); references(node, refs, strings, destinations);
-      result[full(name)] = { text: source.slice(node.start, node.end) + tags.join(','),
-        deps: [...new Set([...refs].map(ref).filter(Boolean)), full('@module')], strings: [...strings], destinations: [...destinations], tags };
-    }
-  }
-  return result;
-}
-console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmpv73jm_m0/replay-sources.json
-replay-graph: exit 0, 0.037 s
-RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.035 s
-.RUN replay-graph: node --input-type=module -e 
-import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
-import { posix } from 'node:path';
-const require = createRequire(process.cwd() + '/package.json');
-const { parse } = require('@babel/parser');
-const snapshots = JSON.parse(readFileSync(process.argv[1], 'utf8'));
-function graph(files) {
-  const result = {};
-  for (const [file, source] of Object.entries(files)) {
-    const ast = parse(source, { sourceType: 'module' });
-    const nodes = Object.create(null), imports = Object.create(null), shared = [];
-    const add = (name, node, comments = []) => {
-      nodes[name] = { node, tags: comments.flatMap(c => [...c.value.matchAll(/STORY:([\w-]+:[SR]\d+[a-z]?)/g)].map(m => m[1])) };
-    };
-    for (const top of ast.program.body) {
-      const node = top.type === 'ExportNamedDeclaration' ? top.declaration : top;
-      if (node?.type === 'ImportDeclaration') {
-        const target = posix.normalize(posix.join(posix.dirname(file), node.source.value));
-        if (files[target]) for (const spec of node.specifiers) {
-          imports[spec.local.name] = [target, spec.imported?.name || '*'];
-          add(spec.local.name, node);
-        }
-      } else if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
-        add(node.id.name, node, top.leadingComments || []);
-      } else if (node?.type === 'VariableDeclaration') {
-        for (const decl of node.declarations) {
-          if (decl.id.type !== 'Identifier') { shared.push(source.slice(top.start, top.end)); continue; }
-          add(decl.id.name, decl, top.leadingComments || []);
-          if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
-            const name = prop.key?.name || prop.key?.value;
-            if (name) add(`${decl.id.name}.${name}`, prop, prop.leadingComments || []);
-          }
-        }
-      } else shared.push(source.slice(top.start, top.end));
-    }
-    const full = name => `${file}::${name}`;
-    const ref = name => {
-      const [first, ...tail] = name.split('.');
-      if (imports[first]) {
-        const [target, imported] = imports[first];
-        return `${target}::${[imported === '*' ? '' : imported, ...tail].filter(Boolean).join('.')}`;
-      }
-      return nodes[name] ? full(name) : nodes[first] ? full(first) : null;
-    };
-    function member(node) {
-      if (node.type === 'Identifier') return node.name;
-      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
-        const base = member(node.object);
-        const field = node.computed ? node.property.value : node.property.name;
-        return base && typeof field === 'string' ? `${base}.${field}` : null;
-      }
-      return null;
-    }
-    function references(node, refs, strings, destinations) {
-      if (!node || typeof node !== 'object') return;
-      if (node.type === 'StringLiteral') strings.add(node.value);
-      if (node.type === 'CallExpression' && ['go', 'goto'].includes(node.callee?.name)
-          && node.arguments[1]?.type === 'StringLiteral') {
-        const destination = node.arguments[1].value;
-        if (['diagnose', 'explore', 'changes', 'day'].includes(destination))
-          destinations.add(destination === 'explore' ? 'diagnose' : destination);
-      }
-      if (node.type === 'Identifier') { refs.add(node.name); return; }
-      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
-        const name = member(node);
-        if (name) { refs.add(name); return; }
-      }
-      for (const [key, value] of Object.entries(node)) {
-        if (['loc', 'start', 'end', 'leadingComments', 'trailingComments', 'innerComments'].includes(key)) continue;
-        if (Array.isArray(value)) value.forEach(child => references(child, refs, strings, destinations));
-        else if (value && typeof value === 'object') references(value, refs, strings, destinations);
-      }
-    }
-    result[full('@module')] = { text: shared.join('\n'), deps: [], strings: [], tags: [] };
-    for (const [name, { node, tags }] of Object.entries(nodes)) {
-      const refs = new Set(), strings = new Set(), destinations = new Set(); references(node, refs, strings, destinations);
-      result[full(name)] = { text: source.slice(node.start, node.end) + tags.join(','),
-        deps: [...new Set([...refs].map(ref).filter(Boolean)), full('@module')], strings: [...strings], destinations: [...destinations], tags };
-    }
-  }
-  return result;
-}
-console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmpd46kpyxl/replay-sources.json
-replay-graph: exit 0, 0.040 s
-RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.035 s
+story-cases: exit 0, 0.041 s
 RUN replay-graph: node --input-type=module -e 
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -467,12 +467,12 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmp09m2c8la/replay-sources.json
-replay-graph: exit 0, 0.034 s
+ /private/tmp/claude-501/tmp3s_whph5/replay-sources.json
+replay-graph: exit 0, 0.048 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.035 s
+story-cases: exit 0, 0.047 s
 .RUN registry: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';console.log(JSON.stringify(REGISTRY.map(([id])=>id)))
-registry: exit 0, 0.035 s
+registry: exit 0, 0.042 s
 ledger inventory: {'issued': 142, 'active': 123, 'retired': 19}
 ledger=142 registry=142 missing=[] extra=[]
 RUN replay-graph: node --input-type=module -e 
@@ -559,10 +559,10 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmpz3cr1fcp/replay-sources.json
-replay-graph: exit 0, 0.187 s
+ /private/tmp/claude-501/tmpyyckiobd/replay-sources.json
+replay-graph: exit 0, 0.194 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.039 s
+story-cases: exit 0, 0.048 s
 .RUN replay-graph: node --input-type=module -e 
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -647,8 +647,8 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmptxzjfr7c/replay-sources.json
-replay-graph: exit 0, 0.038 s
+ /private/tmp/claude-501/tmpl3wz5dsv/replay-sources.json
+replay-graph: exit 0, 0.042 s
 .RUN replay-graph: node --input-type=module -e 
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -733,10 +733,10 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmp326trdii/replay-sources.json
-replay-graph: exit 0, 0.036 s
+ /private/tmp/claude-501/tmpugskbo7u/replay-sources.json
+replay-graph: exit 0, 0.043 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.040 s
+story-cases: exit 0, 0.049 s
 .RUN replay-graph: node --input-type=module -e 
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -821,20 +821,20 @@ function graph(files) {
   return result;
 }
 console.log(JSON.stringify(snapshots.map(graph)));
- /private/tmp/claude-501/tmpbhsc9q60/replay-sources.json
-replay-graph: exit 0, 0.039 s
+ /private/tmp/claude-501/tmp_gtq8jj6/replay-sources.json
+replay-graph: exit 0, 0.045 s
 RUN story-cases: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';import {storyCase} from './frontend-v2/replay-cases.mjs';console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))
-story-cases: exit 0, 0.041 s
+story-cases: exit 0, 0.049 s
 .
 ======================================================================
 ERROR: test_taken_port_is_rejected_without_touching_its_listener (__main__.ServerLifecycleTest.test_taken_port_is_rejected_without_touching_its_listener)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/connor/worktrees/harmonic/416-c1/mockups/sweep/harmonic-v2-desktop/acceptance.test.py", line 91, in test_taken_port_is_rejected_without_touching_its_listener
+  File "/Users/connor/worktrees/harmonic/416-c1/mockups/sweep/harmonic-v2-desktop/acceptance.test.py", line 89, in test_taken_port_is_rejected_without_touching_its_listener
     listener.bind(("127.0.0.1", 0))
 PermissionError: [Errno 1] Operation not permitted
 
 ----------------------------------------------------------------------
-Ran 41 tests in 2.777s
+Ran 41 tests in 2.868s
 
 FAILED (errors=1)

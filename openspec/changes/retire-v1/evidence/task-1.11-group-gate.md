@@ -47,7 +47,15 @@ the HTTP case failed on the shell's assets still sitting under `/v2/assets/`;
 the fail-closed case failed with `200 != 503 : /`, because the root page was
 still v1's.
 
-## Two more negatives, observed rather than assumed
+## Three more negatives, observed rather than assumed
+
+**The three-owner agreement check.** The mirror half of
+`test_server_router_and_disk_mirror_name_the_same_pages` enumerates the mirror's
+page set rather than filtering it, and was run against five deliberately
+divergent mirrors — a double-quoted extra path, a differently-cased path, a
+hyphenated path, an element the test cannot resolve, and a page the mirror drops
+while the server keeps serving it. All five fail; the committed mirror passes.
+Each run and its message is in `task-1.4-divergent-mirror.md`.
 
 **The disk-serving mirror.** With `'/v2/'` added back to `V2_PAGE_PATHS` in
 `frontend/built-shell.js`, `frontend/built-shell.test.js` fails its new

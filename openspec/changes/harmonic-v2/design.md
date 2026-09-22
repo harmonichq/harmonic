@@ -670,7 +670,8 @@ Current backend/Node tests, generated-fixture drift checks, browser gates,
 OpenSpec validation, and ADR/publication guards remain the existing verification
 bar. Each future ticket adds checks through the public interface for the
 behavior it actually changes. V2 delivery additionally needs built-output proof
-for `/v2/`, `/v2/assets/`, API authentication and the packaged Python-only runtime;
+for `/`, its three destination paths, `/assets/`, API authentication and the
+packaged Python-only runtime;
 a working Vite development server alone does not establish deployment. Exact
 commands and reviewed source pins belong to the eventual implementation locks.
 

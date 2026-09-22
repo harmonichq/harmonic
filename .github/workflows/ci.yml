@@ -465,7 +465,7 @@ jobs:
           push: false
           load: true
           tags: harmonic:pr-test
-      - name: Prove both packaged shells, assets, authentication and closed routes
+      - name: Prove the packaged shell, assets, authentication and closed routes
         run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/package"
       - name: Retain packaged runtime proof
         if: always()

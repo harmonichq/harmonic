@@ -594,7 +594,6 @@ def checks(run):
     run.command("npm-ci", ["npm", "ci"])
     run.command("build", ["npm", "run", "build"])
     run.command("node", ["node", "--test", "frontend/**/*.test.js"])
-    run.command("node-v2", ["node", "--test", "frontend/**/*.test.js"])
     run.command("openspec", ["npx", "--yes", "@fission-ai/openspec@1", "validate", "--all", "--strict"])
     for guard in ["check_adr_numbers", "check_owned_identifiers", "check_public_allowlist"]:
         run.command(guard, [sys.executable, f"scripts/{guard}.py"])

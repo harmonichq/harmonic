@@ -12,7 +12,7 @@
 import './fonts/inter.css';
 import './shell.css';
 import './material.css';
-import './shell.css';
+import './chrome.css';
 import './diagnose-workstation.css';
 import './diagnose-event-comparison.css';
 import './desk.css';

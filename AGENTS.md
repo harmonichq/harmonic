@@ -128,10 +128,10 @@ PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
 
-# Rebuild the shell after any frontend/ change, before the three CI legs.
+# Rebuild the shell after any frontend/ change, before the three suite legs.
 npm ci && npm run build
 
-# Two of the three gate legs, as CI runs them. The third — the desk's Trial and
+# Two of the three suite legs, as CI runs them. The third — the desk's Trial and
 # Pattern Focus follow-up suite — reads private design inputs, so it is a file
 # the public tree excludes and its command lives in
 # `.github/workflows/ci.yml`. It drives a real no-fetch server, so it also needs
@@ -156,11 +156,21 @@ while a separate generator job checks drift. The CI workflow owns the matrices
 and commands; the private acceptance record states the selection rules and
 measured ceilings.
 
-All three **fail closed**: a missing driver, built shell or fixture exits
-nonzero, naming what is absent, rather than skipping. A green step that
-silently ran zero assertions is the exact failure mode that design guards
-against, and `frontend/browser-gates-fail-closed.test.js` is a
-dependency-free regression test for it.
+**All four legs fail closed** — the three suites and the ledger replay. Each
+carries its own preflight, which exits nonzero naming the missing driver, built
+shell or fixture rather than skipping. A green step that silently ran zero
+assertions is the exact failure mode that design guards against.
+
+**One of those four preflights is under regression guard, not four.**
+`frontend/browser-gates-fail-closed.test.js` spawns a leg against an empty
+`HARMONIC_DIST` and asserts it names what is missing, so it can only drive a leg
+that serves a built shell that way. The desk suite is the only one: the
+follow-up suite and the browser-runner regression serve no shell, and the ledger
+replay reads no `HARMONIC_DIST` at all — it needs an already-running no-fetch
+server, which that spawn harness does not stand up. #416 took the guarded list
+from nine legs to one, and the other three preflights are held by reading alone.
+Do not shrink that list to zero: it is asserted non-empty, because an empty list
+is itself a green step that ran zero assertions.
 
 **Run only what a change touches; run the whole ledger once, before the push.**
 A full frozen-ledger replay is the whole registry — 142 stories — at each of two

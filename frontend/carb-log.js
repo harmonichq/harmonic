@@ -1,11 +1,11 @@
 /* =========================================================================
    #126 CARB-LOG — pure capture logic for the header quick-log sheet.
 
-   Vue-free and DOM-free at import time (same seam discipline as
-   scenario-chart.js / chart-builders.js, the #100 harness) so `node --test`
-   imports it with no importmap and no DOM. The Vue popover in index.html is a
-   thin shell over these: it owns the refs and the fetch calls; the time math
-   and payload shaping — the parts worth testing — live here.
+   DOM-free at import time (same seam discipline as chart-builders.js) so
+   `node --test` imports it with no DOM. The quick-log sheet the desk's utility
+   layer renders is a thin shell over these: it owns the seat and the fetch
+   calls; the time math and payload shaping — the parts worth testing — live
+   here.
 
    Everything logged from the sheet is source='manual' and follows the #125
    CarbEntry contract {t, grams, certainty, source, note}. certainty drives

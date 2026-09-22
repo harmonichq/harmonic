@@ -1925,13 +1925,14 @@
 
 /* Verify's half of the rule split at #359, verbatim and at its original 760px.
    The widened block above belongs to Diagnose alone, so Verify's stacked seam
-   keeps the width it has always had. Verify stacks on its own 900px breakpoint
-   in verify-workstation.css, which means it already stacks with no seam between
-   761 and 900px — a pre-existing quirk preserved exactly here, not fixed.
+   keeps the width it has always had. Verify stacked on its own 900px breakpoint
+   in v1's own sheet, which #416 deleted along with the rest of that surface, so
+   it already stacked with no seam between 761 and 900px — a quirk of the split
+   this block was carved out of, recorded here rather than fixed.
    `border-left: 0` is inert on both copies: theme.css restates
    `border-left: 1px solid var(--wk-rule)` for the identical selector at
    identical specificity and loads after this sheet, and the second pane's
-   computed `border-left-width` measures 1px at every width on both screens. It
+   computed `border-left-width` measured 1px at every width on both screens. It
    is carried across unchanged rather than cleaned up, so this carve-out is a
    selector split and nothing else. */
 @media (max-width: 760px) {

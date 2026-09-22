@@ -5,20 +5,19 @@
  * the mock.
  *
  * The two-median ribbon: the area between the Before and Trial medians, tinted
- * by which ran higher; no quartile bands. Medians reach it through
- * verify-workstation-data.js, which maps /api/verify/trials' `envelopes` (clock
- * family) and `meal_arcs.bins` (meal family) onto the shape below — the same
- * numbers the mock read from its capture, now backend-supplied.
+ * by which ran higher; no quartile bands. #416 retired the v1 binder that fed
+ * it; the desk's own `comparisonPairs` in follow-up.js is the binding now,
+ * pairing a served comparison's two clock envelopes onto the shape below — the
+ * same numbers the mock read from its capture, still backend-supplied.
  */
 /* Verify story hero — the two-median ribbon, rendered in ECharts (the app's
    shipping chart library) so the mock IS the target medium. Ribbon = the area
    between the Before and Trial medians, tinted by which ran higher; no
    quartile bands (locked 2026-08-12, hero-forms board).
 
-   Every number here comes from the backend's per-Trial envelope/meal-arc
-   data (see verify-workstation-data.js):
-   medians from _envelopes[tid] (clock family) or _mealarcs[tid].bins (meal
-   family) — the scoped per-period envelope backend extension. */
+   Every number here comes from the backend's per-period envelope data, paired
+   by `comparisonPairs` in follow-up.js — the scoped per-period envelope backend
+   extension. */
 
 export function heroOption(colors, { pairs, arc, beforeLabel, trialLabel }) {
   // pairs: [{t(min), b(before med), v(trial med), d(delta)}]

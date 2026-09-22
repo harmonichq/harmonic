@@ -362,9 +362,10 @@ export function evidenceFigure(comparison, kind, colors) {
 
 /**
  * The two clock envelopes ONE comparison served, paired where both sides have a
- * bin — the shipped Verify binding (verify-workstation.js renderHero). A side
- * with no readings pairs nothing and stays a Before-only figure rather than
- * drawing an empty line.
+ * bin. #416 retired v1's Verify hero, so this is the only binding left for the
+ * ribbon: it is the same pairing rule, owned here. A side with no readings
+ * pairs nothing and stays a Before-only figure rather than drawing an empty
+ * line.
  *
  * The comparison is passed in rather than chosen here, so the figure and the
  * tables beneath it always read the same one. Letting the figure prefer a

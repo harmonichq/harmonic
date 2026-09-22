@@ -16,7 +16,7 @@ RETIRED_PATTERN = re.compile(
 # evidence, not consumers). docs/ and openspec/ are decision history and are
 # deliberately outside the scan.
 EXECUTABLE_FILES = ("AGENTS.md",)
-EXECUTABLE_ROOTS = (".claude", ".github", "harness", "scripts", "tests", "frontend")
+EXECUTABLE_ROOTS = (".claude", ".github", "scripts", "tests", "frontend")
 EXECUTABLE_MOCKUP_SUFFIX = ".mjs"
 SKIPPED_DIRS = {".git", "node_modules", "__pycache__", ".venv"}
 

@@ -68,7 +68,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; }
    logotype from a contrast minimum. It is also the empty band in miniature —
    the same square rides a dark chrome bar and a light browser tab strip, which
    pull opposite ways, so a constant is the only stable answer for it. Do not
-   re-point this at --ck-bar-signal; index.test.js pins that it does not. */
+   re-point this at --ck-bar-signal; chrome.test.js pins that it does not. */
 .cockpit-mark {
   display: grid;
   width: 20px;

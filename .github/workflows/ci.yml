@@ -73,23 +73,13 @@ jobs:
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
-      # The frontend's I:C block fixtures are real analyzer output, not literals
-      # (#518). If a gate moves and the fixture isn't regenerated, the frontend tests
-      # keep asserting a verdict the analyzer no longer produces — the #273 trap in a
-      # new place. This fails the build instead.
-      - name: Check the generated I:C block fixtures are current
-        run: uv run python scripts/gen_ic_block_fixtures.py --check
-      - name: Check the generated evidence-canvas exploration is current
-        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
-      - name: Check the generated v2 design evidence and app material are current
+      - name: Check the generated design evidence and app material are current
         run: uv run python mockups/harmonic-v2.exploration/generate.py --check
-      # Same drift class, the engine-authored annotation copy the Settings audit
-      # renders verbatim (#536).
-      - name: Check the generated annotation fixtures are current
-        run: uv run python scripts/gen_annotation_fixtures.py --check
-      # Same drift class again: the three chart-builder fixtures (#728) are real
-      # analyze()/timeline()/scenario-engine output over invented inputs, not
-      # literals — see scripts/gen_chart_builder_fixtures.py.
+      # The chart-builder fixtures (#728) are real analyze()/timeline()/
+      # scenario-engine output over invented inputs, not literals — see
+      # scripts/gen_chart_builder_fixtures.py. If a producer moves and the
+      # fixture isn't regenerated, the frontend tests keep asserting output the
+      # engine no longer produces. This fails the build instead.
       - name: Check the generated chart-builder fixtures are current
         run: uv run python scripts/gen_chart_builder_fixtures.py --check
       # #716: the two committed synthetic demo sets under mockups/ (Verify,
@@ -207,31 +197,16 @@ jobs:
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm dependency; the dev-only harness/ is not exercised here. Both
-      # source roots are named: frontend-v2/ is the v2 desk (#389), and a glob
-      # that does not name it is a runner no new test is ever seen by.
+      # no npm dependency. The one source root is named explicitly: a glob
+      # that does not name a root is a runner no new test is ever seen by.
       - name: Run tests
-        run: node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'
+        run: node --test 'frontend/**/*.test.js'
       # The browser capture is generated too; a passing test must not run
       # against bytes that have drifted from its support-stamp producer.
       - name: Check the event-comparison synthetic capture is current
         run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
       - name: Exercise the local screenshot wrapper
         run: node --test scripts/screenshots.local.test.mjs
-      # The same drift class the backend job guards for its five generators, in
-      # the one place it was never applied. The finding->evidence exploration
-      # commits three GENERATED artifacts: app-base.extracted.css and
-      # evidence-table.extracted.js are lifted verbatim out of
-      # frontend/index.html and frontend/diagnose-workstation.js, and data.json
-      # is fixture data run through the shipped queue/chart/dock producers. All
-      # three move when the app moves, and until now nothing noticed. The light
-      # relight (63d9053) left the extracted stylesheet on the retired parchment
-      # tokens, so the exploration's own contrast guard spent an entire round
-      # measuring a theme the app had already left and reporting zero failures.
-      # Node-only and dependency-free — it regenerates in memory and byte-
-      # compares, so it belongs in the fast gate rather than behind Chromium.
-      - name: Check the exploration's generated artifacts are current
-        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
 
   browser-gate-setup:
     name: browser gate setup
@@ -281,77 +256,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - gate: Day lifecycle
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
-          - gate: Diagnose workstation
-            timeout: 10
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-          - gate: Diagnose canvas composition
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-          - gate: Cockpit shell
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
-      # #554: the shared browser-runner.js front door itself — proves it
-      # launches Chromium once per command and still isolates scenarios.
-      # #672: fails closed like every other browser gate, so it's a
-      # `.browser.test.mjs` (not `.test.js`) and only runs here.
+          # #554: the shared browser-runner.js front door itself — proves it
+          # launches Chromium once per command and still isolates scenarios.
+          # #672: fails closed like every other browser gate, so it's a
+          # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
             timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
-      # #389: the v2 desk's own browser gate. Browser suites are never
-      # discovered by a glob in this repository — they are hand-listed matrix
-      # entries — so the new source root gets its own step here, and chunks 2, 3
-      # and 4 add theirs beside it. It serves the BUILT desk from disk and
-      # answers the API from manufactured payloads in the driver, so it needs no
-      # Python and no server.
-          - gate: V2 desk
+          # #389: the desk's own browser gate. Browser suites are never
+          # discovered by a glob in this repository — they are hand-listed
+          # matrix entries. It serves the BUILT desk from disk and answers the
+          # API from manufactured payloads in the driver, so it needs no Python
+          # and no server.
+          - gate: Desk
             timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
-          - gate: V2 Trial and Pattern Focus
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/desk.browser.test.mjs
+          - gate: Trial and Pattern Focus
             timeout: 30
             python: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
-          - gate: First-plan reconcile
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-      # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
-      # glob never discovers, so it gets its own explicit step. It fails closed —
-      # a missing driver, built shell or fixture exits nonzero rather than
-      # skipping, because a green step that ran zero stories proves nothing.
-      #
-      # This surface has shipped (#722): the app is now the contract artifact,
-      # so this is the only leg — the same stories and assertions, against the
-      # BUILT workstation through the app opener, whose route stubs serve the
-      # synthetic set's API-shaped payload. The mock (and its TARGET=mock CI
-      # leg) has been archived; the anti-drift guarantee lives on in these
-      # stories replaying against the built app forever.
-          - gate: Diagnose workstation behaviour ledger
-            timeout: 21
-            server: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-      # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
-      # S12 mutates glucose after the mock's former server-owned support facts
-      # were computed, so its production aggregation regression is app-only
-      # (#706). This surface has shipped (#722): the app is now the contract
-      # artifact, so only the app leg remains, running every frozen story
-      # (S1–S12). It fails closed when browser infrastructure or a fixture is
-      # absent (#672).
-          - gate: Diagnose event comparisons
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-          - gate: Diagnose comparison support audit
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-      # #660: the Verify workstation's own frozen ledger. This surface has
-      # shipped (#722): the app is now the contract artifact, so this is the
-      # only leg — the regression gate the port owes, rendering the committed
-      # synthetic set. It fails closed — a run that executes zero stories
-      # exits nonzero.
-          - gate: Verify behaviour ledger
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/follow-up.browser.test.mjs
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -361,13 +284,13 @@ jobs:
           cache: npm
       - name: Build the delivered frontend shell
         run: npm ci && npm run build
-      - name: Set up uv for the no-fetch app server
-        if: matrix.server || matrix.python
+      - name: Set up uv for the legs that need the API runtime
+        if: matrix.python
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Install the API runtime for the no-fetch app server
-        if: matrix.server || matrix.python
+      - name: Install the API runtime
+        if: matrix.python
         run: uv sync --frozen --extra api
       - name: Restore the isolated browser runner and Chromium
         id: browser-runner-cache
@@ -380,24 +303,13 @@ jobs:
       - name: Require the browser runner cache
         if: steps.browser-runner-cache.outputs.cache-hit != 'true'
         run: exit 1
-      - name: Start the declared synthetic no-fetch app server
-        if: matrix.server
-        run: |
-          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          uv run harmonic serve --no-fetch --token '' --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
-          for attempt in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:8765/api/health && exit 0
-            sleep 1
-          done
-          cat "$RUNNER_TEMP/harmonic-no-fetch.log"
-          exit 1
       - name: Run browser gate
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
 
-  v2-ledger-plan:
-    name: select v2 ledger shards
+  ledger-plan:
+    name: select ledger shards
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -422,26 +334,26 @@ jobs:
         run: |
           args=()
           if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
-          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/v2-plan"
+          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/ledger-plan"
       - name: Retain the selection and planned shard inventory
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-plan
-          path: ${{ runner.temp }}/v2-plan/
+          name: ledger-plan
+          path: ${{ runner.temp }}/ledger-plan/
 
-  v2-ledger:
-    name: browser gates — V2 ${{ needs.v2-ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.v2-ledger-plan.outputs.count }} selected)
-    needs: [browser-gate-setup, v2-ledger-plan]
+  ledger:
+    name: browser gates — ${{ needs.ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.ledger-plan.outputs.count }} selected)
+    needs: [browser-gate-setup, ledger-plan]
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 21 || 60 }}
+    timeout-minutes: ${{ needs.ledger-plan.outputs.mode == 'full' && 21 || 60 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
       fail-fast: false
       matrix:
         viewport: [1280x720, 1440x900]
-        shard: ${{ fromJSON(needs.v2-ledger-plan.outputs.shards) }}
+        shard: ${{ fromJSON(needs.ledger-plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -470,29 +382,29 @@ jobs:
       - name: Require the browser runner cache
         if: steps.browser-runner-cache.outputs.cache-hit != 'true'
         run: exit 1
-      - name: Run the selected v2 ledger
+      - name: Run the selected ledger
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
-          SMOKE_BASE: ${{ needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
+          SMOKE_BASE: ${{ needs.ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
         run: |
           args=()
           if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
-          uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "${{ matrix.viewport }}" --shard "${{ matrix.shard }}" "${args[@]}" --out "$RUNNER_TEMP/v2-${{ matrix.viewport }}-${{ strategy.job-index }}"
-      - name: Retain v2 acceptance output
+          uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "${{ matrix.viewport }}" --shard "${{ matrix.shard }}" "${args[@]}" --out "$RUNNER_TEMP/ledger-${{ matrix.viewport }}-${{ strategy.job-index }}"
+      - name: Retain the ledger acceptance output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-${{ matrix.viewport }}-${{ strategy.job-index }}
+          name: ledger-${{ matrix.viewport }}-${{ strategy.job-index }}
           path: |
-            ${{ runner.temp }}/v2-*/*.json
-            ${{ runner.temp }}/v2-*/*.log
-            ${{ runner.temp }}/v2-*/captures/
+            ${{ runner.temp }}/ledger-*/*.json
+            ${{ runner.temp }}/ledger-*/*.log
+            ${{ runner.temp }}/ledger-*/captures/
 
 
   frontend-browser:
     name: browser gates
-    needs: [frontend-browser-leg, v2-ledger]
+    needs: [frontend-browser-leg, ledger]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -500,8 +412,8 @@ jobs:
       - name: Require every browser gate leg to pass
         env:
           BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
-          V2_RESULT: ${{ needs.v2-ledger.result }}
-        run: test "$BROWSER_LEGS_RESULT" = success && test "$V2_RESULT" = success
+          LEDGER_RESULT: ${{ needs.ledger.result }}
+        run: test "$BROWSER_LEGS_RESULT" = success && test "$LEDGER_RESULT" = success
 
   nightly-result:
     name: nightly result
@@ -553,16 +465,16 @@ jobs:
           push: false
           load: true
           tags: harmonic:pr-test
-      - name: Prove both packaged shells, assets, authentication and closed routes
-        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/v2-package"
+      - name: Prove the packaged shell, assets, authentication and closed routes
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/package"
       - name: Retain packaged runtime proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-packaged-runtime
+          name: packaged-runtime
           path: |
-            ${{ runner.temp }}/v2-package/*.log
-            ${{ runner.temp }}/v2-package/*.json
+            ${{ runner.temp }}/package/*.log
+            ${{ runner.temp }}/package/*.json
 
   docker:
     name: build + push image

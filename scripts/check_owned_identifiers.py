@@ -54,8 +54,10 @@ RULES = (
                    re.compile(r'<title>(?P<identifier>[^<]+)</title>')),
     IdentifierRule("frontend/favicon.svg", "application icon accessible name",
                    re.compile(r'aria-label="(?P<identifier>[^"]+)"')),
-    IdentifierRule("frontend/index.html", "header wordmark",
-                   re.compile(r'^\s*(?P<identifier>[A-Za-z0-9-]+)\s+<small>advisory</small>', re.MULTILINE)),
+    # ADR 416: the desk's chrome module builds the topbar as one template
+    # string, so the wordmark sits mid-line rather than at the head of one.
+    IdentifierRule("frontend/shell.js", "header wordmark",
+                   re.compile(r'(?P<identifier>[A-Za-z0-9-]+)\s+<small>advisory</small>')),
     IdentifierRule("README.md", "README heading",
                    re.compile(r'^#\s+(?P<identifier>.+)$', re.MULTILINE)),
     IdentifierRule("CONTEXT.md", "glossary heading",

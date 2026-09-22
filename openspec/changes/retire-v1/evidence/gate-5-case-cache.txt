@@ -1,0 +1,2 @@
+RUN case-cache: node /private/tmp/claude-501/gate-case-cache-3/case-cache.mjs
+case-cache: exit 0, 6.345 s

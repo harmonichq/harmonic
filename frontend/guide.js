@@ -3,9 +3,11 @@
    (the archived catalog-cards and worked-example mocks, #157); only
    wrapped in ES `export`s here.
 
-   VUE-FREE and DOM-FREE at import time so `node --test` can import it with no
-   importmap and no DOM. The Vue component (GuideTab) lives in index.html and
-   imports these helpers. The catalog payload is /api/catalog (build_catalog in
+   DOM-FREE at import time so `node --test` can import it with no DOM. The Guide
+   surface that renders these helpers is the desk's utility pane
+   (`utilities.js`), which owns the seat, the fetches and the markup; #416
+   retired the Vue shell that held them before. The catalog payload is
+   /api/catalog (build_catalog in
    ciq_autotune/analyzers/scenario/guide.py) — this module never hand-codes the
    lever/silence/tier copy; it only reshapes the payload for render.
    ========================================================================= */

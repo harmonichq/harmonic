@@ -236,12 +236,13 @@ class TaxonomyMetadataTest(unittest.TestCase):
 
 class HighExposureRosterTest(unittest.TestCase):
     def test_the_high_anchored_levers_are_exactly_these_two(self):
-        """The roster `frontend/diagnose-high-causes-have-no-alignment.test.js` pins.
+        """The closed roster of high-anchored levers, pinned by title.
 
-        The event-comparison lens has no Highs view, so a HIGHS lever must stay out of
+        The event-comparison lens has no Highs view, so a HIGHS lever stays out of
         its title-keyed allowlist — and absence is a silent contract that nothing
-        fails when a third one is added. This is the tripwire: adding a high-anchored
-        lever fails HERE, which names the JS guard that has to learn its title.
+        fails when a third one is added. This is the tripwire: adding a
+        high-anchored lever fails HERE, so the lens has to be re-ruled for it
+        deliberately rather than by omission.
         """
         highs = {lever for lever in Lever if exposure(lever) is Exposure.HIGHS}
         self.assertEqual(highs, {Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT})

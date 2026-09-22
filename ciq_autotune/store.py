@@ -457,14 +457,6 @@ CREATE TABLE IF NOT EXISTS pattern_reviews (
     UNIQUE (cell_id, era_start)
 );
 
--- Audit dispositions are deliberately tiny: an item stays dismissed only while
--- the exact server-evidence fingerprint it was reviewed against is current.
-CREATE TABLE IF NOT EXISTS audit_dismissals (
-    item_id TEXT PRIMARY KEY,
-    evidence_fingerprint TEXT NOT NULL,
-    dismissed_at TEXT NOT NULL
-);
-
 -- ADR 383's durable user choice.  This is intentionally one bounded row per
 -- subject, not a history of refreshes or a copy of analyzer output.
 CREATE TABLE IF NOT EXISTS guidance_preferences (
@@ -1858,28 +1850,6 @@ class Store:
                            "era_start": r["era_start"]}
             for r in rows
         }
-
-    # --- Audit dismissal (#586) -------------------------------------------
-
-    def dismiss_audit_item(self, item_id: str, evidence_fingerprint: str,
-                           dismissed_at: Optional[str] = None) -> None:
-        if not item_id or not evidence_fingerprint:
-            raise ValueError("item_id and evidence_fingerprint are required")
-        with self._write_transaction():
-            self.conn.execute(
-                "INSERT INTO audit_dismissals "
-                "(item_id, evidence_fingerprint, dismissed_at) VALUES (?, ?, ?) "
-                "ON CONFLICT(item_id) DO UPDATE SET "
-                "evidence_fingerprint=excluded.evidence_fingerprint, "
-                "dismissed_at=excluded.dismissed_at",
-                (item_id, evidence_fingerprint, dismissed_at or format_t(datetime.now())),
-            )
-            self._advance_revision()
-
-    def audit_dismissals(self) -> dict:
-        rows = self.conn.execute("SELECT * FROM audit_dismissals").fetchall()
-        return {r["item_id"]: {"evidence_fingerprint": r["evidence_fingerprint"],
-                                "dismissed_at": r["dismissed_at"]} for r in rows}
 
     def counts(self) -> dict:
         tables = [

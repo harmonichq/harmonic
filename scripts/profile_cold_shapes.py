@@ -13,10 +13,10 @@ is what names the dominant scans.
     uv run python scripts/profile_cold_shapes.py --db <snapshot>
     uv run python scripts/profile_cold_shapes.py --db <snapshot> --profile findings-case-preparation
 
-The shape list and its order come from the SPA's own cold arrival: `loadAll` runs
-the backtest and the standard analysis, then Diagnose's `loadAudit` runs the other
-six (`frontend/index.html`). The two warm-set-only shapes at the end are not part of
-that arrival; they are here because the hourly pre-warm computes them (`api.py`
+The shape list and its order are the cold arrival the retired v1 page measured,
+kept as the fixed profiling order so runs stay comparable across the ADR 416
+cutover. The two warm-set-only shapes at the end are not part of that arrival;
+they are here because the hourly pre-warm computes them (`api.py`
 `invalidate_and_warm`), so their cost is measurable drift rather than user-facing
 latency.
 
@@ -42,14 +42,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ciq_autotune.store import Store  # noqa: E402
 
 DIAGNOSE_WINDOW_DAYS = 30
-
-
-def _backtest(store):
-    """`/api/backtest` (holdout 2): the SPA's first heavy read."""
-    from ciq_autotune.backtest import backtest
-
-    backtest(store.basal_events(), store.cgm_readings(), store.bolus_events(),
-             store.pump_events(), holdout_days=2)
 
 
 def _analyze(store, *, pool: bool):
@@ -104,7 +96,6 @@ def _outcomes_trend(store, *, window: int):
 
 # Cold-arrival shapes in the order the SPA requests them, then the warm-set-only ones.
 SHAPES = (
-    ("backtest", "cold", _backtest),
     ("analyze", "cold", lambda store: _analyze(store, pool=False)),
     ("analyze-pooled", "cold", lambda store: _analyze(store, pool=True)),
     ("scenarios", "cold", _scenarios),

@@ -1,15 +1,15 @@
+// The desk's root: the one browser shell, built ahead of time and served at the
+// root page by the packaged Python runtime (HV2-01, HV2-02, ADR 416).
+//
+// `base: '/'` is the whole delivery contract in one line — every emitted asset
+// URL is rewritten to sit under /assets/, which is the one prefix api.py
+// mounts. Built with no CDN: the fonts and the ECharts bundle both come from
+// the tree.
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   root: 'frontend',
   base: '/',
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.esm-bundler.js',
-    },
-  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

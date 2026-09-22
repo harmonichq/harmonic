@@ -13,7 +13,6 @@ __pycache__/
 .claude/
 node_modules/
 frontend/dist/
-harness/
 
 # Design scratch — not part of the runtime app.
 mockups/

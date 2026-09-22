@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 from html.parser import HTMLParser
@@ -23,7 +22,6 @@ import subprocess
 import sys
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -34,16 +32,14 @@ TOKEN = "synthetic-replay-token"
 # and the Guide, Settings, Carb questions and Pump settings entry points.
 SMOKE_STORIES = (
     "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
-    "S74", "S76", "S77", "S87", "S91", "S98", "S99", "S110", "R8", "R18",
+    "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "R8", "R18",
 )
 DRIFTS = [
-    "scripts/gen_ic_block_fixtures.py", "scripts/gen_annotation_fixtures.py",
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
     "scripts/gen_qa_e2e_db.py", "scripts/gen_findings_projection_fixtures.py",
     "scripts/gen_ic_history_event_fixtures.py", "scripts/gen_ic_block_evidence_fixtures.py",
     "scripts/gen_basal_night_evidence_fixtures.py", "scripts/gen_isf_rest_window_evidence_fixtures.py",
     "scripts/gen_missed_meal_comparison_fixtures.py", "scripts/gen_eating_sequence_fixtures.py",
-    "mockups/diagnose-evidence-canvas.exploration/generate.py",
     "mockups/harmonic-v2.exploration/generate.py",
 ]
 
@@ -61,9 +57,9 @@ class Run:
         self.out.mkdir(parents=True, exist_ok=True)
         self.records = []
         inputs = ["mockups/harmonic-v2-desktop.lock.md", "mockups/harmonic-v2-desktop.behavior.md",
-                  "frontend/harmonic-v2-desktop-behavior.replay.mjs", "frontend-v2/c2.replay.mjs",
-                  "frontend-v2/c3.replay.mjs", "frontend-v2/c4.replay.mjs", "frontend-v2/replay-cases.mjs",
-                  "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
+                  "frontend/desk-behavior.replay.mjs", "frontend/c2.replay.mjs",
+                  "frontend/c3.replay.mjs", "frontend/c4.replay.mjs", "frontend/replay-cases.mjs",
+                  "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend/capture.mjs", "scripts/qa_e2e_cases.py",
                   "scripts/gen_qa_e2e_db.py", "mockups/qa-e2e.synthetic/harmonic.sqlite"]
         (self.out / "inputs.json").write_text(json.dumps({
             "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
@@ -203,35 +199,8 @@ def free_port(port):
             raise RuntimeError(f"Port {port} is occupied; refusing to start or reuse a server") from error
 
 
-def stop_server(child, *, grace=10):
-    """Reap the launcher AND stop its owned session, even if uv exited first."""
-    def signal_group(sig):
-        try:
-            os.killpg(child.pid, sig)
-            return True
-        except ProcessLookupError:
-            return False
-
-    signal_group(signal.SIGTERM)
-    deadline = time.monotonic() + grace
-    while time.monotonic() < deadline:
-        child.poll()  # Reap uv; its exit alone says nothing about its server.
-        if not signal_group(0):
-            break
-        time.sleep(.05)
-    # A launcher can exit on TERM while its child keeps the port bound. Always
-    # address the original process group; never discover/kill a process by port.
-    signal_group(signal.SIGKILL)
-    child.wait(timeout=5)
-    deadline = time.monotonic() + 5
-    while signal_group(0) and time.monotonic() < deadline:
-        time.sleep(.05)
-
-
-def wait_ready(base, process=None):
+def wait_ready(base):
     for _ in range(120):
-        if process is not None:
-            require(process.poll() is None, "synthetic server exited before readiness")
         try:
             if request(base, "/api/health")[0] == 200:
                 return
@@ -239,23 +208,6 @@ def wait_ready(base, process=None):
             pass
         time.sleep(.25)
     raise RuntimeError(f"synthetic server did not become ready at {base}")
-
-
-@contextmanager
-def auth_server(run):
-    free_port(8766)
-    db = run.out / "auth.sqlite"
-    shutil.copyfile(SHOWCASE, db)
-    with (run.out / "auth-server.log").open("w") as log:
-        child = subprocess.Popen(["uv", "run", "harmonic", "serve", "--no-fetch",
-                                  "--token", TOKEN, "--db", str(db), "--port", "8766"],
-                                 cwd=REPO, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
-        try:
-            wait_ready("http://127.0.0.1:8766", child)
-            yield
-        finally:
-            stop_server(child)
-            free_port(8766)
 
 
 def shard_arg(value):
@@ -425,8 +377,8 @@ def smoke_selection(run, base, ids):
     sources = []
     recipes = []
     for ref in [base, "HEAD"]:
-        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend", "frontend-v2").splitlines()
-        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend-v2/replay-cases.mjs"]
+        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend").splitlines()
+        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend/replay-cases.mjs"]
         sources.append({path: git("show", f"{ref}:{path}") for path in paths})
         recipes.append(recipe_graph(git("show", f"{ref}:scripts/qa_e2e_cases.py")))
     before, after = replay_graph(run, sources)
@@ -435,8 +387,8 @@ def smoke_selection(run, base, ids):
     changed_recipes = {key for key in recipes[0].keys() | recipes[1].keys()
                        if recipes[0].get(key) != recipes[1].get(key)}
     _, output = run.command("story-cases", ["node", "--input-type=module", "-e",
-        "import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';"
-        "import {storyCase} from './frontend-v2/replay-cases.mjs';"
+        "import {REGISTRY} from './frontend/desk-behavior.replay.mjs';"
+        "import {storyCase} from './frontend/replay-cases.mjs';"
         "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
     defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
     require(len(SMOKE_STORIES) == 21 and len(set(SMOKE_STORIES)) == 21
@@ -445,18 +397,18 @@ def smoke_selection(run, base, ids):
     selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}
     # Changes to the runner itself, registry, transport or generator can affect
     # every story. They must not disappear behind a function-only comparison.
-    global_files = {"scripts/gen_qa_e2e_db.py", "frontend-v2/replay-cases.mjs",
-                    "frontend-v2/capture.mjs", "frontend/browser-runner.js",
+    global_files = {"scripts/gen_qa_e2e_db.py", "frontend/replay-cases.mjs",
+                    "frontend/capture.mjs", "frontend/browser-runner.js",
                     "mockups/sweep/harmonic-v2-desktop/acceptance.py", "package-lock.json"}
-    global_symbols = {"frontend/harmonic-v2-desktop-behavior.replay.mjs::" + name
+    global_symbols = {"frontend/desk-behavior.replay.mjs::" + name
                       for name in ["REGISTRY", "main", "openApp", "requireEnvironment", "requireAssets"]}
     global_change = bool(changed_files & global_files or changed & global_symbols)
     for identity in ids:
         touched, used_cases, visited = set(), {defaults[identity]}, set()
         for graph in [before, after]:
-            roots = [f"frontend-v2/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
+            roots = [f"frontend/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
             root = next((key for key in roots if key in graph),
-                        f"frontend/harmonic-v2-desktop-behavior.replay.mjs::{identity}")
+                        f"frontend/desk-behavior.replay.mjs::{identity}")
             dependencies = closure(graph, [root])
             touched.update(dependencies & changed)
             visited.update(value for key in dependencies for value in graph[key].get("destinations", []))
@@ -503,8 +455,7 @@ def replay(run, viewport, shard=None, base=None):
     require(os.environ.get("PLAYWRIGHT_MODULE"), "PLAYWRIGHT_MODULE is required")
     free_port(8765)
     env = {**os.environ, "TARGET": "app", "VIEWPORT": viewport,
-           "BASE_URL": "http://127.0.0.1:8765", "AUTH_BASE_URL": "http://127.0.0.1:8766",
-           "AUTH_TOKEN": TOKEN, "CASE_STORE_DIR": str(run.out / "cases"),
+           "BASE_URL": "http://127.0.0.1:8765", "CASE_STORE_DIR": str(run.out / "cases"),
            "CAPTURE_DIR": str(run.out / "captures"),
            "CAPTURE_ONLY": "S1,S3,S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S36,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77,S93,S99"}
     # S100 delegates to Event S8, whose use() closes its page after asserting.
@@ -515,9 +466,8 @@ def replay(run, viewport, shard=None, base=None):
     env.pop("STORY_CASES", None)
     if shard or base:
         env["ONLY"] = ",".join(selected_ids)
-    with auth_server(run):
-        # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
+    # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
+    _, output = run.command("complete-replay", ["node", "frontend/desk-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
@@ -530,7 +480,7 @@ def replay(run, viewport, shard=None, base=None):
 
 def inventory(run):
     _, output = run.command("registry", ["node", "--input-type=module", "-e",
-        "import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';"
+        "import {REGISTRY} from './frontend/desk-behavior.replay.mjs';"
         "console.log(JSON.stringify(REGISTRY.map(([id])=>id)))"])
     ids = json.loads(next(line for line in output.splitlines() if line.startswith('["')))
     ledger = (REPO / "mockups/harmonic-v2-desktop.behavior.md").read_text()
@@ -540,7 +490,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 142, "active": 124, "retired": 18}
+    require(counts == {"issued": 142, "active": 123, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")
@@ -558,8 +508,8 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { copyFile, readFile, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { REGISTRY } from './frontend/harmonic-v2-desktop-behavior.replay.mjs';
-import { createCaseServer, storyCase } from './frontend-v2/replay-cases.mjs';
+import { REGISTRY } from './frontend/desk-behavior.replay.mjs';
+import { createCaseServer, storyCase } from './frontend/replay-cases.mjs';
 const directory = process.env.CACHE_OUT;
 const checking = process.env.CACHE_CHECK === '1';
 const benchmarking = process.env.CACHE_BENCHMARK === '1';
@@ -643,23 +593,21 @@ if (benchmarking) {
 def checks(run):
     run.command("npm-ci", ["npm", "ci"])
     run.command("build", ["npm", "run", "build"])
-    run.command("node", ["node", "--test", "frontend/**/*.test.js", "frontend-v2/**/*.test.js"])
-    run.command("node-v2", ["node", "--test", "frontend-v2/**/*.test.js"])
+    run.command("node", ["node", "--test", "frontend/**/*.test.js"])
     run.command("openspec", ["npx", "--yes", "@fission-ai/openspec@1", "validate", "--all", "--strict"])
     for guard in ["check_adr_numbers", "check_owned_identifiers", "check_public_allowlist"]:
         run.command(guard, [sys.executable, f"scripts/{guard}.py"])
     for number, path in enumerate(DRIFTS, 1):
         run.command(f"drift-{number:02}", ["uv", "run", "python", path]
                     + ([] if path.endswith("check_demo_fixtures.py") else ["--check"]))
-    for name, path in [("event-drift", "mockups/diagnose-event-comparison.synthetic/generate.mjs"),
-                       ("routing-drift", "mockups/finding-evidence-routing.exploration/build.mjs")]:
-        run.command(name, ["node", path, "--check"])
+    run.command("event-drift", ["node", "mockups/diagnose-event-comparison.synthetic/generate.mjs",
+                                "--check"])
 
 
 def budget(run):
-    # Both shells must already be built. No concurrent suites on this machine.
-    for root in ["frontend", "frontend-v2"]:
-        require((REPO / root / "dist/index.html").is_file(), "run npm ci && npm run build first")
+    # The desk must already be built. No concurrent suites on this machine.
+    require((REPO / "frontend" / "dist/index.html").is_file(),
+            "run npm ci && npm run build first")
     before = hashlib.sha256(SHOWCASE.read_bytes()).hexdigest()
     full, _ = run.command("pytest", ["uv", "run", "python", "-m", "pytest"])
     drift, _ = run.command("qa-drift", ["uv", "run", "python", "scripts/gen_qa_e2e_db.py", "--check"])
@@ -696,32 +644,27 @@ class ShellAssets(HTMLParser):
 
 
 def probe(base, token):
-    """Request both packaged shells and their real assets; no source-text stand-in."""
+    """Request the packaged shell and its real assets; no source-text stand-in."""
+    prefix = "/assets/"
     rows = []
-    for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/"),
-                         ("/v2/diagnose", "/v2/assets/"), ("/v2/changes", "/v2/assets/"),
-                         ("/v2/day", "/v2/assets/")]:
+    for page in ["/", "/diagnose", "/changes", "/day"]:
         status, body, headers = request(base, page)
         require(status == 200, f"{page}: {status}")
         require(headers.get("cache-control") == "no-cache", f"{page}: shell cache policy")
         parser = ShellAssets()
         parser.feed(body.decode())
         require(parser.paths, f"{page}: no packaged assets")
-        packaged = [asset for asset in parser.paths if asset.startswith(prefix)]
-        require(packaged, f"{page}: no local packaged assets")
         for asset in parser.paths:
-            url = urllib.parse.urlsplit(asset)
-            if page == "/" and url.scheme == "https" and url.netloc in {"fonts.googleapis.com", "fonts.gstatic.com"}:
-                rows.append({"path": asset, "scope": "carried-v1-font-reference", "requested": False})
-                continue
             require(asset.startswith(prefix), f"{page} references an external or misplaced asset: {asset}")
             code, content, cache = request(base, asset)
             require(code == 200 and content, f"{asset}: absent packaged bytes ({code})")
             require(cache.get("cache-control") == "public, max-age=31536000, immutable", f"{asset}: cache policy")
             rows.append({"path": asset, "status": code, "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()})
         rows.append({"path": page, "status": status})
-    for path in ["/unlisted", "/v2/unlisted", "/v2/index.html", "/v1",
-                 "/v2/assets/no-such.js", "/assets/no-such.js"]:
+    # ADR 416: every retired address answers 404, and none redirects.
+    for path in ["/unlisted", "/index.html", "/v1", "/v2", "/v2/", "/v2/diagnose",
+                 "/v2/changes", "/v2/day", "/v2/assets/no-such.js",
+                 "/verify", "/plan", "/settings", "/guide", "/assets/no-such.js"]:
         code = request(base, path)[0]
         require(code == 404, f"closed route {path}: expected 404, got {code}")
         rows.append({"path": path, "status": code})
@@ -737,8 +680,8 @@ def public_tree(run):
     tree = run.out / "public-tree"
     require(not tree.exists(), "use a fresh --out; materialized tree must start empty")
     run.command("public-tree", [sys.executable, "scripts/build_public_tree.py", str(tree)])
-    require((tree / "frontend-v2/main.js").is_file(), "public tree omitted v2 source")
-    require((tree / "vite.config.v2.mjs").is_file(), "public tree omitted v2 build config")
+    require((tree / "frontend/main.js").is_file(), "public tree omitted the desk source")
+    require((tree / "vite.config.mjs").is_file(), "public tree omitted the build config")
     # Some synthetic fixtures intentionally publish; private design material must not.
     for private in ["harmonic-v2-glucose.html", "harmonic-v2.archive", "harmonic-v2.exploration", "sweep"]:
         require(not (tree / "mockups" / private).exists(), f"public tree exposed private mockups/{private}")

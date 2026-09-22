@@ -38,8 +38,8 @@ in fresh contexts. S49 retains its observed-zero proof and then renders the real
 missing-outcome case. The basal and Pattern cases remain c3's; the Pattern's
 opportunity gate supersedes the historical elapsed-days wording in obligation 6.
 
-HV2-06/HV2-08 named judgments, clinical pairs, transient-state captures, the full
-browser and Docker runs, final budgets, Fable polish and archive close remain
+HV2-06/HV2-08 named judgments, transient-state captures, the full browser and
+Docker runs, final budgets, Fable polish and archive close remain
 coordinator-owned. No rendered evidence or independent verdict is claimed here.
 
 ## Twelve scenario obligations
@@ -181,26 +181,17 @@ font weights, numerals, contrast and flat surfaces at both sizes using each
 capture's computed styles, font inventory and screenshot. Record the judge and
 verdict separately for each term and size. The commands do not assign verdicts.
 
-The clinical-pair driver opens both shipped compositions against one fresh
-manufactured store per setting family. Its shared response cache serves the
-identical clinical response body to both consumers, records SHA-256 and the raw
-response, and fails if the expected endpoint is not consumed by both. It uses
-v1's shared clinical renderer as the source reference; the historical prototype
-captures below remain a separate material/geometry reference under ADR 397.
+The clinical-pair proof is retired by ADR 416, and nothing replaces it. It
+opened both shipped compositions against one fresh manufactured store per
+setting family and required the identical clinical response body to reach both
+consumers, reading v1's shared clinical renderer as the source reference. With
+one shell there is no second composition to pair against, so the proof has no
+subject: its driver `clinical-pairs.mjs` and its two tests are deleted. Wherever
+this document asked the coordinator to inspect a Basal, Correction factor or I:C
+pair, there is now one rendering to judge on its own terms.
 
-`CAPTURE_DIR` must be a fresh, nonexistent directory outside the worktree with
-an existing parent. The driver creates it and refuses any existing path, even
-an empty directory. For a rerun, choose new directory names for both viewports;
-do not pre-create those two directories.
-
-```sh
-VIEWPORT=1280x720 CAPTURE_DIR="$evidence/clinical-pairs-1280" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs
-VIEWPORT=1440x900 CAPTURE_DIR="$evidence/clinical-pairs-1440" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs
-```
-
-These commands are prepared, not run. Same-byte transport is only one part of
-clinical fidelity; the coordinator must inspect each Basal, Correction factor
-and I:C pair and record whether the plotted data, axes and reading are faithful.
+The historical prototype captures below remain a separate material and geometry
+reference under ADR 397.
 
 ## Fast-gates measurements and ceilings (#406)
 
@@ -482,42 +473,29 @@ TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.jso
 
 These use different clinical source populations from the generated app cases.
 They permit inspection of unchanged material, geometry and the ADR 397 adaptation
-ranges in fidelity.md. They are **not** same-byte clinical pairs. Use the separate shared-renderer clinical-pair commands above for that proof. Do not relabel a historical Overview as a proved Diagnose.
+ranges in fidelity.md. They are **not** same-byte clinical pairs, and no command in this document
+proves that any more: the clinical-pair driver retired with v1 (ADR 416). Do
+not relabel a historical Overview as a proved Diagnose.
 
-## Complete inherited browser inventory
+## Complete browser inventory
 
 Run these sequentially outside the seatbelt sandbox. No historical count is
-hard-coded; retain each actual executed count. The full inherited Diagnose
-registry runs on v1's `/` and `/diagnose`. It does not establish v2 composition.
+hard-coded; retain each actual executed count. ADR 416 retired v1 and its nine
+browser legs, so three explicit suites remain beside the desk's own ledger, and
+the inherited Diagnose registry that ran on v1's `/` and `/diagnose` is gone
+with the shell it opened.
 
 ```sh
-node frontend/day-surface.browser.mjs
-PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-node --test frontend/cockpit-shell.browser.test.mjs
 node --test frontend/browser-runner.browser.test.mjs
 node --test frontend-v2/desk.browser.test.mjs
 node --test frontend-v2/follow-up.browser.test.mjs
-node frontend/plan-first-match.browser.mjs
-TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-For the remaining inherited Diagnose leg, start the declared empty-token server
-on 8765 in a second terminal, then run the complete unfiltered registry:
+None of the three needs a server started by hand. The follow-up suite spawns
+the desk replay, which owns the offline server lifecycle itself; the leg that
+required the separate empty-token server on 8765 was the inherited Diagnose
+registry, and it retired with v1.
 
-```sh
-qa_probe="$(mktemp -d "${TMPDIR:-/tmp}/harmonic-389-inherited.XXXXXX")"
-cp mockups/qa-e2e.synthetic/harmonic.sqlite "$qa_probe/harmonic.sqlite"
-uv run harmonic serve --no-fetch --token '' --db "$qa_probe/harmonic.sqlite" --port 8765
-```
-
-```sh
-env -u ONLY BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-```
-
-Stop only that server before returning to case-store or packaged-runtime runs.
 The coordinator's already-reported evidence is c2 57/57 at each size, seven
 app-only c2 stories at each size, Event 14/14, desk 13/13, inherited rail 160/160 before #342 (the current registry has 168 active entries),
 c3 25/25 at each size and follow-up suite 52/52. These are attributed prior runs;
@@ -620,17 +598,16 @@ roster, then checks the recorded focus outcome; a repaint cannot erase the event
 before the assertion reads it. Both exact-target assertions remain, and a
 missing or wrong focus event still fails within thirty seconds.
 
-The clinical pair driver now sets the same manufactured browser token used by
-other v1 offline replays before opening either shell. V1's `hasToken` gate
-otherwise prevents Diagnose from mounting, leaving no clock control to press.
-Both consumers use the shared owner's `#seg-window` 24 h button after `#level`
-mounts. Basal exposes supporting nights; Correction factor and Carb ratio expose
-numeric evidence. Every capture requires its exact focal clinical canvas and
-an observed request to its expected endpoint; paired proof still requires a
-shared response key with identical bytes. No clinical endpoint check was removed.
+This amendment's clinical-pair corrections are superseded by ADR 416. They
+tuned a driver that opened v1 and the desk together: a manufactured browser
+token past v1's `hasToken` gate, the shared owner's `#seg-window` 24 h button
+after `#level` mounts, and a focal clinical canvas plus an observed endpoint
+request behind every capture. V1 is retired, so there is no second shell to open
+and the driver is deleted.
 
 The coordinator also reported R18/S49/S91 3 of 3 and eye legs 7 of 7 at both
-sizes with captures. Clinical pairing remains unaccepted: the previous driver
-stopped after its v2 basal capture. Fresh full-ledger and pair runs are required;
-no new browser pass, fidelity verdict or packaged-runtime result is claimed here.
+sizes with captures. Clinical pairing is retired rather than left unaccepted
+(ADR 416): the previous driver stopped after its v2 basal capture and has no
+successor. A fresh full-ledger run is still required; no new browser pass,
+fidelity verdict or packaged-runtime result is claimed here.
 No app source or built shell changed in this amendment.

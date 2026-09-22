@@ -5,39 +5,96 @@ the Settings audit evidence pane prints them verbatim, and the CLI and the Markd
 report print them too. So they are bound by `DESIGN.md`'s voice and user-copy
 register just like any string the surface owns.
 
-The catalogs under test are the ones the browser fixture is generated from
-(`scripts/gen_annotation_fixtures.py`), so a sentence can never be register-clean in
-the rendered gate while the engine still emits something else.
+The catalogs below ask the real analyzers for every sentence they can emit, so a
+copy regression in either analyzer fails here rather than hiding behind a literal.
+They lived in `scripts/gen_annotation_fixtures.py` until ADR 416 retired v1 and
+with it the browser fixture that generator wrote; this is now their one home.
 """
 
 from __future__ import annotations
 
-import json
-import pathlib
 import re
-import sys
 import unittest
+from datetime import date
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
-
-from ciq_autotune.analyzers.basal import _annotation_for  # noqa: E402
-from ciq_autotune.render import render_text  # noqa: E402
-from ciq_autotune.report import markdown_report  # noqa: E402
-from ciq_autotune.result import (  # noqa: E402
+from ciq_autotune.analyzers.basal import _annotation_for
+from ciq_autotune.analyzers.isf import IsfChannels, IsfConfig, _recommend
+from ciq_autotune.render import render_text
+from ciq_autotune.report import markdown_report
+from ciq_autotune.result import (
     AnalysisResult,
     DataQuality,
     SlotEstimate,
     Span,
 )
-from ciq_autotune.safety import Status  # noqa: E402
-from ciq_autotune.uncertainty import Estimate  # noqa: E402
+from ciq_autotune.safety import Status
+from ciq_autotune.uncertainty import Estimate
 
-from gen_annotation_fixtures import (  # noqa: E402
-    OUT,
-    basal_annotations,
-    isf_annotations,
-    payload,
-)
+_CFG = IsfConfig()
+
+
+def _est(value, lo, hi, n=200):
+    return Estimate(value=value, lo=lo, hi=hi, n=n, method="bootstrap-ols-isf")
+
+
+def _ch(*, night_median=None, fits=None, corr_low_days=0, rescue_days=0,
+        covered_days=30, rescue_observed=True):
+    pairs = [(date(2026, 6, i + 1), v) for i, v in enumerate(fits or [])]
+    if night_median is None and pairs:
+        vals = sorted(v for _, v in pairs)
+        m = len(vals) // 2
+        night_median = vals[m] if len(vals) % 2 else (vals[m - 1] + vals[m]) / 2
+    return IsfChannels(night_fits=pairs, night_median=night_median,
+                       corr_low_days=corr_low_days, rescue_days=rescue_days,
+                       covered_days=covered_days, rescue_observed=rescue_observed)
+
+
+def basal_annotations() -> dict:
+    """Every basal status's sentence, keyed by the status string the API emits."""
+    return {status.value: _annotation_for(status) for status in Status}
+
+
+# One entry per reachable `_recommend` branch. The `direction` each case is expected
+# to produce is asserted here, so a case that quietly stops reaching its branch
+# fails instead of silently checking yesterday's sentence.
+_ISF_CASES = [
+    ("no_baseline_no_data", None, _est(None, None, None, 0), _ch(), False, None),
+    ("no_baseline_measured", None, _est(40.0, 32.0, 48.0), _ch(night_median=40.0),
+     False, None),
+    ("no_measurement", 36.0, _est(None, None, None, 0), _ch(), False, None),
+    ("weaken_no_target", 36.0, _est(30.0, 26.0, 40.0),
+     _ch(night_median=30.0, corr_low_days=4), False, "weaken"),
+    ("weaken_easing", 36.0, _est(42.0, 36.5, 48.0),
+     _ch(night_median=45.0, corr_low_days=4), False, "weaken"),
+    ("weaken_easing_disagreeing_measurement", 36.0, _est(28.0, 24.0, 32.0),
+     _ch(night_median=45.0, corr_low_days=4), False, "weaken"),
+    ("confirmed", 36.0, _est(40.0, 32.0, 48.0),
+     _ch(night_median=40.0, corr_low_days=1), False, None),
+    ("held_after_a_low", 36.0, _est(24.0, 18.0, 30.0),
+     _ch(fits=[24.0, 25.0, 23.0], corr_low_days=1), False, None),
+    ("held_rescue_log_incomplete", 36.0, _est(24.0, 18.0, 30.0),
+     _ch(fits=[24.0, 25.0, 23.0], rescue_observed=False), False, None),
+    ("collecting_range_too_wide", 36.0, _est(60.0, 45.0, 110.0),
+     _ch(fits=[60.0, 58.0, 62.0]), False, None),
+    ("strengthen", 36.0, _est(28.0, 25.0, 31.0),
+     _ch(fits=[28.0, 27.0, 29.0, 26.0, 28.5]), True, "strengthen"),
+    ("watching_not_yet_held", 36.0, _est(28.0, 25.0, 31.0),
+     _ch(fits=[28.0, 27.0, 29.0, 26.0, 28.5]), False, None),
+]
+
+
+def isf_annotations() -> dict:
+    """Every correction-strength sentence `_recommend` can return, by branch."""
+    out = {}
+    for name, programmed, est, ch, prior, want_direction in _ISF_CASES:
+        _rec, ann, direction, _priced = _recommend(
+            programmed, est, ch, _CFG, prior_strengthen_signal=prior)
+        if direction != want_direction:
+            raise AssertionError(
+                f"{name}: expected direction {want_direction!r}, got {direction!r} — "
+                "the case no longer reaches the branch it was built for")
+        out[name] = ann
+    return out
 
 # The register, as rules a sentence can be checked against. Every one of these is a
 # numbered rule in `DESIGN.md`'s "Voice and user-copy register".
@@ -70,13 +127,6 @@ class RegisterTest(unittest.TestCase):
         for branch, sentence in isf_annotations().items():
             with self.subTest(branch=branch):
                 self._check(f"correction strength {branch}", sentence)
-
-    def test_the_committed_browser_fixture_matches_the_analyzers(self):
-        # The rendered gate reads this file; if it drifts, the gate proves the rule
-        # for yesterday's copy while the engine ships something else.
-        committed = json.loads(OUT.read_text())
-        self.assertEqual(committed["basal"], payload()["basal"])
-        self.assertEqual(committed["isf"], payload()["isf"])
 
 
 class HeldSlotPrintsInRegisterTest(unittest.TestCase):

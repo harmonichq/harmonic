@@ -2,9 +2,10 @@
    #269 GUIDE-KB — pure shell logic, extracted from the locked mockup
    (the archived Guide-KB companion mock, #157); only wrapped in ES `export`s here.
 
-   VUE-FREE and DOM-FREE at import time so `node --test` can import it with no
-   importmap and no DOM. The Vue component (the Guide tab) lives in index.html
-   and imports these helpers.
+   DOM-FREE at import time so `node --test` can import it with no DOM. The Guide
+   surface that renders these helpers is the desk's utility pane
+   (`utilities.js`), which owns the seat, the fetches and the markup; #416
+   retired the Vue shell that held them before.
 
    Content model (ADR 0044). Two streams, never conflated:
      • The 4 authored "reading the app" how-tos are markdown in `docs/kb/*.md`,

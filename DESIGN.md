@@ -95,8 +95,8 @@ components:
 # Design System: Harmonic
 
 > **The Harmonic theme is locked** (2026-08-18, issue #736) and it **ships in
-> `frontend/`**: the tokens are the single `:root` block at the top of
-> `frontend/index.html`, and the shell's role rules are `frontend/theme.css`,
+> `frontend/`**: the tokens are the single `:root` block in
+> `frontend/material.css`, and the shell's role rules are `frontend/theme.css`,
 > which loads last. Those two files are the source of truth for the app-wide
 > material — colour, elevation, and the type split — and they supersede the
 > palette and elevation values recorded below wherever the two disagree. Read
@@ -184,7 +184,7 @@ and technical documentation keep their established domain terms.
 
 ## 2. Colors
 
-Two committed brand colors (primary, accent) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name that shipped value, read directly from `frontend/index.html`'s `:root` block (e.g. primary is burnt orange `#E07F3F`, tuned to hold contrast against a near-black surface).
+Two committed brand colors (primary, accent) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name that shipped value, read directly from `frontend/material.css`'s `:root` block (e.g. primary is burnt orange `#E07F3F`, tuned to hold contrast against a near-black surface).
 
 ### Primary
 - **Burnt Orange** (`--primary`, `#E07F3F`): the one recurring brand color — primary buttons, active tab underline, focus rings, links. Used sparingly outside of these functional roles.
@@ -329,8 +329,12 @@ during-eating windows retain a tick at the zero-minute end anchor. The shared
 readout overlays the High-carb headline without moving its Full control, with
 three reserved rows in narrow stage and fullscreen headers. Pattern alignment is unchanged.
 The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js. It losslessly retains every roster selection, including clean reference sequences, through shared JSON values.
-The component harness reads generator-owned public Python cases. The coordinator
-owns rendered direction review and the three-viewport evidence matrix.
+Chart-level revision of these surfaces happens in the served desk, not in a
+second composition of it: ADR 416 deleted the component harness, and AGENTS.md's
+no-fetch QA copy-then-serve over a generator-owned synthetic case store is the
+safe surface that replaced it. A chart revised there is the shipped chart. The
+coordinator owns rendered direction review and the three-viewport evidence
+matrix.
 
 ### #404 desk revise amendment
 

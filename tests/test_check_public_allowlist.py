@@ -30,10 +30,10 @@ class TestGrammar(unittest.TestCase):
 
     def test_glob_positive_requires_extension_whitelist(self) -> None:
         allowlist = allowlist_rules.parse("frontend/** {.js,.html}\n")
-        self.assertTrue(allowlist.disposition("frontend/index.html")[0])
+        self.assertTrue(allowlist.disposition("frontend/page.html")[0])
         self.assertTrue(allowlist.disposition("frontend/sub/app.js")[0])
         self.assertFalse(allowlist.disposition("frontend/data.json")[0])
-        self.assertFalse(allowlist.disposition("other/index.html")[0])
+        self.assertFalse(allowlist.disposition("other/page.html")[0])
 
     def test_bare_double_star_is_rejected(self) -> None:
         with self.assertRaises(allowlist_rules.AllowlistError):

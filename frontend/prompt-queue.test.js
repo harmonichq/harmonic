@@ -2,8 +2,8 @@
 //
 //     node --test frontend/
 //
-// Same harness rule as scenario-chart.test.js (#100): pure logic lives in a
-// vue-free module so it imports with no importmap and no DOM.
+// Same harness rule as carb-log.test.js: pure logic lives in a DOM-free module
+// so it imports with no DOM.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

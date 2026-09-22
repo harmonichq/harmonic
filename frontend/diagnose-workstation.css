@@ -238,13 +238,13 @@
 
 /* ---- the depth idiom (#135), authored to OUTRANK theme.css ------------
    theme.css loads after this sheet and owns the docked-workspace roles:
-   `:is(.dw, .vw) .panes` flattens the gutters and `:is(.dw, .vw) .pane` states
+   `.dw .panes` flattens the gutters and `.dw .pane` states
    `box-shadow: none; border-radius: 0` — the shipped flush dock this canvas
    revises. Restating the idiom at plain `.pane` rank lost every time, silently:
    the edge ring and the pooled shadow were never on screen in either theme.
    These rules carry `.dw:has(.tile-field)` so they outrank the role rules by
    SPECIFICITY rather than by load order, and so they bind to this canvas alone
-   — Verify's `.vw` dock and any `.dw` with no tile field keep the flush dock.
+   — any `.dw` with no tile field keeps the flush dock.
    The GROUNDS stay theme.css's own: the idiom adds an edge, a top highlight and
    a pooled shadow, and lifts no surface's value.
 
@@ -1853,12 +1853,13 @@
   .main-content .dw[data-canvas-full] .panes {
     grid-template-rows: minmax(0, 1fr);
   }
-  /* SPLIT from the `.vw` copy below rather than pinned (#359). This sheet loads
-     on every screen, and this was the one rule in this block that could reach
-     Verify. Its `border-top` is the stacked layout's only horizontal divider,
-     so travelling with the widened block is what keeps Diagnose's seam wherever
-     Diagnose stacks; pinning the whole rule at 760px would leave the newly
-     stacked 761-831px band with no line between the panes it had just stacked. */
+  /* This rule TRAVELS with the widened block rather than being pinned at 760px
+     (#359). Its `border-top` is the stacked layout's only horizontal divider, so
+     riding the same breakpoint is what keeps Diagnose's seam wherever Diagnose
+     stacks; pinning it at 760px would leave the newly stacked 761-831px band
+     with no line between the panes it had just stacked. #359 split it away from
+     a second copy scoped to Verify, which is why it carries `.dw` rather than
+     standing bare; #416 deleted that surface and its copy with it. */
   .dw .panes > .pane + .pane {
     border-left: 0; border-top: 1px solid var(--wk-rule);
   }
@@ -1923,23 +1924,6 @@
   }
 }
 
-/* Verify's half of the rule split at #359, verbatim and at its original 760px.
-   The widened block above belongs to Diagnose alone, so Verify's stacked seam
-   keeps the width it has always had. Verify stacks on its own 900px breakpoint
-   in verify-workstation.css, which means it already stacks with no seam between
-   761 and 900px — a pre-existing quirk preserved exactly here, not fixed.
-   `border-left: 0` is inert on both copies: theme.css restates
-   `border-left: 1px solid var(--wk-rule)` for the identical selector at
-   identical specificity and loads after this sheet, and the second pane's
-   computed `border-left-width` measures 1px at every width on both screens. It
-   is carried across unchanged rather than cleaned up, so this carve-out is a
-   selector split and nothing else. */
-@media (max-width: 760px) {
-  .vw .panes > .pane + .pane {
-    border-left: 0; border-top: 1px solid var(--wk-rule);
-  }
-}
-
 /* ---- terms 46–49 · the watched-change dock ---------------------------
    ONE object at the column's floor: Plan, Trial or Focus, never two lists
    (CONTEXT.md). The queue can end; the column no longer can.
@@ -1948,8 +1932,8 @@
    names it — not a surface class of our own. The single most expensive defect of that
    theme round was a rule wearing a surface's selector, and a dock that invents a
    third class ships unthemed. */
-:is(.dw, .vw) .inspector { grid-template-rows: auto minmax(0, 1fr) auto; }
-:is(.dw, .vw) .inspector > .watch {
+.dw .inspector { grid-template-rows: auto minmax(0, 1fr) auto; }
+.dw .inspector > .watch {
   display: grid; grid-template-columns: minmax(0, 1fr) auto;
   align-items: center; align-content: center; row-gap: 2px; column-gap: 12px;
   padding: 10px var(--ck-pad) 11px;
@@ -1964,29 +1948,29 @@
      raises the height rather than cutting the sentence. */
   min-height: 98px;
 }
-:is(.dw, .vw) .inspector > .watch .kind {
+.dw .inspector > .watch .kind {
   grid-column: 1; font-size: var(--ck-micro); font-weight: 700;
   text-transform: uppercase; letter-spacing: var(--ck-track); color: var(--mk-muted);
 }
-:is(.dw, .vw) .inspector > .watch .what {
+.dw .inspector > .watch .what {
   grid-column: 1; font-size: var(--ck-emph); font-weight: 600; color: var(--mk-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* The detail line WRAPS. A title may ellipsize; the sentence that says the pump is
    untouched may not. */
-:is(.dw, .vw) .inspector > .watch .how { grid-column: 1; font-size: var(--ck-data); color: var(--mk-muted); }
-:is(.dw, .vw) .inspector > .watch .how b {
+.dw .inspector > .watch .how { grid-column: 1; font-size: var(--ck-data); color: var(--mk-muted); }
+.dw .inspector > .watch .how b {
   color: var(--mk-text); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 /* OUTLINED, not filled: the surface had just narrowed its interaction accent. */
-:is(.dw, .vw) .inspector > .watch .go {
+.dw .inspector > .watch .go {
   grid-column: 2; grid-row: 1 / -1; align-self: center; white-space: nowrap;
   border: 1px solid var(--mk-line); background: transparent; color: var(--mk-text);
   font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 3px;
   cursor: pointer;
 }
 /* Idle is quiet, not absent — the slot holds its height in every state. */
-:is(.dw, .vw) .inspector > .watch[data-state="idle"] .what { color: var(--mk-muted); font-weight: 500; }
+.dw .inspector > .watch[data-state="idle"] .what { color: var(--mk-muted); font-weight: 500; }
 
 /* ---- #135 mode, explorer and temporary fullscreen ------------------ */
 .canvas-pane > header.canvas-head {

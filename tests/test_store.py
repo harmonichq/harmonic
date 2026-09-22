@@ -20,20 +20,6 @@ from ciq_autotune.store import (
 )
 
 
-class AuditDismissalStoreTest(unittest.TestCase):
-    def test_dismissal_is_scoped_to_item_and_evidence_fingerprint(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with Store.open(os.path.join(tmp, "ciq.db")) as store:
-                store.dismiss_audit_item("basal:2", "evidence-v1",
-                                         dismissed_at="2026-08-09 00:00:00")
-                self.assertEqual(store.audit_dismissals()["basal:2"]["evidence_fingerprint"],
-                                 "evidence-v1")
-                store.dismiss_audit_item("basal:2", "evidence-v2",
-                                         dismissed_at="2026-08-10 00:00:00")
-                self.assertEqual(store.audit_dismissals()["basal:2"]["evidence_fingerprint"],
-                                 "evidence-v2")
-
-
 def _raw_settings(active_idp=4, isf=30):
     pad = [{"startTime": 0, "basalRate": 0, "isf": 0, "carbRatio": 0, "targetBg": 0}] * 12
     return {

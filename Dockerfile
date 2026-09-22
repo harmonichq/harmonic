@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# harmonic serve — FastAPI API + bundled Vue SPA on one port, for
+# harmonic serve — FastAPI API + the bundled browser shell on one port, for
 # single-user self-hosting (issue #6, ADR 0021).
 #
 # Multi-stage: the builders resolve the locked dependency set and frontend
@@ -40,12 +40,9 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.mjs vite.config.v2.mjs tsconfig.json ./
-# Both source roots. frontend-v2's build reads the app's own material out of
-# frontend/index.html at build time (frontend-v2/app-source.mjs), so the v1 tree
-# must be present for the v2 build as well as its own.
+COPY vite.config.mjs tsconfig.json ./
+# The one source root: the desk's page, its modules and its stylesheets.
 COPY frontend ./frontend
-COPY frontend-v2 ./frontend-v2
 RUN npm run build
 
 # ---- runtime: venv + source, non-root -------------------------------------
@@ -63,16 +60,13 @@ WORKDIR /app
 # The resolved venv from the builder (same interpreter path, so it just works).
 COPY --from=builder /app/.venv /app/.venv
 
-# The app source. The built frontend must sit beside ciq_autotune/ — api.py resolves
-# the SPA as ../frontend/dist/index.html. docs/kb/ likewise:
+# The app source. The built shell must sit beside ciq_autotune/ — api.py resolves
+# it as ../frontend/dist/index.html and serves it at /. docs/kb/ likewise:
 # the #269 Guide-KB serves the authored how-tos as raw markdown from
 # ../docs/kb/<slug>.md, so those files must ship in the image too — without this
 # COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
 COPY ciq_autotune ./ciq_autotune
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
-# #389: the v2 desk's own build, which api.py resolves as
-# ../frontend-v2/dist/index.html and serves at /v2/ beside v1.
-COPY --from=frontend-builder /app/frontend-v2/dist ./frontend-v2/dist
 COPY docs/kb ./docs/kb
 COPY pyproject.toml README.md ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

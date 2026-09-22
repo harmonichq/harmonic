@@ -73,3 +73,26 @@ name-boundary.sh: exit 0
 ```
 
 The image package proof is not run locally; it is CI's image job on the pull request (design.md "Verification design").
+
+## Re-run on the final commit edc41aac, after the whole-diff review fixes
+
+The whole-diff review rehomed eight assertions and removed 82 dead `.vw` CSS rules,
+collapsing 65 live `:is(.dw, .vw)` selectors to `.dw`. Because that touched live
+selectors, every browser leg was run again rather than inherited.
+```
+browser-runner.browser.test.mjs      pass 1  fail 0
+frontend/desk.browser.test.mjs       pass 40 fail 0
+frontend/follow-up.browser.test.mjs  pass 2  fail 0
+
+1280x720: ledger inventory: {'issued': 142, 'active': 123, 'retired': 19}
+1280x720: ledger=142 registry=142 missing=[] extra=[]
+1280x720: RUN complete-replay: node frontend/desk-behavior.replay.mjs
+1280x720: complete-replay: exit 0, 763.560 s
+1280x720: # executed 142 · failed 0 · deferred 0 · selected 142
+
+1440x900: ledger inventory: {'issued': 142, 'active': 123, 'retired': 19}
+1440x900: ledger=142 registry=142 missing=[] extra=[]
+1440x900: RUN complete-replay: node frontend/desk-behavior.replay.mjs
+1440x900: complete-replay: exit 0, 767.350 s
+1440x900: # executed 142 · failed 0 · deferred 0 · selected 142
+```

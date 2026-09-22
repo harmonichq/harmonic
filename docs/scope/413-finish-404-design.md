@@ -25,7 +25,7 @@ remains untested is how it lands in the code that exists.
   row, Patterns included.** The desk prints served words and keeps no word list
   of its own. Why: the design lock says served words. Disposition: → ADR, in
   this change's `design.md`.
-- **Q3: a new change, `v2-desk-design-completion`, records this work** and states
+- **Q3: a new change, `v2-desk-design-completion` (renamed `desk-design-completion` on 2026-09-22), records this work** and states
   that it supersedes task 3.3's completion claim in `v2-findings-ledger`, which
   is left as written. Why: Connor delegated it; one ticket, one change.
   Disposition: inline.
@@ -88,6 +88,45 @@ remains untested is how it lands in the code that exists.
   (4) authoring: the full desk ledger command was cited to a block that does not
   hold it; the wrapper's replay leg is now named. Note: the two parallel
   sub-orders both listed the task checklist; it now has one owner.
+
+## Re-triage after #418 (2026-09-22)
+
+#418 (ADR 416) merged as eec4652a: v1 is deleted, the desk is the only shell at
+`/`, and `frontend-v2/` folded into `frontend/`. `/scope` found nothing
+genuinely uncertain; the decisions below are defaults that follow from ADR 416.
+
+### Decisions
+
+- **Q1 is superseded: the design lands directly in the shared modules.** No
+  composition statement, no desk branch, no v1-unchanged tests, no v1 ledger
+  legs. Why: `openspec/changes/retire-v1/design.md` "Sequencing against #413"
+  records that #413 no longer needs the desk-only path. Disposition: → ADR,
+  rewritten as ADR 413 in the change's `design.md`.
+- **The frontend Pattern word constant is deleted**, including its use for the
+  Pattern mini's cohort label. Why: Q2's served words leave it no reader once v1
+  is gone. Disposition: inline (task 3.3).
+- **The change folder is renamed `desk-design-completion`.** Why: ADR 416 takes
+  the v2 name out of the living system; this change was never pinned by an
+  executed lock. Disposition: inline.
+- **`frontend/diagnose-workstation.css` may change; `frontend/theme.css` tokens
+  may not.** Why: the desk imports both now, so the old ban protected only v1;
+  token values stay the app's. Disposition: inline.
+- **Base eec4652a; base replay is main push CI run 35785233892.** Disposition:
+  inline.
+- **Risk contract:** the v1 clauses are removed; the rest is unchanged.
+  Disposition: copied into `design.md`.
+
+### Grounded facts (origin/main eec4652a)
+
+- Every desk file lock 1 named kept its file name under `frontend/`; the desk
+  replay is now `frontend/desk-behavior.replay.mjs`. The ledger, sweep and
+  exploration paths keep their `harmonic-v2` names as historical records.
+- The ledger inventory pins 142 issued, 123 active, 19 retired.
+- A probe field beside `headline` drifts the same three generators and six
+  fixture files as on 6821bbf6; the new acceptance case-cache check stays clean.
+- The desk imports `diagnose-workstation.css` and `theme.css` from `main.js`.
+- The browser gates are the desk suite, the follow-up suite, the browser-runner
+  regression and the desk ledger replay.
 
 ## Open questions
 

@@ -20,21 +20,16 @@
   browser mirror to answer the new field, and leave every `--check` and
   `frontend/findings-projection-mirror.test.js` green.
 
-## 2. Desk composition, basal lane and cold loading
+## 2. Basal lane and cold loading
 
-- [ ] 2.1 State the desk's composition once where the desk mounts the
-  workstation and thread it through `createDiagnoseEventComparison` to
-  `createDiagnoseWorkstation`; with it absent every shared module renders as on
-  the base. Node test: the v1 mount's rail, lane and key markup is unchanged.
-- [ ] 2.2 Implement surfaces **The desk basal lane names and paints every
-  verdict**: head row with the lane's name and the key above the cells, every
-  served verdict painted with matching key marks, selected outline and staged
-  underline kept, compact height, slot selection and keyboard traversal
-  untouched.
-- [ ] 2.3 Implement surfaces **A cold destination shows a count-free skeleton**
+- [ ] 2.1 Implement surfaces **The basal lane names and paints every verdict**:
+  head row with the lane's name and the key above the cells, every served
+  verdict painted with matching key marks, selected outline and staged underline
+  kept, compact height, slot selection and keyboard traversal untouched.
+- [ ] 2.2 Implement surfaces **A cold destination shows a count-free skeleton**
   in the desk's one loading frame, keeping the status role, the named loading
   text of #414 and the retained-Day reload.
-- [ ] 2.4 Add the lane and loading stories to the desk behavior ledger with their
+- [ ] 2.3 Add the lane and loading stories to the desk behavior ledger with their
   replay functions and node regression tests that tell a feature assertion from
   a setup error: the key lies inside the visible lane above the cells and its
   marks match the cells' computed paint for every verdict, selected and staged
@@ -45,47 +40,50 @@
   Manufacture any lane state the showcase lacks as a `QaCase` recipe per
   `AGENTS.md`, never by hand-setting `asserts_move`.
 
-## 3. Desk rail
+## 3. Rail
 
-- [ ] 3.1 Implement surfaces **A Pattern owns its causes in the desk rail**.
-- [ ] 3.2 Implement surfaces **The desk rail shows served urgency**.
-- [ ] 3.3 Implement surfaces **Desk rail rows print the served count sentence**;
-  the desk path reads no frontend word list.
-- [ ] 3.4 Implement surfaces **Every ranked desk rail row draws one mini
+- [ ] 3.1 Implement surfaces **A Pattern owns its causes in the rail**.
+- [ ] 3.2 Implement surfaces **The rail shows served urgency**.
+- [ ] 3.3 Implement surfaces **Rail rows print the served count sentence**, and
+  delete the frontend Pattern word constant with every reader of it, the Pattern
+  mini's cohort label included.
+- [ ] 3.4 Implement surfaces **Every ranked rail row draws one mini
   instrument**, settling mini width and placement with the fold at both desktop
   sizes.
-- [ ] 3.5 Implement surfaces **The desk opens Diagnose on the 24 h window**,
-  leaving contextual-entry and retained windows to win as they do today.
+- [ ] 3.5 Implement surfaces **Diagnose opens on the 24 h window**, leaving
+  contextual-entry and retained windows to win as they do today.
 - [ ] 3.6 Add the rail and default-window stories to the desk behavior ledger
   with replay functions and node regression tests, move the ledger inventory's
   pinned story counts in `mockups/sweep/harmonic-v2-desktop/acceptance.py` with
-  its test to match, amend under the frozen header
-  the stories whose facts Connor ruled changed (member minis, sibling cause rows,
-  the Overnight arrival) with his dated quotes from `design.md`, and re-read for
-  intent every existing desk replay and test that names a claimed row, the
-  Overnight default or a rail mini.
+  its test to match, amend under the frozen header the stories whose facts
+  Connor ruled changed (member minis, sibling cause rows, the Overnight arrival)
+  with his dated quotes from `design.md`, and re-read for intent every existing
+  desk replay and test that names a claimed row, the Overnight default or a rail
+  mini.
 
 ## 4. Rendered evidence, critique and records
 
 - [ ] 4.1 Prove every new story fails on the base for its feature reason at
-  1280x720 and 1440x900, serving origin/main 6821bbf6 from a second worktree
+  1280x720 and 1440x900, serving origin/main eec4652a from a second worktree
   through the safe start, then prove each passes on the branch. Keep the raw
   logs with the evidence.
 - [ ] 4.2 Capture synthetic before and after renders at both sizes of the rail
   (open and closed Patterns, one-tier urgency, each mini family), the lane
   (supported raise and lower, hold, insufficient, no data, selected, staged) and
-  the cold loading frame, into `docs/scope/413-v2-desk-design-evidence/` with a
+  the cold loading frame, into `docs/scope/413-desk-design-evidence/` with a
   README that maps each #413 requirement to its story, log and captures one by
   one.
 - [ ] 4.3 Obtain an Opus 5 high-effort critique of those after-captures against
   Connor's locked mockup, implement each supported finding or record the
   concrete objection beside it, and re-capture what changed.
-- [ ] 4.4 Update `DESIGN.md`'s v2 desk section and `mockups/INDEX.md`'s desk row
-  for the rail fold, urgency, one mini, lane key and paint, 24 h arrival and
-  skeleton; re-freeze the desk ledger's header with this base and the story
-  counts, which must equal the inventory's pinned counts in
+- [ ] 4.4 Update `DESIGN.md`'s desk revise section and `mockups/INDEX.md`'s
+  Harmonic v2 desktop row for the rail fold, urgency, one mini, lane key and
+  paint, 24 h arrival and skeleton; re-freeze the desk ledger's header with this
+  base and the story counts, which must equal the inventory's pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`.
 - [ ] 4.5 Run the complete desk ledger at both sizes through
   `mockups/sweep/harmonic-v2-desktop/acceptance.py replay`, which checks the
-  ledger inventory before any story, and v1's three ledgers once each, serially, on the commit that will be pushed, with the fast gate, pytest
-  over the built shells, the OpenSpec strict validation and every drift check.
+  ledger inventory before any story, and the desk, follow-up and browser-runner
+  browser suites, once each, serially, on the commit that will be pushed, with the fast
+  gate, pytest over the built shell, the OpenSpec strict validation and every
+  drift check.

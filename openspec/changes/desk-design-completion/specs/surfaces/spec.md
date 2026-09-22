@@ -1,22 +1,8 @@
 ## ADDED Requirements
 
-### Requirement: The v2 desk alone carries the #413 design
+### Requirement: A Pattern owns its causes in the rail
 
-The rail, basal lane, rail mini and default-window behavior this change adds
-SHALL be reached only through the v2 desk's composition of the shared Diagnose
-workstation. The app served at `/` SHALL render the same rail rows, lane, minis
-and default window it rendered before this change, and its frozen behavior
-ledgers SHALL pass without amendment.
-
-#### Scenario: v1 is untouched
-
-- **GIVEN** the built app on the synthetic showcase
-- **WHEN** v1's frozen workstation, event-comparison and verify ledgers replay
-- **THEN** every story passes with no ledger or replay amendment in this change
-
-### Requirement: A Pattern owns its causes in the desk rail
-
-In the v2 desk rail, a Pattern row SHALL hold its claimed causes beneath it on
+In the rail, a Pattern row SHALL hold its claimed causes beneath it on
 the Pattern's own spine, one line per cause carrying the cause's name, the
 count, denominator and noun of each of its served count sentences in served
 order, never merged, and a drill chevron. A
@@ -32,15 +18,15 @@ as sibling rail rows.
 
 - **GIVEN** a synthetic window whose first ranked row is a Pattern with claimed
   causes and a later Pattern with one
-- **WHEN** Diagnose loads in the v2 desk at each supported desktop size
+- **WHEN** Diagnose loads at each supported desktop size
 - **THEN** the first Pattern shows its causes beneath it and the later one shows
   only its toggle, each toggle naming its served cause count
 - **AND** no claimed cause is a sibling row and no cause line holds a chart
 - **AND** opening a cause's chevron lands on that cause's case file
 
-### Requirement: The desk rail shows served urgency
+### Requirement: The rail shows served urgency
 
-The first tier caption in the v2 desk rail SHALL paint in the primary hue and
+The first tier caption in the rail SHALL paint in the primary hue and
 the rows of that tier SHALL carry a rank stripe and a primary rank numeral.
 Later tiers SHALL stay quiet. The caption word, the tier membership and the rank
 SHALL be the served values; the desk SHALL derive none of them.
@@ -52,9 +38,9 @@ SHALL be the served values; the desk SHALL derive none of them.
 - **THEN** that tier's caption is primary and each of its rows carries the stripe
 - **AND** the caption and ranks equal the served projection's
 
-### Requirement: Every ranked desk rail row draws one mini instrument
+### Requirement: Every ranked rail row draws one mini instrument
 
-Every ranked row's mini in the v2 desk rail SHALL be the same instrument: the
+Every ranked row's mini in the rail SHALL be the same instrument: the
 matched cohort's label with its count at the left, `TYPICAL` with the
 denominator at the right, the event named on the anchor line, the target band
 dashed, and the rail's cohort palette. No mini SHALL draw in the comparison blue.
@@ -70,9 +56,9 @@ honest unavailable state rather than a second instrument.
   named anchor and the dashed target band
 - **AND** every series colour resolves to a rail cohort token
 
-### Requirement: Desk rail rows print the served count sentence
+### Requirement: Rail rows print the served count sentence
 
-Every count-bearing rail row in the v2 desk SHALL print each of the projection's
+Every count-bearing rail row in the rail SHALL print each of the projection's
 served count sentences for that row, in served order and never merged, with each
 count and denominator emphasised. The desk SHALL hold no
 noun or outcome word list of its own.
@@ -84,9 +70,9 @@ noun or outcome word list of its own.
 - **THEN** both rows read `n of d noun outcome` with the served words
 - **AND** a Cause appearing in two families prints both served sentences
 
-### Requirement: The desk basal lane names and paints every verdict
+### Requirement: The basal lane names and paints every verdict
 
-In the v2 desk the basal lane SHALL show a head row above its cells carrying the
+The basal lane SHALL show a head row above its cells carrying the
 lane's name and a key of the served verdict short forms with their counts, fully
 visible inside the lane at both supported desktop sizes. Every cell SHALL paint
 its served verdict: hold a filled neutral, raise the high gold with an upward
@@ -106,21 +92,21 @@ verdict decision SHALL be unchanged; the lane paints what is served.
   hold cells are not the bare ground
 - **AND** the key's words and counts equal the served lane counts
 
-### Requirement: The desk opens Diagnose on the 24 h window
+### Requirement: Diagnose opens on the 24 h window
 
-On a cold arrival with no contextual entry and no retained window, the v2 desk
+On a cold arrival with no contextual entry and no retained window, the desk
 SHALL open Diagnose on the 24 h window. A contextual entry's window and a
 retained window SHALL still win.
 
 #### Scenario: Cold arrival
 
 - **GIVEN** the built app on the synthetic showcase
-- **WHEN** the reader opens the desk's Diagnose with no entry context
+- **WHEN** the reader opens Diagnose with no entry context
 - **THEN** the 24 h window is selected and the findings read is unscoped
 
 ### Requirement: A cold destination shows a count-free skeleton
 
-While a v2 destination loads cold, the desk SHALL show a skeleton of rail rows
+While a desk destination loads cold, the desk SHALL show a skeleton of rail rows
 and stage instruments in place of the empty block. The skeleton SHALL state no
 count, title or value, SHALL shimmer slowly, SHALL hold still under reduced
 motion, SHALL keep the loading status and its named text for assistive

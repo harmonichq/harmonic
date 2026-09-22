@@ -31,8 +31,8 @@ export class ApiTransportError extends Error {
  * Build a bound API namespace whose transport can be replaced.
  *
  * @param {{ fetch?: Function }} [deps={}]
- * @returns {{ fetchCredentials, saveCredentials, fetchStatus, fetchNow,
- *             fetchPumpSettings, fetchBacktest, fetchAnalysis, fetchScenarios,
+ * @returns {{ fetchCredentials, saveCredentials, fetchStatus,
+ *             fetchPumpSettings, fetchAnalysis, fetchScenarios,
  *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, fetchEatingSequences, fetchAuditDismissals, dismissAuditItem, loadPlan, savePlanDraft,
  *             loadPlanHistory, applyPlan }}
  */
@@ -92,26 +92,11 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/status');
   }
 
-  /** POST /api/fetch */
-  function fetchNow() {
-    return api('/api/fetch', { method: 'POST' });
-  }
-
   // --- pump settings ------------------------------------------------------
 
   /** GET /api/pump-settings */
   function fetchPumpSettings() {
     return api('/api/pump-settings');
-  }
-
-  // --- backtest -----------------------------------------------------------
-
-  /**
-   * GET /api/backtest
-   * @param {{ holdoutDays?: number }} [opts]
-   */
-  function fetchBacktest({ holdoutDays = 2 } = {}) {
-    return api('/api/backtest' + (holdoutDays !== 2 ? '?holdout_days=' + holdoutDays : ''));
   }
 
   // --- analysis -----------------------------------------------------------
@@ -552,9 +537,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchCredentials,
     saveCredentials,
     fetchStatus,
-    fetchNow,
     fetchPumpSettings,
-    fetchBacktest,
     fetchAnalysis,
     fetchScenarios,
     fetchCatalog,
@@ -608,9 +591,7 @@ const _defaults = makeDeps();
 export const fetchCredentials  = _defaults.fetchCredentials;
 export const saveCredentials   = _defaults.saveCredentials;
 export const fetchStatus       = _defaults.fetchStatus;
-export const fetchNow          = _defaults.fetchNow;
 export const fetchPumpSettings = _defaults.fetchPumpSettings;
-export const fetchBacktest     = _defaults.fetchBacktest;
 export const fetchAnalysis     = _defaults.fetchAnalysis;
 export const fetchScenarios    = _defaults.fetchScenarios;
 export const fetchCatalog      = _defaults.fetchCatalog;

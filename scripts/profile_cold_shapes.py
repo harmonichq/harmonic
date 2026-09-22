@@ -13,10 +13,10 @@ is what names the dominant scans.
     uv run python scripts/profile_cold_shapes.py --db <snapshot>
     uv run python scripts/profile_cold_shapes.py --db <snapshot> --profile findings-case-preparation
 
-The shape list and its order come from the SPA's own cold arrival: `loadAll` runs
-the backtest and the standard analysis, then Diagnose's `loadAudit` runs the other
-six (`frontend/index.html`). The two warm-set-only shapes at the end are not part of
-that arrival; they are here because the hourly pre-warm computes them (`api.py`
+The shape list and its order are the cold arrival the retired v1 page measured,
+kept as the fixed profiling order so runs stay comparable across the ADR 416
+cutover. The two warm-set-only shapes at the end are not part of that arrival;
+they are here because the hourly pre-warm computes them (`api.py`
 `invalidate_and_warm`), so their cost is measurable drift rather than user-facing
 latency.
 

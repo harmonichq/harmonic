@@ -84,33 +84,11 @@ test('fetchStatus builds GET /api/status', async () => {
   assert.ok(!calls[0].opts.method || calls[0].opts.method === 'GET');
 });
 
-test('fetchNow builds POST /api/fetch', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const { fetchNow } = makeDeps({ fetch });
-  await fetchNow();
-  assert.equal(calls[0].url, '/api/fetch');
-  assert.equal(calls[0].opts.method, 'POST');
-});
-
 test('fetchPumpSettings builds GET /api/pump-settings', async () => {
   const { fetch, calls } = makeFakeFetch({ configured: false });
   const { fetchPumpSettings } = makeDeps({ fetch });
   await fetchPumpSettings();
   assert.equal(calls[0].url, '/api/pump-settings');
-});
-
-test('fetchBacktest builds GET /api/backtest with default holdout', async () => {
-  const { fetch, calls } = makeFakeFetch({ n_matched: 0 });
-  const { fetchBacktest } = makeDeps({ fetch });
-  await fetchBacktest();
-  assert.equal(calls[0].url, '/api/backtest');
-});
-
-test('fetchBacktest appends ?holdout_days when non-default', async () => {
-  const { fetch, calls } = makeFakeFetch({ n_matched: 0 });
-  const { fetchBacktest } = makeDeps({ fetch });
-  await fetchBacktest({ holdoutDays: 5 });
-  assert.equal(calls[0].url, '/api/backtest?holdout_days=5');
 });
 
 test('fetchAnalysis builds GET /api/analyze without params by default', async () => {

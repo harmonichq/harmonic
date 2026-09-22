@@ -4,5 +4,3 @@
 # never by hand.
 frontend/__fixtures__/*.json linguist-generated=true
 mockups/*.synthetic/*.json linguist-generated=true
-mockups/finding-evidence-routing.exploration/data.json linguist-generated=true
-mockups/finding-evidence-routing.exploration/*.extracted.* linguist-generated=true

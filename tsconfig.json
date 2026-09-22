@@ -9,7 +9,7 @@
     "noEmit": true
   },
   "include": [
-    "frontend/**/*.js", "frontend/**/*.ts", "frontend/**/*.vue",
+    "frontend/**/*.js", "frontend/**/*.ts",
     "frontend-v2/**/*.js", "frontend-v2/**/*.mjs"
   ]
 }

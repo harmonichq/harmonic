@@ -140,7 +140,7 @@ export function navigate(next, entryContext = {}) {
   navigation += 1;
   destination = resolveDestination(next);
   context = { ...entryContext };
-  writeRoute({ destination, context }, { serialize: (route) => serializeV2Route(route) });
+  writeRoute({ destination, context }, { serialize: serializeV2Route });
   // Arriving at a destination puts the hand on its subject: the reading pane's
   // head, else the stage's title.
   if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '#crumb-trail', '.gf-stage .gf-title'];

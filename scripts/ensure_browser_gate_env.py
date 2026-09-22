@@ -15,7 +15,7 @@ stat each. Only the exports print to stdout; provisioning chatter goes to
 stderr. Use with:
 
     eval "$(python3 scripts/ensure_browser_gate_env.py)"
-    PAYLOAD=... node --test frontend/diagnose-workstation.browser.test.mjs
+    node --test frontend-v2/desk.browser.test.mjs
 
 Deliberately not ``--with-deps``: that step can stall on a privilege prompt
 for system packages, CI keeps its own recipe, and a local dev box already has

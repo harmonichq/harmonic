@@ -24,7 +24,6 @@ Dockerfile
 .dockerignore
 package.json
 package-lock.json
-vite.config.mjs
 vite.config.v2.mjs
 tsconfig.json
 docker-compose.yml
@@ -51,17 +50,18 @@ CLAUDE.md
 ciq_autotune/** {.py}
 tests/** {.py}
 
-# --- The frontend SPA (§1.3). .json is deliberate: it's the entire
-# __fixtures__/ set, including the two stamped exemplars and whatever
-# Phase 0.5.1 regenerates. The global binary deny and the Phase 3.1
-# structural scan are what keep a future real-data JSON out of this rule.
-frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
+# --- The shared frontend modules the desk imports (§1.3). .json is
+# deliberate: it's the entire __fixtures__/ set, including the stamped
+# exemplars and whatever Phase 0.5.1 regenerates. The global binary deny and
+# the Phase 3.1 structural scan are what keep a future real-data JSON out of
+# this rule.
+frontend/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 
-# --- The v2 desktop's source root (#389). It is a SHIPPING tree: the packaged
-# image builds both surfaces from this tree alone, so the second Vite root and
-# its build configuration above must both ship or /v2/ cannot be built at all.
-# Its built output is generated during packaging and is untracked, so it is
-# never a candidate input here.
+# --- The desk's source root (#389). It is a SHIPPING tree: the packaged image
+# builds the one shell from this tree alone, so this root and its build
+# configuration above must both ship or the app cannot be built at all. Its
+# built output is generated during packaging and is untracked, so it is never a
+# candidate input here.
 #
 # No binary class is added here. HV2-08 keeps Inter as the single UI family and
 # HV2-01 forbids a CDN, so the font travels in the tree — as a CSS resource
@@ -69,16 +69,10 @@ frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
 # .css extension below. That keeps every shipping file text, which is what the
 # contamination scan reads; a WOFF2 beside it would fail that scan closed, and
 # the scan is right to do so.
-frontend-v2/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
+frontend-v2/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 # The font licence must travel with the font. Exact-path, because .txt is not in
 # the extension set above and should not be widened for one file.
 frontend-v2/fonts/OFL.txt
-
-# --- The dev-only component harness ------------------------------------
-# It ships as source so the README and contributor instructions resolve.
-# It never enters the production app or CI, and the structural scan covers
-# every committed harness byte before the public tree is materialised.
-harness/** {.html,.js,.json}
 
 # --- The public "why" (§0.2 [R5]) ---------------------------------------
 openspec/specs/** {.md}
@@ -96,13 +90,11 @@ docs/kb/the-plan-tab.md
 
 # --- mockups/ is exact-path only (§1.6.6); nothing else in the tree ships
 # from that directory.
-mockups/explore-investigation.fixture.js
-mockups/diagnose-event-comparison-support-audit.mjs
 # The fixture-only JS mirror of the findings projection. It is not a mockup
-# record: five SHIPPING modules import it, so leaving it out makes the tree
-# fail to build. frontend/findings-projection-mirror.test.js (the fast frontend
-# job) plus the Diagnose workstation browser gate, the Diagnose workstation and
-# event-comparison behaviour-ledger replays all resolve this path.
+# record: shipping modules import it, so leaving it out makes the tree fail to
+# build. frontend/findings-projection-mirror.test.js (the fast frontend job),
+# the shared Diagnose fixture population and the desk's browser suite all
+# resolve this path.
 mockups/findings-projection.mirror.mjs
 # The three committed synthetic sets, extension-scoped (§1.6.7).
 mockups/diagnose-workstation.synthetic/** {.json,.mjs}

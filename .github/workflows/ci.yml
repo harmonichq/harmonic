@@ -73,23 +73,13 @@ jobs:
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
-      # The frontend's I:C block fixtures are real analyzer output, not literals
-      # (#518). If a gate moves and the fixture isn't regenerated, the frontend tests
-      # keep asserting a verdict the analyzer no longer produces — the #273 trap in a
-      # new place. This fails the build instead.
-      - name: Check the generated I:C block fixtures are current
-        run: uv run python scripts/gen_ic_block_fixtures.py --check
-      - name: Check the generated evidence-canvas exploration is current
-        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
       - name: Check the generated v2 design evidence and app material are current
         run: uv run python mockups/harmonic-v2.exploration/generate.py --check
-      # Same drift class, the engine-authored annotation copy the Settings audit
-      # renders verbatim (#536).
-      - name: Check the generated annotation fixtures are current
-        run: uv run python scripts/gen_annotation_fixtures.py --check
-      # Same drift class again: the three chart-builder fixtures (#728) are real
-      # analyze()/timeline()/scenario-engine output over invented inputs, not
-      # literals — see scripts/gen_chart_builder_fixtures.py.
+      # The chart-builder fixtures (#728) are real analyze()/timeline()/
+      # scenario-engine output over invented inputs, not literals — see
+      # scripts/gen_chart_builder_fixtures.py. If a producer moves and the
+      # fixture isn't regenerated, the frontend tests keep asserting output the
+      # engine no longer produces. This fails the build instead.
       - name: Check the generated chart-builder fixtures are current
         run: uv run python scripts/gen_chart_builder_fixtures.py --check
       # #716: the two committed synthetic demo sets under mockups/ (Verify,
@@ -207,9 +197,9 @@ jobs:
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm dependency; the dev-only harness/ is not exercised here. Both
-      # source roots are named: frontend-v2/ is the v2 desk (#389), and a glob
-      # that does not name it is a runner no new test is ever seen by.
+      # no npm dependency. Both source roots are named: frontend-v2/ is the
+      # desk (#389) and frontend/ holds the modules it shares, and a glob that
+      # does not name a root is a runner no new test is ever seen by.
       - name: Run tests
         run: node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'
       # The browser capture is generated too; a passing test must not run
@@ -218,20 +208,6 @@ jobs:
         run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
       - name: Exercise the local screenshot wrapper
         run: node --test scripts/screenshots.local.test.mjs
-      # The same drift class the backend job guards for its five generators, in
-      # the one place it was never applied. The finding->evidence exploration
-      # commits three GENERATED artifacts: app-base.extracted.css and
-      # evidence-table.extracted.js are lifted verbatim out of
-      # frontend/index.html and frontend/diagnose-workstation.js, and data.json
-      # is fixture data run through the shipped queue/chart/dock producers. All
-      # three move when the app moves, and until now nothing noticed. The light
-      # relight (63d9053) left the extracted stylesheet on the retired parchment
-      # tokens, so the exploration's own contrast guard spent an entire round
-      # measuring a theme the app had already left and reporting zero failures.
-      # Node-only and dependency-free — it regenerates in memory and byte-
-      # compares, so it belongs in the fast gate rather than behind Chromium.
-      - name: Check the exploration's generated artifacts are current
-        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
 
   browser-gate-setup:
     name: browser gate setup
@@ -281,31 +257,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - gate: Day lifecycle
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
-          - gate: Diagnose workstation
-            timeout: 10
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-          - gate: Diagnose canvas composition
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-          - gate: Cockpit shell
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
-      # #554: the shared browser-runner.js front door itself — proves it
-      # launches Chromium once per command and still isolates scenarios.
-      # #672: fails closed like every other browser gate, so it's a
-      # `.browser.test.mjs` (not `.test.js`) and only runs here.
+          # #554: the shared browser-runner.js front door itself — proves it
+          # launches Chromium once per command and still isolates scenarios.
+          # #672: fails closed like every other browser gate, so it's a
+          # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
             timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
-      # #389: the v2 desk's own browser gate. Browser suites are never
-      # discovered by a glob in this repository — they are hand-listed matrix
-      # entries — so the new source root gets its own step here, and chunks 2, 3
-      # and 4 add theirs beside it. It serves the BUILT desk from disk and
-      # answers the API from manufactured payloads in the driver, so it needs no
-      # Python and no server.
+          # #389: the desk's own browser gate. Browser suites are never
+          # discovered by a glob in this repository — they are hand-listed
+          # matrix entries. It serves the BUILT desk from disk and answers the
+          # API from manufactured payloads in the driver, so it needs no Python
+          # and no server.
           - gate: V2 desk
             timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
@@ -313,45 +276,6 @@ jobs:
             timeout: 30
             python: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
-          - gate: First-plan reconcile
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-      # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
-      # glob never discovers, so it gets its own explicit step. It fails closed —
-      # a missing driver, built shell or fixture exits nonzero rather than
-      # skipping, because a green step that ran zero stories proves nothing.
-      #
-      # This surface has shipped (#722): the app is now the contract artifact,
-      # so this is the only leg — the same stories and assertions, against the
-      # BUILT workstation through the app opener, whose route stubs serve the
-      # synthetic set's API-shaped payload. The mock (and its TARGET=mock CI
-      # leg) has been archived; the anti-drift guarantee lives on in these
-      # stories replaying against the built app forever.
-          - gate: Diagnose workstation behaviour ledger
-            timeout: 21
-            server: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-      # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
-      # S12 mutates glucose after the mock's former server-owned support facts
-      # were computed, so its production aggregation regression is app-only
-      # (#706). This surface has shipped (#722): the app is now the contract
-      # artifact, so only the app leg remains, running every frozen story
-      # (S1–S12). It fails closed when browser infrastructure or a fixture is
-      # absent (#672).
-          - gate: Diagnose event comparisons
-            timeout: 6
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-          - gate: Diagnose comparison support audit
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-      # #660: the Verify workstation's own frozen ledger. This surface has
-      # shipped (#722): the app is now the contract artifact, so this is the
-      # only leg — the regression gate the port owes, rendering the committed
-      # synthetic set. It fails closed — a run that executes zero stories
-      # exits nonzero.
-          - gate: Verify behaviour ledger
-            timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -361,13 +285,13 @@ jobs:
           cache: npm
       - name: Build the delivered frontend shell
         run: npm ci && npm run build
-      - name: Set up uv for the no-fetch app server
-        if: matrix.server || matrix.python
+      - name: Set up uv for the legs that need the API runtime
+        if: matrix.python
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Install the API runtime for the no-fetch app server
-        if: matrix.server || matrix.python
+      - name: Install the API runtime
+        if: matrix.python
         run: uv sync --frozen --extra api
       - name: Restore the isolated browser runner and Chromium
         id: browser-runner-cache
@@ -380,17 +304,6 @@ jobs:
       - name: Require the browser runner cache
         if: steps.browser-runner-cache.outputs.cache-hit != 'true'
         run: exit 1
-      - name: Start the declared synthetic no-fetch app server
-        if: matrix.server
-        run: |
-          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          uv run harmonic serve --no-fetch --token '' --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
-          for attempt in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:8765/api/health && exit 0
-            sleep 1
-          done
-          cat "$RUNNER_TEMP/harmonic-no-fetch.log"
-          exit 1
       - name: Run browser gate
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers

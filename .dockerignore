@@ -12,8 +12,7 @@ __pycache__/
 .pytest_cache/
 .claude/
 node_modules/
-frontend/dist/
-harness/
+frontend-v2/dist/
 
 # Design scratch — not part of the runtime app.
 mockups/

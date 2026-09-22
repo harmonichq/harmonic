@@ -22,6 +22,12 @@ lowercase-and-hyphen charset so a request cannot escape its directory.
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
 
+#### Scenario: One process answers the shell, its assets and the API
+
+- **WHEN** the service is started
+- **THEN** the same port answers the shell at `/`, a built asset beneath `/assets/`, and `/api/health`
+- **AND** a path outside the named page set, the asset prefix and `/api` answers 404
+
 #### Scenario: Built shell, built assets and the API stay distinct
 
 - **GIVEN** a completed production build and a TestClient application

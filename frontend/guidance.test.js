@@ -1,5 +1,5 @@
 // #389 — tests for the desk's one guidance read (guidance.js).
-//   node --test 'frontend-v2/**/*.test.js'
+//   node --test 'frontend/**/*.test.js'
 //
 // The three rules this module exists to enforce are the three things a
 // destination cannot see for itself, so they are what is asserted here: a failed

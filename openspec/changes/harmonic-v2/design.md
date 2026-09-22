@@ -657,6 +657,10 @@ executable component backlog or permission to change the related tickets.
    when its inventoried jobs are preserved or Connor has explicitly approved
    their retirement, and remove old routes/assets/docs together. Restoring the
    prior frontend must not require discarding the shared decision history.
+   **Superseded by ADR 416** (`openspec/changes/retire-v1/design.md`): Connor's
+   2026-09-21 acceptance was also the cutover and retirement approval, so the
+   desk moved to the root address and v1 was deleted in one change, with no
+   transition period and no retained v1 route.
 
 Every backend write continues to follow the existing cache invalidation rule;
 the existing Plan-draft exception is not expanded by analogy. Ordinary failures

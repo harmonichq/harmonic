@@ -23,7 +23,7 @@
 //
 //   PLAYWRIGHT_MODULE=<playwright> MOCK_BASE_URL=http://127.0.0.1:8080 \
 //   [FONT_ASSETS=<font-assets.json>] TARGET=mock [ONLY=S1,S24] \
-//   [VIEWPORT=1280x720] node frontend/harmonic-v2-desktop-behavior.replay.mjs
+//   [VIEWPORT=1280x720] node frontend/desk-behavior.replay.mjs
 //
 // TARGET is required and explicit — `mock` or `app`. There is no default.
 //
@@ -60,13 +60,13 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { S8 as sharedEventSpeech } from '../frontend-v2/diagnose-replay.mjs';
+import { S8 as sharedEventSpeech } from './diagnose-replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
-import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
-import { C4_STORIES, C4_RETIREMENTS, historicalAbsence } from '../frontend-v2/c4.replay.mjs';
-import { C3_STORIES } from '../frontend-v2/c3.replay.mjs';
-import { C2_STORIES, waitForDesk } from '../frontend-v2/c2.replay.mjs';
-import { captureStory } from '../frontend-v2/capture.mjs';
+import { createCaseServer, storyCase } from './replay-cases.mjs';
+import { C4_STORIES, C4_RETIREMENTS, historicalAbsence } from './c4.replay.mjs';
+import { C3_STORIES } from './c3.replay.mjs';
+import { C2_STORIES, waitForDesk } from './c2.replay.mjs';
+import { captureStory } from './capture.mjs';
 
 const require = createRequire(import.meta.url);
 const { createBrowserRunner } = require('./browser-runner.js');

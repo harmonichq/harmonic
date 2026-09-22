@@ -1,10 +1,10 @@
 // App-only c3 bodies. Every read/write below uses the production API of a fresh
 // generator-owned case store. Historical prototype bodies remain unchanged.
-import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { boundedWait } from './c2.replay.mjs';
 import { date } from './frame.js';
-import { parseV2Route } from '../frontend/tab-routing.js';
+import { parseRoute } from './tab-routing.js';
 
 export const C3_CASES = Object.freeze({
   ...Object.fromEntries('S36,S45,S45b,S46,S47,S48,S49,S50,S51,S52,S53,S55,S91,S92,S94'.split(',').map(id => [id, 'c3-trial'])),
@@ -130,7 +130,7 @@ async function startForm(page, selection = 'afternoon') {
     await changes(page); await press(page, '[data-start-focus]');
   }
   await page.locator('[data-focus="pin"]').waitFor({ timeout: 30000 });
-  const route = parseV2Route(new URL(page.url()));
+  const route = parseRoute(new URL(page.url()));
   const scope = route.context.window?.split('-').map(Number);
   const selectedScope = scope?.length === 2 && scope.every(Number.isInteger)
     ? { start_min: scope[0], end_min: scope[1] } : null;
@@ -154,7 +154,7 @@ async function pin(page, selection = 'afternoon') {
     const roster = seen(await read(page, '/api/focus'));
     const saved = roster.focuses.find(row => row.id === roster.admission.active_id);
     assert.equal(saved.pattern_key, offered.key);
-    assert.equal(parseV2Route(new URL(seen(page.url()))).destination, 'changes');
+    assert.equal(parseRoute(new URL(seen(page.url()))).destination, 'changes');
     assert.equal(seen(await page.locator('[data-focus="retry-pin"]').count()), 0);
     return { saved };
   }, "pin");
@@ -177,7 +177,7 @@ async function pin(page, selection = 'afternoon') {
     }, { timeout: 30000 });
     await press(page, '[data-follow-up-inspect]');
     const returned = await boundedWait(preparation, 'retained 24 h Inspect preparation').then(response => response.json());
-    const inspectRoute = parseV2Route(new URL(page.url()));
+    const inspectRoute = parseRoute(new URL(page.url()));
     assert.equal(inspectRoute.destination, 'diagnose');
     assert.equal(inspectRoute.context.window, '0-1440', 'Inspect keeps the saved explicit 24 h scope');
     assert.equal(returned.coordinates.window.scoped, false,
@@ -221,7 +221,7 @@ export const C3_STORIES = {
     await press(page, '[data-follow-up-inspect]');
     await page.waitForFunction(slot => document.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label')?.startsWith(`${slot} basal slot,`), slot, { timeout: 30000 });
     await waitForReplayAssertion(async seen => {
-      const route = parseV2Route(new URL(seen(page.url())));
+      const route = parseRoute(new URL(seen(page.url())));
       assert.equal(route.destination, 'diagnose');
       assert.equal(route.context.window, `${start}-${start + 30}`);
       assert.equal(route.context.from, 'changes');
@@ -383,7 +383,7 @@ export const C3_STORIES = {
     await page.locator('[data-record-part="ending"]').waitFor();
     await press(page, '[data-action="overview"]');
     await waitForReplayAssertion(async seen => {
-      const route = parseV2Route(new URL(seen(page.url())));
+      const route = parseRoute(new URL(seen(page.url())));
       assert.equal(route.destination, 'diagnose');
       assert.equal(route.context.subject, 'setting:basal_rate');
       assert.equal(route.context.window, '180-210');

@@ -73,7 +73,7 @@ jobs:
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
-      - name: Check the generated v2 design evidence and app material are current
+      - name: Check the generated design evidence and app material are current
         run: uv run python mockups/harmonic-v2.exploration/generate.py --check
       # The chart-builder fixtures (#728) are real analyze()/timeline()/
       # scenario-engine output over invented inputs, not literals — see
@@ -197,11 +197,10 @@ jobs:
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm dependency. Both source roots are named: frontend-v2/ is the
-      # desk (#389) and frontend/ holds the modules it shares, and a glob that
-      # does not name a root is a runner no new test is ever seen by.
+      # no npm dependency. The one source root is named explicitly: a glob
+      # that does not name a root is a runner no new test is ever seen by.
       - name: Run tests
-        run: node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'
+        run: node --test 'frontend/**/*.test.js'
       # The browser capture is generated too; a passing test must not run
       # against bytes that have drifted from its support-stamp producer.
       - name: Check the event-comparison synthetic capture is current
@@ -269,13 +268,13 @@ jobs:
           # matrix entries. It serves the BUILT desk from disk and answers the
           # API from manufactured payloads in the driver, so it needs no Python
           # and no server.
-          - gate: V2 desk
+          - gate: Desk
             timeout: 5
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
-          - gate: V2 Trial and Pattern Focus
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/desk.browser.test.mjs
+          - gate: Trial and Pattern Focus
             timeout: 30
             python: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/follow-up.browser.test.mjs
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -309,8 +308,8 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
 
-  v2-ledger-plan:
-    name: select v2 ledger shards
+  ledger-plan:
+    name: select ledger shards
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -335,26 +334,26 @@ jobs:
         run: |
           args=()
           if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
-          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/v2-plan"
+          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/ledger-plan"
       - name: Retain the selection and planned shard inventory
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-plan
-          path: ${{ runner.temp }}/v2-plan/
+          name: ledger-plan
+          path: ${{ runner.temp }}/ledger-plan/
 
-  v2-ledger:
-    name: browser gates — V2 ${{ needs.v2-ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.v2-ledger-plan.outputs.count }} selected)
-    needs: [browser-gate-setup, v2-ledger-plan]
+  ledger:
+    name: browser gates — ${{ needs.ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.ledger-plan.outputs.count }} selected)
+    needs: [browser-gate-setup, ledger-plan]
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 21 || 60 }}
+    timeout-minutes: ${{ needs.ledger-plan.outputs.mode == 'full' && 21 || 60 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
       fail-fast: false
       matrix:
         viewport: [1280x720, 1440x900]
-        shard: ${{ fromJSON(needs.v2-ledger-plan.outputs.shards) }}
+        shard: ${{ fromJSON(needs.ledger-plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -383,29 +382,29 @@ jobs:
       - name: Require the browser runner cache
         if: steps.browser-runner-cache.outputs.cache-hit != 'true'
         run: exit 1
-      - name: Run the selected v2 ledger
+      - name: Run the selected ledger
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
-          SMOKE_BASE: ${{ needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
+          SMOKE_BASE: ${{ needs.ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
         run: |
           args=()
           if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
-          uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "${{ matrix.viewport }}" --shard "${{ matrix.shard }}" "${args[@]}" --out "$RUNNER_TEMP/v2-${{ matrix.viewport }}-${{ strategy.job-index }}"
-      - name: Retain v2 acceptance output
+          uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "${{ matrix.viewport }}" --shard "${{ matrix.shard }}" "${args[@]}" --out "$RUNNER_TEMP/ledger-${{ matrix.viewport }}-${{ strategy.job-index }}"
+      - name: Retain the ledger acceptance output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-${{ matrix.viewport }}-${{ strategy.job-index }}
+          name: ledger-${{ matrix.viewport }}-${{ strategy.job-index }}
           path: |
-            ${{ runner.temp }}/v2-*/*.json
-            ${{ runner.temp }}/v2-*/*.log
-            ${{ runner.temp }}/v2-*/captures/
+            ${{ runner.temp }}/ledger-*/*.json
+            ${{ runner.temp }}/ledger-*/*.log
+            ${{ runner.temp }}/ledger-*/captures/
 
 
   frontend-browser:
     name: browser gates
-    needs: [frontend-browser-leg, v2-ledger]
+    needs: [frontend-browser-leg, ledger]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -413,8 +412,8 @@ jobs:
       - name: Require every browser gate leg to pass
         env:
           BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
-          V2_RESULT: ${{ needs.v2-ledger.result }}
-        run: test "$BROWSER_LEGS_RESULT" = success && test "$V2_RESULT" = success
+          LEDGER_RESULT: ${{ needs.ledger.result }}
+        run: test "$BROWSER_LEGS_RESULT" = success && test "$LEDGER_RESULT" = success
 
   nightly-result:
     name: nightly result
@@ -467,15 +466,15 @@ jobs:
           load: true
           tags: harmonic:pr-test
       - name: Prove both packaged shells, assets, authentication and closed routes
-        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/v2-package"
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/package"
       - name: Retain packaged runtime proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v2-packaged-runtime
+          name: packaged-runtime
           path: |
-            ${{ runner.temp }}/v2-package/*.log
-            ${{ runner.temp }}/v2-package/*.json
+            ${{ runner.temp }}/package/*.log
+            ${{ runner.temp }}/package/*.json
 
   docker:
     name: build + push image

@@ -24,7 +24,7 @@ Dockerfile
 .dockerignore
 package.json
 package-lock.json
-vite.config.v2.mjs
+vite.config.mjs
 tsconfig.json
 docker-compose.yml
 docker-entrypoint.sh
@@ -65,14 +65,13 @@ frontend/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 #
 # No binary class is added here. HV2-08 keeps Inter as the single UI family and
 # HV2-01 forbids a CDN, so the font travels in the tree — as a CSS resource
-# carrying its bytes as data URLs (frontend-v2/fonts/inter.css), cleared by the
+# carrying its bytes as data URLs (frontend/fonts/inter.css), cleared by the
 # .css extension below. That keeps every shipping file text, which is what the
 # contamination scan reads; a WOFF2 beside it would fail that scan closed, and
 # the scan is right to do so.
-frontend-v2/** {.html,.js,.mjs,.ts,.css,.svg,.json}
 # The font licence must travel with the font. Exact-path, because .txt is not in
 # the extension set above and should not be widened for one file.
-frontend-v2/fonts/OFL.txt
+frontend/fonts/OFL.txt
 
 # --- The public "why" (§0.2 [R5]) ---------------------------------------
 openspec/specs/** {.md}
@@ -139,10 +138,10 @@ scripts/public_scan_config.txt
 # exploration JSON files. Keep it and tests that import or launch it private
 # until those dependencies have a separately reviewed publication disposition.
 # These files remain tracked and runnable in this private checkout (#389).
-! frontend/harmonic-v2-desktop-behavior.replay.mjs
-! frontend-v2/c3.replay.test.js
-! frontend-v2/c4.replay.test.js
-! frontend-v2/follow-up.browser.test.mjs
+! frontend/desk-behavior.replay.mjs
+! frontend/c3.replay.test.js
+! frontend/c4.replay.test.js
+! frontend/follow-up.browser.test.mjs
 
 # Generated design-capture parity requires private artifacts. Public analyzer
 # fixture coverage remains in the separate public test module.

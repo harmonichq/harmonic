@@ -35,12 +35,12 @@ test('Day carries canonical subject, opaque occurrence, moment and source window
 
 test('the Day return keeps moment and evidence coordinates through the shared router', async () => {
   const { dayReturnContext } = await import('./day.js');
-  const { parseV2Route, serializeV2Route } = await import('../frontend/tab-routing.js');
+  const { parseRoute, serializeRoute } = await import('./tab-routing.js');
   const entry = { key: 'private-memory-key', date: '2024-06-01', moment: '2024-06-01 08:12:00',
     subject: 'pattern:served', occurrence: 'opaque-7', window: '360-720', lever: 'served-lever', from: 'diagnose', focus: '.occ-foot button:last-child' };
   const context = dayReturnContext(entry);
-  const address = serializeV2Route({ destination: 'diagnose', context });
-  assert.deepEqual(parseV2Route({ search: address.slice(address.indexOf('?')) }).context, context);
+  const address = serializeRoute({ destination: 'diagnose', context });
+  assert.deepEqual(parseRoute({ search: address.slice(address.indexOf('?')) }).context, context);
   assert.equal(context.moment, entry.moment);
   assert.equal(Object.hasOwn(context, 'key'), false);
 });

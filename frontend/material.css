@@ -2,8 +2,8 @@
    the shipped Day legend the desk's figure keys render.
 
    #416 — THIS IS THE ONE HOME. Until the v1 page was retired, the desk's build
-   read these rules out of frontend/index.html at build time (the retired
-   frontend-v2/app-source.mjs) so that one ladder had one home and no committed
+   read these rules out of v1's page at build time (through a retired
+   build-time lift) so that one ladder had one home and no committed
    copy could go stale. With v1 retired the desk is the only shell, so the
    reading end of that arrangement is gone and these rules are simply the desk's
    own source. The bytes below are what that lift emitted on origin/main,

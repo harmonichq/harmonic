@@ -5,8 +5,8 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev:v2": "vite --config vite.config.v2.mjs",
-    "build": "vite build --config vite.config.v2.mjs"
+    "dev": "vite --config vite.config.mjs",
+    "build": "vite build --config vite.config.mjs"
   },
   "devDependencies": {
     "@babel/parser": "7.29.8",

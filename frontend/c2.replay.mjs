@@ -1,7 +1,7 @@
 // ADR 397 / coordinator amendment 1: app adaptations use the carried owner's
 // controls and production responses. The historical prototype bodies stay in
 // their original replay. No fixture projection or chart painter is duplicated.
-import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { waitForLevelAnimations } from './diagnose-replay.mjs';
 

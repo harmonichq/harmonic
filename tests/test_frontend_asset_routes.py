@@ -16,14 +16,14 @@ except ImportError:  # pragma: no cover
 
 _REPO = Path(__file__).resolve().parent.parent
 # #416: the desk is the only shell, and it is served at root.
-_DIST = _REPO / "frontend-v2" / "dist"
+_DIST = _REPO / "frontend" / "dist"
 _INDEX = _DIST / "index.html"
 _API = _REPO / "ciq_autotune" / "api.py"
 _TAB_ROUTING = _REPO / "frontend" / "tab-routing.js"
 _BUILT_SHELL = _REPO / "frontend" / "built-shell.js"
-_DESTINATIONS = re.compile(r"V2_DESTINATIONS = [\(\[]([^\)\]]*)[\)\]]")
-_MIRROR_PAGES = re.compile(r"V2_PAGE_PATHS = new Set\(\[([^\]]*)\]\)")
-_MIRROR_ROOT = re.compile(r"""const V2_PAGE = ['"]([^'"]*)['"]""")
+_DESTINATIONS = re.compile(r"(?<![A-Z_])DESTINATIONS = [\(\[]([^\)\]]*)[\)\]]")
+_MIRROR_PAGES = re.compile(r"PAGE_PATHS = new Set\(\[([^\]]*)\]\)")
+_MIRROR_ROOT = re.compile(r"""const PAGE = ['"]([^'"]*)['"]""")
 _JS_STRING = re.compile(r"""^(['"])([^'"]*)\1$""")
 _ASSET_REF = re.compile(r'''(?:src|href)=["'](/assets/[^"']+)["']''')
 # The complete non-API route set, named here so a new one cannot be added
@@ -74,7 +74,7 @@ class FrontendAssetRoutesTest(unittest.TestCase):
         for element in (part.strip() for part in mirror.group(1).split(",")):
             if not element:
                 continue
-            if element == "V2_PAGE":
+            if element == "PAGE":
                 pages.add(root.group(1))
                 continue
             literal = _JS_STRING.match(element)
@@ -163,8 +163,8 @@ class FrontendAssetRoutesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, tempfile.NamedTemporaryFile(suffix=".db") as db:
             dist = Path(temporary)
             assets = dist / "assets"
-            with patch("ciq_autotune.api._FRONTEND_V2_INDEX", dist / "index.html"), \
-                 patch("ciq_autotune.api._FRONTEND_V2_ASSETS", assets):
+            with patch("ciq_autotune.api._FRONTEND_INDEX", dist / "index.html"), \
+                 patch("ciq_autotune.api._FRONTEND_ASSETS", assets):
                 with self.assertLogs("ciq_autotune.api", "ERROR") as first_log:
                     client = TestClient(create_app(
                         db_path=db.name, token=None, enable_fetch_loop=False))

@@ -1,7 +1,7 @@
 // ADR 397: seat the shipped Diagnose composition once. The rail, case stack,
 // scoped requests, charts and clinical verdicts remain in their existing owners.
-import { createDiagnoseEventComparison } from '../frontend/diagnose-event-comparison.js';
-import { recordDiagnoseAge } from '../frontend/diagnose-data-age.js';
+import { createDiagnoseEventComparison } from './diagnose-event-comparison.js';
+import { recordDiagnoseAge } from './diagnose-data-age.js';
 import * as client from './client.js';
 import { currentDestination, hold, navigate, registerDestination, render, view } from './routes.js';
 import { loadingFrame, emptyFrame } from './frame.js';
@@ -9,7 +9,7 @@ import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
-import { formatStartMin } from '../frontend/plan.js';
+import { formatStartMin } from './plan.js';
 
 // A case-file's unscoped WindowQuery is the reader's explicit 24 h selection.
 // Routes carry concrete coordinates because Pattern Focus requires a retained

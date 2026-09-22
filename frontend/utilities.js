@@ -16,11 +16,11 @@
 // Chunk 2 places the Pump settings entry inside Changes by rendering nothing:
 // this module puts it in the Changes stage head, because the entry belongs to
 // the utility layer that owns the pane behind it (HV2-12).
-import { QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast } from '../frontend/carb-log.js';
-import { answerToSource, answerLabel, detectorKicker, sortOldestFirst, buildSparklineOption } from '../frontend/prompt-queue.js';
-import { AUTHORED, GENERATED, CATEGORIES, renderMarkdown, articleBySlug } from '../frontend/kb.js';
-import { guideGroups, guideTierLabel, guideMd, guideWorkedRows } from '../frontend/guide.js';
-import { PLAN_PARAMS, formatStartMin } from '../frontend/plan.js';
+import { QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast } from './carb-log.js';
+import { answerToSource, answerLabel, detectorKicker, sortOldestFirst, buildSparklineOption } from './prompt-queue.js';
+import { AUTHORED, GENERATED, CATEGORIES, renderMarkdown, articleBySlug } from './kb.js';
+import { guideGroups, guideTierLabel, guideMd, guideWorkedRows } from './guide.js';
+import { PLAN_PARAMS, formatStartMin } from './plan.js';
 import {
   answerPrompt, clearPrompt, createCarb, deleteCarb, fetchCarbs, fetchCatalog, fetchCredentials,
   fetchKbArticle, fetchPrompts, fetchPumpSettings, saveCredentials,

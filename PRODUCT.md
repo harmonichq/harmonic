@@ -77,7 +77,7 @@ Single-user personal tool; no other known accessibility needs beyond this.
 
 ## #404 evidence and follow-up amendment
 
-Readable v2 destination paths preserve old links. A Focus action is shown only
+Readable destination paths preserve old links. A Focus action is shown only
 when the backend admits it; a withholding reason and served parent route remain
 visible otherwise. Local reconciliation after an existing input write or stale
 startup never changes clinical policy, an immutable Trial ending, or a GET.

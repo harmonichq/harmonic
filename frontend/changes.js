@@ -16,7 +16,7 @@
 //
 // It does NOT duplicate Diagnose's findings roster: it shows the selected
 // concern's own members and one named route across (HV2-10, S14).
-import { formatStartMin } from '../frontend/plan.js';
+import { formatStartMin } from './plan.js';
 import { desk, e, emptyFrame, nameplate, readingHeader, sheetToggle, stamp } from './frame.js';
 import {
   asideRows, candidateFor, clearGuidanceWriteError, disposition, guidance, guidanceError,

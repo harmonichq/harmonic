@@ -1,29 +1,29 @@
 ## ADDED Requirements
 
-### Requirement: Python serves the v2 desktop beside v1 from one packaged runtime
+### Requirement: Python serves the desk at the root address from one packaged runtime
 
-The system SHALL serve the v2 desktop at `/v2/` and its fingerprinted assets
-beneath `/v2/assets/`, built ahead of time and served by the existing Python
-process. The packaged runtime SHALL require no Node runtime and no CDN at run
-time. V1 SHALL remain served on its existing routes against the same
-authenticated API and the same database; this change admits neither a root-route
-cutover nor v1 retirement.
+The system SHALL serve the desk at `/`, its destinations at `/diagnose`,
+`/changes` and `/day`, and its fingerprinted assets beneath `/assets`, built
+ahead of time and served by the existing Python process. The packaged runtime
+SHALL require no Node runtime and no CDN at run time. The desk SHALL be the only
+served shell: every retired address, including the whole `/v2` prefix and the
+prior surface's own page paths, SHALL answer 404 with no redirect (ADR 416).
 
 The server's non-API route set SHALL remain closed: every served page path is
 named explicitly, and any other path SHALL answer 404. The browser-side
 disk-serving harness and the Python route policy SHALL agree, because a harness
 that serves a path the server does not is structurally blind to a missing route.
-The publishable-tree inputs SHALL account for the new frontend source root and
+The publishable-tree inputs SHALL account for the frontend source root and
 its build configuration; a shipping path that is silently default-excluded is a
 delivery defect even though the allowlist checker reports every path
 dispositioned. Built output is generated during packaging and is not a tracked
 input, so its delivery SHALL be proved in the packaged image rather than by
 committing it.
 
-#### Scenario: The packaged runtime serves both surfaces
+#### Scenario: The packaged runtime serves the one surface
 
 - **WHEN** the installed package is started against a synthetic database and authenticated
-- **THEN** `/` and every existing v1 page path serve the v1 shell, `/v2/` serves the v2 shell, and both answer from the same API and database
+- **THEN** `/` and each of the three destination paths serve the desk shell, answering from the same API and database
 - **AND** the runtime image contains no Node executable and the built output references no CDN host
 
 #### Scenario: An unlisted path is not served
@@ -32,19 +32,24 @@ committing it.
 - **THEN** the server answers 404 rather than the shell
 - **AND** the closed-set route assertion names the complete non-API route set, so a new route cannot be added without updating it
 
+#### Scenario: A retired address is not served and does not redirect
+
+- **WHEN** a retired address is requested, whether under the `/v2` prefix or one of the prior surface's page paths
+- **THEN** the server answers 404 rather than the shell, and never a redirect to it
+
 #### Scenario: A missing build fails loudly
 
-- **WHEN** the v2 build output is absent
-- **THEN** the v2 route reports that the frontend build is missing rather than serving a blank or partial shell, and the API remains reachable
+- **WHEN** the build output is absent
+- **THEN** every page route reports that the frontend build is missing rather than serving a blank or partial shell, and the API remains reachable
 
-#### Scenario: The published tree carries the new shipping paths
+#### Scenario: The published tree carries the shipping paths
 
 - **WHEN** the publishable tree is materialised into a scratch directory
-- **THEN** it contains the v2 frontend source and its build configuration, so both surfaces can be built and packaged from that tree alone
+- **THEN** it contains the frontend source and its build configuration, so the shell can be built and packaged from that tree alone
 - **AND** it does not contain built output, which is untracked and therefore never a candidate input
 - **AND** it does not newly contain the design mockups or their retained sweep evidence
 - **WHEN** the image is packaged and run
-- **THEN** it contains both built surfaces and serves them
+- **THEN** it contains the one built surface and serves it at the root address
 
 ### Requirement: The desk carries persistent chrome, four destinations, Day and the utilities
 

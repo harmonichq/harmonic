@@ -14,7 +14,7 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 /* ----------------------------------------------- evidence capture */

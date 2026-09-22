@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
+import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry } from './c4.replay.mjs';
-import { REGISTRY } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
+import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
 function inputPage(rows, roster = { trials: [{}], focuses: [{}] }) {
@@ -414,7 +414,7 @@ test('S104 establishes a populated week before observing teardown and releases t
 for (const width of [480, 760]) {
   test(`S101 measures the brace at chart width ${width} and observes each snapped move before release`, async () => {
     const { C4_STORIES } = await import('./c4.replay.mjs');
-    const { xAtMinute, minuteAtX, snapWindow } = await import('../frontend/diagnose-workstation-chart.js');
+    const { xAtMinute, minuteAtX, snapWindow } = await import('./diagnose-workstation-chart.js');
     const page = qa404Page();
     const chart = { clientWidth: width };
     let range = [720, 1080], origin = 120, measured = false, laidOut = false;
@@ -475,7 +475,7 @@ for (const width of [480, 760]) {
 
 test('S101 rejects an unpainted 24 h brace before it can drag the named Afternoon preset', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
-  const { xAtMinute } = await import('../frontend/diagnose-workstation-chart.js');
+  const { xAtMinute } = await import('./diagnose-workstation-chart.js');
   const page = qa404Page();
   const chart = { clientWidth: 480 };
   const stale = [0, 1440];

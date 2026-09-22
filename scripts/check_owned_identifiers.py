@@ -50,13 +50,13 @@ RULES = (
                    re.compile(r'FastAPI\(title="(?P<identifier>[^"]+)"')),
     IdentifierRule("ciq_autotune/api.py", "API extra package name",
                    re.compile(r'pip install (?P<identifier>[^\[\s]+)\[api\]')),
-    IdentifierRule("frontend-v2/index.html", "browser title",
+    IdentifierRule("frontend/index.html", "browser title",
                    re.compile(r'<title>(?P<identifier>[^<]+)</title>')),
     IdentifierRule("frontend/favicon.svg", "application icon accessible name",
                    re.compile(r'aria-label="(?P<identifier>[^"]+)"')),
     # ADR 416: the desk's chrome module builds the topbar as one template
     # string, so the wordmark sits mid-line rather than at the head of one.
-    IdentifierRule("frontend-v2/shell.js", "header wordmark",
+    IdentifierRule("frontend/shell.js", "header wordmark",
                    re.compile(r'(?P<identifier>[A-Za-z0-9-]+)\s+<small>advisory</small>')),
     IdentifierRule("README.md", "README heading",
                    re.compile(r'^#\s+(?P<identifier>.+)$', re.MULTILINE)),

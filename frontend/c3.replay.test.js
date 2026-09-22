@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
-import { openApp, REGISTRY, goto, harnessCheck, harnessSelect, S24 } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
+import { withReplayAssertionTimeout } from './replay-assertions.mjs';
+import { openApp, REGISTRY, goto, harnessCheck, harnessSelect, S24 } from './desk-behavior.replay.mjs';
 import { C3_CASES, C3_STORIES } from './c3.replay.mjs';
 import { S03 } from './diagnose-replay.mjs';
 

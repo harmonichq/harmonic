@@ -107,7 +107,7 @@ class ReplayWrapperTest(unittest.TestCase):
                     if expected_timeout is not None:
                         testcase.assertEqual(timeout, expected_timeout,
                             "the replay process ceiling stated in ACCEPTANCE.md")
-                    testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
+                    testcase.assertEqual(args, ["node", "frontend/desk-behavior.replay.mjs"])
                     testcase.assertNotIn("STORY_CASES", env)
                     captures = env["CAPTURE_ONLY"].split(",")
                     testcase.assertNotIn("S100", captures)
@@ -205,10 +205,10 @@ class ReplayPlanTest(unittest.TestCase):
                 self.assertIn(f"shards={json.dumps(named[mode])}\n", output.read_text())
                 self.assertIn(f"mode={mode}\n", output.read_text())
                 self.assertIn(f"count={len(selection)}\n", output.read_text())
-        ledger = workflow.split('  v2-ledger:\n', 1)[1].split('  frontend-browser:\n', 1)[0]
-        self.assertIn('fromJSON(needs.v2-ledger-plan.outputs.shards)', ledger)
-        self.assertIn("needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha", ledger)
-        self.assertIn('needs.v2-ledger-plan.outputs.count', ledger)
+        ledger = workflow.split('  ledger:\n', 1)[1].split('  frontend-browser:\n', 1)[0]
+        self.assertIn('fromJSON(needs.ledger-plan.outputs.shards)', ledger)
+        self.assertIn("needs.ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha", ledger)
+        self.assertIn('needs.ledger-plan.outputs.count', ledger)
 
     def test_ci_plan_command_exports_real_inventory_without_browser(self):
         import re
@@ -263,10 +263,9 @@ class CaseCacheTest(unittest.TestCase):
                 # Import an empty registry through the same Node driver; no
                 # generator or server can turn zero checks into apparent success.
                 (root / "frontend").mkdir()
-                (root / "frontend/harmonic-v2-desktop-behavior.replay.mjs").write_text(
+                (root / "frontend/desk-behavior.replay.mjs").write_text(
                     "export const REGISTRY = [];\n")
-                (root / "frontend-v2").mkdir()
-                (root / "frontend-v2/replay-cases.mjs").write_text(
+                (root / "frontend/replay-cases.mjs").write_text(
                     "export const storyCase = id => id;\n"
                     "export function createCaseServer() { throw new Error('server must not start'); }\n")
                 with patch.object(acceptance, "REPO", root), \
@@ -357,7 +356,7 @@ class BackendShardTest(unittest.TestCase):
 
 
 class SmokeSelectionTest(unittest.TestCase):
-    replay_path = 'frontend/harmonic-v2-desktop-behavior.replay.mjs'
+    replay_path = 'frontend/desk-behavior.replay.mjs'
     recipe_path = 'scripts/qa_e2e_cases.py'
     source = '''
 // STORY:manufactured:S2

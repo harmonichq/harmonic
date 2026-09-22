@@ -15,10 +15,11 @@ their own behavior, and the service is a thin renderer over their results.
 ### Requirement: The service is local, self-hosted, and serves the app and the API on one port
 
 There is no central service and no separate frontend server. The app factory binds
-a loopback address by default; the same process serves the single-page app at `/`,
-its sibling ES-module and stylesheet assets, and every JSON endpoint. The frontend
-assets are served as explicit per-file routes rather than a mounted static
-directory, so a file on disk can never shadow an API route or the index. Any route
+a loopback address by default; the same process serves the one built browser shell
+at `/` and its named page paths, that shell's built assets beneath `/assets/`, and
+every JSON endpoint. The non-API route set is closed: each page path is a named
+route, the built assets are the only mounted directory, and any other path answers
+404, so a file on disk can never shadow an API route or the shell. Any route
 that reads a filename from the request path (the knowledge-base articles) MUST
 restrict the slug to a fixed lowercase-and-hyphen charset so a request cannot
 escape its directory.
@@ -27,6 +28,12 @@ escape its directory.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+#### Scenario: One process answers the shell, its assets and the API
+
+- **WHEN** the service is started
+- **THEN** the same port answers the shell at `/`, a built asset beneath `/assets/`, and `/api/health`
+- **AND** a path outside the named page set, the asset prefix and `/api` answers 404
 
 ### Requirement: Data endpoints are gated by one optional static bearer token; the app shell is not
 
@@ -46,15 +53,15 @@ single shared secret for a single user; there are no accounts, roles, or scopes.
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive
-reads — the analysis result, scenarios, backtest, outcomes, the outcomes trend, the
-per-day model view, the day navigator, the pattern sweep, the time-of-day evidence
-feed, the lever catalog, and the eating-sequence report — answer through a cache
-keyed by endpoint name plus the parameters that change the answer. Finding case-file
-preparation is cached once per data version and projects each request's coordinates
-from that prepared source. Caching is opt-in per endpoint: the cheap store reads
-(status, timeline, pump settings, carb entries, prompts, the Plan draft and its
-history, Focus, dismissals) read the store directly on every request and are never
-cached.
+reads — the analysis result, scenarios, outcomes, the outcomes trend, the per-day
+model view, the day navigator, the pattern sweep, the time-of-day evidence feed,
+the lever catalog, and the eating-sequence report the finding case files carry —
+answer through a cache keyed by endpoint name plus the parameters that change the
+answer. Finding case-file preparation is cached once per data version and projects
+each request's coordinates from that prepared source. Caching is opt-in per
+endpoint: the cheap store reads (status, timeline, pump settings, carb entries,
+prompts, the Plan draft and its history, Focus) read the store directly on every
+request and are never cached.
 
 The cache instance belongs to the app, not to the module, so two apps built in one
 process (as tests do) never share state. It is bounded by a least-recently-used cap
@@ -136,50 +143,6 @@ replace the High roster or attribution account.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
-
-### Requirement: Every write path MUST invalidate the cache
-
-The system SHALL satisfy the following:
-
-Invalidation is coarse and global: a single `bump` clears the whole map and advances
-a monotonic version. There is no per-endpoint dependency tracking, because
-over-invalidation costs at most one recompute while under-invalidation serves
-numbers that no longer match the data. **Every endpoint that writes to the store —
-recording a fetch, saving credentials, creating, editing, or deleting a carb entry,
-answering or clearing a prompt, dismissing an audit item, signing off a swept
-pattern, applying a Plan, pinning or resolving a Focus — invalidates the cache
-before returning.** A new write endpoint that omits this is a defect, not an
-optimization: it leaves every cached read answering from pre-write data.
-
-#### Scenario: A write endpoint invalidates what the reads depend on
-
-- **GIVEN** the analysis result for a window has been computed and cached
-- **WHEN** a client creates a carb entry, which the analysis reads as an exclusion signal
-- **THEN** the write invalidates the cache before responding, and the next request for
-  that analysis recomputes — exactly once for the new data version, with every later
-  request for the same key served from the cache
-
-#### Scenario: A fetch endpoint that committed rows and then failed invalidates before returning its error
-
-- **GIVEN** the analysis result for a window has been computed and cached
-- **WHEN** a client triggers a fetch that commits rows and then fails part-way
-- **THEN** the endpoint invalidates the cache before returning, and the client is
-  still told the fetch failed — a partial fetch answers the same `503` a rejected
-  pull does, carrying how far it got, rather than escaping the handler as an
-  unexplained server error
-- **AND** widening the handler far enough to invalidate MUST NOT widen that
-  status. Every other failure keeps whatever it produced before, so a defect in
-  reading the vendor's events still surfaces as the defect it is
-
-#### Scenario: A write path that skips invalidation serves stale advice
-
-- **GIVEN** a cached analysis result computed before a write
-- **WHEN** a write endpoint changes state that a cached computation reads but does not
-  invalidate the cache
-- **THEN** every later read of that endpoint returns the pre-write numbers until some
-  unrelated write or the next scheduled fetch happens to clear the cache — the surface
-  presents advice derived from data the store no longer holds, with nothing in the
-  response marking it stale
 
 ### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard
 
@@ -300,34 +263,35 @@ arguments.
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
 
-### Requirement: The eating-sequence report is a fixed-window cached Diagnose read
+### Requirement: Every write endpoint MUST invalidate the cache
 
-`GET /api/diagnose/eating-sequences` SHALL be a bearer-token-gated data endpoint.
-Its `window` query parameter SHALL default to and accept only
-`findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other integer value SHALL
-return 400 whose detail names that fixed window, matching basal-night evidence's
-refusal. Non-integer values SHALL be refused by the framework's query validation. It
-SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary under
-the shared fixed-response semantics — no age field on fresh data, backend-owned
-`input_data_age` only when a labelled stale predecessor is served, which
-`serve_stale=False` here never does — from cache key `("eating-sequences", window)`
-with shape marker `"eating-sequences-v1"` and `serve_stale=False`.
+The system SHALL satisfy the following:
 
-#### Scenario: A fixed-window request is served fresh from the cache
+Invalidation is coarse and global: a single `bump` clears the whole map and advances
+a monotonic version. There is no per-endpoint dependency tracking, because
+over-invalidation costs at most one recompute while under-invalidation serves
+numbers that no longer match the data. **Every endpoint that writes to the store —
+saving credentials, creating, editing, or deleting a carb entry, answering or
+clearing a prompt, signing off a swept pattern, applying a Plan, pinning or
+resolving a Focus — invalidates the cache before returning.** A new write endpoint
+that omits this is a defect, not an optimization: it leaves every cached read
+answering from pre-write data. The live pull has no endpoint (ADR 417): the
+scheduled fetch invalidates through the loop's own hook, specified below.
 
-- **GIVEN** a request for the fixed Diagnose source window
-- **WHEN** the endpoint answers the report
-- **THEN** it returns the cache-backed `eating-sequence-report-v1` dictionary
-- **AND** the fresh response carries no `input_data_age` field
+#### Scenario: A write endpoint invalidates what the reads depend on
 
-#### Scenario: A non-fixed integer window is refused
+- **GIVEN** the analysis result for a window has been computed and cached
+- **WHEN** a client creates a carb entry, which the analysis reads as an exclusion signal
+- **THEN** the write invalidates the cache before responding, and the next request for
+  that analysis recomputes — exactly once for the new data version, with every later
+  request for the same key served from the cache
 
-- **WHEN** a request names an integer window other than the fixed Diagnose source window
-- **THEN** the endpoint returns 400 and its detail names the fixed window
-- **AND** a non-integer window is refused by framework query validation
+#### Scenario: A write path that skips invalidation serves stale advice
 
-#### Scenario: A request without the configured token is refused
-
-- **GIVEN** the API has a bearer token configured
-- **WHEN** a request omits that token
-- **THEN** the endpoint refuses the request before serving report data
+- **GIVEN** a cached analysis result computed before a write
+- **WHEN** a write endpoint changes state that a cached computation reads but does not
+  invalidate the cache
+- **THEN** every later read of that endpoint returns the pre-write numbers until some
+  unrelated write or the next scheduled fetch happens to clear the cache — the surface
+  presents advice derived from data the store no longer holds, with nothing in the
+  response marking it stale

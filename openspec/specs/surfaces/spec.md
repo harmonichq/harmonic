@@ -6,39 +6,6 @@ Harmonic is a single-page app with a built shell and no login — the HTML shell
 
 ## Requirements
 
-### Requirement: The app is single-page, no-build, no-login HTML and Vue
-
-The system SHALL satisfy the following:
-
-The frontend is a single `frontend/index.html` file containing inlined Vue 3 and ECharts, loaded without a build step or login screen. The SPA shell loads on every origin, then makes bearer-token-gated API calls to load data. The three CDN dependencies (Vue esm-browser, ECharts) are vendored in browser tests; live requests use the unpkg / jsdelivr CDN.
-
-Canonical browser addressing is `/<page>?<existing-page-state>`. The route query
-carries only the selected page and the already-shareable Day `date`, Guide
-`article`, and Diagnose `view`, `factor`, `start_min`, `end_min`, `another`, and
-`occ` coordinates. A fragment carries no route: the retired `#/<page>?...`
-grammar is unsupported, so a saved hash link opens the default page rather than
-the page it names. Programmatic interfaces live below `/api` and local assets
-below `/assets`.
-
-The server SHALL serve the shell at `/` and at exactly the live page paths, and
-SHALL answer every other path 404. A retired page id is therefore not served and
-SHALL NOT be migrated to a live page: its address never reaches the shell. The
-browser router SHALL resolve a live page id to itself and any other id to the
-default page, which is what keeps an unrecognized Guide handoff target on a real
-surface.
-
-#### Scenario: The app is single-page, no-build, no-login HTML and Vue
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-#### Scenario: A retired page id is not served and is not migrated
-
-- **GIVEN** a page id the app no longer has, such as `patterns`, `daily` or `outcomes`
-- **WHEN** that id is requested as a page path
-- **THEN** the server answers 404 and the shell does not load
-- **AND** the browser router grants that id no live page of its own
-
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
 The system SHALL satisfy the following:
@@ -155,17 +122,6 @@ The system SHALL satisfy the following:
 Each surface renders data calculated by the backend and carried in `/api/analyze` or specialized endpoints (`/api/day-navigator`, `/api/verify/trials`, etc.). A surface never recalculates the engine's own verdicts — asserts_move, priority, recurrence, harm gates, silence reasons, localized outcome triage — even if tempted to re-check them for UI purposes. The backend is the single source of truth for all analysis. This boundary has been repeatedly load-bearing: frontend re-derivations of backend gates have diverged and silently invalidated the app's behavior.
 
 #### Scenario: Surfaces render server-owned projections; they do not re-derive analysis verdicts
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: All four surfaces are available from the cockpit shell tab bar
-
-The system SHALL satisfy the following:
-
-The app shell presents a workflow sequence — Diagnose → Plan → Verify — as numbered steps in the header, plus a separate Day button anchored to the right. The drawer offers the same four buttons plus Settings. All surfaces update a single `tab` state; only the active tab is visible (others are `v-show="false"` and remain mounted).
-
-#### Scenario: All four surfaces are available from the cockpit shell tab bar
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
@@ -521,46 +477,6 @@ and repository merge gates SHALL pass before the implementation PR opens.
 - **THEN** every applicable story executes with zero failures and each retired behavior retains its attributed absence check
 - **AND** inspected synthetic before/after renders demonstrate the required arrangement and reachable controls at desktop, short and narrow viewports
 - **AND** the runnable exploratory wireframe has been removed before the implementation PR opens
-
-### Requirement: Diagnose hosts a non-advisory aggregate-evidence section outside Audit and Watching
-
-Diagnose SHALL nest supported eating-sequence lever findings as habit causes under
-Highs after meals in its existing queue. They SHALL have their own sequence counts
-and no rank numeral or extra Findings/Sift count. The eating-sequence descriptor
-SHALL bring the registry to six entries; the parent SHALL retain pattern-case-file. It SHALL NOT
-create a separate aggregate section or new stage, drawer or dock behavior. Neither
-finding SHALL stage a Plan change. Its adapter SHALL reshape
-served aggregates without deriving a verdict, median, difference, or status. An
-insufficient cell SHALL remain visible as insufficient rather than numeric. The chart SHALL be built and reviewed through the existing frontend chart design
-harness in manufactured mode, using the real chart module and Diagnose composition.
-
-#### Scenario: An insufficient served aggregate remains insufficient in the adapter
-
-- **GIVEN** an eating-sequence report cell with insufficient status and null metric
-- **WHEN** Diagnose adapts it for aggregate evidence
-- **THEN** the chart-ready cell retains that status and null value
-- **AND** it is neither dropped nor zero-filled
-
-#### Scenario: The adapter does not re-derive an eating-sequence judgment
-
-- **GIVEN** served aggregates, comparisons, statuses, findings, and exclusions
-- **WHEN** Diagnose adapts the report
-- **THEN** its outputs use those values field-for-field
-- **AND** no frontend threshold, median, difference, or verdict is calculated
-
-#### Scenario: The section consumes the server-owned fixed window
-
-- **GIVEN** Diagnose requests eating-sequence evidence
-- **WHEN** its data helper loads the report
-- **THEN** it requests `/api/diagnose/eating-sequences` without a window parameter
-- **AND** the server-owned fixed Diagnose source window determines the report
-
-#### Scenario: A fresh report response does not invent an input-data age
-
-- **GIVEN** a fresh eating-sequence report response without `input_data_age`
-- **WHEN** Diagnose records its response age
-- **THEN** the report passes through unchanged
-- **AND** only that report shape's recorded age is cleared
 
 ### Requirement: Diagnose places selected evidence before the clock overview
 
@@ -919,3 +835,82 @@ active story and retain S117's retirement.
 - **WHEN** a reader drills into either sequence cause from its row or All charts
 - **THEN** the existing Clear trace control is mounted with its inherited behavior
 - **AND** fullscreen and return preserve the canonical cause, selection, focus and window
+
+### Requirement: The desk is the only shell, built ahead of time and served at root
+
+Harmonic SHALL have exactly one browser shell, the desk. It is built ahead of
+time, loads with no login screen, and then makes bearer-token-gated API calls to
+load data. The packaged runtime SHALL require no Node runtime and no CDN at run
+time.
+
+The server SHALL serve the desk at `/` and at exactly the page paths
+`/diagnose`, `/changes` and `/day`, and its fingerprinted built assets beneath
+`/assets/`. Programmatic interfaces live below `/api`. The non-API route set
+SHALL be closed: every served page path is named explicitly, and every other
+path SHALL answer 404 rather than the shell. No retired address is served or
+redirected: a `/v2/...` path, a retired v1 page path such as `/plan`, `/verify`,
+`/settings` or `/guide`, and any older retired page id all answer 404. A fragment
+carries no route.
+
+The browser router, the browser-side disk-serving mirror used by the browser
+gates, and the Python route policy SHALL agree on that page set and asset prefix,
+because a mirror that serves a path the server does not is structurally blind to
+a missing route.
+
+#### Scenario: The desk answers at root and its page paths
+
+- **WHEN** the built app is started against a synthetic database
+- **THEN** `/`, `/diagnose`, `/changes` and `/day` each answer the desk shell
+- **AND** every asset the shell names is served beneath `/assets/`
+- **AND** the built output references no CDN host
+
+#### Scenario: A retired address is not served and is not redirected
+
+- **GIVEN** an address the app no longer has, such as `/v2/`, `/v2/day`, `/plan`, `/verify`, `/settings` or `/guide`
+- **WHEN** that address is requested
+- **THEN** the server answers 404, not the shell and not a redirect
+
+#### Scenario: A missing build fails loudly
+
+- **WHEN** the desk's build output is absent
+- **THEN** each page path reports that the frontend build is missing and names the build command, rather than serving a blank or partial shell
+- **AND** the API remains reachable
+
+#### Scenario: The route set cannot grow silently
+
+- **WHEN** the closed-set route assertion runs
+- **THEN** it names the complete non-API route set, so a route cannot be added or kept without updating it
+
+### Requirement: Diagnose draws eating-sequence evidence from the finding case file
+
+Diagnose SHALL nest supported eating-sequence lever findings as habit causes under
+Highs after meals in its existing queue. They SHALL have their own sequence counts
+and no rank numeral or extra Findings/Sift count. The eating-sequence descriptor
+SHALL bring the registry to six entries; the parent SHALL retain pattern-case-file. It SHALL NOT
+create a separate aggregate section or new stage, drawer or dock behavior. Neither
+finding SHALL stage a Plan change. Its adapter SHALL reshape
+served aggregates without deriving a verdict, median, difference, or status. An
+insufficient cell SHALL remain visible as insufficient rather than numeric. The
+report reaches Diagnose inside the finding case file it opens, as that case's
+`projection.report`; it has no route of its own (ADR 417).
+
+#### Scenario: An insufficient served aggregate remains insufficient in the adapter
+
+- **GIVEN** an eating-sequence report cell with insufficient status and null metric
+- **WHEN** Diagnose adapts it for aggregate evidence
+- **THEN** the chart-ready cell retains that status and null value
+- **AND** it is neither dropped nor zero-filled
+
+#### Scenario: The adapter does not re-derive an eating-sequence judgment
+
+- **GIVEN** served aggregates, comparisons, statuses, findings, and exclusions
+- **WHEN** Diagnose adapts the report
+- **THEN** its outputs use those values field-for-field
+- **AND** no frontend threshold, median, difference, or verdict is calculated
+
+#### Scenario: The section reads the report from the case file
+
+- **GIVEN** Diagnose opens an eating-sequence finding's case file
+- **WHEN** it draws that finding's aggregate evidence
+- **THEN** the report is the case file's own `projection.report`, prepared for the server-owned fixed Diagnose source window
+- **AND** Diagnose makes no separate report request

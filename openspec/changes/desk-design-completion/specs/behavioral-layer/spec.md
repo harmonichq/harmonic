@@ -17,7 +17,8 @@ than serve a sentence without an outcome. A row whose counts are under review,
 or that carries no denominator, SHALL serve no count sentence and SHALL keep its
 existing served status words. Each sentence SHALL use the same count, denominator
 and noun the row already serves, window-local where the row's counts are. No
-staging, tier, rank, verdict or priority value SHALL change.
+staging, tier, rank, verdict or priority value, and no served `headline`, SHALL
+change.
 
 #### Scenario: A cause row serves its outcome per appearance
 
@@ -27,7 +28,7 @@ staging, tier, rank, verdict or priority value SHALL change.
 - **THEN** the row serves two count sentences in appearance order, each with the
   count, denominator and noun of its own appearance, followed by that lever's
   outcome words for that family
-- **AND** the row's tier, rank, priority and register are unchanged
+- **AND** the row's tier, rank, priority, register and headline are unchanged
 
 #### Scenario: Opposite outcomes in one family stay apart
 

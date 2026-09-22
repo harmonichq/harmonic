@@ -11,8 +11,9 @@
   through the projection's public read: a two-family Cause serves two sentences
   that agree with its served appearances; every Pattern key and every emittable
   lever-and-family pair has exactly one entry; the two meals Patterns serve
-  different outcomes; tier, rank, priority and register are byte-identical to the
-  base for the fixture windows.
+  different outcomes; tier, rank, priority, register and `headline` are
+  byte-identical to the base for the fixture windows. The count sentences are a
+  new field beside `headline`; `headline` is not rebuilt from them.
 - [ ] 1.2 Regenerate the three generators that drift and nothing else
   (`scripts/gen_findings_projection_fixtures.py`,
   `scripts/gen_eating_sequence_fixtures.py`,
@@ -45,8 +46,15 @@
 - [ ] 3.1 Implement surfaces **A Pattern owns its causes in the rail**.
 - [ ] 3.2 Implement surfaces **The rail shows served urgency**.
 - [ ] 3.3 Implement surfaces **Rail rows print the served count sentence**, and
-  delete the frontend Pattern word constant with every reader of it, the Pattern
-  mini's cohort label included.
+  delete the frontend Pattern word constant (`PATTERN_COPY`). Each of its readers
+  moves to a served fact: the Pattern chart's row match reads `row.pattern_chart`
+  alone (the projection already serves it only for a chartable Pattern); a member
+  line prints every served count sentence, so the parent-family lookup goes; the
+  Pattern mini's cohort label takes its outcome from the row's served count
+  sentence, and the Pattern case-file check stops testing the lever against a
+  word table; the `pattern-unknown` detail goes, because 1.1's test makes every
+  Pattern key carry an entry, and a Pattern row with no count sentence prints its
+  served status words as today.
 - [ ] 3.4 Implement surfaces **Every ranked rail row draws one mini
   instrument**, settling mini width and placement with the fold at both desktop
   sizes.
@@ -76,8 +84,9 @@
 - [ ] 4.3 Obtain an Opus 5 high-effort critique of those after-captures against
   Connor's locked mockup, implement each supported finding or record the
   concrete objection beside it, and re-capture what changed.
-- [ ] 4.4 Update `DESIGN.md`'s desk revise section and `mockups/INDEX.md`'s
-  Harmonic v2 desktop row for the rail fold, urgency, one mini, lane key and
+- [ ] 4.4 Update `DESIGN.md`'s desk revise section, `mockups/INDEX.md`'s
+  Harmonic v2 desktop row and the ledger inventory stated in
+  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` for the rail fold, urgency, one mini, lane key and
   paint, 24 h arrival and skeleton; re-freeze the desk ledger's header with this
   base and the story counts, which must equal the inventory's pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`.

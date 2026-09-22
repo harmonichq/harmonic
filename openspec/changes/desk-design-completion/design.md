@@ -65,7 +65,9 @@ record 735) must answer the new field.
 A Pattern key or lever-and-family pair added later without outcome words fails
 the projection's tests and cannot merge, so the desk carries no fallback
 wording. Setting rows keep their now-to-then figures; they carry no count
-sentence.
+sentence. The served `headline`, which already reads "title in k of n noun"
+for a Pattern, stays byte-identical: the count sentence is a separate field,
+not a rebuild of it.
 
 ## Revise preparation
 

@@ -33,7 +33,7 @@ export class ApiTransportError extends Error {
  * @param {{ fetch?: Function }} [deps={}]
  * @returns {{ fetchCredentials, saveCredentials, fetchStatus,
  *             fetchPumpSettings, fetchAnalysis, fetchScenarios,
- *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, fetchEatingSequences, fetchAuditDismissals, dismissAuditItem, loadPlan, savePlanDraft,
+ *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, loadPlan, savePlanDraft,
  *             loadPlanHistory, applyPlan }}
  */
 export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
@@ -222,8 +222,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
   function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
-  /** GET /api/diagnose/eating-sequences — fixed Diagnose aggregate evidence. */
-  function fetchEatingSequences() { return api('/api/diagnose/eating-sequences'); }
   /** GET /api/explore/exposures — every exposure in the window with each
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
   function fetchExploreExposures() { return api('/api/explore/exposures'); }
@@ -306,11 +304,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     const params = new URLSearchParams({ projection_id, finding_id, alignment });
     if (occ) params.set('occ', occ);
     return api('/api/diagnose/finding-case-file?' + params.toString());
-  }
-  function fetchAuditDismissals() { return api('/api/audit/dismissals'); }
-  function dismissAuditItem(item_id, evidence_fingerprint) {
-    return api('/api/audit/dismissals', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item_id, evidence_fingerprint }) });
   }
 
   // --- timeline -----------------------------------------------------------
@@ -549,7 +542,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     finishTrial,
     concludeTrial,
     fetchExploreTimeOfDay,
-    fetchEatingSequences,
     fetchExploreExposures,
     fetchDiagnoseBasalNightEvidence,
     fetchDiagnoseIsfRestWindowEvidence,
@@ -558,8 +550,6 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDiagnoseCarbRatioHistoryEvents,
     fetchDiagnoseFindingCasePreparation,
     fetchDiagnoseFindingCase,
-    fetchAuditDismissals,
-    dismissAuditItem,
     fetchTimeline,
     fetchCarbs,
     createCarb,
@@ -603,7 +593,6 @@ export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
 export const finishTrial = _defaults.finishTrial;
 export const concludeTrial = _defaults.concludeTrial;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
-export const fetchEatingSequences = _defaults.fetchEatingSequences;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
 export const fetchDiagnoseBasalNightEvidence = _defaults.fetchDiagnoseBasalNightEvidence;
 export const fetchDiagnoseIsfRestWindowEvidence = _defaults.fetchDiagnoseIsfRestWindowEvidence;
@@ -614,8 +603,6 @@ export const fetchDiagnoseCarbRatioHistoryEvents =
   _defaults.fetchDiagnoseCarbRatioHistoryEvents;
 export const fetchDiagnoseFindingCasePreparation = _defaults.fetchDiagnoseFindingCasePreparation;
 export const fetchDiagnoseFindingCase = _defaults.fetchDiagnoseFindingCase;
-export const fetchAuditDismissals = _defaults.fetchAuditDismissals;
-export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;
 export const fetchCarbs        = _defaults.fetchCarbs;
 export const createCarb        = _defaults.createCarb;

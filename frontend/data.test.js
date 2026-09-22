@@ -268,15 +268,6 @@ test('Finding case-file errors retain the exact structured server envelope', asy
   );
 });
 
-test('audit dismissal uses the stable item id and evidence fingerprint', async () => {
-  const { fetch, calls } = makeFakeFetch({});
-  const deps = makeDeps({ fetch });
-  await deps.fetchAuditDismissals();
-  await deps.dismissAuditItem('basal:2', 'evidence-v1');
-  assert.equal(calls[0].url, '/api/audit/dismissals');
-  assert.deepEqual(JSON.parse(calls[1].opts.body), { item_id:'basal:2', evidence_fingerprint:'evidence-v1' });
-});
-
 test('savePlanDraft builds PUT /api/plan with JSON body', async () => {
   const { fetch, calls } = makeFakeFetch({ items: [] });
   const { savePlanDraft } = makeDeps({ fetch });

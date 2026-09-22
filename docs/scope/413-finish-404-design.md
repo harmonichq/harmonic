@@ -128,6 +128,21 @@ genuinely uncertain; the decisions below are defaults that follow from ADR 416.
 - The browser gates are the desk suite, the follow-up suite, the browser-runner
   regression and the desk ledger replay.
 
+### Review rounds (lock 2)
+
+- **Panel 1, 2026-09-22, cold Opus at high effort (Claude-only), three passes,
+  COUNTERSIGNED.** Pass 1 BLOCKED, three blockers and four notes, all reproduced:
+  (1) authoring: the frontend Pattern word table also decides a cause's parent
+  family and three eligibility checks; task 3.3 now names a served replacement
+  for each. (2) authoring: the served `headline` already carries the Pattern
+  count; it is pinned byte-identical and the count sentence is additive.
+  (3) authoring: the full-ledger cost was 13 minutes against a recorded 25 to 35
+  per size. Notes: the 24 h pre-state, the wrapper dropping `ONLY`, the stale
+  ACCEPTANCE.md inventory, and the base CI run (verified green outside the
+  reviewer's sandbox). Pass 2 BLOCKED on one injected blocker: the iteration
+  command lived only in the header. Notes: pin the overnight presets and name
+  the case-file invariant. Pass 3 clean.
+
 ## Open questions
 
 None.

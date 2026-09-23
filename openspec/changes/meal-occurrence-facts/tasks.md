@@ -74,9 +74,11 @@
   `scripts/gen_missed_meal_comparison_fixtures.py`,
   `scripts/gen_eating_sequence_fixtures.py`,
   `mockups/harmonic-v2.exploration/generate.py`). Every drift check in AGENTS.md
-  passes; no regenerated meal or correction-cluster Occurrence carries an anchor
-  glucose; every node test that reads a regenerated capture passes, edited only to
-  follow the analyzer-shaped rows.
+  passes; no regenerated meal or correction-cluster case-file or exposure
+  Occurrence carries an anchor glucose (the event-comparison capture's
+  exploration-only `views` and its `pattern_populations` source rows are excluded,
+  as `design.md` states); every node test that reads a regenerated capture passes,
+  edited only to follow the analyzer-shaped rows.
 
 ## 3. Surface and contract
 
@@ -107,16 +109,24 @@
   Amend S25 (`frontend/c2.replay.mjs`) and S107 (`frontend/c4.replay.mjs` and its
   node test). Record the stories, handler rows and both amendments, with the
   sanction quoted in `design.md`, in a new dated `## #432 amendment — 2026-09-23`
-  section of `mockups/harmonic-v2-desktop.behavior.md`; no `★ FROZEN` block or
-  header inventory line is edited. Move only the numeric inventory literals in
-  `mockups/sweep/harmonic-v2-desktop/acceptance.py` and its test to 150 issued, 131
-  active, 19 retired; `ACCEPTANCE.md` and `mockups/INDEX.md` counts are the release
-  coordinator's.
+  section of `mockups/harmonic-v2-desktop.behavior.md`, writing each amendment as
+  an `Amended S25 · 2026-09-23 · #432 / Q2 sanction: …` or `Amended S107 · …` line
+  and never as a line beginning `S25 ·` or `S107 ·`; no `★ FROZEN` block or header
+  inventory line is edited. Move only the numeric inventory literals, in
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()` and in its test at
+  `:226`, `:292` and `:295-296`, to 150 issued, 131 active, 19 retired; run
+  `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
+  ReplayPlanTest InventoryProofTest SmokeSelectionTest` and
+  `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out <scratch
+  dir>`, which must print 150/131/19. `ACCEPTANCE.md` and `mockups/INDEX.md` counts
+  are the release coordinator's.
 - [ ] 3.5 Coordinator-run, serially, with `CASE_STORE_DIR` set to a fresh directory
   and nothing else on port 8765, at 1280x720 and 1440x900: S148–S150 fail on the
   base for their feature reason and pass on the branch; the frozen S25 and S107
   fail on the branch build at the count-line and "Completed carb bolus" assertions
   and pass as amended; the render matrix in `design.md` is captured base and branch
-  as release pull request revision evidence; the whole
-  `frontend/desk.browser.test.mjs` passes once; and the complete ledger passes once
-  per size on the commit to be integrated.
+  into `docs/scope/release-422-434-evidence/432/`; the whole
+  `frontend/desk.browser.test.mjs` passes once; the full
+  `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` passes once (it binds a
+  port); and the complete ledger passes once per size on the commit to be
+  integrated.

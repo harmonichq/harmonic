@@ -1020,14 +1020,19 @@
   border-right: 1px solid color-mix(in srgb, var(--ck-accent) 60%, transparent);
 }
 
-/* verdict lane — one cell per basal slot, in register with the clock axis */
-.lane-wrap { padding: 0 0 8px; overflow: hidden; }
+/* verdict lane — one cell per basal slot, in register with the clock axis.
+   #413: the wrap no longer hides its own overflow — `.lane-key` renders
+   first, as the lane's head row, and both rows already fit their auto-sized
+   track (`.canvas-pane > .body`'s own grid); clipping only risked cutting the
+   key instead of ever doing useful work. */
+.lane-wrap { padding: 0 0 8px; overflow: visible; }
 /* The ribbon is a densitometer, so it needs its own ground: without a track
    behind the cells a "hold" slot went white-on-white in light theme and the
    outline-only verdicts lost their baseline. */
 .lane {
   display: grid; height: 11px; gap: 1px;
   margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
+  margin-top: 8px;
   background: var(--ck-inset);
   box-shadow: inset 0 0 0 1px var(--ck-hair);
   border-radius: 2px;
@@ -1044,8 +1049,26 @@
 .lane button.lane-cell {
   position: relative; border: 0; padding: 0; cursor: pointer;
 }
-.lane-cell[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
-.lane-cell[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
+/* #413: raise and lower are the app's own high-gold and workstation-accent
+   hues (ADR 317's `--high`; `--ck-accent`, already the canvas plane's
+   interaction hue per theme.css) — not the generic ok/danger pair, which
+   name a glucose reading's safety, not a dose direction. Each also carries a
+   glyph (`::before`, so it never collides with the staged underline's
+   `::after`), one selector shared by the real cell and its key swatch so the
+   two can never drift: shape is the redundant channel color alone can't
+   give a colorblind or monochrome reader (HV2-32). */
+.lane-cell[data-verdict="up"] { --cell: color-mix(in srgb, var(--high) 72%, transparent); }
+.lane-cell[data-verdict="down"] { --cell: color-mix(in srgb, var(--ck-accent) 72%, transparent); }
+.lane-cell[data-verdict="up"],
+.lane-cell[data-verdict="down"] { position: relative; }
+.lane-cell[data-verdict="up"]::before,
+.lane-cell[data-verdict="down"]::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 0; height: 0; transform: translate(-50%, -50%);
+  border-left: 2.5px solid transparent; border-right: 2.5px solid transparent;
+}
+.lane-cell[data-verdict="up"]::before { border-bottom: 3px solid var(--mk-text); }
+.lane-cell[data-verdict="down"]::before { border-top: 3px solid var(--mk-text); }
 .lane-cell[data-verdict="hold"] {
   --cell: var(--ck-hold);
   /* A quiet solid field says the programmed rate remains in force. */
@@ -1072,11 +1095,15 @@
   background: var(--ck-accent); border-radius: 1px;
 }
 
-/* one line, always: a wrapped key would grow the canvas pane's fixed rows */
+/* one line, always: a wrapped key would grow the canvas pane's fixed rows.
+   #413: the key is the lane's head row now, so it leads `.lane-wrap` — the
+   8px gap it used to open above the cells (`padding-top`) moves to `.lane`'s
+   own `margin-top` below, so the two rows keep the same spacing in the new
+   order instead of the key floating flush against the pane above it. */
 .lane-key {
-  display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: hidden;
+  display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: visible;
   margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
-  padding-top: 8px; font-size: var(--ck-micro); color: var(--mk-muted);
+  font-size: var(--ck-micro); color: var(--mk-muted);
   white-space: nowrap;
 }
 .lane-key span { display: inline-flex; align-items: center; gap: 5px; }

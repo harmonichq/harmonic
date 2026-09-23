@@ -2622,6 +2622,61 @@ S112 · The roster read and a requested reassessment each show their own named
             1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
+```
+S113 · The basal lane's head row — the served verdict key — stands wholly
+       above the 48 cells, inside the lane; every served verdict (raise,
+       lower, hold, insufficient, no data) paints its cells and matches its
+       key mark on that one shared paint, hold never reading as the bare
+       ground; a staged cell and a different selected cell are both provable
+       at once; every key count equals the served cells sharing that verdict.
+  element:  #lane-wrap, #lane-key, #lane, .stagebtn
+  source:   frontend/diagnose-workstation.js renderLaneKey; frontend/diagnose-workstation.css .lane-cell[data-verdict]/.lane-wrap/.lane-key
+  lock:     HV2-17
+  data:     basal-verdict-gallery (scripts/qa_e2e_cases.py QaCase, manufactured
+            per AGENTS.md's QA-coverage-era process from real
+            `execute_case` output): one basal lane serving a raise, a lower,
+            a hold, an insufficient-evidence and every other slot no-data, in
+            one 30-day source window
+  evidence: C4_STORIES.assertBasalLaneGallery (called from S113 after
+            `openBasalLane`); requires all five served verdicts present,
+            stages the raise cell then selects the lower cell, reads the DOM
+            order of `#lane-wrap`'s children and each element's bounding
+            box, then for every verdict compares its cells' and its key
+            mark's shared `--cell` paint token (plus the hatch/dot structure
+            for insufficient/no-data and the directional glyph for
+            raise/lower) and the key's printed count against the served
+            lane count
+  status:   #413 task 2 sub-order — the coordinator's own `ONLY=S113,S114`
+            run at 1280x720 passed a narrower prior revision of this story
+            (the DOM-order/visibility checks alone, against whatever verdict
+            mix the showcase happened to carry). This revision requires the
+            full scenario instead — all five verdicts, a distinct staged and
+            selected cell, and the shared-paint comparison — backed by the
+            new basal-verdict-gallery case, and has not yet been run by the
+            coordinator. Both that pass proof and the fail-first proof
+            against the base are owed by #413 task 4.1
+```
+
+```
+S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
+       loading frame in place of the empty block, keeping the loading status,
+       its named text, and the reading pane at the Diagnose reference width;
+       the skeleton holds still under reduced motion.
+  element:  .gf-loading, .gf-skeleton
+  source:   frontend/frame.js loadingFrame / loadingSkeleton; frontend/desk.css .gf-skeleton/.gf-skel
+  lock:     HV2-29
+  data:     the app's own showcase; the read held open with a synthetic
+            route so the loading frame stands long enough to inspect
+  evidence: C4_STORIES.S114; holds `/api/analyze`, reloads cold, reads the
+            skeleton's marks, text content, status label and the reading
+            pane's width, then checks the animation is suppressed under
+            `prefers-reduced-motion: reduce` before releasing the read
+  status:   #413 task 2 sub-order — story authored and registered;
+            coordinator ran the bare-script `ONLY=S114` replay on this
+            branch at 1280x720 (unsandboxed) and it passed. The fail-first
+            proof against the base is owed by #413 task 4.1
+```
+
 ### Coordinator amendment 1 — 2026-09-10
 
 The coordinator's first isolated browser runs did not reach the feature assertions

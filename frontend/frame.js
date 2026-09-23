@@ -61,13 +61,26 @@ export function emptyFrame(cap, title, copy, actions, note = '') {
   return `<section class="pane gf-stage gf-stage-table" aria-label="${e(cap)}"><header><h2>${e(cap)}</h2></header><div class="gf-empty"><div class="gf-title" tabindex="-1">${title}</div><p>${copy}</p><div class="gf-actions">${actions}</div></div>${note ? `<p class="gf-note">${e(note)}</p>` : ''}</section>`;
 }
 
+/** #413: the cold skeleton standing inside the loading block — a hint of the
+    stage's own instrument row and the rail's rows, so a first-visit
+    destination reads as itself rather than as void. Every mark is decorative
+    (`aria-hidden`) and carries no text, count or value: the block's own
+    status role and label (#414's named `message` included) are what
+    assistive technology reads. Desk.css shimmers it slowly and holds it still
+    under reduced motion. */
+function loadingSkeleton() {
+  const chip = () => '<span class="gf-skel gf-skel-chip"></span>';
+  const row = () => '<span class="gf-skel gf-skel-row"></span>';
+  return `<div class="gf-skeleton" aria-hidden="true">${chip()}${chip()}${row()}${row()}${row()}${row()}${row()}</div>`;
+}
+
 /** The one loading frame, so a destination waiting on the API says so rather
     than standing empty. It carries no count and no former row (HV2-31). An
     optional `message` names what is being read, for a destination whose
     loading state would otherwise say nothing about what it is waiting on. */
 export function loadingFrame(title, message = '') {
   return desk(
-    `<section class="pane gf-stage" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}">${message ? `<p>${e(message)}</p>` : ''}</div></section>`,
+    `<section class="pane gf-stage" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}">${loadingSkeleton()}${message ? `<p>${e(message)}</p>` : ''}</div></section>`,
     `<aside class="pane gf-reading" aria-label="${e(title)}">${readingHeader(e(title))}<div class="gf-pane-body"></div></aside>`,
   );
 }

@@ -136,8 +136,8 @@ const MARKUP = `
           <div class="readout" id="brace-readout" hidden></div>
         </div>
         <div class="lane-wrap" id="lane-wrap">
-          <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
           <div class="lane-key" id="lane-key"></div>
+          <div class="lane" id="lane" role="group" aria-label="Basal slot verdicts"></div>
         </div>
       </div>
       <!-- The spotlight is the resting evidence surface. All charts temporarily
@@ -520,7 +520,10 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
 }
 
 /**
- * The basal verdict key reconciles the 48 slots on the canvas lane.
+ * The basal verdict key reconciles the 48 slots on the canvas lane. #413:
+ * this is the lane's head row — it renders above `#lane`'s cells (the
+ * markup is ordered that way), naming the lane ("Basal slots") and giving
+ * every served verdict its short form and count.
  */
 function renderLaneKey(lane) {
   const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];

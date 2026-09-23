@@ -40,6 +40,18 @@ test('the loading frame carries no count and the error frame offers its retry', 
   assert.match(errorFrame('Day', 'This day'), /data-retry>Retry</);
 });
 
+test('the loading frame stands a count-free skeleton of stage instruments and rail rows', () => {
+  // #413: a cold destination shows a skeleton in place of the empty block.
+  const loading = loadingFrame('Diagnose');
+  const [, body] = loading.match(/<div class="gf-skeleton" aria-hidden="true">([\s\S]*?)<\/div>/) || [];
+  assert.ok(body, 'a gf-skeleton block is present');
+  assert.equal(body.replace(/<[^>]+>/g, '').trim(), '', 'the skeleton states no count, title or value');
+  assert.equal((body.match(/gf-skel-chip/g) || []).length, 2, 'stage instruments are represented');
+  assert.equal((body.match(/gf-skel-row/g) || []).length, 5, 'rail rows are represented');
+  // The status role and its label are the loading state assistive technology reads.
+  assert.match(loading, /class="gf-loading" role="status" aria-label="Loading Diagnose"/);
+});
+
 test('the loading frame names what it is reading when a caller supplies the text', () => {
   assert.doesNotMatch(loadingFrame('Diagnose'), /<p>/, 'no message: no empty <p>');
   const named = loadingFrame('Changes', 'Reading change records');

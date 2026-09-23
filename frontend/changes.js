@@ -78,13 +78,15 @@ function asideLead(candidate) {
     ${following ? `<p class="gf-meta">${e(following.title || following.subject)} leads now.</p>` : ''}</section>`;
 }
 
-/** The action this concern asks for, in the served units and direction. */
+/** The action this concern asks for, in the served units and direction. An
+    identified action reads its served title, or its concern's where it serves
+    none (a habit concern), and never its id (ADR 426). */
 function actionLead(candidate) {
   const read = guidance();
   const action = Array.isArray(candidate.action) ? candidate.action : [];
   const change = action.length
     ? `${e(action[0].direction)} to ${e(action[0].recommended)} ${e(candidate.units || '')}`
-    : candidate.action?.action_id ? e(candidate.action.title) : 'No action is staged from this read';
+    : candidate.action?.action_id ? e(candidate.action.title ?? candidate.title) : 'No action is staged from this read';
   const span = action.length
     ? `${formatStartMin(Math.min(...action.map((row) => row.start_min)))} to ${formatStartMin(Math.max(...action.map((row) => row.end_min)) % 1440)}`
     : '';

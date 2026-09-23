@@ -46,6 +46,20 @@ test('a Pattern concern names its members and its action by their served names',
   }
 });
 
+test('a habit concern names its action by the concern\'s served title, never its id', async () => {
+  failure = false;
+  // Shaped like the served behavioral-missed-meal selection: a habit concern whose
+  // identified action carries only its id, and no title of its own.
+  const habit = { subject: 'habit:missed_meal', kind: 'habit', lever: 'missed_meal',
+    title: 'Missed / unannounced meal', units: null, action: { action_id: 'habit:missed_meal' },
+    members: [], unknowns: [], preference: {} };
+  answer = { disposition: 'eligible_action', selected: habit, candidates: [habit], reasons: {} };
+  await loadGuidance({ force: true }); mount(host);
+  assert.ok(host.innerHTML.includes('<div class="gf-figure">Missed / unannounced meal<small>'),
+    'the Action figure names the concern by its served title');
+  assert.doesNotMatch(host.innerHTML, /habit:/);
+});
+
 test('unavailable retains its served reason and is distinct from quiet', async () => {
   answer = { disposition: 'unavailable', unavailable: 'Synthetic source is unavailable <reason>', candidates: [], selected: null };
   await loadGuidance({ force: true }); mount(host);

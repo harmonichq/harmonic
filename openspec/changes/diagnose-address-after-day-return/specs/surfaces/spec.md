@@ -3,17 +3,22 @@
 ### Requirement: Diagnose's address names the case the reader is on
 
 Diagnose SHALL keep its address naming the case on screen. Whenever the case on
-screen changes and the desk is not restoring an entry, the desk SHALL replace
+screen changes and the desk is neither restoring an entry nor tearing down or
+rebuilding its workstation, the desk SHALL replace
 the current address in place, with no new history entry, so that it names that
 case: its subject (the Finding or Pattern row, or the basal slot), its
 Occurrence while one is selected, and its window, plus a `from` from the entry
 that names a destination other than Diagnose. The trigger SHALL be the change to
 the case on screen, whichever control, key or chart caused it. The address SHALL
 carry no date, moment, lever or return-focus key, and at the Findings index it
-SHALL carry no case. A restoration of an entry SHALL last until the named case
-and Occurrence are on screen or until the reader's first own pointer or key
-input, SHALL NOT rewrite the address itself, and SHALL leave a Day return's own
-address as it is until the case next changes.
+SHALL carry no case. A restoration of an entry SHALL begin when the desk decides
+to apply a contextual entry, before any teardown or rebuild that entry causes,
+and SHALL last until it has opened the named subject and held the named
+Occurrence, or until the reader's first own pointer press or key press other
+than Tab or a bare modifier, which SHALL end it before that input's own handlers
+run, so a case that input changes is written. A restoration SHALL NOT rewrite the
+address itself, and SHALL leave a Day return's own address as it is until the
+case next changes.
 
 The Day entry Diagnose writes SHALL take its subject, Occurrence and window from
 the same case the address names, SHALL name its return target by the

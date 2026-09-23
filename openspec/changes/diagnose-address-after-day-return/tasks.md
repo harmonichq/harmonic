@@ -39,20 +39,29 @@ on the base is labelled as one.
   where an existing export already reaches the drill stack, and extract nothing
   for testability alone.
 - [ ] 2.2 `frontend/diagnose.js` replaces the address with the case address on
-  every change to the published case while no entry restoration is pending, and
-  tracks the restoration exactly as ADR 428 point 2 defines it: pending from the
-  read that applies a contextual entry until the named case and Occurrence are on
-  screen, or until the first trusted pointer press or key press other than Tab
-  or a bare modifier anywhere on the page while Diagnose is current, which ends
-  it; the restoration's own untrusted presses never end it and its settling
-  writes nothing. It keeps the entry it holds equal to what it wrote. The trigger
-  is the published case, so no per-control hook is added. Unit tests in
-  `frontend/diagnose.test.js` (stub the browser location and history as the
-  scratch reproduction did): a published case with no restoration pending
-  replaces the address with no push and no new navigation; a published case
-  during a pending restoration writes nothing; a trusted key press ends a pending
-  restoration and the next published case is written; a Tab press does not end
-  it; a published Findings root writes `/diagnose`; `from=changes` survives.
+  every change to the published case while no entry restoration is pending and
+  the workstation is not being torn down or rebuilt, and tracks the restoration
+  exactly as ADR 428 point 2 defines it. Pending opens when `mount` decides to
+  apply a contextual entry — on a re-read before `leave()` and the rebuild, on a
+  cold seat from the first read — and lasts until `restoreEntry` has opened the
+  named subject and held the named Occurrence. The first trusted pointer press or
+  key press other than Tab or a bare modifier anywhere on the page while Diagnose
+  is current ends it, through one capture-phase `pointerdown`/`keydown` listener
+  on `window` that runs before every case-changing handler. The restoration's own
+  untrusted presses never end it and its settling writes nothing. Publications
+  inside `leave()` or `setData` are never written. It keeps the entry it holds
+  equal to what it wrote. The trigger is the published case, so no per-control
+  hook is added. Unit tests in `frontend/diagnose.test.js` (stub the browser
+  location, history and `window` listeners as the scratch reproduction did): a
+  published case with no restoration pending replaces the address with no push
+  and no new navigation; a Findings root published inside a re-read's `leave()`
+  or `setData` writes nothing and `restoreEntry` still reads the contextual entry
+  (a `setting:basal_rate` entry with a window stays in the address and is
+  applied); a published case during a pending restoration writes nothing; a
+  trusted key event ends a pending restoration in the capture phase and a case
+  published synchronously inside that same event is written; a Tab press does
+  not end it; a published Findings root outside a rebuild writes `/diagnose`;
+  `from=changes` survives.
 - [ ] 2.3 The Day entry (ADR 428 points 4 and 5): `evidenceDayContext` in
   `frontend/diagnose-context.js` takes `subject`, `occurrence` and `window` from
   the published case and no longer accepts or writes `focus`; `date`, `moment`
@@ -129,9 +138,11 @@ on the base is labelled as one.
   the same-total case to 132 active and 18 retired. `ACCEPTANCE.md`'s count
   sentence is not edited here; it is written once on the integration branch.
 - [ ] 3.4 Browser legs, each run once and serially by whoever can bind a port:
-  the new desk test by its name pattern, then the whole desk suite;
-  `ONLY=S136,S137,S138,S24,S26,S33,S35,S37,S61,S62,S108,S109` on the bare replay at
-  both sizes, first on a base worktree with the new stories laid over it (S136–S138
-  fail at their feature assertions) and then on the branch (all pass); then the
+  the new desk test by its name pattern (branch: tests 1, pass 1; base: tests 1,
+  fail 1), then the whole desk suite (branch: every test passes);
+  `ONLY=S136,S137,S138,S24,S26,S33,S35,S36,S37,S54b,S61,S62,S108,S109` on the bare
+  replay at both sizes, first on a base worktree with the new stories laid over it
+  (14 selected: 11 pass, 3 fail — S136, S137, S138, each at its feature
+  assertion) and then on the branch (14 selected, 14 pass, 0 fail); then the
   complete ledger through `acceptance.py replay` at both sizes on the commit to
-  be pushed.
+  be pushed (0 failed, S136–S138 among those executed).

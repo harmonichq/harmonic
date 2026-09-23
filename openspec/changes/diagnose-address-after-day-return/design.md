@@ -28,13 +28,25 @@ Occurrence's served id instead of a CSS selector.
    by pointer or arrow key, a chart tile that drills a different Finding, a step
    back by crumb or Backspace, and a case file re-scoped by a window choice
    answering are examples; a path not named here writes the same way.
-   An entry restoration is pending from the read that applies a contextual entry
-   until the named case, and its named Occurrence, are on screen, or until the
-   reader's first trusted pointer press, or key press other than Tab or a bare
-   modifier, anywhere on the page while Diagnose is current; that input ends the
-   restoration, because the entry it was restoring is superseded. The
-   restoration's own presses are untrusted and never end it, and its settling
-   writes nothing by itself. So the address a Day return writes stays exactly as
+   A publication made while Diagnose is tearing down or rebuilding its
+   workstation (`leave()`, and `setData`, whose rebuild paints the Findings root
+   synchronously) is never written.
+   An entry restoration is pending from the moment `mount` decides to apply a
+   contextual entry: on a re-read, before `leave()` and the rebuild; on a cold
+   seat, from the first read. It stays pending until the restoration's own work
+   is done — it has opened the named subject and, when one is named, held the
+   named Occurrence — rather than until the published case equals the entry,
+   because an entry's subject (a Changes entry's `setting:<parameter>`, say) need
+   not be spelled as the published one (`basal:<start>`). The reader's first
+   trusted pointer press, or key press other than Tab or a bare modifier,
+   anywhere on the page while Diagnose is current, ends it, because the entry it
+   was restoring is superseded. That end is taken by one capture-phase
+   `pointerdown` and `keydown` listener on `window`, so it runs before every
+   handler that changes the case inside the same event (the lane's arrow keys on
+   the root, the workstation's document-level Backspace, ↑/↓ and Escape, a
+   window grip that stops propagation), and the case that event publishes is
+   written. The restoration's own presses are untrusted and never end it, and its
+   settling writes nothing by itself. So the address a Day return writes stays exactly as
    today until the case next changes (HV2-14's return context and the
    canonical-door browser test pin it). A Diagnose session with no contextual
    entry is addressed from its first case change, in every session and not only
@@ -98,8 +110,10 @@ session recorded his standing sanction for this release's shipped-surface
 revisions and behavior-ledger amendments (Q2): "Yes. I record your answer as the
 approval for every change these 13 checklists call for, and write the wording in
 CONTEXT.md terms." The coordinator ruled the `from` clause of point 7 in plan
-review round 1. Points 2 to 8 are otherwise the triage worker's calls that make
-D2 hold; each is reviewed with this change.
+review round 1, and in round 2 that restoration opens at `mount`'s decision to
+apply and that reader input ends it in the capture phase (point 2). Points 2 to 8
+are otherwise the triage worker's calls that make D2 hold; each is reviewed with
+this change.
 
 ### Grounding
 
@@ -120,7 +134,16 @@ D2 hold; each is reviewed with this change.
   drawn window on Escape, and a chart tile can drill a different Finding
   (`chartClickRoute` in `frontend/diagnose-canvas-state.js`). None of these reaches
   `frontend/diagnose.js`'s capture click listener, which is why the trigger is
-  the published case.
+  the published case. Several of these change the case synchronously inside the
+  key or pointer event, and the lane's arrow keys and a window grip handle it
+  before or instead of bubbling to the page.
+- On a re-read, `mount` sets the entry, calls `leave()` (which runs
+  `setData(null)`) and then `read()`; every apply site runs `setData(payload)`
+  and then `restoreEntry()`, and the rebuild inside `setData` paints the Findings
+  root synchronously, before `restoreEntry()` reads the entry's subject.
+  Contextual re-read entries (Changes Inspect, S36; Changes "Back to Diagnose",
+  S54b, whose address keeps `subject=setting:basal_rate&window=180-210`; a Day
+  return to a different case) depend on that entry surviving the rebuild.
 - Every workstation drill frame carries the rail row it came from (`rowId`), a
   case frame its selected Occurrence and its served case file, and a slot frame
   its cell (`frontend/diagnose-workstation.js`).
@@ -144,8 +167,8 @@ is unchanged; its retained return now also covers a plain return after a Day
 visit and a Day return to the held case. A basal night's Day entry carries the
 selected night's Occurrence id where it carried a date. The desk's router gains
 one in-place write, the workstation one published case, and Diagnose one
-page-level reader-input listener that ends a pending restoration; none adds a
-request. The Changes and utility Day entries keep their own selector-shaped
+capture-phase reader-input listener on `window` that ends a pending restoration;
+none adds a request. The Changes and utility Day entries keep their own selector-shaped
 return targets until their follow-up issue.
 
 ## Risk contract
@@ -153,7 +176,9 @@ return targets until their follow-up issue.
 - **Must prevent:** while no entry restoration is pending, a Diagnose address
   that names a case, Occurrence or window other than the one on screen (the
   drawn-window reload below excepted); a CSS selector in a Diagnose address once
-  its case has changed, or in a Diagnose-origin Day address; a new history entry
+  its case has changed, or in a Diagnose-origin Day address; a contextual entry
+  overwritten by its own teardown or rebuild, so it lands on Findings instead of
+  its case; a new history entry
   per in-Diagnose case change; a retained Diagnose shown as current after a store
   write or a failed re-read (ADR 414 and HV2-29 unchanged); secret exposure,
   irreversible loss of authoritative data, silent incorrect success.
@@ -175,14 +200,17 @@ return targets until their follow-up issue.
   routing owner's interface; Diagnose re-addresses on every published-case change
   while no restoration is pending, including one path outside the listed examples
   (↓ after a Day return and Backspace to Findings), and never during a pending
-  restoration; the first reader input ends a pending restoration; the
+  restoration or a teardown or rebuild; a contextual re-read entry survives the
+  rebuild and is restored; the first reader input ends a pending restoration in
+  the capture phase, and a case published synchronously inside that same event
+  is written; the
   Diagnose-origin Day entry carries no `focus` and names its Occurrence;
   exact-return focus on both return paths; a plain return after a Day-return
   entry makes one status read, keeps the drill and drops the held `from`; a
   contextual entry naming a different case still re-reads; preset-window
   restoration; the failing-first browser test and stories S136–S138 at both
-  desktop sizes, with S24, S26, S33, S35, S37, S61, S62, S108 and S109 still
-  passing.
+  desktop sizes, with S24, S26, S33, S35, S36, S37, S54b, S61, S62, S108 and S109
+  still passing.
 
 Why: the address and the retention return are one state machine whose failure
 mode is a link or a return that silently shows a different case.

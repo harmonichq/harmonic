@@ -18,27 +18,34 @@
 
 ## 2. The Day desk (frontend)
 
-- [ ] 2.1 Day's status read (`loadBounds`) keeps `data_day_count` beside the first
-  and last day, and the rail's "N recorded day(s) · <first> to <last>" prints
-  that served count, keeping today's singular/plural wording. It never falls back
-  to counting loaded rows.
-- [ ] 2.2 `dayFrame`'s state takes the loaded month reads, keyed by month as the
+- [ ] 2.1 Fail first, against today's input. Before any `frontend/day.js` change,
+  add cases to `frontend/day.test.js` built from synthetic padded reads shaped as
+  `build_day_navigator` serves them (the month plus seven days either side), fed
+  through today's `rows` input exactly as `loadedDays()` joins them (the reads
+  flattened, unmerged), with the served count on `bounds.dataDays`: (a) the rail
+  prints the served count, the same with one read loaded as with two; (b) with
+  two adjacent reads loaded, each month's head equals its own recorded days. Run
+  them on the unchanged code and record that each fails on its assertion for the
+  right reason — the rail printing the loaded-row count, a month head including
+  its neighbour's week — never on a thrown error. With June 2024 missing one day
+  and July 1–23 recorded (52 days), today's code prints 36 and then 66 in the
+  rail, and heads of 30 for July (true 23) and 36 for June (true 29).
+- [ ] 2.2 Day's status read (`loadBounds`) keeps `data_day_count` as
+  `bounds.dataDays` beside the first and last day, and the rail's
+  "N recorded day(s) · <first> to <last>" prints it, keeping today's
+  singular/plural wording. It never falls back to counting loaded rows.
+- [ ] 2.3 `dayFrame`'s state takes the loaded month reads, keyed by month as the
   desk holds them (`memory.months`), in place of the pre-joined `rows` list, and
   joins them to one row per day before the ribbon, the month grid or its head
   read them. When two reads carry the same day, the read of that day's own month
   supplies it; a padding row stands only while its own month is not loaded. The
   same join replaces `loadedDays()` for recorded-day stepping, so there is one
   join in the module. `dayState()` passes the reads.
-- [ ] 2.3 The month head counts the joined rows inside the shown month that have
+- [ ] 2.4 The month head counts the joined rows inside the shown month that have
   data.
-- [ ] 2.4 `frontend/day.test.js`: move the `state()` helper to the new input shape,
-  then add failing-first cases built from synthetic padded reads shaped as
-  `build_day_navigator` serves them (the month plus seven days either side):
-  (a) given one loaded read and then two overlapping reads plus a served count,
-  the rail prints the served count, the same for both; (b) with two adjacent
-  padded reads loaded in either order, each month's head equals its own recorded
-  days (fails today with the neighbour's week added), and a shown month's cells
-  come from its own read.
+- [ ] 2.5 Move the `state()` helper and 2.1's cases to the month-keyed input (the
+  same padded reads, keyed by month), add (b) in the other load order and that a
+  shown month's cells come from its own read, and run the file green.
 
 ## 3. Desk browser coverage
 
@@ -53,13 +60,15 @@
 
 ## 4. Behavior ledger and replay
 
-- [ ] 4.1 `frontend/c4.replay.mjs`: add `C4_STORIES.S127` on the showcase. Open Day
-  through the nav (as S104 does); read the served `/api/status` with the file's
-  `read` helper; the rail's count equals `data_day_count`. Open the Month
-  calendar: the head count equals the number of enabled cells. Page to the
-  previous month, then back: after each page lands, the rail count is unchanged
-  and the shown month's head equals its enabled cells, and June's head equals its
-  first reading. Register it in `frontend/desk-behavior.replay.mjs`
+- [ ] 4.1 `frontend/c4.replay.mjs`: add `C4_STORIES.S127` on the showcase, its
+  paging assertions before its served-count comparison so the base app fails on
+  paging, not only on the missing field. Open Day through the nav (as S104 does)
+  and read the rail's count. Open the Month calendar: the head count equals the
+  number of enabled cells. Page to the previous month, then back: after each page
+  lands, the rail's count equals the count read on arrival, the shown month's head
+  equals its enabled cells, and June's head equals its first reading. Then read
+  the served `/api/status` with the file's `read` helper: the rail's count equals
+  `data_day_count`. Register it in `frontend/desk-behavior.replay.mjs`
   (`// STORY:harmonic-v2-desktop:S127`, `appOnly('HV2-13', '#425 …',
   C4_STORIES.S127)`, and `['S127', S127, J()]` in `REGISTRY`), and add a
   `frontend/c4.replay.test.js` case that S127 is registered once, carries term

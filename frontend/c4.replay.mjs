@@ -482,6 +482,36 @@ async function heldRequest414(page, pattern, matches) {
   };
 }
 
+// #413: S116's scenario, factored out the same way as S113's below. The
+// candidates are chosen by the served chart coordinate alone, so a desk that
+// serves no count sentence still reaches the feature assertion.
+export async function assertRankedMinis(page, rows) {
+  const graphicOf = async (id) => page.evaluate((rowId) => {
+    const row = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"]`);
+    const host = row?.querySelector('.mini canvas');
+    const chart = host && window.echarts.getInstanceByDom(host.parentElement);
+    return chart?.getOption().graphic?.map((item) => item.style?.text) || null;
+  }, id);
+  const candidates = rows.filter((row) => row.pattern_chart || (row.event_chart && !row.claimed_by));
+  assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
+  await waitForReplayAssertion(async seen => {
+    let mounted = 0;
+    for (const row of candidates) {
+      const graphic = seen(await graphicOf(row.id));
+      if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
+      mounted += 1;
+      const sentence = row.count_sentences?.[0];
+      assert.ok(sentence,
+        `S116 ${row.id}'s mini must draw from its served count sentence; none is served, and it draws ${JSON.stringify(graphic)}`);
+      assert.deepEqual(graphic, [
+        `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
+        `TYPICAL · ${sentence.denominator}`,
+      ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
+    }
+    assert.ok(mounted > 0, 'S116 at least one ranked mini must be mounted to compare');
+  }, 'S116 every ranked mini draws the same instrument, from the served row');
+}
+
 // #413: S113's scenario, factored out of the story so a fake page can drive
 // it directly (frontend/c4.replay.test.js) without also faking
 // `openBasalLane`'s own network reads and navigation — the same boundary
@@ -982,27 +1012,7 @@ export const C4_STORIES = {
   async S116(page) {
     await openDiagnoseRail(page);
     const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
-    const rows = preparation.rendered_rows;
-    const graphicOf = async (id) => page.evaluate((rowId) => {
-      const row = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"]`);
-      const host = row?.querySelector('.mini canvas');
-      const chart = host && window.echarts.getInstanceByDom(host.parentElement);
-      return chart?.getOption().graphic?.map((item) => item.style?.text) || null;
-    }, id);
-    const candidates = rows.filter((row) => row.count_sentences?.length
-      && (row.pattern_chart || (row.event_chart && !row.claimed_by)));
-    assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
-    await waitForReplayAssertion(async seen => {
-      for (const row of candidates) {
-        const graphic = seen(await graphicOf(row.id));
-        if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
-        const sentence = row.count_sentences[0];
-        assert.deepEqual(graphic, [
-          `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
-          `TYPICAL · ${sentence.denominator}`,
-        ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
-      }
-    }, 'S116 every ranked mini draws the same instrument, from the served row');
+    await assertRankedMinis(page, preparation.rendered_rows);
   },
   // #413: "Diagnose opens on the 24 h window" — a cold arrival, with no
   // contextual entry and no retained window, reads unscoped. `openApp`

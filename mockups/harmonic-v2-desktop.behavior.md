@@ -2730,10 +2730,14 @@ S116 · Every ranked rail row's mini draws the same instrument: the matched
   lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
   data:     the app's own showcase; a ranked Pattern and a ranked Cause both
             carry a mounted mini
-  evidence: C4_STORIES.S116; for every ranked row carrying a served count
-            sentence and a chartable coordinate, reads its mounted mini's
-            ECharts option and compares the graphic text against the row's
-            own served outcome word, count and denominator
+  evidence: C4_STORIES.S116 → assertRankedMinis; for every row serving a
+            chartable coordinate (a Pattern chart, or an unclaimed Cause's
+            event chart), reads its mounted mini's ECharts option, requires
+            the row to serve a count sentence, and compares the graphic text
+            against that sentence's outcome word, count and denominator; at
+            least one mini must be mounted. Candidates are chosen by the
+            coordinate alone, so a desk serving no count sentence reaches
+            this feature assertion rather than a premise failure
   status:   #413 task 3 sub-order — story authored and registered against the
             branch's own node unit suite (frontend/diagnose-workstation-chart.test.js,
             frontend/diagnose-evidence-charts.test.js); the bare-script

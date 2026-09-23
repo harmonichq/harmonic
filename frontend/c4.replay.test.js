@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery } from './c4.replay.mjs';
+import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -724,4 +724,41 @@ test('assertBasalLaneGallery fails when the key does not render above the cells'
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertBasalLaneGallery(qa413GalleryPage({ order: ['lane', 'lane-key'] })),
     /the key must render as the lane's head row, above the cells/));
+});
+
+// #413: a fake page for `assertRankedMinis` — the scenario S116 drives after
+// opening the rail. `graphics` maps a row id to its mounted mini's graphic
+// texts; an absent id is an unmounted mini.
+function qa413MiniPage(graphics) {
+  return { evaluate: async (_fn, id) => graphics[id] ?? null };
+}
+const minied = { id: 'pattern:p', pattern_chart: { key: 'p' },
+  count_sentences: [{ outcome: 'ran high', count: 5, denominator: 12, noun: 'meals' }] };
+
+test('assertRankedMinis passes when every mounted mini draws its served count sentence', async () => {
+  await assertRankedMinis(qa413MiniPage({ 'pattern:p': ['RAN HIGH · 5', 'TYPICAL · 12'] }), [minied]);
+});
+
+test('assertRankedMinis fails at its premise when no row carries a chart coordinate', async () => {
+  await assert.rejects(assertRankedMinis(qa413MiniPage({}), [{ id: 'finding:x' }]),
+    /S116 premise: the showcase must rank a mini-bearing Pattern or Cause/);
+});
+
+test('assertRankedMinis reaches its feature assertion when the row serves no count sentence', async () => {
+  const unserved = { id: 'pattern:p', pattern_chart: { key: 'p' } };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({ 'pattern:p': ['RAN HIGH · 5', 'TYPICAL · 12'] }), [unserved]),
+    /must draw from its served count sentence; none is served/));
+});
+
+test('assertRankedMinis fails when a mini draws words other than the served sentence', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({ 'pattern:p': ['MATCHED · 5', 'TYPICAL · 12'] }), [minied]),
+    /must draw the served outcome word and count/));
+});
+
+test('assertRankedMinis fails when no candidate mini is mounted', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({}), [minied]),
+    /at least one ranked mini must be mounted/));
 });

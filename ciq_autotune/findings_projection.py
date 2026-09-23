@@ -1037,24 +1037,56 @@ _PATTERN_OUTCOME = {
 }
 
 _CAUSE_OUTCOME = {
+    # Closed over the code-derived cross product (coordinator decision, #413 review
+    # round 2): every `Lever` member (levers.py) x every family a Cause appearance
+    # can be filed under — the four exposure families `explore_exposures._FAMILY_FOR_KIND`
+    # names (lows / meals / highs / correction_clusters), plus a lever's own
+    # recurrence/sequence family when `evidence_population.policy_for(lever)` (or,
+    # for the two sequence levers, `_finding_rows`'s dedicated sequence branch)
+    # restricts it there in code. Never widened or narrowed from fixture output.
+    #
+    # carb_undercount, late_bolus, meal_over_delivery, over_treated_low,
+    # correction_stacking, correction_on_iob and missed_meal all have
+    # `recurrence_family is not None` (an "ordinary" or ordinary-shaped policy), so
+    # `_finding_rows` never overrides their appearances — each can be filed under
+    # any of the four exposure families and gets one entry per family.
     ("carb_undercount", "meals"): "ran high",
     ("carb_undercount", "highs"): "followed an undercounted meal",
+    ("carb_undercount", "lows"): "followed an undercounted meal",
+    ("carb_undercount", "correction_clusters"): "followed an undercounted meal",
     ("late_bolus", "meals"): "ran high",
     ("late_bolus", "highs"): "followed a late bolus",
+    ("late_bolus", "lows"): "followed a late bolus",
+    ("late_bolus", "correction_clusters"): "followed a late bolus",
     ("meal_over_delivery", "meals"): "ran low",
     ("meal_over_delivery", "lows"): "followed a strong meal dose",
-    ("meal_over_delivery", "highs"): "ran high",
+    ("meal_over_delivery", "highs"): "followed a strong meal dose",
+    ("meal_over_delivery", "correction_clusters"): "followed a strong meal dose",
     ("over_treated_low", "lows"): "rebounded high",
     ("over_treated_low", "highs"): "followed an over-treated low",
+    ("over_treated_low", "meals"): "followed an over-treated low",
+    ("over_treated_low", "correction_clusters"): "followed an over-treated low",
     ("correction_stacking", "correction_clusters"): "went low",
     ("correction_stacking", "lows"): "followed stacked corrections",
-    ("correction_stacking", "highs"): "ran high",
+    ("correction_stacking", "meals"): "followed stacked corrections",
+    ("correction_stacking", "highs"): "followed stacked corrections",
     ("correction_on_iob", "lows"): "followed a correction on active insulin",
-    ("correction_on_iob", "correction_clusters"): "landed on active insulin",
-    ("correction_on_iob", "highs"): "ran high",
+    ("correction_on_iob", "correction_clusters"): "followed a correction on active insulin",
+    ("correction_on_iob", "meals"): "followed a correction on active insulin",
+    ("correction_on_iob", "highs"): "followed a correction on active insulin",
     ("missed_meal", "highs"): "had no bolus nearby",
     ("missed_meal", "meals"): "had no bolus nearby",
+    ("missed_meal", "lows"): "had no bolus nearby",
+    ("missed_meal", "correction_clusters"): "had no bolus nearby",
+    # meal_bolus_short: `evidence_population._POLICIES[Lever.MEAL_BOLUS_SHORT]` sets
+    # `recurrence_family=None`, so `_finding_rows`'s override unconditionally
+    # replaces its appearances with the one `recurrence_noun` family ("meals") —
+    # never any of the four exposure families.
     ("meal_bolus_short", "meals"): "needed a correction after",
+    # high_carb_sequence / repeat_eating: `model_view._is_driver` excludes every
+    # `SEQUENCE_LEVERS` member from ever being attributed on an exposure-family
+    # anchor, so `_finding_rows`'s dedicated sequence branch is their only source
+    # of appearances, always filed under the one hardcoded "sequences" family.
     ("high_carb_sequence", "sequences"): "ran less in range",
     ("repeat_eating", "sequences"): "ran less in range",
 }

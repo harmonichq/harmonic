@@ -77,6 +77,23 @@ crumb, reload) are traced in code and owed to the failing-first browser test.
   every session. Also applied the release brief's ledger-freeze rule: stories go
   in a dated `## #428 amendment — 2026-09-23` section, and the frozen header's
   count line and `ACCEPTANCE.md` are left to the integration branch.
+- Round 2 (coordinator-dispatched, final round at the cap of 3): confirmed round
+  1 landed; BLOCKED, 2 blocking and 2 notes, both blockers `injected` by the
+  round-1 trigger fix and reproduced against the tree by this worker. (1) With
+  pending opening at the apply read, a re-read's `leave()`/`setData` rebuild
+  paints the Findings root synchronously before `restoreEntry()` reads the entry,
+  so the root's "no case" would overwrite every contextual re-read entry (S36,
+  S54b, a Day return to a different case). Coordinator ruling applied: pending
+  opens when `mount` decides to apply, before the teardown, and publications
+  during teardown or rebuild are never written; pending ends at the
+  restoration's own completion, since an entry's `setting:<parameter>` need not
+  match the published `basal:<start>`. (2) Case-changing handlers run
+  synchronously on keydown, some in the root's bubble phase or behind a stopped
+  propagation. Coordinator ruling applied: one capture-phase
+  `pointerdown`/`keydown` listener on `window` ends the restoration first, and
+  task 2.2 tests a case published inside that same event. Notes applied: the
+  spec names the Tab and bare-modifier exception; task 3.4 and the lock state
+  expected counts, with S36 and S54b added.
 
 ## Open questions
 

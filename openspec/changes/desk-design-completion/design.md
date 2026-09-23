@@ -69,6 +69,37 @@ sentence. The served `headline`, which already reads "title in k of n noun"
 for a Pattern, stays byte-identical: the count sentence is a separate field,
 not a rebuild of it.
 
+## ADR 413 — The Cause outcome table covers every lever and family
+
+### Decision
+
+The Cause outcome table in `ciq_autotune/findings_projection.py` holds one entry
+for every lever in the `Lever` enum crossed with every family a Cause appearance
+can be filed under: the four exposure families (lows, meals, highs, correction
+clusters), narrowed only where code narrows them — a lever whose evidence policy
+has no recurrence family is filed under its one recurrence noun, and the two
+sequence levers only under sequences. The projection test builds that set from
+the same code and asserts the table's keys equal it.
+
+### Why
+
+Implementation found that the set of pairs the projection can emit is not closed
+by any table: the analysis stamps a Cause's lever on whichever anchor coincides
+in time with the trigger, so the family an appearance lands in is a fact about
+the data. A synthetic store already produced a missed-meal appearance among
+meals that no evidence policy predicts. A table keyed only on the pairs the
+fixtures happened to produce would pass its tests and then raise inside the
+projection on real data, taking the Diagnose findings read down — the opposite
+of "nothing degrades at run time" in this change's risk contract. Closing the
+table over the code-derived cross product makes the accepted failure the only
+failure: a lever or family added later without words fails the backend test.
+
+### Consequences
+
+About two dozen outcome phrases exist for pairs that are rare in practice; each
+says what the counted event followed ("followed a missed meal"). The frontend
+still holds no word list. Coordinator decision during #413 execution, 2026-09-22.
+
 ## Revise preparation
 
 - **Lifecycle:** `revise`, routed by UI Craft on 2026-09-20 (`shipped`,

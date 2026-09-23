@@ -80,7 +80,8 @@
   malformed value; test in `frontend/finding-case-file-validation.test.js`.
 - [ ] 3.4 Add S148, S149 and S150 to the desk behavior ledger with replay
   functions (`frontend/c4.replay.mjs`), registry entries
-  (`frontend/desk-behavior.replay.mjs`), handler-inventory rows and node
+  (`frontend/desk-behavior.replay.mjs`), case mappings
+  (`frontend/replay-cases.mjs`), handler-inventory rows and node
   regression tests in `frontend/c4.replay.test.js` that tell a feature assertion
   from a setup error. Amend S25 (`frontend/c2.replay.mjs`) and S107
   (`frontend/c4.replay.mjs` and its node test) under the sanction quoted in

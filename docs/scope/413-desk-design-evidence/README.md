@@ -147,14 +147,20 @@ regressions its fixes introduced. The round-2 fixes are in 92ca1414.
 at both sizes. I read the re-shot captures myself, and each round-2 fix below is
 visible in them.
 
-The re-shoot also shows one new flaw, recorded here and **not fixed**:
-- At 1280x720 the stage skeleton's strip well runs below the loading card's
-  own ground (`loading-after-1280x720.png`: the card's field ends near
+The re-shoot also showed one new flaw, now **fixed** (coordinator ruling,
+2026-09-22):
+- At 1280x720 the stage skeleton's strip well ran below the loading card's own
+  ground (`loading-after-1280x720.png` at 165b83fc: the card's field ended near
   y≈470, the strip near y≈625).
-- It changes no text, count or status. S114's assertions hold, and it passed.
-- Proposed fix: let `.gf-loading` grow to its content, or shorten the strip
-  well at the smaller size. This order's `Done when` is closed, so the fix is
-  proposed rather than made.
+- Theory: the loading stage inherited the stage's five-row grid, whose fixed
+  204 px figure row sized the card's track below its content.
+- The fix gives the loading stage its own block-flow variant
+  (`gf-stage-loading`), so the card grows to hold every mark and a short pane
+  scrolls rather than spills. No count, text or status changed.
+- S114 now also asserts that the loading card contains every stage mark. Its
+  node test fails when a mark runs past the card.
+- **Proofs:** the coordinator's re-shoot of `loading-after` and rerun of S114,
+  both at 1280x720 and 1440x900, on the fix commit.
 
 | # | Sev | Finding | Disposition | Evidence |
 |---|-----|---------|-------------|----------|
@@ -172,7 +178,7 @@ The re-shoot also shows one new flaw, recorded here and **not fixed**:
 | 12 | minor | Count emphasis was a colour step only. | **Fixed** (c7fdad07): weight 600. Round 2: resolved. | `rail-arrival-after-*` |
 | 13 | minor | The rank stripe curved at its ends. | **Fixed** (c7fdad07): square left edge. Round 2: resolved. The stripe now runs down the item (92ca1414). | `urgency-one-tier-after-*` |
 | 14 | minor | A focus ring shows on the Findings heading. | **Unchanged** (ruling above). | — |
-| 15 | minor | There was no window-bar placeholder, and the skeleton was faint. | **Fixed** (c7fdad07): a bar mark, one surface step above the field. Round 2: partly, on two points. First, the stage skeleton ended at mid-height; **fixed** (92ca1414), adding a strip well for the glucose panel. Second, the bar sits inside the loading card rather than where Diagnose's window bar sits. **Objection**: the loading frame is the desk's one frame for every destination (Diagnose, Changes, Day, Focus), and only Diagnose has a window bar. The status element that carries the named loading text is that card. Seating a mark at one destination's bar position would couple the shared frame to Diagnose's layout. Re-shot: the strip well stands below the chart well. The new flaw, the strip running past the card at 1280x720, is recorded above. | `loading-after-*` |
+| 15 | minor | There was no window-bar placeholder, and the skeleton was faint. | **Fixed** (c7fdad07): a bar mark, one surface step above the field. Round 2: partly, on two points. First, the stage skeleton ended at mid-height; **fixed** (92ca1414), adding a strip well for the glucose panel. Second, the bar sits inside the loading card rather than where Diagnose's window bar sits. **Objection**: the loading frame is the desk's one frame for every destination (Diagnose, Changes, Day, Focus), and only Diagnose has a window bar. The status element that carries the named loading text is that card. Seating a mark at one destination's bar position would couple the shared frame to Diagnose's layout. Re-shot: the strip well stands below the chart well. Its overrun of the card at 1280x720 is fixed, as recorded above. | `loading-after-*` (re-shoot on the fix commit); S114 |
 
 ## Captures in this folder
 

@@ -2708,7 +2708,9 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
             skeleton per pane (stage instruments inside the loading block,
             rail rows in the reading pane's body — the #413 critique moved
             the rows out of the stage), each one's marks and text content,
-            the status label and the reading pane's width, then checks the
+            that the loading card contains every stage mark (after the
+            strip well overran it at 1280x720), the status label and the
+            reading pane's width, then checks the
             animation is suppressed under
             `prefers-reduced-motion: reduce` before releasing the read
   status:   base eec4652a fails at its feature assertion at both sizes ("the

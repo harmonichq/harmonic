@@ -176,6 +176,11 @@
 .gf-empty p { max-width:56ch; color:var(--mk-muted); margin-bottom:12px; }
 .gf-empty .gf-actions { padding:0; }
 .gf-loading { margin:20px; background:var(--wk-field); min-height:200px; padding:16px; }
+/* #413: the loading stage is block flow, not the stage's five-row grid. That
+   grid's fixed figure row sized the card's track below the skeleton, so the
+   strip well ran past the card at 1280x720; in block flow the card grows to
+   hold every mark, and a short pane scrolls rather than spills. */
+.gf-stage.gf-stage-loading { display:block; overflow:auto; }
 .gf-loading p { margin:16px 0 0; color:var(--mk-muted); }
 /* #413: the cold skeleton, one per pane (frame.js's `stageSkeleton` and
    `railSkeleton`) — decorative marks with no text, count or value. The stage

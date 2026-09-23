@@ -956,6 +956,15 @@ export const C4_STORIES = {
         const text = seen(await skeleton.innerText());
         assert.equal(text.trim(), '', `S114 the ${pane} skeleton must state no count, title or value`);
       }
+      // The loading card holds every stage mark: none runs past its box.
+      const spilled = seen(await page.evaluate(() => {
+        const card = document.querySelector('.gf-loading').getBoundingClientRect();
+        return [...document.querySelectorAll('.gf-loading .gf-skel')].filter((mark) => {
+          const box = mark.getBoundingClientRect();
+          return box.top < card.top - 1 || box.bottom > card.bottom + 1;
+        }).length;
+      }));
+      assert.equal(spilled, 0, `S114 the loading card must contain its skeleton; ${spilled} mark(s) run past it`);
       const status = seen(await page.locator('.gf-loading').getAttribute('aria-label'));
       assert.equal(status, 'Loading Diagnose', 'S114 the loading status must still be announced');
       const rail = seen(await page.locator('.gf-desk > .gf-reading').boundingBox());

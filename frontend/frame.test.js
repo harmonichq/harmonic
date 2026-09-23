@@ -61,6 +61,9 @@ test('the loading frame stands a count-free skeleton of stage instruments and ra
   assert.doesNotMatch(stageMarks, /gf-skel-row/, 'no rail row stands in the stage');
   // The status role and its label are the loading state assistive technology reads.
   assert.match(loading, /class="gf-loading" role="status" aria-label="Loading Diagnose"/);
+  // The loading stage is its own block-flow variant, so the card holds every
+  // mark rather than a stage grid track clipping it (S114 proves the layout).
+  assert.match(loading, /<section class="pane gf-stage gf-stage-loading" aria-label="Diagnose">/);
 });
 
 test('the loading frame names what it is reading when a caller supplies the text', () => {

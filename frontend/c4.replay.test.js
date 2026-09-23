@@ -283,7 +283,7 @@ test('S112 holds the roster, record and reassessment reads in turn and reaches i
 // fetches resolve); the loading frame's skeleton is asserted while the read
 // is still held open.
 function qa413ColdDiagnosePage({ skeletons = { stage: 1, rail: 1 }, marks = 4, skeletonText = '',
-  status = 'Loading Diagnose', railWidth = 430, reference = '430px', animationName = 'none' } = {}) {
+  status = 'Loading Diagnose', railWidth = 430, reference = '430px', animationName = 'none', spilled = 0 } = {}) {
   const routes = new Map();
   const fire = pathname => {
     const request = { url: () => `http://synthetic.invalid${pathname}` };
@@ -313,7 +313,12 @@ function qa413ColdDiagnosePage({ skeletons = { stage: 1, rail: 1 }, marks = 4, s
     route: async (pattern, handler) => { routes.set(pattern, handler); },
     unroute: async pattern => { routes.delete(pattern); },
     emulateMedia: async () => {},
-    evaluate: async fn => (fn.toString().includes('animationName') ? animationName : reference),
+    evaluate: async fn => {
+      const src = fn.toString();
+      if (src.includes('animationName')) return animationName;
+      if (src.includes('getBoundingClientRect')) return spilled;
+      return reference;
+    },
   };
 }
 
@@ -334,6 +339,13 @@ test('S114 fails when the rail pane stands without its own skeleton', async () =
   await withReplayAssertionTimeout(10, () => assert.rejects(
     C4_STORIES.S114(qa413ColdDiagnosePage({ skeletons: { stage: 1, rail: 0 } })),
     /must carry one rail skeleton block/));
+});
+
+test('S114 fails when a skeleton mark runs past the loading card', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ spilled: 1 })),
+    /the loading card must contain its skeleton; 1 mark\(s\) run past it/));
 });
 
 test('S114 fails when the rail does not hold the Diagnose reference width', async () => {

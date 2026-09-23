@@ -84,7 +84,7 @@ function railSkeleton() {
     loading state would otherwise say nothing about what it is waiting on. */
 export function loadingFrame(title, message = '') {
   return desk(
-    `<section class="pane gf-stage" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}">${stageSkeleton()}${message ? `<p>${e(message)}</p>` : ''}</div></section>`,
+    `<section class="pane gf-stage gf-stage-loading" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}">${stageSkeleton()}${message ? `<p>${e(message)}</p>` : ''}</div></section>`,
     `<aside class="pane gf-reading" aria-label="${e(title)}">${readingHeader(e(title))}<div class="gf-pane-body">${railSkeleton()}</div></aside>`,
   );
 }

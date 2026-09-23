@@ -845,7 +845,7 @@ test('a canonical Day address reloads through the built shell and returns throug
 
 // ADR 428: once the reader acts inside Diagnose, the address names the case on
 // screen — rewritten in place — and never again the Day hop's own keys.
-test('after a Day return, acting inside Diagnose re-addresses to the case on screen and a reload reopens it', async () => {
+test('after a Day return, acting inside Diagnose re-addresses it in place, and its Findings address reloads with no case open', async () => {
   const subject = 'finding:over_treated_low';
   const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
   const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,

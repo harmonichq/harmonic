@@ -2,7 +2,7 @@
 
 ## 1. Keep a seated Diagnose case file attached across renders
 
-- [ ] 1.1 In `createDiagnoseDestination().mount` (`frontend/diagnose.js`),
+- [x] 1.1 In `createDiagnoseDestination().mount` (`frontend/diagnose.js`),
   replace the unconditional re-seat of the root (`host.replaceChildren(root)`)
   so that a render never detaches a root already seated in its host. Remove any
   host child other than the root, and attach the root only when it is not
@@ -13,7 +13,7 @@
   `deferredApply` and scroll handling, `restoreEntry()`/`showFocusAction()`
   calls, and the held cleanup (ADR 414). Do not touch `routes.js`,
   `diagnose-workstation.js` or any replay file.
-- [ ] 1.2 Public-interface test in `frontend/diagnose.test.js`, driven only
+- [x] 1.2 Public-interface test in `frontend/diagnose.test.js`, driven only
   through `createDiagnoseDestination(...).mount`. Extend the file's mocked host
   so it models the host's children the way a DOM node does (child list, append,
   and removal of a child). It must record every time the seated root is removed
@@ -28,7 +28,7 @@
 
 ## 2. Verify
 
-- [ ] 2.1 `npm ci && npm run build`, then `node --test 'frontend/**/*.test.js'`
+- [x] 2.1 `npm ci && npm run build`, then `node --test 'frontend/**/*.test.js'`
   with zero failures, and `python3 scripts/check_adr_numbers.py`,
   `python3 scripts/check_owned_identifiers.py`,
   `python3 scripts/check_public_allowlist.py` and

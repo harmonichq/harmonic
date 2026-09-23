@@ -435,7 +435,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // that skipped the re-read, not a fresh seat and not an in-place render.
     const wasParked = seated && parked;
     if (wasParked) { root.style.display = ''; parked = false; }
-    host.replaceChildren(root);
+    // Never detach a root already seated here (ADR 441): removing and
+    // re-inserting it drops the focus held inside it to the page body, and a
+    // render the reader did not ask for (a background read landing) puts
+    // nothing back. A cold seat and a parked return still end with the root
+    // as the host's only child.
+    for (const node of [...host.childNodes]) if (node !== root) node.remove();
+    if (root.parentNode !== host) host.append(root);
     // A cold seat never has a deferred completion to consume: the flag is set
     // only while seated, and leave() is the one place seated turns false.
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }

@@ -1306,7 +1306,12 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
       projectionId: 'fp_test',
     });
-    const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors);
+    // The outcome word is the SERVED row's own count sentence (#413) — never a
+    // frontend word table keyed by lever.
+    const row = { count_sentences: [{ outcome: outcome.toLowerCase(),
+      noun: label === 'MEAL' ? 'meals' : 'lows', count: data.summary.claimed,
+      denominator: data.summary.denominator }] };
+    const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
     assert.deepEqual(option.graphic.map((item) => item.style.text), [
       `${outcome} · ${data.summary.claimed}`, `TYPICAL · ${data.summary.denominator}`,
     ]);
@@ -1330,11 +1335,16 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
 });
 
 
-test('#395 · an unknown Pattern coordinate is not mounted as a supported chart kind', () => {
+test('#413 · a Pattern chart row match reads `pattern_chart` alone, the served roster', () => {
+  // The projection serves `pattern_chart` only for a chartable Pattern
+  // (#413 ADR "the desk carries no fallback"), so the frontend no longer
+  // polices the key against a word table of its own — it trusts the server.
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
-  for (const key of ['future_pattern', '__proto__']) {
-    assert.equal(entry.matches({ pattern_chart: { key } }), false);
+  for (const key of ['future_pattern', '__proto__', 'highs_after_meals']) {
+    assert.equal(entry.matches({ pattern_chart: { key } }), true);
   }
+  assert.equal(entry.matches({ pattern_chart: null }), false);
+  assert.equal(entry.matches({}), false);
 });
 
 

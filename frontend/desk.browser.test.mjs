@@ -944,7 +944,12 @@ for (const viewport of Object.keys(VIEWPORTS)) {
       await page.locator('.qrow[data-id^="pattern:"]').first().waitFor();
       assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
       assert.equal(await countOf(page, '#lane > button.lane-cell'), 48);
-      assert.ok(await countOf(page, '#level .qitem.claimed') > 0, 'the shipped Pattern rail retains nested causes');
+      // #413 — a Pattern owns its causes behind a fold, not as sibling rows.
+      const fold = page.locator('#level .qfold').first();
+      await fold.waitFor();
+      if ((await fold.getAttribute('aria-expanded')) !== 'true') await fold.click();
+      await page.locator('#level .qitem.member').first().waitFor();
+      assert.ok(await countOf(page, '#level .qitem.member') > 0, 'the shipped Pattern rail folds its nested causes');
       const before = await countOf(page, '[data-v2-diagnose] canvas');
       assert.ok(before > 0);
       for (let visit = 0; visit < 3; visit += 1) {

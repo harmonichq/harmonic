@@ -76,6 +76,16 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
   }
 });
 
+test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
+  const term = 'pending #413 design lock (task 4.4)';
+  for (const id of ['S115', 'S116', 'S117']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), 'showcase');
+  }
+});
+
 // A minimal fake page for the #414 chunk 3 stories. `click` on the Diagnose nav
 // button simulates the one GET /api/status the retained desk issues by routing
 // it through any registered `**/api/status*` handler, so the held-request

@@ -115,7 +115,7 @@ const previewBands = (points) => {
   return bands;
 };
 
-export function queuePreviewOption(descriptor, range, colors) {
+export function queuePreviewOption(descriptor, range, colors, row) {
   const data = descriptor?.data || {};
   const ink = colors || {};
   const text = ink.text || '#f2ede2';
@@ -125,6 +125,7 @@ export function queuePreviewOption(descriptor, range, colors) {
   const high = ink.high || '#e2be4c';
   const basal = ink.basal || '#a89a85';
   const excluded = ink.excluded || '#8d8579';
+  const warn = ink.warn || high;
 
   if (descriptor.kind === 'basal') {
     const nights = (data.nights || []).filter((night) =>
@@ -259,17 +260,37 @@ export function queuePreviewOption(descriptor, range, colors) {
         type: styles[index % styles.length] },
       itemStyle: { color, opacity: index === 0 ? .95 : .82 } });
   });
+  /* Term "Every ranked rail row draws one mini instrument" (#413) — the SAME
+     instrument the Pattern mini draws: the matched cohort's served outcome
+     word and count at the left, TYPICAL and the denominator at the right, the
+     event named on the anchor line, and a dashed target band. The served
+     count sentence (never a frontend word table) supplies the words. */
+  const sentence = row?.count_sentences?.[0];
+  const anchorLabel = sentence ? (sentence.noun === 'meals' ? 'MEAL' : 'LOW') : null;
+  const anchorRenderItem = (params, api) => {
+    const mark = { type: 'rect', shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+      width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } };
+    if (!anchorLabel) return mark;
+    return { type: 'group', children: [mark,
+      { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
+        style: { text: anchorLabel, fill: text, font: '600 9px Inter, system-ui, sans-serif' } }] };
+  };
   return {
     ...previewBase(`${cohorts.length} served response cohorts compared around the event.`),
     xAxis: previewAxis('value', { min: projection.window_min?.[0] ?? -60,
       max: projection.window_min?.[1] ?? 180 }),
     yAxis: previewAxis('value', { min: y[0], max: y[1] }),
-    graphic: [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
+    graphic: sentence
+      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8, ink.cohorts?.matched || signal),
+        previewText(`TYPICAL · ${sentence.denominator}`, 'right', muted, { align: 'right' })]
+      : [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
     series: [...series,
       { id: 'queue:event:event-anchor', type: 'custom', animation: false, silent: true,
-        data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
-          x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
-          width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } }) }],
+        data: [[0, 0]], renderItem: anchorRenderItem },
+      ...(sentence ? [{ id: 'queue:event:180', type: 'line', data: [], silent: true,
+        markLine: { silent: true, symbol: 'none', label: { show: false },
+          lineStyle: { color: warn, width: 1, type: 'dashed' },
+          data: [{ yAxis: 70 }, { yAxis: 180 }] } }] : [])],
   };
 }
 

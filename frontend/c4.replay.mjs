@@ -38,6 +38,17 @@ async function retained(page) {
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   return detail.reassessment.comparison;
 }
+// #413: land on the rail at 24 h without drilling into any row — S113/S114's
+// `openBasalLane`/`heldRequest414` both open something specific; this story
+// pair needs the plain rail listing itself.
+async function openDiagnoseRail(page) {
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  await page.waitForFunction(() =>
+    document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'diagnose');
+  await settled(page);
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled(page);
+}
 async function readiness(page, unit, required) {
   const comparison = await retained(page);
   await waitForReplayAssertion(async seen => {
@@ -893,6 +904,118 @@ export const C4_STORIES = {
     await page.emulateMedia({ reducedMotion: null });
     analyzeHold.release(); await analyzeHold.close();
     await page.locator('#lane').waitFor({ timeout: 30000 });
+  },
+  // #413: a Pattern owning claimed causes folds them under its own spine —
+  // never as sibling rail rows — behind a toggle naming the served count,
+  // closed on arrival unless the Pattern is the first ranked row; every
+  // served count sentence prints in served order, count and denominator
+  // emphasised, and the first served tier's rows carry the urgency stripe.
+  async S115(page) {
+    await openDiagnoseRail(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const rows = preparation.rendered_rows;
+    const parent = rows.find(row => row.kind === 'pattern' && rows.some(member => member.claimed_by === row.id));
+    assert.ok(parent, 'S115 premise: the showcase must serve a Pattern owning at least one claimed cause');
+    const members = rows.filter(row => row.claimed_by === parent.id);
+    assert.ok(members.length > 0, 'S115 premise: the owning Pattern must have at least one claimed member');
+    const firstRankedTier = rows.find(row => row.priority != null)?.tier;
+    assert.ok(firstRankedTier, 'S115 premise: the showcase must rank at least one row');
+
+    await waitForReplayAssertion(async seen => {
+      const rowIds = seen(await page.locator('#level .qrow').evaluateAll(nodes => nodes.map(n => n.dataset.id)));
+      for (const member of members) {
+        assert.ok(!rowIds.includes(member.id),
+          `S115 ${member.id} must never be a sibling rail row`);
+      }
+      const toggle = page.locator(`#level .qfold`).first();
+      assert.equal(seen(await toggle.count()), 1, 'S115 the owning Pattern must show one fold toggle');
+      assert.equal(seen(await toggle.textContent()),
+        `${members.length} ${members.length === 1 ? 'cause' : 'causes'}`,
+        "S115 the toggle must name the served cause count");
+    }, 'S115 causes fold under their Pattern, never as sibling rows');
+
+    await page.evaluate((parentId) => {
+      const list = document.querySelector('#level .q');
+      const items = [...list.children];
+      const at = items.findIndex(el => el.querySelector?.(`.qrow[data-id="${CSS.escape(parentId)}"]`));
+      const next = items[at + 1];
+      if (next?.classList.contains('qfold') && next.getAttribute('aria-expanded') !== 'true') next.click();
+    }, parent.id);
+
+    await waitForReplayAssertion(async seen => {
+      for (const member of members) {
+        const line = page.locator(`#level .qmember[data-id="${member.id}"]`);
+        await line.waitFor({ timeout: 30000 });
+        const text = seen(await line.locator('.den').innerText());
+        for (const sentence of member.count_sentences) {
+          assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`),
+            `S115 ${member.id} must print its served ${sentence.noun} sentence: ${text}`);
+          assert.ok(!text.includes(sentence.outcome),
+            `S115 a folded member line must not repeat the Pattern's own outcome word: ${text}`);
+        }
+      }
+    }, 'S115 every served count sentence prints, in served order, never merged');
+
+    if (parent.count_sentences?.length) {
+      await waitForReplayAssertion(async seen => {
+        const text = seen(await page.locator(`#level .qrow[data-id="${parent.id}"] .den`).innerText());
+        for (const sentence of parent.count_sentences) {
+          assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun} ${sentence.outcome}`),
+            `S115 the Pattern's own row must print its served sentence verbatim: ${text}`);
+        }
+        const bold = seen(await page.locator(`#level .qrow[data-id="${parent.id}"] .den .v`).count());
+        assert.ok(bold > 0, 'S115 the count and denominator must be emphasised');
+      }, "S115 the Pattern's own row prints the served count sentence");
+    }
+
+    await waitForReplayAssertion(async seen => {
+      const urgent = seen(await page.locator(`#level .qrow[data-tier="${firstRankedTier}"][data-urgent="true"]`).count());
+      assert.ok(urgent > 0, "S115 the first served tier's rows must carry the urgency stripe");
+      const stray = seen(await page.locator(`#level .qrow[data-urgent="true"]:not([data-tier="${firstRankedTier}"])`).count());
+      assert.equal(stray, 0, 'S115 no later tier carries the urgency stripe');
+    }, 'S115 the rail shows served urgency');
+  },
+  // #413: every ranked row's mini draws the SAME instrument — the matched
+  // cohort's outcome word and count at the left, TYPICAL and the denominator
+  // at the right — sourced from the row's own served count sentence, never a
+  // frontend word table, in the rail's own cohort palette.
+  async S116(page) {
+    await openDiagnoseRail(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const rows = preparation.rendered_rows;
+    const graphicOf = async (id) => page.evaluate((rowId) => {
+      const row = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"]`);
+      const host = row?.querySelector('.mini canvas');
+      const chart = host && window.echarts.getInstanceByDom(host.parentElement);
+      return chart?.getOption().graphic?.map((item) => item.style?.text) || null;
+    }, id);
+    const candidates = rows.filter((row) => row.count_sentences?.length
+      && (row.pattern_chart || (row.event_chart && !row.claimed_by)));
+    assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
+    await waitForReplayAssertion(async seen => {
+      for (const row of candidates) {
+        const graphic = seen(await graphicOf(row.id));
+        if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
+        const sentence = row.count_sentences[0];
+        assert.deepEqual(graphic, [
+          `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
+          `TYPICAL · ${sentence.denominator}`,
+        ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
+      }
+    }, 'S116 every ranked mini draws the same instrument, from the served row');
+  },
+  // #413: "Diagnose opens on the 24 h window" — a cold arrival, with no
+  // contextual entry and no retained window, reads unscoped. `openApp`
+  // defaults every opener story to a fresh root ('/') Diagnose arrival, so
+  // this story asserts against that same cold seat before touching anything.
+  async S117(page) {
+    await settled(page);
+    await waitForReplayAssertion(async seen => {
+      const pressed = seen(await page.locator('#seg-window button[aria-pressed="true"]').innerText());
+      assert.equal(pressed.trim(), '24 h', 'S117 a cold arrival with no context must open on the 24 h window');
+      const findings = seen(await read(page, '/api/diagnose/finding-case-file-preparation'));
+      assert.equal(findings.findings?.window?.scoped, false, 'S117 the findings read must be unscoped');
+    }, 'S117 a cold arrival opens on the 24 h window, unscoped');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

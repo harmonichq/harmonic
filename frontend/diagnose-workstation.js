@@ -1173,6 +1173,10 @@ function boot(root, data, callbacks, signal) {
   let filterFocus = 0;
   let queueScrollTop = 0;
   let collapsedFindingsExpanded = false;
+  /* Explicit reader overrides for a Pattern's fold (#413); a Pattern absent
+     here falls back to the queue's own default (open on the first ranked
+     row). Reset alongside the sift, matching `collapsedFindingsExpanded`. */
+  let openMembers = new Map();
   const watched = data.watched;
 
   const phoneReadingScroller = () => window.matchMedia('(max-width: 480px)').matches
@@ -1524,7 +1528,10 @@ function boot(root, data, callbacks, signal) {
             nearly_matched: token('--ec-nearly-matched', '#e2be4c'),
             comparison: token('--ec-comparison', '#d08150'),
           },
-        });
+          /* the served row this mini is mounting for — its own served count
+             sentence supplies the mini's outcome word (#413); no frontend
+             word table reads it. */
+        }, row);
         const mounted = { chart: window.echarts.init(host, null, { renderer: 'canvas' }), option };
         host.dataset.previewKind = descriptor.kind;
         rowMiniMounts.push(installTileMount(host, mounted));
@@ -3098,6 +3105,7 @@ function boot(root, data, callbacks, signal) {
     if (next.has(key)) next.delete(key); else next.add(key);
     selectedChips = next.size === CHIP_LABELS.length ? null : next;
     collapsedFindingsExpanded = false;
+    openMembers = new Map();
     /* THE FIRST PRICED ROW AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes
        which of the server-ordered rows is first without changing the descriptor
        set, so the ordinary canvas reconcile quite correctly preserves the
@@ -3408,6 +3416,8 @@ function boot(root, data, callbacks, signal) {
         selected: selectedChips,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
+        openMembers,
+        onToggleMembers: (id, wasOpen) => { openMembers.set(id, !wasOpen); paint(); },
       });
       mountRowMinis(queue.miniSlots);
       appendCaseError(host);

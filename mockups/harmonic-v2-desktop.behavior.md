@@ -2677,6 +2677,87 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
             proof against the base is owed by #413 task 4.1
 ```
 
+## #413 task 3 sub-order amendment — 2026-09-22, issue #413
+
+S115–S117 are the rail's fail-first obligations for the #413 design lock's
+Pattern fold, urgency paint, one mini instrument, the served count sentence,
+and the 24 h cold arrival — surfaces 1, 2, 3, 4 and 6 of the pinned change's
+`specs/surfaces/spec.md`. They are app-opener-only, like S113/S114; browser
+execution belongs to the coordinator at 1280x720 and 1440x900, unsandboxed
+(a sandboxed worker cannot launch Chromium). The frontend Pattern word
+constant (`PATTERN_COPY`) is deleted with this amendment; every reader named
+in the #413 design record (the queue's member-family lookup and
+`pattern-unknown` detail, the Pattern mini's cohort label, and the Pattern
+case-file's `pattern_chart` key match) now reads a served fact instead.
+
+```
+S115 · A Pattern owning claimed causes folds them beneath its own row, one
+       line per cause naming the cause and every one of its served count
+       sentences' count, denominator and noun — never its outcome word, never
+       merged, never as a sibling rail row — behind a toggle naming the
+       served cause count, open on the first ranked row and closed on every
+       later one on arrival; the Pattern's own row still prints its full
+       served sentence, count and denominator emphasised; the first served
+       tier's rows carry a rank stripe, later tiers stay quiet.
+  element:  .qrow, .qfold, .qitem.member, .qmember
+  source:   frontend/diagnose-findings-queue.js queueRows / renderFindingsQueue;
+            frontend/diagnose-workstation.css .qfold/.qitem.member/.qmember/[data-urgent]
+  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  data:     the app's own showcase; a served Pattern already claims at least
+            one Cause (the same fact S113's predecessor observed of the base)
+  evidence: C4_STORIES.S115; reads the served preparation to name the owning
+            Pattern and its claimed members, asserts none renders as a
+            sibling `.qrow`, opens the fold, reads each member's line against
+            every one of its served count sentences, reads the Pattern's own
+            row against its served sentence with emphasis, and compares the
+            served rank-one tier's rows against `data-urgent`
+  status:   #413 task 3 sub-order — story authored and registered against the
+            branch's own node unit suite (frontend/diagnose-findings-queue.test.js);
+            the bare-script browser replay and the fail-first proof against
+            the base are both owed by #413 task 4.1
+```
+
+```
+S116 · Every ranked rail row's mini draws the same instrument: the matched
+       cohort's served outcome word and count at the left, TYPICAL and the
+       served denominator at the right, sourced from the row's own served
+       count sentence rather than a frontend word table, in the rail's
+       cohort palette.
+  element:  .qrow .mini
+  source:   frontend/diagnose-workstation-chart.js queuePreviewOption;
+            frontend/diagnose-evidence-charts.js patternQueuePreview / the
+            eating-sequence high-carb queuePreview
+  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  data:     the app's own showcase; a ranked Pattern and a ranked Cause both
+            carry a mounted mini
+  evidence: C4_STORIES.S116; for every ranked row carrying a served count
+            sentence and a chartable coordinate, reads its mounted mini's
+            ECharts option and compares the graphic text against the row's
+            own served outcome word, count and denominator
+  status:   #413 task 3 sub-order — story authored and registered against the
+            branch's own node unit suite (frontend/diagnose-workstation-chart.test.js,
+            frontend/diagnose-evidence-charts.test.js); the bare-script
+            browser replay and the fail-first proof against the base are
+            both owed by #413 task 4.1
+```
+
+```
+S117 · A cold Diagnose arrival with no contextual entry and no retained
+       window opens on the 24 h window, and the findings read is unscoped.
+  element:  #seg-window
+  source:   frontend/diagnose.js restoreEntry
+  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  data:     the app's own showcase; the default opener's fresh root arrival
+            (no subject, no window)
+  evidence: C4_STORIES.S117; reads the pressed Window control and the served
+            findings preparation's window scope on the cold seat, before any
+            row is drilled or window pressed
+  status:   #413 task 3 sub-order — story authored and registered against the
+            branch's own node unit suite (frontend/diagnose.test.js); the
+            bare-script browser replay and the fail-first proof against the
+            base are both owed by #413 task 4.1
+```
+
 ### Coordinator amendment 1 — 2026-09-10
 
 The coordinator's first isolated browser runs did not reach the feature assertions

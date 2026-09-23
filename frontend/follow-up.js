@@ -386,13 +386,13 @@ export function evidenceFigure(comparison, kind, colors, { saved = false } = {})
   // there is nothing to draw, and none reports an absence of readings it cannot
   // actually see.
   const legend = {
-    'not-requested': '<span>no comparison has been read for this record yet</span>',
-    paired: `<span><i style="background:${palette.accentSoft}"></i>${later} above Before</span><span><i style="background:${palette.mutedSoft}"></i>${later} below Before</span>`,
-    'before-only': `<span>no ${kind === 'focus' ? 'later' : 'Trial'} readings to compare yet</span>`,
-    saved: '<span>no clock envelope is retained for this record</span>',
-    unavailable: `<span>comparison unavailable</span><span data-figure-reason>${e(comparisonReasonWords(availabilityOf(comparison).reason || 'not_recorded'))}</span>`,
-    'no-readings': `<span>${pairs.after.length ? `no Before readings to compare the ${later} period against` : `no Before or ${later} readings in these periods`}</span>`,
-  }[state];
+    'not-requested': () => '<span>no comparison has been read for this record yet</span>',
+    paired: () => `<span><i style="background:${palette.accentSoft}"></i>${later} above Before</span><span><i style="background:${palette.mutedSoft}"></i>${later} below Before</span>`,
+    'before-only': () => `<span>no ${kind === 'focus' ? 'later' : 'Trial'} readings to compare yet</span>`,
+    saved: () => '<span>no clock envelope is retained for this record</span>',
+    unavailable: () => `<span>comparison unavailable</span><span data-figure-reason>${e(comparisonReasonWords(availabilityOf(comparison).reason || 'not_recorded'))}</span>`,
+    'no-readings': () => `<span>${pairs.after.length ? `no Before readings to compare the ${later} period against` : `no Before or ${later} readings in these periods`}</span>`,
+  }[state]();
   const drawn = state === 'paired' || state === 'before-only';
   const attribute = kind === 'focus' ? 'data-focus-chart' : 'data-trial-chart';
   return `<div class="gf-fig ${kind === 'focus' ? 'gf-fig-focus' : 'gf-fig-trial'}" ${attribute}="${e(kind)}" data-figure-state="${state}"><div class="gf-chart-seat"><div class="gf-chart" role="img" aria-label="Median glucose by clock, before against after"></div></div><div class="ds-chart-legend">${legend}${drawn ? `<span>median glucose by clock · ${e(pairs.days)}</span>` : ''}</div></div>`;
@@ -400,8 +400,8 @@ export function evidenceFigure(comparison, kind, colors, { saved = false } = {})
 
 /** A comparison's availability, nested as served or — on a legacy saved ending
     assessment that carries no nested availability — at its own top level. */
-const availabilityOf = (comparison) => (comparison || {}).availability
-  || { state: (comparison || {}).state, reason: (comparison || {}).reason };
+const availabilityOf = (comparison) => comparison.availability
+  || { state: comparison.state, reason: comparison.reason };
 
 /**
  * Which of the figure's six states one comparison is in, from its clock bins

@@ -3002,10 +3002,13 @@ S142 · Opening a still-open record from the Changes roster reads its
   evidence: C4_STORIES.S142; records every assessment read the roster press
             makes, then reads both periods, the paired figure and its canvas,
             the pressed assessment and the ending part
-  status:   app-opener-only fail-first obligation. Expected: base a4d374a7
-            fails at its feature assertion (the press makes no retained read;
-            the base opens on the Original read), and the branch passes, at
-            1280x720 and 1440x900. Coordinator-run; no result recorded yet
+  status:   base a4d374a7 (with the branch harness) fails at its feature
+            assertion at both sizes ("S142 opening a still-open record must
+            request its retained comparison once, with no control pressed");
+            branch f1484547 and fix head 5002272e pass at 1280x720 and
+            1440x900; coordinator-run 2026-09-23. Raw logs 430-base-4-*.log,
+            430-branch-4-*.log and 430b-branch-4-*.log, kept with the release
+            evidence (docs/scope/release-422-434-evidence/430/)
 ```
 
 ```
@@ -3025,16 +3028,17 @@ S143 · Opening a still-open record whose retained comparison is served
   evidence: C4_STORIES.S143; reads the served reason code from the API, opens
             the record by its roster press, and compares the figure's reason
             with the code and with the result line's words
-  status:   app-opener-only fail-first obligation. Expected: base a4d374a7
-            fails at its feature assertion (no unavailable figure state; the
-            base draws the empty figure), and the branch passes, at 1280x720
-            and 1440x900. Coordinator-run; no result recorded yet
+  status:   base a4d374a7 (with the branch harness) fails at its feature
+            assertion at both sizes ("S143 the figure must read as an
+            unavailable comparison"; no figure state on base); branch
+            f1484547 and fix head 5002272e pass at 1280x720 and 1440x900;
+            coordinator-run 2026-09-23. Raw logs as S142's
 ```
 
-Amended S112 · 2026-09-23 · ADR 430, on the sanction above: The roster read, the record read and the retained reassessment read the open record then makes on its own, with no control pressed, each show their own named loading frame while pending — "Reading change records" for the first two and "Computing reassessment" for the third. `C4_STORIES.S112` holds the record read, installs the reassessment hold before releasing it, reads "Computing reassessment" with no press, then releases it and waits for the retained reassessment part. Its data stays edit-chain, whose open records serve an unavailable retained comparison. Expected: base a4d374a7 fails at the held reassessment read (none is requested without a press), and the branch passes.
+Amended S112 · 2026-09-23 · ADR 430, on the sanction above: The roster read, the record read and the retained reassessment read the open record then makes on its own, with no control pressed, each show their own named loading frame while pending — "Reading change records" for the first two and "Computing reassessment" for the third. `C4_STORIES.S112` holds the record read, installs the reassessment hold before releasing it, reads "Computing reassessment" with no press, then releases it and waits for the retained reassessment part. Its data stays edit-chain, whose open records serve an unavailable retained comparison. Recorded 2026-09-23 (coordinator-run, both sizes): base a4d374a7 with the branch harness fails at "S112 held reassessment read, requested with no control pressed"; f1484547 and 5002272e pass.
 The preceding wording and results are the attributed pre-amendment record.
 
-Amended S49 · 2026-09-23 · ADR 430, on the sanction above: The story's text is unchanged. Its c4 part still opens c4-missing's open Trial through the `retained()` helper, but no longer finds the served unavailable code in the reading pane: the code (read from the API, as before) must be absent from `.gf-reading`, and the reason after "Unavailable · " on the reassessment result line must be non-empty and appear in the readiness availability line too. The replay checks the words through the rendered page and imports nothing new. Expected: base a4d374a7 fails at the words assertion (the base prints the code), and the branch passes.
+Amended S49 · 2026-09-23 · ADR 430, on the sanction above: The story's text is unchanged. Its c4 part still opens c4-missing's open Trial through the `retained()` helper, but no longer finds the served unavailable code in the reading pane: the code (read from the API, as before) must be absent from `.gf-reading`, and the reason after "Unavailable · " on the reassessment result line must be non-empty and appear in the readiness availability line too. The replay checks the words through the rendered page and imports nothing new. Recorded 2026-09-23 (coordinator-run, both sizes): base a4d374a7 with the branch harness fails at "S49 the reading pane must name the unavailable reason in words, never its served code" (it printed `Unavailable · no_readable_period_evidence`); f1484547 and 5002272e pass.
 The preceding wording and results are the attributed pre-amendment record.
 
 Every other desk replay and test that opens a record or reads the figure was

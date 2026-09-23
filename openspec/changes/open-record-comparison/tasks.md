@@ -264,7 +264,7 @@ page instead.
 
   No generator, committed fixture or extracted source is in this change's diff,
   so the AGENTS.md drift checks are left to the coordinator's integration run.
-- [ ] 5.2 The coordinator owns every port-bound leg and ticks this task with
+- [x] 5.2 The coordinator owns every port-bound leg and ticks this task with
   its evidence; the implementer runs none.
   1. On base a4d374a7, served from a second worktree with this branch's replay
      harness laid over it, S112 (amended), S142 and S143 each fail at their

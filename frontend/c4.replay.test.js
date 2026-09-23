@@ -63,10 +63,11 @@ test('S107 keeps a grouped comparison heading distinct from readable mixed-tier 
   }), /columns overlap/);
 });
 
-test('S108–S112 are unique app-only C4 stories with their required manufactured cases', () => {
+test('S108–S114 are unique app-only C4 stories with their required manufactured cases', () => {
   for (const [id, expectedCase, term] of [
     ['S108', 'showcase', 'HV2-34'], ['S109', 'showcase', 'HV2-34'],
     ['S110', 'edit-chain', 'HV2-28'], ['S111', 'edit-chain', 'HV2-28'], ['S112', 'edit-chain', 'HV2-28'],
+    ['S113', 'showcase', 'HV2-17'], ['S114', 'showcase', 'HV2-29'],
   ]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
@@ -265,6 +266,67 @@ function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
 test('S112 holds the roster, record and reassessment reads in turn and reaches its final assertion', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S112(qa414RecordHoldPage());
+});
+
+// #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route
+// synchronously (mirroring real navigation, which commits before client-side
+// fetches resolve); the loading frame's skeleton is asserted while the read
+// is still held open.
+function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', status = 'Loading Diagnose',
+  railWidth = 430, reference = '430px', animationName = 'none' } = {}) {
+  const routes = new Map();
+  const fire = pathname => {
+    const request = { url: () => `http://synthetic.invalid${pathname}` };
+    for (const [pattern, handler] of routes) {
+      const base = pattern.replace('**', '').replace('*', '');
+      if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
+    }
+  };
+  const node = selector => ({
+    waitFor: async () => {},
+    count: async () => {
+      if (selector === '.gf-skeleton[aria-hidden="true"]') return skeletons;
+      if (selector === '.gf-skeleton .gf-skel') return marks;
+      return 1;
+    },
+    innerText: async () => skeletonText,
+    getAttribute: async name => (name === 'aria-label' ? status : null),
+    boundingBox: async () => ({ x: 0, y: 0, width: railWidth, height: 400 }),
+  });
+  return {
+    url: () => 'http://synthetic.invalid/?to=diagnose',
+    reload: async () => { fire('/api/analyze'); },
+    locator: node,
+    route: async (pattern, handler) => { routes.set(pattern, handler); },
+    unroute: async pattern => { routes.delete(pattern); },
+    emulateMedia: async () => {},
+    evaluate: async fn => (fn.toString().includes('animationName') ? animationName : reference),
+  };
+}
+
+test('S114 stands the skeleton while the cold analyze read is held, then releases it', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S114(qa413ColdDiagnosePage());
+});
+
+test('S114 fails when the skeleton still carries text, count or value', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ skeletonText: '3 findings' })),
+    /must state no count, title or value/));
+});
+
+test('S114 fails when the rail does not hold the Diagnose reference width', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ railWidth: 256 })),
+    /reference width/));
+});
+
+test('S114 fails when the skeleton still animates under reduced motion', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S114(qa413ColdDiagnosePage({ animationName: 'gf-skel-shimmer' })),
+    /hold still under reduced motion/);
 });
 
 test('R18 fails before touching the UI when historical input is absent', async () => {

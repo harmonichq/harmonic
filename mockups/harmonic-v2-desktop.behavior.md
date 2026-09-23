@@ -2622,6 +2622,47 @@ S112 · The roster read and a requested reassessment each show their own named
             1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
+```
+S113 · The basal lane's head row — the served verdict key — stands wholly
+       above the 48 cells, inside the lane, and every key count equals the
+       served cells sharing that verdict.
+  element:  #lane-wrap, #lane-key, #lane
+  source:   frontend/diagnose-workstation.js renderLaneKey; frontend/diagnose-workstation.css .lane-wrap/.lane-key
+  lock:     HV2-17
+  data:     the dense 48-slot capture (the app's own showcase, reached
+            through openBasalLane); whatever mix of served verdicts that
+            slot's lane carries
+  evidence: C4_STORIES.S113; reads the DOM order of `#lane-wrap`'s children,
+            each element's bounding box, and the key's per-verdict count
+            against the cells actually painted
+  status:   #413 task 2 sub-order — story authored and registered; a
+            sandboxed session cannot launch Chromium (AGENTS.md, "A
+            sandboxed agent cannot launch Chromium"), so the fail-first proof
+            against the base and the pass proof on this branch are owed by
+            #413 task 4.1, not yet run
+```
+
+```
+S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
+       loading frame in place of the empty block, keeping the loading status,
+       its named text, and the reading pane at the Diagnose reference width;
+       the skeleton holds still under reduced motion.
+  element:  .gf-loading, .gf-skeleton
+  source:   frontend/frame.js loadingFrame / loadingSkeleton; frontend/desk.css .gf-skeleton/.gf-skel
+  lock:     HV2-29
+  data:     the app's own showcase; the read held open with a synthetic
+            route so the loading frame stands long enough to inspect
+  evidence: C4_STORIES.S114; holds `/api/analyze`, reloads cold, reads the
+            skeleton's marks, text content, status label and the reading
+            pane's width, then checks the animation is suppressed under
+            `prefers-reduced-motion: reduce` before releasing the read
+  status:   #413 task 2 sub-order — story authored and registered; a
+            sandboxed session cannot launch Chromium (AGENTS.md, "A
+            sandboxed agent cannot launch Chromium"), so the fail-first proof
+            against the base and the pass proof on this branch are owed by
+            #413 task 4.1, not yet run
+```
+
 ### Coordinator amendment 1 — 2026-09-10
 
 The coordinator's first isolated browser runs did not reach the feature assertions

@@ -749,6 +749,81 @@ export const C4_STORIES = {
     reassessHold.release(); await reassessHold.close();
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   },
+  // #413: the lane's head row and key. `openBasalLane` lands on whichever
+  // basal slot the showcase's own analysis ranks; the assertions below hold
+  // for whatever mix of served verdicts that slot's lane carries, rather than
+  // assuming the showcase manufactures all five at once.
+  async S113(page) {
+    await C2_STORIES.openBasalLane(page);
+    await waitForReplayAssertion(async seen => {
+      const order = seen(await page.evaluate(() => [...document.querySelectorAll('#lane-wrap > *')].map(el => el.id)));
+      assert.deepEqual(order, ['lane-key', 'lane'], 'S113 the key must render as the lane\'s head row, above the cells');
+      const wrap = seen(await page.locator('#lane-wrap').boundingBox());
+      const key = seen(await page.locator('#lane-key').boundingBox());
+      const lane = seen(await page.locator('#lane').boundingBox());
+      assert.ok(wrap && key && lane, 'S113 premise: the lane, its key and their wrap must all render');
+      assert.ok(key.y >= wrap.y - 1 && key.y + key.height <= wrap.y + wrap.height + 1,
+        "S113 the key's box must lie wholly inside the visible lane");
+      assert.ok(key.x >= wrap.x - 1 && key.x + key.width <= wrap.x + wrap.width + 1,
+        "S113 the key's box must lie wholly inside the visible lane");
+      assert.ok(key.y + key.height <= lane.y + 1, 'S113 the key must sit above the cells, not beneath them');
+    }, 'S113 the key stands fully visible above the cells');
+
+    const verdicts = await page.evaluate(() => {
+      const counts = {};
+      for (const cell of document.querySelectorAll('#lane > .lane-cell')) {
+        counts[cell.dataset.verdict] = (counts[cell.dataset.verdict] || 0) + 1;
+      }
+      return counts;
+    });
+    assert.ok(Object.keys(verdicts).length > 0, 'S113 premise: the lane must paint at least one verdict');
+    for (const [verdict, count] of Object.entries(verdicts)) {
+      const keyCount = await page.locator(`#lane-key [title]:has(.lane-cell[data-verdict="${verdict}"]) .t`).innerText();
+      assert.equal(Number(keyCount), count, `S113 the key's ${verdict} count must equal the served lane count`);
+      const cellPaint = await page.evaluate(sel => {
+        const el = document.querySelector(sel);
+        const style = getComputedStyle(el);
+        return [style.backgroundColor, style.backgroundImage];
+      }, `#lane > .lane-cell[data-verdict="${verdict}"]`);
+      if (verdict === 'hold') {
+        const groundPaint = await page.evaluate(() => getComputedStyle(document.querySelector('#lane')).backgroundColor);
+        assert.notEqual(cellPaint[0], groundPaint, 'S113 a hold cell must not paint as the bare ground');
+      }
+    }
+  },
+  // #413: a cold Diagnose arrival shows a count-free skeleton instead of an
+  // empty loading block, while keeping the same status role, named text
+  // (#414) and reference-width rail the shipped loading frame always had.
+  async S114(page) {
+    const analyzeHold = await heldRequest414(page, '**/api/analyze*');
+    await page.reload();
+    await analyzeHold.wait('S114 held analyze read');
+    const loading = page.locator('.gf-loading[role="status"]');
+    await loading.waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const skeletons = seen(await page.locator('.gf-skeleton[aria-hidden="true"]').count());
+      assert.equal(skeletons, 1, 'S114 the cold loading frame must carry one skeleton block');
+      const marks = seen(await page.locator('.gf-skeleton .gf-skel').count());
+      assert.ok(marks > 0, 'S114 the skeleton must draw at least one mark');
+      const text = seen(await page.locator('.gf-skeleton').innerText());
+      assert.equal(text.trim(), '', 'S114 the skeleton must state no count, title or value');
+      const status = seen(await page.locator('.gf-loading').getAttribute('aria-label'));
+      assert.equal(status, 'Loading Diagnose', 'S114 the loading status must still be announced');
+      const rail = seen(await page.locator('.gf-desk > .gf-reading').boundingBox());
+      const reference = seen(await page.evaluate(() =>
+        getComputedStyle(document.querySelector('.gf')).getPropertyValue('--gf-reading').trim()));
+      assert.equal(`${Math.round(rail.width)}px`, reference, 'S114 the rail must stay at the Diagnose reference width while cold');
+    }, 'S114 the cold skeleton stands text-free at the reference width');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const animationName = await page.evaluate(() => {
+      const el = document.querySelector('.gf-skel');
+      return el ? getComputedStyle(el).animationName : null;
+    });
+    assert.equal(animationName, 'none', 'S114 the skeleton must hold still under reduced motion');
+    await page.emulateMedia({ reducedMotion: null });
+    analyzeHold.release(); await analyzeHold.close();
+    await page.locator('#lane').waitFor({ timeout: 30000 });
+  },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

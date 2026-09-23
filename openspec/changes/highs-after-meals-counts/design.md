@@ -120,8 +120,10 @@ by exactly the shared meals. The fixture-only findings mirror transcribes the
 credit over its own outcome-window filter and the frozen projection fixture, the
 eating-sequence fixture and the exploration's captures regenerate. The QA case
 expectations, the showcase and the Pattern roster do not move. The #413 rail-fold
-requirement, still in the unarchived `desk-design-completion` change, is modified
-here, so that change archives first.
+requirement in `desk-design-completion` is left as written and keeps governing the
+fold's structure; this change adds a surfaces requirement that governs which counts
+a folded line prints, reading the fold sentences as the cause's served count
+sentences for the fold.
 
 ## ADR 424 — Claimed-by-another-factor meals are outside the Pattern's count
 

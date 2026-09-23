@@ -89,8 +89,8 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   the band's own words (`VERDICT_BAND_KEY`), and "outside the comparison" after
   the served population noun only when the served count is non-zero. The verdict
   band and its residue line are untouched (#423 owns the claimed word).
-- [ ] 3.2 Implement surfaces **A Pattern owns its causes in the rail** as
-  modified: `queueRows` gives each folded member its served `fold_sentences` and
+- [ ] 3.2 Implement surfaces **A folded cause's count reads on its Pattern's
+  population**: `queueRows` gives each folded member its served `fold_sentences` and
   scope (`frontend/diagnose-findings-queue.js`), and the member line prints the
   Pattern's-scope sentence first and sets the outside ones apart behind "outside
   the count", printing no outcome word. Node tests in

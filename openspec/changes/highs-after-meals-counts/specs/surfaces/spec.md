@@ -44,34 +44,21 @@ its denominator remain a separate account.
   their counts, and "3 highs outside the comparison"
 - **AND** no caption count is labelled "not comparable"
 
-### Requirement: A Pattern owns its causes in the rail
+## ADDED Requirements
 
-In the rail, a Pattern row SHALL hold its claimed causes beneath it on
-the Pattern's own spine, one line per cause carrying the cause's name, the
-count, denominator and noun of each of its served fold sentences in served
-order, never merged, and a drill chevron. Under a Pattern that serves a count, a
+### Requirement: A folded cause's count reads on its Pattern's population
+
+Each line the rail's Pattern fold gives a claimed cause SHALL print the count,
+denominator and noun of each of that cause's served fold sentences, in served
+order, never merged, and no outcome word. Under a Pattern that serves a count, a
 rate-lever cause's first fold sentence is its count on the Pattern's own
-population; every fold sentence the
-projection marks as outside the Pattern's count SHALL be set apart from the
-Pattern's-scope sentence behind the words "outside the count", and a cause line
-SHALL print no outcome word. A
-toggle on the Pattern row SHALL name the number of causes, SHALL be open on the
-first ranked row and closed on every later one on arrival, and SHALL be operable
-by pointer and keyboard with its state exposed to assistive technology. Cause
-lines SHALL carry no mini. A cause's chevron SHALL open that cause's case file
-and the Pattern's chevron the Pattern's, exactly as before; Focus entry and
-occurrence selection SHALL be unchanged. Claimed causes SHALL no longer appear
-as sibling rail rows.
-
-#### Scenario: Causes fold under their Pattern
-
-- **GIVEN** a synthetic window whose first ranked row is a Pattern with claimed
-  causes and a later Pattern with one
-- **WHEN** Diagnose loads at each supported desktop size
-- **THEN** the first Pattern shows its causes beneath it and the later one shows
-  only its toggle, each toggle naming its served cause count
-- **AND** no claimed cause is a sibling row and no cause line holds a chart
-- **AND** opening a cause's chevron lands on that cause's case file
+population. Every fold sentence the projection marks as outside the Pattern's count
+SHALL be set apart from any Pattern's-scope sentence behind the words "outside the
+count", so under a Pattern that serves no count a cause's line leads with those
+words. The desk SHALL compute no share and decide no scope. The fold's toggle, its
+open and closed states on arrival, its keyboard operation, the cause and Pattern
+drills, and the absence of cause minis and of sibling cause rows SHALL be
+unchanged.
 
 #### Scenario: A folded cause shows its share of the Pattern first
 
@@ -80,8 +67,15 @@ as sibling rail rows.
 - **WHEN** the fold is open
 - **THEN** Correction stacking's line reads 2 of 2 lows first, then, set apart
   behind "outside the count", its correction-cluster count
+- **AND** the line prints no outcome word
 
-## ADDED Requirements
+#### Scenario: A cause under a Pattern that serves no count is all outside it
+
+- **GIVEN** the synthetic showcase, where Highs after meals serves no count
+  sentence and folds Meal bolus fell short
+- **WHEN** that Pattern's fold is opened
+- **THEN** Meal bolus fell short's line leads with "outside the count", followed by
+  its served meals count
 
 ### Requirement: The Response comparison caption reconciles with its cohorts and the band
 

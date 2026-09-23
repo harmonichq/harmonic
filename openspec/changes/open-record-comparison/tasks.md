@@ -7,7 +7,7 @@ call for", with wording in CONTEXT.md terms.
 
 ## 1. An open record opens on its retained comparison (desk)
 
-- [ ] 1.1 In `frontend/history.js`, make a newly opened record (roster press,
+- [x] 1.1 In `frontend/history.js`, make a newly opened record (roster press,
   address or reload) start on its default read, decided after the record read
   from the served `selected.original.ending`:
   - no `kind`: request `fetchVerifyTrials({ kind, selected, assessment:
@@ -21,12 +21,12 @@ call for", with wording in CONTEXT.md terms.
   Keep one in-flight read keyed by record and effective mode, so a stale answer
   never overwrites a newer record. Do not consult the roster row for the
   default. Change no backend read, cache key or prewarm.
-- [ ] 1.2 Loading text: while the record read is pending, the existing
+- [x] 1.2 Loading text: while the record read is pending, the existing
   loading frame reads "Reading change records". Once the record read shows no
   saved ending and the retained read is pending, it reads "Computing
   reassessment". Render between the two reads so the second text actually
   shows.
-- [ ] 1.3 Node tests through the record destination's public `mount` in
+- [x] 1.3 Node tests through the record destination's public `mount` in
   `frontend/follow-up-lifecycle.test.js`. First make its fetch stub serve
   `reassessment` only when the request names an `assessment`, and
   `reassessment: null` otherwise, as the server does. Then cover four cases:
@@ -45,7 +45,7 @@ call for", with wording in CONTEXT.md terms.
 
 ## 2. The figure says why it is empty (desk)
 
-- [ ] 2.1 In `frontend/follow-up.js`, give `evidenceFigure` one
+- [x] 2.1 In `frontend/follow-up.js`, give `evidenceFigure` one
   `data-figure-state` attribute on the figure element. Classify from the clock
   bins first, whatever the served availability. The backend serves
   `unavailable_adherence` and `no_readable_period_evidence` while keeping
@@ -82,7 +82,7 @@ call for", with wording in CONTEXT.md terms.
   - c3-history's and c4-history's ended records are saved;
   - edit-chain is unavailable;
   - c4-history's open Trial is no-readings.
-- [ ] 2.2 Export one closed word table from `frontend/follow-up.js` for
+- [x] 2.2 Export one closed word table from `frontend/follow-up.js` for
   comparison availability reasons, as a function from a served code to plain
   words. Each code gets words with no underscore:
   - `missing_comparison_context`
@@ -111,7 +111,7 @@ call for", with wording in CONTEXT.md terms.
 
   Leave `history.js`'s saved-ending assessment line and the per-arm readiness
   reasons as they are.
-- [ ] 2.3 With no comparison (`null`):
+- [x] 2.3 With no comparison (`null`):
   - `periodsSection` and `outcomesTable` say no comparison has been read for
     this record, in the words `readinessSection` already uses for that state;
   - the record stage's instrument meta in `history.js` does not say "recomputed
@@ -121,7 +121,7 @@ call for", with wording in CONTEXT.md terms.
     pointing at "the saved ending above".
 
   A served-unavailable comparison keeps today's periods and outcomes notes.
-- [ ] 2.4 Node tests in `frontend/follow-up.test.js`, one `evidenceFigure` case
+- [x] 2.4 Node tests in `frontend/follow-up.test.js`, one `evidenceFigure` case
   per state:
   - a `null` comparison (fail-first: today it reads "no clock envelope is
     retained");
@@ -148,12 +148,12 @@ call for", with wording in CONTEXT.md terms.
 
 ## 3. "First seen" names when Harmonic recorded the change (desk)
 
-- [ ] 3.1 In `frontend/history.js` `originalSection`, relabel the "First seen"
+- [x] 3.1 In `frontend/history.js` `originalSection`, relabel the "First seen"
   row "Recorded by Harmonic". Its value, `context.captured_at`, is when Harmonic
   first recorded the change, and every change found in one reconcile pass
   shares it. The stage's "Detected" stays the pump transition. Do not touch the
   unavailable-reason line or the Focus "What changed" line; #426 owns both.
-- [ ] 3.2 A `frontend/history.test.js` case: a first-observed context prints
+- [x] 3.2 A `frontend/history.test.js` case: a first-observed context prints
   "Recorded by Harmonic" with its capture stamp and no "First seen".
 
 ## 4. Behavior ledger and replay (desk contract)

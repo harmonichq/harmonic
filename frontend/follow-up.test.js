@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  adherenceTable, comparisonPairs, comparisonTables, conclusionForm,
+  adherenceTable, comparisonPairs, comparisonReasonWords, comparisonTables, conclusionForm,
   dailyEvidence, evidenceFigure, maturitySection, outcomesTable, periodsSection,
   planRouteSection, readinessArm, readinessSection, saveErrorBlock,
 } from './follow-up.js';
@@ -193,11 +193,12 @@ test('an unavailable setting arm prints the served reason rather than a gap', ()
   assert.match(html, /No contributing date has qualified in this period yet\./);
 });
 
-test('an unavailable comparison carries no readiness, and the section says so', () => {
+test('an unavailable comparison carries no readiness, and the section says so in words', () => {
   const html = readinessSection({ availability: { state: 'unavailable', reason: 'data_not_yet_arrived' } }, { kind: 'focus' });
-  assert.match(html, /data-availability="unavailable"/);
-  assert.match(html, /data-readiness-state="unavailable"/);
-  assert.match(html, /data_not_yet_arrived/);
+  const words = comparisonReasonWords('data_not_yet_arrived');
+  assert.match(html, new RegExp(`data-availability="unavailable">This comparison is unavailable: ${words}\\.`));
+  assert.match(html, new RegExp(`data-readiness-state="unavailable">No readiness is served for this comparison: ${words}\\.`));
+  assert.doesNotMatch(html, /data_not_yet_arrived/);
   assert.doesNotMatch(html, /data-readiness="before"/);
 });
 
@@ -392,9 +393,14 @@ test('a period with no readings pairs nothing and keeps its Before figure', () =
 
 test('a comparison with no envelope at all says so, rather than reporting no readings', () => {
   // A saved ending retains the rows and the assessment, not the curve, so the
-  // figure must not claim the later period had nothing in it.
-  const retained = evidenceFigure({ ...SETTING_COMPARISON, views: {} }, 'trial');
+  // figure must not claim the later period had nothing in it. The record frame
+  // says which comparison is a saved ending snapshot, and the snapshot drops
+  // its clock views when it is captured.
+  const { views, ...snapshot } = SETTING_COMPARISON;
+  const retained = evidenceFigure(snapshot, 'trial', undefined, { saved: true });
+  assert.equal(figureState(retained), 'saved');
   assert.match(retained, /no clock envelope is retained for this record/);
+  assert.doesNotMatch(retained, /half-hours read/);
   const beforeOnly = evidenceFigure({
     ...SETTING_COMPARISON,
     views: { before: SETTING_COMPARISON.views.before, after: { clock: [] } },
@@ -403,6 +409,91 @@ test('a comparison with no envelope at all says so, rather than reporting no rea
   assert.match(evidenceFigure(SETTING_COMPARISON, 'trial'), /Trial above Before/);
   assert.match(evidenceFigure(FOCUS_COMPARISON, 'focus'), /data-focus-chart/);
   assert.match(evidenceFigure(SETTING_COMPARISON, 'trial'), /data-trial-chart/);
+});
+
+/* ------------------------------------------- why an empty figure is empty */
+
+const figureState = html => /data-figure-state="([^"]+)"/.exec(html)?.[1];
+const REASON_CODES = [
+  'missing_comparison_context', 'unsupported_retained_execution', 'missing_programmed_isf',
+  'no_source_evidence', 'change_predates_pin', 'missing_legacy_ending', 'data_not_yet_arrived',
+  'lever_unavailable', 'missing_continuous_setting_history', 'no_readable_period_evidence',
+  'unavailable_adherence', 'not_recorded',
+];
+const NO_CURVE_WORDS = /no clock envelope|no readings yet|half-hours read|Before · unavailable/;
+
+test('with no comparison read, the figure says so and claims neither an envelope nor readings', () => {
+  const html = evidenceFigure(null, 'trial');
+  assert.equal(figureState(html), 'not-requested');
+  assert.match(html, /no comparison has been read for this record yet/);
+  assert.doesNotMatch(html, NO_CURVE_WORDS);
+});
+
+test('an unavailable comparison that keeps its clock bins still draws its paired curve', () => {
+  // Unmeasured adherence marks the comparison unavailable; its glucose periods
+  // and their clock views are still served, as a live Focus comparison serves them.
+  const html = evidenceFigure({ ...FOCUS_COMPARISON, views: SETTING_COMPARISON.views }, 'focus');
+  assert.equal(figureState(html), 'paired');
+  assert.match(html, /After above Before/);
+  assert.match(html, /2 → 2 half-hours read/);
+});
+
+test('an early Trial with Before readings only draws its Before-only curve', () => {
+  const html = evidenceFigure({
+    ...SETTING_COMPARISON,
+    availability: { state: 'unavailable', reason: 'no_readable_period_evidence' },
+    views: { before: SETTING_COMPARISON.views.before, after: { clock: [] } },
+  }, 'trial');
+  assert.equal(figureState(html), 'before-only');
+  assert.match(html, /no Trial readings to compare yet/);
+  assert.match(html, /2 → 0 half-hours read/);
+});
+
+test('a served-unavailable comparison with no clock envelope names its reason in words', () => {
+  const html = evidenceFigure({ availability: { state: 'unavailable', reason: 'missing_comparison_context' },
+    periods: {}, views: {}, outcomes: [] }, 'trial');
+  assert.equal(figureState(html), 'unavailable');
+  const words = comparisonReasonWords('missing_comparison_context');
+  assert.match(html, new RegExp(`<span data-figure-reason>${words}</span>`));
+  assert.doesNotMatch(html, /missing_comparison_context/);
+  assert.doesNotMatch(html, NO_CURVE_WORDS);
+  // A saved ending's legacy assessment carries its state and reason at the top
+  // level, with no nested availability.
+  const legacy = evidenceFigure({ state: 'unavailable', reason: 'not_recorded' }, 'trial', undefined, { saved: true });
+  assert.equal(figureState(legacy), 'unavailable');
+  assert.match(legacy, /<span data-figure-reason>not recorded<\/span>/);
+});
+
+test('a comparison serving views but no Before readings says which period has none', () => {
+  const none = evidenceFigure({ ...SETTING_COMPARISON,
+    availability: { state: 'unavailable', reason: 'no_readable_period_evidence' },
+    views: { before: { clock: [] }, after: { clock: [] } } }, 'trial');
+  assert.equal(figureState(none), 'no-readings');
+  assert.match(none, /no Before or Trial readings in these periods/);
+  assert.doesNotMatch(none, NO_CURVE_WORDS);
+  const afterOnly = evidenceFigure({ ...SETTING_COMPARISON,
+    views: { before: { clock: [] }, after: SETTING_COMPARISON.views.after } }, 'trial');
+  assert.equal(figureState(afterOnly), 'no-readings');
+  assert.match(afterOnly, /no Before readings to compare the Trial period against/);
+  assert.doesNotMatch(afterOnly, /no Before or Trial readings/, 'the Trial period has bins and is not called empty');
+});
+
+test('every comparison reason has plain words, and an unknown code prints as served', () => {
+  for (const code of REASON_CODES) {
+    const words = comparisonReasonWords(code);
+    assert.ok(words && words !== code, `${code} has words of its own`);
+    assert.doesNotMatch(words, /_/, `${code} words carry no underscore`);
+  }
+  assert.match(comparisonReasonWords('missing_continuous_setting_history'), /continuous setting history/);
+  assert.equal(comparisonReasonWords('a_new_served_reason'), 'a_new_served_reason');
+});
+
+test('with no comparison read, the periods and outcomes notes say so; a served one keeps its notes', () => {
+  assert.match(periodsSection(null), /data-periods="not-requested">No comparison has been read for this record yet\./);
+  assert.match(outcomesTable(null, 'trial'), /data-outcomes="not-requested">No comparison has been read for this record yet\./);
+  const unavailable = { availability: { state: 'unavailable', reason: 'missing_comparison_context' }, periods: {}, views: {}, outcomes: [] };
+  assert.match(periodsSection(unavailable), /No period is served for this comparison/);
+  assert.match(outcomesTable(unavailable, 'trial'), /data-outcomes="none">No glucose outcome is served for these periods\./);
 });
 
 /* ------------------------------------------------------- the conclusion */

@@ -35,7 +35,7 @@ import { hold, navigate, render, view } from './routes.js';
 // dependency runs one way only: follow-up.js imports nothing from here, and the
 // Changes composition is handed both mounts by the entry module.
 import {
-  comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
+  comparisonReasonWords, comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
   conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock,
 } from './follow-up.js';
 
@@ -81,8 +81,11 @@ export function settingValue(parameter, value) {
 
 /* ------------------------------------------------------- the record's memory */
 
+// `mode` is the reader's own choice of assessment for the open record, or null
+// until they make one: the record's default read, which its served ending
+// decides once the record read has landed (ADR 430).
 const memory = {
-  roster: null, error: null, open: null, mode: 'original',
+  roster: null, error: null, open: null, mode: null,
   record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
 };
 
@@ -94,7 +97,7 @@ export function openRecord(kind, id) {
   memory.open = { kind, id: String(id) };
   memory.roster = null;
   navigate('changes', { subject: 'history', occurrence: `record:${kind}:${id}` });
-  memory.mode = 'original';
+  memory.mode = null;
   memory.record = null;
 }
 
@@ -146,17 +149,28 @@ async function loadRoster(token = readGeneration) {
 // The record read is TWO requests, and deliberately sequential. The original is
 // what the record IS; a reassessment is a second, explicitly requested read that
 // the server rejects (422) without a selection, so it can never arrive as a
-// roster field (lock "Pre-ready values need a second request").
-async function loadRecord({ kind, id }, mode, token) {
+// roster field (lock "Pre-ready values need a second request"). Each is its own
+// keyed read, so the loading frame can name whichever one is pending, and a
+// stale answer for another record is dropped by its generation.
+async function loadRecord({ kind, id }, token) {
   const original = await fetchVerifyTrials({ kind, selected: id });
   const row = (kind === 'focus' ? memory.roster.focuses : memory.roster.trials).find(row => String(row.id) === id);
-  const record = { ...row, ...original.selected, revision: original.input_revision, admission: original.admission };
-  if (mode !== 'original') {
-    const again = await fetchVerifyTrials({ kind, selected: id, assessment: mode });
-    record.reassessment = again.selected.reassessment;
-  }
-  if (readGeneration === token) memory.record = { kind, id, mode, detail: record };
+  const detail = { ...row, ...original.selected, revision: original.input_revision, admission: original.admission };
+  if (readGeneration === token) memory.record = { kind, id, mode: 'original', detail };
 }
+
+async function loadReassessment({ kind, id }, mode, token) {
+  const again = await fetchVerifyTrials({ kind, selected: id, assessment: mode });
+  if (readGeneration !== token) return;
+  memory.record = { ...memory.record, mode, detail: { ...memory.record.detail, reassessment: again.selected.reassessment } };
+}
+
+/** The read a record shows: the reader's choice, else what its served ending
+    decides. An ended record opens on its saved ending; one with no saved
+    ending carries no comparison in its Original read, so it opens on its
+    retained-context reassessment (ADR 430). The roster row is not consulted. */
+const recordMode = (detail) => memory.mode
+  || (((detail.original || {}).ending || {}).kind ? 'original' : 'retained');
 
 /* -------------------------------------------------------------- the roster */
 
@@ -263,11 +277,13 @@ export function originalSection(original) {
   const context = original.context || {};
   const unavailable = context.state !== 'available';
   // The field names are the prototype's (harmonic-v2-glucose.js:635): what was
-  // decided before the change, why, and when Harmonic first saw it.
+  // decided before the change and why. The third is when Harmonic recorded it —
+  // every change one reconcile pass found shares that time — so it is named
+  // apart from the stage's Detected, which is the pump's own transition.
   const rows = [
     ['Earlier decision', context.action ? 'Recorded with this change' : 'Not recorded'],
     ['Original explanation', unavailable ? 'Not recorded' : (context.explanation || 'Not recorded')],
-    ['First seen', unavailable ? 'Not recorded' : stamp(context.captured_at)],
+    ['Recorded by Harmonic', unavailable ? 'Not recorded' : stamp(context.captured_at)],
   ];
   const unknowns = context.unknowns || [];
   return `<section class="gf-section" data-record-part="original"><h3>Original ${context.action ? 'decision' : 'context'} <span class="meta">${e(context.action ? 'as decided' : 'first observed')}</span></h3>
@@ -329,12 +345,17 @@ export function changeSection(detail) {
 
 /** The reassessment: a second, explicitly requested read, kept beside the
     original rather than in place of it. */
-export function reassessmentSection(detail, mode) {
+export function reassessmentSection(detail, mode, { kind } = {}) {
   const controls = `<div class="seg" role="group" aria-label="Assessment"><button data-assessment="original" aria-pressed="${mode === 'original'}">Original</button><button data-assessment="retained" aria-pressed="${mode === 'retained'}">Retained context</button><button data-assessment="current" aria-pressed="${mode === 'current'}">Current policy</button></div>`;
   const reassessment = detail.reassessment;
   if (mode === 'original' || !reassessment) {
+    // A record with no saved ending has nothing above to point at: its Original
+    // read carries no comparison until it ends.
+    const ended = Boolean(((detail.original || {}).ending || {}).kind);
     return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment</h3>${controls}
-      <p class="gf-meta" data-reassessment="none">Not requested. The saved ending above is what this record was decided on.</p></section>`;
+      <p class="gf-meta" data-reassessment="none">Not requested. ${ended
+        ? 'The saved ending above is what this record was decided on.'
+        : `The saved read carries no comparison until this ${kind === 'focus' ? 'Focus' : 'change'} ends.`}</p></section>`;
   }
   const comparison = reassessment.comparison || {};
   const availability = comparison.availability || {};
@@ -347,7 +368,7 @@ export function reassessmentSection(detail, mode) {
         : `Stored context ${e(context.id ? String(context.id).slice(0, 12) : 'unavailable')}`}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
         ? e((comparison.assessment || {}).state || 'unclear')
-        : `Unavailable · ${e(availability.reason || 'not recorded')}`}</dd>
+        : `Unavailable · ${e(comparisonReasonWords(availability.reason || 'not_recorded'))}`}</dd>
     </dl>
     <p class="gf-meta">A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.</p></section>`;
 }
@@ -400,8 +421,8 @@ function recordFrame(state) {
     sub: kind === 'focus' ? `Pinned ${e(stamp(detail.pinned_at))}` : `Detected ${e(stamp(detail.changed_at))}`,
     end: '<button class="gf-btn" data-record-close>Back to records</button><button class="gf-btn" data-action="overview">Back to Diagnose</button>',
   })}
-    <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : 'recomputed now'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
-    ${evidenceFigure(shown.comparison, kind, figureColors())}
+    <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
+    ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
     <div class="gf-scroll">${comparisonTables(shown.comparison, kind)}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.
   const pane = kind === 'focus' ? 'This Focus' : 'This trial';
@@ -415,7 +436,7 @@ function recordFrame(state) {
     ${periodsSection(shown.comparison, kind)}
     ${changeSection({ ...detail, kind })}
     ${readinessSection(shown.comparison, { kind, heading: 'Evidence accrued' })}
-    ${reassessmentSection(detail, mode)}
+    ${reassessmentSection(detail, mode, { kind })}
   </div></aside>`;
   return desk(stage, reading);
 }
@@ -479,10 +500,12 @@ function bind(host) {
   }
   const close = host.querySelector('[data-record-close]');
   if (close) close.onclick = () => { closeRecord(); view.focusAfterRender = '.gf-stage .gf-title'; render(); };
+  // A press holds for this record until another opens. The mount reads what
+  // the chosen assessment still needs; pressing the one already shown needs
+  // nothing and re-renders it as it stands.
   for (const button of host.querySelectorAll('[data-assessment]')) {
     button.onclick = () => {
       memory.mode = button.dataset.assessment;
-      memory.record = null;
       view.focusAfterRender = `[data-assessment="${memory.mode}"]`;
       render();
     };
@@ -520,7 +543,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   const open = match ? { kind: match[1], id: match[2] } : null;
   if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
     readGeneration += 1;
-    memory.open = open; memory.record = null; memory.error = null; memory.loading = null;
+    memory.open = open; memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
   }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
@@ -538,14 +561,22 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
     bind(host);
     return;
   }
-  const key = `record:${memory.open.kind}:${memory.open.id}:${memory.mode}`;
-  if (!memory.record || memory.record.mode !== memory.mode
-      || memory.record.id !== memory.open.id || memory.record.kind !== memory.open.kind) {
-    load(key, token => loadRecord(memory.open, memory.mode, token));
-    host.innerHTML = memory.mode === 'original'
-      ? loadingFrame('Changes', 'Reading change records')
-      : loadingFrame('Reassessment', 'Computing reassessment');
+  const record = memory.record?.kind === open.kind && memory.record.id === open.id ? memory.record : null;
+  if (!record) {
+    load(`record:${open.kind}:${open.id}`, token => loadRecord(open, token));
+    host.innerHTML = loadingFrame('Changes', 'Reading change records');
     return;
+  }
+  const mode = recordMode(record.detail);
+  if (record.mode !== mode) {
+    if (mode === 'original') {
+      // The Original read is the record read already held; nothing is requested.
+      memory.record = { ...record, mode, detail: { ...record.detail, reassessment: null } };
+    } else {
+      load(`record:${open.kind}:${open.id}:${mode}`, token => loadReassessment(open, mode, token));
+      host.innerHTML = loadingFrame('Reassessment', 'Computing reassessment');
+      return;
+    }
   }
   host.innerHTML = recordFrame({ ...memory.record });
   bind(host);

@@ -12,6 +12,19 @@ const admission = () => ({ state: 'available', active_kind: kind, active_id: ide
   can_finish_trial: true, focus_pin: { available: false } });
 const comparison = { availability: { state: 'available' }, periods: {}, views: {}, outcomes: [],
   assessment: { state: 'unclear' }, readiness: { before: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] }, after: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] } } };
+// A retained comparison with both evidence periods and one clock bin both
+// periods served, the shape the committed c3-trial case serves an open record.
+const PAIRED = { ...comparison,
+  periods: {
+    before: { start: '2024-06-02 03:00:00', end: '2024-06-16 03:00:00', data_cutoff: '2024-06-30 23:55:00',
+      boundary_reasons: { start: 'available_history', end: 'setting_change' } },
+    after: { start: '2024-06-16 03:00:00', end: '2024-06-30 23:55:00', data_cutoff: '2024-06-30 23:55:00',
+      boundary_reasons: { start: 'setting_change', end: 'data_tail' } },
+  },
+  views: { before: { clock: [{ t: '03:00', n: 12, med: 131 }] }, after: { clock: [{ t: '03:00', n: 12, med: 118 }] } } };
+let served = comparison;
+// A held assessment read: the record read answers, the reassessment waits.
+let assessmentGate = null;
 globalThis.fetch = async (path, options = {}) => {
   requests.push({ path, options });
   if (options.method === 'POST') {
@@ -23,7 +36,12 @@ globalThis.fetch = async (path, options = {}) => {
     return { ok: !fail, status: fail ? 503 : 200,
       json: async () => fail ? { detail: 'Synthetic refusal' } : { id: identity, record: { id: identity } } };
   }
-  const selected = new URL(path, 'http://synthetic').searchParams.get('selected');
+  const params = new URL(path, 'http://synthetic').searchParams;
+  const selected = params.get('selected');
+  // The server serves a reassessment only to a read that names an assessment;
+  // the default (Original) selected read carries `reassessment: null`.
+  const assessment = params.get('assessment');
+  if (assessment && assessmentGate) await assessmentGate;
   const result = { input_revision: 7, admission: admission(),
     trials: kind === 'trial' ? [{ id: identity }] : [],
     focuses: kind === 'focus' ? [{ id: identity, title: 'Highs after meals', pattern_key: 'served-pattern', pinned_at: '2024-05-05 00:00:00' }] : [],
@@ -32,7 +50,8 @@ globalThis.fetch = async (path, options = {}) => {
         ...(expired ? { ending: { kind: 'expired_unreviewed', effective_at: '2026-09-01 00:00:00',
           recorded_at: '2026-09-01 00:00:00', conclusion: null, assessment: { state: 'unavailable' } },
         late_conclusion: lateConclusion } : {}) },
-      reassessment: { comparison } } } : {}),
+      reassessment: assessment ? { mode: assessment, computed_at: '2026-09-23 12:00:00',
+        comparison_context: { id: 'synthetic-context-0001' }, comparison: served } : null } } : {}),
   };
   return { ok: true, json: async () => result };
 };
@@ -44,8 +63,15 @@ const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(resolv
 function host() {
   const field = { value: '' }; const form = {};
   const lateField = { value: '' }; const lateForm = {};
-  return { innerHTML: '', field, form, lateField, lateForm,
-    querySelectorAll: () => [],
+  // The record's three assessment controls, handed to its binding so a test can
+  // press one the way a reader does.
+  const assessment = Object.fromEntries(['original', 'retained', 'current']
+    .map(mode => [mode, { dataset: { assessment: mode } }]));
+  return { innerHTML: '', field, form, lateField, lateForm, assessment,
+    querySelectorAll(selector) {
+      return selector === '[data-assessment]' && this.innerHTML.includes('data-assessment=')
+        ? Object.values(assessment) : [];
+    },
     querySelector(selector) { return selector === '#conclusion' && this.innerHTML.includes('id="conclusion"') ? field
       : selector === '[data-form="finish"]' && this.innerHTML.includes('data-form="finish"') ? form
         : selector === '#late-conclusion-conclusion' && this.innerHTML.includes('id="late-conclusion-conclusion"') ? lateField
@@ -159,4 +185,74 @@ test('an exact expired Trial records a later conclusion through the public clien
     assert.ok(requests.some(row => String(row.path).includes(`selected=${identity}`)),
       'retry re-read the exact expired Trial record');
   } finally { context = {}; expired = false; lateConclusion = { state: 'unavailable' }; }
+});
+
+/* ------------------------------------------ the record door's default read */
+
+const assessmentsOf = (from, id) => requests.slice(from)
+  .filter(row => String(row.path).includes(`selected=${id}`))
+  .map(row => new URL(row.path, 'http://synthetic').searchParams.get('assessment'));
+async function openHistoryRecord(seat, id, steps = 4) {
+  const route = { occurrence: `record:trial:${id}` };
+  for (let step = 0; step < steps; step++) { mountHistory(seat, { context: route, hold() {} }); await flush(); }
+  return route;
+}
+
+test('an open change record reads its retained comparison with no control pressed', async () => {
+  kind = 'trial'; identity = 'open-record-synthetic'; served = PAIRED;
+  try {
+    const from = requests.length;
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.deepEqual(assessmentsOf(from, identity), [null, 'retained'],
+      'the record read, then exactly one retained-context read');
+    assert.match(seat.innerHTML, /data-period="before"/);
+    assert.match(seat.innerHTML, /data-period="after"/);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
+    assert.match(seat.innerHTML, /data-reassessment-context="retained"/);
+    assert.match(seat.innerHTML, /data-unavailable="ending">Not recorded — this change is still open\./);
+  } finally { served = comparison; }
+});
+
+test('an ended change record opens on its saved ending and requests no reassessment', async () => {
+  kind = 'trial'; identity = 'ended-record-synthetic'; expired = true;
+  try {
+    const from = requests.length;
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.deepEqual(assessmentsOf(from, identity), [null], 'the record read alone');
+    assert.match(seat.innerHTML, /data-ending-kind="expired_unreviewed"/);
+    assert.match(seat.innerHTML, /data-assessment="original" aria-pressed="true"/);
+  } finally { expired = false; }
+});
+
+test('an open record names its pending retained read "Computing reassessment"', async () => {
+  kind = 'trial'; identity = 'held-record-synthetic'; served = PAIRED;
+  let release;
+  assessmentGate = new Promise(resolve => { release = resolve; });
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity, 3);
+    assert.match(seat.innerHTML, /<p>Computing reassessment<\/p>/);
+    assert.doesNotMatch(seat.innerHTML, /data-record-part=/, 'no record renders while its read is pending');
+    release(); await flush();
+    await openHistoryRecord(seat, identity, 1);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+  } finally { assessmentGate = null; release(); served = comparison; }
+});
+
+test('choosing Original on an open record reads as no comparison requested', async () => {
+  kind = 'trial'; identity = 'original-choice-synthetic'; served = PAIRED;
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    seat.assessment.original.onclick();
+    const from = requests.length;
+    await openHistoryRecord(seat, identity, 1);
+    assert.equal(requests.length, from, 'the Original read is already held; nothing more is requested');
+    assert.match(seat.innerHTML, /data-assessment="original" aria-pressed="true"/);
+    assert.match(seat.innerHTML, /data-figure-state="not-requested"/);
+    assert.match(seat.innerHTML, /data-periods="not-requested"/);
+    assert.match(seat.innerHTML, /data-outcomes="not-requested"/);
+    assert.doesNotMatch(seat.innerHTML, /recomputed now/);
+    assert.match(seat.innerHTML, /The saved read carries no comparison until this change ends\./);
+  } finally { served = comparison; }
 });

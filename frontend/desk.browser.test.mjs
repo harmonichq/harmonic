@@ -97,7 +97,7 @@ const modelViewFor = (iso) => ({
   },
   episodes: [{
     id: `${iso}-ep1`, start: `${iso} 14:00:00`, end: `${iso} 17:00:00`,
-    lever: 'late_bolus', trigger: '', trigger_t: `${iso} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
+    lever: 'late_bolus', lever_title: 'Late bolus', trigger: '', trigger_t: `${iso} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
     anchors: [{
       t: `${iso} 14:00:00`, kind: 'meal', label: 'Meal bolus', bg: 210, insulin: 4.8, carbs: 48, state: 'fired',
       verdicts: [{ classifier: 'late_bolus', matched: true, detail: 'the dose trailed the rise', evidence_tier: 'observed', silence_reason: null }],

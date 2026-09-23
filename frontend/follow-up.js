@@ -597,7 +597,10 @@ async function submitEnding({ retry } = {}) {
 
 /* =============================== the frames =============================== */
 
-const trialTitle = (detail) => {
+// The active change's nameplate title, which is also the name a Day entry
+// opened from it carries (ADR 426).
+const changeTitle = (detail) => {
+  if (detail.kind === 'focus') return detail.title || 'Focus';
   const changes = detail.changes || [];
   if (changes.length !== 1) return `Profile change · ${changes.length} settings`;
   const [change] = changes;
@@ -628,7 +631,7 @@ function trialFrame(state) {
     : comparisonTables(comparison, 'trial');
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({
     kicker: `Trial · <b>${e((detail.readiness || {}).label || 'Active')}</b>`,
-    title: e(trialTitle(detail)),
+    title: e(changeTitle(detail)),
     sub: `Detected ${e(stamp(detail.changed_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -660,7 +663,7 @@ function focusFrame(state) {
   const context = (detail.original || {}).context || {};
   const stage = `<section class="pane gf-stage gf-stage-focus" aria-label="Focus evidence">${nameplate({
     kicker: 'Focus · <b>Active</b>',
-    title: e(detail.title || 'Focus'),
+    title: e(changeTitle(detail)),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -738,6 +741,7 @@ function bind(host) {
     button.onclick = () => navigate('day', {
       date: button.dataset.dayDate,
       subject: retainedEvidenceContext(memory.detail).subject,
+      title: changeTitle(memory.detail),
       lever: button.dataset.dayLever || null,
       occurrence: memory.detail.id, window: retainedEvidenceContext(memory.detail).window,
       from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,

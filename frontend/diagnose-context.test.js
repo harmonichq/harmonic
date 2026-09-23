@@ -21,23 +21,27 @@ test('tile loads, failed replacements and late responses do not choose a drill s
   assert.equal(context.current().subject, b.finding_id);
 });
 
-test('Day carries canonical subject, opaque occurrence, moment and source window', () => {
+test('Day carries canonical subject, its served title, opaque occurrence, moment and source window', () => {
   assert.deepEqual(evidenceDayContext({
     occurrence: { id: 'opaque-7', anchor: { t: '2024-06-01 08:12:00' } },
-    selected: { subject: 'pattern:served', occurrence: 'opaque-7', window: { start_min: 360, end_min: 720 } },
+    selected: { subject: 'pattern:served', occurrence: 'opaque-7', finding: { id: 'pattern:served', title: 'Highs after meals' },
+      window: { start_min: 360, end_min: 720 } },
     focus: '.occ-foot button:last-child',
-  }), { date: '2024-06-01', moment: '2024-06-01 08:12:00', subject: 'pattern:served', occurrence: 'opaque-7',
-    window: '360-720', lever: '', from: 'diagnose', focus: '.occ-foot button:last-child' });
+  }), { date: '2024-06-01', moment: '2024-06-01 08:12:00', subject: 'pattern:served', title: 'Highs after meals',
+    occurrence: 'opaque-7', window: '360-720', lever: '', from: 'diagnose', focus: '.occ-foot button:last-child' });
+  // A basal slot has no case file to name it, so the door names the setting
+  // and the half-hour range in the wearer's words (CONTEXT.md, Slot).
   const night = evidenceDayContext({ occurrence: { t: '2024-06-01 03:00:00' }, slot: { start: 180, end: 210 }, focus: '#crumb-trail' });
   assert.equal(night.subject, 'basal:180');
+  assert.equal(night.title, 'Basal · 03:00–03:30');
   assert.equal(night.occurrence, '2024-06-01');
 });
 
-test('the Day return keeps moment and evidence coordinates through the shared router', async () => {
+test('the Day return keeps moment, title and evidence coordinates through the shared router', async () => {
   const { dayReturnContext } = await import('./day.js');
   const { parseRoute, serializeRoute } = await import('./tab-routing.js');
   const entry = { key: 'private-memory-key', date: '2024-06-01', moment: '2024-06-01 08:12:00',
-    subject: 'pattern:served', occurrence: 'opaque-7', window: '360-720', lever: 'served-lever', from: 'diagnose', focus: '.occ-foot button:last-child' };
+    subject: 'pattern:served', title: 'Highs after meals', occurrence: 'opaque-7', window: '360-720', lever: 'served-lever', from: 'diagnose', focus: '.occ-foot button:last-child' };
   const context = dayReturnContext(entry);
   const address = serializeRoute({ destination: 'diagnose', context });
   assert.deepEqual(parseRoute({ search: address.slice(address.indexOf('?')) }).context, context);

@@ -55,7 +55,7 @@
 
 ## 3. Day names its origin and its causes
 
-- [ ] 3.1 `title` joins the address keys (`frontend/tab-routing.js`
+- [x] 3.1 `title` joins the address keys (`frontend/tab-routing.js`
   `CONTEXT_KEYS`). Every Day door passes it per ADR 426: the Diagnose door
   (`frontend/diagnose-context.js` `evidenceDayContext`, called from
   `frontend/diagnose.js`), the active-change door (`frontend/follow-up.js`), the
@@ -66,14 +66,14 @@
   (a served finding's title and a basal slot's words; the return context still
   round-trips through the router) and `frontend/tab-routing.test.js` (`title`
   survives serialize and parse).
-- [ ] 3.2 Day's "Opened from" (`frontend/day.js`) prints the entry's `title`,
+- [x] 3.2 Day's "Opened from" (`frontend/day.js`) prints the entry's `title`,
   never its `subject`; an entry without a title names its return destination.
   Test in `frontend/day.test.js`: a Day frame whose entry comes from
   `evidenceDayContext` with a served finding shows that finding's title and no
   `pattern:`, `finding:` or `basal:` text; a basal-slot entry shows its words;
   an entry without a title shows the return label. The existing contextual-entry
   test stops feeding prose as the subject. Fails first on the base.
-- [ ] 3.3 Episode Log rows (`frontend/day.js`, with `frontend/day-chart.js`
+- [x] 3.3 Episode Log rows (`frontend/day.js`, with `frontend/day-chart.js`
   where the row is built) end with the episode's served `lever_title`. Delete
   `LEVER_WORD` from `frontend/day.js` and `CLS_NAME`, `clsName` and `humanize`
   from `frontend/day-chart.js`. Tests in `frontend/day.test.js` (and
@@ -82,7 +82,7 @@
   end with their served titles and contain no underscore token; an unattributed
   row names no Lever. Fails first on the base. The `/api/model-view` stub in
   `frontend/desk.browser.test.mjs` gains `lever_title`.
-- [ ] 3.4 Amend the S61 replay body in `frontend/c2.replay.mjs`: after the
+- [x] 3.4 Amend the S61 replay body in `frontend/c2.replay.mjs`: after the
   selected occurrence opens Day, "Opened from" equals the case file's served
   `finding.title` and contains no `finding:`, `pattern:` or `basal:` text; and,
   given the Day's served `/api/model-view` carries at least one attributed
@@ -93,7 +93,7 @@
   rejects an "Opened from" equal to the subject id, a row carrying a raw Lever
   key, and a row lacking its episode's `lever_title`, and passes on served
   names.
-- [ ] 3.5 Record the S61 and S62 amendments in a new section,
+- [x] 3.5 Record the S61 and S62 amendments in a new section,
   `## #426 amendment — 2026-09-23, issue #426`, appended to
   `mockups/harmonic-v2-desktop.behavior.md` after the existing dated sections,
   quoting the Q2 sanction (design.md, Revise preparation): S61 names its origin

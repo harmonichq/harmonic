@@ -393,9 +393,7 @@ function recordFrame(state) {
   const ending = (detail.original || {}).ending || {};
   const ended = Boolean(ending.kind);
   const label = ended ? (ENDING_WORD[ending.kind] || ending.kind) : 'Still open';
-  const title = kind === 'focus'
-    ? (detail.title || 'Focus')
-    : recordTitle(detail);
+  const title = recordTitle(detail, kind);
   const shown = shownComparison(detail);
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Record evidence">${nameplate({
     kicker: `${e(KIND_WORD[kind])} · <b>${e(label)}</b>`,
@@ -423,7 +421,10 @@ function recordFrame(state) {
   return desk(stage, reading);
 }
 
-function recordTitle(detail) {
+// The record's nameplate title, which is also the name a Day entry opened from
+// the record carries (ADR 426).
+function recordTitle(detail, kind) {
+  if (kind === 'focus') return detail.title || 'Focus';
   const changes = detail.changes || [];
   if (changes.length !== 1) return `Profile change · ${changes.length} settings`;
   const [change] = changes;
@@ -497,6 +498,7 @@ function bind(host) {
     button.onclick = () => navigate('day', {
       date: button.dataset.dayDate,
       subject: memory.record?.detail?.subject || 'history',
+      title: recordTitle(memory.record.detail, memory.record.kind),
       lever: button.dataset.dayLever || null,
       from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
       occurrence: `record:${memory.open.kind}:${memory.open.id}`,

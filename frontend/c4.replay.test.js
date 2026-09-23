@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
-  assertBasalLaneReachable, LANE_REACH_SIZES,
+  assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -969,6 +969,94 @@ test('assertBasalLaneReachable names a vertical failure at one size and a horizo
     return true;
   });
   assert.equal(page.log.at(-1), '1280x720', 'the run\'s own size is restored even when checks failed');
+});
+
+// #433 (D6): a fake page for `assertRecurringLowsVariant` — S113's route on the
+// `basal-recurring-low-no-clean-median` store. That store's 05:00 slot serves no
+// steady night, so no `#level .case-occurrence` row ever renders: a wait on one
+// times out here, as it did in the browser. The defaults are the branch's lane;
+// the key-word knobs reproduce base, which counts the slot under plain "lower".
+function qa433RecurringLowsPage({
+  keyEntries = ['Basal slots', 'lower · recurring lows 1', 'no data 47'],
+  counts = { 'down:recurring-lows': 1, nodata: 47 },
+} = {}) {
+  const asked = [];
+  let panel = null;
+  const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const recurring = selector => selector.includes('[data-reason="recurring-lows"]');
+  const node = selector => {
+    asked.push(selector);
+    const self = {
+      filter() { return self; },
+      first() { return self; },
+      waitFor: async () => {
+        if (selector.includes('case-occurrence')) {
+          throw new Error('locator.waitFor: Timeout 30000ms exceeded (this store renders no steady night)');
+        }
+      },
+      click: async () => {
+        if (recurring(selector)) {
+          panel = { time: '05:00–05:30', verdict: 'lower (recurring lows)', recommended: '0.48', stage: 1,
+            text: '05:00–05:30 lower (recurring lows) Recommended 0.48 Stage change' };
+        }
+      },
+      count: async () => (selector === '#lane > button.lane-cell' ? 48
+        : recurring(selector) ? counts['down:recurring-lows'] || 0 : 0),
+      getAttribute: async name => (name === 'aria-label' && recurring(selector)
+        ? '05:00 basal slot, suggests a lower because lows keep happening at this hour' : null),
+      evaluateAll: async () => [...keyEntries],
+      innerText: async () => String(counts[entryOf(selector)]),
+      evaluate: async fn => {
+        const src = fn.toString();
+        if (src.includes("getPropertyValue('--cell')")) return `token(${verdictOf(selector)})`;
+        if (src.includes('::before')) return verdictOf(selector) === 'down' ? '""' : 'none';
+        if (src.includes('backgroundImage')) return verdictOf(selector) === 'nodata' ? 'radial-gradient(circle, ...)' : 'none';
+        throw new Error(`unexpected evaluate on ${selector}: ${src}`);
+      },
+    };
+    return self;
+  };
+  return {
+    asked,
+    // the store's served preparation: one basal Finding, the 05:00 slot's
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async () => ({ ok: () => true, status: () => 200,
+      json: async () => ({ rendered_rows: [{ id: 'basal:300-330' }] }) }) },
+    locator: node,
+    getByRole: (role, { name }) => {
+      asked.push(`${role}:${name}`);
+      return { click: async () => {} };
+    },
+    waitForFunction: async () => {},
+    evaluate: async fn => {
+      if (fn.name === 'readSlotPanel') return panel && { ...panel };
+      if (fn.toString().includes('lane-cell')) return { ...counts };
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+  };
+}
+
+test('assertRecurringLowsVariant reaches the lane on a store with no steady night, never waiting for one', async () => {
+  const page = qa433RecurringLowsPage();
+  await assertRecurringLowsVariant(page);
+  assert.ok(page.asked.includes('button:24 h'), 'the route opens the 24 h rail');
+  assert.ok(page.asked.includes('#lane > button.lane-cell'), 'the route waits for the 48 basal slots');
+  assert.deepEqual(page.asked.filter(selector => selector.includes('case-occurrence')), [],
+    'the route never waits for a steady-night row, which this store never renders');
+  assert.ok(page.asked.includes('#lane > .lane-cell[data-verdict="down"][data-reason="recurring-lows"]'),
+    'the route opens the recurring-lows cell itself');
+});
+
+test('assertRecurringLowsVariant fails at the key word when the key counts the slot under plain "lower"', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRecurringLowsVariant(qa433RecurringLowsPage({
+      keyEntries: ['Basal slots', 'lower 1', 'no data 47'], counts: { down: 1, nodata: 47 },
+    })),
+    /S113 the key must read "lower · recurring lows 1"; it reads \["Basal slots","lower 1","no data 47"\]/));
 });
 
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after

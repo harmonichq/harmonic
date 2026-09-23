@@ -928,6 +928,21 @@ async function assertRecurringLowsLower(page) {
   }, 'S113 the recurring-lows lower opens its staging panel');
 }
 
+// #433 (D6): S113's variant route, exported so a fake page can drive it. It
+// cannot reuse `openBasalLane`: that opener drills the basal Finding and waits
+// for the slot's first steady night (`#level .case-occurrence`), and this
+// store's 05:00 slot serves none — no steady nights is the case's point. The
+// lane is canvas furniture that renders on the plain rail, so the variant opens
+// Diagnose at 24 h, waits for all 48 slots, and opens the 05:00 cell itself.
+export async function assertRecurringLowsVariant(page) {
+  await openDiagnoseRail(page);
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await page.locator('#lane > button.lane-cell').count()), 48,
+      'S113 premise: the recurring-lows store must render all 48 basal slots');
+  }, 'S113 the recurring-lows lane renders on the 24 h rail');
+  await assertRecurringLowsLower(page);
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -1217,15 +1232,14 @@ export const C4_STORIES = {
   // it directly, without also having to fake `openBasalLane`'s own network
   // reads and navigation.
   // #433 (D6): a variant on a second case store proves the recurring-lows key
-  // word. It keeps S113 the one story on that store, so the fixed PR slice,
-  // which already holds S113, covers it unchanged.
+  // word, through its own route (`assertRecurringLowsVariant`: that store serves
+  // no steady night for `openBasalLane` to wait on). It keeps S113 the one story
+  // on that store, so the fixed PR slice, which already holds S113, covers it
+  // unchanged.
   async S113(page, ctx) {
     await C2_STORIES.openBasalLane(page);
     await assertBasalLaneGallery(page);
-    await ctx.withCase('basal-recurring-low-no-clean-median', async fresh => {
-      await C2_STORIES.openBasalLane(fresh);
-      await assertRecurringLowsLower(fresh);
-    });
+    await ctx.withCase('basal-recurring-low-no-clean-median', assertRecurringLowsVariant);
   },
   // #413: a cold Diagnose arrival shows a count-free skeleton instead of an
   // empty loading block, while keeping the same status role, named text

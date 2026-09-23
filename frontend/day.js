@@ -70,8 +70,23 @@ const memory = {
 };
 
 const monthKey = (iso) => String(iso).slice(0, 7);
-const loadedDays = () => [...memory.months.values()].flat();
-const recorded = () => loadedDays().filter((row) => row.has_data).map((row) => row.iso).sort();
+
+// The loaded month reads, one row per day, in date order. Each read carries a
+// week of its neighbours; a day's own month read supplies it, and a padding row
+// stands only while its own month is not loaded (ADR 425). Everything that reads
+// the loaded days — the ribbon, the month grid and its head, stepping — reads
+// this one join, so no day is ever counted twice.
+function joinDays(months) {
+  const byDay = new Map();
+  for (const [key, rows] of months) {
+    for (const row of rows) {
+      const own = monthKey(row.iso);
+      if (own === key || !months.has(own)) byDay.set(row.iso, row);
+    }
+  }
+  return [...byDay.values()].sort((a, b) => a.iso.localeCompare(b.iso));
+}
+const recorded = () => joinDays(memory.months).filter((row) => row.has_data).map((row) => row.iso);
 const earliest = () => memory.bounds?.earliest || null;
 const latest = () => memory.bounds?.latest || null;
 
@@ -86,6 +101,9 @@ async function loadBounds() {
   memory.bounds = {
     earliest: status.earliest_data_day || null,
     latest: status.latest_data_day || null,
+    // The whole history's recorded days, from this same read, so the rail's
+    // count and span are one pair and paging the month never moves it (#425).
+    dataDays: status.data_day_count,
     // The read this desk shows: when the store last took data. A store that was
     // never fetched — the offline synthetic one, for instance — has none, and
     // the desk says what it is viewed at instead of inventing a read.
@@ -249,15 +267,16 @@ function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
  */
 export function dayFrame(state) {
   const {
-    iso, rows, bounds, month, monthArrived = true, stats, ledger, entry, moved, focusT,
+    iso, months, bounds, month, monthArrived = true, stats, ledger, entry, moved, focusT,
     readAt, viewedAt, isNarrow,
   } = state;
   if (!iso) {
     return emptyFrame('Day', 'No days recorded', 'This store has no recorded day yet.',
       '<button class="gf-btn primary" data-destination-action="diagnose">Return to Diagnose</button>');
   }
+  const rows = joinDays(months);
   const held = decorate(iso, rows);
-  const recordedCount = rows.filter((row) => row.has_data).length;
+  const recordedCount = bounds.dataDays;
   const sub = stats && stats.n
     ? `<b>${stats.tir}% in range</b> · ${stats.low} ${stats.low === 1 ? 'low' : 'lows'} · ${stats.high} ${stats.high === 1 ? 'high' : 'highs'} · ${stats.n} readings · ${e(stats.min)}–${e(stats.max)} mg/dL`
     : 'No glucose recorded this day.';
@@ -407,7 +426,7 @@ function bind(host) {
 function dayState() {
   return {
     iso: memory.date,
-    rows: loadedDays(),
+    months: memory.months,
     bounds: memory.bounds,
     month: memory.month,
     monthArrived: memory.months.has(memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date)),

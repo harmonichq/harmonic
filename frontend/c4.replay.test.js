@@ -87,6 +87,13 @@ test('S115–S117 are unique app-only C4 rail stories, served from the showcase'
   }
 });
 
+test('S127 is a unique app-only Day story, served from the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S127');
+  assert.equal(entries.length, 1, 'S127 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-13');
+  assert.equal(storyCase('S127'), 'showcase');
+});
+
 // A minimal fake page for the #414 chunk 3 stories. `click` on the Diagnose nav
 // button simulates the one GET /api/status the retained desk issues by routing
 // it through any registered `**/api/status*` handler, so the held-request

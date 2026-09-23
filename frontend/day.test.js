@@ -49,8 +49,8 @@ const COLORS = {
 
 const state = (overrides = {}) => ({
   iso: '2024-06-26',
-  rows: WEEK,
-  bounds: { earliest: '2024-06-01', latest: '2024-06-30', readAt: null },
+  months: new Map([['2024-06', WEEK]]),
+  bounds: { earliest: '2024-06-01', latest: '2024-06-30', dataDays: 29, readAt: null },
   month: null,
   stats: dayStats(MODEL),
   ledger: buildEpisodeLedger(MODEL),
@@ -203,6 +203,66 @@ test('a utility entry is named for the utility and returns over the destination 
 test('a date the read does not carry says so rather than showing an empty day as the answer', () => {
   const markup = dayFrame(state({ moved: '2024-05-04' }));
   assert.match(markup, /May 4, 2024 is not among this read's recorded days/);
+});
+
+// #425: two month reads shaped as build_day_navigator serves them — the calendar
+// month plus seven days either side, one row per day. June 2024 is recorded
+// except June 10 and July 1–23 is recorded: 52 days with data in all. Each read
+// stamps its own tir, so a cell shows which read supplied it.
+const recordedDay = (iso) => (iso >= '2024-06-01' && iso <= '2024-06-30' && iso !== '2024-06-10')
+  || (iso >= '2024-07-01' && iso <= '2024-07-23');
+function paddedRead(y, m, tir) {
+  const rows = [];
+  const end = new Date(Date.UTC(y, m, 7));
+  for (let d = new Date(Date.UTC(y, m - 1, 1 - 7)); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const iso = d.toISOString().slice(0, 10);
+    rows.push(recordedDay(iso)
+      ? { iso, has_data: true, lows: 0, highs: 0, tir, curve: [{ x: 0.5, bg: 120 }] }
+      : { iso, has_data: false, lows: 0, highs: 0, tir: 0, curve: [] });
+  }
+  return rows;
+}
+const JUNE = paddedRead(2024, 6, 80);
+const JULY = paddedRead(2024, 7, 90);
+const SPAN = { earliest: '2024-06-01', latest: '2024-07-23', dataDays: 52, readAt: null };
+const railCount = (markup) => Number(markup.match(/(\d+) recorded days? · /)[1]);
+const monthHead = (markup) => Number(markup.match(/<span class="meta">(\d+) recorded days<\/span><\/div><div class="gf-nav-dow">/)[1]);
+const cellTir = (markup, iso) => Number(markup.match(new RegExp(`class="gf-nav-cell" data-pick="${iso}"[^>]*><span class="dom">\\d+</span><span class="sev"><span class="g">[^<]*</span> (\\d+)</span>`))[1]);
+const juneThenJuly = new Map([['2024-06', JUNE], ['2024-07', JULY]]);
+const julyThenJune = new Map([['2024-07', JULY], ['2024-06', JUNE]]);
+
+test('the rail prints the served recorded-day count, whichever months are loaded', () => {
+  const juneLoaded = dayFrame(state({ months: new Map([['2024-06', JUNE]]), bounds: SPAN }));
+  const bothLoaded = dayFrame(state({ months: juneThenJuly, bounds: SPAN, month: { y: 2024, m: 7 } }));
+  assert.equal(railCount(juneLoaded), 52);
+  assert.equal(railCount(bothLoaded), 52);
+  // One recorded day keeps the singular.
+  assert.match(dayFrame(state({ bounds: { ...SPAN, dataDays: 1 } })), /1 recorded day · Jun 1, 2024 to Jul 23, 2024/);
+});
+
+test('with a neighbouring month loaded, each month counts only its own days, once', () => {
+  for (const months of [juneThenJuly, julyThenJune]) {
+    const july = dayFrame(state({ months, bounds: SPAN, month: { y: 2024, m: 7 } }));
+    const june = dayFrame(state({ months, bounds: SPAN, month: { y: 2024, m: 6 } }));
+    assert.equal(monthHead(july), 23);
+    assert.equal(monthHead(june), 29);
+    // A shown month's cells come from its own read, not a neighbour's padding.
+    assert.equal(cellTir(july, '2024-07-03'), 90);
+    assert.equal(cellTir(june, '2024-06-26'), 80);
+  }
+});
+
+test('a neighbour\'s padding row stands for a day only while that day\'s own month is unread', () => {
+  // The week of Sunday June 30 reaches into July. With only June read, its July
+  // days come from June's padding; once July is read, from July's own read.
+  const ribbonTir = (markup, iso) => Number(markup.match(new RegExp(`class="gf-nav-col" data-pick="${iso}".*?<span class="sev"><span class="g">[^<]*</span> (\\d+)%</span>`))[1]);
+  const juneOnly = dayFrame(state({ iso: '2024-06-30', months: new Map([['2024-06', JUNE]]), bounds: SPAN }));
+  assert.equal(ribbonTir(juneOnly, '2024-07-03'), 80);
+  for (const months of [juneThenJuly, julyThenJune]) {
+    const both = dayFrame(state({ iso: '2024-06-30', months, bounds: SPAN }));
+    assert.equal(ribbonTir(both, '2024-07-03'), 90);
+    assert.equal(ribbonTir(both, '2024-06-30'), 80);
+  }
 });
 
 test('a store with no recorded day says so and offers the way back', () => {

@@ -124,7 +124,24 @@ const PUMP = {
 };
 const STATUS = {
   last_attempt_at: null, last_success_at: null, last_error: null, last_written: null,
-  earliest_data_day: '2024-06-01', latest_data_day: '2024-06-30',
+  // Every June day but the gap day is recorded (daysFor).
+  earliest_data_day: '2024-06-01', latest_data_day: '2024-06-30', data_day_count: 29,
+};
+// #425: a two-month span — June recorded but for the gap day, July 1–23 — whose
+// navigator reads pad each month with seven days either side, exactly as
+// build_day_navigator serves them, so adjacent reads overlap by two weeks.
+const SPAN_STATUS = { ...STATUS, latest_data_day: '2024-07-23', data_day_count: 52 };
+const spanRecorded = (iso) => (iso >= '2024-06-01' && iso <= '2024-06-30' && iso !== GAP_DAY)
+  || (iso >= '2024-07-01' && iso <= '2024-07-23');
+const paddedDaysFor = (month) => {
+  const [year, index] = month.split('-').map(Number);
+  const days = [];
+  const end = new Date(Date.UTC(year, index, 7));
+  for (let d = new Date(Date.UTC(year, index - 1, 1 - 7)); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const iso = d.toISOString().slice(0, 10);
+    days.push(navDay(iso, spanRecorded(iso)));
+  }
+  return days;
 };
 
 const generated = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
@@ -759,6 +776,37 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
     assert.equal(await page.getAttribute(`.gf-log-row[data-day-row="${rows[0].t}"]`, 'aria-pressed'), 'true');
     await press(page, `.gf-log-row[data-day-row="${rows[0].t}"]`);
     assert.equal(await page.getAttribute(`.gf-log-row[data-day-row="${rows[0].t}"]`, 'aria-pressed'), 'false');
+  } finally { await close(); }
+});
+
+test('paging the Month calendar keeps the served recorded-day count, and each month counts its own days once', async () => {
+  const json = (body) => ({ contentType: 'application/json', body: JSON.stringify(body) });
+  const { page, close } = await openDesk({ address: '/?to=day', beforeNavigate: async (page) => {
+    await page.route('**/api/status', (route) => route.fulfill(json(SPAN_STATUS)));
+    await page.route('**/api/day-navigator*', (route) => {
+      const month = new URL(route.request().url()).searchParams.get('month');
+      return route.fulfill(json({ month, days: paddedDaysFor(month) }));
+    });
+  } });
+  const railCount = () => page.evaluate(() => document.querySelector('.gf-stage-day .instrument .meta.gf-desk-only')?.textContent || '');
+  // A paged month is a served read: its head is read once its own cells land.
+  const monthHead = async (label) => {
+    await page.locator(`.gf-nav-month[aria-label="${label}"] .gf-nav-cell[data-pick]`).first().waitFor({ timeout: 20000 });
+    return page.evaluate(() => document.querySelector('.gf-nav-month-head .meta')?.textContent || '');
+  };
+  try {
+    // The desk arrives on the span's latest day, in July.
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
+    assert.match(await railCount(), /^52 recorded days · /);
+    await press(page, '.gf-month-toggle');
+    assert.equal(await monthHead('July 2024'), '23 recorded days');
+    assert.match(await railCount(), /^52 recorded days · /);
+    await press(page, '[data-day="prev-month"]');
+    assert.equal(await monthHead('June 2024'), '29 recorded days');
+    assert.match(await railCount(), /^52 recorded days · /, 'loading June moved the rail count');
+    await press(page, '[data-day="next-month"]');
+    assert.equal(await monthHead('July 2024'), '23 recorded days', 'July counted June\'s overlapping week');
+    assert.match(await railCount(), /^52 recorded days · /, 'paging back moved the rail count');
   } finally { await close(); }
 });
 

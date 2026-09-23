@@ -1077,6 +1077,48 @@ export const C4_STORIES = {
       assert.equal(findings.findings?.window?.scoped, false, 'S117 the findings read must be unscoped');
     }, 'S117 a cold arrival opens on the 24 h window, unscoped');
   },
+  // #425: Day's recorded-day count is the served history total, whichever
+  // months are loaded, and each month's head counts its own days once. Paging
+  // is asserted before the served comparison, so an app that counts loaded rows
+  // fails on the count moving, not only on the field it lacks.
+  async S127(page) {
+    await press(page, 'nav.v2-nav [data-destination="day"]');
+    await waitForDesk(page);
+    await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
+    const railCount = async () => {
+      const text = await page.locator('.gf-stage-day .instrument .meta.gf-desk-only').textContent();
+      const match = /^(\d+) recorded days? · /.exec(text || '');
+      assert.ok(match, `S127 the rail must state a recorded-day count: ${JSON.stringify(text)}`);
+      return Number(match[1]);
+    };
+    // The shown month once its own cells have landed (a paged month is a served
+    // read): its label, its head, and how many of its cells are recorded.
+    const landedMonth = async (previous = null) => (await page.waitForFunction(prior => {
+      const grid = document.querySelector('#gf-nav .gf-nav-month');
+      const label = grid?.getAttribute('aria-label');
+      if (!label || label === prior || !grid.querySelector('.gf-nav-cell[data-pick]')) return null;
+      return { label, head: grid.querySelector('.gf-nav-month-head .meta')?.textContent || '',
+        enabled: grid.querySelectorAll('.gf-nav-cell[data-pick]:not([disabled])').length };
+    }, previous, { timeout: 30000 })).jsonValue();
+    const arrival = await railCount();
+    await press(page, '.gf-month-toggle');
+    const held = await landedMonth();
+    assert.equal(held.head, `${held.enabled} recorded days`, `S127 ${held.label}'s head must count its own recorded days`);
+    assert.equal(await page.locator('[data-day="prev-month"]').isEnabled(), true, 'S127 premise: an earlier recorded month exists');
+    await press(page, '[data-day="prev-month"]');
+    const earlier = await landedMonth(held.label);
+    assert.equal(await railCount(), arrival, `S127 loading ${earlier.label} must not move the rail's recorded-day count`);
+    assert.equal(earlier.head, `${earlier.enabled} recorded days`,
+      `S127 ${earlier.label}'s head must count its own recorded days once, without ${held.label}'s overlapping week`);
+    await press(page, '[data-day="next-month"]');
+    const back = await landedMonth(earlier.label);
+    assert.equal(back.label, held.label, 'S127 the next month must return to the arrival month');
+    assert.equal(await railCount(), arrival, 'S127 paging back must not move the rail\'s recorded-day count');
+    assert.equal(back.head, `${back.enabled} recorded days`, `S127 ${back.label}'s head must count its own recorded days`);
+    assert.equal(back.head, held.head, `S127 ${held.label}'s head must read as it did before ${earlier.label} was loaded`);
+    const status = await read(page, '/api/status');
+    assert.equal(arrival, status.data_day_count, 'S127 the rail must print the served data_day_count');
+  },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

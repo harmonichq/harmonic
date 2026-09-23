@@ -26,7 +26,15 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from ..events import BasalEvent, BolusEvent, CarbEntry, CgmReading, PumpEvent
 from ..finding_case_file import FMT
 from ..harm import BasalHarm, HarmConfig, PrintedLow, basal_harm, basal_harm_evidence
-from ..model import CgmSeries, CleanSample, ModelConfig, _slot_label, _slot_of, clean_samples
+from ..model import (
+    CLEAN_WINDOW_FAILURES,
+    CgmSeries,
+    CleanSample,
+    CleanWindow,
+    ModelConfig,
+    _slot_label,
+    _slot_of,
+)
 from ..result import (
     ConsolidatedProfile,
     IcBlock,
@@ -49,6 +57,13 @@ from ..uncertainty import Estimate, estimate_median
 # noise floor (safety.SafetyConfig.noise_floor), the same threshold that turns a
 # basal move into "no change".
 _LEAN_NOISE_FLOOR = SafetyConfig().noise_floor
+
+# Why a source night is absent from its slot's estimate, in rank order (#434):
+# each excluded night takes the first that applies, so the counts sum to
+# ``excluded_night_count``.  A night that predates the slot's current programmed
+# rate, unpooled, never reached the filter's verdict for that rate; every other
+# excluded night takes the highest-ranked clean-window rule its minutes fail.
+EXCLUDED_NIGHT_REASONS = ("before_current_setting",) + CLEAN_WINDOW_FAILURES
 
 # The Tandem pump accepts at most this many basal segments (settings.py:17-18,
 # tDependentSegs zero-padded to 16). Applying all 48 per-slot rates is literally
@@ -344,8 +359,9 @@ def analyze_basal(
     """
     cfg = config
     n_slots = 24 * 60 // cfg.slot_minutes
-    samples = clean_samples(basal_events, cgm_readings, bolus_events, pump_events, cfg,
-                            carb_entries=carb_entries)
+    window = CleanWindow(basal_events, cgm_readings, bolus_events, pump_events, cfg,
+                         carb_entries=carb_entries)
+    samples = window.samples()
     # Direction is a per-night departure from the programmed basal that was in
     # force on that night — never today's active schedule. Ties are Control-IQ
     # simply delivering the profile and carry no directional information. Missing
@@ -383,7 +399,7 @@ def analyze_basal(
         if harm_config is not None else BasalHarm()
     )
     # One-sided / dawn-band lean verdict per slot (ADR 0001). Computed here in the
-    # same pass — reusing the clean_samples the estimate rides on — and attached to
+    # same pass — reusing the clean samples the estimate rides on — and attached to
     # each SlotEstimate.evidence, the same shelf the pooling verdict uses.
     onesided = _onesided_verdicts(samples, cgm_readings, cfg)
     reconstructed = programmed_basal_by_slot(basal_events, cfg.slot_minutes)
@@ -564,7 +580,19 @@ def analyze_basal(
         # including epoch and Regime-B exclusions.  Pooling merely decides which
         # source nights return to the estimate; it never changes the accounting.
         source_dates = source_nights[s] | pre_source_nights[s]
-        evidence["excluded_night_count"] = len(source_dates - estimate_dates)
+        excluded_dates = source_dates - estimate_dates
+        evidence["excluded_night_count"] = len(excluded_dates)
+        # Explain the same population, one reason per night.  This reads the
+        # estimate's nights and changes nothing above; only excluded nights'
+        # minutes are asked why they were not clean.
+        pooled = day_map is not post_map
+        reasons = dict.fromkeys(EXCLUDED_NIGHT_REASONS, 0)
+        for d in excluded_dates:
+            if d in pre_source_nights[s] and not pooled:
+                reasons["before_current_setting"] += 1
+            else:
+                reasons[window.night_failure(d, s)] += 1
+        evidence["excluded_night_reasons"] = reasons
         # This is deliberately not the roster size: the sign test uses the full
         # non-tie, as-of-programmed pool before any setting-epoch estimate cut.
         evidence["directional_support_count"] = len(signs_by_slot[s])

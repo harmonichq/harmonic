@@ -105486,7 +105486,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+              "code_version": "66990682b38e11425e29b9a3bb27f713ac97f27ac6715ae0536decad8b51634f",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105578,7 +105578,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+              "id": "22e49d737dc6b44a0ee1b3a2cfc8050e4f86bc1a2972852307a397c0eadadbdf",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105666,7 +105666,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+                  "code_version": "66990682b38e11425e29b9a3bb27f713ac97f27ac6715ae0536decad8b51634f",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105758,7 +105758,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+                  "id": "22e49d737dc6b44a0ee1b3a2cfc8050e4f86bc1a2972852307a397c0eadadbdf",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -108604,6 +108604,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108636,6 +108644,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108668,6 +108684,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108700,6 +108724,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108732,6 +108764,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108764,6 +108804,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -108796,6 +108844,14 @@
           "evidence": {
             "directional_support_count": 30,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [
               {
@@ -112198,6 +112254,14 @@
           "evidence": {
             "directional_support_count": 28,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [
               {
@@ -115376,6 +115440,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115408,6 +115480,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115440,6 +115520,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115472,6 +115560,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115504,6 +115600,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115536,6 +115640,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115568,6 +115680,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115600,6 +115720,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115632,6 +115760,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115664,6 +115800,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115696,6 +115840,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115728,6 +115880,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115760,6 +115920,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115792,6 +115960,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115824,6 +116000,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115856,6 +116040,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115888,6 +116080,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115920,6 +116120,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115952,6 +116160,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -115984,6 +116200,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116016,6 +116240,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116048,6 +116280,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116080,6 +116320,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116112,6 +116360,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116144,6 +116400,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116176,6 +116440,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116208,6 +116480,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116240,6 +116520,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116272,6 +116560,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116304,6 +116600,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116336,6 +116640,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116368,6 +116680,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116400,6 +116720,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116432,6 +116760,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116464,6 +116800,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116496,6 +116840,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116528,6 +116880,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116560,6 +116920,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116592,6 +116960,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -116624,6 +117000,14 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "excluded_night_reasons": {
+              "above_range": 0,
+              "before_current_setting": 0,
+              "below_range_or_suspended": 0,
+              "carb_log": 0,
+              "insulin_acting": 0,
+              "other": 0
+            },
             "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
@@ -117885,6 +118269,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -117905,6 +118297,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -117925,6 +118325,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -117945,6 +118353,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -117965,6 +118381,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -117985,6 +118409,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118005,6 +118437,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118025,6 +118465,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118045,6 +118493,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118065,6 +118521,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118085,6 +118549,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118105,6 +118577,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118125,6 +118605,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118145,6 +118633,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118165,6 +118661,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118185,6 +118689,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118205,6 +118717,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118225,6 +118745,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118245,6 +118773,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118265,6 +118801,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118285,6 +118829,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118305,6 +118857,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118325,6 +118885,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118345,6 +118913,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118365,6 +118941,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118385,6 +118969,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118405,6 +118997,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118425,6 +119025,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118445,6 +119053,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118465,6 +119081,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118485,6 +119109,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118505,6 +119137,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118525,6 +119165,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118545,6 +119193,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118565,6 +119221,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118585,6 +119249,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118605,6 +119277,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118625,6 +119305,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118645,6 +119333,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118665,6 +119361,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118685,6 +119389,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118705,6 +119417,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118725,6 +119445,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118745,6 +119473,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -118765,6 +119501,14 @@
             "value": 0.48
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [
             {
               "date": "2024-05-03",
@@ -121996,6 +122740,14 @@
             "value": 0.48
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [
             {
               "date": "2024-05-03",
@@ -125013,6 +125765,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -125033,6 +125793,14 @@
             "value": null
           },
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "nights": [],
           "recommended": null,
           "roster_count": 0,
@@ -135498,6 +136266,14 @@
             "evidence": {
               "directional_support_count": 30,
               "excluded_night_count": 0,
+              "excluded_night_reasons": {
+                "above_range": 0,
+                "before_current_setting": 0,
+                "below_range_or_suspended": 0,
+                "carb_log": 0,
+                "insulin_acting": 0,
+                "other": 0
+              },
               "harm_band_source_nights": 30,
               "night_roster": [
                 {
@@ -138900,6 +139676,14 @@
             "evidence": {
               "directional_support_count": 28,
               "excluded_night_count": 0,
+              "excluded_night_reasons": {
+                "above_range": 0,
+                "before_current_setting": 0,
+                "below_range_or_suspended": 0,
+                "carb_log": 0,
+                "insulin_acting": 0,
+                "other": 0
+              },
               "harm_band_source_nights": 30,
               "night_roster": [
                 {
@@ -179758,6 +180542,14 @@
         "evidence": {
           "directional_support_count": 30,
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "harm_band_source_nights": 30,
           "night_roster": [
             {
@@ -183160,6 +183952,14 @@
         "evidence": {
           "directional_support_count": 28,
           "excluded_night_count": 0,
+          "excluded_night_reasons": {
+            "above_range": 0,
+            "before_current_setting": 0,
+            "below_range_or_suspended": 0,
+            "carb_log": 0,
+            "insulin_acting": 0,
+            "other": 0
+          },
           "harm_band_source_nights": 30,
           "night_roster": [
             {

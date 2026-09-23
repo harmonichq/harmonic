@@ -13,6 +13,14 @@
       "value": 0.8
     },
     "excluded_night_count": 1,
+    "excluded_night_reasons": {
+      "above_range": 0,
+      "before_current_setting": 0,
+      "below_range_or_suspended": 0,
+      "carb_log": 0,
+      "insulin_acting": 1,
+      "other": 0
+    },
     "nights": [
       {
         "date": "2026-01-01",

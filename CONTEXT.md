@@ -237,6 +237,23 @@ coverage; validated on basal-estimate drift, so its modest lightness versus the
 pump's own IOB is intended, not an error. Owns `ModelConfig.insulin_dia_min`
 (ADR 0013). _Avoid_: coverage DIA (overloads Coverage), the DIA.
 
+**Excluded night**:
+A source night of a basal **Slot** (a night with basal delivery in it) that is absent
+from the slot's final estimate. Each is counted once, under the first of six reasons
+that applies, in rank order: before the current setting (it predates the slot's
+basal **Setting epoch** cut, and the estimate did not pool those earlier nights back
+in); below range or suspended (any of its minutes had basal suspended or at zero, or
+glucose below range); above range; insulin acting (bolus-only **IOB** at the **Gate
+DIA** above the clear threshold); **Carb log**; and other (no delivery covering the
+minute, an excluded pump event, no recent glucose reading, or glucose not flat), so
+the reasons sum to the slot's excluded-night count. The analyzer stamps them
+(`excluded_night_reasons`); a reason explains an exclusion and never changes which
+nights count, the estimate, or whether a move stages (ADR 434). User copy says
+"excluded nights" and names the reasons before the current rate, low or suspended,
+high, insulin on board, logged carbs, and other reasons.
+_Avoid_: dropped night, discarded night, rejected night, unclean night, not steady
+(the retired rail label).
+
 **Maintenance need**:
 What the three tuning estimators measure — the insulin required to hold glucose flat
 and in range — read only from **Clean windows**. By construction this is blind to the

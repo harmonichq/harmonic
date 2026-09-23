@@ -6,12 +6,13 @@ one should knock minutes out.
 """
 
 import unittest
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading, PumpEvent
 from ciq_autotune.model import (
     ModelConfig,
     CgmSeries,
+    CleanWindow,
     clean_samples,
     suggest_basal_profile,
 )
@@ -119,6 +120,39 @@ class CleanWindowTest(unittest.TestCase):
         one = night(1)
         self.assertEqual(slot_at(suggest_basal_profile(*one, [], []), "03:00").confidence, "LOW")
         self.assertIsNone(slot_at(suggest_basal_profile(*one, [], []), "03:00").suggested)
+
+
+class NightFailureTest(unittest.TestCase):
+    """#434: a slot-night with no clean minute names the highest-ranked rule its
+    minutes fail, by the same rules that decide which minutes are clean."""
+
+    @staticmethod
+    def _failure(basal, cgm, boluses=()):
+        # Slot 6 is 03:00-03:30 on 2022-06-01.
+        return CleanWindow(basal, cgm, list(boluses), []).night_failure(date(2022, 6, 1), 6)
+
+    def test_a_suspended_minute_outranks_its_high_reading(self):
+        basal, cgm = night(1, dtype="manual suspension", rate=0.0, bg=250.0)
+        self.assertEqual(self._failure(basal, cgm), "below_range_or_suspended")
+
+    def test_a_high_minute_outranks_insulin_acting_through_the_slot(self):
+        basal, cgm = night(1)
+        spike = datetime(2022, 6, 1, 3, 0, 0)
+        cgm = [CgmReading(r.t, 250.0, r.type) if r.t == spike else r for r in cgm]
+        self.assertEqual(self._failure(basal, cgm, [bolus(1, 2, 0, 5.0)]), "above_range")
+
+    def test_a_missing_reading_is_other_not_low(self):
+        basal, cgm = night(1)
+        # No reading within the 10-minute staleness limit of any 03:00-03:29
+        # minute, while readings after the gap keep those minutes in the span.
+        gap = (datetime(2022, 6, 1, 2, 45, 0), datetime(2022, 6, 1, 3, 45, 0))
+        cgm = [r for r in cgm if not gap[0] <= r.t <= gap[1]]
+        self.assertEqual(self._failure(basal, cgm), "other")
+
+    def test_an_uncovered_minute_is_other_not_suspended(self):
+        basal = night(1, end_h=3)[0]
+        cgm = night(1)[1]
+        self.assertEqual(self._failure(basal, cgm), "other")
 
 
 class CarbEntryExclusionTest(unittest.TestCase):

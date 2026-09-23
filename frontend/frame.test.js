@@ -53,9 +53,9 @@ test('the loading frame stands a count-free skeleton of stage instruments and ra
   for (const marks of [stageMarks, railMarks]) {
     assert.equal(marks.replace(/<[^>]+>/g, '').trim(), '', 'a skeleton states no count, title or value');
   }
-  assert.deepEqual(stageMarks.match(/gf-skel-(bar|eyebrow|title|chart)/g),
-    ['gf-skel-bar', 'gf-skel-eyebrow', 'gf-skel-title', 'gf-skel-chart'],
-    'the stage shows the window bar, the nameplate and the instrument well');
+  assert.deepEqual(stageMarks.match(/gf-skel-(bar|eyebrow|title|chart|strip)/g),
+    ['gf-skel-bar', 'gf-skel-eyebrow', 'gf-skel-title', 'gf-skel-chart', 'gf-skel-strip'],
+    'the stage shows the window bar, the nameplate, the instrument well and the strip well');
   assert.equal((railMarks.match(/gf-skel-row/g) || []).length, 4, 'the rail shows its rows');
   assert.match(railMarks, /gf-skel-row gf-skel-hero/, 'the first rail row carries its mini well');
   assert.doesNotMatch(stageMarks, /gf-skel-row/, 'no rail row stands in the stage');

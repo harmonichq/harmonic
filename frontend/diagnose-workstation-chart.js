@@ -277,21 +277,28 @@ export function queuePreviewOption(descriptor, range, colors, row) {
      sentence supplies the words and the case file's served anchor names the
      event; the desk keeps no word list of its own. */
   const anchorLabel = sentence ? projection.anchor?.label?.toUpperCase() || null : null;
+  // The label is knocked out of the plot on the mini's own ground, so a target
+  // line or a band crossing the anchor's top never runs through its letters.
   const anchorRenderItem = (params, api) => {
     const mark = { type: 'rect', shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
       width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } };
     if (!anchorLabel) return mark;
     return { type: 'group', children: [mark,
       { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
-        style: { text: anchorLabel, fill: text, font: '600 9px Inter, system-ui, sans-serif' } }] };
+        style: { text: anchorLabel, fill: text, font: '600 9px Inter, system-ui, sans-serif',
+          ...(ink.ground ? { backgroundColor: ink.ground, padding: [1, 2] } : {}) } }] };
   };
+  // A claimed cohort whose every point is withheld draws no line, so its label
+  // keys nothing on the plot and steps down to the muted ink.
+  const claimedDrawn = cohorts.some((cohort) => cohort.key === 'matched');
   return {
     ...previewBase(`${cohorts.length} served response cohorts compared around the event.`),
     xAxis: previewAxis('value', { min: projection.window_min?.[0] ?? -60,
       max: projection.window_min?.[1] ?? 180 }),
     yAxis: previewAxis('value', { min: y[0], max: y[1] }),
     graphic: sentence
-      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8, cohortInk.matched),
+      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8,
+        claimedDrawn ? cohortInk.matched : muted),
         previewText(`TYPICAL · ${sentence.denominator}`, 'right', muted, { align: 'right' })]
       : [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
     series: [...series,

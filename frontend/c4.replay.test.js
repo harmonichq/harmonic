@@ -77,7 +77,7 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
 });
 
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
-  const term = 'pending #413 design lock (task 4.4)';
+  const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);

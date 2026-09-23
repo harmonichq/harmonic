@@ -1778,6 +1778,9 @@
   transform: rotate(-90deg); transition: transform .12s ease;
 }
 .dw .qfold[aria-expanded="true"]::before { transform: none; }
+/* The toggle keeps to its own words: the shell's full-surface hover fill
+   (chrome.css) would otherwise read as a selected row butting the causes. */
+.dw .qfold:hover { background: none; color: var(--mk-text); }
 /* The parent's spine: one rule down the title column that every cause hangs
    from, in the rule ink, so a folded cause never borrows the rank colour. */
 .dw .qcauses {
@@ -1806,12 +1809,11 @@
 
 /* #413 — "the rail shows served urgency": the first served tier's rows carry
    a rank stripe and a primary numeral; every later tier stays quiet. */
-/* The stripe is the row's left edge squared off, so the inset shadow runs
-   straight rather than bending round the row's radius. */
-.dw .qrow[data-urgent="true"] {
-  box-shadow: inset 3px 0 0 var(--primary);
-  border-radius: 0 var(--wk-radius) var(--wk-radius) 0;
-}
+/* The stripe runs down the whole list item, so an urgent Pattern's toggle and
+   causes stand inside it as the mockup draws them. The row's left edge is
+   squared so its hover fill meets the stripe straight. */
+.dw .qitem:has(> .qrow[data-urgent="true"]) { box-shadow: inset 3px 0 0 var(--primary); }
+.dw .qrow[data-urgent="true"] { border-radius: 0 var(--wk-radius) var(--wk-radius) 0; }
 .dw .qrow[data-urgent="true"] .n { color: var(--primary); font-weight: 700; }
 .dw .qrow[data-urgent="true"] > .tier { color: var(--primary); }
 

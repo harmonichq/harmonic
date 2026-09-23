@@ -63,8 +63,8 @@ export function emptyFrame(cap, title, copy, actions, note = '') {
 
 /** #413: the cold skeleton, one per pane, so a first-visit destination reads
     as itself rather than as void. The stage's skeleton stands inside the
-    loading block: the window bar, the nameplate's two lines, and the stage
-    instrument's chart well. The rail's stands in the reading pane's body: its
+    loading block: the window bar, the nameplate's two lines, the stage
+    instrument's chart well, and the glucose strip's well below it. The rail's stands in the reading pane's body: its
     rows, the first carrying the well its mini draws in. Every mark is
     decorative (`aria-hidden`) and carries no text, count or value: the loading
     block's own status role and label (#414's named `message` included) are
@@ -72,7 +72,7 @@ export function emptyFrame(cap, title, copy, actions, note = '') {
     still under reduced motion. */
 const skel = (kind) => `<span class="gf-skel gf-skel-${kind}"></span>`;
 function stageSkeleton() {
-  return `<div class="gf-skeleton" aria-hidden="true">${skel('bar')}${skel('eyebrow')}${skel('title')}${skel('chart')}</div>`;
+  return `<div class="gf-skeleton" aria-hidden="true">${skel('bar')}${skel('eyebrow')}${skel('title')}${skel('chart')}${skel('strip')}</div>`;
 }
 function railSkeleton() {
   return `<div class="gf-skeleton gf-skeleton-rail" aria-hidden="true">${skel('row gf-skel-hero')}${skel('row')}${skel('row')}${skel('row')}</div>`;

@@ -3121,13 +3121,13 @@ export const S113 = appOnly('HV2-17', '#413 the basal lane names and paints ever
 // STORY:harmonic-v2-desktop:S114
 export const S114 = appOnly('HV2-29', '#413 a cold Diagnose arrival shows a count-free skeleton, not an empty loading block', C4_STORIES.S114);
 // STORY:harmonic-v2-desktop:S115
-export const S115 = appOnly('pending #413 design lock (task 4.4)',
+export const S115 = appOnly('#413 design lock',
   '#413 a Pattern owns its causes behind a fold and the rail shows served urgency', C4_STORIES.S115);
 // STORY:harmonic-v2-desktop:S116
-export const S116 = appOnly('pending #413 design lock (task 4.4)',
+export const S116 = appOnly('#413 design lock',
   '#413 every ranked rail mini draws the same instrument, from the served row', C4_STORIES.S116);
 // STORY:harmonic-v2-desktop:S117
-export const S117 = appOnly('pending #413 design lock (task 4.4)',
+export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
 
 /* -------------------------------------------------------------- the registry */

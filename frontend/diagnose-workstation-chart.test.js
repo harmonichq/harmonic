@@ -93,6 +93,25 @@ test('#413 · a Cause mini draws the same instrument the Pattern mini draws, fro
   assert.ok(!bare.series.some((series) => series.id === 'queue:event:180'));
 });
 
+test('#413 · a withheld claimed cohort mutes its label, and the anchor label is knocked out of the plot', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const row = { count_sentences: [{ count: 1, denominator: 5, noun: 'lows', outcome: 'rebounded high' }] };
+  const railInk = { ...previewColors, misses: '#d08150', body: '#c7bca8', ground: 'rgb(30, 26, 23)' };
+  const withheld = { ...event, projection: { ...event.projection,
+    cohorts: event.projection.cohorts.map((cohort) => cohort.key !== 'matched' ? cohort
+      : { ...cohort, points: cohort.points.map((point) => ({ ...point, support: 'withheld' })) }) } };
+  const option = queuePreviewOption({ kind: 'event-comparison', data: withheld }, [60, 240], railInk, row);
+  assert.ok(!option.series.some((series) => series.id === 'queue:event:matched:median'),
+    'premise: a wholly withheld claimed cohort draws no line');
+  assert.equal(option.graphic[0].style.fill, railInk.muted, 'a label keying no line steps down to muted');
+  const drawn = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], railInk, row);
+  assert.equal(drawn.graphic[0].style.fill, railInk.misses, 'a drawn claimed cohort keeps the miss ink');
+  const label = drawn.series.find((series) => series.id === 'queue:event:event-anchor')
+    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] }).children[1];
+  assert.equal(label.style.backgroundColor, railInk.ground, 'the anchor label sits on the mini ground');
+});
+
 test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
   const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
     runs: [{ run_id: 'meal', in_pool: true }],

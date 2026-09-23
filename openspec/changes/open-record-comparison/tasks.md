@@ -175,7 +175,7 @@ and a missing named import fails the whole replay at module link, before any
 feature assertion. Each story asserts its reason words through the rendered
 page instead.
 
-- [ ] 4.1 In the #430 amendment section, record that S112's retained read now
+- [x] 4.1 In the #430 amendment section, record that S112's retained read now
   follows the record read with no Retained-context press. Its data stays
   edit-chain, whose open records serve an unavailable retained comparison. In
   `frontend/c4.replay.mjs` `C4_STORIES.S112`:
@@ -186,7 +186,7 @@ page instead.
 
   Update S112's fake-page test in `frontend/c4.replay.test.js` so releasing
   the record read fires the retained read.
-- [ ] 4.2 Add S142 on c3-trial: from the Changes roster, open the still-open
+- [x] 4.2 Add S142 on c3-trial: from the Changes roster, open the still-open
   record. With no assessment control pressed, a request carries
   `assessment=retained`, and the stage shows:
   - `[data-period="before"]` and `[data-period="after"]`;
@@ -214,7 +214,7 @@ page instead.
   - add node regression tests in `frontend/c4.replay.test.js`: the
     registration and case, a passing fake page, and one fake page failing each
     story's feature assertion.
-- [ ] 4.3 Move the pinned inventory literals to 149 issued · 130 active · 19
+- [x] 4.3 Move the pinned inventory literals to 149 issued · 130 active · 19
   retired on this branch, so this change's own tests pass:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay-plan
@@ -226,7 +226,7 @@ page instead.
   - `ACCEPTANCE.md`'s count sentence;
   - `mockups/INDEX.md`'s row, which quotes the #413 re-freeze figures;
   - the single release freeze block.
-- [ ] 4.4 Re-read for intent every other desk replay and test that opens a
+- [x] 4.4 Re-read for intent every other desk replay and test that opens a
   record or reads the figure. Record in the #430 amendment section that each
   one keeps its subject, or how it was amended:
   - S96 and S105, which open ended records;

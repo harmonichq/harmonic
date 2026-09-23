@@ -3129,6 +3129,10 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S142
+export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);
+// STORY:harmonic-v2-desktop:S143
+export const S143 = appOnly('HV2-28', '#430 an unavailable record figure names its reason in the result line\'s words', C4_STORIES.S143);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3181,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S142', S142, J()], ['S143', S143, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

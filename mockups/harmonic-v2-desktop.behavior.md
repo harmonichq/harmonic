@@ -2937,3 +2937,132 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #430 amendment — 2026-09-23, issue #430
+
+Sanction: Connor Griffin, 2026-09-23, "Q1 A, Q2 A, defaults all fine, go" —
+the standing approval for every change the release's 13 checklists call for
+("I record your answer as the approval for every change these 13 checklists
+call for"). This section changes shipped desk behavior on that sanction only.
+The decision is ADR 430 in `openspec/changes/open-record-comparison/design.md`.
+
+Base a4d374a72c8048d9d93ee4925805b91cf5674835. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c3-trial,
+edit-chain and c4-missing here, each through `CASE_STORE_DIR`. No real data is
+read. The worker ran no server and no browser; every replay below is the
+coordinator's.
+
+Changed shipped behavior:
+
+- **An open record opens on its comparison.** A change record with no saved
+  ending makes its record read, then its retained-context reassessment read,
+  with no assessment control pressed, and renders with Retained context
+  selected. An ended record still opens on its saved ending and requests
+  nothing more. The loading frame reads "Reading change records", then
+  "Computing reassessment". A reader's press holds until another record opens.
+- **The record figure says why it is empty.** It classifies from its clock
+  bins first and draws a paired or Before-only curve whenever one is served,
+  even under a served unavailable state. With no curve it names one of four
+  states — no comparison read, a saved ending that kept no curve, unavailable
+  with the reason in words, or no Before readings — mounts no chart and prints
+  no half-hours count.
+- **One vocabulary for comparison reasons.** The figure, the readiness
+  availability lines and the reassessment result line print a served reason in
+  the same words, never its code.
+- **"First seen" reads "Recorded by Harmonic"**, apart from the stage's
+  Detected time.
+
+S142 and S143 are new app-opener-only stories under HV2-28. Two stories are
+amended in prose below; no story is retired.
+
+```
+S142 · Opening a still-open record from the Changes roster reads its
+       retained-context comparison with no assessment control pressed: the
+       record shows both evidence periods and a paired Before/Trial figure
+       with its chart mounted, Retained context reads as selected, and the
+       saved-ending part still says the change is still open.
+  element:  table.gf-table [data-record], [data-period], [data-figure-state],
+            [data-assessment="retained"], [data-unavailable="ending"]
+  source:   frontend/history.js mount / loadRecord / loadReassessment;
+            frontend/follow-up.js evidenceFigure
+  lock:     HV2-28; ADR 430 (openspec/changes/open-record-comparison/design.md)
+  data:     c3-trial; its one retained Trial is still open, and its retained
+            comparison is available with a clock bin both periods serve
+  evidence: C4_STORIES.S142; records every assessment read the roster press
+            makes, then reads both periods, the paired figure and its canvas,
+            the pressed assessment and the ending part
+  status:   app-opener-only fail-first obligation. Expected: base a4d374a7
+            fails at its feature assertion (the press makes no retained read;
+            the base opens on the Original read), and the branch passes, at
+            1280x720 and 1440x900. Coordinator-run; no result recorded yet
+```
+
+```
+S143 · Opening a still-open record whose retained comparison is served
+       unavailable with no clock envelope shows an unavailable figure that
+       names the reason in words — never the served code, and the same words
+       the reassessment result line prints — with no chart and none of "no
+       clock envelope is retained", "no readings yet" or "0 → 0 half-hours
+       read" on the stage.
+  element:  [data-figure-state="unavailable"], [data-figure-reason],
+            [data-reassessment-state], .gf-stage
+  source:   frontend/follow-up.js evidenceFigure / comparisonReasonWords;
+            frontend/history.js reassessmentSection
+  lock:     HV2-28; ADR 430
+  data:     edit-chain; every retained record is still open and its retained
+            comparison is served unavailable (missing_comparison_context)
+  evidence: C4_STORIES.S143; reads the served reason code from the API, opens
+            the record by its roster press, and compares the figure's reason
+            with the code and with the result line's words
+  status:   app-opener-only fail-first obligation. Expected: base a4d374a7
+            fails at its feature assertion (no unavailable figure state; the
+            base draws the empty figure), and the branch passes, at 1280x720
+            and 1440x900. Coordinator-run; no result recorded yet
+```
+
+Amended S112 · 2026-09-23 · ADR 430, on the sanction above: The roster read, the record read and the retained reassessment read the open record then makes on its own, with no control pressed, each show their own named loading frame while pending — "Reading change records" for the first two and "Computing reassessment" for the third. `C4_STORIES.S112` holds the record read, installs the reassessment hold before releasing it, reads "Computing reassessment" with no press, then releases it and waits for the retained reassessment part. Its data stays edit-chain, whose open records serve an unavailable retained comparison. Expected: base a4d374a7 fails at the held reassessment read (none is requested without a press), and the branch passes.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S49 · 2026-09-23 · ADR 430, on the sanction above: The story's text is unchanged. Its c4 part still opens c4-missing's open Trial through the `retained()` helper, but no longer finds the served unavailable code in the reading pane: the code (read from the API, as before) must be absent from `.gf-reading`, and the reason after "Unavailable · " on the reassessment result line must be non-empty and appear in the readiness availability line too. The replay checks the words through the rendered page and imports nothing new. Expected: base a4d374a7 fails at the words assertion (the base prints the code), and the branch passes.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and test that opens a record or reads the figure was
+re-read for intent, and each keeps its subject:
+
+- **S96 and S105** open ended records, so they make the Original read alone;
+  S96's Retained context and Current policy presses still each read their
+  reassessment.
+- **S110** opens an open edit-chain record and waits for the original part,
+  which now renders after the retained read as well; its address and reload
+  assertions are unchanged.
+- **The c4 `retained()` helper** (S91's c4 cases and the readiness stories)
+  presses a Retained context that is already selected. The press keeps the
+  shown reassessment and requests nothing, and the helper's wait is unchanged.
+- **S50**, both the c3 body and the desk replay's own, pins the active Trial
+  legend; `paired` and `before-only` keep "Trial above Before" and "no Trial
+  readings to compare yet".
+- **R18** opens c4-history's first Trial and first Focus by address and waits
+  up to 30 s for the original part. The Trial is open, so it now also makes
+  the retained read (served unavailable with clock views and no bins, so the
+  figure reads no-readings); the in-process read took under a second. The
+  Focus is ended.
+- **The c3 record openers** (S54, S54b, S92's finished record, S95 and the
+  preempted Focus) all open ended records. S92 counts the figure container,
+  which still renders on a saved ending.
+- **The desk browser suite's expired-record test** opens an ended record
+  whose saved ending is a bare unavailable assessment, so its figure reads
+  unavailable ("not recorded"); its Later conclusion assertions are unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Record press: record read, then retained read with no control pressed | frontend/history.js | S142, S112 |
+| Record figure state, reason words and result line | frontend/follow-up.js, history.js | S143, S49 |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 149 issued · 130 active · 19 retired on this branch.

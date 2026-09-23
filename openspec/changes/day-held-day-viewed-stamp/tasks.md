@@ -68,23 +68,17 @@
 
 ## 3. Behavior ledger and replay
 
-- [ ] 3.1 Re-freeze `mockups/harmonic-v2-desktop.behavior.md` for S133.
-  - **Header.** Set the frozen line to
-    `★ FROZEN 2026-09-23 · base a4d374a72c8048d9d93ee4925805b91cf5674835`
-    and the generator to the same commit. Set the inventory line to
-    `148 issued · 129 active · 19 retired`, still marked equal to
-    `acceptance.py inventory()`'s pinned literal. Keep the fixtures,
-    predecessor, retired and lifecycle lines; this change does not regenerate
-    the showcase.
-  - **Lead paragraph.** Above the #413 re-freeze paragraph, which stays as
-    history, add a paragraph saying: this #427 re-freeze adds S133, which
-    records the shipped rule that the topbar's Day reopens the day last looked
-    at (ADR 427), and no inherited story is weakened, amended or retired.
-  - **Amendment section.** Append `## #427 amendment — 2026-09-23, issue
-    #427` at the end of the file, in the form of the #414 chunk 3 amendment.
-    Its lead states that S133 is app-opener-only, that browser execution
-    belongs to whoever can launch a browser, and the Q2 sanction line from
-    design.md. Then the story block:
+- [ ] 3.1 Record S133 in `mockups/harmonic-v2-desktop.behavior.md` only
+  through a new section, `## #427 amendment — 2026-09-23, issue #427`,
+  appended at the end of the file in the form of the #414 chunk 3 amendment.
+  Do not rewrite, re-date or replace any existing `★ FROZEN` block. Do not
+  touch the header's inventory line, and add no freeze block. The header
+  count and the one release freeze block belong to the release coordinator.
+  - **Lead.** S133 records the shipped rule that the topbar's Day reopens the
+    day last looked at (ADR 427). It is app-opener-only, and browser execution
+    belongs to whoever can launch a browser. No inherited story is weakened,
+    amended or retired. Quote the Q2 sanction line from design.md.
+  - **Story block:**
     - **Summary:** direct Day entry reopens the day last looked at. After a
       selected occurrence's "Open <date> in Day" opens a recorded day earlier
       than the latest, a visit to Diagnose, then Changes, then the topbar's Day
@@ -110,14 +104,18 @@
   The body:
   1. `go(page, 'day')`. Read the pressed week column's `data-pick` as the
      latest recorded day, and assert `[data-day="latest"]` is disabled.
-  2. `go(page, 'diagnose')` and open the comparison case
-     (`openComparisonCase`). For each `#level .case-occurrence` in order:
-     `choose` it, press `.occ-foot button:last-child`, wait for
-     `.gf-stage-day`, then read the opened day from the pressed week column
-     and the address's `date` parameter, which must agree. Stop at the first
-     opened day that differs from the latest recorded day. Otherwise
-     `go(page, 'diagnose')` and try the next occurrence. If none opens an
-     earlier day, fail and name how many occurrences were tried; never skip.
+  2. For each index i of the comparison case's occurrences, starting at 0:
+     1. `go(page, 'diagnose')`.
+     2. Call `openComparisonCase(page)` at the top of every iteration. Do not
+        rely on Diagnose restoring a parked case; #428 changes how the address
+        carries it.
+     3. `choose` the i-th `#level .case-occurrence`, press
+        `.occ-foot button:last-child`, and wait for `.gf-stage-day`.
+     4. Read the opened day from the pressed week column and from the
+        address's `date` parameter; the two must agree.
+
+     Stop at the first opened day that differs from the latest recorded day.
+     If none does, fail and name how many occurrences were tried; never skip.
   3. Assert "opened from" is shown.
   4. `go(page, 'diagnose')`, then `go(page, 'changes')`, then
      `go(page, 'day')`. Assert:
@@ -133,21 +131,19 @@
   `export const S133 = appOnly('HV2-13', '#427 the topbar's Day reopens the day last looked at; a reload opens the latest recorded day', C2_STORIES.S133);`
   (escape the apostrophe in the string literal). Register
   `['S133', S133, M()]` in `REGISTRY`.
-- [ ] 3.3 Move every statement of the desk ledger's inventory from
-  147 / 128 / 19 to 148 / 129 / 19:
+- [ ] 3.3 Move the replay driver's numeric inventory literals from
+  147 / 128 / 19 to 148 / 129 / 19, so this branch's own tests pass:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay plan's
     `count`, the stated active/retired inventory (S1–S129 plus R1–R19), and
-    the same-total test (130 S and 18 R, total 148);
-  - `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`: its count sentence
-    ("The desk ledger now holds … issued entries …"), plus a line after the
-    #413 list saying "#427 added S133 on 2026-09-23: the topbar's Day
-    reopening the day last looked at";
-  - the ledger header, which 3.1 already moved.
+    the same-total test (130 S and 18 R, total 148).
 
-  The smoke slice and its hash do not change. The CI shards are fractional, so
-  `ci.yml` does not change. `mockups/INDEX.md`'s count sits under the
-  2026-09-22 re-freeze, which it describes accurately, so it does not change.
+  Leave three places unchanged: the ledger header's inventory line,
+  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s count sentence, and
+  `mockups/INDEX.md`. The release coordinator owns the first two and
+  reconciles the final counts on the integration branch; INDEX.md's count
+  describes the 2026-09-22 re-freeze accurately. The smoke slice and its hash
+  do not change. The CI shards are fractional, so `ci.yml` does not change.
 
 ## 4. Documentation
 

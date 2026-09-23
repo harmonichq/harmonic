@@ -22,10 +22,13 @@
     `/api/model-view`, `/api/timeline` and `/api/carbs` from manufactured
     values written in the file.
   - **Page:** stub `document` (`activeElement`, `querySelectorAll`,
-    `documentElement`) and `getComputedStyle`. Pass a fake browser to
-    `startDesk`: `location`, `history.pushState`/`replaceState` updating that
-    location, `matchMedia` and `addEventListener`. Seat the desk on a plain
-    host object.
+    `documentElement`) and `getComputedStyle`. Build a fake browser with
+    `location`, `history.pushState`/`replaceState` updating that location,
+    `matchMedia` and `addEventListener`. Pass it to `startDesk`, and also
+    assign it to `globalThis.window`: `navigate` writes the address through
+    `writeRoute`, which defaults to `window.location` and `window.history`
+    (`tab-routing.js`). `changes.test.js` sets `window` the same way. Restore
+    every replaced global afterwards. Seat the desk on a plain host object.
   - **Order:** call `installDay()` before `startDesk`. Wait for open reads
     through `routes.js` `loading()`.
   - **Existing tests:** every existing `dayFrame` test keeps passing
@@ -65,46 +68,86 @@
 
 ## 3. Behavior ledger and replay
 
-- [ ] 3.1 Add story S133 to the Day section of
-  `mockups/harmonic-v2-desktop.behavior.md`, in the ledger's story format:
-  - **Summary:** direct Day entry reopens the day last looked at. After a
-    contextual Open Day on a recorded day earlier than the latest, a visit to
-    Diagnose, then Changes, then the topbar's Day shows that same day. It shows
-    no Opened from and no return, at the plain `/day` address, and a reload
-    opens the latest recorded day.
-  - **element:** `[data-destination="day"]`; `.gf-nav-col[aria-pressed="true"][data-pick]`;
-    `[data-day="latest"]`; absence of `[data-day="return"]`.
-  - **source:** `frontend/day.js` `adopt`/`settle`.
-  - **lock:** HV2-13, ADR 427.
-  - **data:** showcase (35 recorded days, 2024-05-20 to 2024-06-30).
-  - **evidence:** replay fn S133.
-  - **status:** owed until replayed.
-- [ ] 3.2 Add `export const S133` to `frontend/desk-behavior.replay.mjs` and
-  register `['S133', S133, M()]` in `REGISTRY`, beside the other Day stories.
-  Use the existing `goto`, `visible`, `activate`, `waitForReplayAssertion` and
-  `deskText` helpers. The story:
-  1. Press the topbar's Day and read the held column's `data-pick` as the
-     latest recorded day. Assert `[data-day="latest"]` is disabled.
-  2. Press Diagnose. Choose the first visible `[data-action="day"][data-date]`
-     whose `data-date` differs from that day, and fail naming how many controls
-     it checked if none does. Never skip.
-  3. Open it, and assert the held column is that date and "opened from" is
-     shown.
-  4. Press Diagnose, then Changes, then Day. Assert the held column is still
-     that date, `[data-day="latest"]` is enabled, and there is no
-     `[data-day="return"]` and no "opened from" text. Assert
-     `location.pathname` is `/day` and `location.search` is empty.
-  5. `page.reload()`. Assert the held column is the latest recorded day again
-     and `[data-day="latest"]` is disabled.
-- [ ] 3.3 Move the replay driver's inventory literals from 147 / 128 / 19 to
-  148 / 129 / 19:
+- [ ] 3.1 Re-freeze `mockups/harmonic-v2-desktop.behavior.md` for S133.
+  - **Header.** Set the frozen line to
+    `★ FROZEN 2026-09-23 · base a4d374a72c8048d9d93ee4925805b91cf5674835`
+    and the generator to the same commit. Set the inventory line to
+    `148 issued · 129 active · 19 retired`, still marked equal to
+    `acceptance.py inventory()`'s pinned literal. Keep the fixtures,
+    predecessor, retired and lifecycle lines; this change does not regenerate
+    the showcase.
+  - **Lead paragraph.** Above the #413 re-freeze paragraph, which stays as
+    history, add a paragraph saying: this #427 re-freeze adds S133, which
+    records the shipped rule that the topbar's Day reopens the day last looked
+    at (ADR 427), and no inherited story is weakened, amended or retired.
+  - **Amendment section.** Append `## #427 amendment — 2026-09-23, issue
+    #427` at the end of the file, in the form of the #414 chunk 3 amendment.
+    Its lead states that S133 is app-opener-only, that browser execution
+    belongs to whoever can launch a browser, and the Q2 sanction line from
+    design.md. Then the story block:
+    - **Summary:** direct Day entry reopens the day last looked at. After a
+      selected occurrence's "Open <date> in Day" opens a recorded day earlier
+      than the latest, a visit to Diagnose, then Changes, then the topbar's Day
+      shows that same day. It shows no Opened from and no return, at the plain
+      `/day` address, and a reload opens the latest recorded day.
+    - **element:** `nav.v2-nav [data-destination]`;
+      `#level .case-occurrence`; `.occ-foot button:last-child`;
+      `.gf-nav-col[aria-pressed="true"][data-pick]`; `[data-day="latest"]`;
+      absence of `[data-day="return"]`.
+    - **source:** `frontend/day.js` `adopt`/`settle`.
+    - **lock:** HV2-13; ADR 427.
+    - **data:** showcase (35 recorded days, 2024-05-20 to 2024-06-30).
+    - **evidence:** `C2_STORIES.S133`.
+    - **status:** owed. It records shipped behavior, so the base app is
+      expected to pass; it is not a fail-first obligation. Task 2.2's
+      broken-variant check carries non-vacuity.
+- [ ] 3.2 Write S133's app body as `C2_STORIES.S133` in
+  `frontend/c2.replay.mjs`, beside S61 and S62. Reuse that file's `go`,
+  `press`, `openComparisonCase` and `choose` helpers and the
+  `.occ-foot button:last-child` path its S61 takes. Diagnose's "Open <date> in
+  Day" is the occurrence foot's plain `.linkbtn`, reached only after an
+  occurrence is selected; Diagnose renders no `[data-action="day"]` control.
+  The body:
+  1. `go(page, 'day')`. Read the pressed week column's `data-pick` as the
+     latest recorded day, and assert `[data-day="latest"]` is disabled.
+  2. `go(page, 'diagnose')` and open the comparison case
+     (`openComparisonCase`). For each `#level .case-occurrence` in order:
+     `choose` it, press `.occ-foot button:last-child`, wait for
+     `.gf-stage-day`, then read the opened day from the pressed week column
+     and the address's `date` parameter, which must agree. Stop at the first
+     opened day that differs from the latest recorded day. Otherwise
+     `go(page, 'diagnose')` and try the next occurrence. If none opens an
+     earlier day, fail and name how many occurrences were tried; never skip.
+  3. Assert "opened from" is shown.
+  4. `go(page, 'diagnose')`, then `go(page, 'changes')`, then
+     `go(page, 'day')`. Assert:
+     - the pressed column is still the opened day;
+     - `[data-day="latest"]` is enabled;
+     - there is no `[data-day="return"]` and no "opened from" text;
+     - the page URL's pathname is `/day` and its search is empty.
+  5. `page.reload()` and wait for `.gf-stage-day`. Assert the pressed column is
+     the latest recorded day and `[data-day="latest"]` is disabled.
+
+  In `frontend/desk-behavior.replay.mjs`, beside S113–S117, add
+  `// STORY:harmonic-v2-desktop:S133` above
+  `export const S133 = appOnly('HV2-13', '#427 the topbar's Day reopens the day last looked at; a reload opens the latest recorded day', C2_STORIES.S133);`
+  (escape the apostrophe in the string literal). Register
+  `['S133', S133, M()]` in `REGISTRY`.
+- [ ] 3.3 Move every statement of the desk ledger's inventory from
+  147 / 128 / 19 to 148 / 129 / 19:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay plan's
     `count`, the stated active/retired inventory (S1–S129 plus R1–R19), and
-    the same-total test (130 S and 18 R, total 148).
+    the same-total test (130 S and 18 R, total 148);
+  - `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`: its count sentence
+    ("The desk ledger now holds … issued entries …"), plus a line after the
+    #413 list saying "#427 added S133 on 2026-09-23: the topbar's Day
+    reopening the day last looked at";
+  - the ledger header, which 3.1 already moved.
 
   The smoke slice and its hash do not change. The CI shards are fractional, so
-  `ci.yml` does not change.
+  `ci.yml` does not change. `mockups/INDEX.md`'s count sits under the
+  2026-09-22 re-freeze, which it describes accurately, so it does not change.
 
 ## 4. Documentation
 
@@ -116,16 +159,20 @@
 
 ## 5. Verification and evidence
 
-- [ ] 5.1 Fast gate and guards, on the commit to be pushed:
-  `node --test 'frontend/**/*.test.js'`,
-  `TZ=America/Denver node --test frontend/day.test.js`,
-  `npx --yes @fission-ai/openspec@1 validate --all --strict`,
-  `python3 scripts/check_adr_numbers.py`,
-  `python3 scripts/check_owned_identifiers.py`,
-  `python3 scripts/check_public_allowlist.py`, and
-  `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`.
-  The whole `acceptance.test.py` runs in 5.2, because its
-  `ServerLifecycleTest` binds a socket.
+- [ ] 5.1 On the commit to be delivered, run each command below on its own and
+  record its exit code. A failure in one does not skip the rest.
+  1. `node --test 'frontend/**/*.test.js'`
+  2. `TZ=America/Denver node --test frontend/day.test.js`
+  3. `npx --yes @fission-ai/openspec@1 validate --all --strict`
+  4. `python3 scripts/check_adr_numbers.py`
+  5. `python3 scripts/check_owned_identifiers.py`
+  6. `python3 scripts/check_public_allowlist.py`
+  7. `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`
+
+  The fast gate must report fail 0, and every other command must exit 0. A leg
+  that cannot run is reported as not run, with its reason; it is never counted
+  as a pass or waved off as noise. The whole `acceptance.test.py` runs in 5.2,
+  because its `ServerLifecycleTest` binds a socket.
 - [ ] 5.2 Port-bound. Whoever can launch a browser runs this, never a
   sandboxed worker. Run the whole
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`.

@@ -47,8 +47,10 @@ with v1, and it does not govern this address.
 ### Consequences
 
 - Behavior does not change. Three things pin it: a surfaces requirement, a
-  Node test through the Day destination's own mount, and story S133 beside S60
-  in the desk's frozen ledger. The story exists because UI Craft's revise
+  Node test through the Day destination's own mount, and story S133, which a
+  dated #427 amendment adds to the desk's frozen ledger. S133 reaches Day the
+  way the reader did: from a selected occurrence's "Open <date> in Day". It
+  exists because UI Craft's revise
   lifecycle turns observed shipped behavior with no story into a story.
 - The spec and ledger call it "the day last looked at", never "held".
   CONTEXT.md already uses **held** for a Diagnose register. The code's "held
@@ -73,7 +75,11 @@ local wall time. Reproduced in-process with the Day destination driven through
 - With a read stamped `2024-06-29 21:30:12`, the same local minute, it read
   `Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 30, 2024 · 03:30`. The
   fold did not fire.
-- Under `TZ=UTC`, the same read and clock folded to `Day · read <b>…</b>`.
+- Under `TZ=UTC`, with the same clock, the Denver read `2024-06-29 21:30:12`
+  rendered `Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 30, 2024 · 03:30`.
+  No fold. A read stamped `2024-06-30 03:30:12`, the same UTC minute, rendered
+  `Day · read <b>Jun 30, 2024 · 03:30</b>`, folded. Only a read in the viewed
+  stamp's own zone and minute folds.
 
 The fix reuses `formatWallClock` from `frontend/carb-log.js`. It is the existing
 exported formatter from a `Date` to the stored `YYYY-MM-DD HH:MM:SS` wall-clock

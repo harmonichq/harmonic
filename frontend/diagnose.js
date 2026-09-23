@@ -124,7 +124,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!restoring || !event.isTrusted || currentDestination() !== 'diagnose') return;
     if (event.type === 'keydown' && NOT_AN_ACT.has(event.key)) return;
     restoring = false;
-    setTimeout(() => { if (!restoring && !rebuilding && onScreen()) writeCase(); });
+    setTimeout(() => { if (!restoring && onScreen()) writeCase(); });
   }
 
   // ADR 428 point 5: a return lands on the held Occurrence's own Open in Day

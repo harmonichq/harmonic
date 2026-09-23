@@ -711,6 +711,25 @@ test('#413 · a claimed cause keeps every served appearance, not only the one ma
   ]);
 });
 
+test('#413 · a claim naming no served row falls back to an ordinary row, never a silent drop', () => {
+  // The backend always stamps `claimed_by` and appends its owning Pattern row
+  // in the same pass (findings_projection.py `_pattern_rows`), so this crosses
+  // no currently reachable payload — but the projection crosses the server
+  // boundary and nothing enforces that coupling with a test, so an orphaned
+  // claim must still surface the row rather than vanish.
+  const orphan = { id: 'finding:orphaned_cause', kind: 'habit', register: 'finding',
+    claimed_by: 'pattern:not_served', priority: 40, tier: 'worth_a_look',
+    count_sentences: [{ count: 3, denominator: 9, noun: 'highs', outcome: 'ran high',
+      sentence: '3 of 9 highs ran high' }] };
+  const rows = queueRows({ rows: [orphan] });
+  assert.equal(rows.length, 1, 'the orphaned claim must still appear as its own row');
+  assert.equal(rows[0].id, 'finding:orphaned_cause');
+  assert.equal(rows[0].members, null);
+  assert.deepEqual(rows[0].detail, {
+    kind: 'sentences', parts: [{ count: '3 of 9', noun: 'highs', outcome: 'ran high' }],
+  });
+});
+
 test('#395 · the browser input publishes only its renderable mini hosts in served order', () => {
   const cases = JSON.parse(readFileSync(new URL(
     '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));

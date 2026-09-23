@@ -208,7 +208,10 @@ const state = (page) => page.evaluate(() => {
     queue: [...document.querySelectorAll('#level .qrow')].map((n) => ({
       title: n.querySelector('.lab')?.textContent.trim() ?? null,
       tag: n.querySelector('.tag')?.textContent.trim() ?? null,
-      claimed: n.parentElement.classList.contains('claimed'),
+      // #413 — a claimed cause folds under its parent Pattern as a
+      // `.qmember`; it is never a `.qrow`, so no row this selector reaches
+      // can carry the retired `claimed` class any more.
+      claimed: false,
       register: n.dataset.state ?? null,
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),
@@ -447,19 +450,34 @@ export function highCarbFailureScenario(defect) {
   return scenario;
 }
 
+// #413 — a claimed cause folds under its parent Pattern; it is never a
+// sibling `.qrow`. This showcase always claims `finding:high_carb_sequence`
+// under `pattern:highs_after_meals`, but the resolver stays correct for an
+// unclaimed ranked row too, rather than assuming which shape the served row
+// takes.
+async function railRowLocator(page, id) {
+  const row = page.locator(`#level .qrow[data-id="${id}"]`);
+  if (await row.count()) return row;
+  for (;;) {
+    const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
+    if (!(await closed.count())) break;
+    await closed.click();
+  }
+  const member = page.locator(`#level .qmember[data-id="${id}"]`);
+  await member.waitFor({ timeout: 30000 });
+  return member;
+}
+
 export async function assertHighCarbFailure(page, scenario, defect, stored) {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
-  const row = '#level .qrow[data-id="finding:high_carb_sequence"]';
-  await page.locator(row).waitFor();
-  // The roster preloads this case for its miniature. Finish that read before
-  // faulting the separate inspector request; its retry count starts at drill-in.
-  await page.waitForFunction((selector) => {
-    const host = document.querySelector(`${selector} .mini`);
-    const chart = host && window.echarts.getInstanceByDom(host);
-    return chart?.getOption().series?.some((series) => /^(matched|comparison):/.test(series.id || ''));
-  }, row);
+  const id = 'finding:high_carb_sequence';
+  const row = await railRowLocator(page, id);
+  // A claimed cause carries no mini of its own (#413, "a Pattern owns its
+  // causes"; its parent Pattern's mini stands for the group), so there is no
+  // rail-mini preload read to finish before arming the scenario: the
+  // case-file request below is the only one this row ever issues.
   scenario.armed = true;
-  await page.locator(row).click();
+  await row.click();
   if (defect === 'stale-recover') {
     await page.locator('#level .sequence-comparison').waitFor();
     is(scenario.cases, ['event', 'event'], 'stale response retries the same High-carb case once');
@@ -478,7 +496,7 @@ export async function assertHighCarbFailure(page, scenario, defect, stored) {
     await captureEvidence(page, `high_carb_sequence-${defect}`);
     scenario.armed = false;
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
-    await page.locator(row).click();
+    await (await railRowLocator(page, id)).click();
     await page.locator('#level .sequence-comparison').waitFor();
     is(await page.locator('#level .case-file-error').count(), 0, 'manual reopen recovers with valid response');
     await assertSequenceResponse(page, stored);

@@ -191,14 +191,27 @@ export function presentedRows(projection) {
  * row's published tier.
  *
  * A CLAIMED CAUSE IS NOT A ROW OF ITS OWN (#413, "A Pattern owns its causes in
- * the rail"). It never enters the returned list; instead it is folded onto its
- * parent Pattern's `members` array, in served order, carrying every one of its
- * own served count sentences. A member outside its parent's fold has nothing to
- * be reachable through, so there is no independent hidden/collapsed state to
- * track for it — it shows exactly when its parent does.
+ * the rail") — PROVIDED its named parent is actually served in this
+ * projection. It never enters the returned list as a sibling; instead it is
+ * folded onto its parent Pattern's `members` array, in served order, carrying
+ * every one of its own served count sentences. A member outside its parent's
+ * fold has nothing to be reachable through, so there is no independent
+ * hidden/collapsed state to track for it — it shows exactly when its parent
+ * does.
+ *
+ * A CLAIM NAMING NO SERVED ROW IS NOT A FOLD, AND NEVER A SILENT DROP. The
+ * backend's `_pattern_rows` always stamps `claimed_by` and appends its owning
+ * Pattern row in the same pass (findings_projection.py), so every currently
+ * reachable payload keeps the two coupled — but nothing enforces that
+ * coupling with a test the way #413's count-sentence coverage does, and this
+ * projection crosses the server boundary. A cause whose named parent is
+ * absent from the served rows falls back to an ordinary top-level row (its
+ * own rank, tier and detail) rather than vanishing, so a malformed or
+ * future-shaped payload degrades to a plain row, never a missing one.
  */
 export function queueRows(projection, selected = null) {
   const rows = presentedRows(projection);
+  const presentIds = new Set(rows.map((row) => row.id));
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
     const chips = row.chips || [];
@@ -208,7 +221,8 @@ export function queueRows(projection, selected = null) {
     const siftedOut = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
     const hidden = siftedOut;
     const collapsed = watching;
-    return { row, hidden, collapsed };
+    const claimedBy = row.claimed_by && presentIds.has(row.claimed_by) ? row.claimed_by : null;
+    return { row, hidden, collapsed, claimedBy };
   });
   let pricedSeen = false;
   let seamOpened = false;
@@ -220,8 +234,8 @@ export function queueRows(projection, selected = null) {
   let firstPricedTier;
   let firstPricedTierSet = false;
   const built = [];
-  for (const { row, hidden, collapsed } of filtered) {
-    if (row.claimed_by) continue; // folded onto its parent below
+  for (const { row, hidden, collapsed, claimedBy } of filtered) {
+    if (claimedBy) continue; // folded onto its parent below
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
     const shown = !hidden && !collapsed;
@@ -278,10 +292,15 @@ export function queueRows(projection, selected = null) {
     });
   }
   const byId = new Map(built.map((entry) => [entry.id, entry]));
-  for (const { row } of filtered) {
-    if (!row.claimed_by) continue;
-    const parent = byId.get(row.claimed_by);
-    if (!parent) continue; // the claim names no served row in this projection
+  for (const { row, claimedBy } of filtered) {
+    if (!claimedBy) continue;
+    const parent = byId.get(claimedBy);
+    // `claimedBy` is only set above when its id names a served row, and every
+    // served row not itself claimed enters `built` unconditionally — so this
+    // is unreached on any payload the backend can currently produce (a
+    // Pattern is never itself claimed). It stays as a last-resort guard
+    // against a future claim chain rather than a silent drop.
+    if (!parent) continue;
     (parent.members ??= []).push({
       id: row.id,
       title: row.title,

@@ -979,6 +979,15 @@ def _history_headline(row: dict) -> str:
             f"until {regime_end_date}. Programmed now: {programmed_now}.")
 
 
+def _pattern_noun(pattern: dict) -> str:
+    """The noun a Pattern's own k-of-n count is denominated in — shared by
+    ``headline`` and the count sentence so the two can never name a different
+    noun for the same row."""
+    if pattern["rate_producer"] == "harm_band_source_nights":
+        return "nights"
+    return _FAMILY_NOUN[pattern_rate_family(pattern).value]
+
+
 def _headline_for(row: dict) -> str:
     """The one served sentence for this row's own family and register."""
     if row["kind"] == "pattern":
@@ -987,11 +996,7 @@ def _headline_for(row: dict) -> str:
             return f"{row['title']}: counts under review"
         if pattern["admission_route"] == "none":
             return row["title"]
-        if pattern["rate_producer"] == "harm_band_source_nights":
-            noun = "nights"
-        else:
-            family = pattern_rate_family(pattern)
-            noun = _FAMILY_NOUN[family.value]
+        noun = _pattern_noun(pattern)
         return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)
@@ -1017,8 +1022,11 @@ def _headline_for(row: dict) -> str:
 # both count in meals; carb_undercount counted in meals ends "ran high", while the
 # same lever counted in highs describes what the high followed). An unrecognized
 # key is a defect, never a silent blank: a Pattern key or lever-and-family pair
-# added later without an entry here fails this module's tests and cannot merge —
-# there is no frontend fallback wording (`PATTERN_COPY` is retired to this table).
+# added later without an entry here fails this module's tests and cannot merge.
+# The frontend's own Pattern word constant (`PATTERN_COPY` in
+# frontend/diagnose-findings-queue.js) still exists as of this commit — this
+# table is its backend replacement, not yet its deletion, which belongs to the
+# rail work that reads served words instead (#413 tasks 3.3).
 
 _PATTERN_OUTCOME = {
     "highs_after_meals": "ran high",
@@ -1069,11 +1077,7 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     pattern = row["pattern"]
     if pattern.get("count_status") or pattern["admission_route"] == "none":
         return None
-    if pattern["rate_producer"] == "harm_band_source_nights":
-        noun = "nights"
-    else:
-        family = pattern_rate_family(pattern)
-        noun = _FAMILY_NOUN[family.value]
+    noun = _pattern_noun(pattern)
     key = pattern["key"]
     if key not in _PATTERN_OUTCOME:
         raise ValueError(f"no outcome word for pattern {key!r}")

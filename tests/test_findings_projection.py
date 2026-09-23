@@ -11,6 +11,7 @@ import importlib.util
 import json
 import pathlib
 import random
+import subprocess
 import tempfile
 import unittest
 from dataclasses import replace
@@ -31,6 +32,7 @@ from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _CAUSE_OUTCOME,
     _EVENT_CHART_FAMILIES,
+    _headline_for,
     _PATTERN_CHIPS,
     _PATTERN_OUTCOME,
     _chips_for,
@@ -53,6 +55,10 @@ from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import DAY_MINUTES
 from tests.test_analyzer_isf import ISF_36, rw, synth_night
 
+# design.md's own recorded base for #413: the commit measured before the count
+# sentence existed, used only to prove `headline` and every other served field
+# stayed byte-identical once it was added.
+_BASE_COMMIT = "eec4652a8f1109aa62d126ce3a0b4f24973194b0"
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
              / "scripts" / "gen_findings_projection_fixtures.py")
 _spec = importlib.util.spec_from_file_location("gen_findings_projection_fixtures",
@@ -311,10 +317,34 @@ class CountSentenceTest(unittest.TestCase):
                 f"{appearance['n']} of {appearance['m']} {appearance['noun']} {outcome}",
             )
 
-    def test_every_pattern_key_and_emittable_lever_family_pair_serves_one_entry(self):
-        # A missing entry is a KeyError inside `project`, never a silent blank —
-        # exercised across the whole window ledger so a pair that only shows up
-        # under one clock scope still gets caught.
+    def test_the_committed_fixture_ledger_serves_one_entry_per_pair_it_carries(self):
+        """Every Pattern key and lever-and-family pair the pinned fixture ledger
+        actually emits serves exactly one outcome-table entry.
+
+        This is deliberately NOT a claim that ``_CAUSE_OUTCOME`` is closed over
+        every pair the real engine could ever produce — it isn't provably closed
+        in code. ``cause_lever`` is stamped per ANCHOR by
+        ``model_view._is_driver`` (``anchor.t == attr.trigger_t or
+        anchor.reach_start == attr.trigger_t``), a timestamp-coincidence test run
+        against every anchor in an episode regardless of its kind
+        (``explore_exposures.build_exposures``'s per-anchor loop then files the
+        resulting occurrence under whichever family that anchor's OWN kind maps
+        to). Which family a lever's occurrence lands in, beyond the anchor its
+        own classifier matched at, is therefore a fact about one patient's CGM
+        shape, not a static taxonomy this module can enumerate — confirmed by
+        ``scripts/gen_eating_sequence_fixtures.py``, which drives the real
+        ``build_exposures`` over manufactured events and produces a
+        ``missed_meal`` occurrence inside the ``meals`` family, a pair
+        ``evidence_population._POLICIES[Lever.MISSED_MEAL]`` (exposure=HIGHS)
+        does not predict.
+
+        Closure is enforced by process, not by proof: every generator that can
+        produce a new pair runs the real engine and is pinned by this
+        sub-order's own test run, so a pair with no table entry fails CI before
+        it can merge — the design's own accepted-failure clause (design.md,
+        #413 ADR "The backend serves the count sentence": "fails the backend
+        test and cannot merge; nothing degrades at run time").
+        """
         for bounds in (None, LOW_BLOCK, REBOUND, MORNING, AFTERNOON, (22 * 60, 2 * 60)):
             query = (WindowQuery.whole_day() if bounds is None
                      else WindowQuery.clock(*bounds))
@@ -327,15 +357,36 @@ class CountSentenceTest(unittest.TestCase):
                     self.assertEqual(len(sentences), len(row["appearances"] or []),
                                      row["lever"])
 
-    def test_tier_rank_priority_register_and_headline_are_unaffected(self):
-        # The count sentence rides beside `headline`; it must never move any of
-        # the fields the queue's ranking and rendering already depend on.
-        rows = self.projection.project(WindowQuery.whole_day())["rows"]
-        for row in rows:
-            self.assertIn("tier", row)
-            self.assertIn("headline", row)
-            self.assertIsNotNone(row["headline"])
-            self.assertNotIn("count_sentences", row["headline"])
+    def test_headline_and_every_other_served_field_are_unaffected(self):
+        """``count_sentences`` rides beside ``headline``, never through it, and
+        moves no other served field.
+
+        Two independent checks: ``_headline_for`` is recomputed with the new
+        field forced to ``None`` and must still equal the row's own served
+        ``headline`` (proving the template never reads it), and every row with
+        ``count_sentences`` stripped back out must equal the row the SAME
+        generator served on the pre-count-sentence base commit
+        (``eec4652a8f1109aa62d126ce3a0b4f24973194b0``, design.md's own recorded
+        base) byte for byte — the actual base comparison, not the
+        already-regenerated fixture this branch committed."""
+        base_fixture = json.loads(subprocess.run(
+            ["git", "show", f"{_BASE_COMMIT}:frontend/__fixtures__/findings-projection.json"],
+            cwd=pathlib.Path(__file__).resolve().parents[1],
+            capture_output=True, check=True, text=True,
+        ).stdout)
+        for name, bounds in gen.WINDOWS.items():
+            query = WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds)
+            rows = self.projection.project(
+                query, analysis_generation=gen.ANALYSIS_GENERATION)["rows"]
+            base_rows = base_fixture["windows"][name]["rows"]
+            self.assertEqual(len(rows), len(base_rows), name)
+            for row, base_row in zip(rows, base_rows):
+                self.assertEqual(
+                    row["headline"], _headline_for({**row, "count_sentences": None}),
+                    row["title"])
+                self.assertNotIn("count_sentences", base_row, row["title"])
+                stripped = {k: v for k, v in row.items() if k != "count_sentences"}
+                self.assertEqual(stripped, base_row, f"{name}: {row['title']}")
 
 
 class GroundedWindowTest(unittest.TestCase):

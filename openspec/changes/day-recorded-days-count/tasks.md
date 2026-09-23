@@ -2,14 +2,14 @@
 
 ## 1. The served count (backend)
 
-- [ ] 1.1 Add a `Store` method beside `cgm_day_bounds` that returns the number of
+- [x] 1.1 Add a `Store` method beside `cgm_day_bounds` that returns the number of
   distinct pump-local days (the date of the naive local `cgm_readings.t`, as
   `cgm_day_bounds` buckets it) holding at least one reading with a non-null
   `bg`; an empty table returns 0. Store test in `tests/test_store.py` next to
   `CgmDayBoundsTest`: an empty store counts 0; a store with glucose readings on
   three days (two on one of them), a gap day and a day holding only a
   null-`bg` reading counts 3.
-- [ ] 1.2 Serve it on `/api/status` as `data_day_count`, read inside the same
+- [x] 1.2 Serve it on `/api/status` as `data_day_count`, read inside the same
   `Store.open` block as `cgm_day_bounds`, beside `earliest_data_day` and
   `latest_data_day`. The status endpoint stays uncached. Failing-first API test in
   `tests/test_api.py` through `GET /api/status` on a store whose readings fall on
@@ -18,7 +18,7 @@
 
 ## 2. The Day desk (frontend)
 
-- [ ] 2.1 Fail first, against today's input. Before any `frontend/day.js` change,
+- [x] 2.1 Fail first, against today's input. Before any `frontend/day.js` change,
   add cases to `frontend/day.test.js` built from synthetic padded reads shaped as
   `build_day_navigator` serves them (the month plus seven days either side), fed
   through today's `rows` input exactly as `loadedDays()` joins them (the reads
@@ -30,20 +30,20 @@
   its neighbour's week — never on a thrown error. With June 2024 missing one day
   and July 1–23 recorded (52 days), today's code prints 36 and then 66 in the
   rail, and heads of 30 for July (true 23) and 36 for June (true 29).
-- [ ] 2.2 Day's status read (`loadBounds`) keeps `data_day_count` as
+- [x] 2.2 Day's status read (`loadBounds`) keeps `data_day_count` as
   `bounds.dataDays` beside the first and last day, and the rail's
   "N recorded day(s) · <first> to <last>" prints it, keeping today's
   singular/plural wording. It never falls back to counting loaded rows.
-- [ ] 2.3 `dayFrame`'s state takes the loaded month reads, keyed by month as the
+- [x] 2.3 `dayFrame`'s state takes the loaded month reads, keyed by month as the
   desk holds them (`memory.months`), in place of the pre-joined `rows` list, and
   joins them to one row per day before the ribbon, the month grid or its head
   read them. When two reads carry the same day, the read of that day's own month
   supplies it; a padding row stands only while its own month is not loaded. The
   same join replaces `loadedDays()` for recorded-day stepping, so there is one
   join in the module. `dayState()` passes the reads.
-- [ ] 2.4 The month head counts the joined rows inside the shown month that have
+- [x] 2.4 The month head counts the joined rows inside the shown month that have
   data.
-- [ ] 2.5 Move the `state()` helper and 2.1's cases to the month-keyed input (the
+- [x] 2.5 Move the `state()` helper and 2.1's cases to the month-keyed input (the
   same padded reads, keyed by month), add (b) in the other load order and that a
   shown month's cells come from its own read, and run the file green.
 

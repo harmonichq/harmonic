@@ -355,6 +355,33 @@ class CgmDayBoundsTest(unittest.TestCase):
         self.assertEqual(latest, "2026-01-10")
 
 
+class CgmDataDayCountTest(unittest.TestCase):
+    """#425: the Day rail's total — days carrying a glucose value, bucketed by the
+    pump-local wall-clock day as cgm_day_bounds buckets them."""
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def test_empty_db_counts_no_days(self):
+        self.assertEqual(self.store.cgm_data_day_count(), 0)
+
+    def test_counts_each_glucose_day_once_and_skips_gap_and_glucose_less_days(self):
+        self.store.upsert_cgm([
+            {"EventDateTime": "2026-01-05T08:30:00", "Readings (CGM / BGM)": 110, "Description": "EGV"},
+            {"EventDateTime": "2026-01-05T23:55:00", "Readings (CGM / BGM)": 140, "Description": "EGV"},
+            {"EventDateTime": "2026-01-06T12:00:00", "Readings (CGM / BGM)": 105, "Description": "EGV"},
+            # 2026-01-07 holds no reading at all: a gap day.
+            # 2026-01-08 holds only a sensor HIGH, stored with no glucose value —
+            # the calendar shows that day as no data, so it is not counted.
+            {"EventDateTime": "2026-01-08T09:00:00", "Readings (CGM / BGM)": None, "Description": "EGV"},
+            {"EventDateTime": "2026-01-09T00:05:00", "Readings (CGM / BGM)": 95, "Description": "EGV"},
+        ])
+        self.assertEqual(self.store.cgm_data_day_count(), 3)
+
+
 class BasalProfileRateTest(unittest.TestCase):
     """The programmed rate (LidBasalDelivery.profileBasalRate) rides alongside the
     delivered rate so A1 can show 'current' and F2 can cut basal epochs."""

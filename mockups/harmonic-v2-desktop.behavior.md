@@ -2323,7 +2323,7 @@ actually drives it**, not one that merely mentions it.
 | ResizeObserver ×3 | glucose.js:474, :513, :593 | S83 |
 | `[data-pick]` | day.js:204 | S63 |
 | `[data-day-row]` | day.js:205 | S67 |
-| `[data-day]` ×7 | day.js:206-226 | return S62 · month S64 · prev/next-month S65 · prev/next/latest S66 |
+| `[data-day]` ×7 | day.js:206-226 | return S62 · month S64, S127 · prev/next-month S65, S127 · prev/next/latest S66 |
 | ResizeObserver | day.js:183 | S83 |
 | `[data-slot]` | setting.js:392 | S43 (pressed) |
 | `[data-night]` | setting.js:393 | S43 (pressed) |
@@ -2936,4 +2936,51 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             404 with no redirect for every one, asserts the desk's own pages
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
+```
+
+## #425 amendment — 2026-09-23, issue #425
+
+Sanction: Connor Griffin (operator, repo owner), 2026-09-23, answered "Q1 A,
+Q2 A, defaults all fine, go"; Q2 A is the operator's dated sanction for every
+shipped-surface revision and behavior-ledger amendment the #422–#434
+checklists call for.
+
+Day's rail printed "N recorded days · <first day> to <last day>" with N counted
+from whichever month reads the desk had loaded, so paging the Month calendar
+grew it over an unchanged span. Each month read carries a week of its
+neighbours, and a month's head counted the neighbour's overlapping week again
+once that neighbour was read. The status read now serves the history's
+recorded-day count (`data_day_count`), the rail prints it, and the desk merges
+its loaded month reads to one row per day before the ribbon, the month grid,
+its head or recorded-day stepping reads them (ADR 425 in
+`openspec/changes/day-recorded-days-count/design.md`).
+
+S127 is added. No inherited story is amended, weakened or retired: S64 and S65
+still drive the month toggle and stepping, and none of S62–S67 asserted a
+count. S127 is app-opener-only, like S104; browser execution belongs to the
+coordinator at 1280x720 and 1440x900.
+
+```
+S127 · Day's rail count is the served number of recorded days in the whole
+       history, unchanged by paging the Month calendar; each month's head
+       counts its own recorded days once, never a loaded neighbour's
+       overlapping week, and reads the same before and after that neighbour
+       is loaded.
+  element:  .gf-stage-day .instrument .meta; .gf-month-toggle;
+            [data-day="prev-month"], [data-day="next-month"];
+            .gf-nav-month-head .meta; .gf-nav-cell[data-pick]
+  source:   frontend/day.js loadBounds / joinDays / dayFrame / monthGrid;
+            ciq_autotune/api.py status_endpoint (data_day_count)
+  lock:     nearest HV2-13; S64/S65 cover toggling and stepping, not the count
+  data:     showcase; arrives on its latest recorded day, opens the Month
+            calendar, pages to the earlier recorded month and back
+  evidence: C4_STORIES.S127; reads the rail's count on arrival, then after
+            each paged month's own cells land requires the rail's count
+            unchanged and the shown month's head equal to its recorded
+            (enabled) cells, and the arrival month's head equal to its first
+            reading; only then compares the rail's count with the served
+            /api/status data_day_count, so an app counting loaded rows fails on
+            the count moving, not only on the field it lacks
+  status:   pending coordinator run — fail-first on base a4d374a7 with the
+            #425 harness laid over, and pass on the branch, at both sizes
 ```

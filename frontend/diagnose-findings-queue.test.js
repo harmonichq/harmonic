@@ -37,6 +37,8 @@ class Node {
   addEventListener(name, callback) { (this.listeners ||= {})[name] = callback; }
 }
 
+const descendants = (node) => (node.children || []).flatMap((child) => [child, ...descendants(child)]);
+
 /* Paint one projection through the module's own entry point and hand back the
    host beside what the render returned. */
 const paint = (projection, view = null, onDrill = () => {}) => {
@@ -273,7 +275,9 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     'each shown row is enclosed, and a tail item is marked for the tail spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
-    assert.equal(item.children.length, 1);
+    // A Pattern's fold toggle rides inside its own item, after the row (#413).
+    assert.deepEqual(item.children.slice(1).map((child) => child.className),
+      item.children.length > 1 ? ['qfold'] : []);
     const [row] = item.children;
     const title = row.children.find((child) => child.className === 'lab')?.textContent;
     assert.equal(row.tag, 'button', `${title} is a real control`);
@@ -292,18 +296,22 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
 test('#413 · a Pattern folds its causes: closed on arrival unless it is rank one, toggled by the reader', () => {
   const { host } = paint(W.global);
   const list = host.children.find((node) => node.className === 'q');
-  const toggles = list.children.filter((node) => node.className === 'qfold');
+  // The toggle and its causes live inside the Pattern's own list item — never
+  // bare in the rail's list, where they would read as sibling rows (#413).
+  assert.deepEqual(list.children.filter((node) => ['qfold', 'qcauses', 'qitem member'].includes(node.className)), []);
+  const toggles = descendants(list).filter((node) => node.className === 'qfold');
   // Neither Pattern that owns causes here is rank one, so both arrive closed —
   // named by their served cause count, no member line rendered underneath.
   assert.deepEqual(toggles.map((toggle) => toggle.textContent), ['1 cause', '2 causes']);
   assert.ok(toggles.every((toggle) => toggle.attributes['aria-expanded'] === 'false'));
-  assert.deepEqual(list.children.filter((node) => node.className === 'qitem member'), []);
+  assert.ok(toggles.every((toggle) => toggle.attributes['aria-controls'] === undefined));
+  assert.deepEqual(descendants(list).filter((node) => node.className === 'qitem member'), []);
 
   let toggled;
   const view = { openMembers: new Map(), onToggleMembers: (id, wasOpen) => { toggled = [id, wasOpen]; } };
   const forced = paint(W.global, view);
   const forcedList = forced.host.children.find((node) => node.className === 'q');
-  forcedList.children.find((node) => node.className === 'qfold').listeners.click();
+  descendants(forcedList).find((node) => node.className === 'qfold').listeners.click();
   assert.deepEqual(toggled, ['pattern:highs_after_meals', false]);
 
   // Rank one opens by default — a Pattern with claimed causes at rank one
@@ -314,9 +322,33 @@ test('#413 · a Pattern folds its causes: closed on arrival unless it is rank on
   ] };
   const { host: openHost } = paint(rankOneOwns);
   const openList = openHost.children.find((node) => node.className === 'q');
-  assert.equal(openList.children.find((node) => node.className === 'qfold')
-    .attributes['aria-expanded'], 'true');
-  assert.equal(openList.children.filter((node) => node.className === 'qitem member').length, 1);
+  const [parentItem] = openList.children.filter((node) => node.className === 'qitem');
+  const [row, toggle, causes] = parentItem.children;
+  assert.equal(row.dataset.id, 'pattern:highs_after_meals');
+  assert.equal(toggle.attributes['aria-expanded'], 'true');
+  // The open causes are their own nested list, named by the toggle.
+  assert.equal(causes.className, 'qcauses');
+  assert.equal(causes.attributes.role, 'list');
+  assert.equal(toggle.attributes['aria-controls'], causes.id);
+  assert.deepEqual(causes.children.map((item) => [item.className, item.attributes.role]),
+    [['qitem member', 'listitem']]);
+  // One line per cause: its name, its served counts, its drill — and no gutter
+  // mark of its own, because the causes list draws the parent's spine.
+  const line = causes.children[0].children[0];
+  assert.deepEqual(line.children.map((child) => child.className), ['lab', 'go', 'den']);
+});
+
+test('#413 · an unpriced row prints its served count sentence under its title', () => {
+  const tail = queueRows(W.afternoon).find((row) => row.weight === 'tail' && row.detail?.kind === 'sentences');
+  assert.ok(tail, 'premise: the fixture serves an unpriced row with a count sentence');
+  const { host } = paint(W.afternoon);
+  const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === tail.id);
+  const den = button.children.find((child) => child.className === 'den');
+  assert.ok(den, `${tail.id} must print its served count sentence`);
+  assert.deepEqual(den.children.filter((child) => child.className === 'v').map((child) => child.textContent),
+    tail.detail.parts.map((part) => part.count));
+  assert.ok(!button.children.some((child) => ['mini', 'sum'].includes(child.className)),
+    'the tail stays quiet: no mini, no summary');
 });
 
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {
@@ -624,8 +656,7 @@ test('#395/#413 · the default replay keeps its claimed Late bolus reachable, fo
     const member = parent.members.find((m) => m.id === 'finding:late_bolus');
     assert.ok(member, `Late bolus stays folded under its parent under ${[...selected]}`);
     const list = host.children.find((node) => node.className === 'q');
-    const button = list.children.flatMap((node) => node.children || [])
-      .find((node) => node.dataset?.id === member.id);
+    const button = descendants(list).find((node) => node.dataset?.id === member.id);
     assert.equal(button?.tag, 'button', `Late bolus remains a control under ${[...selected]}`);
   }
 });

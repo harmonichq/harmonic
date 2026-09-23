@@ -373,9 +373,11 @@ function paintDetail(node, detail) {
   return den;
 }
 
-/** A folded cause's own line: name, drill, and every served count sentence's
-    count/denominator/noun — never its outcome word, which the parent Pattern's
-    own line already carries (#413, "A Pattern owns its causes in the rail"). */
+/** A folded cause's own line: name, every served count sentence's
+    count/denominator/noun, then the drill, on one line — never its outcome
+    word, which the parent Pattern's own line already carries (#413, "A Pattern
+    owns its causes in the rail"). The parent's spine is the causes list's own
+    rule, so a line carries no gutter mark of its own. */
 function paintMember(list, member, onDrill) {
   const item = document.createElement('div');
   item.className = 'qitem member';
@@ -385,7 +387,6 @@ function paintMember(list, member, onDrill) {
   node.className = 'qmember';
   node.dataset.id = member.id;
   item.append(node);
-  add(node, 'n', '│').setAttribute('aria-hidden', 'true');
   add(node, 'lab', member.title);
   add(node, 'go', '›').setAttribute('aria-hidden', 'true');
   const den = add(node, 'den');
@@ -474,6 +475,9 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // changes use the caption inserted immediately before their first row.
     if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     add(node, 'lab', row.title);
+    /* The toggle and the causes it discloses belong to the Pattern's own list
+       item, so a cause is announced inside its Pattern, never as a sibling of
+       the ranked rows; the causes are their own nested list. */
     const appendFold = () => {
       if (!row.members || !row.members.length) return;
       const override = view?.openMembers;
@@ -485,11 +489,21 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       toggle.textContent = `${row.members.length} ${causeWord}`;
       toggle.setAttribute('aria-expanded', String(open));
       toggle.addEventListener('click', () => view?.onToggleMembers?.(row.id, open));
-      list.append(toggle);
-      if (open) for (const member of row.members) paintMember(list, member, onDrill);
+      item.append(toggle);
+      if (!open) return;
+      const causes = document.createElement('div');
+      causes.className = 'qcauses';
+      causes.id = `causes-${row.id}`;
+      causes.setAttribute('role', 'list');
+      toggle.setAttribute('aria-controls', causes.id);
+      for (const member of row.members) paintMember(causes, member, onDrill);
+      item.append(causes);
     };
     if (row.weight === 'tail' || row.detail?.kind === 'pattern-status') {
-      if (row.detail?.kind === 'pattern-status') paintDetail(node, row.detail);
+      // An unpriced row holds no rank, but it still prints every served count
+      // sentence it carries (#413: every count-bearing rail row); its other
+      // details stay off the quiet tail, as before.
+      if (['sentences', 'pattern-status'].includes(row.detail?.kind)) paintDetail(node, row.detail);
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));
       list.append(item);

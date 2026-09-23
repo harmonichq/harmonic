@@ -1046,8 +1046,11 @@
   border-radius: 1px;
   background: var(--cell, var(--ck-inset)); min-width: 0;
 }
+/* `min-height: 0` releases the shell's 36px button floor (chrome.css): a cell is
+   a slot of the 11px track, and the floor sank the lower half of every cell —
+   the selected outline and the staged underline with it — below the pane (#413). */
 .lane button.lane-cell {
-  position: relative; border: 0; padding: 0; cursor: pointer;
+  position: relative; border: 0; padding: 0; cursor: pointer; min-height: 0;
 }
 /* #413: raise and lower are the app's own high-gold and workstation-accent
    hues (ADR 317's `--high`; `--ck-accent`, already the canvas plane's
@@ -1088,7 +1091,10 @@
     transparent 1.25px);
   background-size: 4px 4px;
 }
-.lane button.lane-cell[aria-pressed="true"] { outline: 1px solid var(--mk-text); outline-offset: 1px; }
+/* The selection keeps the primary outline (#413 surfaces spec); the offset
+   holds it clear of a lower cell's accent fill and the staged underline, so the
+   three stay three marks: outline, underline, fill. */
+.lane button.lane-cell[aria-pressed="true"] { outline: 1px solid var(--primary); outline-offset: 1px; }
 .lane button.lane-cell[data-neighbour] { opacity: .2; }
 .lane button.lane-cell[data-staged="true"]::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
@@ -1627,7 +1633,7 @@
 /* Monospace is reserved for column-aligned digits (the evidence table, the lane
    counts, the hover readout). A denominator inside a sentence is flowed row
    text, so it stays in the proportional UI face and takes only tabular figures. */
-.dw .qrow .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); }
+.dw .qrow .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
 .dw .qrow .den.nums { font-variant-numeric: tabular-nums; }
 .dw .qrow .den.nums b { color: var(--mk-text); font-weight: 600; }
 
@@ -1707,6 +1713,11 @@
      way to give it more presence would be to tint it, which is a different
      colour for the cohort and the one thing this cell must never do. */
   --ec-comparison: color-mix(in srgb, var(--mk-accent) 85%, transparent);
+  /* #413: a mini drawn from a served count sentence — every ranked Pattern,
+     Cause and High-carb mini — inks from the rail palette instead
+     (`queuePreviewOption`: claimed cohort in `--mk-accent`, TYPICAL in
+     `--mk-body`), so these `--ec-*` inks now reach only a mini with no served
+     sentence. */
 }
 .dw .qrow .mini.tile-state {
   display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);
@@ -1734,9 +1745,11 @@
    shown the built rail, the operator read two title-only rows adrift in a full
    asserting row's box as leftovers rather than as a deliberately quiet group.
    Consecutive tails close up to a 4px beat and the first one binds to the seam
-   sentence, so the sentence and the rows it describes read as one object. They
-   stay title-only; only the box moved, and the 831px block below restores a
-   44px touch target where a pointer is a finger. */
+   sentence, so the sentence and the rows it describes read as one object.
+   #413 adds one line under the title: a tail row prints its served count
+   sentence, because every count-bearing rail row does; it still carries no
+   tag, summary or mini. The 831px block below restores a 44px touch target
+   where a pointer is a finger. */
 .dw .qrow.tail { min-height: 30px; padding-block: 4px; }
 .dw .tailnote + .qitem.tail { margin-top: -4px; }
 .dw .qitem.tail + .qitem.tail { margin-top: calc(4px - var(--q-gap)); }
@@ -1748,39 +1761,59 @@
 
 /* #413 — a Pattern owns its causes in the rail: claimed causes fold under
    their parent's spine behind a toggle, never as sibling rows. */
+/* The toggle and the causes sit inside the Pattern's own list item, in the
+   title column (the rank gutter's 16px plus the row's 9px gap), so they read as
+   part of the Pattern row. `min-height: 0` releases the shell's 36px button
+   floor (chrome.css), which stood the toggle in a band of its own. */
 .dw .qfold {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 0;
   border: 0; background: none; color: var(--mk-secondary); cursor: pointer;
-  padding: 2px var(--ck-pad) 6px calc(var(--ck-pad) + 16px + 9px);
+  padding: 0 0 6px; margin-left: calc(var(--ck-pad) + 16px + 9px);
   text-align: left; font-size: var(--ck-micro); font-weight: 500;
-  margin-top: calc(2px - var(--q-gap));
 }
-.dw .qfold::after { content: ' ▸'; }
-.dw .qfold[aria-expanded="true"]::after { content: ' ▾'; }
-.dw .qitem.member { margin-top: calc(2px - var(--q-gap)); }
+.dw .qfold::before {
+  content: ''; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transform: rotate(-90deg); transition: transform .12s ease;
+}
+.dw .qfold[aria-expanded="true"]::before { transform: none; }
+/* The toggle keeps to its own words: the shell's full-surface hover fill
+   (chrome.css) would otherwise read as a selected row butting the causes. */
+.dw .qfold:hover { background: none; color: var(--mk-text); }
+/* The parent's spine: one rule down the title column that every cause hangs
+   from, in the rule ink, so a folded cause never borrows the rank colour. */
+.dw .qcauses {
+  display: grid; gap: 2px;
+  margin: 0 var(--ck-pad) 6px calc(var(--ck-pad) + 16px + 9px + 3px);
+  padding-left: 12px; border-left: 1px solid var(--wk-rule);
+}
 .dw .qitem.member .qmember {
-  display: grid; width: 100%; text-align: left; min-height: 30px;
-  grid-template-columns: 16px minmax(0, 1fr) 12px;
-  column-gap: 9px; padding: 3px var(--ck-pad); border: 0; background: none;
+  display: grid; width: 100%; text-align: left; min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto 12px;
+  column-gap: 9px; padding: 3px 0; border: 0; background: none;
   color: inherit; align-items: baseline;
 }
 .dw button.qmember { cursor: pointer; }
 .dw button.qmember:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qmember:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-.dw .qmember .n { grid-column: 1; color: var(--mk-accent); font-family: var(--ck-mono); font-size: var(--ck-micro); }
-.dw .qmember .lab { grid-column: 2; font-size: var(--ck-data); font-weight: 500; color: var(--mk-text);
+/* one line per cause: name, the served counts, then the drill */
+.dw .qmember .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-data); font-weight: 500; color: var(--mk-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dw .qmember .go { grid-column: 3; color: var(--mk-accent); font-size: 12px; }
-.dw .qmember .den { grid-column: 2 / -1; font-size: var(--ck-micro); color: var(--mk-muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dw .qmember .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); }
+.dw .qmember .den { grid-column: 2; grid-row: 1; font-size: var(--ck-micro); color: var(--mk-muted);
+  white-space: nowrap; }
+.dw .qmember .go { grid-column: 3; grid-row: 1; color: var(--mk-muted); font-size: 12px; }
+.dw .qmember .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
 .dw .qmember .den .sep { margin: 0 6px; opacity: .6; }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* #413 — "the rail shows served urgency": the first served tier's rows carry
    a rank stripe and a primary numeral; every later tier stays quiet. */
-.dw .qrow[data-urgent="true"] {
-  box-shadow: inset 3px 0 0 var(--primary);
-}
+/* The stripe runs down the whole list item, so an urgent Pattern's toggle and
+   causes stand inside it as the mockup draws them. The row's left edge is
+   squared so its hover fill meets the stripe straight. */
+.dw .qitem:has(> .qrow[data-urgent="true"]) { box-shadow: inset 3px 0 0 var(--primary); }
+.dw .qrow[data-urgent="true"] { border-radius: 0 var(--wk-radius) var(--wk-radius) 0; }
 .dw .qrow[data-urgent="true"] .n { color: var(--primary); font-weight: 700; }
 .dw .qrow[data-urgent="true"] > .tier { color: var(--primary); }
 

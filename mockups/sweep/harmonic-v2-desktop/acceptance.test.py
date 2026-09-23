@@ -434,9 +434,12 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
 
     def test_fixed_slice_is_pinned_and_covers_every_real_replay_case(self):
         import hashlib
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 21)
+        # #413: S113 joins the slice because it is the only story on the
+        # manufactured `basal-verdict-gallery` store, and the slice covers every
+        # real replay case.
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 22)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '0661c31d3fed2a2c0a6af942a6391ded5fc85bfe9296ad41f0660b0b90b6acd0')
+                         'd7a7939d4fdcc21c9e3ec79611800223c67af77e1c171471bb7df93cff5a56aa')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

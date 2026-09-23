@@ -482,6 +482,39 @@ async function heldRequest414(page, pattern, matches) {
   };
 }
 
+// #413: S116's scenario, factored out the same way as S113's below. The
+// candidates are chosen by the served chart coordinate alone, so a desk that
+// serves no count sentence still reaches the feature assertion.
+export async function assertRankedMinis(page, rows) {
+  // The ECharts instance lives on the `.mini` host itself (its canvas sits in
+  // an inner div), and `getOption()` normalises the graphic list into one
+  // group whose `elements` carry the texts.
+  const graphicOf = async (id) => page.evaluate((rowId) => {
+    const mini = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"] .mini`);
+    const chart = mini?.querySelector('canvas') && window.echarts.getInstanceByDom(mini);
+    const graphic = chart?.getOption().graphic;
+    return graphic ? graphic.flatMap((item) => item.elements || [item]).map((item) => item.style?.text) : null;
+  }, id);
+  const candidates = rows.filter((row) => row.pattern_chart || (row.event_chart && !row.claimed_by));
+  assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
+  await waitForReplayAssertion(async seen => {
+    let mounted = 0;
+    for (const row of candidates) {
+      const graphic = seen(await graphicOf(row.id));
+      if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
+      mounted += 1;
+      const sentence = row.count_sentences?.[0];
+      assert.ok(sentence,
+        `S116 ${row.id}'s mini must draw from its served count sentence; none is served, and it draws ${JSON.stringify(graphic)}`);
+      assert.deepEqual(graphic, [
+        `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
+        `TYPICAL · ${sentence.denominator}`,
+      ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
+    }
+    assert.ok(mounted > 0, 'S116 at least one ranked mini must be mounted to compare');
+  }, 'S116 every ranked mini draws the same instrument, from the served row');
+}
+
 // #413: S113's scenario, factored out of the story so a fake page can drive
 // it directly (frontend/c4.replay.test.js) without also faking
 // `openBasalLane`'s own network reads and navigation — the same boundary
@@ -578,6 +611,36 @@ export async function assertBasalLaneGallery(page) {
       assert.equal(keyGlyph, cellGlyph, `S113 the ${verdict} key mark must carry the same glyph as its cells`);
     }
   }
+
+  // The selection, the stage and the lower verdict are three different marks
+  // (#413 critique 7): the selected cell keeps the PRIMARY outline, the staged
+  // cell an underline, and a lower cell its fill; and every cell stands wholly
+  // inside the lane's own track, so none of the three is clipped (critique 1).
+  const marks = await page.evaluate(() => {
+    const lane = document.querySelector('#lane');
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--primary)';
+    lane.append(probe);
+    const primary = getComputedStyle(probe).color;
+    probe.remove();
+    const selected = document.querySelector('#lane > .lane-cell[aria-pressed="true"]');
+    const staged = document.querySelector('#lane > .lane-cell[data-staged="true"]');
+    const selectedStyle = getComputedStyle(selected);
+    const underline = getComputedStyle(staged, '::after');
+    const track = lane.getBoundingClientRect();
+    const cells = [...lane.querySelectorAll(':scope > .lane-cell')].map((cell) => cell.getBoundingClientRect());
+    return {
+      primary, outlineStyle: selectedStyle.outlineStyle, outlineColor: selectedStyle.outlineColor,
+      fill: selectedStyle.backgroundColor, underline: underline.content, underlineHeight: underline.height,
+      clipped: cells.filter((box) => box.top < track.top - 1 || box.bottom > track.bottom + 1).length,
+    };
+  });
+  assert.equal(marks.clipped, 0, `S113 every lane cell must stand wholly inside the lane's track; ${marks.clipped} overflow it`);
+  assert.equal(marks.outlineStyle, 'solid', 'S113 the selected cell must carry an outline');
+  assert.equal(marks.outlineColor, marks.primary, 'S113 the selected cell must keep the primary outline');
+  assert.notEqual(marks.outlineColor, marks.fill, 'S113 the selected lower cell\'s outline must read apart from its fill');
+  assert.notEqual(marks.underline, 'none', 'S113 the staged cell must carry its underline');
+  assert.equal(marks.underlineHeight, '2px', 'S113 the staged mark must be an underline, not a fill');
 }
 
 export const C4_STORIES = {
@@ -882,12 +945,26 @@ export const C4_STORIES = {
     const loading = page.locator('.gf-loading[role="status"]');
     await loading.waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
-      const skeletons = seen(await page.locator('.gf-skeleton[aria-hidden="true"]').count());
-      assert.equal(skeletons, 1, 'S114 the cold loading frame must carry one skeleton block');
-      const marks = seen(await page.locator('.gf-skeleton .gf-skel').count());
-      assert.ok(marks > 0, 'S114 the skeleton must draw at least one mark');
-      const text = seen(await page.locator('.gf-skeleton').innerText());
-      assert.equal(text.trim(), '', 'S114 the skeleton must state no count, title or value');
+      // One skeleton per pane: stage instruments in the loading block, rail
+      // rows in the reading pane (#413 critique 2).
+      for (const [pane, selector] of [['stage', '.gf-loading .gf-skeleton[aria-hidden="true"]'],
+        ['rail', '.gf-desk > .gf-reading .gf-pane-body > .gf-skeleton[aria-hidden="true"]']]) {
+        const skeleton = page.locator(selector);
+        assert.equal(seen(await skeleton.count()), 1, `S114 the cold loading frame must carry one ${pane} skeleton block`);
+        const marks = seen(await skeleton.locator('.gf-skel').count());
+        assert.ok(marks > 0, `S114 the ${pane} skeleton must draw at least one mark`);
+        const text = seen(await skeleton.innerText());
+        assert.equal(text.trim(), '', `S114 the ${pane} skeleton must state no count, title or value`);
+      }
+      // The loading card holds every stage mark: none runs past its box.
+      const spilled = seen(await page.evaluate(() => {
+        const card = document.querySelector('.gf-loading').getBoundingClientRect();
+        return [...document.querySelectorAll('.gf-loading .gf-skel')].filter((mark) => {
+          const box = mark.getBoundingClientRect();
+          return box.top < card.top - 1 || box.bottom > card.bottom + 1;
+        }).length;
+      }));
+      assert.equal(spilled, 0, `S114 the loading card must contain its skeleton; ${spilled} mark(s) run past it`);
       const status = seen(await page.locator('.gf-loading').getAttribute('aria-label'));
       assert.equal(status, 'Loading Diagnose', 'S114 the loading status must still be announced');
       const rail = seen(await page.locator('.gf-desk > .gf-reading').boundingBox());
@@ -927,25 +1004,27 @@ export const C4_STORIES = {
         assert.ok(!rowIds.includes(member.id),
           `S115 ${member.id} must never be a sibling rail row`);
       }
-      const toggle = page.locator(`#level .qfold`).first();
-      assert.equal(seen(await toggle.count()), 1, 'S115 the owning Pattern must show one fold toggle');
+      const toggle = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) > .qfold`);
+      assert.equal(seen(await toggle.count()), 1, 'S115 the owning Pattern must show one fold toggle inside its own item');
       assert.equal(seen(await toggle.textContent()),
         `${members.length} ${members.length === 1 ? 'cause' : 'causes'}`,
         "S115 the toggle must name the served cause count");
     }, 'S115 causes fold under their Pattern, never as sibling rows');
 
     await page.evaluate((parentId) => {
-      const list = document.querySelector('#level .q');
-      const items = [...list.children];
-      const at = items.findIndex(el => el.querySelector?.(`.qrow[data-id="${CSS.escape(parentId)}"]`));
-      const next = items[at + 1];
-      if (next?.classList.contains('qfold') && next.getAttribute('aria-expanded') !== 'true') next.click();
+      const item = document.querySelector(`#level .qrow[data-id="${CSS.escape(parentId)}"]`).parentElement;
+      const toggle = item.querySelector(':scope > .qfold');
+      if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
     }, parent.id);
 
     await waitForReplayAssertion(async seen => {
       for (const member of members) {
-        const line = page.locator(`#level .qmember[data-id="${member.id}"]`);
+        // The cause is announced inside its Pattern's item, never as a sibling.
+        const line = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) .qcauses .qmember[data-id="${member.id}"]`);
         await line.waitFor({ timeout: 30000 });
+        const [name, counts] = [seen(await line.locator('.lab').boundingBox()), seen(await line.locator('.den').boundingBox())];
+        assert.ok(Math.abs(name.y - counts.y) < name.height,
+          `S115 ${member.id} must read as one line, name and counts side by side`);
         const text = seen(await line.locator('.den').innerText());
         for (const sentence of member.count_sentences) {
           assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`),
@@ -982,27 +1061,7 @@ export const C4_STORIES = {
   async S116(page) {
     await openDiagnoseRail(page);
     const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
-    const rows = preparation.rendered_rows;
-    const graphicOf = async (id) => page.evaluate((rowId) => {
-      const row = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"]`);
-      const host = row?.querySelector('.mini canvas');
-      const chart = host && window.echarts.getInstanceByDom(host.parentElement);
-      return chart?.getOption().graphic?.map((item) => item.style?.text) || null;
-    }, id);
-    const candidates = rows.filter((row) => row.count_sentences?.length
-      && (row.pattern_chart || (row.event_chart && !row.claimed_by)));
-    assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
-    await waitForReplayAssertion(async seen => {
-      for (const row of candidates) {
-        const graphic = seen(await graphicOf(row.id));
-        if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
-        const sentence = row.count_sentences[0];
-        assert.deepEqual(graphic, [
-          `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
-          `TYPICAL · ${sentence.denominator}`,
-        ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
-      }
-    }, 'S116 every ranked mini draws the same instrument, from the served row');
+    await assertRankedMinis(page, preparation.rendered_rows);
   },
   // #413: "Diagnose opens on the 24 h window" — a cold arrival, with no
   // contextual entry and no retained window, reads unscoped. `openApp`

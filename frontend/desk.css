@@ -176,22 +176,37 @@
 .gf-empty p { max-width:56ch; color:var(--mk-muted); margin-bottom:12px; }
 .gf-empty .gf-actions { padding:0; }
 .gf-loading { margin:20px; background:var(--wk-field); min-height:200px; padding:16px; }
+/* #413: the loading stage is block flow, not the stage's five-row grid. That
+   grid's fixed figure row sized the card's track below the skeleton, so the
+   strip well ran past the card at 1280x720; in block flow the card grows to
+   hold every mark, and a short pane scrolls rather than spills. */
+.gf-stage.gf-stage-loading { display:block; overflow:auto; }
 .gf-loading p { margin:16px 0 0; color:var(--mk-muted); }
-/* #413: the cold skeleton. A stage instrument is a short chip; a rail row is
-   a full-width bar — both are decorative marks with no text, count or value
-   (frame.js's `loadingSkeleton`). The shimmer sweeps slowly and holds still
-   under reduced motion; it never touches `.gf-day-loading`'s separate
-   retained-reload bar, which stays as it was. */
-.gf-skeleton { display:flex; flex-wrap:wrap; gap:10px; }
+/* #413: the cold skeleton, one per pane (frame.js's `stageSkeleton` and
+   `railSkeleton`) — decorative marks with no text, count or value. The stage
+   shows the window bar, the nameplate's two lines and the instrument's chart
+   well; the rail shows its rows, the first one tall enough for its mini's
+   well, at the rail's own reference width. The marks sit one surface step
+   ABOVE the field (`--wk-surface-rail`), where the sunken step read as
+   nearly nothing. The shimmer sweeps slowly and holds still under reduced
+   motion; it never touches `.gf-day-loading`'s separate retained-reload bar,
+   which stays as it was. */
+.gf-skeleton { display:grid; gap:10px; }
+.gf-skeleton-rail { padding:14px var(--ck-pad); }
 .gf-skel {
-  display:block; border-radius:5px; background:var(--wk-surface-sunken);
+  display:block; border-radius:5px; background-color:var(--wk-surface-rail);
   background-image: linear-gradient(90deg, transparent,
-    color-mix(in srgb, var(--wk-surface-rail) 65%, transparent), transparent);
+    color-mix(in srgb, var(--mk-muted) 14%, transparent), transparent);
   background-size: 200% 100%;
   animation: gf-skel-shimmer 2.4s ease-in-out infinite;
 }
-.gf-skel-chip { width: 84px; height: 24px; }
-.gf-skel-row { flex-basis: 100%; height: 38px; }
+.gf-skel-bar { height:28px; margin-bottom:6px; }
+.gf-skel-eyebrow { width:22%; height:10px; }
+.gf-skel-title { width:58%; height:20px; margin-bottom:6px; }
+.gf-skel-chart { height:260px; }
+.gf-skel-strip { height:180px; }
+.gf-skel-row { height:48px; }
+.gf-skel-hero { height:148px; }
 @keyframes gf-skel-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }

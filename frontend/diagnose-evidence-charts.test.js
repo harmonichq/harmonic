@@ -1299,8 +1299,8 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
   const colors = { misses: '#d08150', body: '#c7bca8', muted: '#3d5848',
     warn: '#e2be4c', text: '#141a15', line: '#c3bfb4' };
   for (const [key, label, outcome] of [
-    ['highs_after_meals', 'MEAL', 'RAN HIGH'],
-    ['lows_after_correcting_highs', 'LOW', 'FOLLOWED A CORRECTION'],
+    ['highs_after_meals', 'COMPLETED CARB BOLUS', 'RAN HIGH'],
+    ['lows_after_correcting_highs', 'LOW EXCURSION', 'FOLLOWED A CORRECTION'],
   ]) {
     const data = projectPatternCaseFile(capture, {
       patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
@@ -1309,7 +1309,7 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
     // The outcome word is the SERVED row's own count sentence (#413) — never a
     // frontend word table keyed by lever.
     const row = { count_sentences: [{ outcome: outcome.toLowerCase(),
-      noun: label === 'MEAL' ? 'meals' : 'lows', count: data.summary.claimed,
+      noun: key.includes('meals') ? 'meals' : 'lows', count: data.summary.claimed,
       denominator: data.summary.denominator }] };
     const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
     assert.deepEqual(option.graphic.map((item) => item.style.text), [
@@ -1339,7 +1339,9 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       ...(node.type === 'text' ? [node] : []),
       ...(node.children || []).flatMap(textNodes),
     ];
-    const labelNodes = textNodes(marker).filter((node) => node.style.text === label);
+    const served = data.projection.anchor.label.toUpperCase();
+    assert.equal(served, label, 'the served anchor names the event the Pattern is counted on');
+    const labelNodes = textNodes(marker).filter((node) => node.style.text === served);
     assert.equal(labelNodes.length, 1, `the anchor label must be drawn exactly once, saw ${labelNodes.length}`);
     assert.equal(labelNodes[0].y, option.grid.top + 3, 'label rides inside the existing plot');
     assert.deepEqual(option.series.find((series) => series.id === 'queue:event:180')
@@ -1366,15 +1368,19 @@ test('#413 · the High-carb-sequence mini draws the same instrument, never the c
   // is caught rather than coincidentally matching.
   const colors = { text: '#141a15', muted: '#3d5848', line: '#c3bfb4', signal: '#5a7a52',
     high: '#caa23b', basal: '#9a8f7e', excluded: '#6b7169', warn: '#caa23b',
+    misses: '#b0632e', body: '#a79c88',
     cohorts: { matched: '#5a7a52', nearly_matched: '#caa23b', comparison: '#b0632e' } };
   const COMPARISON_BLUE = '#3b6ea5';
   const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
   assert.deepEqual(option.graphic.map((item) => item.style.text),
     ['RAN LESS IN RANGE · 8', 'TYPICAL · 40'], 'the same cohort-label/TYPICAL instrument as every other mini');
-  assert.equal(option.graphic[0].style.fill, colors.cohorts.matched);
+  assert.equal(option.graphic[0].style.fill, colors.misses, 'the rail miss ink, as on the Pattern mini');
   const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor')
     .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
-  assert.equal(anchor.children[1].style.text, 'LOW', 'sequences are not meals, so the anchor names LOW');
+  const servedAnchor = data.projection.response.anchor?.label;
+  assert.ok(servedAnchor, 'premise: the High-carb response serves an anchor label');
+  assert.equal(anchor.children[1].style.text, servedAnchor.toUpperCase(),
+    'the anchor names the served event, not a desk word table');
   const band = option.series.find((series) => series.id === 'queue:event:180');
   assert.ok(band, 'the dashed 70-180 target band must render');
   assert.equal(band.markLine.lineStyle.color, colors.warn);
@@ -1385,7 +1391,7 @@ test('#413 · the High-carb-sequence mini draws the same instrument, never the c
     assert.notEqual(color, COMPARISON_BLUE, 'no mini series may resolve to the comparison-blue token');
   }
   assert.ok(paintedColors.every((color) =>
-    Object.values(colors.cohorts).includes(color) || color === colors.warn),
+    [colors.misses, colors.body, colors.cohorts.nearly_matched, colors.warn].includes(color)),
     `every painted color must resolve to a rail cohort token or the warn band, saw ${JSON.stringify(paintedColors)}`);
 });
 

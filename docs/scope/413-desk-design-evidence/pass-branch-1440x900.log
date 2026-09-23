@@ -1,0 +1,28 @@
+(node:24125) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/413-c4/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/413-c4/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S113 case=basal-verdict-gallery milliseconds=179.538
+# S113 synthetic case=basal-verdict-gallery (fresh copy)
+PASS S113
+# story-time S113 milliseconds=1902.049
+# case-copy S114 case=showcase milliseconds=205.304
+# S114 synthetic case=showcase (fresh copy)
+PASS S114
+# story-time S114 milliseconds=7817.281
+# case-copy S115 case=showcase milliseconds=1.735
+# S115 synthetic case=showcase (fresh copy)
+PASS S115
+# story-time S115 milliseconds=7379.630
+# case-copy S116 case=showcase milliseconds=1.269
+# S116 synthetic case=showcase (fresh copy)
+PASS S116
+# story-time S116 milliseconds=7364.952
+# case-copy S117 case=showcase milliseconds=1.409
+# S117 synthetic case=showcase (fresh copy)
+PASS S117
+# story-time S117 milliseconds=6854.547
+
+# executed 5 · failed 0 · deferred 0 · selected 5 · chromium launches 1

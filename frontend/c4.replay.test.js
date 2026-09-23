@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery } from './c4.replay.mjs';
+import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -77,7 +77,7 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
 });
 
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
-  const term = 'pending #413 design lock (task 4.4)';
+  const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
@@ -282,8 +282,8 @@ test('S112 holds the roster, record and reassessment reads in turn and reaches i
 // synchronously (mirroring real navigation, which commits before client-side
 // fetches resolve); the loading frame's skeleton is asserted while the read
 // is still held open.
-function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', status = 'Loading Diagnose',
-  railWidth = 430, reference = '430px', animationName = 'none' } = {}) {
+function qa413ColdDiagnosePage({ skeletons = { stage: 1, rail: 1 }, marks = 4, skeletonText = '',
+  status = 'Loading Diagnose', railWidth = 430, reference = '430px', animationName = 'none', spilled = 0 } = {}) {
   const routes = new Map();
   const fire = pathname => {
     const request = { url: () => `http://synthetic.invalid${pathname}` };
@@ -292,11 +292,14 @@ function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', st
       if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
     }
   };
+  const pane = selector => (selector.startsWith('.gf-loading ') ? 'stage'
+    : selector.includes('.gf-pane-body > .gf-skeleton') ? 'rail' : null);
   const node = selector => ({
     waitFor: async () => {},
+    locator: sub => node(`${selector} ${sub}`),
     count: async () => {
-      if (selector === '.gf-skeleton[aria-hidden="true"]') return skeletons;
-      if (selector === '.gf-skeleton .gf-skel') return marks;
+      if (selector.endsWith(' .gf-skel')) return marks;
+      if (pane(selector)) return skeletons[pane(selector)];
       return 1;
     },
     innerText: async () => skeletonText,
@@ -310,7 +313,12 @@ function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', st
     route: async (pattern, handler) => { routes.set(pattern, handler); },
     unroute: async pattern => { routes.delete(pattern); },
     emulateMedia: async () => {},
-    evaluate: async fn => (fn.toString().includes('animationName') ? animationName : reference),
+    evaluate: async fn => {
+      const src = fn.toString();
+      if (src.includes('animationName')) return animationName;
+      if (src.includes('getBoundingClientRect')) return spilled;
+      return reference;
+    },
   };
 }
 
@@ -324,6 +332,20 @@ test('S114 fails when the skeleton still carries text, count or value', async ()
   await withReplayAssertionTimeout(10, () => assert.rejects(
     C4_STORIES.S114(qa413ColdDiagnosePage({ skeletonText: '3 findings' })),
     /must state no count, title or value/));
+});
+
+test('S114 fails when the rail pane stands without its own skeleton', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ skeletons: { stage: 1, rail: 0 } })),
+    /must carry one rail skeleton block/));
+});
+
+test('S114 fails when a skeleton mark runs past the loading card', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ spilled: 1 })),
+    /the loading card must contain its skeleton; 1 mark\(s\) run past it/));
 });
 
 test('S114 fails when the rail does not hold the Diagnose reference width', async () => {
@@ -619,7 +641,10 @@ function qa413GalleryPage({
   order = ['lane-key', 'lane'],
   staged = true,
   distinctSelection = true,
+  marks = {},
 } = {}) {
+  marks = { primary: 'rgb(224, 127, 63)', outlineStyle: 'solid', outlineColor: 'rgb(224, 127, 63)',
+    fill: 'color(srgb 0.8 0.5 0.3 / 0.72)', underline: '""', underlineHeight: '2px', clipped: 0, ...marks };
   keyTokens = keyTokens || cellTokens;
   keyImages = keyImages || cellImages;
   keyGlyph = keyGlyph || cellGlyph;
@@ -659,6 +684,7 @@ function qa413GalleryPage({
     evaluate: async fn => {
       const src = fn.toString();
       if (src.includes('lane-wrap')) return order;
+      if (src.includes('outlineStyle')) return { ...marks };
       if (src.includes('lane-cell')) return { ...verdicts };
       throw new Error(`unexpected page.evaluate: ${src}`);
     },
@@ -724,4 +750,86 @@ test('assertBasalLaneGallery fails when the key does not render above the cells'
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertBasalLaneGallery(qa413GalleryPage({ order: ['lane', 'lane-key'] })),
     /the key must render as the lane's head row, above the cells/));
+});
+
+test('assertBasalLaneGallery fails when lane cells overflow the lane track', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { clipped: 48 } })),
+    /every lane cell must stand wholly inside the lane's track; 48 overflow it/);
+});
+
+test('assertBasalLaneGallery fails when the selected outline is not primary', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { outlineColor: 'rgb(242, 237, 226)' } })),
+    /the selected cell must keep the primary outline/);
+});
+
+test('assertBasalLaneGallery fails when the staged mark is not an underline', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { underlineHeight: '11px' } })),
+    /the staged mark must be an underline, not a fill/);
+});
+
+// #413: a fake page for `assertRankedMinis` — the scenario S116 drives after
+// opening the rail. `graphics` maps a row id to its mounted mini's graphic
+// texts; an absent id is an unmounted mini. The story's own in-page function
+// runs against a DOM shaped as the served desk mounts a mini: the ECharts
+// instance on `SPAN.mini`, its canvas inside an inner DIV, and `getOption()`
+// returning the texts as ONE graphic group's `elements` (coordinator probe of
+// the branch showcase, 2026-09-22).
+function qa413MiniPage(graphics) {
+  const charts = new Map();
+  const miniFor = (id) => {
+    if (!(id in graphics)) return null;
+    const mini = { tagName: 'SPAN' };
+    const div = { tagName: 'DIV', parentElement: mini };
+    mini.querySelector = (selector) => (selector === 'canvas' ? { tagName: 'CANVAS', parentElement: div } : null);
+    charts.set(mini, { getOption: () => ({ graphic: [{ type: 'group',
+      elements: graphics[id].map((text) => ({ type: 'text', style: { text } })) }] }) });
+    return mini;
+  };
+  return {
+    evaluate: async (fn, id) => {
+      const saved = { document: globalThis.document, window: globalThis.window, CSS: globalThis.CSS };
+      Object.assign(globalThis, {
+        CSS: { escape: (value) => value },
+        window: { echarts: { getInstanceByDom: (node) => charts.get(node) } },
+        document: { querySelector: (selector) => {
+          const match = /^\.qrow\[data-id="([^"]+)"\] \.mini$/.exec(selector);
+          return match ? miniFor(match[1]) : null;
+        } },
+      });
+      try { return fn(id); } finally { Object.assign(globalThis, saved); }
+    },
+  };
+}
+const minied = { id: 'pattern:p', pattern_chart: { key: 'p' },
+  count_sentences: [{ outcome: 'ran high', count: 5, denominator: 12, noun: 'meals' }] };
+
+test('assertRankedMinis passes when every mounted mini draws its served count sentence', async () => {
+  await assertRankedMinis(qa413MiniPage({ 'pattern:p': ['RAN HIGH · 5', 'TYPICAL · 12'] }), [minied]);
+});
+
+test('assertRankedMinis fails at its premise when no row carries a chart coordinate', async () => {
+  await assert.rejects(assertRankedMinis(qa413MiniPage({}), [{ id: 'finding:x' }]),
+    /S116 premise: the showcase must rank a mini-bearing Pattern or Cause/);
+});
+
+test('assertRankedMinis reaches its feature assertion when the row serves no count sentence', async () => {
+  const unserved = { id: 'pattern:p', pattern_chart: { key: 'p' } };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({ 'pattern:p': ['RAN HIGH · 5', 'TYPICAL · 12'] }), [unserved]),
+    /must draw from its served count sentence; none is served/));
+});
+
+test('assertRankedMinis fails when a mini draws words other than the served sentence', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({ 'pattern:p': ['MATCHED · 5', 'TYPICAL · 12'] }), [minied]),
+    /must draw the served outcome word and count/));
+});
+
+test('assertRankedMinis fails when no candidate mini is mounted', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRankedMinis(qa413MiniPage({}), [minied]),
+    /at least one ranked mini must be mounted/));
 });

@@ -8,9 +8,10 @@ episode carries no Lever. The guidance read SHALL serve, on every Pattern
 candidate, a `title` on each member, an `action_title` on each member whose
 action is non-null, and a `title` on the Pattern's action when that action is an
 identified action rather than span rows. A habit member's names SHALL be its
-Lever's served title and a setting member's names SHALL be the served tuning
-lever title for its parameter; the Pattern action's title SHALL be the title of
-the member it came from. Names SHALL travel beside identifiers and SHALL NOT
+Lever's title from the one lever name source, and a setting member's names
+SHALL be the setting's user-facing label from guidance's closed setting-label
+table: Basal, Correction factor or Carb ratio. The Pattern action's title SHALL
+be the title of the member it came from. Names SHALL travel beside identifiers and SHALL NOT
 replace, rename or be parsed from any identifier. Names SHALL NOT enter the
 set-aside comparison state.
 
@@ -27,6 +28,7 @@ set-aside comparison state.
 - **GIVEN** synthetic analyzer output whose Pattern roster carries habit and setting members
 - **WHEN** the guidance read serves its Pattern candidates
 - **THEN** every member carries a non-empty `title` with no `habit:`, `setting:` or underscore token
+- **AND** a correction-factor setting member is named "Correction factor", never "ISF"
 - **AND** every member with an action carries its `action_title`
 - **AND** a Pattern whose action is identified carries that action's `title`
 - **AND** each Pattern's set-aside baseline equals the baseline of the same candidate with its names removed
@@ -35,7 +37,8 @@ set-aside comparison state.
 
 Every contextual Day entry SHALL carry a display `title` beside its routing
 subject: the served finding title for a Diagnose occurrence, the setting name
-and start clock time for a basal slot, the title the record's own nameplate
+and half-hour range for a basal slot (such as `Basal · 03:00–03:30`), the title
+the record's own nameplate
 shows for a Changes record or the active change, and the utility's existing
 label for a utility moment. The title SHALL ride the address with the other
 entry fields, so a reload or Back keeps it. Day's "Opened from" SHALL print the
@@ -55,7 +58,7 @@ window, lever, focus and return SHALL be unchanged.
 
 - **GIVEN** a basal slot selected in Diagnose with no case drilled
 - **WHEN** the reader opens Day from it
-- **THEN** "Opened from" names the basal setting and the slot's start time in words
+- **THEN** "Opened from" names the basal setting and the slot's half-hour range, such as `Basal · 03:00–03:30`
 
 #### Scenario: The name survives the address
 

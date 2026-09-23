@@ -31,6 +31,17 @@ point below had a grounded default.
   ledger amendments. Why: two slicing traits fire (served contract + desk
   consumer + ledger; a replay against the offline server) and each chunk projects
   at or above the 120k floor. `inline`
+- Setting members are named by CONTEXT.md's user-facing labels (Basal,
+  Correction factor, Carb ratio) from a closed table beside guidance's units
+  table, not by the tuning lever's title. Why: that title reads "ISF", banned in
+  user copy, and no backend table served "Correction factor". Coordinator ruling,
+  plan review round 1, 2026-09-23. `→ ADR`
+- A basal slot's Day entry reads `Basal · 03:00–03:30`, composed in the Diagnose
+  door from the desk's existing setting-name and clock formatters. Why:
+  CONTEXT.md's user-copy form for a slot; the earlier no-import rule rested on a
+  false premise. Coordinator ruling, round 1. `inline`
+- S61/S62 amendments live in the ticket's own dated ledger section; no frozen
+  block is edited. Why: release freeze-header rule, 2026-09-23. `inline`
 
 ### Risk contract
 
@@ -68,7 +79,19 @@ point below had a grounded default.
 
 ## Review rounds
 
-- none yet (the coordinator dispatches `/plan-review`)
+- Round 1 (coordinator-dispatched `/plan-review`, lock 1 draft at 437f2524):
+  BLOCKED, 4 blocking, all `authoring`, each verified by the coordinator or
+  reproduced here. (1) guidance member names break
+  `tests/test_pattern_replay.py:135`, which was in no expected diff → added to
+  sub-order 1, the roster stays the oracle with names compared separately;
+  (2) the amended S61 had no fail-first proof → a fake-page case in
+  `frontend/replay-cases.test.js`; (4) setting members would print "ISF" →
+  closed CONTEXT.md label table in guidance; (5) the ban on importing
+  `frontend/plan-view.js` into the Diagnose door was false (it loads in node;
+  the door's test already imports modules that pull routes.js) → removed, the
+  door composes the slot words itself. Finding 3 (#423's row ending) needed no
+  change; a Context line cites the coordinator's cross-ticket ruling. The
+  ledger-amendment form was brought under the new freeze-header rule.
 
 ## Open questions
 
@@ -79,5 +102,7 @@ point below had a grounded default.
 - Follow-up issue draft for the coordinator (not filed): the active Focus arm's
   `LEVER_NAME` table in `frontend/follow-up.js` has no entry for High-carb
   sequence or Repeat eating, and the record ending assessment prints its raw
-  reason (`Unavailable · unavailable_adherence`). Both are outside #426's checklist
-  and its sanction.
+  reason (`Unavailable · unavailable_adherence`). A setting concern's own
+  nameplate in Changes still prints the tuning lever's title, which reads "ISF"
+  for the correction factor. All three are outside #426's checklist and its
+  sanction.

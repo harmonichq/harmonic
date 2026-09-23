@@ -12,11 +12,11 @@ it names, from the module that already owns that name:
   candidate, `title` on each member and `action_title` on each member whose
   served `action` is non-null, and `title` on the Pattern's `action` when it is
   an identified action (`{"action_id": …}`) rather than span rows. A habit
-  member's names are its Lever's served title, which guidance already holds on
-  that habit's source candidate; a setting member's names are the tuning lever's
-  served title for that parameter, which guidance already reads for setting
-  candidates. The Pattern action's title is the title of the member it came
-  from.
+  member's names are its Lever's title (`levers.title`), which guidance
+  already serves on that habit's source candidate; a setting member's names are
+  the setting's user-facing label from a closed table beside `_SETTING_UNITS`
+  in `ciq_autotune/guidance.py`: Basal, Correction factor, Carb ratio. The
+  Pattern action's title is the title of the member it came from.
 
 The desk prints these fields and keeps no name table for them.
 
@@ -28,6 +28,15 @@ field. Guidance is the read Changes renders and already holds the served name
 for every member subject. The one lever name source is `levers.title`; the
 episode name reuses it rather than adding a second table.
 
+**Setting labels.** A setting member is named by CONTEXT.md's user-facing label,
+not by the tuning lever's title: that title reads "ISF" for the correction
+factor (`ciq_autotune/analyzers/tuning_priority.py`), which CONTEXT.md bans from
+user copy, and no backend table served "Correction factor" before this change.
+The closed table sits beside the units table guidance already keeps per
+parameter. Coordinator ruling during #426 plan review, 2026-09-23. A setting
+concern's own nameplate, which still prints the tuning lever's title, is outside
+#426 and goes to a follow-up.
+
 **Field name.** `lever_title`, beside the episode's existing `lever`. CONTEXT.md
 lists "cause" as a synonym to avoid for **Lever**, and the behavioral spec calls
 Cause an internal attribution construct. #423 consumes this field.
@@ -36,7 +45,10 @@ Cause an internal attribution construct. #423 consumes this field.
 (`_state` keeps kind, the chosen member's action string, seriousness and the
 member fingerprint), so adding or rewording a name cannot return a set-aside
 subject. The existing baseline key test stays as written and a new assertion
-pins the baseline value.
+pins the baseline value. The Pattern replay test (`tests/test_pattern_replay.py`,
+which asserts guidance's members equal the literal roster's) keeps the literal
+roster as its oracle: it compares members with the name keys removed and asserts
+the names separately.
 
 ## ADR 426 — The Day entry carries its display name in the address
 
@@ -51,8 +63,11 @@ Each door supplies the name the reader was just looking at:
 
 - a Diagnose occurrence: the served finding title the case context holds
   (`selected.finding.title`);
-- a basal slot with no case: the slot's setting name and start clock time,
-  composed from the desk's existing setting-name and clock formatters;
+- a basal slot with no case: the setting name and the slot's half-hour range in
+  CONTEXT.md's user-copy form (`Basal · 03:00–03:30`), composed inside
+  `evidenceDayContext` from the desk's existing `SETTING_NAME`
+  (`frontend/plan-view.js`) and `formatStartMin` (`frontend/plan.js`), so the
+  door's own test exercises the real composition;
 - a Changes record or the active change: the title that record's own nameplate
   shows, through the same function;
 - a utility moment: the label the utility already passes.
@@ -90,6 +105,16 @@ the same address.
   release question Q2, answered "A"): "I record your answer as the approval for
   every change these 13 checklists call for, and write the wording in
   CONTEXT.md terms." Under it, S61 and S62 are amended; no story is retired.
+- **Ledger amendment form:** the S61 and S62 amendments are recorded in the
+  ticket's own dated section, `## #426 amendment — 2026-09-23`, at the end of
+  `mockups/harmonic-v2-desktop.behavior.md`, following the #413/#414 sections.
+  No `★ FROZEN` block, header inventory line or story body above it is edited
+  (release coordinator rule, 2026-09-23).
+- **Fail-first proof for the amended S61:** a node test in
+  `frontend/replay-cases.test.js` drives the amended C2 S61 body against a fake
+  page, following that file's S37b and S56 cases: it rejects an "Opened from"
+  equal to the subject id, and a Day row that carries a raw Lever key or lacks
+  its episode's `lever_title`; it passes on served names.
 
 ## Risk contract
 
@@ -124,4 +149,7 @@ the same address.
 - `frontend/desk.browser.test.mjs` stubs `/api/model-view`; its stub gains
   `lever_title` so it stays the served shape.
 - The parallel tickets #423 (Episode Log row), #428 (Day entry `focus`) and #430
-  (`originalSection`) edit neighbouring lines; the coordinator merges.
+  (`originalSection`) edit neighbouring lines; the coordinator merges. The
+  release coordinator ruled (2026-09-23) that #423 keeps a claimed row ending
+  with its episode's served `lever_title`, the claiming Finding last and matched
+  titles before it, so this change's "ends with" wording stands.

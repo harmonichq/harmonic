@@ -13,13 +13,19 @@
 - [ ] 1.2 Serve names on guidance's Pattern candidates
   (`ciq_autotune/guidance.py`, `_pattern_candidate`): `title` on each member,
   `action_title` on each member whose `action` is non-null, and `title` on the
-  Pattern's `action` when it is an identified action, per ADR 426. Tests in
+  Pattern's `action` when it is an identified action, per ADR 426. Habit
+  members are named by `levers.title`; setting members by a closed label table
+  beside `_SETTING_UNITS` (Basal, Correction factor, Carb ratio). Tests in
   `tests/test_guidance.py` from the existing synthetic producer: every Pattern
   member carries a non-empty `title` with no `habit:`, `setting:` or underscore
-  token; every member with an action carries `action_title`; a Pattern whose
-  action is identified carries its `title`; and a named Pattern candidate's
-  set-aside baseline equals the baseline of the same candidate with every
-  served name removed. Fails first on the base.
+  token and no member is named "ISF"; the correction-factor setting member is
+  named "Correction factor"; every member with an action carries
+  `action_title`; a Pattern whose action is identified carries its `title`; and
+  a named Pattern candidate's set-aside baseline equals the baseline of the same
+  candidate with every served name removed. Fails first on the base.
+  `tests/test_pattern_replay.py` keeps the literal roster as its oracle: it
+  compares guidance's members to the roster's with the name keys removed and
+  asserts the served names separately.
 - [ ] 1.3 Emit `browser_guidance_patterns` from
   `scripts/gen_findings_projection_fixtures.py`: the Pattern candidates
   `guidance.candidates` serves for the same browser-gate inputs that produce
@@ -54,8 +60,10 @@
   (`frontend/diagnose-context.js` `evidenceDayContext`, called from
   `frontend/diagnose.js`), the active-change door (`frontend/follow-up.js`), the
   record door (`frontend/history.js`) and the utility door
-  (`frontend/utilities.js`). Tests: `frontend/diagnose-context.test.js` (a
-  served finding's title and a basal slot's words; the return context still
+  (`frontend/utilities.js`). `evidenceDayContext` composes a basal slot's words
+  (`Basal · 03:00–03:30`) from `SETTING_NAME` (`frontend/plan-view.js`) and
+  `formatStartMin` (`frontend/plan.js`). Tests: `frontend/diagnose-context.test.js`
+  (a served finding's title and a basal slot's words; the return context still
   round-trips through the router) and `frontend/tab-routing.test.js` (`title`
   survives serialize and parse).
 - [ ] 3.2 Day's "Opened from" (`frontend/day.js`) prints the entry's `title`,
@@ -80,10 +88,18 @@
   given the Day's served `/api/model-view` carries at least one attributed
   episode (a premise that fails loudly), each row of an attributed episode ends
   with that episode's served `lever_title` and no row's text contains an
-  underscore token.
-- [ ] 3.5 Amend S61 and S62 in `mockups/harmonic-v2-desktop.behavior.md` with
-  dated amendment lines quoting the Q2 sanction (design.md, Revise
-  preparation): S61 names its origin by the served title and its Day names each
-  attributed episode's Lever by its served name; S62's "names that same subject
-  verbatim" becomes "names that subject by its served title". Inventory counts
-  do not change.
+  underscore token. Prove it fail-first in `frontend/replay-cases.test.js` with
+  a fake page, following that file's S37b and S56 cases: the amended S61
+  rejects an "Opened from" equal to the subject id, a row carrying a raw Lever
+  key, and a row lacking its episode's `lever_title`, and passes on served
+  names.
+- [ ] 3.5 Record the S61 and S62 amendments in a new section,
+  `## #426 amendment — 2026-09-23, issue #426`, appended to
+  `mockups/harmonic-v2-desktop.behavior.md` after the existing dated sections,
+  quoting the Q2 sanction (design.md, Revise preparation): S61 names its origin
+  by the served title and its Day names each attributed episode's Lever by its
+  served name; S62's "names that same subject verbatim" becomes "names that
+  subject by its served title". Edit no `★ FROZEN` block, header inventory line
+  or story body above the new section. No story is added, so the inventory
+  literals in `mockups/sweep/harmonic-v2-desktop/acceptance.py` and
+  `acceptance.test.py` do not change.

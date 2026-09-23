@@ -2974,9 +2974,12 @@ S139 · A watched Trial's dock offers "Open Changes ›" and names Verify
             activates the link, requires the address to parse (parseRoute) to
             Changes with subject watch, and requires .gf-stage-trial visible
             with its title carrying the admitted slot
-  status:   owed — no result recorded. Expected: base a4d374a7 with this
-            harness laid over it fails at the label assertion at both sizes;
-            the branch passes at both sizes. The coordinator records both here
+  status:   replays done; dock renders owed at integration. Base a4d374a7
+            with this harness laid over it fails at its label assertion at
+            both sizes ("saw [ 'Open Verify ›' ]; S139 the dock's link must
+            read "Open Changes ›""); branch f57cf730 passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-23. Raw logs land
+            in docs/scope/release-422-434-evidence/429/ on the integration branch
 ```
 
 ```
@@ -2997,7 +3000,10 @@ S140 · A watched Focus's dock reads "Pinned ‹MM-DD› · adherence and outcom
             "Verify" in its text, activates the link, requires the address to
             parse (parseRoute) to Changes with subject watch, and requires
             .gf-stage-focus visible
-  status:   owed — no result recorded. Expected: base a4d374a7 with this
-            harness laid over it fails at the label assertion at both sizes;
-            the branch passes at both sizes. The coordinator records both here
+  status:   replays done; dock renders owed at integration. Base a4d374a7
+            with this harness laid over it fails at its label assertion at
+            both sizes ("saw [ 'Open Verify ›' ]; S140 the dock's link must
+            read "Open Changes ›""); branch f57cf730 passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-23. Raw logs land
+            in docs/scope/release-422-434-evidence/429/ on the integration branch
 ```

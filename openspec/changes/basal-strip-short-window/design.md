@@ -90,6 +90,13 @@ entries (`flex-wrap: wrap`), and each entry stays one unbroken
 210px body, whose track is `minmax(0, 1fr)`, and the pane scrolls if the body
 still overruns.
 
+**Scoped to the split.** Both declarations, the pane's `overflow-y: auto` and
+the key's `flex-wrap: wrap`, live in one `@media (min-width: 832px)` block.
+The base `.canvas-pane` and `.lane-key` rules sit outside every media query,
+so adding either declaration there would also reach the ≤831px and ≤480px
+layouts. Scoped this way, those layouts stay byte-identical, which keeps this
+change inside the Unsupported line below and the sanction list.
+
 At 1280 and 1440 wide the key has at least 764px of line, against roughly
 430px of entries for a five-verdict lane (read from the #413 capture), or about
 520px with D6's entry as well. So it stays on one line and nothing moves at
@@ -125,8 +132,9 @@ The ≤831px layout's scroll on this element is shipped precedent.
 - At 832px wide, #359 also measured the header's hover readout (`#rd-p-n`)
   overrunning the pane edge. That is chart-header furniture, outside the basal
   lane, and it stays clipped exactly as today.
-- The ≤831px and ≤480px blocks set their own overflow and are untouched, so
-  only the ≥832px split changes.
+- Both declarations sit in the `@media (min-width: 832px)` block, so only the
+  ≥832px split changes. The ≤831px and ≤480px blocks and every value they
+  compute stay byte-identical.
 - The fullscreen and All charts states resize the pane's rows to
   `auto minmax(0, 1fr)`, which fits, so the pane scroll never engages there.
   All charts keeps its own inner scroll.

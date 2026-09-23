@@ -20,25 +20,36 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 - [ ] 2.1 Read UI Craft's `reference/web-implementation.md`, then implement
   surfaces **The basal lane stays reachable on short desktop windows** in
-  `frontend/diagnose-workstation.css`. Give the desktop `.canvas-pane` rule a
-  vertical scroll (`overflow-y: auto`) and leave its row tracks, the
-  `[data-canvas-full]` rules and the ≤831px and ≤480px blocks unchanged. Add
-  no `scrollbar-gutter`, which would narrow the pane at the supported sizes.
-  Rewrite the #359 comment on that rule: the pane now owns a vertical scroll,
-  so its width backstop computes to `hidden`, and S151 guards `scrollLeft`.
-  Let `.lane-key` wrap between whole entries (`flex-wrap: wrap`, with a row
-  gap no larger than the key's own line spacing). Each `#lane-key > span`
-  entry stays one unbroken line. Rewrite the #413 "one line, always" comment
-  there: a wrapped key takes its line from the chart inside the fixed body,
-  and it wraps only when the pane is too narrow, never at 1280×720 or
-  1440×900.
+  `frontend/diagnose-workstation.css`. Both new declarations go in one
+  `@media (min-width: 832px)` block, the split's own range, so the ≤831px and
+  ≤480px layouts stay byte-identical:
+  - `.canvas-pane` gets a vertical scroll (`overflow-y: auto`);
+  - `.lane-key` wraps between whole entries (`flex-wrap: wrap`, with a row gap
+    no larger than the key's own line spacing), and each `#lane-key > span`
+    entry stays one unbroken line.
+
+  Leave the pane's row tracks, the `[data-canvas-full]` rules, the base
+  `.lane-key` rule and the ≤831px and ≤480px blocks unchanged. Add no
+  `scrollbar-gutter`, which would narrow the pane at the supported sizes.
+  Rewrite the #359 comment on the pane rule: at split widths the pane now owns
+  a vertical scroll, so its width backstop computes to `hidden`, and S151
+  guards `scrollLeft`. Rewrite the #413 "one line, always" comment on
+  `.lane-key`: at split widths a wrapped key takes its line from the chart
+  inside the fixed body, and it wraps only when the pane is too narrow, never
+  at 1280×720 or 1440×900.
 - [ ] 2.2 Add S151 to the desk ledger and replay. S151, S152 and S153 are each
   built the way S113 is: a `C4_STORIES` body, an
   `appOnly('HV2-17', …)` export carrying its
   `// STORY:harmonic-v2-desktop:<id>` marker, a `REGISTRY` entry, and case
-  `basal-verdict-gallery` in `STORY_CASES`. For each of
-  1200×736, 1200×560 and 832×560, set the size with `page.setViewportSize`
-  and restore the run's size afterwards. Require all of these:
+  `basal-verdict-gallery` in `STORY_CASES`.
+
+  S151 checks every size and both axes before it judges: it records each
+  failure and fails once at the end, listing every failure by size and axis.
+  It never stops at the first size or the first axis that fails, so on base it
+  reports both 1200×560's vertical clip and 832×560's key-entry overrun. For
+  each of 1200×736, 1200×560 and 832×560, set the size with
+  `page.setViewportSize`, and restore the run's size afterwards even when
+  checks failed. At each size, check all of these:
   - the document has no root scroll;
   - when `#lane-wrap` is not wholly inside `.canvas-pane`'s visible box at
     rest, the pane's computed `overflow-y` is `auto` or `scroll`;
@@ -62,9 +73,12 @@ decisions, the measurement, the revise preparation and the risk contract.
   axis.
 
   Factor the in-page geometry check into an exported helper, as S113's is.
-  Give it fake-page node tests in `frontend/c4.replay.test.js`: one passing
-  lane, one failing on a key entry past the pane's right edge, and one failing
-  on a strip below a pane that cannot scroll.
+  Give it fake-page node tests in `frontend/c4.replay.test.js`:
+  - one passing lane;
+  - one failing on a key entry past the pane's right edge;
+  - one failing on a strip below a pane that cannot scroll;
+  - one where a vertical failure at one size and a horizontal failure at
+    another are both named in the single failure message.
 - [ ] 2.3 Add S152: on `basal-verdict-gallery`, at each of S151's three sizes
   (1200×736, 1200×560 and 832×560), set with `page.setViewportSize` and
   restored afterwards, handle every cell the key counts as raise or lower:

@@ -160,43 +160,12 @@ const patternMiniLabel = (data, row) => {
   return `${phrase} · ${data?.summary?.claimed ?? 0}`;
 };
 
-/* Pattern rail furniture wraps the shipped response preview. The case file
-   still supplies every point; this changes only the sanctioned inks and labels. */
+/* The Pattern rail mini is the shared rail instrument (#413): the case file
+   supplies every point, and `queuePreviewOption` owns the inks, the labels,
+   the named anchor and the target band for every ranked row's mini. */
 function patternQueuePreview(descriptor, range, colors, row) {
-  const data = descriptor.data;
-  if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
-  const option = queuePreviewOption(descriptor, range, {
-    ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
-  }, row);
-  option.graphic = [
-    { type: 'text', left: 8, top: 5, silent: true,
-      style: { text: patternMiniLabel(data, row), fill: colors.misses, font: `600 9px ${FONT}` } },
-    { type: 'text', right: 8, top: 5, silent: true,
-      style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
-        font: `600 9px ${FONT}`, align: 'right' } },
-  ];
-  // Only the typical cohort carries the interquartile band in this treatment.
-  option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
-  for (const series of option.series) {
-    if (series.id.startsWith('queue:event:comparison:band:')) {
-      const paint = series.renderItem;
-      series.renderItem = (params, api) => {
-        const mark = paint(params, api);
-        if (mark.style.fill) mark.style.fill = colors.muted;
-        if (mark.style.stroke) mark.style.stroke = colors.muted;
-        return mark;
-      };
-    }
-    if (!series.id.endsWith(':median')) continue;
-    series.symbol = 'none';
-    series.showSymbol = false;
-    series.lineStyle.type = 'solid';
-  }
-  // The anchor's named label (MEAL/LOW) and the dashed 70-180 target band
-  // (`queue:event:180`) are already drawn by `queuePreviewOption` above, from
-  // the same served `row` — one builder owns them, so neither is redrawn
-  // here (that duplicated the label and the band at identical coordinates).
-  return option;
+  if (!validPatternEvidence(descriptor.data)) throw new Error('Pattern evidence is unavailable.');
+  return queuePreviewOption(descriptor, range, colors, row);
 }
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the

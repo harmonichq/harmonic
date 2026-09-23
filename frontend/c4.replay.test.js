@@ -282,8 +282,8 @@ test('S112 holds the roster, record and reassessment reads in turn and reaches i
 // synchronously (mirroring real navigation, which commits before client-side
 // fetches resolve); the loading frame's skeleton is asserted while the read
 // is still held open.
-function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', status = 'Loading Diagnose',
-  railWidth = 430, reference = '430px', animationName = 'none' } = {}) {
+function qa413ColdDiagnosePage({ skeletons = { stage: 1, rail: 1 }, marks = 4, skeletonText = '',
+  status = 'Loading Diagnose', railWidth = 430, reference = '430px', animationName = 'none' } = {}) {
   const routes = new Map();
   const fire = pathname => {
     const request = { url: () => `http://synthetic.invalid${pathname}` };
@@ -292,11 +292,14 @@ function qa413ColdDiagnosePage({ skeletons = 1, marks = 7, skeletonText = '', st
       if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
     }
   };
+  const pane = selector => (selector.startsWith('.gf-loading ') ? 'stage'
+    : selector.includes('.gf-pane-body > .gf-skeleton') ? 'rail' : null);
   const node = selector => ({
     waitFor: async () => {},
+    locator: sub => node(`${selector} ${sub}`),
     count: async () => {
-      if (selector === '.gf-skeleton[aria-hidden="true"]') return skeletons;
-      if (selector === '.gf-skeleton .gf-skel') return marks;
+      if (selector.endsWith(' .gf-skel')) return marks;
+      if (pane(selector)) return skeletons[pane(selector)];
       return 1;
     },
     innerText: async () => skeletonText,
@@ -324,6 +327,13 @@ test('S114 fails when the skeleton still carries text, count or value', async ()
   await withReplayAssertionTimeout(10, () => assert.rejects(
     C4_STORIES.S114(qa413ColdDiagnosePage({ skeletonText: '3 findings' })),
     /must state no count, title or value/));
+});
+
+test('S114 fails when the rail pane stands without its own skeleton', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S114(qa413ColdDiagnosePage({ skeletons: { stage: 1, rail: 0 } })),
+    /must carry one rail skeleton block/));
 });
 
 test('S114 fails when the rail does not hold the Diagnose reference width', async () => {
@@ -619,7 +629,10 @@ function qa413GalleryPage({
   order = ['lane-key', 'lane'],
   staged = true,
   distinctSelection = true,
+  marks = {},
 } = {}) {
+  marks = { primary: 'rgb(224, 127, 63)', outlineStyle: 'solid', outlineColor: 'rgb(224, 127, 63)',
+    fill: 'color(srgb 0.8 0.5 0.3 / 0.72)', underline: '""', underlineHeight: '2px', clipped: 0, ...marks };
   keyTokens = keyTokens || cellTokens;
   keyImages = keyImages || cellImages;
   keyGlyph = keyGlyph || cellGlyph;
@@ -659,6 +672,7 @@ function qa413GalleryPage({
     evaluate: async fn => {
       const src = fn.toString();
       if (src.includes('lane-wrap')) return order;
+      if (src.includes('outlineStyle')) return { ...marks };
       if (src.includes('lane-cell')) return { ...verdicts };
       throw new Error(`unexpected page.evaluate: ${src}`);
     },
@@ -724,6 +738,24 @@ test('assertBasalLaneGallery fails when the key does not render above the cells'
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertBasalLaneGallery(qa413GalleryPage({ order: ['lane', 'lane-key'] })),
     /the key must render as the lane's head row, above the cells/));
+});
+
+test('assertBasalLaneGallery fails when lane cells overflow the lane track', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { clipped: 48 } })),
+    /every lane cell must stand wholly inside the lane's track; 48 overflow it/);
+});
+
+test('assertBasalLaneGallery fails when the selected outline is not primary', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { outlineColor: 'rgb(242, 237, 226)' } })),
+    /the selected cell must keep the primary outline/);
+});
+
+test('assertBasalLaneGallery fails when the staged mark is not an underline', async () => {
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ marks: { underlineHeight: '11px' } })),
+    /the staged mark must be an underline, not a fill/);
 });
 
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after

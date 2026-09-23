@@ -221,6 +221,15 @@ export function queuePreviewOption(descriptor, range, colors, row) {
   }
 
   const projection = data.projection || {};
+  /* Term "Every ranked rail row draws one mini instrument" (#413) — a row that
+     serves a count sentence draws the rail instrument: the claimed cohort in
+     the rail's miss ink, TYPICAL in body ink with its muted band as the only
+     band, unmarked solid medians. Pattern, Cause and High-carb minis all reach
+     this one inking; the By-event stage keeps its own `--ec-*` cohort inks. */
+  const sentence = row?.count_sentences?.[0];
+  const cohortInk = sentence
+    ? { ...ink.cohorts, matched: ink.misses || '#d08150', comparison: ink.body || '#c7bca8' }
+    : ink.cohorts;
   const cohorts = (projection.cohorts || []).map((cohort) => ({ ...cohort,
     points: cohort.points || [] }))
     .filter((cohort) => cohort.points.some((point) => point.support !== 'withheld'
@@ -231,8 +240,9 @@ export function queuePreviewOption(descriptor, range, colors, row) {
   const styles = ['solid', 'dashed', 'dotted'];
   const series = [];
   cohorts.forEach((cohort, index) => {
-    const color = ink.cohorts?.[cohort.key] || [signal, high, excluded][index % 3];
-    previewBands(cohort.points).forEach((band, bandIndex) => {
+    const color = cohortInk?.[cohort.key] || [signal, high, excluded][index % 3];
+    const bandInk = sentence ? muted : color;
+    if (!sentence || cohort.key === 'comparison') previewBands(cohort.points).forEach((band, bandIndex) => {
       const quantiles = band.map((point) => [point.minute, point.p25, point.p75]);
       series.push({ id: `queue:event:${cohort.key}:band:${bandIndex}`, type: 'custom',
         animation: false, silent: true, data: [[bandIndex]], quantiles,
@@ -243,30 +253,30 @@ export function queuePreviewOption(descriptor, range, colors, row) {
           if (quantiles.length === 1) {
             return { type: 'line', shape: { x1: upper[0][0], y1: upper[0][1],
               x2: lower[0][0], y2: lower[0][1] },
-            style: { stroke: color, lineWidth: 3, opacity: .22 } };
+            style: { stroke: bandInk, lineWidth: 3, opacity: .22 } };
           }
           return { type: 'polygon', shape: { points: [...upper, ...lower] },
-            style: { fill: color, opacity: .16 } };
+            style: { fill: bandInk, opacity: .16 } };
         } });
     });
-    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line', symbol: 'circle',
-      symbolSize: index === 0 ? 4 : 3.5, showSymbol: true,
+    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line',
+      symbol: sentence ? 'none' : 'circle',
+      symbolSize: index === 0 ? 4 : 3.5, showSymbol: !sentence,
       connectNulls: false, data: cohort.points.map((point) => [
         Number.isFinite(point.minute) ? point.minute : null,
         point.support !== 'withheld' && Number.isFinite(point.minute)
           && Number.isFinite(point.median) ? point.median : null,
       ]),
       lineStyle: { color, width: index === 0 ? 2.4 : 1.8, opacity: index === 0 ? .92 : .78,
-        type: styles[index % styles.length] },
+        type: sentence ? 'solid' : styles[index % styles.length] },
       itemStyle: { color, opacity: index === 0 ? .95 : .82 } });
   });
-  /* Term "Every ranked rail row draws one mini instrument" (#413) — the SAME
-     instrument the Pattern mini draws: the matched cohort's served outcome
-     word and count at the left, TYPICAL and the denominator at the right, the
-     event named on the anchor line, and a dashed target band. The served
-     count sentence (never a frontend word table) supplies the words. */
-  const sentence = row?.count_sentences?.[0];
-  const anchorLabel = sentence ? (sentence.noun === 'meals' ? 'MEAL' : 'LOW') : null;
+  /* The rail instrument's furniture: the matched cohort's served outcome word
+     and count at the left, TYPICAL and the denominator at the right, the event
+     named on the anchor line, and a dashed target band. The served count
+     sentence supplies the words and the case file's served anchor names the
+     event; the desk keeps no word list of its own. */
+  const anchorLabel = sentence ? projection.anchor?.label?.toUpperCase() || null : null;
   const anchorRenderItem = (params, api) => {
     const mark = { type: 'rect', shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
       width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } };
@@ -281,7 +291,7 @@ export function queuePreviewOption(descriptor, range, colors, row) {
       max: projection.window_min?.[1] ?? 180 }),
     yAxis: previewAxis('value', { min: y[0], max: y[1] }),
     graphic: sentence
-      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8, ink.cohorts?.matched || signal),
+      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8, cohortInk.matched),
         previewText(`TYPICAL · ${sentence.denominator}`, 'right', muted, { align: 'right' })]
       : [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
     series: [...series,

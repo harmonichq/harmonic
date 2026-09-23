@@ -2645,7 +2645,11 @@ S113 · The basal lane's head row — the served verdict key — stands wholly
             mark's shared `--cell` paint token (plus the hatch/dot structure
             for insufficient/no-data and the directional glyph for
             raise/lower) and the key's printed count against the served
-            lane count
+            lane count; then (after the #413 critique) requires every cell
+            to stand wholly inside the lane's track, the selected cell's
+            outline to resolve to `--primary`, and the staged mark to be a
+            2px underline, so selection, stage and lower fill stay three
+            distinct marks
   status:   #413 task 2 sub-order — the coordinator's own `ONLY=S113,S114`
             run at 1280x720 passed a narrower prior revision of this story
             (the DOM-order/visibility checks alone, against whatever verdict
@@ -2667,9 +2671,12 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
   lock:     HV2-29
   data:     the app's own showcase; the read held open with a synthetic
             route so the loading frame stands long enough to inspect
-  evidence: C4_STORIES.S114; holds `/api/analyze`, reloads cold, reads the
-            skeleton's marks, text content, status label and the reading
-            pane's width, then checks the animation is suppressed under
+  evidence: C4_STORIES.S114; holds `/api/analyze`, reloads cold, reads one
+            skeleton per pane (stage instruments inside the loading block,
+            rail rows in the reading pane's body — the #413 critique moved
+            the rows out of the stage), each one's marks and text content,
+            the status label and the reading pane's width, then checks the
+            animation is suppressed under
             `prefers-reduced-motion: reduce` before releasing the read
   status:   #413 task 2 sub-order — story authored and registered;
             coordinator ran the bare-script `ONLY=S114` replay on this
@@ -2707,8 +2714,12 @@ S115 · A Pattern owning claimed causes folds them beneath its own row, one
             one Cause (the same fact S113's predecessor observed of the base)
   evidence: C4_STORIES.S115; reads the served preparation to name the owning
             Pattern and its claimed members, asserts none renders as a
-            sibling `.qrow`, opens the fold, reads each member's line against
-            every one of its served count sentences, reads the Pattern's own
+            sibling `.qrow`, finds the fold toggle inside the Pattern's own
+            list item and opens it, requires each member's line inside that
+            item's nested causes list with its name and counts on one line
+            (the #413 critique's nesting and one-line fixes), reads each
+            member's line against every one of its served count sentences,
+            reads the Pattern's own
             row against its served sentence with emphasis, and compares the
             served rank-one tier's rows against `data-urgent`
   status:   #413 task 3 sub-order — story authored and registered against the

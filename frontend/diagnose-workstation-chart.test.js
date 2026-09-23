@@ -63,13 +63,27 @@ test('#413 · a Cause mini draws the same instrument the Pattern mini draws, fro
     .cases['finding:carb_undercount'].event;
   const row = { count_sentences: [{ count: 2, denominator: 4, noun: 'highs', outcome: 'followed an undercounted meal',
     sentence: '2 of 4 highs followed an undercounted meal' }] };
-  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors, row);
+  const railInk = { ...previewColors, misses: '#d08150', body: '#c7bca8' };
+  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], railInk, row);
   assert.deepEqual(option.graphic.map((item) => item.style.text),
     ['FOLLOWED AN UNDERCOUNTED MEAL · 2', 'TYPICAL · 4']);
-  assert.equal(option.graphic[0].style.fill, previewColors.cohorts.matched);
+  // The rail cohort palette the Pattern mini uses (#413 critique 5): the
+  // claimed cohort and its label in the miss ink, TYPICAL in body ink — never
+  // the By-event stage's `--ec-*` cohort inks, which paint matched in-range green.
+  assert.equal(option.graphic[0].style.fill, railInk.misses);
+  const median = (key) => option.series.find((series) => series.id === `queue:event:${key}:median`);
+  assert.equal(median('matched').lineStyle.color, railInk.misses);
+  assert.equal(median('comparison').lineStyle.color, railInk.body);
+  assert.equal(median('matched').showSymbol, false);
+  assert.equal(median('matched').lineStyle.type, 'solid');
+  assert.deepEqual(option.series.filter((series) => series.id.includes(':band:'))
+    .map((series) => series.id.split(':')[2]).filter((key, i, all) => all.indexOf(key) === i),
+  ['comparison'], 'only the typical cohort carries the interquartile band');
   const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
     .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
-  assert.equal(marker.children[1].style.text, 'LOW', 'a non-meal noun anchors as LOW, matching the Pattern mini');
+  assert.ok(event.projection.anchor.label, 'premise: the case file serves an anchor label');
+  assert.equal(marker.children[1].style.text, event.projection.anchor.label.toUpperCase(),
+    'the anchor names the served event, not a desk word table');
   assert.deepEqual(option.series.find((series) => series.id === 'queue:event:180').markLine.data,
     [{ yAxis: 70 }, { yAxis: 180 }]);
   // Without a served row (no count sentence to draw from), the mini keeps its

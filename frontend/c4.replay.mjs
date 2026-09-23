@@ -516,9 +516,10 @@ export async function assertRankedMinis(page, rows) {
 }
 
 // #413: S113's scenario, factored out of the story so a fake page can drive
-// it directly (frontend/c4.replay.test.js) without also faking
-// `openBasalLane`'s own network reads and navigation — the same boundary
-// S31-S35 already draw (no fake-page test covers their shared opener either).
+// it directly, from this module's own node regression test, without also
+// faking `openBasalLane`'s own network reads and navigation — the same
+// boundary S31-S35 already draw (no fake-page test covers their shared
+// opener either).
 export async function assertBasalLaneGallery(page) {
   const verdicts = await page.evaluate(() => {
     const counts = {};

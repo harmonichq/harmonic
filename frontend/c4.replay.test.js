@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
+import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -372,6 +373,63 @@ test('R18 refuses to prove absence by also removing current evidence or records'
     { trials: [{}], focuses: [] })), /both Trial and Focus/);
 });
 
+
+// R8's case ('behavioral-carb-undercount') claims finding:carb_undercount
+// under a Pattern (#413): the served row is a `.qmember` under a closed fold,
+// never a sibling `.qrow`. A raw `.qrow[data-id]` lookup (the pre-#413
+// locator) never resolves for it — this fails on that locator and passes
+// only through the fold-aware `railRowLocator` resolution.
+function foldedComparisonPage(id) {
+  const actions = [];
+  const qrowSel = `#level .qrow[data-id="${id}"]`;
+  const qmemberSel = `#level .qmember[data-id="${id}"]`;
+  const foldSel = '#level .qfold[aria-expanded="false"]';
+  let foldClosed = true;
+  const node = selector => ({
+    first() { return this; },
+    filter() { return this; },
+    count: async () => {
+      if (selector === qrowSel) return 0;
+      if (selector === foldSel) return foldClosed ? 1 : 0;
+      if (selector === qmemberSel) return 1;
+      return 1;
+    },
+    waitFor: async () => {
+      if (selector === qrowSel) throw new Error(`Timeout waiting for ${qrowSel}`);
+    },
+    click: async () => {
+      actions.push(selector);
+      if (selector === foldSel) foldClosed = false;
+    },
+    getAttribute: async () => null,
+  });
+  return {
+    actions,
+    url: () => 'http://synthetic.invalid/',
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    waitForFunction: async () => true,
+    waitForResponse: async predicateFn => {
+      const response = {
+        url: () => 'http://synthetic.invalid/api/diagnose/finding-case-file?finding_id=' + encodeURIComponent(id),
+        ok: () => true,
+        json: async () => ({ finding: { id }, projection: { alignment: 'event' } }),
+      };
+      assert.ok(predicateFn(response), 'fake response never matched the expected finding-case-file request');
+      return response;
+    },
+  };
+}
+
+test('R8 opens finding:carb_undercount through its Pattern fold, never a raw qrow lookup', async () => {
+  const page = foldedComparisonPage('finding:carb_undercount');
+  const file = await C2_STORIES.openComparisonCase(page, 'finding:carb_undercount');
+  assert.equal(file.finding.id, 'finding:carb_undercount');
+  assert.ok(page.actions.includes('#level .qfold[aria-expanded="false"]'),
+    'R8 must open the closed fold before it can reach the claimed cause');
+  assert.ok(page.actions.includes('#level .qmember[data-id="finding:carb_undercount"]'),
+    'R8 must click the folded .qmember row, not a sibling .qrow');
+});
 
 test('R17 requires the generated finishable Trial, never a mock ready selector', async () => {
   assert.equal(storyCase('R17'), 'c3-trial');

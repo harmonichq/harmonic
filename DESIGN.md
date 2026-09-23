@@ -397,5 +397,6 @@ lock, 2026-09-14). Every value painted below is served. No token in
   - Both sit one surface step above the field and shimmer slowly, still under
     reduced motion.
   - The status role and its named text are unchanged.
-- **Evidence.** `docs/scope/413-desk-design-evidence/` holds the evidence and
-  the critique. The desk ledger's S113–S117 hold the replays.
+- **Evidence.** A private design-evidence record — not part of the public
+  tree — holds the evidence and the critique. The desk ledger's S113–S117
+  hold the replays.

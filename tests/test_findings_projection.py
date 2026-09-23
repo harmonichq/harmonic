@@ -24,13 +24,18 @@ except ImportError:  # pragma: no cover
     _HAS_FASTAPI = False
 
 from ciq_autotune.analyzers.isf import analyze_isf
+from ciq_autotune.analyzers.scenario.evaluation import SEQUENCE_LEVERS
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
+from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
 from ciq_autotune.findings_projection import (
+    _CAUSE_OUTCOME,
     _EVENT_CHART_FAMILIES,
+    _headline_for,
     _PATTERN_CHIPS,
+    _PATTERN_OUTCOME,
     _chips_for,
     _row as projection_row,
     FindingsProjection,
@@ -273,6 +278,83 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
                 for appearance in row["appearances"] or []:
                     self.assertLessEqual(appearance["n"], appearance["m"],
                                          f"{row['title']} in {bounds}")
+
+
+class CountSentenceTest(unittest.TestCase):
+    """#413: the served count sentence beside ``headline``, from one closed
+    outcome table — a new field, never a rebuild of ``headline`` (#413 ADR "The
+    backend serves the count sentence")."""
+
+    def setUp(self):
+        self.projection = gen.projection()
+
+    def test_every_pattern_key_has_exactly_one_outcome_entry(self):
+        roster_keys = {row[0] for row in _ROSTER}
+        self.assertEqual(set(_PATTERN_OUTCOME), roster_keys)
+
+    def test_the_two_meals_patterns_serve_different_outcomes(self):
+        # highs_after_meals and lows_after_meals are both counted in meals and
+        # must not share a word: a family cannot be the key.
+        self.assertNotEqual(_PATTERN_OUTCOME["highs_after_meals"],
+                            _PATTERN_OUTCOME["lows_after_meals"])
+
+    def test_a_two_family_cause_serves_two_sentences_agreeing_with_its_appearances(self):
+        rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        row = next(r for r in rows if r.get("lever") == "carb_undercount")
+        self.assertEqual(len(row["appearances"]), 2)
+        self.assertEqual(len(row["count_sentences"]), 2)
+        for appearance, sentence in zip(row["appearances"], row["count_sentences"]):
+            self.assertEqual(sentence["count"], appearance["n"])
+            self.assertEqual(sentence["denominator"], appearance["m"])
+            self.assertEqual(sentence["noun"], appearance["noun"])
+            outcome = _CAUSE_OUTCOME[(row["lever"], appearance["family"])]
+            self.assertEqual(sentence["outcome"], outcome)
+            self.assertEqual(
+                sentence["sentence"],
+                f"{appearance['n']} of {appearance['m']} {appearance['noun']} {outcome}",
+            )
+
+    def test_the_outcome_table_covers_the_code_derived_cross_product_exactly(self):
+        """``_CAUSE_OUTCOME``'s keys equal every ``Lever`` member x every family a
+        Cause appearance can be filed under — both sets read from code, never
+        from fixture output (coordinator decision, #413 review round 2).
+
+        The four exposure families come from ``explore_exposures._FAMILY_FOR_KIND``.
+        A lever is narrowed off that full set only when its OWN policy or the
+        sequence-lever exclusion makes the narrower set structural:
+
+        * ``evidence_population.policy_for(lever).recurrence_family is None`` means
+          ``_finding_rows``'s override unconditionally replaces that lever's
+          appearances with its one ``recurrence_noun`` family — never any of the
+          four exposure families (``Lever.MEAL_BOLUS_SHORT``, and the two
+          ``SEQUENCE_LEVERS``, whose ``recurrence_noun`` is ``"sequences"``).
+        * ``SEQUENCE_LEVERS`` (``model_view._is_driver``) are additionally excluded
+          from ever being attributed on an exposure-family anchor at all, so their
+          only served family is the sequence branch's hardcoded ``"sequences"``.
+
+        Every other lever's policy leaves ``recurrence_family`` set to its own
+        exposure — no override fires, so `_finding_rows` can file its appearances
+        under any of the four exposure families and each needs its own entry.
+        """
+        expected = set()
+        for lever in Lever:
+            policy = policy_for(lever)
+            if lever in SEQUENCE_LEVERS:
+                expected.add((lever.value, "sequences"))
+            elif policy.recurrence_family is None:
+                expected.add((lever.value, policy.recurrence_noun))
+            else:
+                expected.update((lever.value, family) for family in _FAMILY_FOR_KIND.values())
+        self.assertEqual(set(_CAUSE_OUTCOME), expected)
+
+    def test_headline_is_computed_independently_of_count_sentences(self):
+        # `_headline_for` never reads `count_sentences`: recomputing it with the
+        # field forced to `None` must reproduce the exact same served headline.
+        rows = self.projection.project(WindowQuery.whole_day())["rows"]
+        for row in rows:
+            self.assertEqual(
+                row["headline"], _headline_for({**row, "count_sentences": None}),
+                row["title"])
 
 
 class GroundedWindowTest(unittest.TestCase):

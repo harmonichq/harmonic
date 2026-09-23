@@ -2722,6 +2722,7 @@
       "lows"
     ],
     "claimed_by": null,
+    "count_sentences": null,
     "current": null,
     "direction": "lower",
     "episodes": null,

@@ -94,7 +94,7 @@
   paint, 24 h arrival and skeleton; re-freeze the desk ledger's header with this
   base and the story counts, which must equal the inventory's pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`.
-- [ ] 4.5 Run the complete desk ledger at both sizes through
+- [x] 4.5 Run the complete desk ledger at both sizes through
   `mockups/sweep/harmonic-v2-desktop/acceptance.py replay`, which checks the
   ledger inventory before any story, and the desk, follow-up and browser-runner
   browser suites, once each, serially, on the commit that will be pushed, with the fast

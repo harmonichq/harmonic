@@ -156,6 +156,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         [...root.querySelectorAll('#seg-window button')].find(button => button.textContent === '24 h')?.click();
       }
       restore();
+    } else {
+      // #413 — "Diagnose opens on the 24 h window": a cold arrival with no
+      // contextual entry (no Pattern, no Finding, no retained window — this
+      // branch is unreached by the parked-return path that preserves those)
+      // opens unscoped. The workstation's own presets keep booting on
+      // Overnight for isf/drill/occurrence/drawn, which this does not touch.
+      [...root.querySelectorAll('#seg-window button')].find(button => button.textContent === '24 h')?.click();
     }
     const heading = root.querySelector('#crumb-trail');
     if (heading) heading.tabIndex = -1;

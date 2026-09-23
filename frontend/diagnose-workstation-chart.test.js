@@ -58,6 +58,27 @@ test('#341 · queue previews carry a purpose-built grammar for every evidence fa
   }
 });
 
+test('#413 · a Cause mini draws the same instrument the Pattern mini draws, from the served row', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const row = { count_sentences: [{ count: 2, denominator: 4, noun: 'highs', outcome: 'followed an undercounted meal',
+    sentence: '2 of 4 highs followed an undercounted meal' }] };
+  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors, row);
+  assert.deepEqual(option.graphic.map((item) => item.style.text),
+    ['FOLLOWED AN UNDERCOUNTED MEAL · 2', 'TYPICAL · 4']);
+  assert.equal(option.graphic[0].style.fill, previewColors.cohorts.matched);
+  const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
+    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
+  assert.equal(marker.children[1].style.text, 'LOW', 'a non-meal noun anchors as LOW, matching the Pattern mini');
+  assert.deepEqual(option.series.find((series) => series.id === 'queue:event:180').markLine.data,
+    [{ yAxis: 70 }, { yAxis: 180 }]);
+  // Without a served row (no count sentence to draw from), the mini keeps its
+  // prior graceful degradation rather than mounting a half-built instrument.
+  const bare = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors);
+  assert.deepEqual(bare.graphic.map((item) => item.style.text), ['EVENT · RESPONSE']);
+  assert.ok(!bare.series.some((series) => series.id === 'queue:event:180'));
+});
+
 test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
   const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
     runs: [{ run_id: 'meal', in_pool: true }],

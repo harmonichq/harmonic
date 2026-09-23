@@ -3120,6 +3120,15 @@ export const S112 = appOnly('HV2-28', '#414 the roster and reassessment loading 
 export const S113 = appOnly('HV2-17', '#413 the basal lane names and paints every served verdict, key held above the cells', C4_STORIES.S113);
 // STORY:harmonic-v2-desktop:S114
 export const S114 = appOnly('HV2-29', '#413 a cold Diagnose arrival shows a count-free skeleton, not an empty loading block', C4_STORIES.S114);
+// STORY:harmonic-v2-desktop:S115
+export const S115 = appOnly('pending #413 design lock (task 4.4)',
+  '#413 a Pattern owns its causes behind a fold and the rail shows served urgency', C4_STORIES.S115);
+// STORY:harmonic-v2-desktop:S116
+export const S116 = appOnly('pending #413 design lock (task 4.4)',
+  '#413 every ranked rail mini draws the same instrument, from the served row', C4_STORIES.S116);
+// STORY:harmonic-v2-desktop:S117
+export const S117 = appOnly('pending #413 design lock (task 4.4)',
+  '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3167,6 +3176,7 @@ export const REGISTRY = [
   ['S104', S104, J()], ['S105', S105, J()], ['S106', S106, J()], ['S107', S107, J()],
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
+  ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

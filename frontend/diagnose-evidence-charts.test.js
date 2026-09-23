@@ -1306,7 +1306,12 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
       projectionId: 'fp_test',
     });
-    const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors);
+    // The outcome word is the SERVED row's own count sentence (#413) — never a
+    // frontend word table keyed by lever.
+    const row = { count_sentences: [{ outcome: outcome.toLowerCase(),
+      noun: label === 'MEAL' ? 'meals' : 'lows', count: data.summary.claimed,
+      denominator: data.summary.denominator }] };
+    const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
     assert.deepEqual(option.graphic.map((item) => item.style.text), [
       `${outcome} · ${data.summary.claimed}`, `TYPICAL · ${data.summary.denominator}`,
     ]);
@@ -1318,23 +1323,83 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
     assert.equal(median.showSymbol, false);
     assert.equal(option.series.find((series) => series.id === 'queue:event:comparison:median')
       .lineStyle.color, colors.body);
-    assert.equal(option.series.find((series) => series.id === 'queue:pattern:180')
+    // The dashed 70-180 target band is `queuePreviewOption`'s own
+    // `queue:event:180` series, not a second copy — one builder owns it.
+    assert.equal(option.series.filter((series) => /^queue:(pattern|event):180$/.test(series.id)).length, 1,
+      'the dashed target band must be drawn exactly once');
+    assert.equal(option.series.find((series) => series.id === 'queue:event:180')
       .markLine.lineStyle.color, colors.warn);
     const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
       .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
-    assert.equal(marker.children[1].style.text, label);
-    assert.equal(marker.children[1].y, option.grid.top + 3, 'label rides inside the existing plot');
-    assert.deepEqual(option.series.find((series) => series.id === 'queue:pattern:180')
+    // The anchor label is drawn by one builder only (#413 review round 1):
+    // walk the WHOLE rendered marker tree rather than trusting a fixed child
+    // index, so a second builder re-wrapping the same marker and drawing its
+    // own duplicate label at identical coordinates fails this test.
+    const textNodes = (node) => !node ? [] : [
+      ...(node.type === 'text' ? [node] : []),
+      ...(node.children || []).flatMap(textNodes),
+    ];
+    const labelNodes = textNodes(marker).filter((node) => node.style.text === label);
+    assert.equal(labelNodes.length, 1, `the anchor label must be drawn exactly once, saw ${labelNodes.length}`);
+    assert.equal(labelNodes[0].y, option.grid.top + 3, 'label rides inside the existing plot');
+    assert.deepEqual(option.series.find((series) => series.id === 'queue:event:180')
       .markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
   }
 });
 
-
-test('#395 · an unknown Pattern coordinate is not mounted as a supported chart kind', () => {
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
-  for (const key of ['future_pattern', '__proto__']) {
-    assert.equal(entry.matches({ pattern_chart: { key } }), false);
+test('#413 · the High-carb-sequence mini draws the same instrument, never the comparison token', () => {
+  // #413 review round 1: every fixture claims finding:high_carb_sequence, so
+  // its rail mini was never exercised by a mini-mounting test even though the
+  // registry already reroutes it through the shared cohort builder. Drive the
+  // registry entry directly against the real case file the app would serve
+  // for a RANKED (unclaimed) row, so a regression here fails even though the
+  // showcase never renders one live.
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'eating-sequence');
+  const generated = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'));
+  const data = generated.states.high_carb_sequence_in_sequence.windows.global.cases['finding:high_carb_sequence'].event;
+  const row = { count_sentences: [
+    { count: 8, denominator: 40, noun: 'sequences', outcome: 'ran less in range',
+      sentence: '8 of 40 sequences ran less in range' },
+  ] };
+  // The rail's own cohort palette, never the case file's comparison token —
+  // deliberately distinct hex values so a leaked `--ec-comparison`/blue read
+  // is caught rather than coincidentally matching.
+  const colors = { text: '#141a15', muted: '#3d5848', line: '#c3bfb4', signal: '#5a7a52',
+    high: '#caa23b', basal: '#9a8f7e', excluded: '#6b7169', warn: '#caa23b',
+    cohorts: { matched: '#5a7a52', nearly_matched: '#caa23b', comparison: '#b0632e' } };
+  const COMPARISON_BLUE = '#3b6ea5';
+  const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors, row);
+  assert.deepEqual(option.graphic.map((item) => item.style.text),
+    ['RAN LESS IN RANGE · 8', 'TYPICAL · 40'], 'the same cohort-label/TYPICAL instrument as every other mini');
+  assert.equal(option.graphic[0].style.fill, colors.cohorts.matched);
+  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor')
+    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
+  assert.equal(anchor.children[1].style.text, 'LOW', 'sequences are not meals, so the anchor names LOW');
+  const band = option.series.find((series) => series.id === 'queue:event:180');
+  assert.ok(band, 'the dashed 70-180 target band must render');
+  assert.equal(band.markLine.lineStyle.color, colors.warn);
+  const paintedColors = option.series.flatMap((series) =>
+    [series.lineStyle?.color, series.itemStyle?.color, series.markLine?.lineStyle?.color]).filter(Boolean);
+  assert.ok(paintedColors.length > 0, 'the mini must actually paint series');
+  for (const color of paintedColors) {
+    assert.notEqual(color, COMPARISON_BLUE, 'no mini series may resolve to the comparison-blue token');
   }
+  assert.ok(paintedColors.every((color) =>
+    Object.values(colors.cohorts).includes(color) || color === colors.warn),
+    `every painted color must resolve to a rail cohort token or the warn band, saw ${JSON.stringify(paintedColors)}`);
+});
+
+
+test('#413 · a Pattern chart row match reads `pattern_chart` alone, the served roster', () => {
+  // The projection serves `pattern_chart` only for a chartable Pattern
+  // (#413 ADR "the desk carries no fallback"), so the frontend no longer
+  // polices the key against a word table of its own — it trusts the server.
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  for (const key of ['future_pattern', '__proto__', 'highs_after_meals']) {
+    assert.equal(entry.matches({ pattern_chart: { key } }), true);
+  }
+  assert.equal(entry.matches({ pattern_chart: null }), false);
+  assert.equal(entry.matches({}), false);
 });
 
 

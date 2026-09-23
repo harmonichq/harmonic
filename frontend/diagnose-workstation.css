@@ -1746,16 +1746,43 @@
 .dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.pattern { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
 
-/* Claimed Cause rows keep their own button and drill, while the served adjacent
-   Pattern owns their rank and count. */
-.dw .qitem.claimed { margin-top: calc(2px - var(--q-gap)); }
-.dw .qitem.claimed .qrow { min-height: 30px; padding-block: 3px; }
-.dw .qitem.claimed .qrow .n { color: var(--mk-accent); }
-.dw .qitem.claimed .qrow .lab { font-size: var(--ck-data); font-weight: 500; }
-.dw .qitem.claimed .qrow .tag { display: none; }
-.dw .qitem.claimed .qrow .go { color: var(--mk-accent); }
-.dw .qitem.claimed .qrow .den { font-size: var(--ck-micro); }
+/* #413 — a Pattern owns its causes in the rail: claimed causes fold under
+   their parent's spine behind a toggle, never as sibling rows. */
+.dw .qfold {
+  border: 0; background: none; color: var(--mk-secondary); cursor: pointer;
+  padding: 2px var(--ck-pad) 6px calc(var(--ck-pad) + 16px + 9px);
+  text-align: left; font-size: var(--ck-micro); font-weight: 500;
+  margin-top: calc(2px - var(--q-gap));
+}
+.dw .qfold::after { content: ' ▸'; }
+.dw .qfold[aria-expanded="true"]::after { content: ' ▾'; }
+.dw .qitem.member { margin-top: calc(2px - var(--q-gap)); }
+.dw .qitem.member .qmember {
+  display: grid; width: 100%; text-align: left; min-height: 30px;
+  grid-template-columns: 16px minmax(0, 1fr) 12px;
+  column-gap: 9px; padding: 3px var(--ck-pad); border: 0; background: none;
+  color: inherit; align-items: baseline;
+}
+.dw button.qmember { cursor: pointer; }
+.dw button.qmember:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
+.dw button.qmember:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
+.dw .qmember .n { grid-column: 1; color: var(--mk-accent); font-family: var(--ck-mono); font-size: var(--ck-micro); }
+.dw .qmember .lab { grid-column: 2; font-size: var(--ck-data); font-weight: 500; color: var(--mk-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dw .qmember .go { grid-column: 3; color: var(--mk-accent); font-size: 12px; }
+.dw .qmember .den { grid-column: 2 / -1; font-size: var(--ck-micro); color: var(--mk-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dw .qmember .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); }
+.dw .qmember .den .sep { margin: 0 6px; opacity: .6; }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
+
+/* #413 — "the rail shows served urgency": the first served tier's rows carry
+   a rank stripe and a primary numeral; every later tier stays quiet. */
+.dw .qrow[data-urgent="true"] {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.dw .qrow[data-urgent="true"] .n { color: var(--primary); font-weight: 700; }
+.dw .qrow[data-urgent="true"] > .tier { color: var(--primary); }
 
 /* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three
    reasons — it is HELD (no direction asserted), BLIND (no clean evidence to
@@ -2159,10 +2186,6 @@
     overflow: hidden;
   }
 }
-
-.dw .qitem.claimed .member-title { grid-column: 2 / 4; grid-row: 1; text-align: left; }
-.dw .qitem.claimed .member-count { color: var(--mk-muted); font-size: var(--ck-micro); }
-.dw .qitem.claimed .member-title .lab { white-space: normal; }
 
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`

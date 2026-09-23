@@ -50,16 +50,6 @@ export const TIER = {
    measurement and mounting lifecycle; this is the rail's legibility floor. */
 export const MIN_ROW_MINI_WIDTH = 120;
 
-/* The roster key is server-owned; this closed table spells the sanctioned
-   reader-facing outcome without deriving one from member findings. */
-export const PATTERN_COPY = Object.freeze({
-  highs_after_meals: { family: 'meals', noun: 'meals', outcome: 'ran high' },
-  lows_after_meals: { family: 'meals', noun: 'meals', outcome: 'ran low' },
-  highs_after_treating_lows: { family: 'lows', noun: 'lows', outcome: 'rebounded high' },
-  lows_after_correcting_highs: { family: 'lows', noun: 'lows', outcome: 'followed a correction' },
-  overnight_lows_no_iob: { family: null, noun: 'nights', outcome: 'ran low overnight' },
-});
-
 /* Display units per parameter. Formatting, not policy: the projection publishes the
    numbers and the parameter id, and a unit is how a number is spelled. */
 const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
@@ -112,7 +102,7 @@ export function caseFileAlignment(row) {
  */
 export function queueMeta(projection, selected = null) {
   const rows = queueRows(projection, selected)
-    .filter((row) => !row.hidden && !row.collapsed && !row.claimedBy);
+    .filter((row) => !row.hidden && !row.collapsed);
   const days = projection?.findings_window?.days;
   const dayWord = days === 1 ? 'day' : 'days';
   if (!rows.length) return `${days} ${dayWord}`;
@@ -121,15 +111,15 @@ export function queueMeta(projection, selected = null) {
   return `${rows.length} ${findingWord} · ${days} ${dayWord}`;
 }
 
-/** The `n of m <family noun>` phrases a finding carries, one per family appearance
-    (term 35). A finding in two families keeps BOTH; never a merged total. */
-function appearanceParts(row) {
-  return (row.appearances || []).map((a) => ({ count: `${a.n} of ${a.m}`, noun: a.noun }));
-}
-
-function patternPart(row) {
-  const { noun, outcome } = PATTERN_COPY[row.pattern.key];
-  return `${row.pattern.k} of ${row.pattern.n} ${noun} ${outcome}`;
+/* #413 ADR "The backend serves the count sentence" — the projection publishes
+   `count_sentences` beside `headline`: one per count-bearing Pattern row, one per
+   served family appearance of a Cause row. The desk holds no noun or outcome word
+   list of its own and prints every served sentence, in served order, never
+   merged (term 35). */
+function sentenceParts(row) {
+  return (row.count_sentences || []).map((s) => ({
+    count: `${s.count} of ${s.denominator}`, noun: s.noun, outcome: s.outcome,
+  }));
 }
 
 /**
@@ -199,9 +189,29 @@ export function presentedRows(projection) {
  * the seam and are not its subject: each owns its own reason line. It uses the
  * server's row facts to place existing markup; it does not classify or infer the
  * row's published tier.
+ *
+ * A CLAIMED CAUSE IS NOT A ROW OF ITS OWN (#413, "A Pattern owns its causes in
+ * the rail") — PROVIDED its named parent is actually served in this
+ * projection. It never enters the returned list as a sibling; instead it is
+ * folded onto its parent Pattern's `members` array, in served order, carrying
+ * every one of its own served count sentences. A member outside its parent's
+ * fold has nothing to be reachable through, so there is no independent
+ * hidden/collapsed state to track for it — it shows exactly when its parent
+ * does.
+ *
+ * A CLAIM NAMING NO SERVED ROW IS NOT A FOLD, AND NEVER A SILENT DROP. The
+ * backend's `_pattern_rows` always stamps `claimed_by` and appends its owning
+ * Pattern row in the same pass (findings_projection.py), so every currently
+ * reachable payload keeps the two coupled — but nothing enforces that
+ * coupling with a test the way #413's count-sentence coverage does, and this
+ * projection crosses the server boundary. A cause whose named parent is
+ * absent from the served rows falls back to an ordinary top-level row (its
+ * own rank, tier and detail) rather than vanishing, so a malformed or
+ * future-shaped payload degrades to a plain row, never a missing one.
  */
 export function queueRows(projection, selected = null) {
   const rows = presentedRows(projection);
+  const presentIds = new Set(rows.map((row) => row.id));
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
     const chips = row.chips || [];
@@ -211,20 +221,28 @@ export function queueRows(projection, selected = null) {
     const siftedOut = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
     const hidden = siftedOut;
     const collapsed = watching;
-    return { row, hidden, collapsed };
+    const claimedBy = row.claimed_by && presentIds.has(row.claimed_by) ? row.claimed_by : null;
+    return { row, hidden, collapsed, claimedBy };
   });
   let pricedSeen = false;
   let seamOpened = false;
   let rankCounter = 0;
   let previousPricedTier = null;
-  return filtered.map(({ row, hidden, collapsed }) => {
+  /* Term 3.2 — "the rail shows served urgency": the FIRST priced tier the
+     reader can see is the urgent one. Every row that shares it carries the
+     stripe, whether or not it happens to be the row that names the tier. */
+  let firstPricedTier;
+  let firstPricedTierSet = false;
+  const built = [];
+  for (const { row, hidden, collapsed, claimedBy } of filtered) {
+    if (claimedBy) continue; // folded onto its parent below
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
     const shown = !hidden && !collapsed;
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
-    const pricedRanked = shown && ranked && !unpriced && !row.claimed_by;
-    const seam = shown && !row.claimed_by && unpriced && pricedSeen && !seamOpened;
+    const pricedRanked = shown && ranked && !unpriced;
+    const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
     const weight = collapsed ? 'collapsed'
       : !shown ? null
@@ -232,6 +250,7 @@ export function queueRows(projection, selected = null) {
     const caption = pricedRanked && pricedSeen && row.tier !== previousPricedTier
       ? TIER[row.tier] || null : null;
     if (pricedRanked) {
+      if (!firstPricedTierSet) { firstPricedTier = row.tier; firstPricedTierSet = true; }
       pricedSeen = true;
       previousPricedTier = row.tier;
     }
@@ -241,8 +260,8 @@ export function queueRows(projection, selected = null) {
        counter walks the server's own order over the rows a reader can see, so a
        sift renumbers exactly as it re-positions. Unpriced tail and Watching
        rows carry no numeral — they hold no rank to state. */
-    const rank = shown && ranked && !unpriced && !row.claimed_by ? ++rankCounter : null;
-    return {
+    const rank = shown && ranked && !unpriced ? ++rankCounter : null;
+    built.push({
       rank,
       /* Slice 4 — the two-line evidence summary is the projection's own
          `annotation` sentence, revealed rather than composed. Only an
@@ -255,7 +274,6 @@ export function queueRows(projection, selected = null) {
       flavor: row.kind === 'pattern' ? 'pattern'
         : row.kind === 'setting' ? 'setting' : 'habit',
       pattern: row.kind === 'pattern',
-      claimedBy: row.claimed_by || null,
       tier: row.tier,
       weight,
       caption,
@@ -268,25 +286,41 @@ export function queueRows(projection, selected = null) {
       stageable: row.register === 'assert'
         && (row.parameter !== 'isf' || row.asserts_move === true),
       detail: detailFor(row),
-      memberCount: row.claimed_by ? (() => {
-        const parent = rows.find((candidate) => candidate.id === row.claimed_by);
-        const family = PATTERN_COPY[parent?.pattern?.key]?.family;
-        const appearance = row.appearances.find((item) => item.family === family)
-          || row.appearances[0];
-        return appearance ? ` · ${appearance.n} of ${appearance.m} ${appearance.noun}` : '';
-      })() : null,
+      urgent: pricedRanked && row.tier === firstPricedTier,
+      members: null,
       raw: row,
-    };
-  });
+    });
+  }
+  const byId = new Map(built.map((entry) => [entry.id, entry]));
+  for (const { row, claimedBy } of filtered) {
+    if (!claimedBy) continue;
+    const parent = byId.get(claimedBy);
+    // `claimedBy` is only set above when its id names a served row, and every
+    // served row not itself claimed enters `built` unconditionally — so this
+    // is unreached on any payload the backend can currently produce (a
+    // Pattern is never itself claimed). It stays as a last-resort guard
+    // against a future claim chain rather than a silent drop.
+    if (!parent) continue;
+    (parent.members ??= []).push({
+      id: row.id,
+      title: row.title,
+      sentences: sentenceParts(row),
+      raw: row,
+    });
+  }
+  return built;
 }
 
 function detailFor(row) {
   if (row.kind === 'pattern') {
-    if (!Object.hasOwn(PATTERN_COPY, row.pattern?.key)) return { kind: 'pattern-unknown' };
     if (row.pattern?.count_status) return { kind: 'pattern-status', text: 'counts under review' };
-    return { kind: 'pattern', text: patternPart(row) };
+    const parts = sentenceParts(row);
+    return parts.length ? { kind: 'sentences', parts } : null;
   }
-  if (row.register === 'finding') return { kind: 'appearances', parts: appearanceParts(row) };
+  if (row.register === 'finding') {
+    const parts = sentenceParts(row);
+    return parts.length ? { kind: 'sentences', parts } : null;
+  }
   if (row.register === 'assert') return assertDetail(row);
   // held / blind — WORDS, not a number spine (term 14). The reason is verbatim
   // backend copy; only the prefix is ours, and the lock pins it byte for byte.
@@ -316,8 +350,8 @@ function paintDetail(node, detail) {
   if (detail.kind === 'reason') {
     return add(node, 'why', detail.text);
   }
-  if (detail.kind === 'pattern' || detail.kind === 'pattern-status') {
-    const den = add(node, `den ${detail.kind}`);
+  if (detail.kind === 'pattern-status') {
+    const den = add(node, 'den pattern-status');
     den.textContent = detail.text;
     return den;
   }
@@ -329,12 +363,39 @@ function paintDetail(node, detail) {
     if (run) { add(den, 'sep', '·'); den.append(run); }
     return den;
   }
+  // 'sentences' — the served `n of d noun outcome`, one per appearance, never
+  // merged (term 35), count and denominator emphasised together (#413).
   detail.parts.forEach((part, i) => {
     if (i) add(den, 'sep', '·');
     add(den, 'v', part.count);
-    den.append(` ${part.noun}`);
+    den.append(` ${part.noun} ${part.outcome}`);
   });
   return den;
+}
+
+/** A folded cause's own line: name, drill, and every served count sentence's
+    count/denominator/noun — never its outcome word, which the parent Pattern's
+    own line already carries (#413, "A Pattern owns its causes in the rail"). */
+function paintMember(list, member, onDrill) {
+  const item = document.createElement('div');
+  item.className = 'qitem member';
+  item.setAttribute('role', 'listitem');
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = 'qmember';
+  node.dataset.id = member.id;
+  item.append(node);
+  add(node, 'n', '│').setAttribute('aria-hidden', 'true');
+  add(node, 'lab', member.title);
+  add(node, 'go', '›').setAttribute('aria-hidden', 'true');
+  const den = add(node, 'den');
+  member.sentences.forEach((sentence, i) => {
+    if (i) add(den, 'sep', '·');
+    add(den, 'v', sentence.count);
+    den.append(` ${sentence.noun}`);
+  });
+  node.addEventListener('click', () => onDrill(member.raw));
+  list.append(item);
 }
 
 /**
@@ -346,7 +407,11 @@ function paintDetail(node, detail) {
 export function renderFindingsQueue(host, projection, onDrill, view = null) {
   /* `view` is workstation-owned UX state:
      { selected: Set<string>|null, collapsedExpanded: boolean,
-       onToggleCollapsed: () => void }. Null selection means no sift. */
+       onToggleCollapsed: () => void, openMembers: Map<string, boolean>|null,
+       onToggleMembers: (id: string, wasOpen: boolean) => void }. Null selection
+     means no sift. `openMembers` holds only EXPLICIT overrides the reader made;
+     a Pattern absent from it falls back to its own default (open on the first
+     ranked row, closed on every later one, #413). */
   const selected = view?.selected ?? null;
   const filtering = selected !== null;
   const rows = queueRows(projection, selected);
@@ -392,7 +457,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
        legitimately hidden — and the button keeps its own role. The item is also
        the flex child of `.q`, so the tail's spacing rules address it. */
     const item = document.createElement('div');
-    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}${row.claimedBy ? ' claimed' : ''}`;
+    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}`;
     item.setAttribute('role', 'listitem');
     const node = document.createElement('button');
     node.type = 'button';
@@ -400,23 +465,35 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
     node.dataset.id = row.id;
+    node.dataset.urgent = String(Boolean(row.urgent));
     item.append(node);
     // the numeral restates the position a screen reader already announces
-    add(node, 'n', row.claimedBy ? '│' : row.rank == null ? '' : String(row.rank))
+    add(node, 'n', row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
     // The first served tier word is read before the first row's title; later tier
     // changes use the caption inserted immediately before their first row.
     if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
-    if (row.claimedBy) {
-      const title = add(node, 'member-title');
-      add(title, 'lab', row.title);
-      add(title, 'member-count', row.memberCount);
-    } else add(node, 'lab', row.title);
-    if (row.weight === 'tail' || ['pattern-status', 'pattern-unknown'].includes(row.detail?.kind)) {
+    add(node, 'lab', row.title);
+    const appendFold = () => {
+      if (!row.members || !row.members.length) return;
+      const override = view?.openMembers;
+      const open = override && override.has(row.id) ? override.get(row.id) : row.rank === 1;
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'qfold';
+      const causeWord = row.members.length === 1 ? 'cause' : 'causes';
+      toggle.textContent = `${row.members.length} ${causeWord}`;
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.addEventListener('click', () => view?.onToggleMembers?.(row.id, open));
+      list.append(toggle);
+      if (open) for (const member of row.members) paintMember(list, member, onDrill);
+    };
+    if (row.weight === 'tail' || row.detail?.kind === 'pattern-status') {
       if (row.detail?.kind === 'pattern-status') paintDetail(node, row.detail);
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));
       list.append(item);
+      appendFold();
       return;
     }
     /* The tag is a SIBLING of the title, not a child of it: it owns the row's right
@@ -431,7 +508,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the evidence summary sits between the title and the denominator, clamped
     // to two lines by the stylesheet
     if (row.summary) add(node, 'sum', row.summary);
-    const detail = row.claimedBy ? null : paintDetail(node, row.detail);
+    const detail = paintDetail(node, row.detail);
     if (detail && row.raw.window_scope === 'whole_day' && !row.pattern) {
       add(detail, 'scope-note', ' · Whole day');
     }
@@ -444,6 +521,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     miniSlots.push({ host: mini, row: row.raw });
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(item);
+    appendFold();
   };
   for (const row of shown) {
     paintRow(row);

@@ -313,6 +313,28 @@ async function press(page, selector) {
   assert.fail(`${selector} matched ${total} element(s), all hidden`);
 }
 
+/* #413 — a claimed cause is no longer a sibling `.qrow`; it folds under its
+   parent Pattern as a `.qmember`, closed on arrival unless the Pattern is
+   rank one. Every one of these generated sequence fixtures claims
+   `finding:high_carb_sequence` under `pattern:highs_after_meals`, so drilling
+   it now means opening its parent's fold first. This helper stays correct
+   for an UNCLAIMED ranked row too (a plain `.qrow` click), rather than
+   assuming which shape the served row takes. */
+async function openRailRow(page, id) {
+  const row = page.locator(`#level .qrow[data-id="${id}"]`);
+  if (await row.count()) { await row.click(); return; }
+  // Force every closed fold open — the member's line does not exist in the
+  // DOM until its parent's toggle expands it.
+  for (;;) {
+    const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
+    if (!(await closed.count())) break;
+    await closed.click();
+  }
+  const member = page.locator(`#level .qmember[data-id="${id}"]`);
+  await member.waitFor({ timeout: 30000 });
+  await member.click();
+}
+
 /* ------------------------------------------------------------------ tests */
 
 test('the desk opens on Diagnose behind its persistent chrome', async () => {
@@ -361,8 +383,7 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
   const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720', sequenceState: 'high_carb_sequence_in_sequence' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
-    await row.click();
+    await openRailRow(page, 'finding:high_carb_sequence');
     const chart = page.locator('#tile-focal #ec-chart');
     await page.waitForFunction(() => {
       const host = document.querySelector('#tile-focal #ec-chart');
@@ -425,7 +446,7 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
   const id = 'finding:high_carb_sequence';
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await page.locator(`#level .qrow[data-id="${id}"]`).click();
+    await openRailRow(page, id);
     await page.locator('#tile-focal #ec-chart').waitFor();
     const stored = input.windows.global.cases[id];
     await assertSequenceResponse(page, stored);
@@ -937,14 +958,21 @@ for (const viewport of Object.keys(VIEWPORTS)) {
     const desk = await openDesk({ viewport });
     const { page } = desk;
     try {
-      // Overnight has only held rows in this generated case. Open the global
-      // Findings scope before asking for its Pattern rows.
+      // #413: a cold arrival already opens on 24 h; Overnight (this case's
+      // default preset window) would carry only held rows, so this explicit
+      // press just asserts the global scope this story actually needs,
+      // rather than relying on the cold-arrival default alone.
       await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await page.locator('.qrow[data-id^="pattern:"]').first().waitFor();
       assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
       assert.equal(await countOf(page, '#lane > button.lane-cell'), 48);
-      assert.ok(await countOf(page, '#level .qitem.claimed') > 0, 'the shipped Pattern rail retains nested causes');
+      // #413 — a Pattern owns its causes behind a fold, not as sibling rows.
+      const fold = page.locator('#level .qfold').first();
+      await fold.waitFor();
+      if ((await fold.getAttribute('aria-expanded')) !== 'true') await fold.click();
+      await page.locator('#level .qitem.member').first().waitFor();
+      assert.ok(await countOf(page, '#level .qitem.member') > 0, 'the shipped Pattern rail folds its nested causes');
       const before = await countOf(page, '[data-v2-diagnose] canvas');
       assert.ok(before > 0);
       for (let visit = 0; visit < 3; visit += 1) {
@@ -1053,21 +1081,27 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
     } } : null;
     const { page, close } = await openDesk({ sequenceState, caseScenario, viewport: process.env.VIEWPORT || '1280x720' });
     const stored = sequenceFixture.states[sequenceState].windows.global.cases['finding:high_carb_sequence'];
+    const id = 'finding:high_carb_sequence';
     try {
       await page.getByRole('button', { name: '24 h', exact: true }).click();
-      const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
-      await row.waitFor();
       if (name === 'empty') {
-        const miniature = await (await page.waitForFunction(() => {
-          const host = document.querySelector('#level .qrow[data-id="finding:high_carb_sequence"] .mini');
-          const chart = host && window.echarts.getInstanceByDom(host);
-          const option = chart?.getOption();
-          if (!option?.series?.some((series) => /^(matched|comparison):/.test(series.id || ''))) return null;
-          return { inert: !option.tooltip[0].show && !option.xAxis[0].axisLabel.show
-            && !option.yAxis[0].axisLabel.show && option.series.every((series) => series.silent) };
-        })).jsonValue();
-        assert.ok(miniature.inert, 'queue miniature remains inert');
-        await row.scrollIntoViewIfNeeded();
+        // #413 — a claimed cause is folded under its parent Pattern and
+        // carries no mini of its own (the parent's mini stands for the
+        // group), so the honest "queue miniature remains inert" check this
+        // story used to make against a sibling `.qrow` has no subject any
+        // more; assert the folded member's absence of a mini instead. The
+        // "All charts" tile is unaffected — the explorer draws one tile per
+        // descriptor regardless of rail fold state, so the response evidence
+        // still renders there.
+        for (;;) {
+          const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
+          if (!(await closed.count())) break;
+          await closed.click();
+        }
+        const member = page.locator(`#level .qmember[data-id="${id}"]`);
+        await member.waitFor({ timeout: 30000 });
+        assert.equal(await member.locator('.mini').count(), 0, 'a claimed cause carries no mini of its own');
+        await member.scrollIntoViewIfNeeded();
         await captureEvidence(page, 'high_carb_sequence-mini');
         await openAllCharts(page);
         const selector = '#tile-row [data-chart-id="finding:high_carb_sequence"] .tile-chart';
@@ -1079,7 +1113,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
         await captureEvidence(page, 'high_carb_sequence-pattern-reference');
         await page.keyboard.press('Escape');
       }
-      await row.click();
+      await openRailRow(page, id);
       await page.locator('#level .sequence-comparison').waitFor();
       await assertSequenceResponse(page, stored);
       if (name === 'null_period') await assertCompactSequenceDetail(page, stored, 'unavailable');
@@ -1089,7 +1123,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       if (name === 'null_period') {
         partialMetrics = true;
         await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
-        await row.click();
+        await openRailRow(page, id);
         await page.locator('#level .sequence-supporting-detail summary').click();
         const period = page.locator('#level [data-period="post_4h"]');
         assert.deepEqual((await period.locator('.sequence-cohort').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim()), [

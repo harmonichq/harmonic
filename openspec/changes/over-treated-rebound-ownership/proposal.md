@@ -41,10 +41,9 @@ outranked candidate.
 - Ownership is span membership: every High inside a fired rebound span is recorded
   as owned, whatever its own classifiers return.
 - An owned High attributes neither Missed / unannounced meal nor Meal bolus fell
-  short. A rise-check exit keeps its own reason (`insufficient_data` or
-  `no_trigger`), and a rise the context gate explains keeps the gate's verdict.
-  Every other outcome is a non-match with silence reason `upstream_cause` naming
-  the owning low.
+  short. Only an outcome that would otherwise match or be priced becomes a
+  non-match with silence reason `upstream_cause` naming the owning low. Every
+  non-matching exit keeps its own reason, including the context gate's verdict.
 - The owning Episode's scored span reaches the later of the guarded terminal and
   the end of every High run it owns. It never passes the scan's meal-bolus stop,
   and it still stops at the next lever-bearing Episode.

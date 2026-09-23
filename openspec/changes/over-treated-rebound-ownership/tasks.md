@@ -10,9 +10,11 @@
   100, 120 and 150 minutes after the nadir. Assert: no Episode attributes Missed /
   unannounced meal or Meal bolus fell short to an owned High, and no Episode's
   candidates include either for it. Each rebound is attributed Over-treated low
-  exactly once. The owned High's retained missed-meal and meal-bolus-short verdicts
-  are non-matches with `upstream_cause`, whose detail names the owning low's nadir
-  value and time. Its Episode draws no Lever, with silence reason `upstream_cause`.
+  exactly once. On a rising, unbolused owned High, the retained missed-meal verdict,
+  which would otherwise match, is a non-match with `upstream_cause` whose detail
+  names the owning low's nadir value and time. The meal-bolus-short verdict keeps
+  its own `no_trigger` (no counted meal bolus). The High's Episode draws no Lever,
+  with silence reason `upstream_cause`.
   Pin the Over-treated-low Episode's end (the later of the guarded terminal and the
   owned High run's end) and its severity as literals dumped from the implemented
   analyzer. Include one flat-approach day: the rebound climbs fast, then creeps
@@ -34,15 +36,17 @@
   correction-on-active-insulin with candidates correction-on-active-insulin and
   missed meal. Assert it keeps no missed-meal match or candidate after the change,
   which proves the High-moment's span is known before the walk.
-- [ ] 1.4 Add the controls on the same window shape; each keeps today's output.
+- [ ] 1.4 Add the controls on the same window shape. Controls (a) to (d) keep
+  today's output; (e) is new behavior.
   (a) A later rise separated from the low by a settled in-range dwell still
   attributes Missed / unannounced meal. (b) A High whose run begins after the guarded
   terminal still attributes it, including a continuous climb that first crosses
   250 mg/dL after the 180-minute horizon. (c) A low refuted by a `no` answer owns
   nothing, and its High is judged as today. (d) A sub-70 low whose High shares its
   Episode keeps the context gate's verdict text unchanged. (e) A 40 g meal bolused
-  10 minutes into an owned High caps the low's span: the Over-treated-low Episode
-  ends no later than that bolus.
+  10 minutes into an owned High, shaped so the meal's Episode draws no Lever (so the
+  next-lever-bearing-Episode clamp does not stop the span first), caps the low's
+  span: the Over-treated-low Episode ends at that bolus.
 - [ ] 1.5 Add a configuration test through each classifier's public call: a
   non-default `gate_lookback_min` changes the missed-meal and the meal-bolus-short
   context-gate verdicts. It fails on the base, which always used the gate defaults.
@@ -50,11 +54,12 @@
 ## 2. Implementation
 
 - [ ] 2.1 Give `classify_missed_meal` and `classify_meal_bolus_short` the owning
-  rebound as an optional input. Consult it after the rise checks and after the
-  context gate: a rise the gate explains keeps its gate verdict; otherwise the
-  classifier returns a non-match with `upstream_cause`, evidence tier Inferred, and
-  a detail naming the owning low's nadir value and time. A rise-check exit keeps its
-  own reason. Pass `scenario_config` to `upstream_cause` in both. Update the prose
+  rebound as an optional input. Consult it only where the classifier would
+  otherwise return a match: there it returns a non-match with `upstream_cause`,
+  evidence tier Inferred, and a detail naming the owning low's nadir value and time.
+  Every non-matching exit keeps its own reason and detail: rise checks, the context
+  gate, missed meal's digestion tail, and meal bolus fell short's no-meal and
+  no-correction exits. Pass `scenario_config` to `upstream_cause` in both. Update the prose
   that defines `upstream_cause` as the context gate only: both classifiers' module
   and function docstrings, the NO_TRIGGER-versus-UPSTREAM_CAUSE comment in
   `ciq_autotune/analyzers/classifiers/missed_meal.py` (the digestion-tail branch,
@@ -81,8 +86,10 @@
   `build_exposures` docstring and the `_uncaused_highs` docstring in
   `ciq_autotune/findings_projection.py`. In `scripts/gen_findings_projection_fixtures.py`,
   update the uncaused roll-up prose (the cross-family comment, lines 603-609 at the
-  base, and the `_rollup` docstring, lines 630-637) to say an owned High is excluded
-  and that this fixture holds none. Its generated output must not move. Add a test
+  base, and the `_rollup` docstring, lines 630-637). Say that the fixture's one
+  owned High, the over-treated low's rebound High, shares its low's lever-bearing
+  Episode, so the Episode-wise rule already leaves it out. The generated output must
+  not move. Add a test
   in `tests/test_explore_exposures.py` built on the flat-approach owned High from
   task 1.1 as the window's only High. The base serves highs `uncaused: 1`; after the
   change it serves 0; the same window with the low removed serves 1.

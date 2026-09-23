@@ -83,25 +83,29 @@ a matched missed-meal candidate inside the owning Episode today.
 ### Decision 4 — what an owned High yields
 
 An owned High attributes no High lever: neither Missed / unannounced meal nor
-Meal bolus fell short (the two split one rise population). Both classifiers
-consult ownership after their rise checks and after the context gate, and before
-any later check.
+Meal bolus fell short (the two split one rise population). Ownership changes only
+the outcome that would otherwise match or be priced. Every non-matching exit keeps
+its own reason, unchanged:
 
-* A rise-check exit keeps its calm reason. Too sparse to judge stays
-  `insufficient_data`, and a flat or slow rise stays `no_trigger`: no behavior was
-  seen, so there is nothing for the low to explain away.
-* A rise the context gate already explains keeps the gate's verdict byte-for-byte,
-  because committed fixtures freeze that text.
-* Every other outcome, including one that would have matched or been priced, is a
-  non-match with silence reason `upstream_cause`, evidence tier Inferred, and a
-  detail naming the owning low's nadir value and time.
+* Too sparse to judge stays `insufficient_data`, and a flat or slow rise stays
+  `no_trigger`.
+* A rise the context gate explains keeps the gate's verdict byte-for-byte, because
+  committed fixtures freeze that text.
+* Missed meal's digestion tail stays `no_trigger`.
+* Meal bolus fell short's "no counted meal bolus" stays `no_trigger`, and its "no
+  correction followed" stays `horizon_expired`.
+
+Only where a classifier would have returned a match does it instead return a
+non-match with silence reason `upstream_cause`, evidence tier Inferred, and a
+detail naming the owning low's nadir value and time. So a rising, unbolused owned
+High reads missed meal `upstream_cause` and meal bolus fell short `no_trigger`.
 
 So `upstream_cause` now also means an over-treated low's rebound owns the rise,
 beside the context gate's recent low or defensive suspend. The silence-reason
 docstrings and the glossary entry say so. An owned High contributes no candidate,
 so no missed-meal or meal-bolus-short impact price counts it. An Episode holding
-only owned Highs draws no Lever, and its silence reason is that missed-meal
-verdict, as for every silent High today.
+only owned Highs draws no Lever. Its silence reason is its missed-meal verdict,
+as for every silent High today.
 
 ### Decision 5 — scoring
 
@@ -126,8 +130,10 @@ attribution records the Highs a rebound owns, and the exposures producer's
 `uncaused` tally skips them, whatever their verdicts, including a flat-approach
 High whose verdicts read `no_trigger`. This refines ADR 63 Decision 6; the count
 stays Episode-wise for every other High. The findings-projection fixture
-generator's hand-built roll-up holds no owned High, so its Episode-wise rule stays
-complete for its data, and its prose says so. An owned High stays a non-driver Occurrence
+generator's roll-up holds one owned High, the rebound High at 14:35 in the fired
+over-treated low's own Episode. That High shares its low's lever-bearing Episode,
+so the Episode-wise rule already leaves it out, and the generated output must not
+move. Its prose says so. An owned High stays a non-driver Occurrence
 with no attributed Lever. That matches a rebound High inside the low's Episode,
 which also carries no cross-family Over-treated-low claim. No count, denominator
 or appearance of any Finding row changes because of it.

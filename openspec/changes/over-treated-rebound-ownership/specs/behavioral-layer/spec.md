@@ -14,13 +14,13 @@ Ownership SHALL be span membership: the evaluation SHALL record every owned High
 whatever its own classifiers return.
 
 An owned High SHALL attribute neither Missed / unannounced meal nor Meal bolus fell
-short, and SHALL contribute no candidate or impact price to either. Each retained
-verdict SHALL keep a rise-check exit's own reason (`insufficient_data`, or
-`no_trigger` for a flat or slow rise) and SHALL keep the context gate's verdict
-when the gate explains the rise. Every other outcome of either classifier,
-including one that would otherwise match or be priced, SHALL be a non-match with
-silence reason `upstream_cause` whose detail names the owning Low's nadir value
-and time. Both classifiers SHALL judge the context gate under the scenario
+short, and SHALL contribute no candidate or impact price to either. Only an
+outcome of either classifier that would otherwise match or be priced SHALL become a
+non-match with silence reason `upstream_cause`, whose detail names the owning
+Low's nadir value and time. Every non-matching exit SHALL keep its own reason and
+detail. These include too little data (`insufficient_data`), a flat or slow rise,
+a digestion tail or no counted meal bolus (`no_trigger`), no correction following
+(`horizon_expired`), and the context gate's own verdict. Both classifiers SHALL judge the context gate under the scenario
 configuration they were given.
 
 The owning Episode's scored span SHALL reach the later of its guarded terminal and

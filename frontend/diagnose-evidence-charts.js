@@ -192,18 +192,10 @@ function patternQueuePreview(descriptor, range, colors, row) {
     series.showSymbol = false;
     series.lineStyle.type = 'solid';
   }
-  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
-  const marker = anchor.renderItem;
-  const label = row?.count_sentences?.[0]?.noun === 'meals' ? 'MEAL' : 'LOW';
-  anchor.renderItem = (params, api) => ({ type: 'group', children: [
-    marker(params, api),
-    { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
-      style: { text: label, fill: colors.text, font: `600 9px ${FONT}` } },
-  ] });
-  option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
-    markLine: { silent: true, symbol: 'none', label: { show: false },
-      lineStyle: { color: colors.warn, width: 1, type: 'dashed' },
-      data: [{ yAxis: 70 }, { yAxis: 180 }] } });
+  // The anchor's named label (MEAL/LOW) and the dashed 70-180 target band
+  // (`queue:event:180`) are already drawn by `queuePreviewOption` above, from
+  // the same served `row` — one builder owns them, so neither is redrawn
+  // here (that duplicated the label and the band at identical coordinates).
   return option;
 }
 

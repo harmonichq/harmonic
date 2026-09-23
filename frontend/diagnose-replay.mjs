@@ -208,10 +208,6 @@ const state = (page) => page.evaluate(() => {
     queue: [...document.querySelectorAll('#level .qrow')].map((n) => ({
       title: n.querySelector('.lab')?.textContent.trim() ?? null,
       tag: n.querySelector('.tag')?.textContent.trim() ?? null,
-      // #413 — a claimed cause folds under its parent Pattern as a
-      // `.qmember`; it is never a `.qrow`, so no row this selector reaches
-      // can carry the retired `claimed` class any more.
-      claimed: false,
       register: n.dataset.state ?? null,
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),

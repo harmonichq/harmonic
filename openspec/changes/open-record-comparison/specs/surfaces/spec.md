@@ -48,38 +48,53 @@ retained read is pending. No other read SHALL prewarm the reassessment.
 
 ### Requirement: An empty record figure says why it is empty
 
-The Before/Trial or Before/After figure SHALL distinguish these states:
+The Before/Trial or Before/After figure SHALL classify from its clock bins
+before its served availability. It SHALL draw paired readings, and Before-only
+readings, whenever the comparison serves them, including a comparison the
+backend marks unavailable while keeping its clock views.
+
+When no curve can be drawn, the figure SHALL distinguish these states:
 
 - no comparison read (not requested);
-- a comparison the backend served as unavailable, naming the served reason in
-  plain words rather than its code;
-- a saved ending snapshot, which keeps its rows but not its curve;
-- an available comparison with no readings in either period;
-- Before readings only;
-- paired readings.
+- a saved ending snapshot that kept its rows but not its curve;
+- a comparison served as unavailable with no clock envelope, naming the served
+  reason in plain words rather than its code;
+- a comparison whose periods have no Before readings, naming which period has
+  none.
 
-The figure SHALL draw a chart and print the half-hours-read count only when a
-clock envelope exists. It SHALL NOT label a missing comparison or a saved
-snapshot as "no readings yet", "Before · unavailable" or "0 → 0 half-hours
-read". It SHALL NOT say "no clock envelope is retained" for anything but a saved
-ending snapshot.
+The figure SHALL draw a chart and print the half-hours-read count only when it
+draws a curve. It SHALL NOT label a missing comparison or a saved snapshot as
+"no readings yet", "Before · unavailable" or "0 → 0 half-hours read". It SHALL
+NOT say "no clock envelope is retained" for anything but a saved ending
+snapshot.
 
 With no comparison read, the periods note and the outcomes note SHALL say that
 no comparison has been read for this record. The stage meta SHALL NOT say the
 observations were recomputed. A record with no saved ending SHALL NOT be told
-that a saved ending above is what it was decided on. The readiness availability
-lines SHALL name an unavailable comparison's reason in the same words as the
-figure.
+that a saved ending above is what it was decided on.
+
+The desk SHALL keep one vocabulary for comparison availability reasons. The
+figure, the readiness availability lines and the reassessment result line SHALL
+name an unavailable comparison's reason in its words. A code the vocabulary does
+not know SHALL print as served.
 
 #### Scenario: A served-unavailable comparison names its reason
 
 - **GIVEN** a record with no saved ending whose retained comparison the backend
-  serves as unavailable
+  serves as unavailable with no clock envelope
 - **WHEN** the reader opens it
 - **THEN** the figure says the comparison is unavailable and names the reason in
-  words
+  words, and the reassessment result line uses the same words
 - **AND** no chart is drawn, and neither "no clock envelope is retained" nor
   "no readings yet" nor "0 → 0 half-hours read" appears
+
+#### Scenario: An unavailable comparison that keeps its curve still draws it
+
+- **GIVEN** a comparison the backend serves as unavailable, whether for
+  unmeasured adherence or for a period with no readable evidence, that still
+  serves Before clock bins, or paired ones
+- **WHEN** its figure renders
+- **THEN** the Before-only or paired curve is drawn with its existing legend
 
 #### Scenario: Choosing Original on an open record reads as not requested
 
@@ -90,7 +105,7 @@ figure.
 
 #### Scenario: A saved ending keeps its rows and says it kept no curve
 
-- **GIVEN** an ended record whose saved assessment is available
+- **GIVEN** an ended record whose saved assessment serves its periods and rows
 - **WHEN** the reader opens it
 - **THEN** the outcome rows show, the figure says the snapshot retains no clock
   envelope, and no empty chart is drawn

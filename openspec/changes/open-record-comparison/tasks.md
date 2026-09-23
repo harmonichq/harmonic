@@ -46,28 +46,45 @@ call for", with wording in CONTEXT.md terms.
 ## 2. The figure says why it is empty (desk)
 
 - [ ] 2.1 In `frontend/follow-up.js`, give `evidenceFigure` one
-  `data-figure-state` attribute on the figure element, with these values:
-  - `not-requested`: no comparison;
-  - `unavailable`: the served `availability.state` is unavailable, or, for a
-    saved ending assessment carrying no nested `availability`, its own
-    top-level `state`/`reason`. It names the reason through task 2.2's table;
-  - `saved`: the caller says the comparison is a saved ending snapshot. The
-    record frame knows this as `shownComparison(...).source === 'ending'`. This
-    is the only state that keeps "no clock envelope is retained for this
-    record";
-  - `no-readings`: a live, available comparison with no clock bins on either
-    side;
-  - `before-only`: keep "no Trial readings to compare yet", or the Focus
-    wording;
-  - `paired`: unchanged.
+  `data-figure-state` attribute on the figure element. Classify from the clock
+  bins first, whatever the served availability. The backend serves
+  `unavailable_adherence` and `no_readable_period_evidence` while keeping
+  periods and clock views: the committed `c4-missing` case and the test file's
+  `FOCUS_COMPARISON` are that shape, and their curves must stay drawn. In order:
+  1. `not-requested`: no comparison (`null`).
+  2. `paired`: both periods serve a bin at one clock time. Unchanged.
+  3. `before-only`: Before bins and no pair. Keep "no Trial readings to compare
+     yet", or the Focus wording.
+  4. `saved`: the caller says the comparison is a saved ending snapshot, and
+     that snapshot serves both periods. It kept its rows but not its curve,
+     since the snapshot drops `views`. The record frame knows this as
+     `shownComparison(...).source === 'ending'`. This is the only state that
+     keeps "no clock envelope is retained for this record".
+  5. `unavailable`: the served availability is unavailable and there is no
+     clock envelope (`views` absent or empty). Read the availability from the
+     nested `availability`, or, for a saved ending assessment carrying no nested
+     `availability`, from its own top-level `state`/`reason`. Name the reason
+     through task 2.2's words.
+  6. `no-readings`: any other comparison, meaning one that serves views but no
+     Before bins. Its words name which period has no readings, and never claim
+     a period with bins is empty.
 
   Print the "half-hours read" count only for `before-only` and `paired`, and
   mount the chart in `mountComparisonChart` only for those two. No "Before ·
   unavailable" or "After · no readings yet" legend may appear where there is no
   curve. The active Trial and Focus arms in the same module pass live
-  comparisons; their paired and Before-only renders are unchanged.
-- [ ] 2.2 Add one closed word table in `frontend/follow-up.js` for comparison
-  availability reasons. Each served code gets plain words with no underscore:
+  comparisons, and their paired and Before-only renders are unchanged.
+
+  The printed premises (`premises.py` in this change) reach states 2 to 6 on
+  committed cases:
+  - c3-trial is paired;
+  - c4-missing is before-only under `no_readable_period_evidence`;
+  - c3-history's and c4-history's ended records are saved;
+  - edit-chain is unavailable;
+  - c4-history's open Trial is no-readings.
+- [ ] 2.2 Export one closed word table from `frontend/follow-up.js` for
+  comparison availability reasons, as a function from a served code to plain
+  words. Each code gets words with no underscore:
   - `missing_comparison_context`
   - `unsupported_retained_execution`
   - `missing_programmed_isf`
@@ -77,12 +94,23 @@ call for", with wording in CONTEXT.md terms.
   - `data_not_yet_arrived`
   - `lever_unavailable`
   - `missing_continuous_setting_history`
+  - `no_readable_period_evidence`
+  - `unavailable_adherence`
   - `not_recorded`
 
-  An unknown code prints verbatim. Use the table in the figure's unavailable
-  state and in `readinessSection`'s two availability lines (`data-availability`
-  and `data-readiness-state="unavailable"`). Leave `history.js`'s
-  ending-assessment line and reassessment-result line as they are.
+  An unknown code prints verbatim. This table is the desk's single vocabulary
+  for comparison reasons, and #426's `not_recorded` wording folds into it at
+  integration.
+
+  Route these three reason lines through it:
+  - the figure's unavailable state;
+  - `readinessSection`'s two availability lines (`data-availability` and
+    `data-readiness-state="unavailable"`);
+  - `history.js`'s Reassessment "Result" line (`data-reassessment-state`),
+    which prints `Unavailable · <code>` today.
+
+  Leave `history.js`'s saved-ending assessment line and the per-arm readiness
+  reasons as they are.
 - [ ] 2.3 With no comparison (`null`):
   - `periodsSection` and `outcomesTable` say no comparison has been read for
     this record, in the words `readinessSection` already uses for that state;
@@ -93,18 +121,30 @@ call for", with wording in CONTEXT.md terms.
     pointing at "the saved ending above".
 
   A served-unavailable comparison keeps today's periods and outcomes notes.
-- [ ] 2.4 Node tests:
-  - in `frontend/follow-up.test.js`, one `evidenceFigure` case per state,
-    including a `null` comparison (fail-first: today it reads "no clock
-    envelope is retained") and a served-unavailable comparison;
-  - a test that every word-table entry carries no underscore, and that
+- [ ] 2.4 Node tests in `frontend/follow-up.test.js`, one `evidenceFigure` case
+  per state:
+  - a `null` comparison (fail-first: today it reads "no clock envelope is
+    retained");
+  - `FOCUS_COMPARISON`, served `unavailable_adherence`, renders `paired` with
+    its marks;
+  - an early Trial served `no_readable_period_evidence` with Before bins only
+    renders `before-only`;
+  - a served-unavailable comparison with empty `views` renders `unavailable`
+    and its reason words;
+  - a live comparison with views but no bins renders `no-readings`;
+  - a saved ending with periods renders `saved`.
+
+  Keep the existing "no envelope at all" test as the saved case, calling it the
+  way the record frame does.
+
+  Also cover:
+  - every word-table entry carries no underscore, and
     `missing_continuous_setting_history` names continuous setting history;
   - the null-comparison periods and outcomes notes;
-  - in `frontend/history.test.js`, the Original line for an open record and for
-    an ended record.
-
-  Keep the existing "no envelope at all" test as the saved-state case, calling
-  it the way the record frame does.
+  - in `frontend/history.test.js`, the Original line for an open and an ended
+    record, and the Reassessment Result line printing words for a served code.
+    The current-policy case that expects `Unavailable · data_not_yet_arrived`
+    moves to the words.
 
 ## 3. "First seen" names when Harmonic recorded the change (desk)
 
@@ -163,35 +203,53 @@ call for", with wording in CONTEXT.md terms.
   - `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`;
   - `mockups/INDEX.md`'s Harmonic v2 desktop row.
 - [ ] 4.4 Re-read for intent every other desk replay and test that opens a
-  record, and record in the ledger amendment that each keeps its subject:
+  record or reads the figure. Amend under the frozen header whatever the change
+  moves. Record in the ledger amendment that each one keeps its subject:
   - S96 and S105, which open ended records;
   - S110, which opens an open edit-chain record and waits for the original
     part;
   - the c4 `retained()` helper used by S91 and the readiness stories;
-  - the desk browser suite's expired-record test.
+  - S49: its c4 part opens c4-missing's open Trial through `retained()` and
+    asserts the served reason in `.gf-reading`. Amend that assertion to expect
+    task 2.2's words for the served code, imported from the exported table,
+    and not the raw code. The story's text is unchanged;
+  - S50, both the c3 body and the desk replay's own: it pins the active Trial
+    legend, "Trial above Before" or "no Trial readings to compare yet", which
+    task 2.1 keeps for `paired` and `before-only`;
+  - R18: it opens c4-history's first Trial and first Focus by address and
+    waits up to 30 s for the original part. The Trial is open, so it now also
+    makes the retained read, which is unavailable with views and no bins, so
+    no-readings. The Focus is ended;
+  - the desk browser suite's expired-record test, whose saved ending is a bare
+    unavailable assessment, so unavailable.
 
 ## 5. Verification and evidence
 
-- [ ] 5.1 Run the fast gate and guards:
+- [ ] 5.1 Tick this task on exactly these commands, each exiting 0:
+  - `npm ci && npm run build`;
+  - `uv run python -m pytest`;
   - `node --test 'frontend/**/*.test.js'`;
-  - `npm ci && npm run build`, then `uv run python -m pytest`;
   - `npx --yes @fission-ai/openspec@1 validate --all --strict`;
   - `python3 scripts/check_adr_numbers.py`,
     `python3 scripts/check_owned_identifiers.py` and
     `python3 scripts/check_public_allowlist.py`;
-  - every drift check `AGENTS.md` lists.
+  - `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`.
 
-  This change moves no generator or fixture.
-- [ ] 5.2 The coordinator owns every port-bound leg; the implementer runs none.
+  No generator, committed fixture or extracted source is in this change's diff,
+  so the AGENTS.md drift checks are left to the coordinator's integration run.
+- [ ] 5.2 The coordinator owns every port-bound leg and ticks this task with
+  its evidence; the implementer runs none.
   1. On base a4d374a7, served from a second worktree with this branch's replay
      harness laid over it, S112 (amended), S142 and S143 each fail at their
-     feature assertion. On the branch, each passes. Both runs at 1280x720 and
-     1440x900:
-     `PLAYWRIGHT_MODULE=<playwright> TARGET=app VIEWPORT=<size> ONLY=S112,S142,S143 CASE_STORE_DIR=<scratch> node frontend/desk-behavior.replay.mjs`.
-  2. Then S96, S105, S110 and S91 at one size, the desk and follow-up browser
-     suites once, and the complete ledger once on the pushed commit.
-- [ ] 5.3 The coordinator owns the synthetic before and after renders, at both
-  sizes, of:
+     feature assertion, and the amended S49 fails at its words assertion. On
+     the branch, each passes. Both runs at 1280x720 and 1440x900:
+     `PLAYWRIGHT_MODULE=<playwright> TARGET=app VIEWPORT=<size> ONLY=S49,S112,S142,S143 CASE_STORE_DIR=<scratch> node frontend/desk-behavior.replay.mjs`.
+  2. Then, at one size, `ONLY=S50,S91,S96,S105,S110,R18`.
+  3. Then the desk and follow-up browser suites once, the full
+     `acceptance.test.py` once (its `ServerLifecycleTest` binds a port), and
+     the complete ledger once on the pushed commit.
+- [ ] 5.3 The coordinator owns the synthetic before and after renders, and
+  ticks this task with them. Render both sizes of:
   - the open c3-trial record;
   - the unavailable edit-chain record;
   - the ended c3-history record.

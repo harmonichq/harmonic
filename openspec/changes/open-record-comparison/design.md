@@ -81,6 +81,13 @@ read, so the same change looked different depending on which door opened it.
   context. The retained read now follows the record read without a press, so
   S112 is amended under the operator's standing sanction for #430's checklist
   (Connor Griffin, 2026-09-23). S142 and S143 prove the default read and the
-  unavailable figure.
+  unavailable figure. S49's c4 replay asserted the raw unavailable code in the
+  reading pane. It now expects the same reason in words, because this change
+  owns the desk's single vocabulary for comparison reasons (coordinator ruling
+  in #430 triage review, 2026-09-23). #426's `not_recorded` wording folds into
+  that vocabulary at integration.
+- `premises.py` in this change prints what the record door's two reads serve
+  on the committed synthetic cases. It runs in process on scratch copies, with
+  no server.
 - Records that reconciliation never ends stay open, so they too open on a live
   reassessment. Whether they should end is a separate issue (D4).

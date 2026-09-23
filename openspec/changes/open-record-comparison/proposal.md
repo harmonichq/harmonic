@@ -36,11 +36,17 @@ single reconcile pass, and it reads like the pump's own date.
   gets its existing named loading text. The reassessment stays labelled as a
   reassessment beside the original and never replaces it. An ended record
   still opens on its saved ending.
-- The record figure names which empty state it is in: not requested,
-  unavailable (with the served reason in words), a saved ending that kept no
-  curve, or no readings yet. It draws a chart only when there is a clock
-  envelope to draw. The periods note, the outcomes note and the stage meta
-  follow the same distinction.
+- The record figure draws its curve whenever the comparison serves clock bins,
+  including a comparison the backend marks unavailable but keeps readings for.
+  When it cannot draw a curve, it names which empty state it is in:
+  - not requested;
+  - a saved ending that kept no curve;
+  - unavailable, with the served reason in words;
+  - no Before readings.
+
+  One vocabulary names comparison reasons in words across the figure, the
+  readiness lines and the reassessment result. The periods note, the outcomes
+  note and the stage meta follow the same distinction.
 - "First seen" becomes "Recorded by Harmonic", so it cannot be read as the
   pump's detected time.
 

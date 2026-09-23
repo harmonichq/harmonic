@@ -94,6 +94,15 @@ test('S127 is a unique app-only Day story, served from the showcase', () => {
   assert.equal(storyCase('S127'), 'showcase');
 });
 
+test('S139 and S140 are unique app-only C4 dock stories on their watched cases', () => {
+  for (const [id, expectedCase] of [['S139', 'c3-trial'], ['S140', 'c3-focus']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-12');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 // A minimal fake page for the #414 chunk 3 stories. `click` on the Diagnose nav
 // button simulates the one GET /api/status the retained desk issues by routing
 // it through any registered `**/api/status*` handler, so the held-request
@@ -897,4 +906,51 @@ test('assertRankedMinis fails when no candidate mini is mounted', async () => {
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertRankedMinis(qa413MiniPage({}), [minied]),
     /at least one ranked mini must be mounted/));
+});
+
+// #429: a fake page for S139/S140 — the served admission, the dock at the foot
+// of the Diagnose inspector, and the Changes landing its link opens.
+function qa429DockPage(kind, { label = 'Open Changes ›' } = {}) {
+  let url = 'http://synthetic.invalid/';
+  const roster = { admission: { state: 'available', active_kind: kind, active_id: kind === 'trial' ? 'basal:390' : 7 },
+    trials: [], focuses: [{ id: 7, pinned_at: '2026-08-04 09:00:00' }] };
+  const detail = kind === 'focus' ? 'Pinned 08-04 · adherence and outcome are read in Changes'
+    : 'Maturing — 6 of 14 days since 08-11';
+  const text = {
+    '.inspector > .watch': `${kind.toUpperCase()} · WATCHING\nThe watched change\n${detail}\n${label}`,
+    '.inspector > .watch .go': label,
+    '.inspector > .watch .how': detail,
+    '.gf-stage-trial .gf-title': 'Basal 06:30 · 0.85 → 1.05 U/hr',
+  };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    locator: sub => node(`${selector} ${sub}`),
+    waitFor: async () => {},
+    click: async () => { if (selector === '.inspector > .watch .go') url = 'http://synthetic.invalid/changes?subject=watch'; },
+    getAttribute: async name => (selector === '.inspector > .watch' && name === 'data-state' ? kind : null),
+    innerText: async () => text[selector] ?? '',
+  });
+  return {
+    url: () => url,
+    request: { get: async href => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(href).searchParams.has('selected')
+        ? { ...roster, selected: { changes: [{ slot: '06:30' }] } } : roster) }) },
+    locator: node,
+  };
+}
+
+test('S139 and S140 pass when the dock names Changes and its link lands on the watch', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S139(qa429DockPage('trial'));
+  await C4_STORIES.S140(qa429DockPage('focus'));
+});
+
+test('S139 and S140 fail at the label, not at a premise, when the dock still reads "Open Verify ›"', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [id, kind] of [['S139', 'trial'], ['S140', 'focus']]) {
+    await withReplayAssertionTimeout(10, () => assert.rejects(
+      C4_STORIES[id](qa429DockPage(kind, { label: 'Open Verify ›' })),
+      error => error.message.includes(`${id} the dock's link must read "Open Changes ›"`)
+        && !error.message.includes('premise')));
+  }
 });

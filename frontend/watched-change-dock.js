@@ -62,9 +62,9 @@ export function watchDockView({ watched = null, staged = null } = {}) {
     // "Maturing" and "ready to judge" are the domain's own words for a Trial's
     // watch phase (CONTEXT.md) — neither is invented here.
     const lead = maturing.is_maturing ? 'Maturing — ' : 'Ready to judge — ';
-    // Verify clamps its rendered day count to the requirement ("day 14 of 14");
-    // the dock clamps the same way so the two surfaces read identically for a
-    // completed Trial whose bounded period spans 15 dates. The payload's true
+    // Changes' Trial progress bar clamps its value to the requirement; the dock
+    // clamps its day count the same way, so a completed Trial whose bounded period
+    // spans 15 dates never reads past its requirement here. The payload's true
     // count is untouched — this is display only.
     const elapsed = Math.min(maturing.days_elapsed ?? 0, maturing.days_required ?? 0);
     return {
@@ -76,7 +76,7 @@ export function watchDockView({ watched = null, staged = null } = {}) {
         { strong: `${elapsed} of ${maturing.days_required ?? 0}` },
         { text: ` days since ${monthDay(watched.changed_at)}` },
       ],
-      route: { label: 'Open Verify', to: 'verify' },
+      route: { label: 'Open Changes', to: 'changes' },
     };
   }
   if (watched && watched.kind === 'focus') {
@@ -84,10 +84,11 @@ export function watchDockView({ watched = null, staged = null } = {}) {
       state: 'focus',
       kind: KIND.focus,
       title: watched.title,
-      // Adherence and outcome are two dimensions read off Verify's own series
-      // (CONTEXT.md "Focus"); the dock names where they are read, never guesses them.
-      detail: [{ text: `Pinned ${monthDay(watched.pinned_at)} · adherence and outcome are read on Verify` }],
-      route: { label: 'Open Verify', to: 'verify' },
+      // Adherence and outcome are a Focus's two dimensions (CONTEXT.md "Focus"), and
+      // Changes renders both as tables; the dock names where they are read, never
+      // guesses them.
+      detail: [{ text: `Pinned ${monthDay(watched.pinned_at)} · adherence and outcome are read in Changes` }],
+      route: { label: 'Open Changes', to: 'changes' },
     };
   }
   if (staged && staged.count > 0) {

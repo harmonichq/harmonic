@@ -641,3 +641,21 @@ test('S129/S131 tile activation replaces the Focus drill, while same-chart picks
     destination.leave();
   } finally { fetchReply = previousFetch; }
 });
+
+test('the watch dock\'s route tokens become Changes arrivals: `changes` names the watch, `plan` the Plan', async () => {
+  let callbacks;
+  const destination = createDiagnoseDestination({ api: source().api,
+    createView(options) { callbacks = options.callbacks; return { setData() {}, leaveSurface() {}, refresh() {}, setError() {} }; },
+  });
+  await destination.read();
+  destination.mount(host(), { navigation: 0, hold() {} });
+  const previous = globalThis.window;
+  const addresses = [];
+  globalThis.window = { location: { pathname: '/diagnose', search: '', hash: '' },
+    history: { pushState: (_state, _title, address) => addresses.push(address) } };
+  try {
+    callbacks.go('changes');
+    callbacks.go('plan');
+    assert.deepEqual(addresses, ['/changes?subject=watch', '/changes?subject=plan']);
+  } finally { globalThis.window = previous; destination.leave(); }
+});

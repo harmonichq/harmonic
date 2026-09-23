@@ -48,10 +48,45 @@ walk costs what it costs today.
 `evidence/reason-precedence-spike.py` states this rule as executed code against
 today's filter internals and checks it on synthetic nights: six causes land
 3/1/1/1/1/1 and sum to the served count of 8; a single low minute moves an
-otherwise high night into rank 2; pooling empties rank 1. Run over every slot of
-the synthetic QA showcase, the spike's buckets summed to `excluded_night_count`
-on all 48 slots. The implementation must own the rule itself and must not import
-the spike.
+otherwise high night into rank 2; pooling empties rank 1. The implementation must
+own the rule itself and must not import the spike. The spike and
+`evidence/showcase-reasons.py` import private filter internals that the
+implementation may restructure, so both run against the base (a4d374a7) only and
+are not gates after the change.
+
+### Generated facts
+
+Run on the base, from the repository root:
+
+```
+$ uv run python openspec/changes/basal-excluded-night-reasons/evidence/showcase-reasons.py
+08:00 30 insulin_acting=30
+08:30 30 insulin_acting=30
+09:00 30 insulin_acting=30
+09:30 30 insulin_acting=30
+10:00 30 insulin_acting=30
+12:00 1 insulin_acting=1
+12:30 3 insulin_acting=1 other=2
+13:00 1 above_range=1
+13:30 1 above_range=1
+14:00 1 above_range=1
+14:30 2 above_range=2
+15:00 2 above_range=2
+15:30 2 insulin_acting=1 other=1
+16:00 1 insulin_acting=1
+19:00 1 insulin_acting=1
+19:30 1 above_range=1
+20:00 1 insulin_acting=1
+20:30 1 insulin_acting=1
+21:00 1 insulin_acting=1
+21:30 1 below_range_or_suspended=1
+22:00 1 below_range_or_suspended=1
+21 of 48 slots exclude nights; every slot's reasons sum to its count
+```
+
+It analyzes the showcase's whole history, not the served 30-day window, so the
+served payload stays authoritative for any count a story pins. No showcase slot
+has more than two nonzero reasons.
 
 ### Why this order
 
@@ -100,11 +135,24 @@ The desk derives, sums and reclassifies nothing: the total is the served
 
 - **Full-size rail:** the total keeps its own row, labelled "excluded", and each
   nonzero reason follows as its own row. No rail text overlaps another or crosses
-  the footer rule; the layout under the total is the implementer's to set.
+  the footer rule. The whole rail below its head (the direction rows, the rule,
+  the total and the reasons) is the implementer's to lay out: when reason rows are
+  present, pitch and type size may follow the canvas height (`api.getHeight()`),
+  and today's positions stay wherever the rows fit. Today's layout cannot hold a
+  crowded rail: in a 307px canvas, today's pitch leaves room below the total for
+  two reason rows, or one when the no-programmed-rate row is present (rule at 180
+  or 204, total row to 212 or 236, footer rule at 279).
 - **Middle rank:** the tally line ends `· N excluded`, followed by
   ` (L low or suspended)` when that count is nonzero. Room is short there, and the
   low-or-suspended count is the one that must survive. The other reasons stay on
-  the full rail and the panel.
+  the full rail and the panel. A worst case such as "16 steady nights · 10 more ·
+  3 less · 1 as set · 2 unpaired · 14 excluded (12 low or suspended)" (95
+  characters) needs about 494px at today's 10px type by the chart's own estimate
+  (0.52 of the type size per character), against 452px inside a 480px seat's
+  margins. The implementer may set the line in smaller type, down to the design
+  system's 9px, or give the tally a second line and move the figure down, so that
+  case fits; every existing token keeps its words and order, and the
+  low-or-suspended count prints.
 - **Accessible description:** `N nights excluded`, followed by `: ` and each
   nonzero reason as `count words`, comma-separated.
 - **Basal slot panel:** its one excluded-night line reads
@@ -128,7 +176,18 @@ This is a shipped-surface revision (`/ui-craft revise`). The frozen desk behavio
 ledger (`mockups/harmonic-v2-desktop.behavior.md`) has no story asserting
 exclusion wording, so no story is amended or retired. The new served behavior
 lands as one new story, S154 (this ticket's story block is S154–S156), with its
-replay function, run on the synthetic showcase.
+replay function, run on the synthetic showcase, in the ledger's own dated
+`## #434 amendment — 2026-09-23` section. The ledger's existing frozen blocks, its
+header inventory line and `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` are
+left to the release coordinator, who writes the release's one freeze block.
+
+The crowded rail has node-level evidence only: no showcase slot serves more than
+two reasons (generated facts above), so no served desk state can show it. Its
+node test runs at the full-size tile canvas height the coordinator measures on the
+served desk, because the height the desk actually gives the tile, not a guessed
+one, decides what fits. The coordinator also keeps before-and-after captures of
+the S154 slot's tile and panel, from the base and the branch served from the same
+QA copy-then-serve bytes, at both desktop sizes, for the release pull request.
 
 ## Risk contract
 
@@ -149,9 +208,11 @@ replay function, run on the synthetic showcase.
   minute outranking a high night, pooling), with no hand-set counts; a projection
   copy test and a fail-closed test; unchanged backend results elsewhere (the QA case
   suite passes without edits, and each regenerated artifact equals its base once the
-  new field is set aside); frontend node tests for the rail rows and their spacing,
-  the middle-rank tally, the description and the panel line; S154 replayed at both
-  desktop sizes.
+  new field is set aside); frontend node tests for the rail rows and their spacing
+  (the crowded case at the measured tile canvas height), the middle-rank tally
+  (the worst case fitting a 480px seat), the description and the panel line; S154
+  replayed at both desktop sizes; before-and-after captures of the S154 slot's tile
+  and panel at both sizes.
 - **Why:** the output is advisory dosing evidence beside the safety invariants, so a
   plausible but wrong explanation, or a moved verdict, can misadvise a dose.
 - **Disposition:** inline, admitted into this change and its execution lock.

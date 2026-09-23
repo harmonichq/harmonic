@@ -17,6 +17,7 @@
   them fail on the base: the requirement's three analyzer scenarios, built from
   synthetic analyzer inputs over N nights (the spike's nights restated in the
   test, never imported), asserting literal counts and never hand-setting one.
+  The spike itself runs against the base only; it is not a gate after the change.
 - [ ] Copy `excluded_night_reasons` verbatim in
   `ciq_autotune/basal_night_evidence.py` and add it to the projection's required
   facts. Test through the endpoint and the projection that the served breakdown
@@ -29,12 +30,14 @@
   `frontend/__fixtures__/findings-projection.json`
   (`scripts/gen_findings_projection_fixtures.py`), and
   `mockups/harmonic-v2.exploration/setting.json`, `journey.json` and `focus.json`
-  (`mockups/harmonic-v2.exploration/generate.py`; `focus.json` moves only through
-  its embedded code-version hash). Leave every other drift check untouched and
-  green. Before committing, compare each regenerated file with its base in a
-  scratch script that sets the new field aside (and, in `focus.json`, the
-  code-version and comparison-context id hashes), and show they are equal.
-  Commit no comparison script.
+  (`mockups/harmonic-v2.exploration/generate.py`). `journey.json` and `focus.json`
+  also embed comparison contexts whose `code_version` hashes every package Python
+  source and whose `id` hashes the context, so any Python edit moves them. Leave
+  every other drift check untouched and green. Before committing, compare each
+  regenerated file with its base in a scratch script that sets aside the new field
+  and every `comparison_context.code_version` and `comparison_context.id` in
+  `journey.json` and `focus.json`, and show they are equal. Commit no comparison
+  script.
 - [ ] Define **Excluded night** in `CONTEXT.md`: a source night of a basal slot
   absent from that slot's final estimate, with its six reasons in rank order,
   each night counted once, and the synonyms to avoid.
@@ -51,15 +54,20 @@
   "excluded — not steady". In `frontend/diagnose-evidence-charts.test.js`, move
   the three rail assertions that expect "excluded — not steady" and the
   middle-rank tally assertion to the new rows and words, and add tests for the
-  requirement's tile scenarios, including the crowded rail in the suite's
-  950×307 canvas with every reason nonzero and a night with no programmed rate.
+  requirement's tile scenarios: the crowded rail, with every reason nonzero and a
+  night with no programmed rate, at the full-size tile canvas height the
+  coordinator measured on the served desk (a named constant citing that
+  measurement), and the worst-case middle-rank tally in a 480px seat.
 - [ ] Implement the panel's excluded-night line in `frontend/diagnose-workstation.js`
   `renderSlotLevel`, moving the `2 excluded nights` assertion in
   `frontend/diagnose-workstation.test.js` and covering the requirement's panel
   scenario.
 - [ ] Add story S154 to `mockups/harmonic-v2-desktop.behavior.md` for the
-  requirement's served-desk scenario, under a dated #434 section that quotes the
-  sanction in design (second ADR 434). Add `C4_STORIES.S154` in
+  requirement's served-desk scenario, in a new `## #434 amendment — 2026-09-23`
+  section that quotes the sanction in design (second ADR 434). Leave every
+  existing frozen block, the header's inventory line and
+  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` untouched; the release
+  coordinator owns them. Add `C4_STORIES.S154` in
   `frontend/c4.replay.mjs`, register it once in
   `frontend/desk-behavior.replay.mjs` (it runs on the default showcase case), and
   cover it in `frontend/c4.replay.test.js`: registered once, served from the
@@ -68,5 +76,11 @@
   and pin its literal counts from the served payload read in-process through the
   API test client, never through a running server. Move the pinned ledger
   inventory to issued 148, active 129, retired 19 in
-  `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`, and the two
-  147 counts in `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` to 148.
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`; in
+  `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, move the replay-plan
+  count of 147 to 148 and the inventory tests' synthetic id ranges and total
+  literal so the stated-inventory test lists 129 active and 19 retired ids and the
+  same-total test still holds 148 ids with one active id too many and one retired
+  id too few. Run the port-free `acceptance.py inventory` leg and the port-free
+  test classes; the full `acceptance.test.py` binds a port and is the
+  coordinator's to run.

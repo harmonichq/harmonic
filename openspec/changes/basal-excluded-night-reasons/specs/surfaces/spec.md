@@ -35,6 +35,15 @@ The miniature SHALL be unchanged.
 - **WHEN** the same payload renders below the middle-rank width
 - **THEN** the tally line ends "· 5 excluded (1 low or suspended)"
 
+#### Scenario: A crowded tally fits the narrowest middle rank
+
+- **GIVEN** a payload whose middle-rank tally reads "16 steady nights · 10 more ·
+  3 less · 1 as set · 2 unpaired · 14 excluded (12 low or suspended)"
+- **WHEN** the tile renders in a 480px seat
+- **THEN** every tally line fits inside the seat's side margins by the chart's own
+  estimate of 0.52 of the type size per character
+- **AND** the tally still carries "12 low or suspended"
+
 #### Scenario: The panel names each reason
 
 - **WHEN** the basal slot panel renders the same payload
@@ -45,7 +54,9 @@ The miniature SHALL be unchanged.
 
 - **GIVEN** a payload in which every reason is nonzero and one night has no
   programmed rate
-- **WHEN** the tile renders at full furniture in a 950×307 canvas
+- **WHEN** the tile renders at full furniture in a 950px-wide canvas as tall as the
+  smallest full-size basal tile canvas measured on the served desk at either
+  supported desktop size
 - **THEN** every rail row prints, no two rail texts overlap, and none crosses the
   footer rule
 

@@ -10,7 +10,7 @@ none reads real data, and nothing here starts a server.
   and a Focus detail that flattens to exactly
   `Pinned 08-04 · adherence and outcome are read in Changes` for the existing
   fixture. Assert that no state's kind, title, flattened detail or route label
-  contains "Verify", looping over all four states. Run it on the base and
+  contains "Verify", looping over every state the view returns. Run it on the base and
   observe it fail for the right reason: the view returns `'Open Verify'` /
   `'verify'` and "read on Verify".
 - [ ] 1.2 Implement surfaces **The watch dock names Changes for a watched Trial
@@ -19,8 +19,8 @@ none reads real data, and nothing here starts a server.
   detail so they name Changes and describe only what Changes renders: Changes'
   Trial progress bar clamps its value to the requirement. Claim no "N of N" text
   Changes does not print. Retitle and reword the clamp test in
-  `frontend/watched-change-dock.test.js` the same way. The Plan and idle states,
-  `KIND`, a Trial's title and its maturity line stay byte-identical.
+  `frontend/watched-change-dock.test.js` the same way. This task edits no other
+  state and no kind label, Trial title or Trial maturity line.
 
 ## 2. Landing on the watched record
 
@@ -76,7 +76,10 @@ none reads real data, and nothing here starts a server.
   admitted Trial's slot.
   Register each one exactly once in `frontend/desk-behavior.replay.mjs`, as an
   `appOnly('HV2-12', …)` export behind its `// STORY:harmonic-v2-desktop:S13n`
-  marker and in `REGISTRY`. Map `S139: 'c3-trial'` and `S140: 'c3-focus'` in
+  marker, and in `REGISTRY` as `['S139', S139, J()]` and `['S140', S140, J()]`,
+  the way S113–S117 are registered. `openApp` refuses any state other than
+  `investigate` for a story outside C2_STORIES, C3_STORIES and C4_RETIREMENTS,
+  so S45's `M('active')` must not be copied. Map `S139: 'c3-trial'` and `S140: 'c3-focus'` in
   `frontend/replay-cases.mjs` `STORY_CASES`. In `frontend/c4.replay.test.js`,
   pin that each story is registered once with term HV2-12 on its case. Also run
   each body against a fake page whose dock reads `Open Verify ›`, and require it
@@ -92,6 +95,13 @@ none reads real data, and nothing here starts a server.
   two on the branch, where both pass, at 1280x720 and 1440x900. Replay
   `ONLY=S45,S45b,S56,S57` on the branch at both sizes to show the Changes
   landings are preserved. Record the results in each story's status line.
+  Then capture the dock (`.inspector > .watch`) on the `c3-trial` and `c3-focus`
+  case stores at 1280x720 and 1440x900, from the base and from the branch, as
+  revision evidence in the release pull request. The replay's own captures
+  cannot stand in for these: base S139 and S140 fail before capture, and the
+  branch captures the Changes landing, not the dock. Each branch render must show
+  the detail line wrapped inside the dock's reserved height, never ellipsized.
+  The coordinator ticks this task; these renders are not committed.
 
 ## 4. Verification
 

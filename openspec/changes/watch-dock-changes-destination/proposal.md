@@ -39,7 +39,7 @@ is being watched. This was reproduced at node level on the base (a4d374a7).
 
 ## What does not change
 
-- The dock's Plan and idle states, its four kind labels, the Trial's title and
+- The dock's Plan and idle states, its kind labels, the Trial's title and
   maturity line, and its day clamp. #431 owns the Plan state.
 - Trial maturity, the Focus lifecycle, the one-active-watch rule, and every
   served payload.

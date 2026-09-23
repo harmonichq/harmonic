@@ -4,11 +4,9 @@
 
 When the watch dock at the foot of the Diagnose inspector reports a watched Trial
 or a watched Focus, its link SHALL read "Open Changes ›", and no part of the dock
-in any of its four states SHALL name Verify. A watched Focus's detail line SHALL
-read "Pinned ‹MM-DD› · adherence and outcome are read in Changes", where
-‹MM-DD› is the Focus's served pin date. The dock's four kind labels, its staged
-Plan and idle states, a Trial's title and a Trial's maturity line SHALL be
-unchanged.
+in any state SHALL name Verify. A watched Focus's detail line SHALL read
+"Pinned ‹MM-DD› · adherence and outcome are read in Changes", where ‹MM-DD› is
+the Focus's served pin date.
 
 #### Scenario: A watched Trial names Changes
 

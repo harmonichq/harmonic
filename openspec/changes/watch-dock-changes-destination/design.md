@@ -36,8 +36,8 @@ On the base (a4d374a7):
 1. **Words.** The Trial and Focus link reads "Open Changes ›". The Focus detail
    reads "Pinned ‹MM-DD› · adherence and outcome are read in Changes". "In
    Changes" is how the ledger already says it (S58, S77). "Adherence" and
-   "outcome" are CONTEXT.md's two Focus dimensions. The four kind labels stay
-   byte for byte.
+   "outcome" are CONTEXT.md's two Focus dimensions. This change edits no kind
+   label.
 2. **Route token.** Both states route with the token `changes`, and Diagnose's
    `go` turns that token into a Changes arrival with subject `watch`. The token
    `plan` keeps its arrival with subject `plan`. In the address it reads
@@ -108,7 +108,9 @@ and tone changes?": "Q1 A, Q2 A, defaults all fine, go".
   through public interfaces. That means the dock view, Changes' `mount`,
   Diagnose's `go` callback, and replay stories S139 and S140 at both sizes, each
   shown failing on the base first. Also: S45, S45b, S56 and S57 still pass on the
-  branch at both sizes.
+  branch at both sizes. Also: base and branch renders of the dock for a watched
+  Trial and a watched Focus at both sizes, the branch showing the detail line
+  wrapped inside the reserve and never ellipsized.
 
 Why: the change is advisory-free routing and copy, so the stakes are a reader
 misled about which change they are looking at, not a dose.

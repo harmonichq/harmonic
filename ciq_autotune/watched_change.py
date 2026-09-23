@@ -1403,9 +1403,105 @@ def _retained_trial(store, record, now):
 
 
 def pending_plan(store):
-    return next((record for record in store.follow_up_records("plan")
-                 if record["reconciliation"].get("state") != "available"
-                 and record["withdrawal"].get("state") != "available"), None)
+    """The newest recorded Plan while it is neither confirmed nor withdrawn
+    (ADR 431). An older open Plan is superseded and withholds nothing."""
+    history = store.plan_history()
+    newest = store.follow_up_record("plan", history[0]["applied_at"]) if history else None
+    if (newest is None or newest["reconciliation"].get("state") == "available"
+            or newest["withdrawal"].get("state") == "available"):
+        return None
+    return newest
+
+
+def _comparable(plan):
+    """Every recorded item names an integer start minute and a numeric value,
+    under today's item rules; a history row an older build accepted may not."""
+    from .store import validate_plan_items
+    try:
+        validate_plan_items(plan["items"])
+    except ValueError:
+        return False
+    return all(type(item.get("start_min")) is int and type(item.get("value")) in (int, float)
+               for item in plan["items"])
+
+
+def _held_schedule(plan, snapshot):
+    """The Plan's schedule when this read's active profile holds it, else None.
+
+    The schedule is the Plan's captured deliverable; a Plan recorded before
+    schedules were captured is its recorded values applied over this read's
+    active profile. An incomparable Plan is held by no read (ADR 431).
+    """
+    from dataclasses import asdict
+    from .guidance import plan_deliverable, schedule_matches
+    profile = snapshot.settings.active()
+    if profile is None or not _comparable(plan):
+        return None
+    actual = [asdict(segment) for segment in profile.segments]
+    deliverable = plan["deliverable"]
+    schedule = (deliverable.get("rows") if deliverable.get("state") == "available"
+                else plan_deliverable(actual, plan["items"]))
+    return schedule if schedule_matches(schedule, actual) else None
+
+
+def _confirm_from_read(store, recorded_at):
+    """Confirm the pending Plan once the latest read after its decision holds it,
+    naming the first read of that unbroken holding run and no Trial (ADR 431)."""
+    plan = pending_plan(store)
+    if plan is None:
+        return
+    decision = datetime.fromisoformat(plan["applied_at"])
+    first = None
+    for snapshot in reversed(store.settings_snapshots()):
+        schedule = _held_schedule(plan, snapshot) if snapshot.captured_at > decision else None
+        if schedule is None:
+            break
+        first = snapshot, schedule
+    if first is None:
+        return
+    snapshot, schedule = first
+    store.save_follow_up_record({**plan, "reconciliation": {
+        "version": "386:1", "state": "available", "applied_at": plan["id"], "trial_id": None,
+        "established_at": recorded_at.strftime(_DT_FMT),
+        "observed_snapshot": {"captured_at": snapshot.captured_at.strftime(_DT_FMT),
+                              "active_idp": snapshot.settings.active_idp},
+        "matched_schedule": schedule}})
+
+
+def with_plan_verdicts(store, records):
+    """Each recorded Plan with its one served verdict (ADR 431), computed at read
+    time without writing; the Plan history and guidance reads both serve it here.
+
+    ``state`` is decided in order: withdrawn, confirmed, then for the newest Plan
+    pending (the latest read after the decision holds it, there is no such read,
+    or it is incomparable) or mismatch, and otherwise superseded. ``on_pump``
+    says whether the latest read after the decision holds the Plan.
+    """
+    snapshots = store.settings_snapshots()
+    last = snapshots[-1] if snapshots else None
+    history = store.plan_history()
+    newest = history[0]["applied_at"] if history else None
+    served = []
+    for plan in records:
+        latest = (last if last is not None
+                  and last.captured_at > datetime.fromisoformat(plan["applied_at"]) else None)
+        on_pump = latest is not None and _held_schedule(plan, latest) is not None
+        receipt = plan["reconciliation"]
+        if plan["withdrawal"].get("state") == "available":
+            state = "withdrawn"
+        elif receipt.get("state") == "available":
+            state = "confirmed"
+        elif plan["id"] != newest:
+            state = "superseded"
+        elif on_pump or latest is None or not _comparable(plan):
+            state = "pending"
+        else:
+            state = "mismatch"
+        confirmed_at = ((receipt.get("observed_snapshot") or {}).get("captured_at")
+                        if state == "confirmed" else None)
+        served.append({**plan, "verdict": {"state": state, "confirmed_at": confirmed_at,
+                                           "on_pump": on_pump}})
+    return served
 
 
 def follow_up_admission(store, *, now):
@@ -1511,6 +1607,7 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "first_observed_at": recorded_at.strftime(_DT_FMT), "observed_context": observed,
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
         _reconcile_plan(store, record, recorded_at)
+    _confirm_from_read(store, recorded_at)
     newest = trials[0] if trials else None
     later = newest is not None and (not frontier or frontier["detected_at"] is None or newest.view.changed_at > frontier["detected_at"])
     old = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None

@@ -1679,12 +1679,16 @@ class Store:
                     self._follow_up_availability(envelope)
             relationship = winner.get('reconciliation', {})
             if relationship.get('state') == 'available':
+                # A pump-read confirmation (ADR 431) names its Plan and no Trial;
+                # a Trial's receipt always names itself.
                 plan_id, trial_id = relationship.get('applied_at'), relationship.get('trial_id')
                 self._follow_up_identity('plan', plan_id)
-                self._follow_up_identity('trial', trial_id)
+                if trial_id is not None or kind == 'trial':
+                    self._follow_up_identity('trial', trial_id)
                 if ((kind == 'plan' and plan_id != id) or (kind == 'trial' and trial_id != id)
                         or self.follow_up_record('plan', plan_id) is None
-                        or (kind == 'plan' and self.follow_up_record('trial', trial_id) is None)):
+                        or (kind == 'plan' and trial_id is not None
+                            and self.follow_up_record('trial', trial_id) is None)):
                     raise FollowUpConflict('invalid_reconciliation_identity', self.input_data_revision())
             if (kind == 'focus' and old['status'] != 'active'
                     and 'kind' not in old['ending']

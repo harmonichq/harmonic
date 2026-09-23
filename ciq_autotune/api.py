@@ -402,7 +402,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def guidance_payload():
         """Compose source guidance and the read-only lifecycle verdict at one revision."""
-        from .watched_change import active_watched_change, follow_up_admission, pending_plan
+        from .watched_change import (active_watched_change, follow_up_admission, pending_plan,
+                                     with_plan_verdicts)
         for _ in range(3):
             with Store.open_queryonly(db_path) as store:
                 revision = store.input_data_revision()
@@ -410,6 +411,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 admission = follow_up_admission(store, now=now)
                 watch = active_watched_change(store, (), (), (), now=now)
                 pending = pending_plan(store)
+                if pending is not None:
+                    pending = with_plan_verdicts(store, [pending])[0]
                 draft = store.get_plan_draft()
                 preferences = store.guidance_preferences()
             try:
@@ -1622,9 +1625,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
+        from .watched_change import with_plan_verdicts
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
-            return {"history": store.follow_up_records("plan"), **follow_up_read(store)}
+            return {"history": with_plan_verdicts(store, store.follow_up_records("plan")),
+                    **follow_up_read(store)}
 
     @app.post("/api/plan/history/withdraw")
     def withdraw_plan_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:

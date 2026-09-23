@@ -246,13 +246,16 @@ const FAMILY_SHORT = {
   lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters', sequences: 'sequences',
 };
 
+/* Keyed by the lane's key entry (`buildSlotLane`): a verdict, or a verdict and
+   the served reason behind it (#433, D6). */
 const VERDICT_KEY = {
-  up: 'suggests a raise', down: 'suggests a lower', hold: 'holds at current',
-  insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
+  up: 'suggests a raise', down: 'suggests a lower',
+  'down:recurring-lows': 'suggests a lower because lows keep happening at this hour',
+  hold: 'holds at current', insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
-// short forms for the single-line lane key
+// short forms for the lane key
 const VERDICT_SHORT = {
-  up: 'raise', down: 'lower', hold: 'hold',
+  up: 'raise', down: 'lower', 'down:recurring-lows': 'lower · recurring lows', hold: 'hold',
   insufficient: 'insufficient', nodata: 'no data',
 };
 
@@ -504,10 +507,11 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
     b.className = 'lane-cell';
     b.dataset.cell = String(cell.i);
     b.dataset.verdict = cell.verdict;
+    if (cell.reason) b.dataset.reason = cell.reason;
     b.dataset.staged = String(staged.has(cell.i));
     b.setAttribute('aria-pressed', String(selectedCell != null && cell.i === selectedCell.i));
-    b.title = `${cell.label} · ${VERDICT_KEY[cell.verdict]}`;
-    b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.verdict]}`);
+    b.title = `${cell.label} · ${VERDICT_KEY[cell.entry]}`;
+    b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.entry]}`);
     b.addEventListener('click', () => onPick(cell));
     host.append(b);
     if (b.dataset.cell === focusedCell) restoreFocus = b;
@@ -523,13 +527,17 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
  * The basal verdict key reconciles the 48 slots on the canvas lane. #413:
  * this is the lane's head row — it renders above `#lane`'s cells (the
  * markup is ordered that way), naming the lane ("Basal slots") and giving
- * every served verdict its short form and count.
+ * every served verdict its short form and count. #433 (D6): a recurring-lows
+ * lower is its own entry, beside a measured lower and on the same lower mark.
  */
 function renderLaneKey(lane) {
-  const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];
+  const order = ['up', 'down', 'down:recurring-lows', 'hold', 'insufficient', 'nodata'];
   const group = (leadWord, counts) => `<span class="lead">${leadWord}</span>`
-    + order.filter((k) => counts[k]).map((k) => `<span title="${VERDICT_KEY[k]}">`
-      + `<i class="lane-cell" data-verdict="${k}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
+    + order.filter((k) => counts[k]).map((k) => {
+      const [verdict, reason] = k.split(':');
+      return `<span title="${VERDICT_KEY[k]}"><i class="lane-cell" data-verdict="${verdict}"`
+        + `${reason ? ` data-reason="${reason}"` : ''}></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`;
+    }).join('');
   el('lane-key').innerHTML = group('Basal slots', lane.counts);
 }
 

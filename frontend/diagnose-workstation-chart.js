@@ -596,9 +596,19 @@ export function buildSlotLane(basal) {
     else if (slot.safety_status === 'no data') verdict = 'nodata';
     else if (slot.safety_status === 'insufficient evidence' || slot.asserts_move) verdict = 'insufficient';
     else verdict = 'hold';
+    /* #433 (D6): a lower the backend serves because lows keep recurring at this
+       hour is named apart from a measured lower, so a reader who opens one is
+       not surprised by its night count. The split reads the served status
+       string alone — no night count, floor or rate — and leaves the verdict,
+       its paint and whether it stages exactly a plain lower's. */
+    const reason = verdict === 'down' && slot.safety_status === 'lower (recurring lows)'
+      ? 'recurring-lows' : null;
     return {
       i,
       verdict,
+      reason,
+      // the lane key's entry: one per served verdict and reason
+      entry: reason ? `${verdict}:${reason}` : verdict,
       asserts,
       slot,
       startMin: start,
@@ -608,7 +618,7 @@ export function buildSlotLane(basal) {
     };
   });
   const counts = {};
-  for (const c of cells) counts[c.verdict] = (counts[c.verdict] || 0) + 1;
+  for (const c of cells) counts[c.entry] = (counts[c.entry] || 0) + 1;
   return { cells, counts, slotMinutes: 1440 / basal.length };
 }
 

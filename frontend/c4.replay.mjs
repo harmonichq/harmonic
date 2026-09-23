@@ -714,6 +714,7 @@ export async function assertBasalLaneReachable(page, sizes = LANE_REACH_SIZES) {
 }
 
 // #433: the opened slot panel, as S152, S153 and S113 read it. Runs in the page.
+// `stage` counts only Stage change buttons that render (have a box).
 function readSlotPanel() {
   const panel = document.querySelector('#level .slot-head')?.closest('.inner');
   if (!panel) return null;
@@ -723,7 +724,7 @@ function readSlotPanel() {
     time: panel.querySelector('.slot-head .time')?.textContent.trim(),
     verdict: panel.querySelector('.slot-head .verdict')?.textContent.trim(),
     recommended: recommended?.querySelector('b')?.textContent.trim() ?? null,
-    stage: panel.querySelectorAll('.stagebtn').length,
+    stage: [...panel.querySelectorAll('.stagebtn')].filter(button => button.getClientRects().length).length,
     text: panel.textContent.replace(/\s+/g, ' '),
   };
 }
@@ -1413,8 +1414,6 @@ export const C4_STORIES = {
             assert.match(panel.recommended ?? '', RECOMMENDED_VALUE,
               `S152 ${at}: "${name}" must open with a Recommended value; it shows ${panel.recommended}`);
             assert.equal(panel.stage, 1, `S152 ${at}: "${name}" must open with the Stage change button`);
-            assert.ok(seen(await page.locator('#level .stagebtn').isVisible()),
-              `S152 ${at}: "${name}"'s Stage change button must render`);
           }, `S152 ${at}: "${name}" opens its staging panel`);
           lane = await page.evaluate(laneGeometry);
           assert.ok(inReach(lane), `S152 ${at}: "${name}" must still lie inside the canvas pane's visible box once picked`);

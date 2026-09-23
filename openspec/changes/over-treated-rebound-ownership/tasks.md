@@ -2,7 +2,7 @@
 
 ## 1. Failing-first analyzer tests (through the public interface)
 
-- [ ] 1.1 Add the ownership regression to `tests/test_scenario_engine.py`, built from
+- [x] 1.1 Add the ownership regression to `tests/test_scenario_engine.py`, built from
   a synthetic window of several days through `evaluate` and `assemble`, with no
   hand-set Lever, verdict or flag. On each day a sub-70 low rebounds, with no bolus,
   into a >250 mg/dL High whose crossing comes more than 90 minutes after the low run
@@ -22,11 +22,11 @@
   that High sits in its own silent Episode with both verdicts `no_trigger`. After
   the change it keeps `no_trigger` and is recorded on the attribution as owned. Run
   the test on the base first and record that it fails for the right reason.
-- [ ] 1.2 Add a near-low regression: a 72 mg/dL nadir rebounding into a High that
+- [x] 1.2 Add a near-low regression: a 72 mg/dL nadir rebounding into a High that
   shares its Episode (crossing within 90 minutes). The Episode keeps Over-treated low,
   and no missed-meal match, candidate or impact price remains for the High. It fails
   on the base.
-- [ ] 1.3 Add a #155 regression: a correction-on-active-insulin low that is
+- [x] 1.3 Add a #155 regression: a correction-on-active-insulin low that is
   over-treated and splits into its two moments, with the real High run split off more
   than 90 minutes after the low. The real High attributes no High lever, and the
   synthesized High-moment keeps Over-treated low. Add the pre-walk shape as well: a
@@ -36,7 +36,7 @@
   correction-on-active-insulin with candidates correction-on-active-insulin and
   missed meal. Assert it keeps no missed-meal match or candidate after the change,
   which proves the High-moment's span is known before the walk.
-- [ ] 1.4 Add the controls on the same window shape. Controls (a) to (d) keep
+- [x] 1.4 Add the controls on the same window shape. Controls (a) to (d) keep
   today's output; (e) is new behavior.
   (a) A later rise separated from the low by a settled in-range dwell still
   attributes Missed / unannounced meal. (b) A High whose run begins after the guarded
@@ -47,13 +47,13 @@
   10 minutes into an owned High, shaped so the meal's Episode draws no Lever (so the
   next-lever-bearing-Episode clamp does not stop the span first), caps the low's
   span: the Over-treated-low Episode ends at that bolus.
-- [ ] 1.5 Add a configuration test through each classifier's public call: a
+- [x] 1.5 Add a configuration test through each classifier's public call: a
   non-default `gate_lookback_min` changes the missed-meal and the meal-bolus-short
   context-gate verdicts. It fails on the base, which always used the gate defaults.
 
 ## 2. Implementation
 
-- [ ] 2.1 Give `classify_missed_meal` and `classify_meal_bolus_short` the owning
+- [x] 2.1 Give `classify_missed_meal` and `classify_meal_bolus_short` the owning
   rebound as an optional input. Consult it only where the classifier would
   otherwise return a match: there it returns a non-match with `upstream_cause`,
   evidence tier Inferred, and a detail naming the owning low's nadir value and time.
@@ -66,7 +66,7 @@
   lines 192-195 at the base), and the `UPSTREAM_CAUSE` entry in the `SilenceReason`
   docstring of `ciq_autotune/analyzers/classifiers/evidence.py` (lines 59-61 at the
   base).
-- [ ] 2.2 In `ciq_autotune/analyzers/scenario/attribute.py` and
+- [x] 2.2 In `ciq_autotune/analyzers/scenario/attribute.py` and
   `ciq_autotune/analyzers/scenario/evaluation.py`, carry each fired over-treated-low
   rebound span through the one evaluation walk. An unsplit low's span runs from its
   nadir to its guarded terminal and comes from the build's own fired judgment when the
@@ -76,11 +76,11 @@
   whose run begins inside a span, in the same or a later Episode. Record the owned
   Highs on the attribution: every High inside a span, whatever its classifiers
   return. Never re-judge a low outside the walk.
-- [ ] 2.3 Extend the owning Episode's scored span to the later of its guarded
+- [x] 2.3 Extend the owning Episode's scored span to the later of its guarded
   terminal and the end of every High run it owns. Never extend past the guarded
   scan's meal-bolus stop (the next substantial carb-tagged meal bolus after the
   nadir), and still stop at the next lever-bearing Episode.
-- [ ] 2.4 In `ciq_autotune/explore_exposures.py`, skip every owned High in the
+- [x] 2.4 In `ciq_autotune/explore_exposures.py`, skip every owned High in the
   `uncaused` tally, reading the attribution's record, whatever its verdicts. An owned
   High stays a non-driver Occurrence with no attributed Lever. Update the
   `build_exposures` docstring and the `_uncaused_highs` docstring in
@@ -96,7 +96,7 @@
 
 ## 3. QA coverage era
 
-- [ ] 3.1 Follow AGENTS.md "Maintaining QA coverage eras": add the manufactured case
+- [x] 3.1 Follow AGENTS.md "Maintaining QA coverage eras": add the manufactured case
   `behavioral-over-treated-rebound-ownership` to `scripts/qa_e2e_cases.py`, with a
   split-off rising owned High, a flat-approach owned High and a separate unowned
   control High. Materialize it, run
@@ -109,7 +109,7 @@
 
 ## 4. Record, generated artifacts and gates
 
-- [ ] 4.1 Widen the *upstream-cause* entry under **Silence reason** in `CONTEXT.md`
+- [x] 4.1 Widen the *upstream-cause* entry under **Silence reason** in `CONTEXT.md`
   to include a rise owned by an over-treated low's rebound.
 - [ ] 4.2 Regenerate `mockups/harmonic-v2.exploration/focus.json` and `journey.json`
   with `uv run python mockups/harmonic-v2.exploration/generate.py`. Leave every

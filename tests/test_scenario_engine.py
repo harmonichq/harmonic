@@ -56,6 +56,7 @@ from ciq_autotune.analyzers.scenario.attribute import (
     match_low_answer,
     over_treated_rebound_judgment,
 )
+from ciq_autotune.analyzers.scenario.evaluation import evaluate
 from ciq_autotune.analyzers.scenario.payload import Step, event_ref, window_ref
 from ciq_autotune.analyzers.scenario.engine import (
     _build_episode,
@@ -2369,3 +2370,220 @@ class FollowUpObservationTest(unittest.TestCase):
              scenario_config=ScenarioConfig(meal_bolus_short_digestion_lookback_min=0))[0]
         self.assertTrue(row['measured'])
         self.assertEqual(row['k'],0)
+
+
+# --- #422: an over-treated low's rebound owns the High it reaches ------------
+
+
+def cgm_trace(day, corners, h=13):
+    """5-min CGM readings interpolated between ``(minute, bg)`` corners from (day, h:00)."""
+    t0 = datetime(2026, 6, day, h, 0, 0)
+    readings = []
+    for (m0, bg0), (m1, bg1) in zip(corners, corners[1:]):
+        readings.extend(
+            CgmReading(t=t0 + timedelta(minutes=m), type="EGV",
+                       bg=round(bg0 + (bg1 - bg0) * (m - m0) / (m1 - m0), 2))
+            for m in range(m0, m1, 5)
+        )
+    m_last, bg_last = corners[-1]
+    readings.append(CgmReading(t=t0 + timedelta(minutes=m_last), bg=bg_last, type="EGV"))
+    return readings
+
+
+def rising_rebound(day, rise_min):
+    """A 55 mg/dL nadir at 14:00 climbing, unbolused, to 270 over ``rise_min`` minutes."""
+    return cgm_trace(day, [(0, 110), (30, 110), (60, 55), (60 + rise_min, 270),
+                           (120 + rise_min, 180), (180 + rise_min, 144)])
+
+
+def flat_approach_rebound(day, *, low=True):
+    """A fast climb that creeps across 250 mg/dL at 0.4 mg/dL/min at 16:00, then holds
+    265 past the rebound horizon. ``low=False`` replaces the 55 mg/dL dip with 110."""
+    lead = [(0, 110), (30, 110), (60, 55)] if low else [(0, 110), (60, 110)]
+    return cgm_trace(day, lead + [(140, 235), (215, 265), (270, 265), (330, 150),
+                                  (390, 120)])
+
+
+class OverTreatedReboundOwnershipTest(unittest.TestCase):
+    """#422 / ADR 422: a fired over-treated low owns every High its rebound reaches.
+
+    The High is then neither a missed meal nor a meal bolus that fell short, whether it
+    shares the low's Episode or splits off into its own (the 250 mg/dL crossing more
+    than 90 minutes after the low), and the rebound's out-of-range time counts on the
+    low's Episode. Every assertion reads analyzer output built from synthetic days.
+    """
+
+    HIGH_LEVERS = {Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT}
+    # The over-treated low's scored span and severity, dumped from the analyzer: each
+    # span reaches the later of the 17:00 guarded terminal and its owned High run's
+    # end, and the flat-approach High (day 13) runs on past the terminal to 17:35.
+    LOW_EPISODE_SCORES = {
+        10: (datetime(2026, 6, 10, 17, 0), 6126.95),
+        11: (datetime(2026, 6, 11, 17, 0), 6450.75),
+        12: (datetime(2026, 6, 12, 17, 0), 6029.65),
+        13: (datetime(2026, 6, 13, 17, 35), 12697.85),
+    }
+
+    @staticmethod
+    def _verdicts(episode, anchor):
+        index = episode.anchors.anchors.index(anchor)
+        return {v.classifier: v for v in episode.attribution.anchor_verdicts[index]}
+
+    @staticmethod
+    def _high(episode):
+        return next(a for a in episode.anchors.anchors if a.kind is AnchorKind.HIGH)
+
+    def _assert_no_high_lever_anywhere(self, evaluation):
+        for episode in evaluation.episodes:
+            self.assertNotIn(episode.attribution.lever, self.HIGH_LEVERS)
+            self.assertFalse({c.lever for c in episode.candidates} & self.HIGH_LEVERS)
+        self.assertFalse(set(evaluation.candidate_impacts) & self.HIGH_LEVERS)
+
+    def test_split_off_rebound_high_is_owned_not_a_missed_meal(self):
+        cgm = (rising_rebound(10, 120) + rising_rebound(11, 140)
+               + rising_rebound(12, 165) + flat_approach_rebound(13))
+        evaluation = evaluate([], cgm, [])
+        self._assert_no_high_lever_anywhere(evaluation)
+        for day in (10, 11, 12, 13):
+            with self.subTest(day=day):
+                episodes = [e for e in evaluation.episodes if e.start.day == day]
+                self.assertEqual(
+                    [e.attribution.lever for e in episodes], [Lever.OVER_TREATED_LOW, None])
+                low_episode, high_episode = episodes
+                end, severity = self.LOW_EPISODE_SCORES[day]
+                self.assertEqual(low_episode.end, end)
+                self.assertAlmostEqual(low_episode.severity, severity, places=2)
+                high = self._high(high_episode)
+                self.assertEqual([h for h, _ in high_episode.attribution.owned_highs], [high])
+                owner = high_episode.attribution.owned_highs[0][1]
+                self.assertEqual((owner.nadir_t, owner.nadir_bg),
+                                 (datetime(2026, 6, day, 14, 0), 55.0))
+                verdicts = self._verdicts(high_episode, high)
+                if day == 13:
+                    # Flat approach: too slow a rise to judge keeps its own reason.
+                    self.assertEqual(
+                        [verdicts[c].silence_reason for c in ("missed_meal", "meal_bolus_short")],
+                        [SilenceReason.NO_TRIGGER, SilenceReason.NO_TRIGGER])
+                    continue
+                mm = verdicts["missed_meal"]
+                self.assertFalse(mm.matched)
+                self.assertEqual(mm.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+                self.assertEqual(mm.evidence_tier, EvidenceTier.INFERRED)
+                self.assertIn("55 mg/dL at 14:00", mm.detail)
+                self.assertEqual(verdicts["meal_bolus_short"].silence_reason,
+                                 SilenceReason.NO_TRIGGER)
+                self.assertEqual(high_episode.attribution.silence.silence_reason,
+                                 SilenceReason.UPSTREAM_CAUSE)
+        report = assemble([], cgm, [])
+        self.assertEqual([e.lever for e in report.episodes.values()],
+                         [Lever.OVER_TREATED_LOW] * 4)
+
+    def test_near_low_rebound_inside_its_episode_prices_no_missed_meal(self):
+        cgm = cgm_trace(10, [(0, 110), (30, 110), (60, 72), (130, 270), (190, 180),
+                             (250, 144)])
+        evaluation = evaluate([], cgm, [])
+        [episode] = evaluation.episodes
+        self.assertEqual(episode.attribution.lever, Lever.OVER_TREATED_LOW)
+        self.assertEqual([c.lever for c in episode.candidates], [Lever.OVER_TREATED_LOW])
+        self.assertNotIn(Lever.MISSED_MEAL, evaluation.candidate_impacts)
+        high = self._high(episode)
+        self.assertEqual([h for h, _ in episode.attribution.owned_highs], [high])
+        mm = self._verdicts(episode, high)["missed_meal"]
+        self.assertEqual(mm.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+        self.assertIn("72 mg/dL at 14:00", mm.detail)
+
+    @staticmethod
+    def _caused_low(day, *, bridge):
+        # A 0.9 U dose (under the correction floor) leaves insulin on board for a lone
+        # 1.5 U correction at 12:00; the crash bottoms at 55 at 13:30 and climbs slowly
+        # to 270 at 15:50. ``bridge`` adds an above-range correction mid-climb that
+        # keeps the real High in the low-moment's cluster.
+        cgm = cgm_trace(day, [(0, 200), (120, 190), (210, 55), (350, 270), (410, 180),
+                              (470, 140)], h=10)
+        bolus = [corr(day, 11, 0, units=0.9), corr(day, 12, 0, units=1.5)]
+        if bridge:
+            bolus.append(corr(day, 14, 55, units=2.0))
+        return cgm, bolus
+
+    def test_caused_low_high_moment_owns_the_split_off_real_high(self):
+        cgm, bolus = self._caused_low(10, bridge=False)
+        evaluation = evaluate(bolus, cgm, [])
+        self._assert_no_high_lever_anywhere(evaluation)
+        self.assertEqual([e.attribution.lever for e in evaluation.episodes],
+                         [None, Lever.CORRECTION_ON_IOB, Lever.OVER_TREATED_LOW, None])
+        moment, real = evaluation.episodes[2:]
+        self.assertEqual(moment.anchors.anchors[0].rebound_nadir_bg, 55.0)
+        high = self._high(real)
+        self.assertIsNone(high.rebound_nadir_bg)
+        self.assertEqual([h for h, _ in real.attribution.owned_highs], [high])
+        self.assertEqual(real.attribution.silence.silence_reason,
+                         SilenceReason.UPSTREAM_CAUSE)
+
+    def test_caused_low_high_moment_owns_a_high_left_in_the_low_moment(self):
+        cgm, bolus = self._caused_low(10, bridge=True)
+        evaluation = evaluate(bolus, cgm, [])
+        self._assert_no_high_lever_anywhere(evaluation)
+        low_moment = next(e for e in evaluation.episodes
+                          if e.attribution.lever is Lever.CORRECTION_ON_IOB)
+        self.assertEqual([a.kind for a in low_moment.anchors.anchors],
+                         [AnchorKind.LOW, AnchorKind.CORRECTION, AnchorKind.HIGH])
+        self.assertEqual([c.lever for c in low_moment.candidates],
+                         [Lever.CORRECTION_ON_IOB])
+        high = self._high(low_moment)
+        self.assertEqual([h for h, _ in low_moment.attribution.owned_highs], [high])
+        self.assertIn(Lever.OVER_TREATED_LOW,
+                      [e.attribution.lever for e in evaluation.episodes])
+
+    def test_high_after_a_settled_rebound_is_still_a_missed_meal(self):
+        # (a) The rebound settles in range at 130 before a separate unbolused rise.
+        cgm = cgm_trace(10, [(0, 110), (30, 110), (60, 55), (100, 200), (140, 130),
+                             (200, 130), (260, 290), (320, 200), (380, 150)])
+        evaluation = evaluate([], cgm, [])
+        self.assertEqual([e.attribution.lever for e in evaluation.episodes],
+                         [Lever.OVER_TREATED_LOW, Lever.MISSED_MEAL])
+        self.assertEqual(evaluation.episodes[1].attribution.owned_highs, ())
+
+    def test_climb_crossing_after_the_rebound_horizon_is_still_a_missed_meal(self):
+        # (b) A continuous climb first crosses 250 mg/dL at 17:05, five minutes past
+        # the 180-minute horizon that ends the rebound at 17:00.
+        cgm = cgm_trace(10, [(0, 110), (30, 110), (60, 55), (150, 150), (210, 200),
+                             (280, 300), (340, 210), (400, 150)])
+        evaluation = evaluate([], cgm, [])
+        self.assertEqual([e.attribution.lever for e in evaluation.episodes],
+                         [Lever.OVER_TREATED_LOW, Lever.MISSED_MEAL])
+        self.assertEqual(self._high(evaluation.episodes[1]).reach_start,
+                         datetime(2026, 6, 10, 17, 5))
+        self.assertEqual(evaluation.episodes[1].attribution.owned_highs, ())
+
+    def test_refuted_low_owns_nothing(self):
+        # (c) A 'no' answer refutes the over-treatment, so its High is judged alone.
+        evaluation = evaluate([], rising_rebound(10, 120), [], low_answers=[
+            LowPromptAnswer(anchor_t=datetime(2026, 6, 10, 14, 0), answer="no")])
+        self.assertEqual([e.attribution.lever for e in evaluation.episodes],
+                         [None, Lever.MISSED_MEAL])
+        self.assertEqual(evaluation.episodes[1].attribution.owned_highs, ())
+
+    def test_shared_episode_high_keeps_the_context_gate_verdict(self):
+        # (d) The crossing comes 65 min after the nadir, inside one Episode, where the
+        # context gate already explains the rise; its text is kept byte-for-byte.
+        evaluation = evaluate([], rising_rebound(10, 70), [])
+        [episode] = evaluation.episodes
+        self.assertEqual(episode.attribution.lever, Lever.OVER_TREATED_LOW)
+        high = self._high(episode)
+        self.assertEqual([h for h, _ in episode.attribution.owned_highs], [high])
+        self.assertEqual(
+            self._verdicts(episode, high)["missed_meal"].detail,
+            "glucose was rising 3.1 mg/dL/min, but BG bottomed at 55 mg/dL in the prior "
+            "90 min — the rise is a recovery, not a from-flat meal climb — the rise is a "
+            "post-low/post-suspend recovery, not a missed meal",
+        )
+
+    def test_meal_bolused_into_an_owned_high_ends_the_low_span(self):
+        # (e) A 40 g meal bolused at 16:00, ten minutes into the owned High, is the
+        # guarded scan's meal stop: what follows belongs to the meal. The meal's own
+        # Episode draws no Lever, so no lever-bearing neighbour clamps the span first.
+        evaluation = evaluate([meal(10, 16, 0, carbs=40.0, dose=4.0)],
+                              rising_rebound(10, 120), [])
+        self.assertEqual([e.attribution.lever for e in evaluation.episodes],
+                         [Lever.OVER_TREATED_LOW, None, None])
+        self.assertEqual(evaluation.episodes[0].end, datetime(2026, 6, 10, 16, 0))

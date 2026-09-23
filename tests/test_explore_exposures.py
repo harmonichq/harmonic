@@ -221,6 +221,30 @@ class ExploreExposuresTest(unittest.TestCase):
         self.assertNotEqual(cluster[0]["ep_id"], lows[0]["ep_id"])
         self.assertEqual((pattern["k"], pattern["n"]), (0, 1))
 
+    def test_a_high_an_over_treated_low_owns_is_not_uncaused(self):
+        # #422: the window's only High creeps across 250 mg/dL too slowly to judge, in
+        # its own leverless Episode, two hours after a 55 mg/dL low whose rebound owns
+        # it. The app has explained it, so it is not a High with no cause detected.
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_scenario_engine import flat_approach_rebound
+
+        def highs(cgm):
+            with tempfile.NamedTemporaryFile(suffix=".db") as db:
+                with Store.open(db.name) as store:
+                    self._seed_scenario_events(store, [], cgm)
+                    return build_exposures(store)["exposures"]["highs"]
+
+        owned = highs(flat_approach_rebound(13))
+        alone = highs(flat_approach_rebound(13, low=False))
+        self.assertEqual((owned["n"], owned["uncaused"]), (1, 0))
+        self.assertEqual((alone["n"], alone["uncaused"]), (1, 1))
+        [occurrence] = owned["occurrences"]
+        self.assertEqual(
+            (occurrence["attributed"], occurrence["cause_lever"],
+             occurrence["attributed_levers"]),
+            (False, None, []),
+        )
+
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
 class ExploreExposuresRouteTest(unittest.TestCase):

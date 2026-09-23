@@ -16,10 +16,16 @@ from datetime import datetime, timedelta
 
 from ciq_autotune.analyzers.classifiers.missed_meal import (
     DIGESTION_LOOKBACK_MIN,
+    ReboundOwner,
     classify_missed_meal,
 )
-from ciq_autotune.analyzers.classifiers import EvidenceTier, UpstreamCause
+from ciq_autotune.analyzers.classifiers import (
+    EvidenceTier,
+    SilenceReason,
+    UpstreamCause,
+)
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
+from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
 
@@ -213,6 +219,56 @@ class GatePrecedenceTest(unittest.TestCase):
         # The prior_meal_t should be None because the gate fired first.
         self.assertIsNone(v.prior_meal_t)
         self.assertIn("recovery", v.detail)
+
+
+class GateConfigurationTest(unittest.TestCase):
+    """#422: the context gate judges under the scenario configuration it is given."""
+
+    def test_configured_gate_lookback_moves_the_verdict(self):
+        # A 60 mg/dL reading 100 min before a from-flat rise sits outside the default
+        # 90-min gate lookback and inside a configured 120-min one.
+        cgm = ([CgmReading(t=datetime(2026, 6, 14, 9, 0, 0), bg=60.0, type="EGV")]
+               + cgm_ramp(14, 9, 5, 110, 0.0, 50) + cgm_ramp(14, 10, 0, 110, 2.0, 60))
+        anchor = datetime(2026, 6, 14, 10, 40, 0)
+        default = classify_missed_meal(anchor, cgm)
+        wider = classify_missed_meal(
+            anchor, cgm, scenario_config=ScenarioConfig(gate_lookback_min=120.0))
+        self.assertTrue(default.matched)
+        self.assertFalse(wider.matched)
+        self.assertEqual(wider.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+        self.assertIn("in the prior 120 min", wider.detail)
+
+
+
+class ReboundOwnerTest(unittest.TestCase):
+    """#422: an owning rebound replaces only the match; every other exit keeps its own."""
+
+    OWNER = ReboundOwner(nadir_t=datetime(2026, 6, 14, 8, 0, 0), nadir_bg=52.0,
+                         terminal=datetime(2026, 6, 14, 11, 0, 0))
+
+    def test_owned_rise_is_upstream_cause_naming_the_low(self):
+        cgm = cgm_ramp(14, 10, 0, 110, 2.0, 60)
+        anchor = datetime(2026, 6, 14, 10, 40, 0)
+        v = classify_missed_meal(anchor, cgm, rebound_owner=self.OWNER)
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+        self.assertEqual(v.evidence_tier, EvidenceTier.INFERRED)
+        self.assertIn("bottomed at 52 mg/dL at 08:00", v.detail)
+
+    def test_owned_non_matches_keep_their_own_reason_and_detail(self):
+        anchor = datetime(2026, 6, 14, 10, 40, 0)
+        rising = cgm_ramp(14, 10, 0, 110, 2.0, 60)
+        cases = (
+            (cgm_ramp(14, 10, 0, 120, 0.0, 60), ()),                        # flat
+            (cgm_ramp(14, 10, 0, 64, 4.0, 50), ()),                         # gate
+            (rising, [meal_bolus(14, 10, 0)]),                              # tail
+        )
+        for cgm, bolus in cases:
+            with self.subTest(detail=classify_missed_meal(anchor, cgm, bolus).detail):
+                self.assertEqual(
+                    classify_missed_meal(anchor, cgm, bolus, rebound_owner=self.OWNER),
+                    classify_missed_meal(anchor, cgm, bolus),
+                )
 
 
 if __name__ == "__main__":

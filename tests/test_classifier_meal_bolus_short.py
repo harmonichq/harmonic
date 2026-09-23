@@ -22,7 +22,10 @@ from ciq_autotune import event_comparison
 from ciq_autotune.analyzers.classifiers import EvidenceTier, SilenceReason
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.analyzers.classifiers.meal_bolus_short import classify_meal_bolus_short
-from ciq_autotune.analyzers.classifiers.missed_meal import classify_missed_meal
+from ciq_autotune.analyzers.classifiers.missed_meal import (
+    ReboundOwner,
+    classify_missed_meal,
+)
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
@@ -210,6 +213,54 @@ class TaxonomySeparationTest(unittest.TestCase):
             for banned in ("undercount", "carb ratio", "i:c", " g vs ", "grams",
                            "implies", "counting"):
                 self.assertNotIn(banned, lowered, f"{banned!r} in {detail!r}")
+
+
+class GateConfigurationTest(unittest.TestCase):
+    """#422: the context gate judges under the scenario configuration it is given, so
+    this classifier and missed meal never split one rise population under two gates."""
+
+    def test_configured_gate_lookback_moves_the_verdict(self):
+        # A 60 mg/dL reading 100 min before the anchor: outside the default 90-min
+        # gate lookback, inside a configured 120-min one.
+        cgm = ([CgmReading(t=datetime(2026, 6, DAY, 12, 0, 0), bg=60.0, type="EGV")]
+               + cgm_ramp(12, 5, 130, 1.6, 175))
+        bolus = [meal_bolus(12, 0), correction(13, 10)]
+        default = classify_meal_bolus_short(ANCHOR, cgm, bolus)
+        wider = classify_meal_bolus_short(
+            ANCHOR, cgm, bolus, scenario_config=ScenarioConfig(gate_lookback_min=120.0))
+        self.assertTrue(default.matched)
+        self.assertFalse(wider.matched)
+        self.assertEqual(wider.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+        self.assertIn("in the prior 120 min", wider.detail)
+
+
+
+class ReboundOwnerTest(unittest.TestCase):
+    """#422: an owning rebound replaces only the match; every other exit keeps its own."""
+
+    OWNER = ReboundOwner(nadir_t=datetime(2026, 6, DAY, 11, 0, 0), nadir_bg=52.0,
+                         terminal=datetime(2026, 6, DAY, 14, 0, 0))
+
+    def test_owned_shortfall_is_upstream_cause_naming_the_low(self):
+        v = classify_meal_bolus_short(
+            ANCHOR, RISING, [meal_bolus(12, 0), correction(13, 10)],
+            rebound_owner=self.OWNER)
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.UPSTREAM_CAUSE)
+        self.assertEqual(v.evidence_tier, EvidenceTier.INFERRED)
+        self.assertIn("bottomed at 52 mg/dL at 11:00", v.detail)
+
+    def test_owned_non_matches_keep_their_own_reason_and_detail(self):
+        cases = (
+            (RISING, [correction(13, 10)]),                  # no counted meal bolus
+            (RISING, [meal_bolus(12, 0)]),                   # no correction followed
+        )
+        for cgm, bolus in cases:
+            with self.subTest(detail=classify_meal_bolus_short(ANCHOR, cgm, bolus).detail):
+                self.assertEqual(
+                    classify_meal_bolus_short(ANCHOR, cgm, bolus, rebound_owner=self.OWNER),
+                    classify_meal_bolus_short(ANCHOR, cgm, bolus),
+                )
 
 
 if __name__ == "__main__":

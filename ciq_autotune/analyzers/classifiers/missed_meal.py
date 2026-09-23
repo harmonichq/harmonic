@@ -7,7 +7,10 @@ one of two observable causes explains away?
 False positive A — **rebound rise** (post-low / post-suspend recovery): the
 shared :func:`~.context_gate.upstream_cause` gate looks back 90 min for a recent
 sub-70 nadir or a CIQ defensive-suspend episode. When either is found the rise is
-a recovery, not a new meal.
+a recovery, not a new meal. A slower rebound can reach 250 mg/dL after that gate's
+lookback has passed its low, so the scenario engine also hands over the
+:class:`ReboundOwner` of a fired over-treated low whose guarded rebound reaches the
+rise (ADR 422). The low owns the rise, which is therefore never a missed meal.
 
 False positive B — **meal-digestion tail**: a prior bolused meal is still driving
 BG up; this rise is the *continuation* of that meal, not a new unannounced one.
@@ -19,9 +22,9 @@ comfortably covers it.
 The rise itself is **observed** (BG slope ≥ threshold is a hard feed fact). But
 calling it "from an unannounced meal" is a shape inference (the invisible carbs
 are the mechanism, per ADR 0003), so a positive verdict is ``INFERRED``. A
-negative verdict driven by a gate hit or a known prior bolus is also ``INFERRED``
-(the attribution of the rise to recovery or digestion tail is a shape inference;
-only the nadir/suspend row is observed). A negative verdict driven by too-sparse
+negative verdict driven by a gate hit, an owning rebound or a known prior bolus is
+also ``INFERRED`` (the attribution of the rise to recovery or digestion tail is a
+shape inference; only the nadir/suspend row is observed). A negative verdict driven by too-sparse
 CGM is ``NOT_IN_DATA``.
 
 Pure function, no I/O, no registry — the scenario engine (#70) does the wiring.
@@ -74,6 +77,35 @@ class MissedMealVerdict(Verdict):
     digestion_window_start: Optional[datetime] = None
 
 
+@dataclass(frozen=True)
+class ReboundOwner:
+    """A fired over-treated low's guarded rebound, which owns the Highs it reaches (ADR 422).
+
+    * ``nadir_t`` / ``nadir_bg`` — the owning low's nadir instant and value.
+    * ``terminal`` — the guarded rebound scan's terminal. A High run that begins after
+      the nadir and at or before the terminal is inside the rebound.
+
+    The scenario engine builds it from its own fired judgment; the High classifiers
+    only read it where a rise would otherwise be claimed, and name the low in their
+    detail.
+    """
+
+    nadir_t: datetime
+    nadir_bg: float
+    terminal: datetime
+
+    def owns(self, run_start: datetime) -> bool:
+        """Whether a High run beginning at ``run_start`` is inside this rebound."""
+        return self.nadir_t < run_start <= self.terminal
+
+    @property
+    def detail(self) -> str:
+        return (
+            f"it is the rebound of the low that bottomed at {self.nadir_bg:.0f} mg/dL "
+            f"at {self.nadir_t:%H:%M}, which is counted as an over-treated low"
+        )
+
+
 def _most_recent_meal_in_window(
     bolus_events: Sequence[BolusEvent],
     window_start: datetime,
@@ -102,6 +134,7 @@ def classify_missed_meal(
     basal_events: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
+    rebound_owner: Optional[ReboundOwner] = None,
 ) -> MissedMealVerdict:
     """Is the CGM rise at ``anchor`` an unannounced / missed meal?
 
@@ -111,15 +144,19 @@ def classify_missed_meal(
        Too sparse → **not matched** (can't judge; ``NOT_IN_DATA``).
     2. Slope at/under ``rise_slope`` → BG is ~flat; no rise to explain →
        **not matched** (``OBSERVED`` — the flat curve is a hard fact).
-    3. Slope rising, but the **context gate** finds a recent low or defensive
-       suspend → the rise is a rebound recovery, not an unannounced meal →
-       **not matched** (``INFERRED``).
+    3. Slope rising, but the **context gate**, judged under ``scenario_config``,
+       finds a recent low or defensive suspend → the rise is a rebound recovery, not
+       an unannounced meal → **not matched** (``INFERRED`` / ``UPSTREAM_CAUSE``).
     4. Slope rising and a **prior carb-tagged bolus** exists within
        ``digestion_lookback_min`` → the rise is the tail of that already-bolused
        meal → **not matched** (``INFERRED``).
-    5. Slope rising, no gate hit, no prior bolus → **matched** as an unannounced
-       / missed meal (``INFERRED`` — "meal" is shape-derived; carbs are invisible
-       per ADR 0003).
+    5. Slope rising, no gate hit, no prior bolus, but ``rebound_owner`` names the
+       fired over-treated low whose rebound reaches this rise → the low owns it →
+       **not matched** (``INFERRED`` / ``UPSTREAM_CAUSE``, ADR 422). Consulted only
+       here, so every earlier exit keeps its own reason and detail.
+    6. Slope rising, no gate hit, no prior bolus, no owning rebound → **matched** as
+       an unannounced / missed meal (``INFERRED`` — "meal" is shape-derived; carbs
+       are invisible per ADR 0003).
 
     Returns a :class:`MissedMealVerdict`.
     """
@@ -159,7 +196,7 @@ def classify_missed_meal(
         )
 
     # Check for rebound / post-low / post-suspend recovery (shared gate).
-    gate = upstream_cause(anchor, cgm_readings, basal_events)
+    gate = upstream_cause(anchor, cgm_readings, basal_events, scenario_config=scenario_config)
     if gate.explained:
         return MissedMealVerdict(
             matched=False,
@@ -191,12 +228,29 @@ def classify_missed_meal(
             evidence_tier=EvidenceTier.INFERRED,
             # NO_TRIGGER, not UPSTREAM_CAUSE: the missed-meal trigger is an
             # *unbolused* rise, and a prior meal bolus means it was announced — the
-            # behavior didn't happen. UPSTREAM_CAUSE is specifically the context
-            # gate's recent low/suspend (ADR 0009), which this is not.
+            # behavior didn't happen. UPSTREAM_CAUSE names an observable cause the
+            # rise recovers from — the context gate's recent low/suspend (ADR 0009)
+            # or an over-treated low's rebound (ADR 422) — which this is not.
             silence_reason=SilenceReason.NO_TRIGGER,
             rise_slope=slope,
             gate=gate,
             prior_meal_t=prior_meal_t,
+            digestion_window_start=digestion_window_start,
+        )
+
+    if rebound_owner is not None:
+        return MissedMealVerdict(
+            matched=False,
+            detail=(
+                f"glucose was rising {slope:.1f} mg/dL/min with no bolus in the prior "
+                f"{digestion_lookback_min} min, but {rebound_owner.detail} — the rise "
+                "belongs to that low, not a missed meal"
+            ),
+            evidence_tier=EvidenceTier.INFERRED,
+            silence_reason=SilenceReason.UPSTREAM_CAUSE,
+            rise_slope=slope,
+            gate=gate,
+            prior_meal_t=None,
             digestion_window_start=digestion_window_start,
         )
 

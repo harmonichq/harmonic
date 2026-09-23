@@ -52,6 +52,7 @@ EXPECTED_ACTIVE_KINDS = {
     "behavioral-meal-over-delivery": None,
     "behavioral-correction-stacking": None,
     "behavioral-over-treated-low": None,
+    "behavioral-over-treated-rebound-ownership": None,
     "behavioral-correction-on-iob": None,
     "behavioral-missed-meal": None,
     "behavioral-meal-bolus-short": None,

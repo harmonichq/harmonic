@@ -71,6 +71,9 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
       at all", which is why the Diagnose surface counts highs with it rather than with
       ``clean``. Measured on the 30-day calibration snapshot the two differ by seven:
       27 highs are not drivers, but only 20 sit in an episode with nothing attributed.
+      One exception (ADR 422): a High an over-treated low's rebound owns is explained
+      by that low, so it is never ``uncaused``, even when its own episode drew no
+      lever. It stays a non-driver occurrence with no attributed lever.
 
     An occurrence outranked by another driver is therefore neither ``attributed``
     nor ``uncaused``: its match stayed diagnostic evidence, but its episode does have
@@ -159,6 +162,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                     ("lows", reached_low.t, attribution.lever.value,
                      outcome_minute)
                 )
+        owned_highs = [high for high, _owner in attribution.owned_highs]
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
         ):
@@ -166,7 +170,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if family is None:
                 continue
             attributed = _is_driver(source_anchor, attribution)
-            if attribution.lever is None:
+            if attribution.lever is None and source_anchor not in owned_highs:
                 uncaused[_FAMILY_FOR_KIND[anchor["kind"]]] += 1
             lever = episode["lever"] if attributed else None
             cause_occurrence_id = None

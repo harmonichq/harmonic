@@ -7,7 +7,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 1. Measurement, before any implementation
 
-- [ ] 1.1 Commit the coordinator's base measurement JSON, which it hands over
+- [x] 1.1 Commit the coordinator's base measurement JSON, which it hands over
   at `start`, verbatim as
   `docs/scope/433-basal-strip-short-window-evidence/base-measurement.json`.
   Confirm that design.md's "Measured facts" table matches it value for value.

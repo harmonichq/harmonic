@@ -2973,6 +2973,15 @@ Changed shipped behavior:
   the same words, never its code.
 - **"First seen" reads "Recorded by Harmonic"**, apart from the stage's
   Detected time.
+- **A failed reassessment read stays on its record** (coordinator ruling, #430
+  review round 1). The base replaced the whole record with "Evidence
+  unavailable · The change records could not load" when a reassessment read
+  failed. Now the record and the read it already showed stay on screen, and the
+  stage names the failed read ("The retained-context reassessment could not
+  load: …") with a "Retry reassessment" control that re-sends that read alone.
+  A failed record or roster read keeps the destination's failure frame. Proved
+  through `mount` in `frontend/follow-up-lifecycle.test.js`; no replay story
+  asserts it.
 
 S142 and S143 are new app-opener-only stories under HV2-28. Two stories are
 amended in prose below; no story is retired.
@@ -3061,6 +3070,7 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Record press: record read, then retained read with no control pressed | frontend/history.js | S142, S112 |
 | Record figure state, reason words and result line | frontend/follow-up.js, history.js | S143, S49 |
+| Retry reassessment after a failed reassessment read | frontend/history.js | none — node test only (see above) |
 
 The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
 `mockups/INDEX.md`'s row and the release freeze block are the coordinator's,

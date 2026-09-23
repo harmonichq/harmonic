@@ -464,6 +464,19 @@ test('a served-unavailable comparison with no clock envelope names its reason in
   assert.match(legacy, /<span data-figure-reason>not recorded<\/span>/);
 });
 
+test('a bare saved-ending assessment names one reason in the figure and both readiness lines', () => {
+  // A legacy saved ending carries its state and reason at the top level, with
+  // no nested availability — the desk suite's expired-Trial fixture is this shape.
+  const bare = { version: '386:1', state: 'unavailable', reason: 'not_recorded' };
+  const words = comparisonReasonWords('not_recorded');
+  const figure = evidenceFigure(bare, 'trial', undefined, { saved: true });
+  assert.match(figure, new RegExp(`<span data-figure-reason>${words}</span>`));
+  const readiness = readinessSection(bare, { kind: 'trial' });
+  assert.match(readiness, new RegExp(`data-availability="unavailable">This comparison is unavailable: ${words}\\.`));
+  assert.match(readiness, new RegExp(`data-readiness-state="unavailable">No readiness is served for this comparison: ${words}\\.`));
+  assert.doesNotMatch(readiness, /not served/);
+});
+
 test('a comparison serving views but no Before readings says which period has none', () => {
   const none = evidenceFigure({ ...SETTING_COMPARISON,
     availability: { state: 'unavailable', reason: 'no_readable_period_evidence' },

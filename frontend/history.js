@@ -83,9 +83,11 @@ export function settingValue(parameter, value) {
 
 // `mode` is the reader's own choice of assessment for the open record, or null
 // until they make one: the record's default read, which its served ending
-// decides once the record read has landed (ADR 430).
+// decides once the record read has landed (ADR 430). `failed` is a reassessment
+// read that failed for the open record, cleared whenever another record opens;
+// the record it was read for stays.
 const memory = {
-  roster: null, error: null, open: null, mode: null,
+  roster: null, error: null, open: null, mode: null, failed: null,
   record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
 };
 
@@ -159,8 +161,17 @@ async function loadRecord({ kind, id }, token) {
   if (readGeneration === token) memory.record = { kind, id, mode: 'original', detail };
 }
 
+// A failed reassessment read is this record's failure, not the destination's:
+// the record read already landed, so its Original read stays on screen and the
+// stage names the read that failed and offers it again.
 async function loadReassessment({ kind, id }, mode, token) {
-  const again = await fetchVerifyTrials({ kind, selected: id, assessment: mode });
+  let again;
+  try {
+    again = await fetchVerifyTrials({ kind, selected: id, assessment: mode });
+  } catch (error) {
+    if (readGeneration === token) memory.failed = { mode, error };
+    return;
+  }
   if (readGeneration !== token) return;
   memory.record = { ...memory.record, mode, detail: { ...memory.record.detail, reassessment: again.selected.reassessment } };
 }
@@ -405,9 +416,16 @@ function shownComparison(detail) {
     : { comparison: (detail.reassessment || {}).comparison || null, source: 'reassessment' };
 }
 
+/** A failed reassessment read, in the stage: which read failed, and its retry. */
+function reassessmentFailure(failed) {
+  if (!failed) return '';
+  const read = failed.mode === 'current' ? 'current-policy' : 'retained-context';
+  return `<div class="gf-status" role="alert" data-reassessment-failed="${e(failed.mode)}"><p class="gf-error">The ${e(read)} reassessment could not load: ${e(failureMessage(failed.error))}.</p><p class="gf-meta">The record itself is unchanged.</p><div class="gf-actions"><button class="gf-btn primary" data-retry-reassessment>Retry reassessment</button></div></div>`;
+}
+
 /** One open record: its evidence on the stage, its four parts in the reading. */
 function recordFrame(state) {
-  const { detail, mode, kind } = state;
+  const { detail, mode, kind, failed } = state;
   const ending = (detail.original || {}).ending || {};
   const ended = Boolean(ending.kind);
   const label = ended ? (ENDING_WORD[ending.kind] || ending.kind) : 'Still open';
@@ -423,7 +441,7 @@ function recordFrame(state) {
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
-    <div class="gf-scroll">${comparisonTables(shown.comparison, kind)}</div></section>`;
+    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind)}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.
   const pane = kind === 'focus' ? 'This Focus' : 'This trial';
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">
@@ -458,7 +476,7 @@ const conclusionAttemptId = () => {
   return memory.conclusionAttempt;
 };
 
-const conclusionFailureMessage = error => error?.detail?.code
+const failureMessage = error => error?.detail?.code
   ? `${error.detail.code} (${error.status})`
   : error?.detail || error?.message || 'no response from the store';
 
@@ -479,7 +497,7 @@ async function submitLateConclusion({ retry = false } = {}) {
     memory.roster = null; memory.record = null;
   } catch (error) {
     memory.conclusionFailure = { operation: 'conclude', headline: 'Recording the later conclusion failed',
-      message: conclusionFailureMessage(error) };
+      message: failureMessage(error) };
     view.focusAfterRender = '[data-retry-save="conclude"]';
   }
   render();
@@ -502,14 +520,22 @@ function bind(host) {
   if (close) close.onclick = () => { closeRecord(); view.focusAfterRender = '.gf-stage .gf-title'; render(); };
   // A press holds for this record until another opens. The mount reads what
   // the chosen assessment still needs; pressing the one already shown needs
-  // nothing and re-renders it as it stands.
+  // nothing and re-renders it as it stands. A press also clears a failed
+  // reassessment read, so pressing its control again is a retry.
   for (const button of host.querySelectorAll('[data-assessment]')) {
     button.onclick = () => {
       memory.mode = button.dataset.assessment;
+      memory.failed = null;
       view.focusAfterRender = `[data-assessment="${memory.mode}"]`;
       render();
     };
   }
+  const retryReassessment = host.querySelector('[data-retry-reassessment]');
+  if (retryReassessment) retryReassessment.onclick = () => {
+    view.focusAfterRender = `[data-assessment="${memory.failed.mode}"]`;
+    memory.failed = null;
+    render();
+  };
   // A supporting date opens that day through the published door, carrying the
   // subject and the exact control to come back to (HV2-14). This desk implements
   // no Day of its own.
@@ -543,7 +569,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   const open = match ? { kind: match[1], id: match[2] } : null;
   if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
     readGeneration += 1;
-    memory.open = open; memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
+    memory.open = open; memory.mode = null; memory.failed = null; memory.record = null; memory.error = null; memory.loading = null;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
   }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
@@ -568,7 +594,8 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
     return;
   }
   const mode = recordMode(record.detail);
-  if (record.mode !== mode) {
+  const failed = memory.failed?.mode === mode ? memory.failed : null;
+  if (record.mode !== mode && !failed) {
     if (mode === 'original') {
       // The Original read is the record read already held; nothing is requested.
       memory.record = { ...record, mode, detail: { ...record.detail, reassessment: null } };
@@ -578,7 +605,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
       return;
     }
   }
-  host.innerHTML = recordFrame({ ...memory.record });
+  host.innerHTML = recordFrame({ ...memory.record, failed });
   bind(host);
   mountComparisonChart(host, shownComparison(memory.record.detail).comparison, holdCleanup);
 }

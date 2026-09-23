@@ -193,7 +193,7 @@ export function readinessSection(comparison, { kind = 'trial', heading = 'Eviden
     return `<section class="gf-section" data-part="readiness"><h3>${e(heading)}</h3>
       <p class="gf-meta" data-readiness-state="not-requested">${NOT_READ}</p></section>`;
   }
-  const availability = comparison.availability || {};
+  const availability = availabilityOf(comparison);
   const readiness = comparison.readiness;
   const inference = comparison.assessment || {};
   // The habit's lever rides on its adherence rows, not on the comparison, and a

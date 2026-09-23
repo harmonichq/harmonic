@@ -463,9 +463,6 @@ async function editChainRoster414(page) {
   await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
   await page.locator('.gf-stage-table[aria-label="Change records"] table.gf-table').waitFor({ timeout: 30000 });
 }
-// Holds the next request matching `pattern` that also satisfies `matches`
-// (other traffic on the same pattern is let through), so a caller can prove
-// which named loading frame stands for which in-flight read.
 // #430: the Changes roster's first still-open record, from the roster itself.
 async function openStillOpenRecord430(page, storyId) {
   await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
@@ -476,6 +473,9 @@ async function openStillOpenRecord430(page, storyId) {
   return open;
 }
 
+// Holds the next request matching `pattern` that also satisfies `matches`
+// (other traffic on the same pattern is let through), so a caller can prove
+// which named loading frame stands for which in-flight read.
 async function heldRequest414(page, pattern, matches) {
   let release; let arrive;
   const gate = new Promise(resolve => { release = resolve; });

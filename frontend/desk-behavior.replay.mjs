@@ -3140,6 +3140,10 @@ export const S139 = appOnly('HV2-12',
 // STORY:harmonic-v2-desktop:S140
 export const S140 = appOnly('HV2-12',
   "#429 a watched Focus's dock names Changes, and its link opens that Focus in Changes", C4_STORIES.S140);
+// STORY:harmonic-v2-desktop:S142
+export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);
+// STORY:harmonic-v2-desktop:S143
+export const S143 = appOnly('HV2-28', '#430 an unavailable record figure names its reason in the result line\'s words', C4_STORIES.S143);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3191,6 +3195,7 @@ export const REGISTRY = [
   ['S127', S127, J()],
   ['S133', S133, M()],
   ['S139', S139, J()], ['S140', S140, J()],
+  ['S142', S142, J()], ['S143', S143, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

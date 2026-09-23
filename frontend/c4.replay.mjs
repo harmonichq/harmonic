@@ -509,6 +509,16 @@ async function editChainRoster414(page) {
   await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
   await page.locator('.gf-stage-table[aria-label="Change records"] table.gf-table').waitFor({ timeout: 30000 });
 }
+// #430: the Changes roster's first still-open record, from the roster itself.
+async function openStillOpenRecord430(page, storyId) {
+  await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
+  await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+  const open = page.locator('table.gf-table tr', { has: page.locator('[data-record-open="true"]') })
+    .locator('[data-record]').first();
+  assert.ok(await open.count(), `${storyId} premise: the roster serves a still-open record`);
+  return open;
+}
+
 // Holds the next request matching `pattern` that also satisfies `matches`
 // (other traffic on the same pattern is let through), so a caller can prove
 // which named loading frame stands for which in-flight read.
@@ -955,18 +965,78 @@ export const C4_STORIES = {
     await button.click();
     await recordHold.wait('S112 held record read');
     await page.locator('.gf-loading', { hasText: 'Reading change records' }).waitFor({ timeout: 30000 });
-    recordHold.release(); await recordHold.close();
-    await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
-    assert.equal(await page.locator('[data-unavailable="ending"]').count(), 1,
-      'S112 premise: an edit-chain record carries no ending');
 
+    // #430 (ADR 430): a record with no saved ending reads its retained
+    // comparison right after the record read, with no control pressed, so the
+    // reassessment hold stands before the record read is released.
     const reassessHold = await heldRequest414(page, '**/api/verify/trials*',
       request => new URL(request.url()).searchParams.has('assessment'));
-    await press(page, '[data-assessment="retained"]');
-    await reassessHold.wait('S112 held reassessment read');
+    recordHold.release(); await recordHold.close();
+    await reassessHold.wait('S112 held reassessment read, requested with no control pressed');
     await page.locator('.gf-loading', { hasText: 'Computing reassessment' }).waitFor({ timeout: 30000 });
     reassessHold.release(); await reassessHold.close();
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('[data-unavailable="ending"]').count(), 1,
+      'S112 premise: an edit-chain record carries no ending');
+  },
+  // #430: the record door's default read, and the figure that names why it is
+  // empty. Both open the roster's first still-open record by a press, as a
+  // reader does, and press no assessment control.
+  async S142(page) {
+    const open = await openStillOpenRecord430(page, 'S142');
+    const assessments = [];
+    const listener = request => {
+      const url = new URL(request.url());
+      if (url.pathname === '/api/verify/trials' && url.searchParams.has('assessment')) {
+        assessments.push(url.searchParams.get('assessment'));
+      }
+    };
+    page.on('request', listener);
+    try {
+      await open.click();
+      await page.locator('[data-record-part="reassessment"]').waitFor({ timeout: 30000 });
+    } finally { page.off('request', listener); }
+    assert.deepEqual(assessments, ['retained'],
+      'S142 opening a still-open record must request its retained comparison once, with no control pressed');
+    await waitForReplayAssertion(async seen => {
+      for (const period of ['before', 'after']) {
+        assert.equal(seen(await page.locator(`[data-period="${period}"]`).count()), 1,
+          `S142 the record must show its ${period} evidence period`);
+      }
+      assert.ok(seen(await page.locator('[data-figure-state="paired"] .gf-chart canvas').count()) > 0,
+        'S142 the figure must be paired, with its chart mounted');
+      assert.equal(seen(await page.locator('[data-assessment="retained"][aria-pressed="true"]').count()), 1,
+        'S142 Retained context must read as the selected assessment');
+      assert.equal(seen(await page.locator('[data-unavailable="ending"]').count()), 1,
+        'S142 the saved-ending part must still say the change is still open');
+    }, 'S142 an open record shows its retained comparison');
+  },
+  async S143(page) {
+    const open = await openStillOpenRecord430(page, 'S143');
+    const [kind, ...rest] = (await open.getAttribute('data-record')).split(':');
+    const served = (await read(page, '/api/verify/trials', { kind, selected: rest.join(':'), assessment: 'retained' }))
+      .selected.reassessment.comparison.availability;
+    assert.equal(served.state, 'unavailable', 'S143 premise: edit-chain serves an unavailable retained comparison');
+    assert.ok(served.reason, 'S143 premise: the unavailable comparison names its served reason');
+    await open.click();
+    await page.locator('[data-record-part="reassessment"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('[data-figure-state="unavailable"]').count()), 1,
+        'S143 the figure must read as an unavailable comparison');
+      const reason = seen(await page.locator('[data-figure-reason]').innerText()).trim();
+      assert.ok(reason, 'S143 the figure must name why the comparison is unavailable');
+      assert.ok(!reason.includes(served.reason), `S143 the figure must name the reason in words, never its code: ${reason}`);
+      const result = seen(await page.locator('[data-reassessment-state]').innerText()).trim();
+      assert.ok(result.startsWith('Unavailable · '), `S143 the reassessment result must read as unavailable: ${result}`);
+      assert.equal(result.slice('Unavailable · '.length).trim(), reason,
+        'S143 the figure and the reassessment result must name the reason in the same words');
+      assert.equal(seen(await page.locator('.gf-stage .gf-chart canvas').count()), 0,
+        'S143 an unavailable figure must mount no chart');
+      const stage = seen(await page.locator('.gf-stage').innerText());
+      for (const phrase of ['no clock envelope is retained', 'no readings yet', '0 → 0 half-hours read']) {
+        assert.ok(!stage.includes(phrase), `S143 the stage must not say "${phrase}"`);
+      }
+    }, 'S143 an unavailable record names its reason');
   },
   // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
   // whichever basal slot the CASE_STORE_DIR case ranks first; the
@@ -1195,7 +1265,15 @@ export const C4_STORIES = {
       await waitForReplayAssertion(async seen => {
         assert.equal(comparison.availability.state, 'unavailable');
         assert.ok(comparison.availability.reason);
-        assert.ok((seen(await fresh.locator('.gf-reading').innerText())).includes(comparison.availability.reason));
+        // #430: the reading pane names the served reason in the desk's one set
+        // of words, never its code, and the result and readiness lines agree.
+        assert.ok(!(seen(await fresh.locator('.gf-reading').innerText())).includes(comparison.availability.reason),
+          'S49 the reading pane must name the unavailable reason in words, never its served code');
+        const result = seen(await fresh.locator('[data-reassessment-state]').innerText()).trim();
+        const words = result.startsWith('Unavailable · ') ? result.slice('Unavailable · '.length).trim() : '';
+        assert.ok(words, `S49 the reassessment result must name why it is unavailable: ${result}`);
+        assert.ok((seen(await fresh.locator('[data-availability]').innerText())).includes(words),
+          'S49 the readiness availability line must name the same reason in the same words');
         assert.ok(comparison.outcomes.some(row => row.before === 0 && row.after == null),
           'producer must supply observed zero and missing measurement in distinct arms');
         for (const row of comparison.outcomes) {

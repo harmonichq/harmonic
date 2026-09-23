@@ -77,6 +77,15 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
   }
 });
 
+test('S142 and S143 are unique app-only C4 record stories with their manufactured cases', () => {
+  for (const [id, expectedCase] of [['S142', 'c3-trial'], ['S143', 'edit-chain']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-28');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
@@ -260,22 +269,31 @@ test('S111 fails on a raw disposition token, and passes on the served word', asy
     /never a raw disposition token/);
 });
 
+// Routes behave as Playwright's do: the newest matching handler takes the
+// request, `continue()` sends it on, and `unroute` removes one handler. A
+// record read that is sent on renders the open record, which (ADR 430) asks for
+// its retained comparison with no control pressed.
 function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
-  const routes = new Map();
+  let routes = [];
   const fire = (pathname, search = '') => {
     const request = { url: () => `http://synthetic.invalid${pathname}${search}` };
-    for (const [pattern, handler] of routes) {
+    const params = new URLSearchParams(search);
+    const sent = async () => {
+      if (params.has('selected') && !params.has('assessment')) fire(pathname, `${search}&assessment=retained`);
+    };
+    const route = routes.find(([pattern]) => {
       const base = pattern.replace('**', '').replace('*', '');
-      if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
-    }
+      return base && pathname.startsWith(base);
+    });
+    if (route) route[1]({ request: () => request, continue: sent });
+    else sent();
   };
   const node = selector => ({
     filter() { return this; }, first() { return this; },
     waitFor: async () => {},
     click: async () => {
       if (selector.startsWith('table.gf-table [data-record]')) fire('/api/verify/trials', `?selected=${recordSelector}`);
-      if (selector === '[data-assessment="retained"]') fire('/api/verify/trials', `?selected=${recordSelector}&assessment=retained`);
     },
     getAttribute: async () => recordSelector,
     count: async () => 1,
@@ -285,14 +303,93 @@ function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
     url: () => url,
     goto: async target => { url = target; fire('/api/verify/trials', ''); },
     locator: selector => node(selector),
-    route: async (pattern, handler) => { routes.set(pattern, handler); },
-    unroute: async pattern => { routes.delete(pattern); },
+    route: async (pattern, handler) => { routes.unshift([pattern, handler]); },
+    unroute: async (pattern, handler) => { routes = routes.filter(([p, h]) => p !== pattern || h !== handler); },
   };
 }
 
-test('S112 holds the roster, record and reassessment reads in turn and reaches its final assertion', async () => {
+test('S112 holds the roster and record reads, then the retained read the record asks for itself', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S112(qa414RecordHoldPage());
+});
+
+// #430: one still-open record on a Changes roster. Pressing its row sends the
+// record read and, when `retainedOnOpen`, the retained read the record door
+// makes with no control pressed; the rendered record is read back by selector.
+function qa430RecordPage({ retainedOnOpen = true, figureState = 'paired', periods = 1, pressed = 1, stillOpen = 1,
+  canvases = figureState === 'paired' ? 1 : 0, served = { state: 'unavailable', reason: 'missing_comparison_context' },
+  figureReason = 'no retained comparison context was recorded with this change',
+  result = 'Unavailable · no retained comparison context was recorded with this change',
+  stage = 'Setting change · Still open\ncomparison unavailable' } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const listeners = new Set();
+  const send = search => {
+    const request = { url: () => `http://synthetic.invalid/api/verify/trials${search}` };
+    for (const listener of listeners) listener(request);
+  };
+  const counts = {
+    'table.gf-table tr [data-record]': 1,
+    '[data-period="before"]': periods, '[data-period="after"]': periods,
+    '[data-figure-state="paired"] .gf-chart canvas': figureState === 'paired' ? canvases : 0,
+    '[data-figure-state="unavailable"]': figureState === 'unavailable' ? 1 : 0,
+    '[data-assessment="retained"][aria-pressed="true"]': pressed,
+    '[data-unavailable="ending"]': stillOpen,
+    '.gf-stage .gf-chart canvas': canvases,
+  };
+  const text = { '[data-figure-reason]': figureReason, '[data-reassessment-state]': result, '.gf-stage': stage };
+  const node = selector => ({
+    first() { return this; },
+    locator: nested => node(`${selector} ${nested}`),
+    waitFor: async () => {},
+    count: async () => counts[selector] ?? 0,
+    innerText: async () => text[selector] ?? '',
+    getAttribute: async name => (name === 'data-record' ? 'trial:open-1' : null),
+    click: async () => {
+      send('?selected=open-1&kind=trial');
+      if (retainedOnOpen) send('?selected=open-1&kind=trial&assessment=retained');
+    },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; send(''); },
+    locator: selector => node(selector),
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    request: { get: async () => ({ status: () => 200, text: async () => '',
+      json: async () => ({ selected: { reassessment: { comparison: { availability: served } } } }) }) },
+  };
+}
+
+test('S142 opens the still-open record and finds its retained comparison with no press', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S142(qa430RecordPage());
+});
+
+test('S142 fails at its feature assertion when opening the record asks for no retained comparison', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S142(qa430RecordPage({ retainedOnOpen: false, figureState: 'not-requested', periods: 0, pressed: 0 })),
+    /S142 opening a still-open record must request its retained comparison once, with no control pressed/);
+});
+
+test('S143 reads an unavailable figure naming its reason in the result line\u2019s words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S143(qa430RecordPage({ figureState: 'unavailable', periods: 0 }));
+});
+
+test('S143 fails at its feature assertion when the record shows no unavailable figure', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'not-requested', periods: 0, figureReason: '', result: '',
+    stage: 'no clock envelope is retained for this record\n0 → 0 half-hours read',
+  }))), /S143 the figure must read as an unavailable comparison/);
+});
+
+test('S143 fails when the figure prints the served code instead of its words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'unavailable', periods: 0, figureReason: 'missing_comparison_context',
+    result: 'Unavailable · missing_comparison_context',
+  }))), /S143 the figure must name the reason in words, never its code/);
 });
 
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route

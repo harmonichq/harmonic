@@ -12,6 +12,22 @@ const admission = () => ({ state: 'available', active_kind: kind, active_id: ide
   can_finish_trial: true, focus_pin: { available: false } });
 const comparison = { availability: { state: 'available' }, periods: {}, views: {}, outcomes: [],
   assessment: { state: 'unclear' }, readiness: { before: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] }, after: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] } } };
+// A retained comparison with both evidence periods and one clock bin both
+// periods served, the shape the committed c3-trial case serves an open record.
+const PAIRED = { ...comparison,
+  periods: {
+    before: { start: '2024-06-02 03:00:00', end: '2024-06-16 03:00:00', data_cutoff: '2024-06-30 23:55:00',
+      boundary_reasons: { start: 'available_history', end: 'setting_change' } },
+    after: { start: '2024-06-16 03:00:00', end: '2024-06-30 23:55:00', data_cutoff: '2024-06-30 23:55:00',
+      boundary_reasons: { start: 'setting_change', end: 'data_tail' } },
+  },
+  views: { before: { clock: [{ t: '03:00', n: 12, med: 131 }] }, after: { clock: [{ t: '03:00', n: 12, med: 118 }] } } };
+let served = comparison;
+// A held assessment read: the record read answers, the reassessment waits.
+let assessmentGate = null;
+// The record whose assessment read the server refuses, as it answers one whose
+// history inputs changed during every snapshot.
+let refusedFor = null;
 globalThis.fetch = async (path, options = {}) => {
   requests.push({ path, options });
   if (options.method === 'POST') {
@@ -23,7 +39,16 @@ globalThis.fetch = async (path, options = {}) => {
     return { ok: !fail, status: fail ? 503 : 200,
       json: async () => fail ? { detail: 'Synthetic refusal' } : { id: identity, record: { id: identity } } };
   }
-  const selected = new URL(path, 'http://synthetic').searchParams.get('selected');
+  const params = new URL(path, 'http://synthetic').searchParams;
+  const selected = params.get('selected');
+  // The server serves a reassessment only to a read that names an assessment;
+  // the default (Original) selected read carries `reassessment: null`.
+  const assessment = params.get('assessment');
+  if (assessment && assessmentGate) await assessmentGate;
+  if (assessment && selected === refusedFor) {
+    return { ok: false, status: 503, statusText: 'Service Unavailable',
+      json: async () => ({ detail: 'history inputs changed during every snapshot' }) };
+  }
   const result = { input_revision: 7, admission: admission(),
     trials: kind === 'trial' ? [{ id: identity }] : [],
     focuses: kind === 'focus' ? [{ id: identity, title: 'Highs after meals', pattern_key: 'served-pattern', pinned_at: '2024-05-05 00:00:00' }] : [],
@@ -32,7 +57,8 @@ globalThis.fetch = async (path, options = {}) => {
         ...(expired ? { ending: { kind: 'expired_unreviewed', effective_at: '2026-09-01 00:00:00',
           recorded_at: '2026-09-01 00:00:00', conclusion: null, assessment: { state: 'unavailable' } },
         late_conclusion: lateConclusion } : {}) },
-      reassessment: { comparison } } } : {}),
+      reassessment: assessment ? { mode: assessment, computed_at: '2026-09-23 12:00:00',
+        comparison_context: { id: 'synthetic-context-0001' }, comparison: served } : null } } : {}),
   };
   return { ok: true, json: async () => result };
 };
@@ -43,14 +69,26 @@ const { mount: mountHistory } = await import('./history.js');
 const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve)); };
 function host() {
   const field = { value: '' }; const form = {};
-  const lateField = { value: '' }; const lateForm = {};
-  return { innerHTML: '', field, form, lateField, lateForm,
-    querySelectorAll: () => [],
+  const lateField = { value: '' }; const lateForm = {}; const retryReassessment = {};
+  // The record's three assessment controls, handed to its binding so a test can
+  // press one the way a reader does.
+  const assessment = Object.fromEntries(['original', 'retained', 'current']
+    .map(mode => [mode, { dataset: { assessment: mode } }]));
+  // The roster's record rows a test names, and the record's Back to records.
+  const records = []; const recordClose = {};
+  return { innerHTML: '', field, form, lateField, lateForm, assessment, retryReassessment, records, recordClose,
+    querySelectorAll(selector) {
+      if (selector === '[data-record]') return this.innerHTML.includes('data-record="') ? records : [];
+      return selector === '[data-assessment]' && this.innerHTML.includes('data-assessment=')
+        ? Object.values(assessment) : [];
+    },
     querySelector(selector) { return selector === '#conclusion' && this.innerHTML.includes('id="conclusion"') ? field
       : selector === '[data-form="finish"]' && this.innerHTML.includes('data-form="finish"') ? form
         : selector === '#late-conclusion-conclusion' && this.innerHTML.includes('id="late-conclusion-conclusion"') ? lateField
           : selector === '[data-form="late-conclusion"]' && this.innerHTML.includes('data-form="late-conclusion"') ? lateForm
-            : null; },
+            : selector === '[data-retry-reassessment]' && this.innerHTML.includes('data-retry-reassessment') ? retryReassessment
+              : selector === '[data-record-close]' && this.innerHTML.includes('data-record-close') ? recordClose
+                : null; },
   };
 }
 async function mountActive(seat, navigation) {
@@ -159,4 +197,145 @@ test('an exact expired Trial records a later conclusion through the public clien
     assert.ok(requests.some(row => String(row.path).includes(`selected=${identity}`)),
       'retry re-read the exact expired Trial record');
   } finally { context = {}; expired = false; lateConclusion = { state: 'unavailable' }; }
+});
+
+/* ------------------------------------------ the record door's default read */
+
+const assessmentsOf = (from, id) => requests.slice(from)
+  .filter(row => String(row.path).includes(`selected=${id}`))
+  .map(row => new URL(row.path, 'http://synthetic').searchParams.get('assessment'));
+async function openHistoryRecord(seat, id, steps = 4) {
+  const route = { occurrence: `record:trial:${id}` };
+  for (let step = 0; step < steps; step++) { mountHistory(seat, { context: route, hold() {} }); await flush(); }
+  return route;
+}
+
+test('an open change record reads its retained comparison with no control pressed', async () => {
+  kind = 'trial'; identity = 'open-record-synthetic'; served = PAIRED;
+  try {
+    const from = requests.length;
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.deepEqual(assessmentsOf(from, identity), [null, 'retained'],
+      'the record read, then exactly one retained-context read');
+    assert.match(seat.innerHTML, /data-period="before"/);
+    assert.match(seat.innerHTML, /data-period="after"/);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
+    assert.match(seat.innerHTML, /data-reassessment-context="retained"/);
+    assert.match(seat.innerHTML, /data-unavailable="ending">Not recorded — this change is still open\./);
+  } finally { served = comparison; }
+});
+
+test('an ended change record opens on its saved ending and requests no reassessment', async () => {
+  kind = 'trial'; identity = 'ended-record-synthetic'; expired = true;
+  try {
+    const from = requests.length;
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.deepEqual(assessmentsOf(from, identity), [null], 'the record read alone');
+    assert.match(seat.innerHTML, /data-ending-kind="expired_unreviewed"/);
+    assert.match(seat.innerHTML, /data-assessment="original" aria-pressed="true"/);
+  } finally { expired = false; }
+});
+
+test('an open record names its pending retained read "Computing reassessment"', async () => {
+  kind = 'trial'; identity = 'held-record-synthetic'; served = PAIRED;
+  let release;
+  assessmentGate = new Promise(resolve => { release = resolve; });
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity, 3);
+    assert.match(seat.innerHTML, /<p>Computing reassessment<\/p>/);
+    assert.doesNotMatch(seat.innerHTML, /data-record-part=/, 'no record renders while its read is pending');
+    release(); await flush();
+    await openHistoryRecord(seat, identity, 1);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+  } finally { assessmentGate = null; release(); served = comparison; }
+});
+
+test('choosing Original on an open record reads as no comparison requested', async () => {
+  kind = 'trial'; identity = 'original-choice-synthetic'; served = PAIRED;
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    seat.assessment.original.onclick();
+    const from = requests.length;
+    await openHistoryRecord(seat, identity, 1);
+    assert.equal(requests.length, from, 'the Original read is already held; nothing more is requested');
+    assert.match(seat.innerHTML, /data-assessment="original" aria-pressed="true"/);
+    assert.match(seat.innerHTML, /data-figure-state="not-requested"/);
+    assert.match(seat.innerHTML, /data-periods="not-requested"/);
+    assert.match(seat.innerHTML, /data-outcomes="not-requested"/);
+    assert.doesNotMatch(seat.innerHTML, /recomputed now/);
+    assert.match(seat.innerHTML, /The saved read carries no comparison until this change ends\./);
+  } finally { served = comparison; }
+});
+
+test('a failed retained read keeps the record and its Original read, and retries only that read', async () => {
+  kind = 'trial'; identity = 'refused-reassessment-synthetic'; served = PAIRED; refusedFor = identity;
+  try {
+    const from = requests.length;
+    const seat = host(); await openHistoryRecord(seat, identity);
+    assert.deepEqual(assessmentsOf(from, identity), [null, 'retained'], 'the record read, then the refused retained read');
+    assert.doesNotMatch(seat.innerHTML, /Evidence unavailable/, 'the loaded record is not replaced by a failure frame');
+    for (const part of ['original', 'ending', 'change', 'reassessment']) {
+      assert.match(seat.innerHTML, new RegExp(`data-record-part="${part}"`), `the ${part} part stays on screen`);
+    }
+    assert.match(seat.innerHTML, /data-assessment="original" aria-pressed="true"/, 'the Original read is what shows');
+    assert.match(seat.innerHTML, /data-figure-state="not-requested"/);
+    assert.match(seat.innerHTML, /data-reassessment-failed="retained"/);
+    assert.match(seat.innerHTML, /The retained-context reassessment could not load: history inputs changed during every snapshot\./);
+    const [stage, reading] = seat.innerHTML.split('<aside');
+    assert.match(stage, /data-retry-reassessment/, 'the failure and its retry sit in the stage');
+    assert.doesNotMatch(reading, /data-reassessment-failed|data-retry-reassessment/, 'the reading pane carries no failure');
+
+    const settled = requests.length;
+    await openHistoryRecord(seat, identity, 2);
+    assert.equal(requests.length, settled, 'a failed read is not re-sent by a re-render');
+
+    refusedFor = null;
+    const retried = requests.length;
+    seat.retryReassessment.onclick();
+    await openHistoryRecord(seat, identity, 3);
+    assert.deepEqual(assessmentsOf(retried, identity), ['retained'], 'the retry re-sends the retained read alone');
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
+    assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
+  } finally { refusedFor = null; served = comparison; }
+});
+
+test('a failed retained read stays with its record: the next record opened from the roster reads its own', async () => {
+  kind = 'trial'; identity = 'roster-synthetic'; served = PAIRED;
+  const [A, B] = ['refused-a-synthetic', 'fresh-b-synthetic'];
+  refusedFor = A;
+  // Back to records and a roster press write the address through the router.
+  const previousWindow = globalThis.window;
+  const location = { pathname: '/', search: '', hash: '' };
+  globalThis.window = { location, history: { pushState: (_state, _title, address) => {
+    const url = new URL(address, 'http://synthetic');
+    Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+  } } };
+  try {
+    const seat = host();
+    seat.records.push({ dataset: { record: `trial:${A}` } }, { dataset: { record: `trial:${B}` } });
+    const press = async (id) => {
+      seat.recordClose.onclick();
+      for (let step = 0; step < 3; step++) { mountHistory(seat, { context: {}, hold() {} }); await flush(); }
+      assert.match(seat.innerHTML, /data-record="/, 'Back to records shows the roster');
+      seat.records.find(row => row.dataset.record === `trial:${id}`).onclick();
+      const from = requests.length;
+      await openHistoryRecord(seat, id);
+      return assessmentsOf(from, id);
+    };
+    await openHistoryRecord(seat, A);
+    assert.match(seat.innerHTML, /data-reassessment-failed="retained"/, 'premise: A\u2019s retained read failed');
+
+    assert.deepEqual(await press(B), [null, 'retained'], 'B, opened from the roster, makes its own retained read');
+    assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/, 'A\u2019s failure does not follow into B');
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
+
+    refusedFor = null;
+    assert.deepEqual(await press(A), [null, 'retained'], 'reopening A retries its retained read');
+    assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+  } finally { refusedFor = null; served = comparison; globalThis.window = previousWindow; }
 });

@@ -6,6 +6,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { stamp } from './frame.js';
+import { comparisonReasonWords } from './follow-up.js';
 import {
   changeSection, endingSection, lateConclusionSection, originalSection, reassessmentSection,
   recordRoster, settingValue,
@@ -202,6 +204,12 @@ test('a first-observed record marks its original decision explicitly unavailable
   assert.match(html, /From the Trial record/);
 });
 
+test('a first-observed record names when Harmonic recorded it, apart from the pump\u2019s Detected time', () => {
+  const html = originalSection(FIRST_OBSERVED);
+  assert.match(html, new RegExp(`<dt>Recorded by Harmonic</dt><dd>${stamp('2026-09-08 15:15:35')}</dd>`));
+  assert.doesNotMatch(html, /First seen/);
+});
+
 test('a recorded decision reads as a decision, not as a first sighting', () => {
   const html = originalSection(DECIDED);
   assert.match(html, /Original decision/);
@@ -306,7 +314,19 @@ test('a current-policy reassessment labels its context and claims no like-for-li
   }, 'current');
   assert.match(html, /data-reassessment-context="current"/);
   assert.match(html, /not a like-for-like comparison/);
-  assert.match(html, /Unavailable · data_not_yet_arrived/);
+  // The result names a served reason in the desk's one set of words, never its code.
+  assert.match(html, new RegExp(`data-reassessment-state="unavailable">Unavailable · ${comparisonReasonWords('data_not_yet_arrived')}<`));
+  assert.doesNotMatch(html, /data_not_yet_arrived/);
+});
+
+test('the Original line points at a saved ending only when the record has one', () => {
+  const open = reassessmentSection({ reassessment: null, original: FIRST_OBSERVED }, 'original', { kind: 'trial' });
+  assert.match(open, /data-reassessment="none">Not requested\. The saved read carries no comparison until this change ends\./);
+  assert.doesNotMatch(open, /saved ending above/);
+  const openFocus = reassessmentSection({ reassessment: null, original: DECIDED }, 'original', { kind: 'focus' });
+  assert.match(openFocus, /carries no comparison until this Focus ends\./);
+  const ended = reassessmentSection({ reassessment: null, original: { ...DECIDED, ending: MANUAL_ENDING } }, 'original', { kind: 'focus' });
+  assert.match(ended, /Not requested\. The saved ending above is what this record was decided on\./);
 });
 
 /* -------------------------------------------------------- the observed change */

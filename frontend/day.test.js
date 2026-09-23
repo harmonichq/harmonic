@@ -1,9 +1,8 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { buildEpisodeLedger, dayStats } from './day-chart.js';
-import { dayFrame, dayReturnTarget } from './day.js';
 
 // A manufactured week: the navigator's own served shape, with one day of no
 // data so the ribbon has a gap to disable (S63).
@@ -46,6 +45,74 @@ const COLORS = {
   inRange: '#86ad78', high: '#e2be4c', low: '#ec6f55', accent: '#d08150',
   secondary: '#a89a85', manualCarb: '#d2743e', basal: '#a89a85', line: '#3f3833',
 };
+
+// The Day destination's served reads, answered from the manufactured week and
+// day above. data.js binds fetch once at import, so the stub is in place before
+// day.js is first imported, which is why that import is dynamic (the
+// changes.test.js pattern). data.js keeps the stub it bound; the global goes
+// back at once. The read stamp is a Denver evening, which the viewed-stamp test
+// pins its own zone for.
+const READ_AT = '2024-06-29 21:30:12';
+const STATUS = { earliest_data_day: '2024-06-23', latest_data_day: '2024-06-29', last_success_at: READ_AT };
+const dayModel = (iso) => (iso === MODEL.date ? MODEL : {
+  date: iso, episodes: [],
+  window: { start: `${iso} 00:00:00`, end: `${iso} 23:59:59`, cgm: [{ t: `${iso} 08:00:00`, bg: 118 }] },
+});
+function served(address) {
+  const { pathname, searchParams } = new URL(address, 'http://desk.test');
+  if (pathname === '/api/status') return STATUS;
+  if (pathname === '/api/day-navigator') return { days: WEEK };
+  if (pathname === '/api/model-view') return dayModel(searchParams.get('date'));
+  if (pathname === '/api/timeline') return { start: searchParams.get('start'), end: searchParams.get('end') };
+  if (pathname === '/api/carbs') return { carb_entries: [] };
+  throw new Error(`the Day test serves no ${address}`);
+}
+const unstubbed = globalThis.fetch;
+globalThis.fetch = async (address) => ({ ok: true, json: async () => served(address) });
+const { dayFrame, dayReturnTarget, installDay } = await import('./day.js');
+const { loading, navigate, render, startDesk } = await import('./routes.js');
+globalThis.fetch = unstubbed;
+
+// The page the desk is seated on: a plain host, and a browser whose history
+// moves its location, so a test reads back the address navigate wrote.
+const seat = { innerHTML: '', dataset: {}, querySelectorAll: () => [], querySelector: () => null };
+const location = { pathname: '/day', search: '', hash: '' };
+const goTo = (address) => {
+  const url = new URL(address, 'http://desk.test');
+  Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+};
+const browser = {
+  location,
+  history: { pushState: (data, title, address) => goTo(address), replaceState: (data, title, address) => goTo(address) },
+  matchMedia: () => ({ matches: false, addEventListener() {} }),
+  addEventListener() {},
+};
+
+// Every open read has landed and rendered.
+async function arrived() {
+  do await new Promise((resolve) => setImmediate(resolve)); while (loading());
+}
+
+// A render reads document and getComputedStyle, and navigate writes the address
+// through window.location and window.history. Each is replaced only while the
+// desk runs. The desk is seated once, at /day, the first time a test needs it.
+let seated = false;
+async function onPage(run) {
+  const previous = { document: globalThis.document, window: globalThis.window, getComputedStyle: globalThis.getComputedStyle };
+  globalThis.document = { activeElement: { tagName: 'BODY' }, querySelectorAll: () => [], documentElement: {} };
+  globalThis.getComputedStyle = () => ({ getPropertyValue: () => '' });
+  globalThis.window = browser;
+  try {
+    if (!seated) { seated = true; installDay(); startDesk(seat, { browser }); }
+    await arrived();
+    await run();
+  } finally {
+    Object.assign(globalThis, previous);
+  }
+}
+
+const pressed = (markup) => [...markup.matchAll(/class="gf-nav-col" data-pick="([\d-]+)" aria-pressed="true"/g)].map(([, iso]) => iso);
+const kicker = (markup) => markup.match(/<div class="gf-kicker">(.*?)<\/div>/)?.[1];
 
 const state = (overrides = {}) => ({
   iso: '2024-06-26',
@@ -209,4 +276,52 @@ test('a store with no recorded day says so and offers the way back', () => {
   const markup = dayFrame({ iso: null });
   assert.match(markup, /No days recorded/);
   assert.match(markup, /data-destination-action="diagnose"/);
+});
+
+test('the topbar\'s Day reopens the day last looked at, with no subject or return, at the plain address (ADR 427)', async () => {
+  await onPage(async () => {
+    assert.deepEqual(pressed(seat.innerHTML), ['2024-06-29'], 'a fresh page did not open the latest recorded day');
+
+    navigate('day', {
+      date: '2024-06-26', from: 'diagnose', subject: 'Selected occurrence · Jun 26 13:55',
+      focus: ".gf-member-row[data-occ='occ-7']",
+    });
+    await arrived();
+    assert.deepEqual(pressed(seat.innerHTML), ['2024-06-26']);
+    assert.match(seat.innerHTML, /<h3>Opened from<\/h3>/);
+
+    navigate('diagnose');
+    navigate('changes');
+    navigate('day');
+    await arrived();
+    assert.deepEqual(pressed(seat.innerHTML), ['2024-06-26'], 'a direct entry moved off the day last looked at');
+    assert.ok(!seat.innerHTML.includes('Opened from'), 'a direct entry kept the earlier entry\'s subject');
+    assert.ok(!seat.innerHTML.includes('data-day="return"'), 'a direct entry offered a return');
+    // Accepted by ADR 427: the plain address does not carry the day shown.
+    assert.equal(location.pathname, '/day');
+    assert.equal(location.search, '');
+  });
+});
+
+test('the viewed stamp is the reader\'s local clock, and a read in the same minute shows alone', async () => {
+  const zone = process.env.TZ;
+  process.env.TZ = 'America/Denver';
+  // 22:45 on Jun 29 in Denver, when the UTC date is already Jun 30.
+  mock.timers.enable({ apis: ['Date'], now: Date.parse('2024-06-30T04:45:05Z') });
+  try {
+    await onPage(async () => {
+      render();
+      assert.equal(kicker(seat.innerHTML), 'Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 29, 2024 · 22:45');
+
+      // The read's own local minute: 21:30:40 in Denver.
+      mock.timers.setTime(Date.parse('2024-06-30T03:30:40Z'));
+      render();
+      assert.equal(kicker(seat.innerHTML), 'Day · read <b>Jun 29, 2024 · 21:30</b>');
+      assert.doesNotMatch(seat.innerHTML, /viewed/);
+    });
+  } finally {
+    mock.timers.reset();
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  }
 });

@@ -2,7 +2,7 @@
 
 ## 1. The viewed stamp (desk)
 
-- [ ] 1.1 In `frontend/day.js` `dayState()`, build `viewedAt` as
+- [x] 1.1 In `frontend/day.js` `dayState()`, build `viewedAt` as
   `formatWallClock(new Date())`, imported from `./carb-log.js` (the existing
   exported local-getter wall-clock formatter). Delete the
   `toISOString()` expression. Add no second formatter, and leave
@@ -13,7 +13,7 @@
 
 ## 2. Tests through the Day destination (frontend/day.test.js)
 
-- [ ] 2.1 Drive the Day destination through its public seam, as
+- [x] 2.1 Drive the Day destination through its public seam, as
   `frontend/changes.test.js` does. `frontend/data.js` binds `fetch` once at
   import (`const _defaults = makeDeps()`), so install a stub
   `globalThis.fetch` before a dynamic `import('./day.js')`, and turn the
@@ -33,7 +33,7 @@
     through `routes.js` `loading()`.
   - **Existing tests:** every existing `dayFrame` test keeps passing
     unchanged.
-- [ ] 2.2 Held-day test.
+- [x] 2.2 Held-day test.
   1. A fresh page at `/day` holds the latest recorded day.
   2. `navigate('day', {date, from: 'diagnose', subject, focus})` on an earlier
      recorded day holds that day and shows "Opened from".
@@ -46,7 +46,7 @@
   aria-pressed="true"`). This test pins existing behavior, so it passes on
   base. Show it is not vacuous: make a direct entry clear the held date in a
   throwaway edit, watch the test fail, then revert the edit.
-- [ ] 2.3 Viewed-stamp test, fail-first. Inside the test, set
+- [x] 2.3 Viewed-stamp test, fail-first. Inside the test, set
   `process.env.TZ = 'America/Denver'`, then restore the previous value, or
   delete it when there was none. Fix the clock with `node:test`
   `mock.timers.enable({ apis: ['Date'], now })`, and reset it in a `finally`.

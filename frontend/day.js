@@ -27,6 +27,7 @@ import {
   fmtISO, monthCells, monthOf, navDaySummary, navSeverity, sparkGeom, washOpacity, weekOf, weekRibbonGeom,
 } from './nav-chart.js';
 import { canStepNext, canStepPrev, clampDay, coldArrivalDay, dayBounds, weekdayLabel } from './daily-nav.js';
+import { formatWallClock } from './carb-log.js';
 import {
   fetchCarbs, fetchDayNavigator, fetchModelView, fetchStatus, fetchTimeline,
 } from './client.js';
@@ -417,7 +418,7 @@ function dayState() {
     moved: memory.moved,
     focusT: memory.focusT,
     readAt: memory.bounds.readAt,
-    viewedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    viewedAt: formatWallClock(new Date()),
     isNarrow: narrow(),
     colors: deskColors(),
   };

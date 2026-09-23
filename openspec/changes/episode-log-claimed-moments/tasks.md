@@ -59,22 +59,23 @@ Read #426's field and row markup from the trunk.
   - remove `warn` and its comment from `deskColors()` in `frontend/colors.js`
     once a whole-tree search, `frontend/index.html` included, finds no other
     reader.
-- [ ] 1.5 Implement surfaces **The Findings band counts attributed episodes, not
-  rows**:
-  - `buildEpisodeLedger` returns the number of distinct served episode ids among
-    the Findings band's rows (attributed episodes, each one Occurrence of its
-    Lever's Finding) and the number of its claimed rows, and drops the unused
-    `fired` count;
-  - the caption prints `Findings · <episodes>`, followed by ` · <k> claimed`
+- [ ] 1.5 Implement surfaces **The Findings band counts Findings, not rows**:
+  - which anchors the band holds is unchanged: fired and claimed anchors, each
+    of an episode attributed to a Lever;
+  - `buildEpisodeLedger` returns the number of distinct served Levers among the
+    band's rows (the distinct Findings their episodes belong to, so two
+    same-Lever episodes count once) and the number of its claimed rows, and
+    drops the unused `fired` count;
+  - the caption prints `Findings · <findings>`, followed by ` · <k> claimed`
     when k > 0.
   Rows keep chronological order.
 - [ ] 1.6 Implement surfaces **The Episode Log bands are explained where a reader
   looks**. Add an Episode Log group to `frontend/glossary.js`, in CONTEXT.md
   terms with no listed synonym:
-  - *Finding*: a Findings-band group is one episode the engine attributed to a
-    Lever, one Occurrence of that Lever's Finding (CONTEXT.md *Finding* and
-    *Occurrence*), and the band's count is the number of those episodes, never
-    rows and never distinct Levers;
+  - *Finding*: the Findings band lists the fired and claimed anchors of
+    episodes the engine attributed to a Lever, and the caption counts the
+    distinct Findings those episodes belong to (CONTEXT.md *Finding* and
+    *Occurrence*), never rows and never episodes;
   - *Claimed*: only that the anchor belongs to an episode another Finding owns.
     The Day row separately names what the anchor matched. A claimed occurrence
     on Diagnose is one whose own Finding's criterion was not met while another
@@ -107,8 +108,10 @@ Read #426's field and row markup from the trunk.
       `ANCHOR_STATE_WORD.outranked`;
     - the claimed row names correction on IOB's served title, ends with the
       episode's served `lever_title`, and contains no underscore token;
-    - the caption for one attributed episode plus one claimed anchor, and for a
-      high-carb-sequence episode with two claimed anchors and no fired one;
+    - the caption: `Findings · 1` plus one claimed anchor for one episode
+      holding a fired and a claimed anchor; `Findings · 1` for one Lever across
+      two episodes; and `Findings · 1` plus two claimed anchors for a
+      high-carb-sequence episode with no fired anchor;
     - each caption's Glossary control and its selector;
     - the claimed tier rule in `frontend/desk.css` does not use `--mk-warn`;
     - the Glossary groups include the Episode Log terms.
@@ -117,7 +120,10 @@ Read #426's field and row markup from the trunk.
       `colors.warn`;
     - the outranked resting marker size equals the fired one;
     - `focusUpdate`'s hairline for a focused claimed row takes the fired hue;
-    - the ledger's two counts.
+    - the ledger's two counts, including one Lever across two episodes
+      counting one Finding;
+    - the band's membership unchanged (a clean anchor of an attributed episode
+      still goes to Quiet).
   - `frontend/diagnose-workstation.test.js`: the outranked label is built from
     `ANCHOR_STATE_WORD` and the phrase `claimed by another factor` is gone.
 
@@ -145,11 +151,13 @@ Read #426's field and row markup from the trunk.
       undercount's served `lever_title`;
     - the row paints its tier word in the fired row's computed colour, not the
       warning ink;
-    - the Findings caption states one attributed episode and one claimed
-      anchor;
-    - the claimed and fired markers' colour and size are read back from the
-      chart's `day-anchor-markers` series option by series id, never by display
-      name, and the claimed marker's colour and size equal the fired marker's.
+    - the Findings caption reads `Findings · 1` and names one claimed anchor;
+    - before any row is pressed, it reads each unfocused marker's
+      `itemStyle.borderColor` and `symbolSize` back from the chart's
+      `day-anchor-markers` series option, by series id and never by display
+      name, and the claimed marker's values equal the fired marker's. At rest
+      the fill is `colors.surface`; pressing turns the border to the accent at
+      size 15.
 
     S121 asserts nothing about a visible ring or hairline, because the axis
     clips both.
@@ -186,8 +194,10 @@ Read #426's field and row markup from the trunk.
     the branch at 1280x720 and 1440x900;
   - S67, S68, S73c and S82 replay green at both sizes;
   - before and after synthetic renders at both sizes of:
-    - the Episode Log on `pattern-near-tie` Day 2024-05-25 (the claimed row at
-      rest and pressed, its tier word, and the Findings caption);
+    - the Episode Log on `pattern-near-tie` Day 2024-05-25: the claimed row at
+      rest and pressed, its tier word, and the Findings caption. Crop the
+      pressed captures to the reading pane, because the off-axis hairline can
+      show in the chart's left gutter;
     - the Glossary opened from a caption;
     - a Diagnose case file whose footer serves an outranked count
       (`behavioral-meal-over-delivery`'s Meal over-delivery case file serves

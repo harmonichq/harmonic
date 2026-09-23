@@ -49,8 +49,10 @@ synonym CONTEXT.md lists to avoid for Lever.
   verdict, from the same one name source.
 - A claimed anchor keeps its Finding's hue and marker size on the tier word,
   the ring and the focus hairline. The warning hue leaves the Episode Log.
-- The Findings caption counts attributed episodes (each one Occurrence of its
-  Lever's Finding), and names claimed anchors separately.
+- The Findings caption counts Findings: the distinct Levers the band's fired
+  and claimed anchors' episodes belong to, so two same-Lever episodes are one.
+  It names claimed anchors separately. Which anchors the band holds is
+  unchanged.
 - The Glossary gains an Episode Log group, CONTEXT.md gains the Episode Log and
   Claimed terms, the Guide's "Reading a Day" article describes the bands, and
   each band caption opens the Glossary at that group.

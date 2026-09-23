@@ -84,39 +84,47 @@ drove its episode.
   not the warning hue
 - **AND** the low's resting marker is as large as the fired meal's
 
-### Requirement: The Findings band counts attributed episodes, not rows
+### Requirement: The Findings band counts Findings, not rows
 
-The Findings band SHALL list the anchors of the day's episodes that are
-attributed to a Lever. Each such episode is one Occurrence, in CONTEXT.md's
-terms, of the Finding its Lever names. The Findings caption SHALL state the
-number of attributed episodes in the band, one per distinct served episode id
-among its rows, whether or not that episode has a fired row. Two episodes
-attributed to the same Lever SHALL count twice. When the band holds claimed
-rows, the caption SHALL name their count separately and SHALL never add it into
-the episode number. Rows SHALL keep their chronological order.
+The Findings band lists the fired and claimed anchors, each belonging to an
+episode attributed to a Lever; which anchors it holds SHALL be unchanged. The
+Findings caption SHALL state the number of distinct Findings those anchors'
+episodes belong to: one per distinct served Lever among the band's rows,
+whether or not that Lever's episode has a fired row. Two episodes attributed to
+the same Lever SHALL count once, as one Finding, in CONTEXT.md's terms and as
+Diagnose counts it. When the band holds claimed rows, the caption SHALL name
+their count separately and SHALL never add it into the Finding number. Rows
+SHALL keep their chronological order.
 
-#### Scenario: One attributed episode and one claimed anchor
+#### Scenario: One Finding and one claimed anchor
 
 - **GIVEN** a served day with one attributed episode holding one fired anchor
   and one claimed anchor
 - **WHEN** the Episode Log renders
-- **THEN** the caption's episode number is 1 and it names 1 claimed anchor
+- **THEN** the caption reads `Findings · 1` and names 1 claimed anchor
 
-#### Scenario: A sequence episode with no fired row
+#### Scenario: Two episodes of one Lever are one Finding
+
+- **GIVEN** a served day with two episodes attributed to the same Lever, each
+  holding one fired anchor
+- **WHEN** the Episode Log renders
+- **THEN** the caption reads `Findings · 1`
+
+#### Scenario: A sequence Finding with no fired row
 
 - **GIVEN** a served day whose only attributed episode is a high-carb sequence
   episode holding two claimed anchors and no fired anchor
 - **WHEN** the Episode Log renders
-- **THEN** the caption's episode number is 1 and it names 2 claimed anchors
+- **THEN** the caption reads `Findings · 1` and names 2 claimed anchors
 
 ### Requirement: The Episode Log bands are explained where a reader looks
 
 The Glossary SHALL carry an Episode Log group, in CONTEXT.md's terms, with four
 entries:
 
-- *Finding*: a Findings-band group is one episode the engine attributed to a
-  Lever, one Occurrence of that Lever's Finding, and the band's count is the
-  number of such episodes;
+- *Finding*: the Findings band lists the fired and claimed anchors of episodes
+  the engine attributed to a Lever, and the caption counts the distinct Findings
+  those episodes belong to;
 - *Claimed*: only the shared fact that the anchor belongs to an episode another
   Finding owns;
 - *Also checked*;
@@ -159,7 +167,9 @@ and Diagnose's claimed label.
 
 Where the claimed anchors sit before the Day chart's time axis, the ring hue,
 hairline hue and resting marker size SHALL be proven by node tests and by the
-story's readback of the anchor overlay option by series id, not by captures. An
+story's readback of the anchor overlay option by series id, not by captures.
+That readback SHALL read each unfocused marker's `itemStyle.borderColor` and
+`symbolSize` before any row is pressed. An
 episode is served on the day it ends, so an evening episode's anchors are
 stamped the day before and are clipped from the axis.
 
@@ -172,5 +182,6 @@ stamped the day before and are clipped from the axis.
   sizes
 - **THEN** each fails on the base naming its feature assertion and passes on the
   branch
-- **AND** S121 reads the claimed and fired markers' hue and size from the
-  `day-anchor-markers` series option
+- **AND** S121 reads the claimed and fired markers' unfocused
+  `itemStyle.borderColor` and `symbolSize` from the `day-anchor-markers` series
+  option before pressing any row

@@ -49,26 +49,33 @@ It does not sanction anything outside #423's checklist.
   (`anchorStateColor`). Its resting marker is as large as a fired one
   (`buildAnchorOverlay`). The word, not the colour, tells it from the driver,
   which keeps colour semantics redundant (S82, HV2-32).
-- **Count.** The Findings band lists the anchors of episodes attributed to a
-  Lever.
+- **Count.** The Findings band lists the fired and claimed anchors, each
+  belonging to an episode attributed to a Lever. Which anchors it holds is
+  unchanged: every other anchor goes to Also checked or Quiet
+  (`isQuietLedgerRow`, `buildEpisodeLedger`). For example, ep13's clean 20:00
+  correction sits in Quiet.
   - In CONTEXT.md's terms a Finding is one behavioral observation with its
-    evidence, and an Occurrence is one concrete instance behind it, carrying its
-    anchor state and whether its episode attributed a Lever. Each attributed
-    episode on Day is one Occurrence of its Lever's Finding.
-  - The caption counts attributed episodes. Two episodes attributed to the same
-    Lever count twice.
+    evidence, and an Occurrence is one concrete instance behind it. Each
+    attributed episode on Day is one Occurrence of its Lever's Finding.
+  - The ticket asks the caption to count Findings, not moments. So the caption
+    counts the distinct Findings the band's episodes belong to: one per distinct
+    served Lever among the band's rows. Two episodes attributed to the same
+    Lever are one Finding, the unit Diagnose counts by.
   - `buildEpisodeLedger` owns the count, as it owns the band split: the number
-    of distinct served episode ids among the band's rows, plus the number of
-    claimed rows. Its unused `fired` count goes.
+    of distinct served Levers among the band's rows, plus the number of claimed
+    rows. Its unused `fired` count goes.
+  - Every band row's episode carries a Lever: a fired anchor needs one, and no
+    claimed anchor in any of the 70 cases sits in an episode without one
+    (generated fact 3). A row whose episode serves no Lever adds no Finding.
   - An episode attributed to a sequence Lever has no fired anchor
     (`model_view._is_driver` excludes `SEQUENCE_LEVERS`), so counting fired rows
-    would miss it.
+    would miss its Finding.
   - Rows keep chronological order. Episodes are disjoint clusters in time, so an
     episode's rows already stand together.
 - **Explanation.** The Glossary gains an Episode Log group.
-  - Its *Finding* entry says a Findings-band group is one episode the engine
-    attributed to a Lever, one Occurrence of that Lever's Finding, and that the
-    band counts those episodes.
+  - Its *Finding* entry says the Findings band lists the fired and claimed
+    anchors of episodes the engine attributed to a Lever, and that the caption
+    counts the distinct Findings those episodes belong to.
   - Its *Claimed* entry carries only the shared fact above.
   - CONTEXT.md gains Episode Log and Claimed under "Day surface", to the same
     effect.
@@ -169,7 +176,14 @@ So the browser evidence is split by what the browser can show:
   Node tests over `buildAnchorOverlay`, `anchorStateColor` and `focusUpdate`
   prove them, together with S121's readback of the `day-anchor-markers` series
   option by series id, which carries each marker's colour and size whether or
-  not the axis clips it. No ring or hairline capture is taken.
+  not the axis clips it.
+  - The readback reads each unfocused marker's `itemStyle.borderColor` and
+    `symbolSize` before any row is pressed. At rest the ring is the border and
+    the fill is `colors.surface`; pressing turns the border to the accent at
+    size 15.
+  - No ring or hairline capture is taken.
+  - Pressed-row captures are cropped to the reading pane, because the
+    off-axis hairline can show in the chart's left gutter.
 
 The ticket's exact instance, a level-2 low claimed inside a meal over-delivery
 episode, is proven below the browser:

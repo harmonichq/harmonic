@@ -105,12 +105,16 @@ Occurrences to exactly one rate lever: the first, in the Pattern's rate-lever or
 whose claims include it. The Pattern's count, a Pattern case file's per-meal
 member, and a folded cause's credited count SHALL all come from that one rule over
 the same window population. The findings projection SHALL serve fold sentences on
-every row it folds under a Pattern. A rate-lever cause's fold sentences SHALL lead
-with its credited count on the Pattern's denominator and noun, marked as the
-Pattern's scope, followed by its count sentences on any other family, marked as
-outside the Pattern's count, in served order. A cause that is not one of the
-Pattern's rate levers SHALL serve all its count sentences marked as outside the
-Pattern's count. The credited counts of a Pattern's folded causes SHALL add up to
+every row it folds under a Pattern. Under a Pattern that serves a count sentence, a
+rate-lever cause's fold sentences SHALL lead with its credited count on the
+Pattern's denominator and noun, marked as the Pattern's scope, followed by its
+count sentences on any other family, marked as outside the Pattern's count, in
+served order. A cause that is not one of the Pattern's rate levers SHALL serve all
+its count sentences marked as outside the Pattern's count. When the Pattern serves
+no count sentence, because it has no admission route or its counts are under
+review, every fold sentence of every cause folded under it SHALL be marked outside
+the Pattern's count and no credited count SHALL be served. Under a Pattern that
+serves a count sentence, the credited counts of its folded causes SHALL add up to
 the Pattern's count. The cause's count sentences and appearances, the Pattern's
 count and denominator, and the Pattern roster the projection publishes SHALL be
 unchanged.
@@ -141,6 +145,15 @@ unchanged.
 - **THEN** the meal is credited to the first of the two in the rate-lever order,
   the case file names that lever as its member, and the credited counts still add
   up to the Pattern's count
+
+#### Scenario: A Pattern that serves no count credits no share
+
+- **GIVEN** the synthetic projection fixture's whole-day window, where Lows after
+  correcting highs has no admission route (1 of 5 lows, no count sentence) and folds
+  Correction on active insulin and Correction stacking
+- **WHEN** the findings projection is read for that window
+- **THEN** every fold sentence of both causes is marked outside the Pattern's count
+- **AND** none is in the Pattern's scope
 
 #### Scenario: A Sequence habit is outside the Pattern's count
 

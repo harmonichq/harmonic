@@ -105,8 +105,11 @@ same window population the Pattern producer used. Every folded cause serves
 `fold_sentences`: a rate-lever cause leads with its credited count on the
 Pattern's denominator and noun (scope `pattern`), then its count sentences on any
 other family (scope `outside`); a cause that is not a rate lever serves all its
-count sentences as `outside`. The credited counts of a Pattern's folded causes add
-up to the Pattern's count. The fold prints every fold sentence, sets the outside
+count sentences as `outside`. When the Pattern serves no count sentence (it has no
+admission route, or its counts are under review), no share of that withheld count
+is served and every fold sentence of its causes is `outside`. Under a Pattern that
+serves a count, the credited counts of its folded causes add up to that count. The
+fold prints every fold sentence, sets the outside
 ones apart behind the words "outside the count", and prints no outcome word, as
 before. A cause's `count_sentences` and `appearances`, and the Pattern roster the
 projection publishes verbatim, are unchanged.

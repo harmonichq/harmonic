@@ -60,8 +60,12 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   no folded row serves a count on its Pattern's population. Add built-payload
   tests for a meal two rate levers claim (credited once, to the first, and the case
   file's member names the same lever) and for a folded Sequence habit (every fold
-  sentence outside). Assert that the rows' `count_sentences` and `appearances` and
-  the published roster are unchanged.
+  sentence outside), and a test on the frozen projection fixture's whole-day inputs
+  (`frontend/__fixtures__/findings-projection.json`), where Lows after correcting
+  highs serves no count sentence (no admission route, 1 of 5 lows): every fold
+  sentence of Correction on active insulin and Correction stacking is outside and
+  none is in the Pattern's scope. Assert that the rows' `count_sentences` and
+  `appearances` and the published roster are unchanged.
 - [ ] 2.3 Implement behavioral-layer **A Pattern case file's outranked meals stay
   outside its claimed count** as a test on the Pattern case file's verdict counts
   in `tests/test_finding_case_file.py`, built with a claimed meal, a meal where
@@ -118,15 +122,18 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   `frontend/replay-cases.mjs`, and node regression tests in
   `frontend/c4.replay.test.js` that tell a feature assertion from a setup error.
   No story asserts the claimed-state words (#423).
-- [ ] 4.2 Amend S115 with an `Amended S115 · 2026-09-23` entry in that same
-  section, quoting the sanction in `proposal.md`: a folded member line is read
-  from the served `fold_sentences`, the outside ones set apart. S115's original
-  text stays as frozen.
+- [ ] 4.2 Amend S115 with a line written `Amended S115 · 2026-09-23 · #424 / Q2
+  sanction: …` in that same section, never a line beginning `S115 ·`, quoting the
+  sanction in `proposal.md`: a folded member line is read from the served
+  `fold_sentences`, the outside ones set apart. S115's original text stays as
+  frozen.
 - [ ] 4.3 Move the pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` (`inventory()`) and
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` from 147 issued / 128
   active to 150 issued / 131 active, retired unchanged at 19, so the driver's own
-  tests pass on this branch. Leave every `★ FROZEN` block, the ledger header's
+  tests pass on this branch, and state the counts that
+  `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out <scratch dir>`
+  prints. Leave every `★ FROZEN` block, the ledger header's
   inventory line, `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s count
   sentence and `mockups/INDEX.md`'s counts untouched: the release coordinator
   writes those once, across every ticket.

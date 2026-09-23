@@ -49,8 +49,9 @@ its denominator remain a separate account.
 In the rail, a Pattern row SHALL hold its claimed causes beneath it on
 the Pattern's own spine, one line per cause carrying the cause's name, the
 count, denominator and noun of each of its served fold sentences in served
-order, never merged, and a drill chevron. A rate-lever cause's first fold
-sentence is its count on the Pattern's own population; every fold sentence the
+order, never merged, and a drill chevron. Under a Pattern that serves a count, a
+rate-lever cause's first fold sentence is its count on the Pattern's own
+population; every fold sentence the
 projection marks as outside the Pattern's count SHALL be set apart from the
 Pattern's-scope sentence behind the words "outside the count", and a cause line
 SHALL print no outcome word. A

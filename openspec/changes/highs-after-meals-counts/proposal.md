@@ -53,7 +53,8 @@ synthetic data (see `design.md`, "Reproduction"):
   the Pattern's claimed Occurrences, each credited once to the first of its rate
   levers that claims it, so the folded counts add up to the Pattern's count. Its
   counts on any other population are served as outside the Pattern's count, and
-  the fold sets them apart.
+  the fold sets them apart. Under a Pattern that serves no count of its own, no
+  share is served and all of a cause's counts are outside it.
 - The "claimed by another factor" meals of a Pattern case file are confirmed by
   code to sit outside the Pattern's claimed count, so the header's "not
   attributed" is right; a test pins it. The words for that state belong to #423.

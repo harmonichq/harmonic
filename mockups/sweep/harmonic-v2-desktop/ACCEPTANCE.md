@@ -9,7 +9,15 @@ fresh scratch directories. Never point a command at a live wearer database.
 
 The ticket branch was merged before the amendment work, carrying #342's twelve
 sequence recipes and the rail's 183 issued / 168 active / 15 retired inventory.
-The v2 ledger remains 130 issued entries (112 active and 18 permanent retirements).
+The desk ledger now holds 147 issued entries: 128 active and 19 permanent
+retirements. `acceptance.py inventory()` pins that literal and checks it before
+any story in every wrapper replay. #413 added S113–S117 on 2026-09-22:
+- S113, the lane key and verdict paint;
+- S114, the cold skeleton;
+- S115, the rail fold and urgency;
+- S116, one mini instrument;
+- S117, the 24 h arrival.
+The ledger's re-freeze header states the same counts.
 R18 is now registered and uses `c4-history`, whose actual API input includes a
 historical I:C row beside current basal evidence and retained Trial/Focus records.
 The registry inventory is complete; browser verdicts remain coordinator-owned.

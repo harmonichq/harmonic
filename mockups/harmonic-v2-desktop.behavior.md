@@ -1,6 +1,41 @@
 # Behavior ledger — harmonic-v2-desktop
 
 ```text
+★ FROZEN 2026-09-22 · base eec4652a8f1109aa62d126ce3a0b4f24973194b0
+  · generator eec4652a8f1109aa62d126ce3a0b4f24973194b0 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e
+  · predecessor shipped single-shell desk (ADR 416) · retired 19
+  · inventory 147 issued · 128 active · 19 retired
+      (equal to acceptance.py inventory()'s pinned literal)
+  · lifecycle revise · contract this ledger + frontend/desk-behavior.replay.mjs
+```
+
+This #413 re-freeze adds S113–S117, the fail-first obligations of the #413
+design lock. They cover the lane key and verdict paint, the cold skeleton, the
+rail fold and urgency, one mini instrument, and the 24 h arrival. It also
+records Connor's three sanctioned changes to shipped behavior (see "#413
+sanctioned changes" below). No inherited story is weakened and none is retired.
+
+Safe start is unchanged from the #404 freeze below: AGENTS.md's QA
+copy-then-serve command, with the showcase or a named `scripts/qa_e2e_cases.py`
+case store.
+
+Base preservation is main push CI run 35785233892 on eec4652a: the complete
+ledger, 142 issued, at both sizes.
+
+The new stories were proved on origin/main eec4652a with this harness laid over
+it, at 1280x720 and 1440x900:
+- S113, S114, S115 and S117 fail there at their feature assertions and pass on
+  the branch.
+- S116's base and branch runs are owed again after its lookup fix (45e6aecc).
+
+The raw logs and the requirement-by-requirement evidence are in
+`docs/scope/413-desk-design-evidence/`. Every story must pass on the commit that
+is pushed. No failure is waived by this freeze.
+
+The earlier freezes below remain historical provenance.
+
+```text
 ★ FROZEN 2026-09-10 · base cbcba39576c7d98c08be265a1255077c76b0f803
   · generator cbcba39576c7d98c08be265a1255077c76b0f803 · window n/a
   · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: 0856d0e09426
@@ -2650,15 +2685,12 @@ S113 · The basal lane's head row — the served verdict key — stands wholly
             outline to resolve to `--primary`, and the staged mark to be a
             2px underline, so selection, stage and lower fill stay three
             distinct marks
-  status:   #413 task 2 sub-order — the coordinator's own `ONLY=S113,S114`
-            run at 1280x720 passed a narrower prior revision of this story
-            (the DOM-order/visibility checks alone, against whatever verdict
-            mix the showcase happened to carry). This revision requires the
-            full scenario instead — all five verdicts, a distinct staged and
-            selected cell, and the shared-paint comparison — backed by the
-            new basal-verdict-gallery case, and has not yet been run by the
-            coordinator. Both that pass proof and the fail-first proof
-            against the base are owed by #413 task 4.1
+  status:   base eec4652a fails at its feature assertion at both sizes ("the
+            key must render as the lane's head row, above the cells");
+            branch c7fdad07 passes at both sizes; coordinator-run
+            2026-09-22. Raw logs: docs/scope/413-desk-design-evidence/
+            fail-first-base-{1280x720,1440x900}.log and
+            pass-branch-{1280x720,1440x900}.log
 ```
 
 ```
@@ -2678,10 +2710,10 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
             the status label and the reading pane's width, then checks the
             animation is suppressed under
             `prefers-reduced-motion: reduce` before releasing the read
-  status:   #413 task 2 sub-order — story authored and registered;
-            coordinator ran the bare-script `ONLY=S114` replay on this
-            branch at 1280x720 (unsandboxed) and it passed. The fail-first
-            proof against the base is owed by #413 task 4.1
+  status:   base eec4652a fails at its feature assertion at both sizes ("the
+            cold loading frame must carry one stage skeleton block": 0);
+            branch c7fdad07 passes at both sizes; coordinator-run
+            2026-09-22. Raw logs as S113's
 ```
 
 ## #413 task 3 sub-order amendment — 2026-09-22, issue #413
@@ -2709,7 +2741,7 @@ S115 · A Pattern owning claimed causes folds them beneath its own row, one
   element:  .qrow, .qfold, .qitem.member, .qmember
   source:   frontend/diagnose-findings-queue.js queueRows / renderFindingsQueue;
             frontend/diagnose-workstation.css .qfold/.qitem.member/.qmember/[data-urgent]
-  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  lock:     #413 design lock (mockups/INDEX.md, Harmonic v2 desktop row)
   data:     the app's own showcase; a served Pattern already claims at least
             one Cause (the same fact S113's predecessor observed of the base)
   evidence: C4_STORIES.S115; reads the served preparation to name the owning
@@ -2722,10 +2754,10 @@ S115 · A Pattern owning claimed causes folds them beneath its own row, one
             reads the Pattern's own
             row against its served sentence with emphasis, and compares the
             served rank-one tier's rows against `data-urgent`
-  status:   #413 task 3 sub-order — story authored and registered against the
-            branch's own node unit suite (frontend/diagnose-findings-queue.test.js);
-            the bare-script browser replay and the fail-first proof against
-            the base are both owed by #413 task 4.1
+  status:   base eec4652a fails at its feature assertion at both sizes
+            (finding:meal_bolus_short "must never be a sibling rail row");
+            branch c7fdad07 passes at both sizes; coordinator-run
+            2026-09-22. Raw logs as S113's
 ```
 
 ```
@@ -2738,7 +2770,7 @@ S116 · Every ranked rail row's mini draws the same instrument: the matched
   source:   frontend/diagnose-workstation-chart.js queuePreviewOption;
             frontend/diagnose-evidence-charts.js patternQueuePreview / the
             eating-sequence high-carb queuePreview
-  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  lock:     #413 design lock (mockups/INDEX.md, Harmonic v2 desktop row)
   data:     the app's own showcase; a ranked Pattern and a ranked Cause both
             carry a mounted mini
   evidence: C4_STORIES.S116 → assertRankedMinis; for every row serving a
@@ -2749,11 +2781,12 @@ S116 · Every ranked rail row's mini draws the same instrument: the matched
             least one mini must be mounted. Candidates are chosen by the
             coordinate alone, so a desk serving no count sentence reaches
             this feature assertion rather than a premise failure
-  status:   #413 task 3 sub-order — story authored and registered against the
-            branch's own node unit suite (frontend/diagnose-workstation-chart.test.js,
-            frontend/diagnose-evidence-charts.test.js); the bare-script
-            browser replay and the fail-first proof against the base are
-            both owed by #413 task 4.1
+  status:   the c7fdad07 runs failed on base AND branch alike ("at least one
+            ranked mini must be mounted"): the story looked for the ECharts
+            instance on the canvas's parent div rather than on `.mini`, and
+            read texts off the graphic list rather than its one normalised
+            group. 45e6aecc corrects the lookup; its base and branch reruns at
+            both sizes are owed by the coordinator
 ```
 
 ```
@@ -2761,17 +2794,44 @@ S117 · A cold Diagnose arrival with no contextual entry and no retained
        window opens on the 24 h window, and the findings read is unscoped.
   element:  #seg-window
   source:   frontend/diagnose.js restoreEntry
-  lock:     pending #413 design lock formalization in mockups/INDEX.md (task 4.4)
+  lock:     #413 design lock (mockups/INDEX.md, Harmonic v2 desktop row)
   data:     the app's own showcase; the default opener's fresh root arrival
             (no subject, no window)
   evidence: C4_STORIES.S117; reads the pressed Window control and the served
             findings preparation's window scope on the cold seat, before any
             row is drilled or window pressed
-  status:   #413 task 3 sub-order — story authored and registered against the
-            branch's own node unit suite (frontend/diagnose.test.js); the
-            bare-script browser replay and the fail-first proof against the
-            base are both owed by #413 task 4.1
+  status:   base eec4652a fails at its feature assertion at both sizes (the
+            pressed window is "Overnight", not "24 h"); branch c7fdad07
+            passes at both sizes; coordinator-run 2026-09-22. Raw logs as
+            S113's
 ```
+
+### #413 sanctioned changes to shipped desk behavior — 2026-09-22
+
+Connor's #413 design lock (2026-09-14, recorded in
+`openspec/changes/desk-design-completion/design.md`) changes three shipped
+facts:
+
+- **Member minis leave the rail.** "No member minis in the rail; the parent's
+  mini stands for the group."
+- **Claimed causes stop being sibling rows.** "Pattern members fold under their
+  parent on the parent's spine, one line each".
+- **The cold arrival opens on 24 h.** "Default window on load is 24 h."
+
+No story in this ledger asserted any of the three, so no story text is amended
+or retired. The executable readers that did assert them were re-read for intent
+by #413 sub-order 3 and moved to the new facts:
+
+- the desk browser suite's fold opener (`openRailRow`) and its Overnight-default
+  comments;
+- the Diagnose replay's High-carb row locator (`railRowLocator`) and its
+  retired `claimed` state field.
+
+The coordinator's 2026-09-22 run of S19, S20, S20b, S31–S35, S36, S37b and
+S102–S104, S106–S109 and S112 at 1280x720 (18 stories) executed all 18 with 0 failures,
+and the full desk browser suite passed 40 of 40.
+The #413 critique fixes change no story's subject. They tighten S113, S114 and
+S115's assertions, as each entry's evidence line states.
 
 ### Coordinator amendment 1 — 2026-09-10
 

@@ -2,8 +2,9 @@
 
 Every task implements surfaces **Diagnose's address names the case the reader is
 on** under ADR 428 in `design.md`. A checked item means implemented and verified.
-Tests go through each module's public interface, and each new test fails first on
-the base for the reason it names.
+Tests go through each module's public interface. Each new behavior test fails
+first on the base for the reason it names; a regression pin that already passes
+on the base is labelled as one.
 
 ## 1. The address (routing owner)
 
@@ -13,9 +14,10 @@ the base for the reason it names.
   `window` when present, plus `from` only when it names a destination other than
   Diagnose. In `frontend/tab-routing.test.js`: every Day-entry key is dropped
   (`date`, `moment`, `lever`, `focus`, a Diagnose `from`); `from=changes` is kept;
-  no case yields `/diagnose`; a case address round-trips through
-  `serializeRoute`/`parseRoute`; and `writeRoute` with `replace` calls
-  `replaceState`, never `pushState`.
+  no case yields `/diagnose` (these fail first, the rule being new). Two
+  regression pins beside them hold behaviour that already passes on the base: a
+  case address round-trips through `serializeRoute`/`parseRoute`, and
+  `writeRoute` with `replace` calls `replaceState`, never `pushState`.
 - [ ] 1.2 In `frontend/routes.js`, add one in-place address write (ADR 428 point
   3): it replaces the router's held context and the current history entry's
   address through `writeRoute(..., { replace: true })`, and changes no
@@ -36,14 +38,21 @@ the base for the reason it names.
   S136–S138; add a node case in `frontend/diagnose-workstation.test.js` only
   where an existing export already reaches the drill stack, and extract nothing
   for testability alone.
-- [ ] 2.2 `frontend/diagnose.js` replaces the address with the case address after
-  each reader action listed in ADR 428 point 2 and whenever the published case
-  changes afterwards, and never on the entry restoration's own presses; it keeps
-  the entry it holds equal to what it wrote. Unit tests in
+- [ ] 2.2 `frontend/diagnose.js` replaces the address with the case address on
+  every change to the published case while no entry restoration is pending, and
+  tracks the restoration exactly as ADR 428 point 2 defines it: pending from the
+  read that applies a contextual entry until the named case and Occurrence are on
+  screen, or until the first trusted pointer press or key press other than Tab
+  or a bare modifier anywhere on the page while Diagnose is current, which ends
+  it; the restoration's own untrusted presses never end it and its settling
+  writes nothing. It keeps the entry it holds equal to what it wrote. The trigger
+  is the published case, so no per-control hook is added. Unit tests in
   `frontend/diagnose.test.js` (stub the browser location and history as the
-  scratch reproduction did): a published case after a reader action replaces the
-  address with no push and no new navigation; restoration presses write nothing;
-  stepping back to Findings writes `/diagnose`; `from=changes` survives.
+  scratch reproduction did): a published case with no restoration pending
+  replaces the address with no push and no new navigation; a published case
+  during a pending restoration writes nothing; a trusted key press ends a pending
+  restoration and the next published case is written; a Tab press does not end
+  it; a published Findings root writes `/diagnose`; `from=changes` survives.
 - [ ] 2.3 The Day entry (ADR 428 points 4 and 5): `evidenceDayContext` in
   `frontend/diagnose-context.js` takes `subject`, `occurrence` and `window` from
   the published case and no longer accepts or writes `focus`; `date`, `moment`
@@ -58,11 +67,14 @@ the base for the reason it names.
   `frontend/follow-up-lifecycle.test.js`, which pins it.
 - [ ] 2.5 Retention (ADR 428 points 6 and 7): in `mount`, a return into a parked
   Diagnose whose context names no case is a retained return whatever entry was
-  held, keeps the held case as its entry and replaces the address with it; a
+  held, keeps the held case (not the held `from`) as its entry and replaces the
+  address with it, so "Return to Trial" does not reappear after a topbar press; a
   contextual entry naming a different case still re-reads; a repeated press
   while on Diagnose still re-reads. Unit tests in `frontend/diagnose.test.js`,
   the first failing first on the base exactly as the scratch reproduction did: a
   held Day-return entry, a park, then an empty entry issues only one status read;
+  a held `from=changes` entry, a park, then an empty entry leaves no `from` in the
+  entry or the address;
   a Day return naming the held case issues only one status read and places the
   return focus; an entry naming a different Occurrence still re-reads (the
   existing test stays green).
@@ -86,12 +98,16 @@ the base for the reason it names.
   assert the address is `/diagnose` with no `occurrence` or `focus`; reload and
   assert no case file is open. The canonical-door test stays unchanged and green.
 - [ ] 3.2 Add three app-only stories to `mockups/harmonic-v2-desktop.behavior.md`
-  in this ticket's block, each with its `C4_STORIES` body in
+  in this ticket's block, recorded in a new dated `## #428 amendment — 2026-09-23`
+  section following the #413/#414 pattern, each with its `C4_STORIES` body in
   `frontend/c4.replay.mjs`, its `appOnly` export and REGISTRY row in
   `frontend/desk-behavior.replay.mjs`, and a status line the coordinator fills
   from base-fails and branch-passes runs at 1280x720 and 1440x900:
-  S136 — acting after a Day return re-addresses to the case on screen, the crumb
-  to Findings leaves `/diagnose`, and a reload lands on Findings;
+  S136 — after a Day return on a Finding case with an Occurrence held, ↓ steps
+  to the next Occurrence and the address names it with no `focus`; choosing
+  Overnight re-addresses to the Finding and the Overnight window with no Day-entry
+  key; Backspace back to Findings leaves `/diagnose`; and a reload lands on
+  Findings;
   S137 — Day return, then Changes, then Diagnose issues exactly one
   `GET /api/status` and nothing else, keeps the pressed window and the crumb, and
   the address names the case (S108's held-return helper);
@@ -100,19 +116,21 @@ the base for the reason it names.
   reload re-opens it in that window with that Occurrence held, Open in Day writes
   a Day address with no CSS selector, and the return makes one status read and
   focuses that Occurrence's Open in Day control.
-  Record a dated "#428 sanctioned changes to shipped desk behavior" section
-  quoting the Q2 sanction and naming ADR 428, and move the frozen header's
-  inventory to 150 issued, 131 active, 19 retired.
-- [ ] 3.3 Move the pinned inventory to match: `inventory()` in
-  `mockups/sweep/harmonic-v2-desktop/acceptance.py` to
+  The amendment section quotes the Q2 sanction, names ADR 428 and states the
+  shipped behavior that changes: an in-place drill now writes the address, and a
+  reload after one re-opens the case. Never rewrite, re-date or replace an
+  existing `★ FROZEN` block, and leave the header's inventory line alone: the
+  release freeze block and that count are written once on the integration branch.
+- [ ] 3.3 Move the pinned inventory literals so this branch's own tests pass:
+  `inventory()` in `mockups/sweep/harmonic-v2-desktop/acceptance.py` to
   `{"issued": 150, "active": 131, "retired": 19}`; in
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` the plan count and the
   registry length to 150, the stated-inventory case to S1–S131 with R1–R19, and
-  the same-total case to 132 active and 18 retired; the count sentence in
-  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` with a one-line #428 note.
+  the same-total case to 132 active and 18 retired. `ACCEPTANCE.md`'s count
+  sentence is not edited here; it is written once on the integration branch.
 - [ ] 3.4 Browser legs, each run once and serially by whoever can bind a port:
   the new desk test by its name pattern, then the whole desk suite;
-  `ONLY=S136,S137,S138,S26,S35,S37,S61,S62,S108,S109` on the bare replay at
+  `ONLY=S136,S137,S138,S24,S26,S33,S35,S37,S61,S62,S108,S109` on the bare replay at
   both sizes, first on a base worktree with the new stories laid over it (S136–S138
   fail at their feature assertions) and then on the branch (all pass); then the
   complete ledger through `acceptance.py replay` at both sizes on the commit to

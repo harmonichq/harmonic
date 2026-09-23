@@ -2,17 +2,18 @@
 
 ### Requirement: Diagnose's address names the case the reader is on
 
-Once the reader acts inside Diagnose — picks a Finding or Pattern row, selects
-or clears an Occurrence, chooses a clock window, picks a basal slot, or steps
-back along the crumb — the desk SHALL replace the current address in place, with
-no new history entry, so that it names the case on screen: its subject (the
-Finding or Pattern row, or the basal slot), its Occurrence while one is
-selected, and its window, plus a `from` that names a destination other than
-Diagnose. It SHALL carry no date, moment, lever or return-focus key. At the
-Findings index it SHALL carry no case. The address SHALL be rewritten whenever
-the case on screen changes after a reader action, and SHALL NOT be rewritten by
-the desk's own restoration of an entry. A Day return's own address SHALL stay as
-it is until the reader acts.
+Diagnose SHALL keep its address naming the case on screen. Whenever the case on
+screen changes and the desk is not restoring an entry, the desk SHALL replace
+the current address in place, with no new history entry, so that it names that
+case: its subject (the Finding or Pattern row, or the basal slot), its
+Occurrence while one is selected, and its window, plus a `from` from the entry
+that names a destination other than Diagnose. The trigger SHALL be the change to
+the case on screen, whichever control, key or chart caused it. The address SHALL
+carry no date, moment, lever or return-focus key, and at the Findings index it
+SHALL carry no case. A restoration of an entry SHALL last until the named case
+and Occurrence are on screen or until the reader's first own pointer or key
+input, SHALL NOT rewrite the address itself, and SHALL leave a Day return's own
+address as it is until the case next changes.
 
 The Day entry Diagnose writes SHALL take its subject, Occurrence and window from
 the same case the address names, SHALL name its return target by the
@@ -21,10 +22,11 @@ focus on that Occurrence's own Open in Day control, whether the return re-reads
 or is retained.
 
 A return into a retained Diagnose whose context names no case SHALL be a
-retained return whatever entry the desk last held, and the address SHALL then
-name the retained case. Reloading a case address SHALL re-open that subject and,
-when named, that Occurrence, applying the named window first when it is one of
-the Window control's presets.
+retained return whatever entry the desk last held; the desk SHALL keep the held
+case, not its `from`, and the address SHALL then name the retained case.
+Reloading a case address SHALL re-open that subject and, when named, that
+Occurrence, applying the named window first when it is one of the Window
+control's presets.
 
 #### Scenario: Acting after a Day return re-addresses to the case on screen
 
@@ -36,9 +38,19 @@ the Window control's presets.
   date, moment, lever or return-focus key
 - **AND** the browser history holds no more entries than before the choice
 
+#### Scenario: A keyboard step re-addresses like any other change
+
+- **GIVEN** the reader returned to Diagnose from Day on a Finding's case file with
+  an Occurrence held
+- **WHEN** the reader presses ↓ to step to the next Occurrence, and later presses
+  Backspace back to Findings
+- **THEN** after ↓ the address names the stepped Occurrence and carries no
+  return-focus key
+- **AND** after Backspace the address is `/diagnose`
+
 #### Scenario: Stepping back to Findings leaves no case in the address
 
-- **GIVEN** the reader acted inside Diagnose after a Day return
+- **GIVEN** the reader changed the case inside Diagnose after a Day return
 - **WHEN** the reader steps back along the crumb to Findings
 - **THEN** the address is `/diagnose` with no subject, Occurrence or return-focus key
 - **AND** reloading it lands on Findings with no case file open
@@ -64,4 +76,4 @@ the Window control's presets.
 - **WHEN** the reader presses Diagnose
 - **THEN** exactly one status read is issued and no guidance or evidence read
 - **AND** the window and the drilled case are as the reader left them, and the
-  address names that case
+  address names that case with no `from`

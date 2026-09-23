@@ -34,6 +34,13 @@ direct operator interview in this session.
   boundary is the Diagnose address and entry; those files carry other release
   tickets' work. `→ issue` (drafted for the coordinator, who files it)
 
+- Review round 1: the address trigger is any change to the published case while
+  no entry restoration is pending; the restoration ends on the reader's first
+  trusted pointer or non-Tab key input. Why: Backspace, ↑/↓, Escape and chart-tile
+  drills change the case without reaching the capture click listener. `→ ADR`
+- Review round 1, coordinator ruling: a topbar return keeps the held case, not its
+  `from`. Why: a direct entry invents neither a prior subject nor a return. `→ ADR`
+
 ### Risk contract
 
 Copied unchanged into `openspec/changes/diagnose-address-after-day-return/design.md`
@@ -52,7 +59,24 @@ crumb, reload) are traced in code and owed to the failing-first browser test.
 
 ## Review rounds
 
-- none yet (the coordinator dispatches `/plan-review`)
+- Round 1 (coordinator-dispatched `/plan-review`, verified by the coordinator):
+  BLOCKED, 1 blocking and 2 notes, all `authoring`, the blocker reproduced
+  against the tree by this worker. (1) The address trigger was a closed list of
+  clicks and missed shipped paths that never reach Diagnose's capture click
+  listener: Backspace and ↑/↓ through a document keydown in
+  `frontend/diagnose-workstation.js`, Escape clearing a drawn window, and a chart
+  tile drilling a different Finding (`chartClickRoute`). Fixed: the trigger is
+  any change to the published case while no entry restoration is pending, the
+  restoration ends on the reader's first trusted pointer or non-Tab key input,
+  the list became examples, and S136 plus task 2.2 carry unlisted paths (↓,
+  Backspace, a Tab press). The drawn-window accepted failure was reworded to
+  match. (2) Coordinator ruling: a topbar press keeps the held case but not its
+  `from`, so "Return to Trial" does not reappear; recorded in ADR 428 point 7, the
+  spec and task 2.5. (3) Task 1.1's round-trip and replace tests are labelled
+  regression pins; the summary now says the address follows every case change in
+  every session. Also applied the release brief's ledger-freeze rule: stories go
+  in a dated `## #428 amendment — 2026-09-23` section, and the frozen header's
+  count line and `ACCEPTANCE.md` are left to the integration branch.
 
 ## Open questions
 

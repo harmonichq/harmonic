@@ -26,11 +26,15 @@ different case.
 
 ## What changes
 
-- Once the reader acts inside Diagnose — picks a Finding or Pattern, selects or
-  clears an Occurrence, chooses a clock window, picks a basal slot, or steps back
-  along the crumb — the address is replaced in place with the case on screen:
-  its subject, its Occurrence while one is selected, and its window. At the
-  Findings index it carries no case. No Day-entry key and no selector survives.
+- Whenever the case on screen changes inside Diagnose, by any control, key or
+  chart, the address is replaced in place with that case: its subject, its
+  Occurrence while one is selected, and its window. At the Findings index it
+  carries no case. No Day-entry key and no selector survives. This holds in every
+  Diagnose session, not only after a Day visit, so a reload after any drill
+  re-opens that case instead of the cold 24 h Findings arrival. While the desk is
+  still restoring an entry it leaves the address alone.
+- A plain return to Diagnose after a Day visit keeps the held case but not a
+  Changes `from`, so "Return to Trial" does not reappear after a topbar press.
 - The Day entry Diagnose writes names its return target by the Occurrence's
   served id, which it already carries; it carries no CSS selector. The return
   still lands on that Occurrence's own Open in Day control.

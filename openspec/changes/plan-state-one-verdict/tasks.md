@@ -71,9 +71,12 @@ the risk contract. Every value in tests and comments is synthetic.
 - [ ] 2.5 Replay contract: C2's S42 body reads "On pump since" and reads the
   newest history record (the first served), not the last; S105's premise also
   asserts the served confirmation, and its "View change record" now comes from
-  the confirmed frame; add S145 (an `in-place` capture confirms
-  the recorded Plan on the server, Changes reads "On pump since" that read, and
-  a second `in-place` capture leaves the time unchanged) and S146 (a differing
+  the confirmed frame; add S145 (an `in-place` capture confirms the recorded
+  Plan on the server, Changes reads "On pump since" that read, and a second
+  `in-place` capture leaves the time unchanged; its first confirmation check
+  reads the newest history row's `verdict?.state` together with the Changes
+  status in one assertion, written so a base history row with no `verdict` does
+  not throw) and S146 (a differing
   draft after a confirmed Plan reads Draft saved, offers Record decision and
   names the confirmed Plan on its own line), both on the `basal-lower` case.
   Register both, write their ledger entries in a dated `## #431 amendment —
@@ -119,10 +122,13 @@ the risk contract. Every value in tests and comments is synthetic.
   Pattern case's header shows no pending-Plan note and the watch panel shows the
   Plan with "Open Changes ›".
 - [ ] 3.6 Replay contract: add S147 on the `basal-lower` case, which serves both
-  a basal action and Pattern rows: after a Plan is recorded, the watch panel
-  reads the same "Plan · awaiting pump" state in two windows, a selected Pattern
-  case's header carries no pending-Plan note in either window (the base shows
-  one), and "Open Changes ›" lands on Changes at `subject=plan`. Add its ledger
+  a basal action and Pattern rows. After a Plan is recorded, it first selects a
+  Pattern case in each of two windows and checks that the case-file header
+  carries no pending-Plan note (the base shows one), and only then checks that
+  the watch panel reads the same "Plan · awaiting pump" state in both windows
+  and that "Open Changes ›" lands on Changes at `subject=plan`. The header
+  check precedes every watch-panel check because the base panel has no Plan
+  state, and a panel-first story would fail at the panel. Add its ledger
   entry to the #431 amendment section, record the moved note there, and move the
   inventory literals to 150 issued, 131 active, 19 retired: `acceptance.py`
   `inventory()`, and in `acceptance.test.py` the replay-plan `plan['count']`,

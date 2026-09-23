@@ -49,7 +49,7 @@
 
 ## 3. Desk browser coverage
 
-- [ ] 3.1 `frontend/desk.browser.test.mjs`: add `data_day_count` to the shared
+- [x] 3.1 `frontend/desk.browser.test.mjs`: add `data_day_count` to the shared
   `STATUS` stub, equal to the days `daysFor` marks as recorded in its span. Add one
   test that, with per-test routes, serves a two-month status span with a
   `data_day_count` and navigator reads padded seven days either side, opens Day,
@@ -60,7 +60,7 @@
 
 ## 4. Behavior ledger and replay
 
-- [ ] 4.1 `frontend/c4.replay.mjs`: add `C4_STORIES.S127` on the showcase, its
+- [x] 4.1 `frontend/c4.replay.mjs`: add `C4_STORIES.S127` on the showcase, its
   paging assertions before its served-count comparison so the base app fails on
   paging, not only on the missing field. Open Day through the nav (as S104 does)
   and read the rail's count. Open the Month calendar: the head count equals the
@@ -91,7 +91,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run the fast gate, the backend tests that cover the status read and the
+- [x] 5.1 Run the fast gate, the backend tests that cover the status read and the
   store, the acceptance unit tests, the OpenSpec validation and the three guard
   scripts named in the lock, and report their output. The port-bound legs (the
   desk browser suite's new case and `ONLY=S127` at both sizes, on base and on the

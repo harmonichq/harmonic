@@ -2981,6 +2981,9 @@ S127 · Day's rail count is the served number of recorded days in the whole
             reading; only then compares the rail's count with the served
             /api/status data_day_count, so an app counting loaded rows fails on
             the count moving, not only on the field it lacks
-  status:   pending coordinator run — fail-first on base a4d374a7 with the
-            #425 harness laid over, and pass on the branch, at both sizes
+  status:   base a4d374a7 with the #425 harness laid over fails at its
+            feature assertion at both sizes ("S127 loading May 2024 must not
+            move the rail's recorded-day count", 42 !== 30; 0 executed,
+            1 failed of 1 selected); branch 62c8aa84 passes at both sizes
+            (1 executed, 0 failed); coordinator-run 2026-09-23
 ```

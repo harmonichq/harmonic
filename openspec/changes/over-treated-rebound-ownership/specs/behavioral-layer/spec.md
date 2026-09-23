@@ -10,18 +10,23 @@ nadir to the guarded terminal. A Low whose judgment does not fire owns nothing:
 under its bar, owned by an announced meal, or refuted by a `no` answer. A High run
 that begins after the terminal SHALL be judged on its own. Ownership SHALL be read
 from the shared evaluation's own fired judgment, and no consumer SHALL re-judge it.
+Ownership SHALL be span membership: the evaluation SHALL record every owned High,
+whatever its own classifiers return.
 
 An owned High SHALL attribute neither Missed / unannounced meal nor Meal bolus fell
-short, and SHALL contribute no candidate or impact price to either. Both retained
-verdicts SHALL be non-matches with silence reason `upstream_cause`. When the
-context gate already explains the rise, the gate's verdict SHALL be kept;
-otherwise the detail SHALL name the owning Low's nadir value and time. Both
-classifiers SHALL judge the context gate under the scenario configuration they
-were given.
+short, and SHALL contribute no candidate or impact price to either. Each retained
+verdict SHALL keep a rise-check exit's own reason (`insufficient_data`, or
+`no_trigger` for a flat or slow rise) and SHALL keep the context gate's verdict
+when the gate explains the rise. Every other outcome of either classifier,
+including one that would otherwise match or be priced, SHALL be a non-match with
+silence reason `upstream_cause` whose detail names the owning Low's nadir value
+and time. Both classifiers SHALL judge the context gate under the scenario
+configuration they were given.
 
 The owning Episode's scored span SHALL reach the later of its guarded terminal and
-the end of every High run it owns, and SHALL still stop at the next Episode that
-bears a Lever. An owned High SHALL NOT count toward the highs "no cause detected"
+the end of every High run it owns. It SHALL never reach past the guarded scan's
+meal-bolus stop, the next substantial carb-tagged meal bolus after the nadir. It
+SHALL still stop at the next Episode that bears a Lever. An owned High SHALL NOT count toward the highs "no cause detected"
 total, even when its own Episode draws no Lever. It SHALL remain a non-driver
 Occurrence with no attributed Lever. No staging predicate, cap, support floor,
 segmentation rule, gate lookback, rebound horizon or rebound bar SHALL change.
@@ -35,6 +40,14 @@ segmentation rule, gate lookback, rebound horizon or rebound bar SHALL change.
 - **THEN** each rebound is attributed Over-treated low exactly once
 - **AND** no Episode attributes Missed / unannounced meal or Meal bolus fell short
   to the High, whose own Episode is silent with `upstream_cause`
+
+#### Scenario: A slow approach to the High is still owned
+
+- **GIVEN** a Low whose rebound climbs fast, then creeps across 250 mg/dL too slowly
+  to count as a rise, more than 90 minutes after the Low run ends
+- **WHEN** the shared evaluation runs and the exposures producer tallies highs
+- **THEN** the High's verdicts keep `no_trigger`
+- **AND** the High is recorded as owned and is not counted as uncaused
 
 #### Scenario: A near-low rebound inside its own Episode is not a missed-meal candidate
 
@@ -57,6 +70,8 @@ segmentation rule, gate lookback, rebound horizon or rebound bar SHALL change.
 - **THEN** its span reaches the later of the guarded terminal and the owned High
   run's end
 - **AND** a later Episode that bears a Lever still bounds it
+- **AND** a substantial meal bolused during the owned High ends the span no later
+  than that bolus
 
 #### Scenario: An owned High is explained, not uncaused
 

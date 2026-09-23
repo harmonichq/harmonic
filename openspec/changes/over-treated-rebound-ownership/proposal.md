@@ -38,14 +38,17 @@ outranked candidate.
   nadir and at or before its guarded rebound terminal, in the low's Episode or a
   later one. The ownership reads the build's own fired judgment; nothing re-judges
   the low.
+- Ownership is span membership: every High inside a fired rebound span is recorded
+  as owned, whatever its own classifiers return.
 - An owned High attributes neither Missed / unannounced meal nor Meal bolus fell
-  short. Both retained verdicts are non-matches with silence reason
-  `upstream_cause`. The context gate's verdict is kept when the gate already
-  explains the rise; otherwise the detail names the owning low.
+  short. A rise-check exit keeps its own reason (`insufficient_data` or
+  `no_trigger`), and a rise the context gate explains keeps the gate's verdict.
+  Every other outcome is a non-match with silence reason `upstream_cause` naming
+  the owning low.
 - The owning Episode's scored span reaches the later of the guarded terminal and
-  the end of every High run it owns, and still stops at the next lever-bearing
-  Episode.
-- The highs "no cause detected" count no longer counts an owned High.
+  the end of every High run it owns. It never passes the scan's meal-bolus stop,
+  and it still stops at the next lever-bearing Episode.
+- The highs "no cause detected" count no longer counts any owned High.
 - The missed-meal and meal-bolus-short classifiers pass the scenario
   configuration to the context gate instead of its defaults.
 - One new QA coverage era covers the new state through the production
@@ -66,6 +69,8 @@ outranked candidate.
 `ciq_autotune/analyzers/classifiers/meal_bolus_short.py`,
 `ciq_autotune/analyzers/scenario/attribute.py`,
 `ciq_autotune/analyzers/scenario/evaluation.py`,
-`ciq_autotune/explore_exposures.py`, their tests, one QA case, `CONTEXT.md`, the
+`ciq_autotune/analyzers/classifiers/evidence.py` (docstring),
+`ciq_autotune/explore_exposures.py`, the findings-projection fixture generator's
+prose, their tests, one QA case, `CONTEXT.md`, the
 behavioral-layer spec (one ADDED requirement), and the design exploration's
 generated `code_version` stamps.

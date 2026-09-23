@@ -486,11 +486,14 @@ async function heldRequest414(page, pattern, matches) {
 // candidates are chosen by the served chart coordinate alone, so a desk that
 // serves no count sentence still reaches the feature assertion.
 export async function assertRankedMinis(page, rows) {
+  // The ECharts instance lives on the `.mini` host itself (its canvas sits in
+  // an inner div), and `getOption()` normalises the graphic list into one
+  // group whose `elements` carry the texts.
   const graphicOf = async (id) => page.evaluate((rowId) => {
-    const row = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"]`);
-    const host = row?.querySelector('.mini canvas');
-    const chart = host && window.echarts.getInstanceByDom(host.parentElement);
-    return chart?.getOption().graphic?.map((item) => item.style?.text) || null;
+    const mini = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"] .mini`);
+    const chart = mini?.querySelector('canvas') && window.echarts.getInstanceByDom(mini);
+    const graphic = chart?.getOption().graphic;
+    return graphic ? graphic.flatMap((item) => item.elements || [item]).map((item) => item.style?.text) : null;
   }, id);
   const candidates = rows.filter((row) => row.pattern_chart || (row.event_chart && !row.claimed_by));
   assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');

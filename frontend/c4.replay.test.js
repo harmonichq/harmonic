@@ -760,9 +760,36 @@ test('assertBasalLaneGallery fails when the staged mark is not an underline', as
 
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after
 // opening the rail. `graphics` maps a row id to its mounted mini's graphic
-// texts; an absent id is an unmounted mini.
+// texts; an absent id is an unmounted mini. The story's own in-page function
+// runs against a DOM shaped as the served desk mounts a mini: the ECharts
+// instance on `SPAN.mini`, its canvas inside an inner DIV, and `getOption()`
+// returning the texts as ONE graphic group's `elements` (coordinator probe of
+// the branch showcase, 2026-09-22).
 function qa413MiniPage(graphics) {
-  return { evaluate: async (_fn, id) => graphics[id] ?? null };
+  const charts = new Map();
+  const miniFor = (id) => {
+    if (!(id in graphics)) return null;
+    const mini = { tagName: 'SPAN' };
+    const div = { tagName: 'DIV', parentElement: mini };
+    mini.querySelector = (selector) => (selector === 'canvas' ? { tagName: 'CANVAS', parentElement: div } : null);
+    charts.set(mini, { getOption: () => ({ graphic: [{ type: 'group',
+      elements: graphics[id].map((text) => ({ type: 'text', style: { text } })) }] }) });
+    return mini;
+  };
+  return {
+    evaluate: async (fn, id) => {
+      const saved = { document: globalThis.document, window: globalThis.window, CSS: globalThis.CSS };
+      Object.assign(globalThis, {
+        CSS: { escape: (value) => value },
+        window: { echarts: { getInstanceByDom: (node) => charts.get(node) } },
+        document: { querySelector: (selector) => {
+          const match = /^\.qrow\[data-id="([^"]+)"\] \.mini$/.exec(selector);
+          return match ? miniFor(match[1]) : null;
+        } },
+      });
+      try { return fn(id); } finally { Object.assign(globalThis, saved); }
+    },
+  };
 }
 const minied = { id: 'pattern:p', pattern_chart: { key: 'p' },
   count_sentences: [{ outcome: 'ran high', count: 5, denominator: 12, noun: 'meals' }] };

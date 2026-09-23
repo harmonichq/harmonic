@@ -71,6 +71,15 @@ reproduction is `docs/scope/431-plan-state-repro.py` with its browser half
   the rewritten browser test keeps "pending Plan" in its title (`pass 2`); every
   sub-order runs on Opus; ledger additions go in a dated `## #431 amendment —
   2026-09-23` section. inline.
+- **Third-panel rulings (release coordinator, the review cap; none reopens a
+  decision):** a withdrawn Plan's verdict is decided first, so a withdrawn newest
+  Plan reads `withdrawn` and agrees with guidance's absent pending Plan; the
+  verdict drops `checked_at`, which no surface reads; the coordinator captures
+  the render evidence into `docs/scope/release-422-434-evidence/431/`; each new
+  story's base proof runs this branch's replay harness over a4d374a7, with
+  S146's unreachable premise accepted and its unit test as the fail-first half;
+  the replay tasks name every `acceptance.test.py` literal the inventory moves.
+  → ADR (verdict) / inline (evidence and tasks).
 - **Default assumed, returned to the coordinator: a confirmed Plan keeps no
   watch-panel state.** Why: the panel shows what holds the one active-change
   seat, the server releases that seat on confirmation, and an indefinitely shown
@@ -132,3 +141,13 @@ blockers found per round, each tagged `authoring` or `injected`.
   commit the release never produces; S105's lost change-record door; the full
   acceptance test binding a port; a filtered browser leg with no pass count.
   6 notes folded in. 0 `injected`.
+- **Round 2** (the same cold reviewer on the round-1 deltas): countersigned;
+  3 notes folded into the draft only (the six test modules listed in the
+  expected diff, the summary's incomplete-items wording, the `Amended S42 ·`
+  line form). 0 blockers.
+- **Round 3** (fresh cold pass, the load-bearing tier's third panel and the
+  cap): BLOCKED, 4 blockers and 1 note, all `authoring` — the verdict states
+  never excluded a withdrawn Plan; `checked_at` served with no reader; no render
+  evidence leg; base proofs not stated against this branch's harness; the note
+  on the acceptance-test literals. Settled by coordinator rulings. 0
+  `injected`.

@@ -28,7 +28,9 @@ its small night count, because the key calls it a plain "lower".
   1280×720 and 1440×900 nothing moves, because the pane's rows fit exactly and
   there is no scroll range. On a shorter window, the strip, its key and every
   cell are reached with the pane's own scroll, and every raise or lower slot
-  can be selected with the pointer and staged.
+  can be selected with the pointer and staged. Near the narrowest split, the
+  key wraps between whole entries instead of cutting its last ones off at the
+  pane's edge. At the supported sizes it stays on one line.
 - **The key names a recurring-lows lower apart from a measured lower.** A
   slot the backend serves as "lower (recurring lows)" counts under
   "lower · recurring lows", with the same paint. The name is read from the

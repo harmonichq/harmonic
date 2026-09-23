@@ -16,8 +16,20 @@ Each fact names its evidence. Theory is marked as theory.
   produce" (`.canvas-head h2` and `.canvas-head .head-line .meta` rules).
 - **Inside the 210px body the chart already yields first.** `.canvas-pane >
   .body` is `grid-template-rows: minmax(0, 1fr) auto`, with `#chart` in the
-  first track and the lane in the `auto` track. Nothing in that body depends on
-  the window's width.
+  first track and the lane in the `auto` track. Nothing in that body's height
+  depends on the window's width.
+- **The key is one unbreakable line that already overruns the pane at 832px.**
+  `.lane-key` is `flex-wrap: nowrap; white-space: nowrap; overflow: visible`,
+  between the canvas spine's side margins, `--ck-grid-left: 34px` and
+  `--ck-grid-right: 52px` (`frontend/diagnose-workstation.css`). The archived
+  #359 measurement
+  (`openspec/changes/archive/2026-09-06-359-canvas-pane-overprint/design.md`)
+  found the key's `b.t` count pair reaching x=422 at 832px wide, against a pane
+  whose right edge is 402. The `b.t` pair is used only in the key
+  (`renderLaneKey`). The pane's `overflow-x: clip` cuts it rather than letting
+  it paint over the inspector. D6's entry adds roughly 90px more whenever it is
+  shown. S113 checks only `#lane-key`'s own box, which stays inside the wrap
+  while its entries spill past it.
 - **Nothing at desktop widths lets the pane scroll.** The pane is
   `overflow-x: clip`, which leaves the vertical axis `visible`. Every ancestor
   hides overflow: `.dw`, `.v2-diagnose`, `.gf-main`, and `.cockpit-shell` down
@@ -70,6 +82,21 @@ There is no scroll range, and nothing on screen moves. Below the floor, the
 pane scrolls, and the strip, its key and every cell are reached with the
 pane's own scroll.
 
+Horizontally, the pane cannot scroll: its width backstop computes to
+`hidden`, and a sideways scroll would pull the plot out of register with the
+clock. So the key must fit its width instead. `.lane-key` wraps between whole
+entries (`flex-wrap: wrap`), and each entry stays one unbroken
+`inline-flex` span. Extra lines take their height from the chart inside the
+210px body, whose track is `minmax(0, 1fr)`, and the pane scrolls if the body
+still overruns.
+
+At 1280 and 1440 wide the key has at least 764px of line, against roughly
+430px of entries for a five-verdict lane (read from the #413 capture), or about
+520px with D6's entry as well. So it stays on one line and nothing moves at
+the supported sizes. At 1200 wide it has 684px, so it also stays on one line.
+It wraps only near the narrowest split. Task 1 measures all of this; S113 and
+S151 assert it.
+
 **Why this and not the issue's other two options.** The requirement is "fully
 visible, or reachable by scrolling, at every desktop window the split layout
 forms at". Only a scroll meets it at every height.
@@ -91,6 +118,13 @@ The ≤831px layout's scroll on this element is shipped precedent.
 - The #359 comment's premise ("would hand this pane a vertical scrollport it
   does not have") is exactly what this decision changes, so the comment is
   rewritten.
+- The #413 comment on `.lane-key` ("one line, always: a wrapped key would grow
+  the canvas pane's fixed rows") is rewritten too. A wrapped key now takes its
+  extra line from the chart inside the fixed body, and the pane scrolls when
+  needed; it grows no row.
+- At 832px wide, #359 also measured the header's hover readout (`#rd-p-n`)
+  overrunning the pane edge. That is chart-header furniture, outside the basal
+  lane, and it stays clipped exactly as today.
 - The ≤831px and ≤480px blocks set their own overflow and are untouched, so
   only the ≥832px split changes.
 - The fullscreen and All charts states resize the pane's rows to
@@ -103,9 +137,11 @@ implementing if either of these shows up in the base measurement:
 - any row resolves larger than its declared track: the header taller than its
   30px rail, or the Spotlight taller than `max(260px, leftover)`; or
 - 1200×560 or 832×560, the short sizes the new stories use, does not clip on
-  base by at least 20px.
+  base by at least 20px; or
+- the key's entries do not fit on one line at 1280×720 on base. The fix would
+  then wrap the key at a supported size, which contradicts "nothing moves".
 
-In either case the cause is not the fixed floors alone. The pane scroll would
+In any of these cases the cause is not the fixed floors alone. The pane scroll would
 still make the strip reachable, but a mis-sized row is a separate defect, and
 this order does not fix it blind.
 
@@ -113,6 +149,9 @@ this order does not fix it blind.
 
 **Decision.** Settled by Connor Griffin (operator, 2026-09-23, D6): "a 'lower'
 slot backed by recurring lows but few nights gets its own word in the key."
+The coordinator confirmed this reading of D6 on the same day, and the scope
+ledger records the ruling verbatim: the word goes on every served
+"lower (recurring lows)" slot, thin or thick.
 
 Every slot served as `"lower (recurring lows)"` counts in the key under its own
 entry, `lower · recurring lows`, and never under `lower`. A cell and its key
@@ -169,12 +208,22 @@ base a4d374a72c8048d9d93ee4925805b91cf5674835 and hands the numbers to `start`.
   - every overflow-clipping ancestor, with its bottom, its `scrollTop` and
     whether it clips the strip;
   - the document's scroll extent;
-  - the key's text.
-- **What decides.** Read the contingency above. The theory holds when all
-  three of these are true:
+  - the key's text;
+  - horizontally, for every key entry (`#lane-key > span`, the lead word
+    included): its left and right edges and its top; the pane's right edge and
+    its client right edge; how far the rightmost entry overruns each of them;
+    the key's line count and its `scrollWidth` against its `clientWidth`; and
+    how far the rightmost cell overruns the pane's right edge.
+
+  The horizontal readings that decide are the ones at 832 and 1200 wide.
+- **What decides.** Read the contingency above. The theory holds when all of
+  these are true:
   - 1200×736 does not clip;
   - the clip threshold is near 604px at every split width;
-  - the rows resolve to `max(260, leftover) / 30 / 210`.
+  - the rows resolve to `max(260, leftover) / 30 / 210`;
+  - the key is one line that fits inside the pane at 1200, 1280 and 1440 wide;
+  - its rightmost entry overruns the pane's right edge at 832 wide, as #359
+    recorded. The key wrap is what fixes that overrun.
 
 The measurement asserts nothing and writes no repository file.
 
@@ -203,6 +252,7 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
 - **Base.** origin/main a4d374a72c8048d9d93ee4925805b91cf5674835.
 - **Inventory diff.** No story asserts any of these today:
   - the strip lies inside the canvas pane's visible box;
+  - every key entry lies horizontally inside the pane;
   - the strip is reachable on a window shorter than the pane's floor;
   - a counted verdict agrees with its slot's panel;
   - the key names a recurring-lows lower.
@@ -211,18 +261,31 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
 - **Sanctioned changes to shipped desk behavior.** Connor Griffin ·
   2026-09-23 · "Q1 A, Q2 A, defaults all fine, go". This is the answer to Q2,
   the standing sanction for every change the release's 13 issue checklists
-  call for. It covers two changes:
+  call for. It covers three changes:
   - On a desktop split window too short for its floors, the canvas pane
     scrolls, where it used to clip the strip.
+  - Near the narrowest split, the key wraps between whole entries, where it
+    used to cut its last entries off at the pane's edge.
   - The key moves recurring-lows lowers out of "lower" into
     "lower · recurring lows" (D6, same date).
 
   No shipped behavior is retired.
+- **Ledger records.**
+  - Following the coordinator's freeze-header rule, this change records its
+    stories in its own `## #433 amendment — 2026-09-23` section.
+  - On this branch it moves only the numeric inventory literals in
+    `acceptance.py` and `acceptance.test.py`.
+  - The existing `★ FROZEN` blocks, the header's inventory line,
+    ACCEPTANCE.md's count sentence, the count literal in `mockups/INDEX.md`'s
+    desk row and the one release freeze block are coordinator-owned. They are
+    written once on the integration branch.
 - **Render matrix owed.** Synthetic before-and-after captures. The desk has one
   theme.
   - The canvas pane at 1200×560: before, the strip is cut; after, it is reached
     by the pane's scroll.
   - The canvas pane at 1280×720 and 1440×900: unchanged.
+  - The lane key at 832×560: before, the last entries are cut at the pane's
+    edge; after, the key wraps and every entry is whole.
   - The `basal-recurring-low-no-clean-median` lane key at 1280×720: before,
     "lower 1"; after, "lower · recurring lows 1".
 
@@ -233,6 +296,7 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
     capture, log or screenshot;
   - a lane key word or count that differs from the served verdicts, which
     would be silent incorrect success;
+  - a key entry cut off or split at the pane's edge at any split width;
   - any staging, verdict, floor or direction decision moving into the
     frontend;
   - the canvas pane gaining a scroll range, or moving anything, at 1280×720 or
@@ -243,13 +307,15 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
   Spotlight stays at its 260px floor.
 - **Unsupported:**
   - layouts below 832px wide, which already scroll or flow and are unchanged;
-  - making the strip visible at rest on every short window.
+  - making the strip visible at rest on every short window;
+  - the chart header's hover readout at the narrowest split, which stays
+    clipped as today.
 - **Evidence owed:**
-  - On base, S151 and S152 fail at the short window for the clipping reason,
-    and S113's recurring-lows variant fails on the key word. All three pass on
-    the branch.
+  - On base, S151 and S152 fail at the short sizes for the clipping reason,
+    with S151 also failing on the key entries' overrun at 832 wide. S113's
+    recurring-lows variant fails on the key word. All three pass on the branch.
   - S153 passes on base and on the branch.
-  - S113's pane checks pass at both supported sizes.
+  - S113's pane checks and one-line key check pass at both supported sizes.
   - Node tests cover `buildSlotLane`'s recurring-lows split and `renderLane`'s
     cell names.
   - The complete desk ledger passes at both sizes on the pushed commit.

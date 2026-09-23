@@ -25,6 +25,18 @@ were assumed and to instrument the mandatory plan-review rounds.
 - **The cause stays theory until the coordinator measures base.** Why: a
   worker may not bind a port in this release. The theory and its contingency
   are in design.md. → inline.
+- **The D6 reading is confirmed** (settled 2026-09-23). Recorded verbatim:
+  "Coordinator ruling, 2026-09-23: the D6 key word goes on every served
+  'lower (recurring lows)' slot, thin or thick. Rationale: every thin lower is
+  one of these by the eight-night floor; the word is true for thick ones too;
+  limiting it to thin ones would need a frontend night floor (forbidden by
+  AGENTS.md) or a new served field." → inline (the design.md ADR cites it).
+- **The lane key wraps between whole entries near the narrowest split**
+  (settled in plan-review round 1). Why: the pane's width backstop computes to
+  `hidden` once the pane scrolls vertically, and the archived #359 measurement
+  has the key's count pair past the pane's edge at 832px. So the key must fit
+  its width, and at 1280/1440 it still fits on one line. → ADR (design.md, the
+  canvas-pane ADR).
 
 ### Risk contract
 
@@ -34,9 +46,10 @@ Disposition: admitted.
 
 ## Open questions
 
-- The coordinator-run base measurement. Its numbers are recorded by task 1.1.
-- For the coordinator: confirm the D6 reading, that the word goes on every
-  recurring-lows lower rather than only on the thin ones (see the result).
+- The coordinator-run base measurement. Task 1.1 records its numbers,
+  including the key entries' horizontal edges.
+- ~~Confirm the D6 reading.~~ Closed 2026-09-23 by the coordinator ruling
+  recorded under Decisions.
 
 ## Spawned tasks
 
@@ -46,3 +59,18 @@ None.
 
 Recorded at each plan-review round: the blockers found, each tagged
 `authoring` or `injected`.
+
+- **Round 1 (coordinator-dispatched): BLOCKED, 3 blockers, all `authoring`.**
+  1. Requirement 1 promised the key visible at 832×560, but the fix scrolled
+     only vertically. The key's entries overrun the pane's edge there, and
+     S151 checked only the key's own box. Fixed: the key wraps between whole
+     entries, S151 and S113 check every entry horizontally, and the
+     measurement records the entries' edges at 832 and 1200 wide.
+  2. The spec's pointer clause named three sizes, but S152 ran only at
+     1200×560. Fixed: S152 loops over all three sizes.
+  3. The fence called the D6 reading settled while this ledger still listed
+     it as open. Fixed: the coordinator ruling is recorded and the question
+     closed.
+
+  Also applied: the brief's freeze-header rule. No header re-freeze, and the
+  count lines in ACCEPTANCE.md and INDEX.md are coordinator-owned.

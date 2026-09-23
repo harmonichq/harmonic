@@ -26,6 +26,12 @@ decisions, the measurement, the revise preparation and the risk contract.
   no `scrollbar-gutter`, which would narrow the pane at the supported sizes.
   Rewrite the #359 comment on that rule: the pane now owns a vertical scroll,
   so its width backstop computes to `hidden`, and S151 guards `scrollLeft`.
+  Let `.lane-key` wrap between whole entries (`flex-wrap: wrap`, with a row
+  gap no larger than the key's own line spacing). Each `#lane-key > span`
+  entry stays one unbroken line. Rewrite the #413 "one line, always" comment
+  there: a wrapped key takes its line from the chart inside the fixed body,
+  and it wraps only when the pane is too narrow, never at 1280×720 or
+  1440×900.
 - [ ] 2.2 Add S151 to the desk ledger and replay. S151, S152 and S153 are each
   built the way S113 is: a `C4_STORIES` body, an
   `appOnly('HV2-17', …)` export carrying its
@@ -37,17 +43,31 @@ decisions, the measurement, the revise preparation and the risk contract.
   - when `#lane-wrap` is not wholly inside `.canvas-pane`'s visible box at
     rest, the pane's computed `overflow-y` is `auto` or `scroll`;
   - a mouse wheel over the pane's header rail scrolls the pane until
-    `#lane-wrap`, `#lane-key` and every `#lane > .lane-cell` lie inside both
-    the pane's visible box and the viewport;
+    `#lane-wrap`, `#lane-key`, every `#lane-key > span` entry and every
+    `#lane > .lane-cell` lie inside both the pane's visible box and the
+    viewport;
+  - horizontally, at rest, every `#lane-key > span` entry and every cell lies
+    inside the pane's client box, whose right edge is the pane's left edge plus
+    `clientLeft` plus `clientWidth`; checking only `#lane-key`'s own box is
+    not enough;
+  - no entry is split: each entry's height is one line, no taller than the
+    lead entry's;
   - every other ancestor's `scrollTop` stays 0, and the pane's `scrollLeft`
     stays 0.
 
   Never set `scrollTop` or `scrollLeft`, and never reach the strip through a
   Playwright action that scrolls into view. On base, the `overflow: hidden`
   ancestors can be scrolled by script or by focus, which would fake
-  reachability. Failure messages name the measured overrun in pixels.
-- [ ] 2.3 Add S152: on `basal-verdict-gallery`, at 1200×560, handle every cell
-  the key counts as raise or lower:
+  reachability. Failure messages name the measured overrun in pixels, per
+  axis.
+
+  Factor the in-page geometry check into an exported helper, as S113's is.
+  Give it fake-page node tests in `frontend/c4.replay.test.js`: one passing
+  lane, one failing on a key entry past the pane's right edge, and one failing
+  on a strip below a pane that cannot scroll.
+- [ ] 2.3 Add S152: on `basal-verdict-gallery`, at each of S151's three sizes
+  (1200×736, 1200×560 and 832×560), set with `page.setViewportSize` and
+  restored afterwards, handle every cell the key counts as raise or lower:
   - reach it as S151 does;
   - click it with `page.mouse.click` at the centre of its visible box, never
     a locator click;
@@ -55,12 +75,17 @@ decisions, the measurement, the revise preparation and the risk contract.
     (`.stagebtn`); the inspector's own scroll may bring the button into view;
   - require the picked cell to still lie inside the pane's visible box.
 - [ ] 2.4 Amend S113 under the Q2 sanction (design.md, "Revise preparation"):
-  at the run's own size (1280×720 or 1440×900), `#lane-wrap` lies wholly inside
-  `.canvas-pane`'s visible box at rest, and the pane has no scroll range
-  (`scrollHeight <= clientHeight + 1`). Update `assertBasalLaneGallery`'s
-  fake-page node tests in `frontend/c4.replay.test.js` so they include the
-  pane: one passing case, one failing when the wrap overruns the pane, and one
-  failing when the pane scrolls.
+  at the run's own size (1280×720 or 1440×900), require all of these at rest:
+  - `#lane-wrap` and every `#lane-key > span` entry lie wholly inside
+    `.canvas-pane`'s visible box;
+  - the key stands on one line, meaning every entry shares the lead entry's
+    top;
+  - the pane has no scroll range (`scrollHeight <= clientHeight + 1`).
+
+  Update `assertBasalLaneGallery`'s fake-page node tests in
+  `frontend/c4.replay.test.js` to include the pane: one passing case, and
+  cases that fail when the wrap overruns the pane, when the pane scrolls, and
+  when the key wraps onto a second line.
 
 ## 3. The recurring-lows key word (D6)
 
@@ -107,22 +132,26 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 5. Records
 
-- [ ] 5.1 Desk ledger `mockups/harmonic-v2-desktop.behavior.md`:
-  - re-freeze the header on base a4d374a7 with inventory 150 issued · 131
-    active · 19 retired;
-  - add a "#433 amendment — 2026-09-23" section holding the S151–S153 entries
-    (element, source, lock, data, evidence, status), the amended S113 entry
-    with its dated sanction and the old-fails / new-passes proof, and its
-    handler-inventory rows.
-- [ ] 5.2 Move the pinned inventory to 150 / 131 / 19 in
-  `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`, in
-  `acceptance.test.py`'s counts, in `ACCEPTANCE.md`'s inventory sentence, and
-  in the surface ledger `mockups/INDEX.md`'s desk row, which also gains this
-  change's spec, S151–S153, and the evidence folder.
-  Pin S151–S153 in `frontend/c4.replay.test.js` beside S108–S117: each is
-  registered once, with term `HV2-17` and case `basal-verdict-gallery`.
-- [ ] 5.3 Update DESIGN.md's "Basal lane" entry: the recurring-lows key word,
-  and the canvas pane's own scroll on short desktop windows.
+- [ ] 5.1 In the desk ledger `mockups/harmonic-v2-desktop.behavior.md`, add
+  one `## #433 amendment — 2026-09-23` section, following the #413 and #414
+  pattern. It holds:
+  - the S151–S153 entries (element, source, lock, data, evidence, status);
+  - the amended S113 entry, with its dated sanction and the old-fails /
+    new-passes proof;
+  - its handler-inventory rows.
+
+  Never rewrite, re-date or replace an existing `★ FROZEN` block. Leave the
+  header's inventory line alone: that line, ACCEPTANCE.md's count sentence,
+  `mockups/INDEX.md`'s count literal and the one release freeze block are
+  coordinator-owned.
+- [ ] 5.2 On this branch, move only the numeric inventory literals to
+  150 / 131 / 19: `mockups/sweep/harmonic-v2-desktop/acceptance.py`
+  `inventory()` and `acceptance.test.py`'s counts, so this branch's own tests
+  pass. Pin S151–S153 in `frontend/c4.replay.test.js` beside S108–S117: each
+  is registered once, with term `HV2-17` and case `basal-verdict-gallery`.
+- [ ] 5.3 Update DESIGN.md's "Basal lane" entry with three things: the
+  recurring-lows key word, the key wrapping between whole entries near the
+  narrowest split, and the canvas pane's own scroll on short desktop windows.
 
 ## 6. Verification
 

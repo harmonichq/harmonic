@@ -282,7 +282,11 @@ export function mount(host, deps = {}) {
   if (deps.context?.occurrence?.startsWith('record:') || deps.context?.subject === 'history') {
     mountHistory(host, deps); return;
   }
-  if ((planOpen && planUnderway()) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
+  // The watch dock's arrival names the watched record: while the server serves
+  // an active change, a Plan this page opened earlier does not take its seat
+  // (ADR 429). Every other arrival keeps the open-Plan precedence.
+  const watchArrival = deps.context?.subject === 'watch' && disposition() === 'active_change';
+  if ((planOpen && planUnderway() && !watchArrival) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
   if (guidanceError()) { host.innerHTML = failedFrame(); bind(host); return; }
   if (!guidanceSettled()) {
     loadGuidance();

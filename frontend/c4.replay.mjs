@@ -5,6 +5,7 @@ import { xAtMinute } from './diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
+import { parseRoute } from './tab-routing.js';
 
 const read = async (page, path, params = {}, timeout = 30000) => {
   const url = new URL(path, page.url());
@@ -48,6 +49,51 @@ async function openDiagnoseRail(page) {
   await settled(page);
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settled(page);
+}
+// #429: the watch dock at the foot of the Diagnose inspector names Changes, and
+// its link opens Changes on the watched record. The served admission is read
+// first, so a case serving no active watch fails at a premise, never at the label.
+async function watchDock429(page, id, kind) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', `${id} premise: the case must publish available follow-up admission`);
+  assert.equal(roster.admission.active_kind, kind, `${id} premise: the case must serve an active ${kind}`);
+  const active = roster.admission.active_id;
+  assert.ok(active != null, `${id} premise: the case must publish the active watch identity`);
+  let slot = null; let detail = null;
+  if (kind === 'trial') {
+    const changes = (await read(page, '/api/verify/trials', { kind, selected: active })).selected?.changes || [];
+    slot = changes.length === 1 ? changes[0].slot : null;
+    assert.ok(slot, `${id} premise: the admitted Trial must serve one change with its slot`);
+  } else {
+    const pinned = roster.focuses.find(row => row.id === active)?.pinned_at;
+    assert.ok(typeof pinned === 'string', `${id} premise: the admitted Focus must serve its pin date`);
+    detail = `Pinned ${pinned.slice(5, 10)} · adherence and outcome are read in Changes`;
+  }
+
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  const dock = page.locator('.inspector > .watch');
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await dock.getAttribute('data-state')), kind, `${id} premise: the dock must report the watched ${kind}`);
+  }, `${id} the dock reports the watched ${kind}`);
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen((await dock.locator('.go').innerText()).trim()), 'Open Changes ›',
+      `${id} the dock's link must read "Open Changes ›"`);
+    assert.doesNotMatch(seen(await dock.innerText()), /Verify/, `${id} no dock text may name Verify`);
+    if (detail) assert.equal(seen((await dock.locator('.how').innerText()).trim()), detail,
+      `${id} the Focus detail line must say where adherence and outcome are read`);
+  }, `${id} the dock names Changes`);
+
+  await dock.locator('.go').click();
+  await waitForReplayAssertion(async seen => {
+    const route = parseRoute(new URL(seen(page.url())));
+    assert.equal(route.destination, 'changes', `${id} the dock's link must land on Changes`);
+    assert.equal(route.context.subject, 'watch', `${id} the arrival must name the watch`);
+  }, `${id} the dock's link opens Changes on the watch`);
+  await page.locator(`.gf-stage-${kind}`).waitFor({ state: 'visible', timeout: 30000 });
+  if (slot) await waitForReplayAssertion(async seen => {
+    assert.ok(seen(await page.locator('.gf-stage-trial .gf-title').innerText()).includes(slot),
+      `${id} the Trial's own view must be titled for the admitted Trial's slot ${slot}`);
+  }, `${id} Changes shows the admitted Trial`);
 }
 async function readiness(page, unit, required) {
   const comparison = await retained(page);
@@ -1077,6 +1123,10 @@ export const C4_STORIES = {
       assert.equal(findings.findings?.window?.scoped, false, 'S117 the findings read must be unscoped');
     }, 'S117 a cold arrival opens on the 24 h window, unscoped');
   },
+  // #429: a watched Trial's dock names Changes, and its link opens that Trial.
+  async S139(page) { await watchDock429(page, 'S139', 'trial'); },
+  // #429: the same for a watched Focus, including its detail line.
+  async S140(page) { await watchDock429(page, 'S140', 'focus'); },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

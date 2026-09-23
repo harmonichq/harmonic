@@ -16,6 +16,7 @@ export const STORY_CASES = Object.freeze({
   S106: 'pattern-near-tie', S107: 'showcase',
   S108: 'showcase', S109: 'showcase', S110: 'edit-chain', S111: 'edit-chain', S112: 'edit-chain',
   S113: 'basal-verdict-gallery',
+  S139: 'c3-trial', S140: 'c3-focus',
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

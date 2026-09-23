@@ -5,7 +5,7 @@ none reads real data, and nothing here starts a server.
 
 ## 1. The dock's words and route token
 
-- [ ] 1.1 Fail first in `frontend/watched-change-dock.test.js`. Expect
+- [x] 1.1 Fail first in `frontend/watched-change-dock.test.js`. Expect
   `{ label: 'Open Changes', to: 'changes' }` from the Trial and the Focus states,
   and a Focus detail that flattens to exactly
   `Pinned 08-04 · adherence and outcome are read in Changes` for the existing
@@ -13,7 +13,7 @@ none reads real data, and nothing here starts a server.
   contains "Verify", looping over every state the view returns. Run it on the base and
   observe it fail for the right reason: the view returns `'Open Verify'` /
   `'verify'` and "read on Verify".
-- [ ] 1.2 Implement surfaces **The watch dock names Changes for a watched Trial
+- [x] 1.2 Implement surfaces **The watch dock names Changes for a watched Trial
   or Focus** in `frontend/watched-change-dock.js`: change both routes and the
   Focus detail. Rewrite the comments above the Trial day clamp and the Focus
   detail so they name Changes and describe only what Changes renders: Changes'
@@ -24,7 +24,7 @@ none reads real data, and nothing here starts a server.
 
 ## 2. Landing on the watched record
 
-- [ ] 2.1 Fail first in a new file, `frontend/changes-watch-arrival.test.js`,
+- [x] 2.1 Fail first in a new file, `frontend/changes-watch-arrival.test.js`,
   in its own process because Changes' open-Plan flag is module state that would
   leak into `frontend/changes.test.js`. Drive Changes' public `mount` the way
   `frontend/changes.test.js` does: serve an eligible concern, press its Stage
@@ -34,13 +34,13 @@ none reads real data, and nothing here starts a server.
   (c) With no active change served, an arrival with `{ subject: 'watch' }`
   renders the same frame as an arrival with no context. Observe (a) fail on the
   base.
-- [ ] 2.2 Implement surfaces **The watch dock opens Changes on the watched Trial
+- [x] 2.2 Implement surfaces **The watch dock opens Changes on the watched Trial
   or Focus** in `frontend/changes.js` `mount`: the watch arrival skips only the
   client-local open-Plan preemption, and only while the served disposition is
   `active_change`. The history and record routes, the explicit `plan` route and
   the served draft and pending-Plan dispositions keep their places, and no other
   arrival changes.
-- [ ] 2.3 In `frontend/diagnose.js`, make Diagnose's `go` callback turn the
+- [x] 2.3 In `frontend/diagnose.js`, make Diagnose's `go` callback turn the
   token `changes` into a Changes arrival with `{ subject: 'watch' }`, and leave
   `plan` as it is. Pin both in `frontend/diagnose.test.js` through the
   `createView` callbacks, with a stubbed `window.history`: `go('changes')` writes
@@ -49,7 +49,7 @@ none reads real data, and nothing here starts a server.
 
 ## 3. Behavior ledger and replay
 
-- [ ] 3.1 Append a section headed `## #429 amendment — 2026-09-23, issue #429`
+- [x] 3.1 Append a section headed `## #429 amendment — 2026-09-23, issue #429`
   to `mockups/harmonic-v2-desktop.behavior.md`. It quotes both sanction lines
   from this change's design.md, says no existing story is amended or retired,
   and adds these stories in the ledger's STORY format (element, source, lock,
@@ -64,7 +64,7 @@ none reads real data, and nothing here starts a server.
   retired`, and the current-inventory sentence in
   `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` to match. Leave historical
   inventory statements as written.
-- [ ] 3.2 Add both stories' bodies as `C4_STORIES.S139` and `C4_STORIES.S140`
+- [x] 3.2 Add both stories' bodies as `C4_STORIES.S139` and `C4_STORIES.S140`
   in `frontend/c4.replay.mjs`. Each body first reads the served admission from
   `/api/verify/trials` and requires the active kind as a premise. It opens
   Diagnose, reads the dock in `.inspector > .watch`, and requires the watched
@@ -84,7 +84,7 @@ none reads real data, and nothing here starts a server.
   pin that each story is registered once with term HV2-12 on its case. Also run
   each body against a fake page whose dock reads `Open Verify ›`, and require it
   to reject at the label assertion rather than at a premise.
-- [ ] 3.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`,
+- [x] 3.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`,
   move the pinned literal to `{"issued": 149, "active": 130, "retired": 19}`.
   In `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, move the counted
   assertions to 149: the full replay-plan count, the stated active/retired
@@ -105,7 +105,7 @@ none reads real data, and nothing here starts a server.
 
 ## 4. Verification
 
-- [ ] 4.1 After `uv sync --frozen --extra api --extra sync` and `npm ci` (the
+- [x] 4.1 After `uv sync --frozen --extra api --extra sync` and `npm ci` (the
   replay graph imports `@babel/parser`), run the fast gate (`node --test 'frontend/**/*.test.js'`),
   `npx --yes @fission-ai/openspec@1 validate --all --strict`, the three
   `scripts/check_*.py` guards, and the port-free classes of

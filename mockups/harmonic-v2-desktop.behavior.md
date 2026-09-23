@@ -2937,3 +2937,67 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #429 amendment — 2026-09-23, issue #429
+
+The watch dock at the foot of the Diagnose inspector named Verify, the v1
+surface #416 retired, for a watched Trial and a watched Focus. S139 and S140 pin
+its words and where its link lands (ADR 429 in
+`openspec/changes/watch-dock-changes-destination/design.md`). No existing story
+is amended or retired. Both are app-opener-only, like S113–S117; browser
+execution belongs to the release coordinator at 1280x720 and 1440x900.
+
+Sanction:
+- The label and destination fall within ADR 397's sanctioned destination-copy
+  amendments (the operator's D3, 2026-09-23).
+- Connor Griffin's standing sanction for this release, 2026-09-23, answering
+  "Can your reply here count as sign-off for the UI copy and tone changes?":
+  "Q1 A, Q2 A, defaults all fine, go".
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 149 issued · 130
+active · 19 retired. The frozen header above and ACCEPTANCE.md's count sentence
+are reconciled once, by the release coordinator, on the integration branch.
+
+```
+S139 · A watched Trial's dock offers "Open Changes ›" and names Verify
+       nowhere; activating it lands on Changes at /changes?subject=watch,
+       showing the served Trial's own view, titled for its slot.
+  element:  .inspector > .watch, .inspector > .watch .go; .gf-stage-trial .gf-title
+  source:   frontend/watched-change-dock.js watchDockView / paintWatchDock;
+            frontend/diagnose.js go; frontend/changes.js mount (the watch arrival)
+  lock:     HV2-12
+  data:     c3-trial; the server serves an active Trial
+  evidence: C4_STORIES.S139 → watchDock429; reads /api/verify/trials and
+            requires the active Trial and its one served change's slot as
+            premises, opens Diagnose, requires the dock's watched state, its
+            link text exactly "Open Changes ›" and no "Verify" in its text,
+            activates the link, requires the address to parse (parseRoute) to
+            Changes with subject watch, and requires .gf-stage-trial visible
+            with its title carrying the admitted slot
+  status:   owed — no result recorded. Expected: base a4d374a7 with this
+            harness laid over it fails at the label assertion at both sizes;
+            the branch passes at both sizes. The coordinator records both here
+```
+
+```
+S140 · A watched Focus's dock reads "Pinned ‹MM-DD› · adherence and outcome
+       are read in Changes" for its served pin date, offers "Open Changes ›"
+       and names Verify nowhere; activating it lands on Changes at
+       /changes?subject=watch, showing the served Focus's own view.
+  element:  .inspector > .watch, .inspector > .watch .how, .inspector > .watch .go;
+            .gf-stage-focus
+  source:   frontend/watched-change-dock.js watchDockView / paintWatchDock;
+            frontend/diagnose.js go; frontend/changes.js mount (the watch arrival)
+  lock:     HV2-12
+  data:     c3-focus; the server serves an active Focus
+  evidence: C4_STORIES.S140 → watchDock429; reads /api/verify/trials and
+            requires the active Focus and its served pin date as premises,
+            opens Diagnose, requires the dock's watched state, its link text
+            exactly "Open Changes ›", its detail line for that date and no
+            "Verify" in its text, activates the link, requires the address to
+            parse (parseRoute) to Changes with subject watch, and requires
+            .gf-stage-focus visible
+  status:   owed — no result recorded. Expected: base a4d374a7 with this
+            harness laid over it fails at the label assertion at both sizes;
+            the branch passes at both sizes. The coordinator records both here
+```

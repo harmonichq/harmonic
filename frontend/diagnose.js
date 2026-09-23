@@ -260,8 +260,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         try { return await caseContext.load(coordinates); }
         finally { showFocusAction(); }
       },
+      // The dock's Trial and Focus route names the watch, so Changes opens the
+      // watched record rather than whichever seat it would otherwise lead with.
       go: (to) => to === 'settings' ? openUtility('settings')
-        : navigate(to === 'day' ? 'day' : 'changes', to === 'plan' ? { subject: 'plan' } : {}),
+        : navigate(to === 'day' ? 'day' : 'changes',
+          to === 'plan' ? { subject: 'plan' } : to === 'changes' ? { subject: 'watch' } : {}),
     } });
   }
 

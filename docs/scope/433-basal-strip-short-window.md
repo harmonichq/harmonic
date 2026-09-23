@@ -46,8 +46,9 @@ Disposition: admitted.
 
 ## Open questions
 
-- The coordinator-run base measurement. Task 1.1 records its numbers,
-  including the key entries' horizontal edges.
+- ~~The coordinator-run base measurement.~~ Closed 2026-09-23. The coordinator
+  ran it at 3f450e3c, whose frontend is identical to base, and design.md's
+  "Measured facts" records the numbers. No contingency condition is met.
 - ~~Confirm the D6 reading.~~ Closed 2026-09-23 by the coordinator ruling
   recorded under Decisions.
 
@@ -74,3 +75,29 @@ Recorded at each plan-review round: the blockers found, each tagged
 
   Also applied: the brief's freeze-header rule. No header re-freeze, and the
   count lines in ACCEPTANCE.md and INDEX.md are coordinator-owned.
+- **Round 2 (coordinator-dispatched): objections 1–3 confirmed landed. 2 new
+  blockers, both `injected` by round 1's key-wrap fix.** The coordinator ruled
+  on both, and round 2 is the final round (cap 3).
+  1. S151 checked sizes in order with the vertical checks first. On base it
+     would stop at 1200×560's vertical clip and never reach the key overrun at
+     832, which design.md's "Evidence owed" claims. Ruling: check everything
+     and report together. Fixed: S151 checks every size and both axes, fails
+     once listing every failure by size and axis, and a node test proves two
+     failures are both named.
+  2. The `.lane-key` rule sits outside every media query, so an unscoped wrap
+     would also change the ≤831px and ≤480px layouts. Ruling: scope the wrap
+     to the split. Fixed: the pane's `overflow-y` and the key's wrap share one
+     `@media (min-width: 832px)` block, and the narrow layouts stay
+     byte-identical; the ADR says so.
+
+  Folded in at the same re-pin: the base measurement.
+  - At 832 wide the cells and the chart also overrun the pane's edge. The
+    body's grid column is 512.75px in a 402px pane: the key's unbreakable
+    426.75px plus its margins.
+  - The key wrap therefore also returns the column to the pane's width. S151
+    checks the cells and `#chart` horizontally, and the sanction list and the
+    render matrix now name the chart at the narrowest split.
+
+  Injected blockers rose from 0 to 2 across the rounds. That is the
+  rewrite-clean signal, so each affected task was rewritten whole rather than
+  patched.

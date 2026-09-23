@@ -7,14 +7,13 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 1. Measurement, before any implementation
 
-- [ ] 1.1 Record the coordinator's base measurement (design.md,
-  "Measurement"): the numbers in design.md's "Measured facts", and the raw
-  output verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
-  If the output meets design.md's contingency, stop and report to the
-  coordinator, and implement nothing further. The contingency is met when the
-  strip clips at a true 1200×736 CSS viewport, when any canvas-pane row
-  resolves larger than its declared track, or when 1200×560 or 832×560 does
-  not clip on base by at least 20px.
+- [ ] 1.1 Commit the coordinator's base measurement JSON, which it hands over
+  at `start`, verbatim as
+  `docs/scope/433-basal-strip-short-window-evidence/base-measurement.json`.
+  Confirm that design.md's "Measured facts" table matches it value for value.
+  Triage already judged the contingency against those numbers, and it is not
+  met. If the handed JSON differs from the table, stop and report to the
+  coordinator, and implement nothing further.
 
 ## 2. The canvas pane scrolls on short desktop windows
 
@@ -26,7 +25,11 @@ decisions, the measurement, the revise preparation and the risk contract.
   - `.canvas-pane` gets a vertical scroll (`overflow-y: auto`);
   - `.lane-key` wraps between whole entries (`flex-wrap: wrap`, with a row gap
     no larger than the key's own line spacing), and each `#lane-key > span`
-    entry stays one unbroken line.
+    entry stays one unbroken line. Wrapping also removes the key's unbreakable
+    width, which on base widens the chart body's grid column to 512.75px in a
+    402px pane at 832 wide (design.md, "Measured facts"). The column then
+    returns to the pane's width, and the cells and `#chart` come back inside
+    with it.
 
   Leave the pane's row tracks, the `[data-canvas-full]` rules, the base
   `.lane-key` rule and the ≤831px and ≤480px blocks unchanged. Add no
@@ -57,10 +60,10 @@ decisions, the measurement, the revise preparation and the risk contract.
     `#lane-wrap`, `#lane-key`, every `#lane-key > span` entry and every
     `#lane > .lane-cell` lie inside both the pane's visible box and the
     viewport;
-  - horizontally, at rest, every `#lane-key > span` entry and every cell lies
-    inside the pane's client box, whose right edge is the pane's left edge plus
-    `clientLeft` plus `clientWidth`; checking only `#lane-key`'s own box is
-    not enough;
+  - horizontally, at rest, every `#lane-key > span` entry, every cell and
+    `#chart` lie inside the pane's client box, whose right edge is the pane's
+    left edge plus `clientLeft` plus `clientWidth`; checking only
+    `#lane-key`'s own box is not enough;
   - no entry is split: each entry's height is one line, no taller than the
     lead entry's;
   - every other ancestor's `scrollTop` stays 0, and the pane's `scrollLeft`

@@ -27,6 +27,8 @@ verdict or ranking decision moves.
 - **THEN** every key entry and every cell lie horizontally inside the canvas
   pane's visible box at rest, and vertically inside it either at rest or after
   the reader scrolls the canvas pane
+- **AND** the glucose chart above the lane lies horizontally inside the pane,
+  in register with the cells
 - **AND** the document does not scroll, the pane does not scroll sideways, and
   no other container moves
 - **AND** at each of those sizes, each raise and lower cell, pointed at where

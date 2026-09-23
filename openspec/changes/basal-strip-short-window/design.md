@@ -45,12 +45,13 @@ Each fact names its evidence. Theory is marked as theory.
   `docs/scope/413-desk-design-evidence/lane-after-1280x720.png` shows a 616px
   pane. The Spotlight is about 376px, the header 30px, and the body's 210px
   ends at the footer with the whole strip visible.
-- **A true 1200×736 viewport should not clip.** Its pane is 632px, 132px above
-  the floor. **Theory:** the reported "1200×736 window" was the browser's outer
-  window, or the page was zoomed, so its CSS viewport was under about 604px
-  tall. The issue's own theory, that the header is taller at 1200px, is
-  contradicted by the header rule above. It has not been measured; task 1
-  measures it.
+- **A true 1200×736 viewport does not clip (measured).** Its pane is 632px,
+  132px above the floor, and the base measurement below confirms no clipping
+  there. So the reported "1200×736 window" was the browser's outer window, or
+  the page was zoomed, and its CSS viewport was under 604px tall. That is
+  still inference, because the report's own viewport was not captured. The
+  issue's own theory, that the header is taller at 1200px, is refuted: the
+  header measures 30px at every size.
 - **The existing checks never test the pane.** S113's assertions
   (`frontend/c4.replay.mjs` `assertBasalLaneGallery`) require the key inside
   `#lane-wrap` and above `#lane`, and each cell inside the lane's track. They
@@ -89,6 +90,20 @@ entries (`flex-wrap: wrap`), and each entry stays one unbroken
 `inline-flex` span. Extra lines take their height from the chart inside the
 210px body, whose track is `minmax(0, 1fr)`, and the pane scrolls if the body
 still overruns.
+
+**The wrap also brings the cells and the chart back inside (measured).** At
+832 wide the base measurement puts the chart body at 0–402 but `#lane-wrap`
+and `#chart` at 0–512.75, and the key and the lane at 34–460.75. The body's
+single grid column has been widened to the key's unbreakable 426.75px plus
+its 34px and 52px margins. The lane and the chart ride that widened column,
+so their last 110.75px lie past the pane's edge. The cells overrun it by the
+same 58.75px as the key's last entry.
+
+Wrapping removes the key's unbreakable width, so the column returns to the
+pane's width, carrying the cells and the chart back inside. No other width
+guard is added: once the key wraps, nothing unbreakable is left in that
+column. S151 checks every key entry, every cell and `#chart` horizontally, so
+a column that stayed wide would fail it.
 
 **Scoped to the split.** Both declarations, the pane's `overflow-y: auto` and
 the key's `flex-wrap: wrap`, live in one `@media (min-width: 832px)` block.
@@ -237,8 +252,41 @@ The measurement asserts nothing and writes no repository file.
 
 ## Measured facts
 
-Recorded by task 1 from the coordinator's measurement output. The output is
-kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
+The coordinator ran the measurement on 2026-09-23 with `measure-433.mjs` at
+3f450e3c, whose frontend is byte-identical to base a4d374a7, on
+`basal-verdict-gallery`. The rest state and S113's drilled state read the same
+at every viewport. Task 1.1 commits the JSON verbatim under
+`docs/scope/433-basal-strip-short-window-evidence/`.
+
+Each row gives the pane's rows, then how far the strip overruns the pane's
+bottom (lane), then how far the rightmost key entry and the rightmost cell
+overrun its right edge (key, cells). Negative means inside.
+
+| Viewport | Pane rows | Lane | Key | Cells |
+|---|---|---|---|---|
+| 1440×900 | 550 / 30 / 210 | 0 | −549.25 | −52 |
+| 1280×720 | 376 / 30 / 210 | 0 | −389.25 | −52 |
+| 1200×736 | 392 / 30 / 210 | 0 | −309.25 | −52.02 |
+| 1200×604 | 260 / 30 / 210 | 0 | −309.25 | −52.02 |
+| 1200×600 | 260 / 30 / 210 | 4 | −309.25 | −52.02 |
+| 1200×590 | 260 / 30 / 210 | 14 | −309.25 | −52.02 |
+| 1200×560 | 260 / 30 / 210 | 44 | −309.25 | −52.02 |
+| 1200×520 | 260 / 30 / 210 | 84 | −309.25 | −52.02 |
+| 832×720 | 376 / 30 / 210 | 0 | +58.75 | +58.75 |
+| 832×560 | 260 / 30 / 210 | 44 | +58.75 | +58.75 |
+
+- **Clip threshold.** At widths 1440, 1280, 1200 and 832 alike, 603px tall
+  clips and 604px is clear.
+- **Key.** It is one line at every size. At 1200, 1280 and 1440 its
+  `scrollWidth` equals its `clientWidth` (684, 764 and 924). At 832 its entries
+  need 427px against 316px of line.
+- **Pane.** Its computed `overflow-y` is `visible` at every size, and the
+  header is 30px at every size.
+- **Contingency: not met.** 1200×736 does not clip. Every row resolves to
+  `max(260, leftover) / 30 / 210`. 1200×560 and 832×560 each clip by 44px.
+  The key fits on one line at 1280×720. The overrun at 832 wide was expected,
+  and the key wrap fixes it, including the cells and the chart that ride the
+  widened column.
 
 ## Revise preparation
 
@@ -273,7 +321,9 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
   - On a desktop split window too short for its floors, the canvas pane
     scrolls, where it used to clip the strip.
   - Near the narrowest split, the key wraps between whole entries, where it
-    used to cut its last entries off at the pane's edge.
+    used to cut its last entries off at the pane's edge. With it, the lane's
+    cells and the glucose chart above them come back inside the pane. At 832
+    wide their last 110.75px used to lie past the edge.
   - The key moves recurring-lows lowers out of "lower" into
     "lower · recurring lows" (D6, same date).
 
@@ -292,8 +342,9 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
   - The canvas pane at 1200×560: before, the strip is cut; after, it is reached
     by the pane's scroll.
   - The canvas pane at 1280×720 and 1440×900: unchanged.
-  - The lane key at 832×560: before, the last entries are cut at the pane's
-    edge; after, the key wraps and every entry is whole.
+  - The canvas pane at 832×560: before, the key's last entries, the lane's
+    right cells and the chart's right edge are cut at the pane's edge; after,
+    the key wraps, and every entry, every cell and the whole chart lie inside.
   - The `basal-recurring-low-no-clean-median` lane key at 1280×720: before,
     "lower 1"; after, "lower · recurring lows 1".
 
@@ -304,7 +355,8 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
     capture, log or screenshot;
   - a lane key word or count that differs from the served verdicts, which
     would be silent incorrect success;
-  - a key entry cut off or split at the pane's edge at any split width;
+  - a key entry cut off or split, or a cell or the chart cut, at the pane's
+    edge at any split width;
   - any staging, verdict, floor or direction decision moving into the
     frontend;
   - the canvas pane gaining a scroll range, or moving anything, at 1280×720 or
@@ -320,7 +372,8 @@ kept verbatim under `docs/scope/433-basal-strip-short-window-evidence/`.
     clipped as today.
 - **Evidence owed:**
   - On base, S151 and S152 fail at the short sizes for the clipping reason,
-    with S151 also failing on the key entries' overrun at 832 wide. S113's
+    with S151 also failing on the key entries', the cells' and the chart's
+    horizontal overrun at 832 wide, all in its one failure message. S113's
     recurring-lows variant fails on the key word. All three pass on the branch.
   - S153 passes on base and on the branch.
   - S113's pane checks and one-line key check pass at both supported sizes.

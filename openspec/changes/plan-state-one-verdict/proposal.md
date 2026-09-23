@@ -49,9 +49,9 @@ found why:
 - Only the newest recorded Plan can be pending; older unconfirmed history is
   superseded and blocks nothing.
 - Every recorded Plan the server serves carries one verdict — pending,
-  mismatch, confirmed, withdrawn or superseded, when it was confirmed, whether
-  the latest read still holds it, and when that read was taken — on both the
-  Plan history and the guidance read.
+  mismatch, confirmed, withdrawn or superseded, when it was confirmed, and
+  whether the latest read still holds it — on both the Plan history and the
+  guidance read.
 - Changes names the phase, status and Decision block from that verdict. "On
   pump since" names the confirming read and stays put. The browser's comparison
   only draws the mismatch rows.

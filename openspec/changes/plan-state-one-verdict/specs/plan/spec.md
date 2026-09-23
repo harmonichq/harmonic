@@ -99,17 +99,17 @@ against this pending Plan.
 
 Each recorded Plan that the Plan history read serves, and the guidance read's
 pending Plan, SHALL carry one verdict the server computes at read time without
-writing. Its `state` SHALL be `pending` when the Plan is the newest, is not
-confirmed, and the latest read after its decision holds its schedule, or there
-is no such read, or the Plan is incomparable; `mismatch` when the Plan is the
-newest, is not confirmed, is comparable, and the latest read after its decision
-does not hold its schedule; otherwise `confirmed`, `withdrawn` or
-`superseded`. `confirmed_at` SHALL be the
-confirming read's capture time for a confirmed Plan and null otherwise. `on_pump`
-SHALL say whether the latest read after the decision holds the Plan's schedule,
-and SHALL be false for an incomparable Plan.
-`checked_at` SHALL be the latest read's capture time, or null with no read. Both
-reads SHALL compute the verdict through one server function, so one Plan at one
+writing. Its `state` SHALL be decided in this order: `withdrawn` when the Plan
+is withdrawn; `confirmed` when it is confirmed; `pending` when it is the newest,
+is not withdrawn, is not confirmed, and the latest read after its decision holds
+its schedule, or there is no such read, or the Plan is incomparable; `mismatch`
+when it is the newest, is not withdrawn, is not confirmed, is comparable, and
+the latest read after its decision does not hold its schedule; otherwise
+`superseded`. `confirmed_at` SHALL be the confirming read's capture time for a
+confirmed Plan and null otherwise. `on_pump` SHALL say whether the latest read
+after the decision holds the Plan's schedule, and SHALL be false for an
+incomparable Plan and when there is no read after the decision. Both reads
+SHALL compute the verdict through one server function, so one Plan at one
 input revision carries the same verdict in both. The Plan history read SHALL
 keep serving records newest first.
 
@@ -118,6 +118,13 @@ keep serving records newest first.
 - **GIVEN** a pending Plan in a synthetic store
 - **WHEN** the Plan history and the guidance are read at one input revision
 - **THEN** the history row's verdict equals the guidance pending Plan's verdict
+
+#### Scenario: A withdrawn newest Plan reads withdrawn on both reads
+
+- **GIVEN** a pending Plan with no read after its decision
+- **WHEN** it is withdrawn and the Plan history and the guidance are read
+- **THEN** its history verdict reads `withdrawn`
+- **AND** the guidance read serves no pending Plan
 
 #### Scenario: A holding read not yet reconciled serves pending
 
@@ -133,7 +140,7 @@ keep serving records newest first.
   differs
 - **WHEN** the Plan history is read
 - **THEN** its verdict reads `confirmed` with the original `confirmed_at`
-- **AND** `on_pump` is false and `checked_at` names the later read
+- **AND** `on_pump` is false
 
 #### Scenario: A differing read after the decision serves a mismatch
 

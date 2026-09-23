@@ -78,11 +78,19 @@ the risk contract. Every value in tests and comments is synthetic.
   names the confirmed Plan on its own line), both on the `basal-lower` case.
   Register both, write their ledger entries in a dated `## #431 amendment —
   2026-09-23` section quoting the Q2 sanction (no existing `★ FROZEN` block is
-  rewritten, re-dated or replaced), and move the inventory literals to 149
-  issued, 130 active, 19 retired in `acceptance.py` `inventory()` and
-  `acceptance.test.py`. The header's inventory line is left to the release
-  coordinator. Update `tests/test_api.py`'s comment that still quotes
-  "on pump as of".
+  rewritten, re-dated or replaced; amendments to S42 and S105 are written
+  `Amended S42 · 2026-09-23 · #431 / Q2 sanction: …`, never as a line beginning
+  `S42 ·`), and move the inventory literals to 149 issued, 130 active, 19
+  retired: `acceptance.py` `inventory()`, and in `acceptance.test.py` the
+  replay-plan `plan['count']`, the stated-inventory ranges (S1–S130 plus R1–R19)
+  and the same-total ids (S1–S131 plus R1–R18, still 149), so "same total,
+  different split" keeps its meaning. The header's inventory line and
+  ACCEPTANCE.md's count sentence are left to the release coordinator. Each new
+  story's base proof runs this branch's replay harness and `replay-pump.py` over
+  a4d374a7: S145 must fail at its served-verdict and Changes agreement
+  assertion; S146's unreachable confirmed premise is accepted as its base
+  failure, with task 2.3's unit test as its fail-first half. Update
+  `tests/test_api.py`'s comment that still quotes "on pump as of".
 
 ## 3. Watch panel and case-file header (frontend)
 
@@ -116,6 +124,10 @@ the risk contract. Every value in tests and comments is synthetic.
   case's header carries no pending-Plan note in either window (the base shows
   one), and "Open Changes ›" lands on Changes at `subject=plan`. Add its ledger
   entry to the #431 amendment section, record the moved note there, and move the
-  inventory literals to 150 issued, 131 active, 19 retired in `acceptance.py`
-  and `acceptance.test.py`. The header's inventory line stays with the release
-  coordinator.
+  inventory literals to 150 issued, 131 active, 19 retired: `acceptance.py`
+  `inventory()`, and in `acceptance.test.py` the replay-plan `plan['count']`,
+  the stated-inventory ranges (S1–S131 plus R1–R19) and the same-total ids
+  (S1–S132 plus R1–R18, still 150). The header's inventory line and
+  ACCEPTANCE.md's count sentence stay with the release coordinator. S147's base
+  proof runs this branch's replay harness over a4d374a7 and must fail on the
+  pending-Plan note present in the `basal-lower` Pattern case's header.

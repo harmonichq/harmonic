@@ -107,10 +107,9 @@ verdict at read time, without writing:
 
 | Field | Meaning |
 |---|---|
-| `state` | `pending`: newest, not confirmed, and the latest read after the decision holds its schedule, or there is no such read, or the Plan is incomparable. `mismatch`: newest, not confirmed, comparable, and the latest read after the decision does not hold its schedule. Otherwise `confirmed`, `withdrawn` or `superseded`. A holding read that reconciliation has not yet seen serves `pending`, never `confirmed`. |
+| `state` | Decided in order. `withdrawn`: withdrawn. `confirmed`: confirmed. `pending`: newest, not withdrawn, not confirmed, and the latest read after the decision holds its schedule, or there is no such read, or the Plan is incomparable. `mismatch`: newest, not withdrawn, not confirmed, comparable, and the latest read after the decision does not hold its schedule. Otherwise `superseded`. A holding read that reconciliation has not yet seen serves `pending`, never `confirmed`; a withdrawn newest Plan serves `withdrawn`, matching the guidance read's absent pending Plan. |
 | `confirmed_at` | The receipt's read time for a confirmed Plan, else null. |
-| `on_pump` | Whether the latest read after the decision holds the schedule; false for an incomparable Plan. |
-| `checked_at` | The latest read's capture time, or null. |
+| `on_pump` | Whether the latest read after the decision holds the schedule; false for an incomparable Plan and when there is no read after the decision. |
 
 `/api/plan/history` serves it on every row, in the same query-only transaction,
 and keeps its newest-first order. `/api/guidance` serves it on `pending_plan`.
@@ -190,8 +189,25 @@ ratio, Target) and is sanctioned under Q2.
   `## #431 amendment — 2026-09-23` section, following the #413 and #414
   pattern. No existing `★ FROZEN` block is rewritten, re-dated or replaced. The
   inventory literals in `acceptance.py` and `acceptance.test.py` move on this
-  branch; the header's inventory line and the release freeze block belong to
-  the release coordinator.
+  branch; the header's inventory line, ACCEPTANCE.md's count sentence and the
+  release freeze block belong to the release coordinator.
+- **Base proofs:** each new story's base proof lays this branch's
+  `frontend/desk-behavior.replay.mjs`, `frontend/c2.replay.mjs`,
+  `frontend/c4.replay.mjs`, `frontend/replay-cases.mjs` and
+  `frontend/replay-pump.py` over a4d374a7 and must fail at its named feature
+  assertion. S145 fails where the served verdict and the Changes status must
+  agree on the confirmation (the branch harness supplies the `in-place`
+  capture). S146's premise, a server-confirmed Plan, is unreachable on the base;
+  that premise failure is accepted, and task 2.3's unit test is its fail-first
+  half. S147 fails on the pending-Plan note still present in the `basal-lower`
+  Pattern case's header.
+- **Render evidence:** the release coordinator captures, at 1280x720 and
+  1440x900 in the one shipped Dark theme, base a4d374a7 against the integration
+  commit, from the S145–S147 synthetic case stores, into
+  `docs/scope/release-422-434-evidence/431/`: Changes at Pending, Mismatch with
+  its rows, "On pump since", Confirmed with `on_pump` false, Draft saved with
+  the previous-Plan line, and the next-change line; the watch panel's Plan
+  states; the case-file header without the note.
 - **Moved behavior:** the pending-Plan note leaves the case-file header and
   lands in the watch panel. Every reader of it is updated in the same change:
   the desk browser test, `frontend/focus-entry.test.js` and the new S147.

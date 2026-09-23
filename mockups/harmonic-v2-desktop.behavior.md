@@ -2965,8 +2965,11 @@ S133 · Direct Day entry reopens the day last looked at. After a selected
   lock:     HV2-13; ADR 427
   data:     showcase (35 recorded days, 2024-05-20 to 2024-06-30)
   evidence: C2_STORIES.S133
-  status:   owed — it records shipped behavior, so the base app is expected to
-            pass; it is not a fail-first obligation. The held-day Node test in
-            frontend/day.test.js, failed against a deliberately broken
-            direct entry, carries non-vacuity.
+  status:   replays done; renders owed at integration. It records shipped
+            behavior, so it is not a fail-first obligation. The held-day Node
+            test in frontend/day.test.js, failed against a deliberately broken
+            direct entry, carries non-vacuity. Coordinator-run 2026-09-23 on
+            330027ac: branch ONLY=S60,S133 passed at 1280x720 and 1440x900
+            (executed 2 · failed 0 at each size); base a4d374a7 with this
+            branch's harness passed ONLY=S133 at 1280x720, as expected.
 ```

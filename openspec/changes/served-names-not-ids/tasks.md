@@ -2,7 +2,7 @@
 
 ## 1. Served names (backend)
 
-- [ ] 1.1 Serve `lever_title` on every episode of the per-day model read
+- [x] 1.1 Serve `lever_title` on every episode of the per-day model read
   (`ciq_autotune/analyzers/scenario/model_view.py`, `_build_episode_view`):
   `levers.title(lever)` for an attributed episode, null for an unattributed one.
   Tests in `tests/test_scenario_model_view.py` through `assemble_model_view` on
@@ -10,7 +10,7 @@
   title, an unattributed episode's is null, and every member of the closed
   Lever set has a non-empty title with no underscore. Fails first on the base
   (the key is absent).
-- [ ] 1.2 Serve names on guidance's Pattern candidates
+- [x] 1.2 Serve names on guidance's Pattern candidates
   (`ciq_autotune/guidance.py`, `_pattern_candidate`): `title` on each member,
   `action_title` on each member whose `action` is non-null, and `title` on the
   Pattern's `action` when it is an identified action, per ADR 426. Habit
@@ -26,7 +26,7 @@
   `tests/test_pattern_replay.py` keeps the literal roster as its oracle: it
   compares guidance's members to the roster's with the name keys removed and
   asserts the served names separately.
-- [ ] 1.3 Emit `browser_guidance_patterns` from
+- [x] 1.3 Emit `browser_guidance_patterns` from
   `scripts/gen_findings_projection_fixtures.py`: the Pattern candidates
   `guidance.candidates` serves for the same browser-gate inputs that produce
   `browser_outcome_patterns`. Regenerate
@@ -36,18 +36,18 @@
 
 ## 2. Changes names what it prints
 
-- [ ] 2.1 A Pattern concern in Changes (`frontend/changes.js`) prints each
+- [x] 2.1 A Pattern concern in Changes (`frontend/changes.js`) prints each
   member's served `title`, each member's served `action_title` or "No action",
   and the Pattern action's served `title` as its Action figure. Test in
   `frontend/changes.test.js` that mounts Changes on a Pattern concern built
   from the committed fixture's `browser_guidance_patterns`: every member title
   appears and the markup contains no `habit:` or `setting:` text. Fails first on
   the base.
-- [ ] 2.2 A Focus record's "What changed" (`frontend/history.js`,
+- [x] 2.2 A Focus record's "What changed" (`frontend/history.js`,
   `changeSection`) names the intended behavior by the record's served `title`.
   Test in `frontend/history.test.js`: the Focus variant contains the served
   title and no underscore token. Fails first on the base.
-- [ ] 2.3 A record whose original context is unavailable (`originalSection`)
+- [x] 2.3 A record whose original context is unavailable (`originalSection`)
   states its served reason through a word table keyed by served reason
   (`not_recorded` → "not recorded"), printing an unknown served reason
   verbatim, as the desk's other word tables do. The existing test that expects

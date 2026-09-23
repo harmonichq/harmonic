@@ -61,6 +61,7 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
 )
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns  # noqa: E402
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
+from ciq_autotune.guidance import candidates as guidance_candidates  # noqa: E402
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
@@ -889,6 +890,13 @@ def payload() -> dict:
         "browser_outcome_patterns": build_outcome_patterns(
             browser_analysis, browser_exposures, browser_scenarios,
         ),
+        # The Pattern candidates guidance serves for those same inputs, names and
+        # all (ADR 426), so a desk test can mount Changes on the served shape.
+        "browser_guidance_patterns": [
+            row for row in guidance_candidates(
+                browser_analysis, browser_exposures, browser_scenarios,
+            ) if row["kind"] == "pattern"
+        ],
         "pattern_clock_case": pattern_clock_case(
             browser_analysis, browser_case_exposures, browser_scenarios,
         ),

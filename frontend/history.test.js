@@ -210,10 +210,14 @@ test('a recorded decision reads as a decision, not as a first sighting', () => {
   assert.match(html, /Missed \/ unannounced meal/);
 });
 
-test('an unavailable original context prints its served reason', () => {
+test('an unavailable original context states its served reason in words', () => {
   const html = originalSection({ context: { state: 'unavailable', reason: 'not_recorded' } });
   assert.match(html, /data-unavailable="original"/);
-  assert.match(html, /unavailable: not_recorded/);
+  assert.match(html, /unavailable: not recorded\./);
+  assert.doesNotMatch(html, /not_recorded/);
+  // A served reason with no word is printed verbatim rather than swallowed.
+  assert.match(originalSection({ context: { state: 'unavailable', reason: 'unworded_reason' } }),
+    /unavailable: unworded_reason\./);
 });
 
 test('a still-open record has no ending, and says that rather than inventing one', () => {
@@ -322,9 +326,10 @@ test('the observed change reads its own units, and says the pump was not program
 });
 
 test('a Focus changed no setting, and its record says that rather than showing a blank table', () => {
-  const html = changeSection({ kind: 'focus', lever: 'missed_meal', changes: [] });
-  assert.match(html, /No pump setting changed\./);
+  const html = changeSection({ kind: 'focus', lever: 'carb_undercount', title: 'Highs after meals', changes: [] });
+  assert.match(html, /The intended behavior: Highs after meals\. No pump setting changed\./);
   assert.doesNotMatch(html, /<table/);
+  assert.doesNotMatch(html, /_/, 'the behavior is named by its served title, never its key');
 });
 
 test('a correction factor reads insulin first on both sides', () => {

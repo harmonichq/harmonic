@@ -63,6 +63,9 @@ const ENDING_NOTE = {
   expired_unreviewed: 'The watch reached the end of its lifecycle window without being reviewed. Its observations are still here.',
   user_finished: 'You recorded this ending. Harmonic did not program the pump; the change was entered by hand.',
 };
+// Why a record's original context is unavailable, keyed by the served reason; a
+// reason with no entry is printed verbatim rather than swallowed.
+const UNAVAILABLE_WORD = { not_recorded: 'not recorded' };
 const KIND_WORD = { trial: 'Setting change', focus: 'Focus' };
 const STATUS_WORD = { active: 'Active', resolved: 'Resolved', dropped: 'Dropped',
   not_selected_for_watch: 'Not watched' };
@@ -272,7 +275,7 @@ export function originalSection(original) {
   const unknowns = context.unknowns || [];
   return `<section class="gf-section" data-record-part="original"><h3>Original ${context.action ? 'decision' : 'context'} <span class="meta">${e(context.action ? 'as decided' : 'first observed')}</span></h3>
     <dl>${rows.map(([term, value]) => `<dt>${e(term)}</dt><dd>${e(value)}</dd>`).join('')}</dl>
-    ${unavailable ? `<p class="gf-meta" data-unavailable="original">This record's original context is unavailable: ${e(context.reason || 'not recorded')}.</p>` : ''}
+    ${unavailable ? `<p class="gf-meta" data-unavailable="original">This record's original context is unavailable: ${e(UNAVAILABLE_WORD[context.reason] || context.reason || 'not recorded')}.</p>` : ''}
     ${unknowns.map((text) => `<p class="gf-meta" data-unknown>${e(text)}</p>`).join('')}
     <p class="gf-note">From the Trial record</p></section>`;
 }
@@ -320,7 +323,7 @@ export function changeSection(detail) {
   const changes = detail.changes || [];
   if (!changes.length) {
     return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
-      <p class="gf-meta">${detail.kind === 'focus' ? `The intended behavior: ${e(SETTING_NAME[detail.lever] || detail.lever)}. No pump setting changed.` : 'Not recorded'}</p></section>`;
+      <p class="gf-meta">${detail.kind === 'focus' ? `The intended behavior: ${e(detail.title)}. No pump setting changed.` : 'Not recorded'}</p></section>`;
   }
   return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
     <table class="gf-table"><thead><tr><th scope="col">Setting</th><th scope="col">Before</th><th scope="col">Detected</th></tr></thead><tbody>${changes.map((change) => `<tr><td>${e(SETTING_NAME[change.parameter] || change.parameter)}${change.slots_changed ? `<small>${e(change.slots_changed)} time slots changed${change.uniform ? ' · uniform' : ` · values shown at ${e(change.slot)}`}</small>` : change.slot ? `<small>${e(change.slot)}</small>` : ''}</td><td class="v">${e(settingValue(change.parameter, change.before))}</td><td class="v">${e(settingValue(change.parameter, change.after))}</td></tr>`).join('')}</tbody></table>

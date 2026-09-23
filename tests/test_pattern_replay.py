@@ -11,6 +11,8 @@ from ciq_autotune.watched_change import follow_up_admission, reconcile_follow_up
 from scripts.qa_e2e_cases import QA_CASES, assert_expectation, execute_case, materialize_case
 
 
+_SERVED_NAMES = ("title", "action_title")
+
 EXPECTED_ACTIVE_KINDS = {
     "pattern-focus-meals": None,
     "showcase": None,
@@ -132,7 +134,18 @@ class PatternReplayTest(unittest.TestCase):
                 )
                 for roster in execution.outcome_patterns:
                     candidate = projected[roster["subject"]]
-                    self.assertEqual(candidate["members"], roster["members"])
+                    # Guidance serves names beside the roster's members (ADR 426);
+                    # the literal roster stays the oracle for everything else.
+                    self.assertEqual(
+                        [{key: value for key, value in member.items()
+                          if key not in _SERVED_NAMES} for member in candidate["members"]],
+                        roster["members"],
+                    )
+                    for member in candidate["members"]:
+                        self.assertTrue(member["title"])
+                        self.assertNotRegex(member["title"], r"habit:|setting:|_")
+                        self.assertEqual(member.get("action_title"),
+                                         None if member["action"] is None else member["title"])
                     self.assertEqual(
                         _action_id(candidate["action"]), _action_id(roster["action"]),
                     )

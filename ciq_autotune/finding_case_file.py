@@ -863,6 +863,12 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     matched_cohort["name"] = "Matched"
     near_cohort["name"] = "Nearly matched"
     comparison_cohort["name"] = policy.comparison_name
+    # ADR 424: a cohort names the verdict-band state it holds exactly, or none.
+    # A cross-population Matched cohort is only the attributed Meets criteria
+    # Occurrences, so it names none.
+    matched_cohort["band_verdict"] = None if policy.cross_population else "fired"
+    near_cohort["band_verdict"] = "near_miss"
+    comparison_cohort["band_verdict"] = None
     if policy.cross_population:
         matched_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
         near_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
@@ -877,12 +883,18 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
         for cohort in (matched_cohort, near_cohort, comparison_cohort):
             cohort["anchor"] = {"kind": kind, "label": label}
         anchor = {"kind": kind, "label": label}
-    not_comparable = len(roster) - len(matched) - len(near)
+    # ADR 424: the roster Occurrences in none of the three cohorts. Zero when the
+    # comparison is drawn from the case file's own population, which the cohorts
+    # then partition; only a cross-population comparison leaves any outside it.
+    cohort_ids = {occurrence_id
+                  for cohort in (matched_cohort, near_cohort, comparison_cohort)
+                  for occurrence_id in cohort["occurrence_ids"]}
+    outside_comparison = sum(member.id not in cohort_ids for member in roster)
     return {"alignment": "event", "anchor": anchor, "window_min": list(window),
             "cohorts": [matched_cohort, near_cohort, comparison_cohort],
             "counts": {"matched": len(matched), "nearly_matched": len(near),
                        "comparison": len(comparison_traces),
-                       "not_comparable": not_comparable},
+                       "outside_comparison": outside_comparison},
             "comparison": {"name": policy.comparison_name,
                            "state": ("unavailable" if comparison_cohort["support"] == "withheld"
                                      else "available")},

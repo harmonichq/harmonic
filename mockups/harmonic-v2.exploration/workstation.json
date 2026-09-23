@@ -203,6 +203,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -808,6 +809,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -1410,6 +1412,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other meal opportunities",
               "occurrence_ids": [
@@ -2020,7 +2023,7 @@
             "comparison": 7,
             "matched": 6,
             "nearly_matched": 3,
-            "not_comparable": 7
+            "outside_comparison": 0
           },
           "window_min": [
             -60,
@@ -31912,6 +31915,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -32513,6 +32517,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -33113,6 +33118,7 @@
                 "kind": "completed_carb_bolus",
                 "label": "Completed carb bolus"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other meal opportunities",
               "occurrence_ids": [
@@ -33719,7 +33725,7 @@
             "comparison": 3,
             "matched": 2,
             "nearly_matched": 1,
-            "not_comparable": 3
+            "outside_comparison": 0
           },
           "window_min": [
             -60,

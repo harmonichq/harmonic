@@ -72746,6 +72746,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -73059,6 +73060,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -73371,6 +73373,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
               "occurrence_ids": [
@@ -73689,7 +73692,7 @@
             "comparison": 3,
             "matched": 2,
             "nearly_matched": 1,
-            "not_comparable": 3
+            "outside_comparison": 0
           },
           "window_min": [
             -60,
@@ -80969,6 +80972,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
                   "occurrence_ids": [
@@ -81281,6 +81285,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
                   "occurrence_ids": [],
@@ -81591,6 +81596,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",
                   "occurrence_ids": [
@@ -81911,7 +81917,7 @@
                 "comparison": 5,
                 "matched": 1,
                 "nearly_matched": 0,
-                "not_comparable": 5
+                "outside_comparison": 0
               },
               "window_min": [
                 -60,
@@ -95156,6 +95162,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -95469,6 +95476,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -95781,6 +95789,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
               "occurrence_ids": [
@@ -96099,7 +96108,7 @@
             "comparison": 3,
             "matched": 2,
             "nearly_matched": 1,
-            "not_comparable": 3
+            "outside_comparison": 0
           },
           "window_min": [
             -60,
@@ -105486,7 +105495,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+              "code_version": "cafb2b65991752c38338e62d756f629c3b4d106b7d12b84891e5bb982a93129b",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105578,7 +105587,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+              "id": "2699630e0c1deb186e7da96a718ec717fdba5b7cc514cb316b6037d272c84308",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105666,7 +105675,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+                  "code_version": "cafb2b65991752c38338e62d756f629c3b4d106b7d12b84891e5bb982a93129b",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105758,7 +105767,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+                  "id": "2699630e0c1deb186e7da96a718ec717fdba5b7cc514cb316b6037d272c84308",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -125135,6 +125144,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -125448,6 +125458,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -125760,6 +125771,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
               "occurrence_ids": [
@@ -126078,7 +126090,7 @@
             "comparison": 3,
             "matched": 2,
             "nearly_matched": 1,
-            "not_comparable": 3
+            "outside_comparison": 0
           },
           "window_min": [
             -60,
@@ -186412,6 +186424,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
               "occurrence_ids": [
@@ -186725,6 +186738,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
               "occurrence_ids": [
@@ -187037,6 +187051,7 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
               "occurrence_ids": [
@@ -187355,7 +187370,7 @@
             "comparison": 3,
             "matched": 2,
             "nearly_matched": 1,
-            "not_comparable": 3
+            "outside_comparison": 0
           },
           "window_min": [
             -60,
@@ -194635,6 +194650,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
                   "occurrence_ids": [
@@ -194947,6 +194963,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
                   "occurrence_ids": [],
@@ -195257,6 +195274,7 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",
                   "occurrence_ids": [
@@ -195577,7 +195595,7 @@
                 "comparison": 5,
                 "matched": 1,
                 "nearly_matched": 0,
-                "not_comparable": 5
+                "outside_comparison": 0
               },
               "window_min": [
                 -60,

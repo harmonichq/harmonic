@@ -12,6 +12,18 @@ deliverable rows. A Plan recorded before #388 captured deliverables has none, so
 its recorded items are applied over that read's active profile with the existing
 `guidance.plan_deliverable`, and the result is compared with the same read.
 
+A Plan any of whose recorded items lacks an integer `start_min` or a numeric
+`value` is incomparable. Pre-#388 history can hold such rows (for example a
+key-only basal item), and `validate_plan_items` checks only the family, so
+`Store.save_plan_draft` and `Store.apply_plan` still record them. Feeding one to
+`plan_deliverable` or `schedule_matches` raises, and a null value would let an
+unchanged read appear to hold it. An incomparable Plan is therefore never
+confirmed by a read, serves `pending` with `on_pump` false, and leaves pending
+only by Withdraw. Neither the reconciler nor the verdict raises on it:
+reconciliation runs inside Withdraw, after every fetch and at `serve` startup,
+and the verdict runs on every `/api/plan/history` row, so a raise there would
+fail all of them. (Release coordinator ruling, #431 review round 1.)
+
 The receipt names the first read of the unbroken run of reads after the
 decision, ending at the latest, that each hold the schedule. It carries the
 Plan's key, that read's capture time and active profile, the schedule it matched,
@@ -95,9 +107,9 @@ verdict at read time, without writing:
 
 | Field | Meaning |
 |---|---|
-| `state` | `pending`: newest, not confirmed, and no read after the decision disagrees. `mismatch`: newest, not confirmed, and the latest read after the decision does not hold its schedule. `confirmed`, `withdrawn`, `superseded`. |
+| `state` | `pending`: newest, not confirmed, and the latest read after the decision holds its schedule, or there is no such read, or the Plan is incomparable. `mismatch`: newest, not confirmed, comparable, and the latest read after the decision does not hold its schedule. Otherwise `confirmed`, `withdrawn` or `superseded`. A holding read that reconciliation has not yet seen serves `pending`, never `confirmed`. |
 | `confirmed_at` | The receipt's read time for a confirmed Plan, else null. |
-| `on_pump` | Whether the latest read after the decision holds the schedule. |
+| `on_pump` | Whether the latest read after the decision holds the schedule; false for an incomparable Plan. |
 | `checked_at` | The latest read's capture time, or null. |
 
 `/api/plan/history` serves it on every row, in the same query-only transaction,
@@ -118,6 +130,11 @@ ratio, Target) and is sanctioned under Q2.
   pump read no longer matches this Plan." after. Pending and mismatch copy, the
   mismatch rows and Re-key are unchanged; the rows are drawn only under a served
   `mismatch`.
+- **Actions:** a pending or mismatched Plan offers Withdraw and "View change
+  record", as shipped. A confirmed Plan with no newer draft keeps "View change
+  record" and offers no Withdraw. Today that door comes only from the pending
+  branch of the Plan frame, and S105's no-op Plan is confirmed by the server once
+  this change lands, so the confirmed frame must supply it.
 - **Decision block:** fields describe only the recorded Plan: Decision recorded,
   On pump (the confirmed time, "Awaiting pump evidence", or "The latest pump read
   doesn't match"), Re-key asked. A draft saved during a pending Plan is the line
@@ -163,9 +180,18 @@ ratio, Target) and is sanctioned under Q2.
 - **Inventory diff:** no ledger story covers the watch panel's Plan states, the
   server's confirmation, a draft after a confirmed Plan, or the pending-Plan
   note (the note is held only by `frontend/desk.browser.test.mjs`). S145–S147
-  are added. C2's S42 body reads "On pump as of" and changes to "On pump since";
-  S105's premise gains the served confirmation. S40, S41 and S89 keep passing
+  are added. C2's S42 body reads "On pump as of" and changes to "On pump since",
+  and it and `frontend/replay-pump.py` read the served history's first (newest)
+  record instead of its last. S105 records a no-op Plan that the server now
+  confirms, so its "View change record" comes from the confirmed frame, and its
+  premise also asserts the served confirmation. S40, S41 and S89 keep passing
   because the labels and pending copy they read are unchanged.
+- **Ledger amendment:** S145–S147 and the amended bodies are recorded in a dated
+  `## #431 amendment — 2026-09-23` section, following the #413 and #414
+  pattern. No existing `★ FROZEN` block is rewritten, re-dated or replaced. The
+  inventory literals in `acceptance.py` and `acceptance.test.py` move on this
+  branch; the header's inventory line and the release freeze block belong to
+  the release coordinator.
 - **Moved behavior:** the pending-Plan note leaves the case-file header and
   lands in the watch panel. Every reader of it is updated in the same change:
   the desk browser test, `frontend/focus-entry.test.js` and the new S147.
@@ -184,20 +210,24 @@ ratio, Target) and is sanctioned under Q2.
 - **Must recover:** none beyond the existing reconciliation on every ingest.
 - **Accepted failure:** a Plan whose pump reads stopped matching before any
   reconciliation saw a match stays pending with a visible mismatch and leaves by
-  Withdraw; an older unconfirmed Plan superseded by a newer record is neither
-  confirmed nor withdrawn, and is not listed as either.
+  Withdraw; an incomparable recorded Plan (an item without an integer start
+  minute or a numeric value) is never confirmed by a read, stays pending, and
+  leaves by Withdraw; an older unconfirmed Plan superseded by a newer record is
+  neither confirmed nor withdrawn, and is not listed as either.
 - **Unsupported:** an out-of-process CLI fetch while `serve` runs (the existing
   process-local cache rule); viewports other than the two supported desktop
   sizes.
 - **Evidence owed:** backend tests through the public routes and
-  `reconcile_ingested_follow_up` that fail on the base (in-place edit after the
-  decision; dose-stream Trial; read before the decision; mismatch; a Plan without
-  a captured schedule; superseded history; the confirmed time holding across a
-  later read; history and guidance serving one verdict; the store's receipt
-  identity rule); frontend unit tests for the Changes phase, status, Decision
-  block and newer-draft frame and for the watch panel's Plan states; the browser
-  test and replay stories named in the change; the desk ledger's inherited
-  stories preserved.
+  `reconcile_ingested_follow_up` (in-place edit after the decision; dose-stream
+  Trial; read before the decision; mismatch; a Plan without a captured schedule;
+  an incomparable Plan through reconciliation, both reads and Withdraw; a
+  holding read not yet reconciled; superseded history; the confirmed time
+  holding across a later read; history and guidance serving one verdict; the
+  store's receipt identity rule), each asserting changed behavior shown failing
+  on the base and each guard shown passing there; frontend unit tests for the
+  Changes phase, status, actions, Decision block and newer-draft frame and for
+  the watch panel's Plan states; the browser test and replay stories named in
+  the change; the desk ledger's inherited stories preserved.
 - Why: these screens are read as advisory insulin-dosing guidance; the harm is a
   false "on the pump", not downtime. Disposition: admitted into
   `openspec/changes/plan-state-one-verdict/design.md` unchanged.

@@ -17,8 +17,10 @@ the risk contract. Every value in tests and comments is synthetic.
   `follow_up_admission` keep reading that one predicate.
 - [ ] 1.3 Implement plan **The server confirms a pending Plan from a matching
   pump read** in `reconcile_follow_up`, after the per-Trial pass, reusing
-  `guidance.schedule_matches` and `guidance.plan_deliverable`. `_reconcile_plan`'s
-  matching is unchanged.
+  `guidance.schedule_matches` and `guidance.plan_deliverable`. A Plan with any
+  item lacking an integer `start_min` or a numeric `value` is incomparable: it is
+  never confirmed, and neither the reconciler nor the verdict raises on it.
+  `_reconcile_plan`'s matching is unchanged.
 - [ ] 1.4 Implement plan **Every recorded Plan serves one verdict** as one
   read-only function in `ciq_autotune/watched_change.py`, served on every
   `/api/plan/history` row inside its existing query-only transaction and on the
@@ -28,9 +30,15 @@ the risk contract. Every value in tests and comments is synthetic.
   `scripts/qa_e2e_cases.py` (the `basal-raise` recipe, as in
   `docs/scope/431-plan-state-repro.py`), one per scenario of the three plan
   requirements. Build Plans recorded without a captured schedule, and older
-  history, through `Store.save_plan_draft` and `Store.apply_plan`. Assert served
-  output built from reads, never a hand-set receipt. Show each failing on the
-  base before it passes.
+  history, through `Store.save_plan_draft` and `Store.apply_plan`. One test
+  records an incomparable Plan that way (an item with no `start_min`) and drives
+  it through `reconcile_ingested_follow_up`, `/api/plan/history`,
+  `/api/guidance` and the withdraw route. One reads a holding read before any
+  reconciliation and asserts `pending`, never `confirmed`. Assert served output
+  built from reads, never a hand-set receipt. Every test asserting changed
+  behavior is shown failing on the base first; the guard tests (1.1's two
+  refusals, "a read from before the decision never confirms", "a latest read that
+  differs keeps the Plan pending") are shown passing on the base.
 - [ ] 1.6 `CONTEXT.md`, under **Plan**: a recorded Plan is pending until it is
   confirmed (by its matched Trial or by a later pump read that holds its
   schedule), withdrawn, or superseded by a newer recorded Plan; name the
@@ -53,21 +61,27 @@ the risk contract. Every value in tests and comments is synthetic.
   pump time stays on `confirmed_at` after a later read; a confirmed Plan with
   `on_pump` false reads Confirmed; a draft saved during a pending Plan stays out
   of its fields and shows the next-change line; a differing draft after a
-  confirmed Plan reads Draft saved with Save draft and Record decision; with two
-  served records the Decision block names the newest.
+  confirmed Plan reads Draft saved with Save draft and Record decision; a
+  confirmed Plan with no newer draft offers "View change record" and no
+  Withdraw; with two served records the Decision block names the newest.
 - [ ] 2.4 `frontend/replay-pump.py` gains an `in-place` capture: the recorded
   Plan's deliverable on the unchanged active profile, no profile switch, then
-  reconciliation. `mismatch` and `match` are unchanged.
-- [ ] 2.5 Replay contract: C2's S42 body reads "On pump since"; S105's premise
-  also asserts the served confirmation; add S145 (an `in-place` capture confirms
+  reconciliation. `mismatch` and `match` keep their captures. The producer reads
+  the served history's first (newest) Plan record, not its last.
+- [ ] 2.5 Replay contract: C2's S42 body reads "On pump since" and reads the
+  newest history record (the first served), not the last; S105's premise also
+  asserts the served confirmation, and its "View change record" now comes from
+  the confirmed frame; add S145 (an `in-place` capture confirms
   the recorded Plan on the server, Changes reads "On pump since" that read, and
   a second `in-place` capture leaves the time unchanged) and S146 (a differing
   draft after a confirmed Plan reads Draft saved, offers Record decision and
   names the confirmed Plan on its own line), both on the `basal-lower` case.
-  Register both, write their ledger entries and a dated #431 amendment under the
-  frozen header quoting the Q2 sanction, and move the inventory to 149 issued,
-  130 active, 19 retired in the ledger, `acceptance.py` `inventory()` and
-  `acceptance.test.py`. Update `tests/test_api.py`'s comment that still quotes
+  Register both, write their ledger entries in a dated `## #431 amendment —
+  2026-09-23` section quoting the Q2 sanction (no existing `★ FROZEN` block is
+  rewritten, re-dated or replaced), and move the inventory literals to 149
+  issued, 130 active, 19 retired in `acceptance.py` `inventory()` and
+  `acceptance.test.py`. The header's inventory line is left to the release
+  coordinator. Update `tests/test_api.py`'s comment that still quotes
   "on pump as of".
 
 ## 3. Watch panel and case-file header (frontend)
@@ -83,14 +97,17 @@ the risk contract. Every value in tests and comments is synthetic.
 - [ ] 3.3 Implement surfaces **The case-file header carries no pending-Plan
   note**: `frontend/focus-entry.js` gives the header no context for a pending
   Plan, and `frontend/guidance.js` drops its now-unread `pending_plan` copy.
-- [ ] 3.4 Unit tests, each failing on the base first:
-  `frontend/watched-change-dock.test.js` (a pending Plan with nothing watched
-  does not read idle; pending and mismatch details; Trial and Focus outrank the
-  Plan; the Plan outranks a staged draft; both Plan states route to `plan`) and
-  `frontend/focus-entry.test.js` (a pending Plan gives no header context; the
-  active Trial and Focus contexts are unchanged).
+- [ ] 3.4 Unit tests: `frontend/watched-change-dock.test.js` (a pending Plan
+  with nothing watched does not read idle; pending and mismatch details; Trial
+  and Focus outrank the Plan; the Plan outranks a staged draft; both Plan states
+  route to `plan`) and `frontend/focus-entry.test.js` (a pending Plan gives no
+  header context; the active Trial and Focus contexts are unchanged). Tests of
+  changed behavior are shown failing on the base first; the precedence and
+  unchanged-context guards are shown passing on the base.
 - [ ] 3.5 Rewrite `frontend/desk.browser.test.mjs`'s pending-Plan test at both
-  desktop sizes: with served guidance carrying a pending Plan and its verdict, a
+  desktop sizes, keeping "pending Plan" in its title so the filtered leg
+  `--test-name-pattern "pending Plan"` matches exactly its two sizes (`pass 2`):
+  with served guidance carrying a pending Plan and its verdict, a
   Pattern case's header shows no pending-Plan note and the watch panel shows the
   Plan with "Open Changes ›".
 - [ ] 3.6 Replay contract: add S147 on the `basal-lower` case, which serves both
@@ -98,6 +115,7 @@ the risk contract. Every value in tests and comments is synthetic.
   reads the same "Plan · awaiting pump" state in two windows, a selected Pattern
   case's header carries no pending-Plan note in either window (the base shows
   one), and "Open Changes ›" lands on Changes at `subject=plan`. Add its ledger
-  entry, extend the #431 amendment with the moved note, and move the inventory to
-  150 issued, 131 active, 19 retired in the ledger, `acceptance.py` and
-  `acceptance.test.py`.
+  entry to the #431 amendment section, record the moved note there, and move the
+  inventory literals to 150 issued, 131 active, 19 retired in `acceptance.py`
+  and `acceptance.test.py`. The header's inventory line stays with the release
+  coordinator.

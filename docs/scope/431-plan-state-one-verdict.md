@@ -48,6 +48,29 @@ reproduction is `docs/scope/431-plan-state-repro.py` with its browser half
   decision; the reachable stuck paths are in-place edits (no settings read shares
   a dose-stream change time) and any Plan no Trial matches. inline (evidence in
   the reproduction).
+- **Incomparable recorded Plans (release coordinator ruling, review round 1):**
+  a Plan with any item lacking an integer `start_min` or a numeric `value` is
+  never confirmed by a read, serves `pending` with `on_pump` false, leaves by
+  Withdraw, and neither the reconciler nor the verdict raises on it. Why:
+  pre-#388 rows can hold key-only items; the comparison raises on them, and a
+  null value would let an unchanged read appear to hold the Plan. → ADR.
+- **Verdict states (release coordinator ruling, review round 1):** `pending` is
+  newest, not confirmed, and the latest read after the decision holds it (or
+  there is none, or it is incomparable); `mismatch` is newest, not confirmed,
+  comparable, and the latest read does not hold it. Why: the first draft left
+  "an earlier read differed, the latest holds, not yet reconciled" in neither
+  state. → ADR.
+- **A confirmed Plan keeps "View change record" and offers no Withdraw**
+  (release coordinator ruling, review round 1). Why: S105's no-op Plan is
+  confirmed by the server once this lands, and today that door comes only from
+  the pending branch. inline (surfaces requirement 1).
+- **Lock shape (release coordinator rulings, review round 1):** workers' done
+  condition is review-clean and committed on the ticket branch with no push and
+  no pull request; the full `acceptance.test.py` binds a port and is
+  coordinator-run, workers run its port-free classes and the `inventory` leg;
+  the rewritten browser test keeps "pending Plan" in its title (`pass 2`); every
+  sub-order runs on Opus; ledger additions go in a dated `## #431 amendment —
+  2026-09-23` section. inline.
 - **Default assumed, returned to the coordinator: a confirmed Plan keeps no
   watch-panel state.** Why: the panel shows what holds the one active-change
   seat, the server releases that seat on confirmation, and an indefinitely shown
@@ -66,20 +89,24 @@ reproduction is `docs/scope/431-plan-state-repro.py` with its browser half
 - **Must recover:** none beyond the existing reconciliation on every ingest.
 - **Accepted failure:** a Plan whose pump reads stopped matching before any
   reconciliation saw a match stays pending with a visible mismatch and leaves by
-  Withdraw; an older unconfirmed Plan superseded by a newer record is neither
-  confirmed nor withdrawn, and is not listed as either.
+  Withdraw; an incomparable recorded Plan (an item without an integer start
+  minute or a numeric value) is never confirmed by a read, stays pending, and
+  leaves by Withdraw; an older unconfirmed Plan superseded by a newer record is
+  neither confirmed nor withdrawn, and is not listed as either.
 - **Unsupported:** an out-of-process CLI fetch while `serve` runs (the existing
   process-local cache rule); viewports other than the two supported desktop
   sizes.
 - **Evidence owed:** backend tests through the public routes and
-  `reconcile_ingested_follow_up` that fail on the base (in-place edit after the
-  decision; dose-stream Trial; read before the decision; mismatch; a Plan without
-  a captured schedule; superseded history; the confirmed time holding across a
-  later read; history and guidance serving one verdict; the store's receipt
-  identity rule); frontend unit tests for the Changes phase, status, Decision
-  block and newer-draft frame and for the watch panel's Plan states; the browser
-  test and replay stories named in the change; the desk ledger's inherited
-  stories preserved.
+  `reconcile_ingested_follow_up` (in-place edit after the decision; dose-stream
+  Trial; read before the decision; mismatch; a Plan without a captured schedule;
+  an incomparable Plan through reconciliation, both reads and Withdraw; a
+  holding read not yet reconciled; superseded history; the confirmed time
+  holding across a later read; history and guidance serving one verdict; the
+  store's receipt identity rule), each asserting changed behavior shown failing
+  on the base and each guard shown passing there; frontend unit tests for the
+  Changes phase, status, actions, Decision block and newer-draft frame and for
+  the watch panel's Plan states; the browser test and replay stories named in
+  the change; the desk ledger's inherited stories preserved.
 - Why: these screens are read as advisory insulin-dosing guidance; the harm is a
   false "on the pump", not downtime. Disposition: admitted into
   `openspec/changes/plan-state-one-verdict/design.md` unchanged.
@@ -99,4 +126,9 @@ None. No issue is filed from triage.
 Instrumentation for `/plan-review` rounds, dispatched by the coordinator:
 blockers found per round, each tagged `authoring` or `injected`.
 
-- (none yet)
+- **Round 1** (cold pass and persona panel, both BLOCKED; findings verified by
+  the coordinator): 6 blockers, all `authoring` — incomparable legacy Plans
+  raising and falsely holding; the verdict-state gap; a done condition naming a
+  commit the release never produces; S105's lost change-record door; the full
+  acceptance test binding a port; a filtered browser leg with no pass count.
+  6 notes folded in. 0 `injected`.

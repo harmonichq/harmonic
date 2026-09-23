@@ -13,7 +13,10 @@ a Plan is on the pump. The phase SHALL read Pending for `pending`, Mismatch for
 this Plan." after it stops. The pending and mismatch status wording SHALL stay as
 shipped. The browser's pump comparison SHALL only draw the planned-versus-pump
 rows, and only under a served `mismatch`. The recorded Plan Changes reads SHALL
-be the newest served record that is neither withdrawn nor superseded.
+be the newest served record that is neither withdrawn nor superseded. A pending
+or mismatched Plan SHALL offer Withdraw and "View change record"; a confirmed
+Plan with no newer draft SHALL keep "View change record" and SHALL offer no
+Withdraw.
 
 #### Scenario: A server-pending Plan with a matching pump read reads Pending
 
@@ -27,6 +30,12 @@ be the newest served record that is neither withdrawn nor superseded.
 - **GIVEN** a Plan served as `confirmed` with its `confirmed_at`
 - **WHEN** a later pump read arrives and Changes renders again
 - **THEN** the status still names the served `confirmed_at`, not the later read
+
+#### Scenario: A confirmed Plan keeps its change-record door
+
+- **GIVEN** a Plan served as `confirmed` and no newer draft
+- **WHEN** Changes renders the Plan
+- **THEN** it offers "View change record" and no Withdraw
 
 #### Scenario: A confirmed Plan the pump no longer holds reads Confirmed
 

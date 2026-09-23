@@ -42,8 +42,10 @@ found why:
 - The server confirms the pending Plan when the latest pump read after the
   decision holds the Plan's schedule, stamping the first read of that matching
   run. A Plan recorded before schedules were captured is compared as its
-  recorded values over that read. The Trial-matched confirmation still wins in
-  the same pass. (ADR 431; operator decision D5.)
+  recorded values over that read; one whose items cannot be compared (no start
+  minute or no value) is never confirmed by a read and leaves by Withdraw. The
+  Trial-matched confirmation still wins in the same pass. (ADR 431; operator
+  decision D5.)
 - Only the newest recorded Plan can be pending; older unconfirmed history is
   superseded and blocks nothing.
 - Every recorded Plan the server serves carries one verdict — pending,
@@ -55,7 +57,8 @@ found why:
   only draws the mismatch rows.
 - Changes keeps the recorded Plan apart from a newer draft: a draft saved while
   a Plan is pending is a separate next-change line; with no Plan pending, a
-  draft is the frame's subject, reads Draft saved, and can be recorded.
+  draft is the frame's subject, reads Draft saved, and can be recorded. A
+  confirmed Plan keeps its "View change record" door.
 - The watch panel gains a Plan-awaiting-pump state, routed with "Open Changes ›"
   to Changes' Plan (never the watched-change address), and the staged-draft
   state routes with the same words.

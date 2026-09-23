@@ -12,7 +12,10 @@ decision, ending at the latest, that each hold the schedule. It SHALL run after
 the Trial-matched reconciliation in the same pass, so a Trial-matched
 confirmation wins when both are available. A pump-read confirmation SHALL name no
 Trial and SHALL create no Plan–Trial relationship. A read captured at or before
-the decision SHALL never confirm a Plan. A confirmed Plan SHALL no longer
+the decision SHALL never confirm a Plan. A Plan any of whose recorded items
+lacks an integer start minute or a numeric value SHALL be incomparable: no read
+SHALL confirm it, and neither reconciliation nor its served verdict SHALL fail
+on it; it leaves pending only by withdrawal. A confirmed Plan SHALL no longer
 withhold a Focus or a new decision.
 
 #### Scenario: An in-place edit after the decision confirms the Plan
@@ -56,6 +59,18 @@ withhold a Focus or a new decision.
 - **THEN** the confirmation names the first of the two matching reads
 - **AND** a further matching read and reconciliation leave it unchanged
 
+#### Scenario: An incomparable recorded Plan fails nothing and leaves by withdrawal
+
+- **GIVEN** a synthetic store whose newest Plan was recorded through
+  `Store.save_plan_draft` and `Store.apply_plan` with an item that carries no
+  start minute, and a later settings read
+- **WHEN** ingestion reconciliation runs and the Plan history and guidance are
+  read
+- **THEN** reconciliation completes, both reads answer, and the Plan's verdict
+  reads `pending` with `on_pump` false
+- **AND** the withdraw route withdraws it and Focus admission then names no
+  pending Plan
+
 #### Scenario: A Plan recorded without a captured schedule confirms from its values
 
 - **GIVEN** a Plan recorded before schedules were captured and a later read whose
@@ -84,11 +99,15 @@ against this pending Plan.
 
 Each recorded Plan that the Plan history read serves, and the guidance read's
 pending Plan, SHALL carry one verdict the server computes at read time without
-writing. Its `state` SHALL be `pending` (no read after the decision disagrees
-with the Plan), `mismatch` (the latest read after the decision does not hold its
-schedule), `confirmed`, `withdrawn` or `superseded`. `confirmed_at` SHALL be the
+writing. Its `state` SHALL be `pending` when the Plan is the newest, is not
+confirmed, and the latest read after its decision holds its schedule, or there
+is no such read, or the Plan is incomparable; `mismatch` when the Plan is the
+newest, is not confirmed, is comparable, and the latest read after its decision
+does not hold its schedule; otherwise `confirmed`, `withdrawn` or
+`superseded`. `confirmed_at` SHALL be the
 confirming read's capture time for a confirmed Plan and null otherwise. `on_pump`
-SHALL say whether the latest read after the decision holds the Plan's schedule.
+SHALL say whether the latest read after the decision holds the Plan's schedule,
+and SHALL be false for an incomparable Plan.
 `checked_at` SHALL be the latest read's capture time, or null with no read. Both
 reads SHALL compute the verdict through one server function, so one Plan at one
 input revision carries the same verdict in both. The Plan history read SHALL
@@ -99,6 +118,14 @@ keep serving records newest first.
 - **GIVEN** a pending Plan in a synthetic store
 - **WHEN** the Plan history and the guidance are read at one input revision
 - **THEN** the history row's verdict equals the guidance pending Plan's verdict
+
+#### Scenario: A holding read not yet reconciled serves pending
+
+- **GIVEN** a recorded Plan and a later settings read that holds its schedule,
+  with no reconciliation run since that read
+- **WHEN** the Plan history is read
+- **THEN** its verdict reads `pending` with `on_pump` true and no
+  `confirmed_at`, never `confirmed`
 
 #### Scenario: A confirmed Plan the pump stops holding stays confirmed
 

@@ -84,8 +84,9 @@ export function settingValue(parameter, value) {
 // `mode` is the reader's own choice of assessment for the open record, or null
 // until they make one: the record's default read, which its served ending
 // decides once the record read has landed (ADR 430). `failed` is a reassessment
-// read that failed for the open record, cleared whenever another record opens;
-// the record it was read for stays.
+// read that failed for the open record; the record it was read for stays. It
+// is cleared wherever a record read lands, so every opening of a record — by a
+// roster press, its address or a reload — reads its reassessment afresh.
 const memory = {
   roster: null, error: null, open: null, mode: null, failed: null,
   record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
@@ -158,7 +159,9 @@ async function loadRecord({ kind, id }, token) {
   const original = await fetchVerifyTrials({ kind, selected: id });
   const row = (kind === 'focus' ? memory.roster.focuses : memory.roster.trials).find(row => String(row.id) === id);
   const detail = { ...row, ...original.selected, revision: original.input_revision, admission: original.admission };
-  if (readGeneration === token) memory.record = { kind, id, mode: 'original', detail };
+  if (readGeneration !== token) return;
+  memory.record = { kind, id, mode: 'original', detail };
+  memory.failed = null;
 }
 
 // A failed reassessment read is this record's failure, not the destination's:
@@ -569,7 +572,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   const open = match ? { kind: match[1], id: match[2] } : null;
   if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
     readGeneration += 1;
-    memory.open = open; memory.mode = null; memory.failed = null; memory.record = null; memory.error = null; memory.loading = null;
+    memory.open = open; memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
   }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }

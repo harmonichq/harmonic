@@ -25,9 +25,9 @@ const PAIRED = { ...comparison,
 let served = comparison;
 // A held assessment read: the record read answers, the reassessment waits.
 let assessmentGate = null;
-// A refused assessment read, as the server answers one whose history inputs
-// changed during every snapshot.
-let refuseAssessment = false;
+// The record whose assessment read the server refuses, as it answers one whose
+// history inputs changed during every snapshot.
+let refusedFor = null;
 globalThis.fetch = async (path, options = {}) => {
   requests.push({ path, options });
   if (options.method === 'POST') {
@@ -45,7 +45,7 @@ globalThis.fetch = async (path, options = {}) => {
   // the default (Original) selected read carries `reassessment: null`.
   const assessment = params.get('assessment');
   if (assessment && assessmentGate) await assessmentGate;
-  if (assessment && refuseAssessment) {
+  if (assessment && selected === refusedFor) {
     return { ok: false, status: 503, statusText: 'Service Unavailable',
       json: async () => ({ detail: 'history inputs changed during every snapshot' }) };
   }
@@ -74,8 +74,11 @@ function host() {
   // press one the way a reader does.
   const assessment = Object.fromEntries(['original', 'retained', 'current']
     .map(mode => [mode, { dataset: { assessment: mode } }]));
-  return { innerHTML: '', field, form, lateField, lateForm, assessment, retryReassessment,
+  // The roster's record rows a test names, and the record's Back to records.
+  const records = []; const recordClose = {};
+  return { innerHTML: '', field, form, lateField, lateForm, assessment, retryReassessment, records, recordClose,
     querySelectorAll(selector) {
+      if (selector === '[data-record]') return this.innerHTML.includes('data-record="') ? records : [];
       return selector === '[data-assessment]' && this.innerHTML.includes('data-assessment=')
         ? Object.values(assessment) : [];
     },
@@ -84,7 +87,8 @@ function host() {
         : selector === '#late-conclusion-conclusion' && this.innerHTML.includes('id="late-conclusion-conclusion"') ? lateField
           : selector === '[data-form="late-conclusion"]' && this.innerHTML.includes('data-form="late-conclusion"') ? lateForm
             : selector === '[data-retry-reassessment]' && this.innerHTML.includes('data-retry-reassessment') ? retryReassessment
-              : null; },
+              : selector === '[data-record-close]' && this.innerHTML.includes('data-record-close') ? recordClose
+                : null; },
   };
 }
 async function mountActive(seat, navigation) {
@@ -266,7 +270,7 @@ test('choosing Original on an open record reads as no comparison requested', asy
 });
 
 test('a failed retained read keeps the record and its Original read, and retries only that read', async () => {
-  kind = 'trial'; identity = 'refused-reassessment-synthetic'; served = PAIRED; refuseAssessment = true;
+  kind = 'trial'; identity = 'refused-reassessment-synthetic'; served = PAIRED; refusedFor = identity;
   try {
     const from = requests.length;
     const seat = host(); await openHistoryRecord(seat, identity);
@@ -287,7 +291,7 @@ test('a failed retained read keeps the record and its Original read, and retries
     await openHistoryRecord(seat, identity, 2);
     assert.equal(requests.length, settled, 'a failed read is not re-sent by a re-render');
 
-    refuseAssessment = false;
+    refusedFor = null;
     const retried = requests.length;
     seat.retryReassessment.onclick();
     await openHistoryRecord(seat, identity, 3);
@@ -295,5 +299,43 @@ test('a failed retained read keeps the record and its Original read, and retries
     assert.match(seat.innerHTML, /data-figure-state="paired"/);
     assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
     assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
-  } finally { refuseAssessment = false; served = comparison; }
+  } finally { refusedFor = null; served = comparison; }
+});
+
+test('a failed retained read stays with its record: the next record opened from the roster reads its own', async () => {
+  kind = 'trial'; identity = 'roster-synthetic'; served = PAIRED;
+  const [A, B] = ['refused-a-synthetic', 'fresh-b-synthetic'];
+  refusedFor = A;
+  // Back to records and a roster press write the address through the router.
+  const previousWindow = globalThis.window;
+  const location = { pathname: '/', search: '', hash: '' };
+  globalThis.window = { location, history: { pushState: (_state, _title, address) => {
+    const url = new URL(address, 'http://synthetic');
+    Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+  } } };
+  try {
+    const seat = host();
+    seat.records.push({ dataset: { record: `trial:${A}` } }, { dataset: { record: `trial:${B}` } });
+    const press = async (id) => {
+      seat.recordClose.onclick();
+      for (let step = 0; step < 3; step++) { mountHistory(seat, { context: {}, hold() {} }); await flush(); }
+      assert.match(seat.innerHTML, /data-record="/, 'Back to records shows the roster');
+      seat.records.find(row => row.dataset.record === `trial:${id}`).onclick();
+      const from = requests.length;
+      await openHistoryRecord(seat, id);
+      return assessmentsOf(from, id);
+    };
+    await openHistoryRecord(seat, A);
+    assert.match(seat.innerHTML, /data-reassessment-failed="retained"/, 'premise: A\u2019s retained read failed');
+
+    assert.deepEqual(await press(B), [null, 'retained'], 'B, opened from the roster, makes its own retained read');
+    assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/, 'A\u2019s failure does not follow into B');
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+    assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
+
+    refusedFor = null;
+    assert.deepEqual(await press(A), [null, 'retained'], 'reopening A retries its retained read');
+    assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
+    assert.match(seat.innerHTML, /data-figure-state="paired"/);
+  } finally { refusedFor = null; served = comparison; globalThis.window = previousWindow; }
 });

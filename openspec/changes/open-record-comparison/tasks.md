@@ -158,10 +158,26 @@ call for", with wording in CONTEXT.md terms.
 
 ## 4. Behavior ledger and replay (desk contract)
 
-- [ ] 4.1 Amend S112 in `mockups/harmonic-v2-desktop.behavior.md`, under the
-  frozen header, with the sanction line above. The retained read now follows
-  the record read with no Retained-context press. Its data stays edit-chain,
-  whose open records serve an unavailable retained comparison. In
+Ledger rule for every task below: never rewrite, re-date or replace an existing
+`★ FROZEN` block, the header's inventory line or any existing story entry.
+Record this change's amendments and new stories in one new dated section,
+`## #430 amendment — 2026-09-23`, appended after the existing amendment
+sections on the #413/#414 pattern, and carrying the sanction line above. In
+that section, name an amended story in prose ("S112 now …"). Never start a
+second line with `S112 · ` or `S49 · `, because `inventory()` rejects duplicate
+story IDs.
+
+Replay rule: no replay module (`frontend/c3.replay.mjs`,
+`frontend/c4.replay.mjs`, `frontend/desk-behavior.replay.mjs`,
+`frontend/replay-cases.mjs`) statically imports task 2.2's new export. Task 5.2
+lays this branch's harness over base a4d374a7, whose `follow-up.js` lacks it,
+and a missing named import fails the whole replay at module link, before any
+feature assertion. Each story asserts its reason words through the rendered
+page instead.
+
+- [ ] 4.1 In the #430 amendment section, record that S112's retained read now
+  follows the record read with no Retained-context press. Its data stays
+  edit-chain, whose open records serve an unavailable retained comparison. In
   `frontend/c4.replay.mjs` `C4_STORIES.S112`:
   1. hold the record read and read "Reading change records";
   2. install the reassessment hold before releasing the record hold;
@@ -178,14 +194,19 @@ call for", with wording in CONTEXT.md terms.
   - Retained context pressed;
   - `[data-unavailable="ending"]`.
 
-  Add S143 on edit-chain: open a still-open record. It shows
-  `[data-figure-state="unavailable"]` naming the served reason in words, no
-  mounted chart, and none of "no clock envelope is retained", "no readings yet"
-  or "0 → 0 half-hours read" on the stage.
+  Add S143 on edit-chain: open a still-open record, and read its served reason
+  code from the API. Assert that:
+  - the figure shows `[data-figure-state="unavailable"]`;
+  - the figure's reason text is non-empty, does not contain the served code,
+    and equals the reason text after "Unavailable · " on the Reassessment
+    Result line;
+  - no chart is mounted;
+  - none of "no clock envelope is retained", "no readings yet" or "0 → 0
+    half-hours read" appears on the stage.
 
   For both stories:
-  - write the ledger entries, as app-opener-only and lock HV2-28, plus
-    handler-inventory rows;
+  - write their `S142 · ` and `S143 · ` entries, as app-opener-only and lock
+    HV2-28, plus handler-inventory rows, inside the #430 amendment section;
   - add `appOnly` registrations and `REGISTRY` entries in
     `frontend/desk-behavior.replay.mjs`;
   - add `STORY_CASES` entries in `frontend/replay-cases.mjs`;
@@ -193,26 +214,32 @@ call for", with wording in CONTEXT.md terms.
   - add node regression tests in `frontend/c4.replay.test.js`: the
     registration and case, a passing fake page, and one fake page failing each
     story's feature assertion.
-- [ ] 4.3 Move the ledger inventory to 149 issued · 130 active · 19 retired in
-  every place it is stated. The coordinator reconciles totals across tickets on
-  integration.
+- [ ] 4.3 Move the pinned inventory literals to 149 issued · 130 active · 19
+  retired on this branch, so this change's own tests pass:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay-plan
-    count, the stated-inventory case and the same-total case;
-  - the ledger's re-freeze header;
-  - `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`;
-  - `mockups/INDEX.md`'s Harmonic v2 desktop row.
+    count, the stated-inventory case and the same-total case.
+
+  Leave these alone; the coordinator writes them once on the integration
+  branch:
+  - the ledger header's inventory line;
+  - `ACCEPTANCE.md`'s count sentence;
+  - `mockups/INDEX.md`'s row, which quotes the #413 re-freeze figures;
+  - the single release freeze block.
 - [ ] 4.4 Re-read for intent every other desk replay and test that opens a
-  record or reads the figure. Amend under the frozen header whatever the change
-  moves. Record in the ledger amendment that each one keeps its subject:
+  record or reads the figure. Record in the #430 amendment section that each
+  one keeps its subject, or how it was amended:
   - S96 and S105, which open ended records;
   - S110, which opens an open edit-chain record and waits for the original
     part;
   - the c4 `retained()` helper used by S91 and the readiness stories;
   - S49: its c4 part opens c4-missing's open Trial through `retained()` and
-    asserts the served reason in `.gf-reading`. Amend that assertion to expect
-    task 2.2's words for the served code, imported from the exported table,
-    and not the raw code. The story's text is unchanged;
+    asserts the served reason code appears in `.gf-reading`. Amend that
+    assertion. The served code (read from the API, as today) must not appear
+    in `.gf-reading`. The reason text after "Unavailable · " on the
+    Reassessment Result line must be non-empty and must also appear in the
+    readiness availability line. The story's text is unchanged, and it
+    imports nothing new;
   - S50, both the c3 body and the desk replay's own: it pins the active Trial
     legend, "Trial above Before" or "no Trial readings to compare yet", which
     task 2.1 keeps for `paired` and `before-only`;

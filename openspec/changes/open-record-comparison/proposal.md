@@ -4,7 +4,9 @@
 
 **Triage source for #430.** An ordinary ticket change. The inherited desk
 revise contract (`mockups/harmonic-v2-desktop.behavior.md` and its replay)
-stays frozen. This change amends S112 and adds S142–S143 beside it.
+stays frozen. A dated `#430 amendment` section in that ledger amends S112 and
+S49 in prose and adds S142–S143. The header's inventory line and the release
+freeze block are the coordinator's.
 
 ## Why
 

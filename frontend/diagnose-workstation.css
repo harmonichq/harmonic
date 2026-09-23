@@ -1049,8 +1049,26 @@
 .lane button.lane-cell {
   position: relative; border: 0; padding: 0; cursor: pointer;
 }
-.lane-cell[data-verdict="up"] { --cell: color-mix(in srgb, var(--ck-up) 72%, transparent); }
-.lane-cell[data-verdict="down"] { --cell: color-mix(in srgb, var(--mk-danger) 72%, transparent); }
+/* #413: raise and lower are the app's own high-gold and workstation-accent
+   hues (ADR 317's `--high`; `--ck-accent`, already the canvas plane's
+   interaction hue per theme.css) — not the generic ok/danger pair, which
+   name a glucose reading's safety, not a dose direction. Each also carries a
+   glyph (`::before`, so it never collides with the staged underline's
+   `::after`), one selector shared by the real cell and its key swatch so the
+   two can never drift: shape is the redundant channel color alone can't
+   give a colorblind or monochrome reader (HV2-32). */
+.lane-cell[data-verdict="up"] { --cell: color-mix(in srgb, var(--high) 72%, transparent); }
+.lane-cell[data-verdict="down"] { --cell: color-mix(in srgb, var(--ck-accent) 72%, transparent); }
+.lane-cell[data-verdict="up"],
+.lane-cell[data-verdict="down"] { position: relative; }
+.lane-cell[data-verdict="up"]::before,
+.lane-cell[data-verdict="down"]::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 0; height: 0; transform: translate(-50%, -50%);
+  border-left: 2.5px solid transparent; border-right: 2.5px solid transparent;
+}
+.lane-cell[data-verdict="up"]::before { border-bottom: 3px solid var(--mk-text); }
+.lane-cell[data-verdict="down"]::before { border-top: 3px solid var(--mk-text); }
 .lane-cell[data-verdict="hold"] {
   --cell: var(--ck-hold);
   /* A quiet solid field says the programmed rate remains in force. */

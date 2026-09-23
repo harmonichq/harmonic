@@ -34,7 +34,7 @@ EXPECTED_CASE_NAMES = (
     "showcase", "setting-recommendation", "behavioral-precedence",
     "basal-raise", "basal-lower", "basal-capped-raise",
     "basal-capped-lower", "basal-insufficient-seven-night",
-    "basal-insufficient-unsupported-sign", "basal-blind",
+    "basal-insufficient-unsupported-sign", "basal-verdict-gallery", "basal-blind",
     "basal-no-baseline", "basal-no-change",
     "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
     "basal-recurring-low-gate",

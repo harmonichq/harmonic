@@ -471,6 +471,104 @@ async function heldRequest414(page, pattern, matches) {
   };
 }
 
+// #413: S113's scenario, factored out of the story so a fake page can drive
+// it directly (frontend/c4.replay.test.js) without also faking
+// `openBasalLane`'s own network reads and navigation — the same boundary
+// S31-S35 already draw (no fake-page test covers their shared opener either).
+export async function assertBasalLaneGallery(page) {
+  const verdicts = await page.evaluate(() => {
+    const counts = {};
+    for (const cell of document.querySelectorAll('#lane > .lane-cell')) {
+      counts[cell.dataset.verdict] = (counts[cell.dataset.verdict] || 0) + 1;
+    }
+    return counts;
+  });
+  for (const verdict of ['up', 'down', 'hold', 'insufficient', 'nodata']) {
+    assert.ok(verdicts[verdict] > 0,
+      `S113 premise: the gallery case must serve a ${verdict} slot; saw ${JSON.stringify(verdicts)}`);
+  }
+
+  // Select the raise cell (opens its detail, matching S31-S35's own route),
+  // then stage it, then select a different cell — staged and selected must
+  // be two distinct cells so both marks are provable at once.
+  const raiseCell = page.locator('#lane > .lane-cell[data-verdict="up"]').first();
+  await raiseCell.click();
+  const stageButton = page.locator('.stagebtn[data-staged="false"]');
+  await stageButton.waitFor({ timeout: 30000 });
+  await stageButton.click();
+  await page.locator('.stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+  const lowerCell = page.locator('#lane > .lane-cell[data-verdict="down"]').first();
+  await lowerCell.click();
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await raiseCell.getAttribute('data-staged')), 'true',
+      'S113 premise: the raise cell must carry the staged mark');
+    assert.equal(seen(await lowerCell.getAttribute('aria-pressed')), 'true',
+      'S113 premise: the lower cell must be the current selection');
+    assert.notEqual(seen(await raiseCell.getAttribute('aria-pressed')), 'true',
+      'S113 premise: the staged cell and the selected cell must be distinct');
+  }, 'S113 one cell is staged and a different cell is selected');
+
+  await waitForReplayAssertion(async seen => {
+    const order = seen(await page.evaluate(() => [...document.querySelectorAll('#lane-wrap > *')].map(el => el.id)));
+    assert.deepEqual(order, ['lane-key', 'lane'], 'S113 the key must render as the lane\'s head row, above the cells');
+    const wrap = seen(await page.locator('#lane-wrap').boundingBox());
+    const key = seen(await page.locator('#lane-key').boundingBox());
+    const lane = seen(await page.locator('#lane').boundingBox());
+    assert.ok(wrap && key && lane, 'S113 premise: the lane, its key and their wrap must all render');
+    assert.ok(key.y >= wrap.y - 1 && key.y + key.height <= wrap.y + wrap.height + 1,
+      "S113 the key's box must lie wholly inside the visible lane");
+    assert.ok(key.x >= wrap.x - 1 && key.x + key.width <= wrap.x + wrap.width + 1,
+      "S113 the key's box must lie wholly inside the visible lane");
+    assert.ok(key.y + key.height <= lane.y + 1, 'S113 the key must sit above the cells, not beneath them');
+  }, 'S113 the key stands fully visible above the cells');
+
+  // "One computed paint": both the cell and its key mark read the SAME
+  // `--cell` custom property off the one shared `.lane-cell[data-verdict]`
+  // rule (diagnose-workstation.css) — that shared token, not a raw
+  // `backgroundColor` string, is what the two surfaces are built to agree
+  // on (the key's own swatch composites it over a different, explicit
+  // backing so a translucent raise/lower tint still reads as the same
+  // colour by eye). Insufficient/no-data additionally carry a structural
+  // hatch/dot pattern; compare its gradient kind, the one thing the key's
+  // `--lane-structure` indirection is built to mirror.
+  for (const [verdict, count] of Object.entries(verdicts)) {
+    const keySwatch = page.locator(`#lane-key .lane-cell[data-verdict="${verdict}"]`);
+    const keyCount = await page.locator(`#lane-key [title]:has(.lane-cell[data-verdict="${verdict}"]) .t`).innerText();
+    assert.equal(Number(keyCount), count, `S113 the key's ${verdict} count must equal the served lane count`);
+
+    const cellSelector = `#lane > .lane-cell[data-verdict="${verdict}"]`;
+    const [cellToken, keyToken] = await Promise.all([
+      page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).getPropertyValue('--cell').trim()),
+      keySwatch.evaluate(el => getComputedStyle(el).getPropertyValue('--cell').trim()),
+    ]);
+    assert.equal(keyToken, cellToken, `S113 the ${verdict} key mark must share the cell's --cell paint token`);
+
+    if (verdict === 'hold') {
+      const groundToken = await page.locator('#lane').evaluate(el => getComputedStyle(el).backgroundColor);
+      const cellPaint = await page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).backgroundColor);
+      assert.notEqual(cellPaint, groundToken, 'S113 a hold cell must not paint as the bare ground');
+    }
+    if (verdict === 'insufficient' || verdict === 'nodata') {
+      const [cellImage, keyImage] = await Promise.all([
+        page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).backgroundImage),
+        keySwatch.evaluate(el => getComputedStyle(el).backgroundImage),
+      ]);
+      const kind = image => (image.includes('repeating-linear-gradient') ? 'hatch'
+        : image.includes('radial-gradient') ? 'dot' : image);
+      assert.equal(kind(keyImage), kind(cellImage),
+        `S113 the ${verdict} key mark's structure must match its cells' (hatched vs dotted)`);
+    }
+    if (verdict === 'up' || verdict === 'down') {
+      const [cellGlyph, keyGlyph] = await Promise.all([
+        page.locator(cellSelector).first().evaluate(el => getComputedStyle(el, '::before').content),
+        keySwatch.evaluate(el => getComputedStyle(el, '::before').content),
+      ]);
+      assert.notEqual(cellGlyph, 'none', `S113 a ${verdict} cell must carry its directional glyph`);
+      assert.equal(keyGlyph, cellGlyph, `S113 the ${verdict} key mark must carry the same glyph as its cells`);
+    }
+  }
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -749,47 +847,19 @@ export const C4_STORIES = {
     reassessHold.release(); await reassessHold.close();
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   },
-  // #413: the lane's head row and key. `openBasalLane` lands on whichever
-  // basal slot the showcase's own analysis ranks; the assertions below hold
-  // for whatever mix of served verdicts that slot's lane carries, rather than
-  // assuming the showcase manufactures all five at once.
+  // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
+  // whichever basal slot the CASE_STORE_DIR case ranks first; the
+  // `basal-verdict-gallery` QaCase (scripts/qa_e2e_cases.py) is built to
+  // serve all five verdicts on one lane, so this story can require the full
+  // scenario rather than accept whatever subset a general fixture happens to
+  // carry. Premise failures (a missing verdict, no selection, no stage) read
+  // distinctly from the feature assertions they gate. The scenario itself
+  // (`assertBasalLaneGallery`) is a separate export so a fake page can drive
+  // it directly, without also having to fake `openBasalLane`'s own network
+  // reads and navigation.
   async S113(page) {
     await C2_STORIES.openBasalLane(page);
-    await waitForReplayAssertion(async seen => {
-      const order = seen(await page.evaluate(() => [...document.querySelectorAll('#lane-wrap > *')].map(el => el.id)));
-      assert.deepEqual(order, ['lane-key', 'lane'], 'S113 the key must render as the lane\'s head row, above the cells');
-      const wrap = seen(await page.locator('#lane-wrap').boundingBox());
-      const key = seen(await page.locator('#lane-key').boundingBox());
-      const lane = seen(await page.locator('#lane').boundingBox());
-      assert.ok(wrap && key && lane, 'S113 premise: the lane, its key and their wrap must all render');
-      assert.ok(key.y >= wrap.y - 1 && key.y + key.height <= wrap.y + wrap.height + 1,
-        "S113 the key's box must lie wholly inside the visible lane");
-      assert.ok(key.x >= wrap.x - 1 && key.x + key.width <= wrap.x + wrap.width + 1,
-        "S113 the key's box must lie wholly inside the visible lane");
-      assert.ok(key.y + key.height <= lane.y + 1, 'S113 the key must sit above the cells, not beneath them');
-    }, 'S113 the key stands fully visible above the cells');
-
-    const verdicts = await page.evaluate(() => {
-      const counts = {};
-      for (const cell of document.querySelectorAll('#lane > .lane-cell')) {
-        counts[cell.dataset.verdict] = (counts[cell.dataset.verdict] || 0) + 1;
-      }
-      return counts;
-    });
-    assert.ok(Object.keys(verdicts).length > 0, 'S113 premise: the lane must paint at least one verdict');
-    for (const [verdict, count] of Object.entries(verdicts)) {
-      const keyCount = await page.locator(`#lane-key [title]:has(.lane-cell[data-verdict="${verdict}"]) .t`).innerText();
-      assert.equal(Number(keyCount), count, `S113 the key's ${verdict} count must equal the served lane count`);
-      const cellPaint = await page.evaluate(sel => {
-        const el = document.querySelector(sel);
-        const style = getComputedStyle(el);
-        return [style.backgroundColor, style.backgroundImage];
-      }, `#lane > .lane-cell[data-verdict="${verdict}"]`);
-      if (verdict === 'hold') {
-        const groundPaint = await page.evaluate(() => getComputedStyle(document.querySelector('#lane')).backgroundColor);
-        assert.notEqual(cellPaint[0], groundPaint, 'S113 a hold cell must not paint as the bare ground');
-      }
-    }
+    await assertBasalLaneGallery(page);
   },
   // #413: a cold Diagnose arrival shows a count-free skeleton instead of an
   // empty loading block, while keeping the same status role, named text

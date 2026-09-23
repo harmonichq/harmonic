@@ -2624,22 +2624,37 @@ S112 · The roster read and a requested reassessment each show their own named
 
 ```
 S113 · The basal lane's head row — the served verdict key — stands wholly
-       above the 48 cells, inside the lane, and every key count equals the
-       served cells sharing that verdict.
-  element:  #lane-wrap, #lane-key, #lane
-  source:   frontend/diagnose-workstation.js renderLaneKey; frontend/diagnose-workstation.css .lane-wrap/.lane-key
+       above the 48 cells, inside the lane; every served verdict (raise,
+       lower, hold, insufficient, no data) paints its cells and matches its
+       key mark on that one shared paint, hold never reading as the bare
+       ground; a staged cell and a different selected cell are both provable
+       at once; every key count equals the served cells sharing that verdict.
+  element:  #lane-wrap, #lane-key, #lane, .stagebtn
+  source:   frontend/diagnose-workstation.js renderLaneKey; frontend/diagnose-workstation.css .lane-cell[data-verdict]/.lane-wrap/.lane-key
   lock:     HV2-17
-  data:     the dense 48-slot capture (the app's own showcase, reached
-            through openBasalLane); whatever mix of served verdicts that
-            slot's lane carries
-  evidence: C4_STORIES.S113; reads the DOM order of `#lane-wrap`'s children,
-            each element's bounding box, and the key's per-verdict count
-            against the cells actually painted
-  status:   #413 task 2 sub-order — story authored and registered; a
-            sandboxed session cannot launch Chromium (AGENTS.md, "A
-            sandboxed agent cannot launch Chromium"), so the fail-first proof
-            against the base and the pass proof on this branch are owed by
-            #413 task 4.1, not yet run
+  data:     basal-verdict-gallery (scripts/qa_e2e_cases.py QaCase, manufactured
+            per AGENTS.md's QA-coverage-era process from real
+            `execute_case` output): one basal lane serving a raise, a lower,
+            a hold, an insufficient-evidence and every other slot no-data, in
+            one 30-day source window
+  evidence: C4_STORIES.assertBasalLaneGallery (called from S113 after
+            `openBasalLane`); requires all five served verdicts present,
+            stages the raise cell then selects the lower cell, reads the DOM
+            order of `#lane-wrap`'s children and each element's bounding
+            box, then for every verdict compares its cells' and its key
+            mark's shared `--cell` paint token (plus the hatch/dot structure
+            for insufficient/no-data and the directional glyph for
+            raise/lower) and the key's printed count against the served
+            lane count
+  status:   #413 task 2 sub-order — the coordinator's own `ONLY=S113,S114`
+            run at 1280x720 passed a narrower prior revision of this story
+            (the DOM-order/visibility checks alone, against whatever verdict
+            mix the showcase happened to carry). This revision requires the
+            full scenario instead — all five verdicts, a distinct staged and
+            selected cell, and the shared-paint comparison — backed by the
+            new basal-verdict-gallery case, and has not yet been run by the
+            coordinator. Both that pass proof and the fail-first proof
+            against the base are owed by #413 task 4.1
 ```
 
 ```
@@ -2656,11 +2671,10 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
             skeleton's marks, text content, status label and the reading
             pane's width, then checks the animation is suppressed under
             `prefers-reduced-motion: reduce` before releasing the read
-  status:   #413 task 2 sub-order — story authored and registered; a
-            sandboxed session cannot launch Chromium (AGENTS.md, "A
-            sandboxed agent cannot launch Chromium"), so the fail-first proof
-            against the base and the pass proof on this branch are owed by
-            #413 task 4.1, not yet run
+  status:   #413 task 2 sub-order — story authored and registered;
+            coordinator ran the bare-script `ONLY=S114` replay on this
+            branch at 1280x720 (unsandboxed) and it passed. The fail-first
+            proof against the base is owed by #413 task 4.1
 ```
 
 ### Coordinator amendment 1 — 2026-09-10

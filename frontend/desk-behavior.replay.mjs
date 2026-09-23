@@ -3132,6 +3132,8 @@ export const S117 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S127
 export const S127 = appOnly('HV2-13',
   '#425 Day\'s recorded-day count is the served total across month paging, and each month counts its own days once', C4_STORIES.S127);
+// STORY:harmonic-v2-desktop:S133
+export const S133 = appOnly('HV2-13', '#427 the topbar\'s Day reopens the day last looked at; a reload opens the latest recorded day', C2_STORIES.S133);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3181,6 +3183,7 @@ export const REGISTRY = [
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
   ['S127', S127, J()],
+  ['S133', S133, M()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -2987,3 +2987,39 @@ S127 · Day's rail count is the served number of recorded days in the whole
             1 failed of 1 selected); branch 62c8aa84 passes at both sizes
             (1 executed, 0 failed); coordinator-run 2026-09-23
 ```
+
+## #427 amendment — 2026-09-23, issue #427
+
+S133 records the shipped rule that the topbar's Day reopens the day last looked
+at (ADR 427, in `openspec/changes/day-held-day-viewed-stamp/design.md`). It is
+app-opener-only, like S113–S117. Browser execution belongs to whoever can launch
+a browser, at 1280x720 and 1440x900; a sandboxed worker never runs it. No
+inherited story is weakened, amended or retired.
+
+Sanction: Connor Griffin, 2026-09-23, answered "Q2 A" to: "Can your reply here
+count as sign-off for the UI copy and tone changes? … Yes. I record your answer
+as the approval for every change these 13 checklists call for, and write the
+wording in CONTEXT.md terms."
+
+```
+S133 · Direct Day entry reopens the day last looked at. After a selected
+       occurrence's "Open <date> in Day" opens a recorded day earlier than the
+       latest, a visit to Diagnose, then Changes, then the topbar's Day shows
+       that same day, with no Opened from and no return, at the plain /day
+       address; a reload opens the latest recorded day.
+  element:  nav.v2-nav [data-destination]; #level .case-occurrence;
+            .occ-foot button:last-child;
+            .gf-nav-col[aria-pressed="true"][data-pick]; [data-day="latest"];
+            absence of [data-day="return"]
+  source:   frontend/day.js adopt / settle
+  lock:     HV2-13; ADR 427
+  data:     showcase (35 recorded days, 2024-05-20 to 2024-06-30)
+  evidence: C2_STORIES.S133
+  status:   replays done; renders owed at integration. It records shipped
+            behavior, so it is not a fail-first obligation. The held-day Node
+            test in frontend/day.test.js, failed against a deliberately broken
+            direct entry, carries non-vacuity. Coordinator-run 2026-09-23 on
+            330027ac: branch ONLY=S60,S133 passed at 1280x720 and 1440x900
+            (executed 2 · failed 0 at each size); base a4d374a7 with this
+            branch's harness passed ONLY=S133 at 1280x720, as expected.
+```

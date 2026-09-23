@@ -785,6 +785,63 @@ export const C2_STORIES = {
       assert.equal(seen(await page.locator('.occ-foot button:last-child').evaluate(node => node === document.activeElement)), true);
     }, "S62");
   },
+  // ADR 427: the topbar's Day reopens the day last looked at, and a reload opens
+  // the latest recorded day. Diagnose reaches Day only through a selected
+  // occurrence's "Open <date> in Day", the occurrence foot's plain link S61 takes.
+  S133: async page => {
+    const pressedDay = () => page.locator('.gf-nav-col[aria-pressed="true"][data-pick]').getAttribute('data-pick');
+    const latestControl = page.locator('[data-day="latest"]');
+    await go(page, 'day'); await page.locator('.gf-stage-day').waitFor();
+    const latest = await waitForReplayAssertion(async seen => {
+      const iso = seen(await pressedDay());
+      check(iso, 'a fresh Day shows a recorded day');
+      assert.equal(seen(await latestControl.isDisabled()), true, 'a fresh Day opens on the latest recorded day');
+      return iso;
+    }, "S133 fresh Day");
+
+    // Open each occurrence's day in turn until one is not the latest recorded
+    // day. openComparisonCase goes to Diagnose and opens the case afresh every
+    // time, rather than relying on Diagnose restoring a parked case (#428).
+    let opened = null;
+    let tried = 0;
+    for (let i = 0; !opened; i += 1) {
+      await openComparisonCase(page);
+      const rows = page.locator('#level .case-occurrence');
+      if (i >= await rows.count()) break;
+      tried += 1;
+      await choose(page, rows.nth(i));
+      await page.locator('#level .occ-detail').waitFor();
+      await press(page, '.occ-foot button:last-child'); await page.locator('.gf-stage-day').waitFor();
+      const day = await waitForReplayAssertion(async seen => {
+        const iso = seen(await pressedDay());
+        assert.equal(seen(new URL(page.url()).searchParams.get('date')), iso, 'the opened day and the address agree');
+        return iso;
+      }, "S133 opened day");
+      if (day !== latest) opened = day;
+    }
+    check(opened, `no occurrence opened a recorded day other than the latest (${latest}); tried ${tried}`);
+    await waitForReplayAssertion(async seen => {
+      check(/opened from/i.test(seen(await page.locator('.gf-desk').innerText())), 'the contextual entry names where it was opened from');
+    }, "S133 contextual entry");
+
+    await go(page, 'diagnose'); await go(page, 'changes'); await go(page, 'day');
+    await page.locator('.gf-stage-day').waitFor();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await pressedDay()), opened, "the topbar's Day reopens the day last looked at");
+      assert.equal(seen(await latestControl.isDisabled()), false, 'Latest stays available on an earlier day');
+      assert.equal(seen(await page.locator('[data-day="return"]').count()), 0, 'a direct entry offers no return');
+      check(!/opened from/i.test(seen(await page.locator('.gf-desk').innerText())), 'a direct entry names no prior subject');
+      const address = new URL(seen(page.url()));
+      assert.equal(address.pathname, '/day');
+      assert.equal(address.search, '', 'the plain address carries no day (accepted by ADR 427)');
+    }, "S133 direct entry");
+
+    await page.reload(); await page.locator('.gf-stage-day').waitFor();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await pressedDay()), latest, 'a reload opens the latest recorded day');
+      assert.equal(seen(await latestControl.isDisabled()), true, 'a reload opens the latest recorded day');
+    }, "S133 reload");
+  },
   S77: async page => {
     await go(page, 'changes'); await press(page, '[data-action="pump"]');
     await page.locator('.gf-utility[data-utility="pump"]').waitFor();

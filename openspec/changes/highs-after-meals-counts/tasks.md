@@ -110,18 +110,25 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   comparable") and S126 (`behavioral-correction-stacking`: the open fold prints
   Correction stacking's 2 of 2 lows first and its correction-cluster count behind
   "outside the count", and the cause lines' Pattern's-scope counts add up to the
-  Pattern's served count) to `mockups/harmonic-v2-desktop.behavior.md`, with
+  Pattern's served count) in a new dated
+  `## #424 amendment — 2026-09-23, issue #424` section of
+  `mockups/harmonic-v2-desktop.behavior.md`, with
   replay functions in `frontend/c4.replay.mjs`, registry entries in
   `frontend/desk-behavior.replay.mjs`, case mappings in
   `frontend/replay-cases.mjs`, and node regression tests in
   `frontend/c4.replay.test.js` that tell a feature assertion from a setup error.
   No story asserts the claimed-state words (#423).
-- [ ] 4.2 Amend S115 so a folded member line is read from the served
-  `fold_sentences`, the outside ones set apart, with a dated amendment line
-  quoting the sanction in `proposal.md`.
-- [ ] 4.3 Move the ledger header's inventory and the pinned counts in
+- [ ] 4.2 Amend S115 with an `Amended S115 · 2026-09-23` entry in that same
+  section, quoting the sanction in `proposal.md`: a folded member line is read
+  from the served `fold_sentences`, the outside ones set apart. S115's original
+  text stays as frozen.
+- [ ] 4.3 Move the pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` (`inventory()`) and
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` from 147 issued / 128
-  active to 150 issued / 131 active, retired unchanged at 19.
+  active to 150 issued / 131 active, retired unchanged at 19, so the driver's own
+  tests pass on this branch. Leave every `★ FROZEN` block, the ledger header's
+  inventory line, `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s count
+  sentence and `mockups/INDEX.md`'s counts untouched: the release coordinator
+  writes those once, across every ticket.
 - [ ] 4.4 Record in each new story's status line the base fail-first and branch
   pass at 1280x720 and 1440x900, from runs the coordinator makes serially.

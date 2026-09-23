@@ -111,14 +111,15 @@ The revision of the case-file caption and the Pattern fold SHALL amend the desk'
 frozen behavior ledger and its app-only replay in the same change: new stories for
 the same-population caption, the cross-population caption and a folded cause's
 share of its Pattern, each on a named manufactured case store, and an amendment of
-every inherited story whose assertion reads a folded cause's sentences. The ledger
-inventory and the replay driver's pinned story counts SHALL move together. Each new
-story SHALL fail on the base at its feature assertion and pass on the revision, at
-both desktop sizes.
+every inherited story whose assertion reads a folded cause's sentences. They SHALL
+be recorded in a dated amendment section of the ledger without rewriting any
+existing freeze block, and the replay driver's pinned story counts SHALL equal the
+ledger's story entries. Each new story SHALL fail on the base at its feature
+assertion and pass on the revision, at both desktop sizes.
 
 #### Scenario: The replay proves the counts revision
 
 - **WHEN** the amended desk replay runs against the built revision at both desktop
   sizes
 - **THEN** the new and amended stories execute with zero failures
-- **AND** the ledger inventory equals the replay driver's pinned counts
+- **AND** the replay driver's pinned counts equal the ledger's story entries

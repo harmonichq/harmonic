@@ -33,7 +33,7 @@
   `python3 scripts/check_owned_identifiers.py`,
   `python3 scripts/check_public_allowlist.py` and
   `npx --yes @fission-ai/openspec@1 validate --all --strict` all passing.
-- [ ] 2.2 Port-bound replay legs, run serially by whichever session holds
+- [x] 2.2 Port-bound replay legs, run serially by whichever session holds
   port 8765 and only on the built commit under test. First, S24 at 1280×720
   passes ten consecutive runs:
   `PLAYWRIGHT_MODULE=<playwright> TARGET=app BASE_URL=http://127.0.0.1:8765
@@ -43,3 +43,14 @@
   `ONLY=S3,S19,S20,S20b,S23,S24,S25,S29,S81,S108,S109,S114,S117` with the same
   environment, reports `failed 0`. The complete ledger at both sizes stays with
   the release's single pre-merge run.
+  - Evidence (coordinator, 2026-09-23, built 743ff47a, synthetic case
+    stores): ten consecutive `ONLY=S24` runs at 1280×720 each reported
+    `PASS S24` and `# executed 1 · failed 0 · deferred 0 · selected 1`; the
+    thirteen-story run reported `# executed 13 · failed 0 · deferred 0 ·
+    selected 13`.
+  - Forcing harness (scratch-only, uncommitted; holds the Diagnose press's
+    `/api/focus` and `/api/guidance` responses and releases them right after
+    S24's third Occurrence response), same commit: three
+    `# releasing 2 held background response(s): /api/focus /api/guidance`
+    lines, then `# pass 3 fail 0 rate 1`. On a4d374a7 triage's run of the same
+    harness printed `# pass 0 fail 3 rate 1`.

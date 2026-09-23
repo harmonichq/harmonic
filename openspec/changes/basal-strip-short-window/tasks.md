@@ -17,7 +17,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 2. The canvas pane scrolls on short desktop windows
 
-- [ ] 2.1 Read UI Craft's `reference/web-implementation.md`, then implement
+- [x] 2.1 Read UI Craft's `reference/web-implementation.md`, then implement
   surfaces **The basal lane stays reachable on short desktop windows** in
   `frontend/diagnose-workstation.css`. Both new declarations go in one
   `@media (min-width: 832px)` block, the split's own range, so the ≤831px and
@@ -40,7 +40,7 @@ decisions, the measurement, the revise preparation and the risk contract.
   `.lane-key`: at split widths a wrapped key takes its line from the chart
   inside the fixed body, and it wraps only when the pane is too narrow, never
   at 1280×720 or 1440×900.
-- [ ] 2.2 Add S151 to the desk ledger and replay. S151, S152 and S153 are each
+- [x] 2.2 Add S151 to the desk ledger and replay. S151, S152 and S153 are each
   built the way S113 is: a `C4_STORIES` body, an
   `appOnly('HV2-17', …)` export carrying its
   `// STORY:harmonic-v2-desktop:<id>` marker, a `REGISTRY` entry, and case
@@ -82,7 +82,7 @@ decisions, the measurement, the revise preparation and the risk contract.
   - one failing on a strip below a pane that cannot scroll;
   - one where a vertical failure at one size and a horizontal failure at
     another are both named in the single failure message.
-- [ ] 2.3 Add S152: on `basal-verdict-gallery`, at each of S151's three sizes
+- [x] 2.3 Add S152: on `basal-verdict-gallery`, at each of S151's three sizes
   (1200×736, 1200×560 and 832×560), set with `page.setViewportSize` and
   restored afterwards, handle every cell the key counts as raise or lower:
   - reach it as S151 does;
@@ -91,7 +91,7 @@ decisions, the measurement, the revise preparation and the risk contract.
   - require its panel to show a Recommended value and the Stage change button
     (`.stagebtn`); the inspector's own scroll may bring the button into view;
   - require the picked cell to still lie inside the pane's visible box.
-- [ ] 2.4 Amend S113 under the Q2 sanction (design.md, "Revise preparation"):
+- [x] 2.4 Amend S113 under the Q2 sanction (design.md, "Revise preparation"):
   at the run's own size (1280×720 or 1440×900), require all of these at rest:
   - `#lane-wrap` and every `#lane-key > span` entry lie wholly inside
     `.canvas-pane`'s visible box;
@@ -106,7 +106,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 3. The recurring-lows key word (D6)
 
-- [ ] 3.1 Implement surfaces **The basal lane key names a recurring-lows lower
+- [x] 3.1 Implement surfaces **The basal lane key names a recurring-lows lower
   apart from a measured lower**:
   - In `buildSlotLane` (`frontend/diagnose-workstation-chart.js`), mark an
     asserting lower whose served `safety_status` is exactly
@@ -123,7 +123,7 @@ decisions, the measurement, the revise preparation and the risk contract.
     which stays hold with no reason; and a lane holding both lower kinds,
     whose two counts equal their cells. Node tests through `renderLane` for
     the cell's title and accessible name.
-- [ ] 3.2 Amend S113 with a `withCase('basal-recurring-low-no-clean-median')`
+- [x] 3.2 Amend S113 with a `withCase('basal-recurring-low-no-clean-median')`
   variant. On the 24 h rail:
   - the key reads `lower · recurring lows 1` and has no `lower` entry;
   - the 05:00 cell keeps the `down` paint token and glyph that its key mark
@@ -137,7 +137,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 4. Key and panel agree
 
-- [ ] 4.1 Add S153, implementing surfaces **Each basal key verdict agrees with
+- [x] 4.1 Add S153, implementing surfaces **Each basal key verdict agrees with
   its slot's panel**. On `basal-verdict-gallery`, at the run's size, open
   every cell once:
   - every raise and lower cell shows a Recommended value and the Stage change
@@ -149,7 +149,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
 ## 5. Records
 
-- [ ] 5.1 In the desk ledger `mockups/harmonic-v2-desktop.behavior.md`, add
+- [x] 5.1 In the desk ledger `mockups/harmonic-v2-desktop.behavior.md`, add
   one `## #433 amendment — 2026-09-23` section, following the #413 and #414
   pattern. It holds:
   - the S151–S153 entries (element, source, lock, data, evidence, status);
@@ -161,18 +161,18 @@ decisions, the measurement, the revise preparation and the risk contract.
   header's inventory line alone: that line, ACCEPTANCE.md's count sentence,
   `mockups/INDEX.md`'s count literal and the one release freeze block are
   coordinator-owned.
-- [ ] 5.2 On this branch, move only the numeric inventory literals to
+- [x] 5.2 On this branch, move only the numeric inventory literals to
   150 / 131 / 19: `mockups/sweep/harmonic-v2-desktop/acceptance.py`
   `inventory()` and `acceptance.test.py`'s counts, so this branch's own tests
   pass. Pin S151–S153 in `frontend/c4.replay.test.js` beside S108–S117: each
   is registered once, with term `HV2-17` and case `basal-verdict-gallery`.
-- [ ] 5.3 Update DESIGN.md's "Basal lane" entry with three things: the
+- [x] 5.3 Update DESIGN.md's "Basal lane" entry with three things: the
   recurring-lows key word, the key wrapping between whole entries near the
   narrowest split, and the canvas pane's own scroll on short desktop windows.
 
 ## 6. Verification
 
-- [ ] 6.1 Run these locally, all green; none of them binds a port:
+- [x] 6.1 Run these locally, all green; none of them binds a port:
   - `npm ci && npm run build`;
   - the fast gate `node --test 'frontend/**/*.test.js'`;
   - OpenSpec strict validation;

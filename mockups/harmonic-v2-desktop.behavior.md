@@ -2937,3 +2937,118 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #433 amendment — 2026-09-23, issue #433
+
+S151–S153 are the fail-first obligations of ADR 433 (the pinned change
+`openspec/changes/basal-strip-short-window/`): the basal lane stays within reach
+on short and narrow desktop windows, every raise and lower slot can be pointed
+at and staged there, and every key verdict agrees with its slot's panel. S113 is
+amended for the recurring-lows key word (operator decision D6) and for the
+canvas pane's at-rest checks. All four are app-opener-only, like S101–S117.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900; the
+ticket worker binds no port.
+
+### #433 sanctioned changes to shipped desk behavior — 2026-09-23
+
+Sanction: Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go" —
+the release's standing Q2 sanction for every shipped-surface revision and
+behavior-ledger amendment the 13 issue checklists call for. It covers three
+changes:
+
+- On a desktop split window too short for the canvas pane's row floors, the
+  pane scrolls vertically, where it used to clip the basal lane out of reach.
+- Near the narrowest split, the lane key wraps between whole entries, where it
+  used to cut its last entries off at the pane's edge. The lane's cells and the
+  glucose chart above them come back inside the pane with it.
+- The key moves a recurring-lows lower out of "lower" into
+  "lower · recurring lows" (D6, same date).
+
+No shipped behavior is retired. At 1280x720 and 1440x900 nothing moves: the
+pane has no scroll range there and the key stays on one line, which S113's
+amendment asserts.
+
+```
+S151 · At three desktop split windows — 1200×736, 1200×560 and 832×560 —
+       the basal lane stays within reach: every key entry, every
+       cell and the glucose chart lie horizontally inside the canvas pane at
+       rest; the lane, its key, every entry and every cell lie inside the
+       pane's visible box vertically, at rest or once the reader wheels the
+       pane; no key entry splits over lines; the document never scrolls, the
+       pane never scrolls sideways, and no other container moves.
+  element:  .canvas-pane, #canvas-head, #lane-wrap, #lane-key > span,
+            #lane > .lane-cell, #chart
+  source:   frontend/diagnose-workstation.css .canvas-pane / .lane-key (the
+            ADR 433 `min-width: 832px` block)
+  lock:     HV2-17
+  data:     basal-verdict-gallery (the case S113 uses)
+  evidence: C4_STORIES.S151 → assertBasalLaneReachable; after `openBasalLane`,
+            sets each size with page.setViewportSize, reads the pane and lane
+            geometry at rest, wheels the mouse over the pane's header rail
+            until the lane is in reach or the pane stops moving (it never sets
+            a scroll offset and never scrolls anything into view by script),
+            wheels back, and restores the run's size even when checks failed.
+            It records every failure by size and axis with the measured
+            overrun, then fails once, listing them all
+  status:   owed, coordinator-run; no result recorded yet. Expected on base
+            a4d374a7 with this harness laid over it: fails at both sizes,
+            naming the 44px vertical clip at 1200×560 and 832×560 (the pane
+            cannot scroll) and, at 832×560, the key entries, the cells and
+            #chart past the pane's right edge. Expected to pass on the branch
+            at both sizes
+```
+
+```
+S152 · On the same three split windows, every cell the key counts as raise or
+       lower is reached the way S151 reaches the lane, pointed at with the
+       mouse in the centre of the part the reader sees, and selected; it opens
+       its panel with a Recommended value and the Stage change button, and
+       still lies inside the canvas pane's visible box once picked.
+  element:  #lane > .lane-cell[data-verdict="up"], [data-verdict="down"],
+            #level .slot-head, #level .numrow, #level .stagebtn
+  source:   frontend/diagnose-workstation.js renderLane / renderSlotLevel;
+            frontend/diagnose-workstation.css (the ADR 433 block)
+  lock:     HV2-17
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S152; per size and per raise or lower cell, wheels the
+            pane over its header rail until the cell lies inside the pane's
+            visible box and the viewport, clicks with page.mouse.click at the
+            centre of the cell's visible part (never a locator click, which
+            would scroll it into view), then reads the cell's aria-pressed,
+            the opened panel's slot time, Recommended value and Stage change
+            button, and the cell's box again; restores the run's size
+  status:   owed, coordinator-run; no result recorded yet. Expected on base:
+            passes 1200×736, then fails at 1200×560 on the raise cell, which
+            still overruns the pane's visible box by 36px after wheeling (the
+            pane cannot scroll). Expected to pass on the branch at both sizes
+```
+
+```
+S153 · Every slot the key counts as raise or lower opens a panel with a
+       Recommended value and the Stage change button; every slot it counts as
+       hold, insufficient or no data opens a panel that says no direction is
+       asserted and offers no Stage change button.
+  element:  #lane > .lane-cell, #level .slot-head, #level .numrow,
+            #level .stagebtn
+  source:   frontend/diagnose-workstation.js renderLane / renderSlotLevel
+  lock:     HV2-17
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S153; at the run's size, opens each of the 48 cells
+            once, waits for the panel's slot time to name that cell's half
+            hour, then reads its Recommended value, its Stage change buttons
+            and its text against the cell's served verdict
+  status:   owed, coordinator-run; no result recorded yet. It needs no
+            application change and is expected to pass on base and on the
+            branch at both sizes
+```
+
+Amended S113 · 2026-09-23 · #433 / Q2 sanction (Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go"): At the run's own size (1280x720 or 1440x900), `#lane-wrap` and every `#lane-key > span` entry stand wholly inside `.canvas-pane`'s visible box at rest, the key stands on one line (every entry shares the lead entry's top), and the pane has no scroll range. Each key count and paint check is scoped to one key entry, its verdict plus its served reason, so every count stays exact on any lane. A variant on `basal-recurring-low-no-clean-median` (scripts/qa_e2e_cases.py: a 05:00 recurring-lows lower with no steady nights) requires the key to read "lower · recurring lows 1" with no "lower" entry, the 05:00 cell to keep the lower paint token and glyph its key mark shares, its accessible name to say the lower comes from recurring lows, and its panel to read "lower (recurring lows)" with a Recommended value and the Stage change button. S113 stays the one story on that store, so the fixed PR slice and its pinned digest are unchanged. Evidence: C4_STORIES.S113 → assertBasalLaneGallery, then assertRecurringLowsLower through ctx.withCase; frontend/c4.replay.test.js drives both helpers on fake pages. Old fails / new passes: owed, coordinator-run. Expected on base a4d374a7 with this harness laid over it: the pane checks pass at both sizes and the variant fails on the key word (the base key reads "lower 1"). Expected to pass on the branch at both sizes.
+
+### #433 handler inventory
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `.canvas-pane` vertical scroll (the user agent's; no script handler), wheeled over `#canvas-head` | diagnose-workstation.css, the ADR 433 block | S151, S152 |
+| `#lane > button.lane-cell` click, pointed at its visible part on a short window | diagnose-workstation.js renderLane | S152 |
+| `#lane > button.lane-cell` click, each of the 48 slots once | diagnose-workstation.js renderLane | S153 |
+| `#lane > button.lane-cell[data-reason="recurring-lows"]` click (D6) | diagnose-workstation.js renderLane | S113 |

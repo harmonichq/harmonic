@@ -3129,6 +3129,12 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S151
+export const S151 = appOnly('HV2-17', '#433 the basal lane stays within reach on short and narrow desktop windows', C4_STORIES.S151);
+// STORY:harmonic-v2-desktop:S152
+export const S152 = appOnly('HV2-17', '#433 every raise and lower slot can be pointed at and staged on a short window', C4_STORIES.S152);
+// STORY:harmonic-v2-desktop:S153
+export const S153 = appOnly('HV2-17', '#433 every basal key verdict agrees with its slot\'s panel', C4_STORIES.S153);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3183,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

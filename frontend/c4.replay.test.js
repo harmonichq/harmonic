@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
+import {
+  historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
+  assertBasalLaneReachable, LANE_REACH_SIZES,
+} from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
@@ -84,6 +87,15 @@ test('S115–S117 are unique app-only C4 rail stories, served from the showcase'
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
     assert.equal(storyCase(id), 'showcase');
+  }
+});
+
+test('S151–S153 are unique app-only C4 basal-lane stories, served from the verdict gallery', () => {
+  for (const id of ['S151', 'S152', 'S153']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-17');
+    assert.equal(storyCase(id), 'basal-verdict-gallery');
   }
 });
 
@@ -700,6 +712,11 @@ function qa413GalleryPage({
   staged = true,
   distinctSelection = true,
   marks = {},
+  // #433: the canvas pane at the run's size — how far the lane runs below its
+  // visible box, how far the pane can scroll, and whether the key wrapped
+  paneOverrun = 0,
+  paneScroll = 0,
+  keyWrapped = false,
 } = {}) {
   marks = { primary: 'rgb(224, 127, 63)', outlineStyle: 'solid', outlineColor: 'rgb(224, 127, 63)',
     fill: 'color(srgb 0.8 0.5 0.3 / 0.72)', underline: '""', underlineHeight: '2px', clipped: 0, ...marks };
@@ -708,6 +725,22 @@ function qa413GalleryPage({
   keyGlyph = keyGlyph || cellGlyph;
   keyCounts = keyCounts || verdicts;
   const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  // a key entry is its verdict, or its verdict and served reason (#433, D6)
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const lane = {
+    pane: { top: 0, bottom: 616, left: 0, right: 850, overflowY: 'auto', scrollTop: 0, scrollLeft: 0,
+      scrollHeight: 616 + paneScroll, clientHeight: 616 },
+    wrap: box(575 + paneOverrun, 616 + paneOverrun, 0, 850),
+    entries: [['Basal slots', 34, 89], ['raise 5', 100, 152], ['lower 5', 163, 218], ['hold 30', 229, 283],
+      ['insufficient 3', 294, 378], ['no data 5', 389, 460]].map(([text, left, right], i, all) => {
+      const top = 575 + (keyWrapped && i === all.length - 1 ? 16 : 0);
+      return { text, ...box(top, top + 14, left, right) };
+    }),
+  };
   const node = selector => ({
     first() { return this; },
     click: async () => {},
@@ -719,7 +752,7 @@ function qa413GalleryPage({
       if (verdict === 'down' && name === 'aria-pressed') return 'true';
       return null;
     },
-    innerText: async () => String(keyCounts[verdictOf(selector)]),
+    innerText: async () => String(keyCounts[entryOf(selector)]),
     boundingBox: async () => {
       if (selector === '#lane-wrap') return laneWrapBox;
       if (selector === '#lane-key') return keyBox;
@@ -741,6 +774,7 @@ function qa413GalleryPage({
   return {
     evaluate: async fn => {
       const src = fn.toString();
+      if (fn.name === 'laneGeometry') return lane;
       if (src.includes('lane-wrap')) return order;
       if (src.includes('outlineStyle')) return { ...marks };
       if (src.includes('lane-cell')) return { ...verdicts };
@@ -826,6 +860,115 @@ test('assertBasalLaneGallery fails when the staged mark is not an underline', as
   await assert.rejects(
     assertBasalLaneGallery(qa413GalleryPage({ marks: { underlineHeight: '11px' } })),
     /the staged mark must be an underline, not a fill/);
+});
+
+// #433: S113's pane checks at the run's own size, and its key counts scoped
+// to verdict plus reason.
+test('assertBasalLaneGallery fails when the lane overruns the canvas pane at rest', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneOverrun: 44 })),
+    /the lane and every key entry must stand wholly inside the canvas pane at rest; #lane-wrap overruns it by 44px/));
+});
+
+test('assertBasalLaneGallery fails when the canvas pane has a scroll range at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneScroll: 44 })),
+    /the canvas pane must have no scroll range at this size; it scrolls 44px/));
+});
+
+test('assertBasalLaneGallery fails when the key wraps onto a second line at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ keyWrapped: true })),
+    /the key must stand on one line at this size; no data 5 wrapped below the lead entry/));
+});
+
+test('assertBasalLaneGallery counts a recurring-lows lower apart from a measured lower', async () => {
+  const verdicts = { up: 5, down: 4, 'down:recurring-lows': 1, hold: 30, insufficient: 3, nodata: 5 };
+  await assertBasalLaneGallery(qa413GalleryPage({ verdicts }));
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ verdicts, keyCounts: { ...verdicts, 'down:recurring-lows': 2 } })),
+    /the key's down:recurring-lows count must equal the served lane count/);
+});
+
+// #433: a fake page for `assertBasalLaneReachable` — S151's scenario. Each size
+// names how far the lane runs below the canvas pane's visible box at rest
+// (`below`), whether the pane can scroll that far (`scrolls`), and how far the
+// last key entry, the last cell and the chart run past its right edge
+// (`past`). A wheel moves the fake pane within its scroll range, as a browser
+// would; nothing else ever moves.
+function qa433ReachPage(sizes = {}) {
+  let viewport = { width: 1280, height: 720 };
+  let offset = 0;
+  const log = [];
+  const at = () => ({ below: 0, scrolls: true, past: 0, ...sizes[`${viewport.width}x${viewport.height}`] });
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const reading = () => {
+    const { below, scrolls, past } = at();
+    const range = scrolls ? below : 0;
+    const scrollTop = Math.min(offset, range);
+    const bottom = 400 + below - scrollTop; // the lane's bottom edge; the pane's is 400
+    return {
+      viewport: { ...viewport },
+      root: { scrollTop: 0, scrollLeft: 0, scrollHeight: viewport.height, clientHeight: viewport.height,
+        scrollWidth: viewport.width, clientWidth: viewport.width },
+      pane: { top: 100, bottom: 400, left: 0, right: 400, overflowY: scrolls ? 'auto' : 'visible',
+        scrollTop, scrollLeft: 0, scrollHeight: 300 + range, clientHeight: 300 },
+      head: box(160 - scrollTop, 190 - scrollTop, 0, 400),
+      wrap: box(bottom - 41, bottom, 0, 400 + past),
+      key: box(bottom - 41, bottom - 27, 34, past ? 400 + past : 348),
+      entries: [['Basal slots', 34, 89], ['raise 1', 100, 152], ['no data 44', 163, past ? 400 + past : 348]]
+        .map(([text, left, right]) => ({ text, ...box(bottom - 41, bottom - 27, left, right) })),
+      cells: [0, 1, 2].map(i => ({ cell: String(i), verdict: 'nodata', name: `slot ${i}`,
+        ...box(bottom - 19, bottom - 8, 34 + i * 105, i === 2 && past ? 400 + past : 134 + i * 105) })),
+      chart: box(190 - scrollTop, bottom - 41, 0, 400 + past),
+      ancestors: [{ name: '.panes', scrollTop: 0, scrollLeft: 0 }],
+    };
+  };
+  return {
+    log,
+    viewportSize: () => ({ ...viewport }),
+    setViewportSize: async size => { viewport = { ...size }; log.push(`${size.width}x${size.height}`); },
+    evaluate: async fn => {
+      if (fn.name === 'laneGeometry') return reading();
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+    mouse: {
+      move: async () => {},
+      wheel: async (_x, y) => {
+        const { below, scrolls } = at();
+        offset = Math.min(scrolls ? below : 0, Math.max(0, offset + y));
+      },
+    },
+  };
+}
+
+test('assertBasalLaneReachable passes when the pane scrolls a short window\'s lane into reach', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44 }, '832x560': { below: 44 } });
+  await assertBasalLaneReachable(page);
+  assert.deepEqual(page.log, [...LANE_REACH_SIZES.map(size => `${size.width}x${size.height}`), '1280x720'],
+    'every split size is visited, then the run\'s own size restored');
+});
+
+test('assertBasalLaneReachable fails on a key entry past the canvas pane\'s right edge', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '832x560': { past: 58.75 } })),
+    /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+});
+
+test('assertBasalLaneReachable fails on a lane below a canvas pane that cannot scroll', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '1200x560': { below: 44, scrolls: false } })),
+    /1200×560 vertical: #lane-wrap overruns the canvas pane's visible box by 44px at rest, and the pane cannot scroll \(overflow-y: visible\)/);
+});
+
+test('assertBasalLaneReachable names a vertical failure at one size and a horizontal one at another, once', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44, scrolls: false }, '832x560': { past: 58.75 } });
+  await assert.rejects(assertBasalLaneReachable(page), error => {
+    assert.match(error.message, /^S151 the basal lane must stay within reach at every split size; \d+ failures:/);
+    assert.match(error.message, /1200×560 vertical: #lane-wrap still overruns the canvas pane's visible box by 44px after wheeling the pane/);
+    assert.match(error.message, /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+    assert.match(error.message, /832×560 horizontal: #chart runs past the canvas pane's client box by 58\.75px/);
+    return true;
+  });
+  assert.equal(page.log.at(-1), '1280x720', 'the run\'s own size is restored even when checks failed');
 });
 
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after

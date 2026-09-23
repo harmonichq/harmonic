@@ -43,16 +43,17 @@ capture's Pattern populations.
   judges: the Arc peak for a high outcome, the Arc nadir for a low one, with the
   minutes from the bolus. The arc comes from the Outcomes trend's existing arc
   owner.
-- A selected Occurrence serves why it was judged: the cause that drove its episode,
-  when one did, and each of the case file's habits' recorded verdict at that
-  anchor, in the analyzer's own words.
+- A selected Occurrence serves why it was judged, built from the same claim
+  account and verdict states as its row so it cannot disagree with the row: the
+  habit that claims it in this case file, when one does, and each judged habit's
+  verdict with the analyzer's own sentence where that sentence agrees.
 - The exposure feed serves the anchor bolus's dose and carbs, so the Pattern roster
   can carry them.
 - Meal rows read as their carbs, dose and arc reading; correction-cluster rows as
   their dose. The selected detail prints those facts and the served reason. The
   fixed canvas sentence and the count-only lines are retired.
-- The three fixtures are regenerated through the real anchor path, with no meal or
-  correction-cluster glucose the analyzer did not produce.
+- The fixtures that hid the dash are regenerated through the real anchor path,
+  with no meal or correction-cluster glucose the analyzer did not produce.
 
 ## Not in this change
 

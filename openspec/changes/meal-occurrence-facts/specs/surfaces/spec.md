@@ -38,8 +38,10 @@ when not empty, each served habit's title with its verdict's existing band label
 and the classifier's sentence, and each source correction as today. It SHALL NOT
 print a line that only counts glucose readings or event markers, and SHALL NOT
 print the fixed sentence about what the canvas shows. The browser SHALL derive no
-outcome, reason or verdict of its own, and a case file whose new fields are
-malformed SHALL be refused as an inconsistent projection.
+outcome, reason or verdict of its own. The case-file validator SHALL require the
+dose and carbs keys on every anchor it checks, the outcome on every roster row and
+the reason on every selected detail, and a case file whose new fields are missing
+or malformed SHALL be refused as an inconsistent projection.
 
 #### Scenario: A selected meal shows its meal
 

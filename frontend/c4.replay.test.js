@@ -1022,7 +1022,8 @@ function qa433RecurringLowsPage({
   };
   return {
     asked,
-    // the store's served preparation: one basal Finding, the 05:00 slot's
+    // the store's served preparation: one basal Finding, the 05:00 slot's, which
+    // the old `openBasalLane` route drills before its steady-night wait
     url: () => 'http://synthetic.invalid/',
     request: { get: async () => ({ ok: () => true, status: () => 200,
       json: async () => ({ rendered_rows: [{ id: 'basal:300-330' }] }) }) },

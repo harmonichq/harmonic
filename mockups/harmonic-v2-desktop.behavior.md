@@ -2990,12 +2990,14 @@ S151 · At three desktop split windows — 1200×736, 1200×560 and 832×560 —
             wheels back, and restores the run's size even when checks failed.
             It records every failure by size and axis with the measured
             overrun, then fails once, listing them all
-  status:   owed, coordinator-run; no result recorded yet. Expected on base
-            a4d374a7 with this harness laid over it: fails at both sizes,
-            naming the 44px vertical clip at 1200×560 and 832×560 (the pane
-            cannot scroll) and, at 832×560, the key entries, the cells and
-            #chart past the pane's right edge. Expected to pass on the branch
-            at both sizes
+  status:   base a4d374a7, with the 7ffa57b9 harness laid over it, fails at
+            its feature assertion at both sizes with one message listing 13
+            failures: the 44px vertical clip at 1200×560 and at 832×560 (the
+            pane cannot scroll; after wheeling, the key is still 17px and the
+            cells up to 36px out of reach) and, at 832×560, the "no data 44"
+            key entry and 7 cells 58.75px and #chart 110.75px past the pane's
+            right edge. Branch 7ffa57b9 passes at both sizes. Coordinator-run
+            2026-09-23; raw logs for docs/scope/release-422-434-evidence/433/
 ```
 
 ```
@@ -3017,10 +3019,11 @@ S152 · On the same three split windows, every cell the key counts as raise or
             would scroll it into view), then reads the cell's aria-pressed,
             the opened panel's slot time, Recommended value and Stage change
             button, and the cell's box again; restores the run's size
-  status:   owed, coordinator-run; no result recorded yet. Expected on base:
-            passes 1200×736, then fails at 1200×560 on the raise cell, which
-            still overruns the pane's visible box by 36px after wheeling (the
-            pane cannot scroll). Expected to pass on the branch at both sizes
+  status:   base a4d374a7, with the 7ffa57b9 harness laid over it, passes
+            1200×736 and fails at 1200×560 at both sizes ("00:00 basal slot,
+            suggests a raise" still overruns the canvas pane's visible box by
+            36px after wheeling the pane). Branch 7ffa57b9 passes at both
+            sizes. Coordinator-run 2026-09-23; raw logs as S151's
 ```
 
 ```
@@ -3037,12 +3040,12 @@ S153 · Every slot the key counts as raise or lower opens a panel with a
             once, waits for the panel's slot time to name that cell's half
             hour, then reads its Recommended value, its Stage change buttons
             and its text against the cell's served verdict
-  status:   owed, coordinator-run; no result recorded yet. It needs no
-            application change and is expected to pass on base and on the
-            branch at both sizes
+  status:   passes on base a4d374a7 with the 7ffa57b9 harness laid over it
+            and on branch 7ffa57b9, at both sizes, as expected: it needs no
+            application change. Coordinator-run 2026-09-23; raw logs as S151's
 ```
 
-Amended S113 · 2026-09-23 · #433 / Q2 sanction (Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go"): At the run's own size (1280x720 or 1440x900), `#lane-wrap` and every `#lane-key > span` entry stand wholly inside `.canvas-pane`'s visible box at rest, the key stands on one line (every entry shares the lead entry's top), and the pane has no scroll range. Each key count and paint check is scoped to one key entry, its verdict plus its served reason, so every count stays exact on any lane. A variant on `basal-recurring-low-no-clean-median` (scripts/qa_e2e_cases.py: a 05:00 recurring-lows lower with no steady nights) requires the key to read "lower · recurring lows 1" with no "lower" entry, the 05:00 cell to keep the lower paint token and glyph its key mark shares, its accessible name to say the lower comes from recurring lows, and its panel to read "lower (recurring lows)" with a Recommended value and the Stage change button. S113 stays the one story on that store, so the fixed PR slice and its pinned digest are unchanged. Evidence: C4_STORIES.S113 → assertBasalLaneGallery, then, through ctx.withCase, assertRecurringLowsVariant, which opens the 24 h rail and waits for the 48 slots rather than reusing `openBasalLane` (that store's 05:00 slot serves no steady night for it to wait on), then assertRecurringLowsLower; frontend/c4.replay.test.js drives these helpers on fake pages. Old fails / new passes: owed, coordinator-run. Expected on base a4d374a7 with this harness laid over it: the pane checks pass at both sizes and the variant fails on the key word (the base key reads "lower 1"). Expected to pass on the branch at both sizes.
+Amended S113 · 2026-09-23 · #433 / Q2 sanction (Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go"): At the run's own size (1280x720 or 1440x900), `#lane-wrap` and every `#lane-key > span` entry stand wholly inside `.canvas-pane`'s visible box at rest, the key stands on one line (every entry shares the lead entry's top), and the pane has no scroll range. Each key count and paint check is scoped to one key entry, its verdict plus its served reason, so every count stays exact on any lane. A variant on `basal-recurring-low-no-clean-median` (scripts/qa_e2e_cases.py: a 05:00 recurring-lows lower with no steady nights) requires the key to read "lower · recurring lows 1" with no "lower" entry, the 05:00 cell to keep the lower paint token and glyph its key mark shares, its accessible name to say the lower comes from recurring lows, and its panel to read "lower (recurring lows)" with a Recommended value and the Stage change button. S113 stays the one story on that store, so the fixed PR slice and its pinned digest are unchanged. Evidence: C4_STORIES.S113 → assertBasalLaneGallery, then, through ctx.withCase, assertRecurringLowsVariant, which opens the 24 h rail and waits for the 48 slots rather than reusing `openBasalLane` (that store's 05:00 slot serves no steady night for it to wait on), then assertRecurringLowsLower; frontend/c4.replay.test.js drives these helpers on fake pages. Old fails / new passes (coordinator-run 2026-09-23; raw logs as S151's): on base a4d374a7 with the 8578895b harness laid over it, S113 passes its gallery part, the new pane checks included, then fails at both sizes at the variant's key word (it reads ["Basal slots","lower 1","no data 47"]); branch 8578895b passes at both sizes ("S113 proved synthetic variant=basal-recurring-low-no-clean-median"). The earlier 7ffa57b9 runs failed on base and branch alike before the key word, at `openBasalLane`'s wait for a steady-night row that store never renders; 8578895b gave the variant its own 24 h rail route.
 
 ### #433 handler inventory
 

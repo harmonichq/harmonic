@@ -183,7 +183,7 @@ decisions, the measurement, the revise preparation and the risk contract.
 
   The coordinator runs the rest of `acceptance.test.py`, which binds a
   socket, and the backend pytest.
-- [ ] 6.2 Hand the coordinator the port-bound legs. It runs them and returns
+- [x] 6.2 Hand the coordinator the port-bound legs. It runs them and returns
   the logs, which go under
   `docs/scope/433-basal-strip-short-window-evidence/`:
   - fail-first on base, with this branch's replay harness and case recipes
@@ -194,3 +194,11 @@ decisions, the measurement, the revise preparation and the risk contract.
   - the render matrix in design.md;
   - the complete desk ledger at both sizes, once, on the commit that will be
     pushed.
+
+  Evidence, coordinator-run 2026-09-23, replay part: `ONLY=S113,S151,S152,S153`
+  at 1280x720 and 1440x900. On base a4d374a7 with the branch harness laid over
+  it, S151 and S152 fail for the clipping reason and S153 passes; S113 fails at
+  the key word (on the 8578895b harness). On the branch, all four pass (S151–S153
+  on 7ffa57b9, S113 on 8578895b), and the full `acceptance.test.py` is OK. The
+  desk ledger records each result. Still owed to the coordinator's integration
+  batch: the render matrix and the complete desk ledger on the integrated commit.

@@ -23,7 +23,9 @@ correction.
 - **Captures** are synthetic only, named `<scene>-<before|after>-<size>.png`.
   - "Before" is the base.
   - "After" is the branch at 165b83fc, re-shot after the round-2 critique
-    fixes.
+    fixes; the two `loading-after-*` captures were re-shot again at 91e2efd2,
+    after the skeleton containment fix. Every other after-capture re-shot at
+    91e2efd2 came out byte-identical.
   - Every scene exists at 1280x720 and 1440x900 unless marked "after only".
 
 ## Raw logs
@@ -32,8 +34,8 @@ correction.
 |-----|----------|--------|
 | `fail-first-base-1280x720.log` | base, with the 165b83fc harness | S113–S117 all FAIL at their feature assertions: 0 executed, 5 failed of 5 selected |
 | `fail-first-base-1440x900.log` | base, with the 165b83fc harness | the same at 1440x900 |
-| `pass-branch-1280x720.log` | branch 165b83fc | S113–S117 all PASS: 5 executed, 0 failed |
-| `pass-branch-1440x900.log` | branch 165b83fc | the same at 1440x900 |
+| `pass-branch-1280x720.log` | branch 91e2efd2 | S113–S117 all PASS: 5 executed, 0 failed |
+| `pass-branch-1440x900.log` | branch 91e2efd2 | the same at 1440x900 |
 
 **S116's history.** The earlier c7fdad07 runs failed on base and branch alike
 with "at least one ranked mini must be mounted".

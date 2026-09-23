@@ -252,7 +252,7 @@ page instead.
 
 ## 5. Verification and evidence
 
-- [ ] 5.1 Tick this task on exactly these commands, each exiting 0:
+- [x] 5.1 Tick this task on exactly these commands, each exiting 0:
   - `npm ci && npm run build`;
   - `uv run python -m pytest`;
   - `node --test 'frontend/**/*.test.js'`;

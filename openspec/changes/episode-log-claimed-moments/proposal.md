@@ -6,9 +6,11 @@
 revision of the desk's Day Episode Log under the frozen desk behavior ledger
 (`mockups/harmonic-v2-desktop.behavior.md`, replay
 `frontend/desk-behavior.replay.mjs`). Implementation is based on the release
-integration trunk after #426 lands: #426 serves each episode's cause title from
-the backend and removes Day's partial cause-name tables, and this change reads
-that served episode cause title rather than keeping any name table of its own.
+integration trunk after #426 lands. #426 serves each episode's `lever_title`
+from the backend, ends every Episode Log row whose episode carries a Lever with
+it, and removes Day's partial cause-name tables. This change reads that served
+title. The Day desk (`frontend/day.js`, `frontend/day-chart.js`) keeps no
+Lever-key-to-name table, and this change adds none.
 
 ## Why
 
@@ -36,19 +38,25 @@ synonym CONTEXT.md lists to avoid for Lever.
 ## What changes
 
 - An outranked anchor reads **claimed** on Day, and Diagnose's case-file word
-  for the same state becomes "claimed by another finding". Both read one
-  definition.
-- A claimed row names the Finding that claimed it (the served episode cause
-  title, from #426) and each Lever the anchor matched on its own. The model-view
-  read serves that second name: a Lever title on every retained verdict, from
-  the same one name source.
+  for its outranked occurrence becomes "claimed by another finding". Both read
+  one definition. The word means only the fact the two share: the anchor or
+  occurrence belongs to an episode another Finding owns. Day's state (the
+  anchor matched) and Diagnose's row-relative verdict (this Finding's criterion
+  was not met) keep their distinct meanings.
+- A claimed row names each Lever the anchor matched on its own, then ends with
+  the episode's served `lever_title` (#426), the claiming Finding named last.
+  The model-view read serves the first names: a Lever title on every retained
+  verdict, from the same one name source.
 - A claimed anchor keeps its Finding's hue and marker size on the tier word,
   the ring and the focus hairline. The warning hue leaves the Episode Log.
-- The Findings caption counts Findings, and names claimed anchors separately.
+- The Findings caption counts attributed episodes (each one Occurrence of its
+  Lever's Finding), and names claimed anchors separately.
 - The Glossary gains an Episode Log group, CONTEXT.md gains the Episode Log and
   Claimed terms, the Guide's "Reading a Day" article describes the bands, and
   each band caption opens the Glossary at that group.
 - Two desk behavior stories (S121, S122) prove the revision in the built app.
+  On their store the claimed anchors sit before the Day axis, so ring and
+  hairline hue and marker size are proven in node and by option readback.
 
 ## Not in this change
 

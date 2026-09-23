@@ -451,7 +451,7 @@ export function highCarbFailureScenario(defect) {
 // under `pattern:highs_after_meals`, but the resolver stays correct for an
 // unclaimed ranked row too, rather than assuming which shape the served row
 // takes.
-async function railRowLocator(page, id) {
+export async function railRowLocator(page, id) {
   const row = page.locator(`#level .qrow[data-id="${id}"]`);
   if (await row.count()) return row;
   for (;;) {

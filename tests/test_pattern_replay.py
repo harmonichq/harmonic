@@ -23,6 +23,7 @@ EXPECTED_ACTIVE_KINDS = {
     "basal-insufficient-seven-night": None,
     "basal-insufficient-unsupported-sign": None,
     "basal-blind": None,
+    "basal-verdict-gallery": None,
     "basal-no-baseline": None,
     "basal-no-change": None,
     "basal-recurring-low-lower": None,

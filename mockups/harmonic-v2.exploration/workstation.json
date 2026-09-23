@@ -20987,6 +20987,15 @@
           "meals"
         ],
         "claimed_by": "pattern:highs_after_meals",
+        "count_sentences": [
+          {
+            "count": 6,
+            "denominator": 16,
+            "noun": "meals",
+            "outcome": "ran high",
+            "sentence": "6 of 16 meals ran high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 6,
@@ -40853,6 +40862,15 @@
           "meals"
         ],
         "claimed_by": "pattern:highs_after_meals",
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "meals",
+            "outcome": "ran high",
+            "sentence": "2 of 6 meals ran high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,

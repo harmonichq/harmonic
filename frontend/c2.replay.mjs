@@ -3,7 +3,7 @@
 // their original replay. No fixture projection or chart painter is duplicated.
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { waitForLevelAnimations } from './diagnose-replay.mjs';
+import { railRowLocator, waitForLevelAnimations } from './diagnose-replay.mjs';
 
 // Bare coordination promises do not inherit Playwright's action deadlines.
 export async function boundedWait(promise, description, timeout = 30000) {
@@ -107,8 +107,10 @@ async function openComparisonCase(page, id = 'finding:over_treated_low', openRow
   await go(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click(); await settled(page);
   await waitForCharts(page);
-  const row = page.locator(`#level .qrow[data-id="${id}"]`);
-  await row.waitFor();
+  // #413 folds a claimed Cause under its Pattern (a `.qmember`, not a `.qrow`);
+  // this resolves through the fold when the served row needs it, unchanged
+  // for a row that is not folded.
+  const row = await railRowLocator(page, id);
   const response = responseFor(page, casePath, r => new URL(r.url()).searchParams.get('finding_id') === id && r.ok());
   const [, file] = await Promise.all([openRow(row), response.then(reply => reply.json())]);
   await page.locator('#level .case-occurrence').first().waitFor();

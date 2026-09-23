@@ -107,6 +107,42 @@ test('a cold first read reaches the desk, and a Retry after a failed first read 
   destination.leave();
 });
 
+// A host whose ensureView()-created root serves one mocked "24 h" Window
+// segment button, so restoreEntry()'s click is directly observable.
+function hostWithWindowButton() {
+  const seat = host();
+  const button = { textContent: '24 h', clicks: 0, click() { this.clicks += 1; } };
+  const priorCreateElement = seat.ownerDocument.createElement;
+  seat.ownerDocument.createElement = () => Object.assign(priorCreateElement(),
+    { querySelectorAll: (selector) => (selector === '#seg-window button' ? [button] : []) });
+  return { seat, button };
+}
+
+test('#413 · a cold arrival with no contextual entry opens on the 24 h window', async () => {
+  const served = source();
+  const { seat, button } = hostWithWindowButton();
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {} });
+  assert.equal(button.clicks, 1, 'no subject and no retained window: the 24 h control is pressed');
+  destination.leave();
+});
+
+test('#413 · a cold arrival with a contextual subject leaves the 24 h override to restoreEntry()\'s own rule', async () => {
+  const served = source();
+  const { seat, button } = hostWithWindowButton();
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read();
+  // A non-Pattern, non-Finding subject with an explicit window keeps the
+  // workstation's own Overnight-booting preset — restoreEntry()'s existing
+  // rule, unaffected by the new no-subject branch.
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'setting:basal_rate', window: '30-90' } });
+  assert.equal(button.clicks, 0, 'a named subject with its own window is untouched by the cold-arrival rule');
+  destination.leave();
+});
+
 test('an initial read failure and a current-read failure own distinct Diagnose frames', async () => {
   const served = source(); const seat = host();
   const destination = createDiagnoseDestination({ api: served.api,

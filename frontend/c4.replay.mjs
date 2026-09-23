@@ -38,6 +38,17 @@ async function retained(page) {
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   return detail.reassessment.comparison;
 }
+// #413: land on the rail at 24 h without drilling into any row — S113/S114's
+// `openBasalLane`/`heldRequest414` both open something specific; this story
+// pair needs the plain rail listing itself.
+async function openDiagnoseRail(page) {
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  await page.waitForFunction(() =>
+    document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'diagnose');
+  await settled(page);
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled(page);
+}
 async function readiness(page, unit, required) {
   const comparison = await retained(page);
   await waitForReplayAssertion(async seen => {
@@ -471,6 +482,168 @@ async function heldRequest414(page, pattern, matches) {
   };
 }
 
+// #413: S116's scenario, factored out the same way as S113's below. The
+// candidates are chosen by the served chart coordinate alone, so a desk that
+// serves no count sentence still reaches the feature assertion.
+export async function assertRankedMinis(page, rows) {
+  // The ECharts instance lives on the `.mini` host itself (its canvas sits in
+  // an inner div), and `getOption()` normalises the graphic list into one
+  // group whose `elements` carry the texts.
+  const graphicOf = async (id) => page.evaluate((rowId) => {
+    const mini = document.querySelector(`.qrow[data-id="${CSS.escape(rowId)}"] .mini`);
+    const chart = mini?.querySelector('canvas') && window.echarts.getInstanceByDom(mini);
+    const graphic = chart?.getOption().graphic;
+    return graphic ? graphic.flatMap((item) => item.elements || [item]).map((item) => item.style?.text) : null;
+  }, id);
+  const candidates = rows.filter((row) => row.pattern_chart || (row.event_chart && !row.claimed_by));
+  assert.ok(candidates.length > 0, 'S116 premise: the showcase must rank a mini-bearing Pattern or Cause');
+  await waitForReplayAssertion(async seen => {
+    let mounted = 0;
+    for (const row of candidates) {
+      const graphic = seen(await graphicOf(row.id));
+      if (!graphic) continue; // an unmounted mini (too narrow) is covered elsewhere, not this story
+      mounted += 1;
+      const sentence = row.count_sentences?.[0];
+      assert.ok(sentence,
+        `S116 ${row.id}'s mini must draw from its served count sentence; none is served, and it draws ${JSON.stringify(graphic)}`);
+      assert.deepEqual(graphic, [
+        `${sentence.outcome.toUpperCase()} · ${sentence.count}`,
+        `TYPICAL · ${sentence.denominator}`,
+      ], `S116 ${row.id}'s mini must draw the served outcome word and count, and TYPICAL with the denominator`);
+    }
+    assert.ok(mounted > 0, 'S116 at least one ranked mini must be mounted to compare');
+  }, 'S116 every ranked mini draws the same instrument, from the served row');
+}
+
+// #413: S113's scenario, factored out of the story so a fake page can drive
+// it directly, from this module's own node regression test, without also
+// faking `openBasalLane`'s own network reads and navigation — the same
+// boundary S31-S35 already draw (no fake-page test covers their shared
+// opener either).
+export async function assertBasalLaneGallery(page) {
+  const verdicts = await page.evaluate(() => {
+    const counts = {};
+    for (const cell of document.querySelectorAll('#lane > .lane-cell')) {
+      counts[cell.dataset.verdict] = (counts[cell.dataset.verdict] || 0) + 1;
+    }
+    return counts;
+  });
+  for (const verdict of ['up', 'down', 'hold', 'insufficient', 'nodata']) {
+    assert.ok(verdicts[verdict] > 0,
+      `S113 premise: the gallery case must serve a ${verdict} slot; saw ${JSON.stringify(verdicts)}`);
+  }
+
+  // Select the raise cell (opens its detail, matching S31-S35's own route),
+  // then stage it, then select a different cell — staged and selected must
+  // be two distinct cells so both marks are provable at once.
+  const raiseCell = page.locator('#lane > .lane-cell[data-verdict="up"]').first();
+  await raiseCell.click();
+  const stageButton = page.locator('.stagebtn[data-staged="false"]');
+  await stageButton.waitFor({ timeout: 30000 });
+  await stageButton.click();
+  await page.locator('.stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+  const lowerCell = page.locator('#lane > .lane-cell[data-verdict="down"]').first();
+  await lowerCell.click();
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await raiseCell.getAttribute('data-staged')), 'true',
+      'S113 premise: the raise cell must carry the staged mark');
+    assert.equal(seen(await lowerCell.getAttribute('aria-pressed')), 'true',
+      'S113 premise: the lower cell must be the current selection');
+    assert.notEqual(seen(await raiseCell.getAttribute('aria-pressed')), 'true',
+      'S113 premise: the staged cell and the selected cell must be distinct');
+  }, 'S113 one cell is staged and a different cell is selected');
+
+  await waitForReplayAssertion(async seen => {
+    const order = seen(await page.evaluate(() => [...document.querySelectorAll('#lane-wrap > *')].map(el => el.id)));
+    assert.deepEqual(order, ['lane-key', 'lane'], 'S113 the key must render as the lane\'s head row, above the cells');
+    const wrap = seen(await page.locator('#lane-wrap').boundingBox());
+    const key = seen(await page.locator('#lane-key').boundingBox());
+    const lane = seen(await page.locator('#lane').boundingBox());
+    assert.ok(wrap && key && lane, 'S113 premise: the lane, its key and their wrap must all render');
+    assert.ok(key.y >= wrap.y - 1 && key.y + key.height <= wrap.y + wrap.height + 1,
+      "S113 the key's box must lie wholly inside the visible lane");
+    assert.ok(key.x >= wrap.x - 1 && key.x + key.width <= wrap.x + wrap.width + 1,
+      "S113 the key's box must lie wholly inside the visible lane");
+    assert.ok(key.y + key.height <= lane.y + 1, 'S113 the key must sit above the cells, not beneath them');
+  }, 'S113 the key stands fully visible above the cells');
+
+  // "One computed paint": both the cell and its key mark read the SAME
+  // `--cell` custom property off the one shared `.lane-cell[data-verdict]`
+  // rule (diagnose-workstation.css) — that shared token, not a raw
+  // `backgroundColor` string, is what the two surfaces are built to agree
+  // on (the key's own swatch composites it over a different, explicit
+  // backing so a translucent raise/lower tint still reads as the same
+  // colour by eye). Insufficient/no-data additionally carry a structural
+  // hatch/dot pattern; compare its gradient kind, the one thing the key's
+  // `--lane-structure` indirection is built to mirror.
+  for (const [verdict, count] of Object.entries(verdicts)) {
+    const keySwatch = page.locator(`#lane-key .lane-cell[data-verdict="${verdict}"]`);
+    const keyCount = await page.locator(`#lane-key [title]:has(.lane-cell[data-verdict="${verdict}"]) .t`).innerText();
+    assert.equal(Number(keyCount), count, `S113 the key's ${verdict} count must equal the served lane count`);
+
+    const cellSelector = `#lane > .lane-cell[data-verdict="${verdict}"]`;
+    const [cellToken, keyToken] = await Promise.all([
+      page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).getPropertyValue('--cell').trim()),
+      keySwatch.evaluate(el => getComputedStyle(el).getPropertyValue('--cell').trim()),
+    ]);
+    assert.equal(keyToken, cellToken, `S113 the ${verdict} key mark must share the cell's --cell paint token`);
+
+    if (verdict === 'hold') {
+      const groundToken = await page.locator('#lane').evaluate(el => getComputedStyle(el).backgroundColor);
+      const cellPaint = await page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).backgroundColor);
+      assert.notEqual(cellPaint, groundToken, 'S113 a hold cell must not paint as the bare ground');
+    }
+    if (verdict === 'insufficient' || verdict === 'nodata') {
+      const [cellImage, keyImage] = await Promise.all([
+        page.locator(cellSelector).first().evaluate(el => getComputedStyle(el).backgroundImage),
+        keySwatch.evaluate(el => getComputedStyle(el).backgroundImage),
+      ]);
+      const kind = image => (image.includes('repeating-linear-gradient') ? 'hatch'
+        : image.includes('radial-gradient') ? 'dot' : image);
+      assert.equal(kind(keyImage), kind(cellImage),
+        `S113 the ${verdict} key mark's structure must match its cells' (hatched vs dotted)`);
+    }
+    if (verdict === 'up' || verdict === 'down') {
+      const [cellGlyph, keyGlyph] = await Promise.all([
+        page.locator(cellSelector).first().evaluate(el => getComputedStyle(el, '::before').content),
+        keySwatch.evaluate(el => getComputedStyle(el, '::before').content),
+      ]);
+      assert.notEqual(cellGlyph, 'none', `S113 a ${verdict} cell must carry its directional glyph`);
+      assert.equal(keyGlyph, cellGlyph, `S113 the ${verdict} key mark must carry the same glyph as its cells`);
+    }
+  }
+
+  // The selection, the stage and the lower verdict are three different marks
+  // (#413 critique 7): the selected cell keeps the PRIMARY outline, the staged
+  // cell an underline, and a lower cell its fill; and every cell stands wholly
+  // inside the lane's own track, so none of the three is clipped (critique 1).
+  const marks = await page.evaluate(() => {
+    const lane = document.querySelector('#lane');
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--primary)';
+    lane.append(probe);
+    const primary = getComputedStyle(probe).color;
+    probe.remove();
+    const selected = document.querySelector('#lane > .lane-cell[aria-pressed="true"]');
+    const staged = document.querySelector('#lane > .lane-cell[data-staged="true"]');
+    const selectedStyle = getComputedStyle(selected);
+    const underline = getComputedStyle(staged, '::after');
+    const track = lane.getBoundingClientRect();
+    const cells = [...lane.querySelectorAll(':scope > .lane-cell')].map((cell) => cell.getBoundingClientRect());
+    return {
+      primary, outlineStyle: selectedStyle.outlineStyle, outlineColor: selectedStyle.outlineColor,
+      fill: selectedStyle.backgroundColor, underline: underline.content, underlineHeight: underline.height,
+      clipped: cells.filter((box) => box.top < track.top - 1 || box.bottom > track.bottom + 1).length,
+    };
+  });
+  assert.equal(marks.clipped, 0, `S113 every lane cell must stand wholly inside the lane's track; ${marks.clipped} overflow it`);
+  assert.equal(marks.outlineStyle, 'solid', 'S113 the selected cell must carry an outline');
+  assert.equal(marks.outlineColor, marks.primary, 'S113 the selected cell must keep the primary outline');
+  assert.notEqual(marks.outlineColor, marks.fill, 'S113 the selected lower cell\'s outline must read apart from its fill');
+  assert.notEqual(marks.underline, 'none', 'S113 the staged cell must carry its underline');
+  assert.equal(marks.underlineHeight, '2px', 'S113 the staged mark must be an underline, not a fill');
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -748,6 +921,161 @@ export const C4_STORIES = {
     await page.locator('.gf-loading', { hasText: 'Computing reassessment' }).waitFor({ timeout: 30000 });
     reassessHold.release(); await reassessHold.close();
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
+  },
+  // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
+  // whichever basal slot the CASE_STORE_DIR case ranks first; the
+  // `basal-verdict-gallery` QaCase (scripts/qa_e2e_cases.py) is built to
+  // serve all five verdicts on one lane, so this story can require the full
+  // scenario rather than accept whatever subset a general fixture happens to
+  // carry. Premise failures (a missing verdict, no selection, no stage) read
+  // distinctly from the feature assertions they gate. The scenario itself
+  // (`assertBasalLaneGallery`) is a separate export so a fake page can drive
+  // it directly, without also having to fake `openBasalLane`'s own network
+  // reads and navigation.
+  async S113(page) {
+    await C2_STORIES.openBasalLane(page);
+    await assertBasalLaneGallery(page);
+  },
+  // #413: a cold Diagnose arrival shows a count-free skeleton instead of an
+  // empty loading block, while keeping the same status role, named text
+  // (#414) and reference-width rail the shipped loading frame always had.
+  async S114(page) {
+    const analyzeHold = await heldRequest414(page, '**/api/analyze*');
+    await page.reload();
+    await analyzeHold.wait('S114 held analyze read');
+    const loading = page.locator('.gf-loading[role="status"]');
+    await loading.waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      // One skeleton per pane: stage instruments in the loading block, rail
+      // rows in the reading pane (#413 critique 2).
+      for (const [pane, selector] of [['stage', '.gf-loading .gf-skeleton[aria-hidden="true"]'],
+        ['rail', '.gf-desk > .gf-reading .gf-pane-body > .gf-skeleton[aria-hidden="true"]']]) {
+        const skeleton = page.locator(selector);
+        assert.equal(seen(await skeleton.count()), 1, `S114 the cold loading frame must carry one ${pane} skeleton block`);
+        const marks = seen(await skeleton.locator('.gf-skel').count());
+        assert.ok(marks > 0, `S114 the ${pane} skeleton must draw at least one mark`);
+        const text = seen(await skeleton.innerText());
+        assert.equal(text.trim(), '', `S114 the ${pane} skeleton must state no count, title or value`);
+      }
+      // The loading card holds every stage mark: none runs past its box.
+      const spilled = seen(await page.evaluate(() => {
+        const card = document.querySelector('.gf-loading').getBoundingClientRect();
+        return [...document.querySelectorAll('.gf-loading .gf-skel')].filter((mark) => {
+          const box = mark.getBoundingClientRect();
+          return box.top < card.top - 1 || box.bottom > card.bottom + 1;
+        }).length;
+      }));
+      assert.equal(spilled, 0, `S114 the loading card must contain its skeleton; ${spilled} mark(s) run past it`);
+      const status = seen(await page.locator('.gf-loading').getAttribute('aria-label'));
+      assert.equal(status, 'Loading Diagnose', 'S114 the loading status must still be announced');
+      const rail = seen(await page.locator('.gf-desk > .gf-reading').boundingBox());
+      const reference = seen(await page.evaluate(() =>
+        getComputedStyle(document.querySelector('.gf')).getPropertyValue('--gf-reading').trim()));
+      assert.equal(`${Math.round(rail.width)}px`, reference, 'S114 the rail must stay at the Diagnose reference width while cold');
+    }, 'S114 the cold skeleton stands text-free at the reference width');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const animationName = await page.evaluate(() => {
+      const el = document.querySelector('.gf-skel');
+      return el ? getComputedStyle(el).animationName : null;
+    });
+    assert.equal(animationName, 'none', 'S114 the skeleton must hold still under reduced motion');
+    await page.emulateMedia({ reducedMotion: null });
+    analyzeHold.release(); await analyzeHold.close();
+    await page.locator('#lane').waitFor({ timeout: 30000 });
+  },
+  // #413: a Pattern owning claimed causes folds them under its own spine —
+  // never as sibling rail rows — behind a toggle naming the served count,
+  // closed on arrival unless the Pattern is the first ranked row; every
+  // served count sentence prints in served order, count and denominator
+  // emphasised, and the first served tier's rows carry the urgency stripe.
+  async S115(page) {
+    await openDiagnoseRail(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const rows = preparation.rendered_rows;
+    const parent = rows.find(row => row.kind === 'pattern' && rows.some(member => member.claimed_by === row.id));
+    assert.ok(parent, 'S115 premise: the showcase must serve a Pattern owning at least one claimed cause');
+    const members = rows.filter(row => row.claimed_by === parent.id);
+    assert.ok(members.length > 0, 'S115 premise: the owning Pattern must have at least one claimed member');
+    const firstRankedTier = rows.find(row => row.priority != null)?.tier;
+    assert.ok(firstRankedTier, 'S115 premise: the showcase must rank at least one row');
+
+    await waitForReplayAssertion(async seen => {
+      const rowIds = seen(await page.locator('#level .qrow').evaluateAll(nodes => nodes.map(n => n.dataset.id)));
+      for (const member of members) {
+        assert.ok(!rowIds.includes(member.id),
+          `S115 ${member.id} must never be a sibling rail row`);
+      }
+      const toggle = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) > .qfold`);
+      assert.equal(seen(await toggle.count()), 1, 'S115 the owning Pattern must show one fold toggle inside its own item');
+      assert.equal(seen(await toggle.textContent()),
+        `${members.length} ${members.length === 1 ? 'cause' : 'causes'}`,
+        "S115 the toggle must name the served cause count");
+    }, 'S115 causes fold under their Pattern, never as sibling rows');
+
+    await page.evaluate((parentId) => {
+      const item = document.querySelector(`#level .qrow[data-id="${CSS.escape(parentId)}"]`).parentElement;
+      const toggle = item.querySelector(':scope > .qfold');
+      if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+    }, parent.id);
+
+    await waitForReplayAssertion(async seen => {
+      for (const member of members) {
+        // The cause is announced inside its Pattern's item, never as a sibling.
+        const line = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) .qcauses .qmember[data-id="${member.id}"]`);
+        await line.waitFor({ timeout: 30000 });
+        const [name, counts] = [seen(await line.locator('.lab').boundingBox()), seen(await line.locator('.den').boundingBox())];
+        assert.ok(Math.abs(name.y - counts.y) < name.height,
+          `S115 ${member.id} must read as one line, name and counts side by side`);
+        const text = seen(await line.locator('.den').innerText());
+        for (const sentence of member.count_sentences) {
+          assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`),
+            `S115 ${member.id} must print its served ${sentence.noun} sentence: ${text}`);
+          assert.ok(!text.includes(sentence.outcome),
+            `S115 a folded member line must not repeat the Pattern's own outcome word: ${text}`);
+        }
+      }
+    }, 'S115 every served count sentence prints, in served order, never merged');
+
+    if (parent.count_sentences?.length) {
+      await waitForReplayAssertion(async seen => {
+        const text = seen(await page.locator(`#level .qrow[data-id="${parent.id}"] .den`).innerText());
+        for (const sentence of parent.count_sentences) {
+          assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun} ${sentence.outcome}`),
+            `S115 the Pattern's own row must print its served sentence verbatim: ${text}`);
+        }
+        const bold = seen(await page.locator(`#level .qrow[data-id="${parent.id}"] .den .v`).count());
+        assert.ok(bold > 0, 'S115 the count and denominator must be emphasised');
+      }, "S115 the Pattern's own row prints the served count sentence");
+    }
+
+    await waitForReplayAssertion(async seen => {
+      const urgent = seen(await page.locator(`#level .qrow[data-tier="${firstRankedTier}"][data-urgent="true"]`).count());
+      assert.ok(urgent > 0, "S115 the first served tier's rows must carry the urgency stripe");
+      const stray = seen(await page.locator(`#level .qrow[data-urgent="true"]:not([data-tier="${firstRankedTier}"])`).count());
+      assert.equal(stray, 0, 'S115 no later tier carries the urgency stripe');
+    }, 'S115 the rail shows served urgency');
+  },
+  // #413: every ranked row's mini draws the SAME instrument — the matched
+  // cohort's outcome word and count at the left, TYPICAL and the denominator
+  // at the right — sourced from the row's own served count sentence, never a
+  // frontend word table, in the rail's own cohort palette.
+  async S116(page) {
+    await openDiagnoseRail(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    await assertRankedMinis(page, preparation.rendered_rows);
+  },
+  // #413: "Diagnose opens on the 24 h window" — a cold arrival, with no
+  // contextual entry and no retained window, reads unscoped. `openApp`
+  // defaults every opener story to a fresh root ('/') Diagnose arrival, so
+  // this story asserts against that same cold seat before touching anything.
+  async S117(page) {
+    await settled(page);
+    await waitForReplayAssertion(async seen => {
+      const pressed = seen(await page.locator('#seg-window button[aria-pressed="true"]').innerText());
+      assert.equal(pressed.trim(), '24 h', 'S117 a cold arrival with no context must open on the 24 h window');
+      const findings = seen(await read(page, '/api/diagnose/finding-case-file-preparation'));
+      assert.equal(findings.findings?.window?.scoped, false, 'S117 the findings read must be unscoped');
+    }, 'S117 a cold arrival opens on the 24 h window, unscoped');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

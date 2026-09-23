@@ -58,6 +58,60 @@ test('#341 · queue previews carry a purpose-built grammar for every evidence fa
   }
 });
 
+test('#413 · a Cause mini draws the same instrument the Pattern mini draws, from the served row', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const row = { count_sentences: [{ count: 2, denominator: 4, noun: 'highs', outcome: 'followed an undercounted meal',
+    sentence: '2 of 4 highs followed an undercounted meal' }] };
+  const railInk = { ...previewColors, misses: '#d08150', body: '#c7bca8' };
+  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], railInk, row);
+  assert.deepEqual(option.graphic.map((item) => item.style.text),
+    ['FOLLOWED AN UNDERCOUNTED MEAL · 2', 'TYPICAL · 4']);
+  // The rail cohort palette the Pattern mini uses (#413 critique 5): the
+  // claimed cohort and its label in the miss ink, TYPICAL in body ink — never
+  // the By-event stage's `--ec-*` cohort inks, which paint matched in-range green.
+  assert.equal(option.graphic[0].style.fill, railInk.misses);
+  const median = (key) => option.series.find((series) => series.id === `queue:event:${key}:median`);
+  assert.equal(median('matched').lineStyle.color, railInk.misses);
+  assert.equal(median('comparison').lineStyle.color, railInk.body);
+  assert.equal(median('matched').showSymbol, false);
+  assert.equal(median('matched').lineStyle.type, 'solid');
+  assert.deepEqual(option.series.filter((series) => series.id.includes(':band:'))
+    .map((series) => series.id.split(':')[2]).filter((key, i, all) => all.indexOf(key) === i),
+  ['comparison'], 'only the typical cohort carries the interquartile band');
+  const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
+    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
+  assert.ok(event.projection.anchor.label, 'premise: the case file serves an anchor label');
+  assert.equal(marker.children[1].style.text, event.projection.anchor.label.toUpperCase(),
+    'the anchor names the served event, not a desk word table');
+  assert.deepEqual(option.series.find((series) => series.id === 'queue:event:180').markLine.data,
+    [{ yAxis: 70 }, { yAxis: 180 }]);
+  // Without a served row (no count sentence to draw from), the mini keeps its
+  // prior graceful degradation rather than mounting a half-built instrument.
+  const bare = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors);
+  assert.deepEqual(bare.graphic.map((item) => item.style.text), ['EVENT · RESPONSE']);
+  assert.ok(!bare.series.some((series) => series.id === 'queue:event:180'));
+});
+
+test('#413 · a withheld claimed cohort mutes its label, and the anchor label is knocked out of the plot', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const row = { count_sentences: [{ count: 1, denominator: 5, noun: 'lows', outcome: 'rebounded high' }] };
+  const railInk = { ...previewColors, misses: '#d08150', body: '#c7bca8', ground: 'rgb(30, 26, 23)' };
+  const withheld = { ...event, projection: { ...event.projection,
+    cohorts: event.projection.cohorts.map((cohort) => cohort.key !== 'matched' ? cohort
+      : { ...cohort, points: cohort.points.map((point) => ({ ...point, support: 'withheld' })) }) } };
+  const option = queuePreviewOption({ kind: 'event-comparison', data: withheld }, [60, 240], railInk, row);
+  assert.ok(!option.series.some((series) => series.id === 'queue:event:matched:median'),
+    'premise: a wholly withheld claimed cohort draws no line');
+  assert.equal(option.graphic[0].style.fill, railInk.muted, 'a label keying no line steps down to muted');
+  const drawn = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], railInk, row);
+  assert.equal(drawn.graphic[0].style.fill, railInk.misses, 'a drawn claimed cohort keeps the miss ink');
+  const label = drawn.series.find((series) => series.id === 'queue:event:event-anchor')
+    .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] }).children[1];
+  assert.equal(label.style.backgroundColor, railInk.ground, 'the anchor label sits on the mini ground');
+});
+
 test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
   const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
     runs: [{ run_id: 'meal', in_pool: true }],

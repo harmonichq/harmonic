@@ -115,7 +115,7 @@ const previewBands = (points) => {
   return bands;
 };
 
-export function queuePreviewOption(descriptor, range, colors) {
+export function queuePreviewOption(descriptor, range, colors, row) {
   const data = descriptor?.data || {};
   const ink = colors || {};
   const text = ink.text || '#f2ede2';
@@ -125,6 +125,7 @@ export function queuePreviewOption(descriptor, range, colors) {
   const high = ink.high || '#e2be4c';
   const basal = ink.basal || '#a89a85';
   const excluded = ink.excluded || '#8d8579';
+  const warn = ink.warn || high;
 
   if (descriptor.kind === 'basal') {
     const nights = (data.nights || []).filter((night) =>
@@ -220,6 +221,15 @@ export function queuePreviewOption(descriptor, range, colors) {
   }
 
   const projection = data.projection || {};
+  /* Term "Every ranked rail row draws one mini instrument" (#413) — a row that
+     serves a count sentence draws the rail instrument: the claimed cohort in
+     the rail's miss ink, TYPICAL in body ink with its muted band as the only
+     band, unmarked solid medians. Pattern, Cause and High-carb minis all reach
+     this one inking; the By-event stage keeps its own `--ec-*` cohort inks. */
+  const sentence = row?.count_sentences?.[0];
+  const cohortInk = sentence
+    ? { ...ink.cohorts, matched: ink.misses || '#d08150', comparison: ink.body || '#c7bca8' }
+    : ink.cohorts;
   const cohorts = (projection.cohorts || []).map((cohort) => ({ ...cohort,
     points: cohort.points || [] }))
     .filter((cohort) => cohort.points.some((point) => point.support !== 'withheld'
@@ -230,8 +240,9 @@ export function queuePreviewOption(descriptor, range, colors) {
   const styles = ['solid', 'dashed', 'dotted'];
   const series = [];
   cohorts.forEach((cohort, index) => {
-    const color = ink.cohorts?.[cohort.key] || [signal, high, excluded][index % 3];
-    previewBands(cohort.points).forEach((band, bandIndex) => {
+    const color = cohortInk?.[cohort.key] || [signal, high, excluded][index % 3];
+    const bandInk = sentence ? muted : color;
+    if (!sentence || cohort.key === 'comparison') previewBands(cohort.points).forEach((band, bandIndex) => {
       const quantiles = band.map((point) => [point.minute, point.p25, point.p75]);
       series.push({ id: `queue:event:${cohort.key}:band:${bandIndex}`, type: 'custom',
         animation: false, silent: true, data: [[bandIndex]], quantiles,
@@ -242,34 +253,61 @@ export function queuePreviewOption(descriptor, range, colors) {
           if (quantiles.length === 1) {
             return { type: 'line', shape: { x1: upper[0][0], y1: upper[0][1],
               x2: lower[0][0], y2: lower[0][1] },
-            style: { stroke: color, lineWidth: 3, opacity: .22 } };
+            style: { stroke: bandInk, lineWidth: 3, opacity: .22 } };
           }
           return { type: 'polygon', shape: { points: [...upper, ...lower] },
-            style: { fill: color, opacity: .16 } };
+            style: { fill: bandInk, opacity: .16 } };
         } });
     });
-    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line', symbol: 'circle',
-      symbolSize: index === 0 ? 4 : 3.5, showSymbol: true,
+    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line',
+      symbol: sentence ? 'none' : 'circle',
+      symbolSize: index === 0 ? 4 : 3.5, showSymbol: !sentence,
       connectNulls: false, data: cohort.points.map((point) => [
         Number.isFinite(point.minute) ? point.minute : null,
         point.support !== 'withheld' && Number.isFinite(point.minute)
           && Number.isFinite(point.median) ? point.median : null,
       ]),
       lineStyle: { color, width: index === 0 ? 2.4 : 1.8, opacity: index === 0 ? .92 : .78,
-        type: styles[index % styles.length] },
+        type: sentence ? 'solid' : styles[index % styles.length] },
       itemStyle: { color, opacity: index === 0 ? .95 : .82 } });
   });
+  /* The rail instrument's furniture: the matched cohort's served outcome word
+     and count at the left, TYPICAL and the denominator at the right, the event
+     named on the anchor line, and a dashed target band. The served count
+     sentence supplies the words and the case file's served anchor names the
+     event; the desk keeps no word list of its own. */
+  const anchorLabel = sentence ? projection.anchor?.label?.toUpperCase() || null : null;
+  // The label is knocked out of the plot on the mini's own ground, so a target
+  // line or a band crossing the anchor's top never runs through its letters.
+  const anchorRenderItem = (params, api) => {
+    const mark = { type: 'rect', shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+      width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } };
+    if (!anchorLabel) return mark;
+    return { type: 'group', children: [mark,
+      { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
+        style: { text: anchorLabel, fill: text, font: '600 9px Inter, system-ui, sans-serif',
+          ...(ink.ground ? { backgroundColor: ink.ground, padding: [1, 2] } : {}) } }] };
+  };
+  // A claimed cohort whose every point is withheld draws no line, so its label
+  // keys nothing on the plot and steps down to the muted ink.
+  const claimedDrawn = cohorts.some((cohort) => cohort.key === 'matched');
   return {
     ...previewBase(`${cohorts.length} served response cohorts compared around the event.`),
     xAxis: previewAxis('value', { min: projection.window_min?.[0] ?? -60,
       max: projection.window_min?.[1] ?? 180 }),
     yAxis: previewAxis('value', { min: y[0], max: y[1] }),
-    graphic: [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
+    graphic: sentence
+      ? [previewText(`${sentence.outcome.toUpperCase()} · ${sentence.count}`, 8,
+        claimedDrawn ? cohortInk.matched : muted),
+        previewText(`TYPICAL · ${sentence.denominator}`, 'right', muted, { align: 'right' })]
+      : [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
     series: [...series,
       { id: 'queue:event:event-anchor', type: 'custom', animation: false, silent: true,
-        data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
-          x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
-          width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } }) }],
+        data: [[0, 0]], renderItem: anchorRenderItem },
+      ...(sentence ? [{ id: 'queue:event:180', type: 'line', data: [], silent: true,
+        markLine: { silent: true, symbol: 'none', label: { show: false },
+          lineStyle: { color: warn, width: 1, type: 'dashed' },
+          data: [{ yAxis: 70 }, { yAxis: 180 }] } }] : [])],
   };
 }
 

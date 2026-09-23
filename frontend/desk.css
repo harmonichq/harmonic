@@ -175,7 +175,45 @@
 .gf-empty .gf-title { margin-bottom:4px; }
 .gf-empty p { max-width:56ch; color:var(--mk-muted); margin-bottom:12px; }
 .gf-empty .gf-actions { padding:0; }
-.gf-loading { margin:20px; background:var(--wk-field); min-height:200px; }
+.gf-loading { margin:20px; background:var(--wk-field); min-height:200px; padding:16px; }
+/* #413: the loading stage is block flow, not the stage's five-row grid. That
+   grid's fixed figure row sized the card's track below the skeleton, so the
+   strip well ran past the card at 1280x720; in block flow the card grows to
+   hold every mark, and a short pane scrolls rather than spills. */
+.gf-stage.gf-stage-loading { display:block; overflow:auto; }
+.gf-loading p { margin:16px 0 0; color:var(--mk-muted); }
+/* #413: the cold skeleton, one per pane (frame.js's `stageSkeleton` and
+   `railSkeleton`) — decorative marks with no text, count or value. The stage
+   shows the window bar, the nameplate's two lines and the instrument's chart
+   well; the rail shows its rows, the first one tall enough for its mini's
+   well, at the rail's own reference width. The marks sit one surface step
+   ABOVE the field (`--wk-surface-rail`), where the sunken step read as
+   nearly nothing. The shimmer sweeps slowly and holds still under reduced
+   motion; it never touches `.gf-day-loading`'s separate retained-reload bar,
+   which stays as it was. */
+.gf-skeleton { display:grid; gap:10px; }
+.gf-skeleton-rail { padding:14px var(--ck-pad); }
+.gf-skel {
+  display:block; border-radius:5px; background-color:var(--wk-surface-rail);
+  background-image: linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--mk-muted) 14%, transparent), transparent);
+  background-size: 200% 100%;
+  animation: gf-skel-shimmer 2.4s ease-in-out infinite;
+}
+.gf-skel-bar { height:28px; margin-bottom:6px; }
+.gf-skel-eyebrow { width:22%; height:10px; }
+.gf-skel-title { width:58%; height:20px; margin-bottom:6px; }
+.gf-skel-chart { height:260px; }
+.gf-skel-strip { height:180px; }
+.gf-skel-row { height:48px; }
+.gf-skel-hero { height:148px; }
+@keyframes gf-skel-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gf-skel { animation: none; }
+}
 
 /* ---- the focus journey. Windows are columns; behavior and glucose outcomes
    are two tables, never one, so an unavailable window stays visibly unavailable. */
@@ -242,25 +280,19 @@
 .gf .gf-roster .gf-note { padding-top:4px; }
 .gf .gf-roster .gf-note .gf-btn { margin-left:6px; min-height:24px; }
 
-/* ---- round 4: every basal slot. The shipped lane and its key seat between the
-   nameplate and the figure, on the plot's spine (--ck-grid-left, as the
-   workstation seats them); the shipped slot inspector reads in the pane. Both
-   carry the workstation's own tokens through `.dw`, unboxed from its two-row
-   grid so they take this desk's flow. */
-.gf-stage-basal { grid-template-rows:auto auto auto auto minmax(0,1fr); }
-.gf .gf-dw { height:auto; display:block; overflow:visible; grid-template-rows:none; }
-.gf .gf-dw.lane-wrap { padding:8px 0 10px; border-top:1px solid var(--wk-rule); background:var(--wk-field); }
-/* The scaffold's `.v2-content button` (36px min-height, radius, surface fill)
-   outranks the shipped `.lane-cell` box and painted every cell down over the
-   key. The lane's own 11px row and the cell's shipped box are restored here. */
-.gf .gf-dw .lane button.lane-cell { min-height:0; border-radius:1px; background-color:var(--cell, var(--ck-inset)); }
-.gf .gf-dw .lane button.lane-cell:focus-visible { outline:2px solid var(--ck-accent); outline-offset:2px; }
-.gf .gf-slot-level { animation:none; overflow:visible; }
-.gf .gf-slot-level .inner:first-child { padding-top:4px; }
-.gf .gf-slot-level .foot-note { line-height:1.45; }
-.gf .gf-fig-empty { display:grid; align-content:center; padding:18px var(--ck-grid-left); border-top:1px solid var(--wk-rule); }
-.gf .gf-empty-seat { display:grid; gap:4px; max-width:48ch; color:var(--mk-muted); font-size:var(--ck-body); line-height:1.45; }
-.gf .gf-empty-seat b { color:var(--mk-text); }
+/* ---- #413: the round-4 "every basal slot" block that stood here is deleted.
+   It restyled a `.gf-stage-basal` / `.gf-dw` composition from the dev-only
+   component harness ADR 416 later deleted — that class pairing has not
+   existed on any mounted element since the single-shell desk landed, so every
+   rule in it was dead: `.gf-dw` never matches (`frontend/shell.js` mounts the
+   workstation root as `.gf.dw`, two separate classes on one element, not the
+   compound `.gf-dw`), and the shipped basal lane lives inside Diagnose's own
+   `.v2-diagnose`, which carries none of the classes this block named. Its
+   dead `overflow:visible` and unboxed-grid rules are exactly why the lane key
+   clipped inside `.lane-wrap` (fixed in diagnose-workstation.css) instead of
+   ever being rescued by this block, which never ran. The lane now renders
+   correctly off diagnose-workstation.css's own rules with no desk override
+   needed. */
 
 /* ---- round 4: Day. One stage: the nameplate, the recorded-day rail, the week
    ribbon (or the month in its place), the five-track lanes chart filling the
@@ -373,11 +405,11 @@
   /* Day: the hero composition takes the figure; the ribbon keeps its spine at
      the pane edge and its columns at touch height; the month scrolls in place */
   .gf-stage.gf-stage-day { grid-template-rows:auto auto auto minmax(var(--gf-day-min,220px),1fr); }
-  /* the lane's cells are the touch targets for 48 slots: taller here, with the
-     slot arrows beside; the key wraps rather than clipping */
-  .gf-stage.gf-stage-basal { grid-template-rows:auto auto auto auto minmax(0,1fr); }
-  .gf .gf-dw.lane-wrap .lane { height:20px; margin-left:var(--ck-pad); margin-right:var(--ck-pad); }
-  .gf .gf-dw.lane-wrap .lane-key { margin-left:var(--ck-pad); margin-right:var(--ck-pad); flex-wrap:wrap; white-space:normal; }
+  /* #413: the matching narrow-viewport `.gf-stage-basal` / `.gf-dw.lane-wrap`
+     rules that stood here are deleted alongside the round-4 block above, for
+     the same reason — dead selectors from the retired basal stage. Narrow
+     viewports are unsupported for the lane in any case (only the two desktop
+     sizes are). */
   .gf-nav-ribbon { margin-left:0; margin-right:0; --gf-rb-plot:48px; --gf-rb-lab:40px; }
   .gf-nav-month { padding:6px var(--ck-pad) 8px; }
   /* Day's rail stacks. Under 831px the shipped sheet turns `.instruments`

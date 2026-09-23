@@ -11,7 +11,7 @@ import { populateFindingsProjectionInput, populateFindingCasePreparation } from 
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
-  MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY,
+  MIN_ROW_MINI_WIDTH, TIER,
   renderFindingsQueue,
   caseFileAlignment, queueMeta, queueRows, presentedRows,
 } from './diagnose-findings-queue.js';
@@ -37,6 +37,8 @@ class Node {
   addEventListener(name, callback) { (this.listeners ||= {})[name] = callback; }
 }
 
+const descendants = (node) => (node.children || []).flatMap((child) => [child, ...descendants(child)]);
+
 /* Paint one projection through the module's own entry point and hand back the
    host beside what the render returned. */
 const paint = (projection, view = null, onDrill = () => {}) => {
@@ -57,6 +59,21 @@ test('the root filter has no retired Event charts view or state', () => {
     new URL('./diagnose-workstation.js', import.meta.url)), 'utf8');
   assert.doesNotMatch(queue, /eventChartsOnly/);
   assert.doesNotMatch(workstation, /eventChartsOnly|Event charts/);
+});
+
+test('#413 · no frontend Pattern word list remains (PATTERN_COPY and its readers)', () => {
+  // The backend serves the count sentence (#413 ADR); the desk holds no word
+  // list of its own keyed by Pattern or lever. Scan every module this change
+  // touches — a reappearing PATTERN_COPY, however renamed the import, is the
+  // exact regression this ledger closed.
+  for (const relative of [
+    './diagnose-findings-queue.js', './diagnose-evidence-charts.js',
+    './diagnose-workstation-chart.js', './diagnose-eating-sequences.js',
+    './diagnose-workstation.js',
+  ]) {
+    const source = readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
+    assert.doesNotMatch(source, /PATTERN_COPY/, `${relative} still reads the retired word table`);
+  }
 });
 
 test('term 45 · the meta has three forms and no others', () => {
@@ -153,11 +170,13 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
 
 test('#395 · settings, Causes, and Patterns interleave in server order', () => {
   const rows = queueRows(W.global);
+  // A claimed cause folds under its parent Pattern (#413), so the top-level
+  // order carries no `habit` entries for the two claimed causes here.
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'pattern', 'habit', 'pattern', 'setting', 'setting', 'pattern', 'habit',
-      'pattern', 'habit', 'habit']);
+    ['setting', 'pattern', 'pattern', 'setting', 'setting', 'pattern', 'habit', 'pattern']);
   // the order is the projection's, untouched
-  assert.deepEqual(rows.map((r) => r.title), presentedRows(W.global).map((r) => r.title));
+  const topLevel = presentedRows(W.global).filter((r) => !r.claimed_by);
+  assert.deepEqual(rows.map((r) => r.title), topLevel.map((r) => r.title));
 });
 
 test('#302 · weights and captions walk the served rows without assigning a priority', () => {
@@ -169,37 +188,55 @@ test('#302 · weights and captions walk the served rows without assigning a prio
     .map(({ id, weight, caption }) => ({ id, weight, caption })), [
       { id: 'ic:720', weight: 'priced', caption: null },
       { id: 'pattern:highs_after_meals', weight: 'priced', caption: 'Worth a look' },
-      { id: 'finding:carb_undercount', weight: 'priced', caption: null },
       { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
       { id: 'basal:30-90', weight: 'priced', caption: 'Next in line' },
       { id: 'basal:330-360', weight: 'priced', caption: null },
       { id: 'pattern:overnight_lows_no_iob', weight: 'priced', caption: 'Worth a look' },
       { id: 'finding:over_treated_low', weight: 'priced', caption: null },
       { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
-      { id: 'finding:correction_on_iob', weight: 'tail', caption: null },
-      { id: 'finding:correction_stacking', weight: 'tail', caption: null },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
     { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },
-    { id: 'finding:carb_undercount', weight: 'priced', caption: null },
     { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(morning.map((row) => row.weight), ['priced']);
 });
 
+test('#413 · the rail shows served urgency: the first priced tier is urgent, later tiers stay quiet', () => {
+  const rows = queueRows(W.global);
+  // ic:720 is rank one and its tier ("next_in_line") is the first priced tier
+  // the reader can see; every OTHER row sharing that tier is urgent too,
+  // whether or not it happens to carry the caption.
+  assert.deepEqual(rows.filter((row) => row.urgent).map((row) => row.id),
+    ['ic:720', 'basal:30-90', 'basal:330-360']);
+  assert.ok(rows.filter((row) => !row.urgent).every((row) =>
+    row.tier !== 'next_in_line' || row.weight !== 'priced'));
+  const shared = { rows: W.global.rows.map((row) => ({ ...row, tier: 'next_in_line' })) };
+  const uniform = queueRows(shared);
+  const priced = uniform.filter((row) => row.weight === 'priced');
+  assert.ok(priced.length > 1);
+  assert.ok(priced.every((row) => row.urgent), 'every row shares the one served tier');
+});
+
 test('#341 · every priced row, including rank one, receives the common mini mount slot', () => {
   const result = paint(W.global);
-  assert.equal(result.rows.length, presentedRows(W.global).length);
+  // A claimed cause is no longer a row of its own (#413) — it folds onto its
+  // parent Pattern's `members` instead of appearing in the top-level list.
+  const topLevel = presentedRows(W.global).filter((row) => !row.claimed_by);
+  assert.equal(result.rows.length, topLevel.length);
   assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
-    'ic:720', 'pattern:highs_after_meals', 'finding:carb_undercount',
+    'ic:720', 'pattern:highs_after_meals',
     'pattern:lows_after_meals', 'basal:30-90', 'basal:330-360',
     'pattern:overnight_lows_no_iob', 'finding:over_treated_low',
   ]);
   assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
+  // Cause lines carry no mini of their own — the parent's mini stands for the group.
+  const parent = result.rows.find((row) => row.id === 'pattern:highs_after_meals');
+  assert.deepEqual(parent.members.map((member) => member.id), ['finding:carb_undercount']);
 });
 
 test('#341 · rank one keeps its served tier word within the common priced-row structure', () => {
@@ -230,13 +267,17 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     .map((child) => [child.className, child.attributes.role]), [],
     'no row sits in the list itself, carrying a role of its own');
   const items = list.children.filter((child) => child.className.startsWith('qitem'));
+  // Claimed causes fold under their Pattern (#413) — member lines render only
+  // once their parent's toggle opens, closed on arrival unless the parent is
+  // rank one, so this default paint shows only the top-level rows.
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem', 'qitem claimed', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
-      'qitem tail', 'qitem tail claimed', 'qitem tail claimed'],
+    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem tail'],
     'each shown row is enclosed, and a tail item is marked for the tail spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
-    assert.equal(item.children.length, 1);
+    // A Pattern's fold toggle rides inside its own item, after the row (#413).
+    assert.deepEqual(item.children.slice(1).map((child) => child.className),
+      item.children.length > 1 ? ['qfold'] : []);
     const [row] = item.children;
     const title = row.children.find((child) => child.className === 'lab')?.textContent;
     assert.equal(row.tag, 'button', `${title} is a real control`);
@@ -252,6 +293,64 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
   assert.equal(list.children.filter((child) => child.className === 'qcollapse').length, 0);
 });
 
+test('#413 · a Pattern folds its causes: closed on arrival unless it is rank one, toggled by the reader', () => {
+  const { host } = paint(W.global);
+  const list = host.children.find((node) => node.className === 'q');
+  // The toggle and its causes live inside the Pattern's own list item — never
+  // bare in the rail's list, where they would read as sibling rows (#413).
+  assert.deepEqual(list.children.filter((node) => ['qfold', 'qcauses', 'qitem member'].includes(node.className)), []);
+  const toggles = descendants(list).filter((node) => node.className === 'qfold');
+  // Neither Pattern that owns causes here is rank one, so both arrive closed —
+  // named by their served cause count, no member line rendered underneath.
+  assert.deepEqual(toggles.map((toggle) => toggle.textContent), ['1 cause', '2 causes']);
+  assert.ok(toggles.every((toggle) => toggle.attributes['aria-expanded'] === 'false'));
+  assert.ok(toggles.every((toggle) => toggle.attributes['aria-controls'] === undefined));
+  assert.deepEqual(descendants(list).filter((node) => node.className === 'qitem member'), []);
+
+  let toggled;
+  const view = { openMembers: new Map(), onToggleMembers: (id, wasOpen) => { toggled = [id, wasOpen]; } };
+  const forced = paint(W.global, view);
+  const forcedList = forced.host.children.find((node) => node.className === 'q');
+  descendants(forcedList).find((node) => node.className === 'qfold').listeners.click();
+  assert.deepEqual(toggled, ['pattern:highs_after_meals', false]);
+
+  // Rank one opens by default — a Pattern with claimed causes at rank one
+  // shows its members without any explicit toggle.
+  const rankOneOwns = { rows: [
+    { ...W.global.rows.find((row) => row.id === 'pattern:highs_after_meals'), priority: 90 },
+    W.global.rows.find((row) => row.id === 'finding:carb_undercount'),
+  ] };
+  const { host: openHost } = paint(rankOneOwns);
+  const openList = openHost.children.find((node) => node.className === 'q');
+  const [parentItem] = openList.children.filter((node) => node.className === 'qitem');
+  const [row, toggle, causes] = parentItem.children;
+  assert.equal(row.dataset.id, 'pattern:highs_after_meals');
+  assert.equal(toggle.attributes['aria-expanded'], 'true');
+  // The open causes are their own nested list, named by the toggle.
+  assert.equal(causes.className, 'qcauses');
+  assert.equal(causes.attributes.role, 'list');
+  assert.equal(toggle.attributes['aria-controls'], causes.id);
+  assert.deepEqual(causes.children.map((item) => [item.className, item.attributes.role]),
+    [['qitem member', 'listitem']]);
+  // One line per cause: its name, its served counts, its drill — and no gutter
+  // mark of its own, because the causes list draws the parent's spine.
+  const line = causes.children[0].children[0];
+  assert.deepEqual(line.children.map((child) => child.className), ['lab', 'go', 'den']);
+});
+
+test('#413 · an unpriced row prints its served count sentence under its title', () => {
+  const tail = queueRows(W.afternoon).find((row) => row.weight === 'tail' && row.detail?.kind === 'sentences');
+  assert.ok(tail, 'premise: the fixture serves an unpriced row with a count sentence');
+  const { host } = paint(W.afternoon);
+  const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === tail.id);
+  const den = button.children.find((child) => child.className === 'den');
+  assert.ok(den, `${tail.id} must print its served count sentence`);
+  assert.deepEqual(den.children.filter((child) => child.className === 'v').map((child) => child.textContent),
+    tail.detail.parts.map((part) => part.count));
+  assert.ok(!button.children.some((child) => ['mini', 'sum'].includes(child.className)),
+    'the tail stays quiet: no mini, no summary');
+});
+
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {
   const rows = queueRows(W.afternoon);
   assert.deepEqual(new Set(rows.map((row) => row.flavor)), new Set(['setting', 'pattern', 'habit']),
@@ -260,10 +359,13 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
     row.raw.kind === 'pattern' ? 'pattern' : row.raw.kind === 'setting' ? 'setting' : 'habit');
 });
 
-test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
-  const carbUndercount = queueRows(W.global).find((r) => r.title === 'Carb undercount');
-  assert.deepEqual(carbUndercount.detail,
-    { kind: 'appearances', parts: [{ count: '2 of 4', noun: 'highs' }, { count: '1 of 3', noun: 'meals' }] });
+test('term 35 · a claimed cause keeps EVERY served family appearance, never a merged total', () => {
+  const parent = queueRows(W.global).find((r) => r.id === 'pattern:highs_after_meals');
+  const carbUndercount = parent.members.find((m) => m.title === 'Carb undercount');
+  assert.deepEqual(carbUndercount.sentences, [
+    { count: '2 of 4', noun: 'highs', outcome: 'followed an undercounted meal' },
+    { count: '1 of 3', noun: 'meals', outcome: 'ran high' },
+  ]);
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {
@@ -316,7 +418,8 @@ test('the queue consumes the server tier and never reclassifies a row', () => {
     })),
   };
   const rows = queueRows(projection);
-  assert.deepEqual(rows.map((row) => row.tier), W.global.rows.map((row) => row.tier));
+  const topLevel = presentedRows(projection).filter((row) => !row.claimed_by);
+  assert.deepEqual(rows.map((row) => row.tier), topLevel.map((row) => row.tier));
 });
 
 test('term 14/38 · a held row is words-first and offers no stage affordance', () => {
@@ -432,8 +535,10 @@ test('chips sift only on published membership and keep withheld reads reachable'
 
 test('a sift computes its priced seam over only visible rows', () => {
   const rows = queueRows(W.global, new Set(['lows', 'corrections']));
-  const hiddenTail = rows.find((row) => row.title === 'Correction stacking');
-  assert.equal(hiddenTail.hidden, false);
+  const parent = rows.find((row) => row.id === 'pattern:lows_after_correcting_highs');
+  assert.equal(parent.hidden, false);
+  assert.ok(parent.members.some((member) => member.title === 'Correction stacking'),
+    'the claimed cause still folds under its visible parent');
   // It is the only visible ranked row and is unpriced, so there is no priced
   // row before it. The unselected high rows cannot open a visible seam.
   assert.deepEqual(rows.filter((row) => row.seam).map((row) => row.id),
@@ -444,8 +549,7 @@ test('a sift computes its priced seam over only visible rows', () => {
 test('slice 4 · the rank numeral spells visible position among priced ranked rows only', () => {
   const rows = queueRows(W.global);
   const priced = rows.filter((row) => !row.hidden && !row.collapsed
-    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null
-    && !row.claimedBy);
+    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null);
   assert.ok(priced.length > 1);
   assert.deepEqual(priced.map((row) => row.rank), priced.map((_, index) => index + 1),
     'numerals are 1..N in the server’s own order — no re-ranking');
@@ -484,7 +588,8 @@ test('#223 · direction-only Correction factor stays asserted after priced rows 
   assert.equal(isf.summary, isf.raw.annotation, 'the queue transcribes the analyzer explanation');
   assert.match(isf.summary, /fasting data agrees with the set factor/i);
   assert.match(isf.summary, /recurring correction-linked lows call for weaker corrections/i);
-  assert.deepEqual(rows.map((row) => row.raw.id), presentedRows(projected).map((row) => row.id),
+  assert.deepEqual(rows.map((row) => row.raw.id),
+    presentedRows(projected).filter((row) => !row.claimed_by).map((row) => row.id),
     'automatic candidates retain backend order');
 });
 
@@ -528,7 +633,7 @@ test('#63 · the sentence never enters the queue meta, which counts the window',
 
 // The default replay input differs from the history fixture above. Exercise its
 // actual preparation and painter so a claimed Lever cannot disappear in the join.
-test('#395 · the default replay keeps its claimed Late bolus reachable under every matching sift', () => {
+test('#395/#413 · the default replay keeps its claimed Late bolus reachable, folded, under every matching sift', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
   const projection = projectFindings(populateFindingsProjectionInput({
@@ -544,32 +649,33 @@ test('#395 · the default replay keeps its claimed Late bolus reachable under ev
   for (let mask = 1; mask < 16; mask += 1) {
     const selected = new Set(chips.filter((_, index) => mask & (1 << index)));
     if (!selected.has('highs') && !selected.has('meals')) continue;
-    const { host, rows } = paint(input, { selected });
-    const member = rows.find((row) => row.id === 'finding:late_bolus');
-    assert.equal(member.claimedBy, 'pattern:highs_after_meals');
-    assert.equal(member.hidden, false);
-    assert.equal(member.collapsed, false);
+    const openMembers = new Map([['pattern:highs_after_meals', true]]);
+    const { host, rows } = paint(input, { selected, openMembers });
+    const parent = rows.find((row) => row.id === 'pattern:highs_after_meals');
+    assert.equal(parent.hidden, false);
+    const member = parent.members.find((m) => m.id === 'finding:late_bolus');
+    assert.ok(member, `Late bolus stays folded under its parent under ${[...selected]}`);
     const list = host.children.find((node) => node.className === 'q');
-    const button = list.children.flatMap((node) => node.children || [])
-      .find((node) => node.dataset?.id === member.id);
+    const button = descendants(list).find((node) => node.dataset?.id === member.id);
     assert.equal(button?.tag, 'button', `Late bolus remains a control under ${[...selected]}`);
   }
 });
 
 
-test('#395 · Pattern recurrence reads one closed copy table and ignores headline wording', () => {
+test('#395/#413 · a Pattern detail reads the served count sentence and ignores headline wording', () => {
   const base = W.global.rows.find((row) => row.kind === 'pattern');
-  for (const [key, noun, outcome] of [
-    ['highs_after_meals', 'meals', 'ran high'],
-    ['lows_after_meals', 'meals', 'ran low'],
-    ['highs_after_treating_lows', 'lows', 'rebounded high'],
-    ['lows_after_correcting_highs', 'lows', 'followed a correction'],
-    ['overnight_lows_no_iob', 'nights', 'ran low overnight'],
+  for (const [count, denominator, noun, outcome] of [
+    [3, 20, 'meals', 'ran high'],
+    [7, 20, 'meals', 'ran low'],
+    [1, 4, 'lows', 'rebounded high'],
+    [2, 9, 'lows', 'followed a correction'],
+    [5, 30, 'nights', 'ran low overnight'],
   ]) {
-    assert.deepEqual(PATTERN_COPY[key], { family: key === 'overnight_lows_no_iob' ? null : noun, noun, outcome });
     const row = { ...base, headline: 'A headline with no recurrence to parse',
-      pattern: { ...base.pattern, key, k: 3, n: 20 } };
-    assert.equal(queueRows({ rows: [row] })[0].detail.text, `3 of 20 ${noun} ${outcome}`);
+      count_sentences: [{ sentence: `${count} of ${denominator} ${noun} ${outcome}`,
+        count, denominator, noun, outcome }] };
+    assert.deepEqual(queueRows({ rows: [row] })[0].detail,
+      { kind: 'sentences', parts: [{ count: `${count} of ${denominator}`, noun, outcome }] });
   }
 });
 
@@ -588,64 +694,72 @@ test('#395 · counts under review keeps its drill without a rate or chart host',
   assert.equal(drilled, raw);
 });
 
-test('#395 · an unpriced claimed member precedes the tail seam and prints its parent-family count', () => {
+test('#413 · a Pattern with no served count sentence renders like any other row without one', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  // `admission_route: "none"` — a real, reachable state (findings_projection.py
+  // `_pattern_count_sentences`) distinct from the now-unreachable unknown-key
+  // case #1.1's backend test forecloses.
+  const row = { ...base, count_sentences: null, pattern: { ...base.pattern, count_status: null } };
+  assert.equal(queueRows({ rows: [row] })[0].detail, null);
+  const { host } = paint({ rows: [row] });
+  const button = host.children.find((node) => node.className === 'q').children[0].children[0];
+  assert.ok(!button.children.some((node) => node.className.startsWith('den')));
+  assert.ok(button.children.some((node) => node.className === 'tag pattern'));
+});
+
+test('#413 · an unpriced claimed member folds under the tail Pattern, printing every served sentence', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
   const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
     event_charts: fixture.inputs.event_charts,
   }));
-  const { host, rows } = paint(projection);
-  const member = rows.find((row) => row.id === 'finding:late_bolus');
-  assert.equal(member.raw.priority, null);
-  assert.equal(member.seam, false);
-  assert.equal(member.caption, null);
-  const appearance = member.raw.appearances.find((item) => item.family === 'meals');
-  assert.equal(member.memberCount, ` · ${appearance.n} of ${appearance.m} ${appearance.noun}`);
-  const children = host.children.find((node) => node.className === 'q').children;
-  const at = children.findIndex((node) => node.children?.[0]?.dataset.id === member.id);
-  assert.equal(children[at - 1].children[0].dataset.id, member.claimedBy,
-    'no seam or caption separates the adjacent served parent and member');
+  const rows = queueRows(projection);
+  const late = rows.flatMap((row) => row.members || []).find((member) => member.id === 'finding:late_bolus');
+  assert.ok(late, 'Late bolus folds under its parent');
+  assert.equal(late.raw.priority, null);
+  assert.deepEqual(late.sentences, late.raw.count_sentences.map((s) => ({
+    count: `${s.count} of ${s.denominator}`, noun: s.noun, outcome: s.outcome,
+  })), 'every served sentence is kept, never merged to the one matching the parent');
 });
 
 
-test('#395 · a member selects the Pattern family even when another appearance comes first', () => {
+test('#413 · a claimed cause keeps every served appearance, not only the one matching its parent', () => {
   const base = W.global.rows.find((row) => row.kind === 'pattern');
   const parent = { ...base, id: 'pattern:lows_after_correcting_highs',
     pattern: { ...base.pattern, key: 'lows_after_correcting_highs' } };
   const member = { id: 'finding:correction_stacking', kind: 'habit', register: 'finding',
-    claimed_by: parent.id, appearances: [
-      { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 12 },
-      { family: 'lows', noun: 'low excursions', n: 6, m: 20 },
+    claimed_by: parent.id, count_sentences: [
+      { count: 2, denominator: 12, noun: 'correction clusters', outcome: 'went low',
+        sentence: '2 of 12 correction clusters went low' },
+      { count: 6, denominator: 20, noun: 'low excursions', outcome: 'followed a correction',
+        sentence: '6 of 20 low excursions followed a correction' },
     ] };
-  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 6 of 20 low excursions');
-  member.appearances.pop();
-  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 2 of 12 correction clusters');
-  assert.equal(PATTERN_COPY.overnight_lows_no_iob.family, null,
-    'source nights have no Exposure family to match');
+  const [{ members }] = queueRows({ rows: [parent, member] });
+  assert.deepEqual(members[0].sentences, [
+    { count: '2 of 12', noun: 'correction clusters', outcome: 'went low' },
+    { count: '6 of 20', noun: 'low excursions', outcome: 'followed a correction' },
+  ]);
 });
 
-test('#395 · unknown Pattern keys stay title-only and do not break adjacent members or findings', () => {
-  const base = W.global.rows.find((row) => row.kind === 'pattern');
-  for (const key of ['future_pattern', '__proto__']) {
-    const parent = { ...base, id: `pattern:${key}`, pattern: { ...base.pattern, key } };
-    const member = { id: 'finding:future_member', kind: 'habit', register: 'finding',
-      claimed_by: parent.id, appearances: [{ family: 'meals', noun: 'meals', n: 2, m: 20 }] };
-    let drilled;
-    const { host, miniSlots, rows } = paint({ rows: [parent, member] }, null,
-      (row) => { drilled = row; });
-    const item = host.children.find((node) => node.className === 'q').children
-      .find((node) => node.children?.[0]?.dataset.id === parent.id);
-    const button = item.children[0];
-    assert.equal(button.children.find((node) => node.className === 'lab').textContent, parent.title);
-    assert.ok(!button.children.some((node) => /^(den|mini|tag)/.test(node.className)));
-    assert.ok(!miniSlots.some((slot) => slot.row.id === parent.id));
-    assert.equal(rows[1].memberCount, ' · 2 of 20 meals');
-    button.listeners.click();
-    assert.equal(drilled, parent);
-  }
+test('#413 · a claim naming no served row falls back to an ordinary row, never a silent drop', () => {
+  // The backend always stamps `claimed_by` and appends its owning Pattern row
+  // in the same pass (findings_projection.py `_pattern_rows`), so this crosses
+  // no currently reachable payload — but the projection crosses the server
+  // boundary and nothing enforces that coupling with a test, so an orphaned
+  // claim must still surface the row rather than vanish.
+  const orphan = { id: 'finding:orphaned_cause', kind: 'habit', register: 'finding',
+    claimed_by: 'pattern:not_served', priority: 40, tier: 'worth_a_look',
+    count_sentences: [{ count: 3, denominator: 9, noun: 'highs', outcome: 'ran high',
+      sentence: '3 of 9 highs ran high' }] };
+  const rows = queueRows({ rows: [orphan] });
+  assert.equal(rows.length, 1, 'the orphaned claim must still appear as its own row');
+  assert.equal(rows[0].id, 'finding:orphaned_cause');
+  assert.equal(rows[0].members, null);
+  assert.deepEqual(rows[0].detail, {
+    kind: 'sentences', parts: [{ count: '3 of 9', noun: 'highs', outcome: 'ran high' }],
+  });
 });
-
 
 test('#395 · the browser input publishes only its renderable mini hosts in served order', () => {
   const cases = JSON.parse(readFileSync(new URL(
@@ -655,8 +769,10 @@ test('#395 · the browser input publishes only its renderable mini hosts in serv
   const { miniSlots } = paint({ ...prepared.findings, rows: prepared.rendered_rows });
   const chartable = miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
     .map(({ row }) => row.id);
+  // Carb undercount is claimed by Highs after meals, so it folds under its
+  // parent (#413) and no longer mounts a mini of its own.
   assert.deepEqual(chartable, [
-    'ic:720', 'pattern:highs_after_meals', 'finding:carb_undercount',
+    'ic:720', 'pattern:highs_after_meals',
     'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
   ]);
   const chartless = prepared.rendered_rows.find((row) => row.id === 'pattern:lows_after_correcting_highs');
@@ -676,23 +792,22 @@ test('#395 · Pattern and Lever drills request event cases; chartless rows retai
   assert.equal(caseFileAlignment(undefined), 'clock');
 });
 
-test('#342 · sequence habits reuse the inherited member grammar and count exclusions', () => {
+test('#342/#413 · sequence habits fold under their Pattern with the inherited member grammar', () => {
   const generated = expandSequenceFixture(JSON.parse(readFileSync(new URL(
     '../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8')));
   for (const name of ['high_carb_sequence_empty', 'repeat_eating_empty', 'both_covered']) {
     const prepared = generated.states[name].windows.global.preparation;
     const projection = { ...prepared.findings, rows: prepared.rendered_rows };
     const painted = queueRows(projection);
-    const members = painted.filter((row) => row.raw.claimed_by === 'pattern:highs_after_meals');
+    const parent = painted.find((row) => row.id === 'pattern:highs_after_meals');
+    const members = parent?.members || [];
     assert.equal(members.length, name === 'both_covered' ? 2 : 1);
-    for (const row of members) {
-      assert.equal(row.rank, null);
-      assert.equal(row.caption, null);
-      assert.equal(row.seam, false);
-      assert.equal(row.stageable, false);
-      assert.equal(row.memberCount,
-        ` · ${row.raw.appearances[0].n} of ${row.raw.appearances[0].m} sequences`);
-      assert.equal(caseFileAlignment(row.raw), 'event');
+    for (const member of members) {
+      assert.equal(member.sentences.length, 1);
+      assert.equal(member.sentences[0].noun, 'sequences');
+      assert.equal(member.sentences[0].count,
+        `${member.raw.count_sentences[0].count} of ${member.raw.count_sentences[0].denominator}`);
+      assert.equal(caseFileAlignment(member.raw), 'event');
     }
     assert.equal(queueMeta(projection), `${projection.counts.finding} findings · 30 days`);
   }

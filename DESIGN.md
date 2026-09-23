@@ -348,3 +348,55 @@ offers only its uniquely served parent context and states the served reason.
 The 2026-09-11 operator request for Filter to match the resized Window control
 is carried by this revise record; no new caret is needed because visual review
 found the resting v2 control readable as Window's peer.
+
+#413 completes the rail and lane that #404 left unfinished (Connor's design
+lock, 2026-09-14). Every value painted below is served. No token in
+`frontend/theme.css` changed.
+
+- **Pattern fold.** A Pattern owns its claimed causes. They fold under it on
+  one spine, a rule down the title column in the rule ink, one line per cause:
+  the name, each served count, then the drill.
+  - The fold's toggle names the cause count and sits inside the Pattern's own
+    list item, with a triangle caret.
+  - The causes are a nested list the toggle controls.
+  - The fold is open on the first ranked row and closed below it.
+  - A cause is never a sibling row and draws no mini.
+- **Urgency.** The first served tier paints its caption and rank numeral in
+  primary. Its rows carry a straight 3 px rank stripe on a squared left edge.
+  Later tiers stay quiet.
+- **Count sentence.** Every count-bearing row prints the served
+  `n of d noun outcome`, with the count and denominator at weight 600. Unpriced
+  tail rows print it too, still with no tag, summary or mini.
+- **One mini.** Every mini drawn from a served count sentence is one
+  instrument:
+  - the claimed cohort's outcome word and count at left, in the miss ink;
+  - TYPICAL and the denominator at right, in body ink, with the only
+    interquartile band (muted);
+  - unmarked solid medians;
+  - the case file's served anchor label on the anchor line;
+  - a dashed 70–180 target band.
+  Setting rows keep their night strip. The By-event stage keeps its own
+  `--ec-*` cohort inks.
+- **Basal lane.** The lane's head row carries its name and the served verdict
+  key with counts, above the cells.
+  - Hold paints a filled neutral, raise the high gold with an up glyph, lower
+    the accent with a down glyph.
+  - Insufficient is hatched and no data dotted, each key mark on its cells'
+    paint.
+  - The selection keeps a 1 px primary outline, offset from the cell. The
+    stage keeps a 2 px accent underline.
+  - Cells release the shell's button height floor, so every cell sits inside
+    the 11 px track.
+- **24 h arrival.** Diagnose opens on 24 h when nothing else chooses a window.
+  A contextual entry or a retained window still wins, and the workstation's
+  ISF, drill, occurrence and drawn presets keep Overnight.
+- **Cold skeleton.** A cold destination shows one text-free skeleton per pane.
+  - The stage shows a window bar, the nameplate's two lines and the
+    instrument's chart well.
+  - The rail shows four rows, the first tall enough for its mini.
+  - Both sit one surface step above the field and shimmer slowly, still under
+    reduced motion.
+  - The status role and its named text are unchanged.
+- **Evidence.** A private design-evidence record — not part of the public
+  tree — holds the evidence and the critique. The desk ledger's S113–S117
+  hold the replays.

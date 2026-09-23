@@ -90,6 +90,92 @@ const PATTERN_CHIPS = {
 // the noun's number as its only variation (a surface printing '1 highs' is a defect).
 const uncausedHighsCopy = (n) => `${n} ${n === 1 ? 'high' : 'highs'} had no cause `
   + 'detected by the app';
+
+// findings_projection._PATTERN_OUTCOME / _CAUSE_OUTCOME — the one closed outcome
+// table the count sentence is served from (#413), transcribed here, never
+// re-derived: a Pattern by its own served key, a Cause by the lever AND the
+// family its appearance is counted in.
+const PATTERN_OUTCOME = {
+  highs_after_meals: 'ran high',
+  lows_after_meals: 'ran low',
+  highs_after_treating_lows: 'rebounded high',
+  lows_after_correcting_highs: 'followed a correction',
+  overnight_lows_no_iob: 'ran low overnight',
+};
+// Closed over the code-derived cross product (coordinator decision, #413 review
+// round 2): every lever x every family a Cause appearance can be filed under,
+// narrowed off the full four-family set only where the lever's own policy or the
+// sequence-lever exclusion makes that structural (findings_projection.py's
+// _CAUSE_OUTCOME comment carries the full reasoning).
+const CAUSE_OUTCOME = {
+  'carb_undercount,meals': 'ran high',
+  'carb_undercount,highs': 'followed an undercounted meal',
+  'carb_undercount,lows': 'followed an undercounted meal',
+  'carb_undercount,correction_clusters': 'followed an undercounted meal',
+  'late_bolus,meals': 'ran high',
+  'late_bolus,highs': 'followed a late bolus',
+  'late_bolus,lows': 'followed a late bolus',
+  'late_bolus,correction_clusters': 'followed a late bolus',
+  'meal_over_delivery,meals': 'ran low',
+  'meal_over_delivery,lows': 'followed a strong meal dose',
+  'meal_over_delivery,highs': 'followed a strong meal dose',
+  'meal_over_delivery,correction_clusters': 'followed a strong meal dose',
+  'over_treated_low,lows': 'rebounded high',
+  'over_treated_low,highs': 'followed an over-treated low',
+  'over_treated_low,meals': 'followed an over-treated low',
+  'over_treated_low,correction_clusters': 'followed an over-treated low',
+  'correction_stacking,correction_clusters': 'went low',
+  'correction_stacking,lows': 'followed stacked corrections',
+  'correction_stacking,meals': 'followed stacked corrections',
+  'correction_stacking,highs': 'followed stacked corrections',
+  'correction_on_iob,lows': 'followed a correction on active insulin',
+  'correction_on_iob,correction_clusters': 'followed a correction on active insulin',
+  'correction_on_iob,meals': 'followed a correction on active insulin',
+  'correction_on_iob,highs': 'followed a correction on active insulin',
+  'missed_meal,highs': 'had no bolus nearby',
+  'missed_meal,meals': 'had no bolus nearby',
+  'missed_meal,lows': 'had no bolus nearby',
+  'missed_meal,correction_clusters': 'had no bolus nearby',
+  'meal_bolus_short,meals': 'needed a correction after',
+  'high_carb_sequence,sequences': 'ran less in range',
+  'repeat_eating,sequences': 'ran less in range',
+};
+
+function countSentence(count, denominator, noun, outcome) {
+  return {
+    sentence: `${count} of ${denominator} ${noun} ${outcome}`,
+    count, denominator, noun, outcome,
+  };
+}
+
+function patternCountSentences(r) {
+  const pattern = r.pattern;
+  if (pattern.count_status || pattern.admission_route === 'none') return null;
+  const noun = pattern.rate_producer === 'harm_band_source_nights'
+    ? 'nights' : FAMILY_NOUN[patternRateFamily(pattern)];
+  const key = pattern.key;
+  if (!Object.hasOwn(PATTERN_OUTCOME, key)) {
+    throw new Error(`no outcome word for pattern ${key}`);
+  }
+  return [countSentence(pattern.k, pattern.n, noun, PATTERN_OUTCOME[key])];
+}
+
+function causeCountSentences(r) {
+  const sentences = (r.appearances || []).map((appearance) => {
+    const key = `${r.lever},${appearance.family}`;
+    if (!Object.hasOwn(CAUSE_OUTCOME, key)) {
+      throw new Error(`no outcome word for lever/family ${key}`);
+    }
+    return countSentence(appearance.n, appearance.m, appearance.noun, CAUSE_OUTCOME[key]);
+  });
+  return sentences.length ? sentences : null;
+}
+
+function countSentencesFor(r) {
+  if (r.kind === 'pattern') return patternCountSentences(r);
+  if (r.kind === 'habit') return causeCountSentences(r);
+  return null;
+}
 // analyzers.ic.BLOCK_WINDOW_DAYS
 const BLOCK_WINDOW_DAYS = 90;
 
@@ -140,7 +226,7 @@ function row(fields) {
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
-    chips: null, window_scope: null,
+    chips: null, window_scope: null, count_sentences: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
     event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
     ...fields,
@@ -869,6 +955,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   }
   for (const row of rows) {
     row.headline = headlineFor(row);
+    row.count_sentences = countSentencesFor(row);
   }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };

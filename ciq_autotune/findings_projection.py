@@ -227,6 +227,7 @@ class FindingsProjection:
         _assign_tiers(rows)
         for row in rows:
             row["headline"] = _headline_for(row)
+            row["count_sentences"] = _count_sentences_for(row)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
@@ -978,6 +979,15 @@ def _history_headline(row: dict) -> str:
             f"until {regime_end_date}. Programmed now: {programmed_now}.")
 
 
+def _pattern_noun(pattern: dict) -> str:
+    """The noun a Pattern's own k-of-n count is denominated in — shared by
+    ``headline`` and the count sentence so the two can never name a different
+    noun for the same row."""
+    if pattern["rate_producer"] == "harm_band_source_nights":
+        return "nights"
+    return _FAMILY_NOUN[pattern_rate_family(pattern).value]
+
+
 def _headline_for(row: dict) -> str:
     """The one served sentence for this row's own family and register."""
     if row["kind"] == "pattern":
@@ -986,11 +996,7 @@ def _headline_for(row: dict) -> str:
             return f"{row['title']}: counts under review"
         if pattern["admission_route"] == "none":
             return row["title"]
-        if pattern["rate_producer"] == "harm_band_source_nights":
-            noun = "nights"
-        else:
-            family = pattern_rate_family(pattern)
-            noun = _FAMILY_NOUN[family.value]
+        noun = _pattern_noun(pattern)
         return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)
@@ -1004,6 +1010,134 @@ def _headline_for(row: dict) -> str:
     if parameter == "carb_ratio":
         return _ic_headline(row)
     raise ValueError(f"no headline template for parameter {parameter!r}")  # pragma: no cover
+
+
+# --- count sentences: "N of M noun outcome" (#413 design lock, 2026-09-14:
+# "n of d noun outcome on every row, causes included, from served words") -----
+#
+# One closed outcome table per row kind, keyed the way the design ADR requires: a
+# Pattern by its own served key, a Cause by the lever AND the family the appearance
+# is counted in — never by family alone, because two Patterns (and two Causes) can
+# share a family and end in opposite words (highs_after_meals / lows_after_meals
+# both count in meals; carb_undercount counted in meals ends "ran high", while the
+# same lever counted in highs describes what the high followed). An unrecognized
+# key is a defect, never a silent blank: a Pattern key or lever-and-family pair
+# added later without an entry here fails this module's tests and cannot merge.
+# The frontend's own Pattern word constant (`PATTERN_COPY` in
+# frontend/diagnose-findings-queue.js) still exists as of this commit — this
+# table is its backend replacement, not yet its deletion, which belongs to the
+# rail work that reads served words instead (#413 tasks 3.3).
+
+_PATTERN_OUTCOME = {
+    "highs_after_meals": "ran high",
+    "lows_after_meals": "ran low",
+    "highs_after_treating_lows": "rebounded high",
+    "lows_after_correcting_highs": "followed a correction",
+    "overnight_lows_no_iob": "ran low overnight",
+}
+
+_CAUSE_OUTCOME = {
+    # Closed over the code-derived cross product (coordinator decision, #413 review
+    # round 2): every `Lever` member (levers.py) x every family a Cause appearance
+    # can be filed under — the four exposure families `explore_exposures._FAMILY_FOR_KIND`
+    # names (lows / meals / highs / correction_clusters), plus a lever's own
+    # recurrence/sequence family when `evidence_population.policy_for(lever)` (or,
+    # for the two sequence levers, `_finding_rows`'s dedicated sequence branch)
+    # restricts it there in code. Never widened or narrowed from fixture output.
+    #
+    # carb_undercount, late_bolus, meal_over_delivery, over_treated_low,
+    # correction_stacking, correction_on_iob and missed_meal all have
+    # `recurrence_family is not None` (an "ordinary" or ordinary-shaped policy), so
+    # `_finding_rows` never overrides their appearances — each can be filed under
+    # any of the four exposure families and gets one entry per family.
+    ("carb_undercount", "meals"): "ran high",
+    ("carb_undercount", "highs"): "followed an undercounted meal",
+    ("carb_undercount", "lows"): "followed an undercounted meal",
+    ("carb_undercount", "correction_clusters"): "followed an undercounted meal",
+    ("late_bolus", "meals"): "ran high",
+    ("late_bolus", "highs"): "followed a late bolus",
+    ("late_bolus", "lows"): "followed a late bolus",
+    ("late_bolus", "correction_clusters"): "followed a late bolus",
+    ("meal_over_delivery", "meals"): "ran low",
+    ("meal_over_delivery", "lows"): "followed a strong meal dose",
+    ("meal_over_delivery", "highs"): "followed a strong meal dose",
+    ("meal_over_delivery", "correction_clusters"): "followed a strong meal dose",
+    ("over_treated_low", "lows"): "rebounded high",
+    ("over_treated_low", "highs"): "followed an over-treated low",
+    ("over_treated_low", "meals"): "followed an over-treated low",
+    ("over_treated_low", "correction_clusters"): "followed an over-treated low",
+    ("correction_stacking", "correction_clusters"): "went low",
+    ("correction_stacking", "lows"): "followed stacked corrections",
+    ("correction_stacking", "meals"): "followed stacked corrections",
+    ("correction_stacking", "highs"): "followed stacked corrections",
+    ("correction_on_iob", "lows"): "followed a correction on active insulin",
+    ("correction_on_iob", "correction_clusters"): "followed a correction on active insulin",
+    ("correction_on_iob", "meals"): "followed a correction on active insulin",
+    ("correction_on_iob", "highs"): "followed a correction on active insulin",
+    ("missed_meal", "highs"): "had no bolus nearby",
+    ("missed_meal", "meals"): "had no bolus nearby",
+    ("missed_meal", "lows"): "had no bolus nearby",
+    ("missed_meal", "correction_clusters"): "had no bolus nearby",
+    # meal_bolus_short: `evidence_population._POLICIES[Lever.MEAL_BOLUS_SHORT]` sets
+    # `recurrence_family=None`, so `_finding_rows`'s override unconditionally
+    # replaces its appearances with the one `recurrence_noun` family ("meals") —
+    # never any of the four exposure families.
+    ("meal_bolus_short", "meals"): "needed a correction after",
+    # high_carb_sequence / repeat_eating: `model_view._is_driver` excludes every
+    # `SEQUENCE_LEVERS` member from ever being attributed on an exposure-family
+    # anchor, so `_finding_rows`'s dedicated sequence branch is their only source
+    # of appearances, always filed under the one hardcoded "sequences" family.
+    ("high_carb_sequence", "sequences"): "ran less in range",
+    ("repeat_eating", "sequences"): "ran less in range",
+}
+
+
+def _count_sentence(count: int, denominator: int, noun: str, outcome: str) -> dict:
+    return {
+        "sentence": f"{count} of {denominator} {noun} {outcome}",
+        "count": count,
+        "denominator": denominator,
+        "noun": noun,
+        "outcome": outcome,
+    }
+
+
+def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
+    """A count-bearing Pattern's one served sentence, or ``None`` — counts under
+    review and a Pattern with no admitted k/n serve none, matching ``_headline_for``'s
+    own gating so the two fields never disagree about which rows carry counts."""
+    pattern = row["pattern"]
+    if pattern.get("count_status") or pattern["admission_route"] == "none":
+        return None
+    noun = _pattern_noun(pattern)
+    key = pattern["key"]
+    if key not in _PATTERN_OUTCOME:
+        raise ValueError(f"no outcome word for pattern {key!r}")
+    return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
+
+
+def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
+    """One sentence per served family appearance, in appearance order (already
+    alphabetical — ``_finding_rows`` sorts ``appearances`` for the same reason)."""
+    sentences = []
+    for appearance in row["appearances"] or []:
+        key = (row["lever"], appearance["family"])
+        if key not in _CAUSE_OUTCOME:
+            raise ValueError(f"no outcome word for lever/family {key!r}")
+        sentences.append(_count_sentence(
+            appearance["n"], appearance["m"], appearance["noun"], _CAUSE_OUTCOME[key],
+        ))
+    return sentences or None
+
+
+def _count_sentences_for(row: dict) -> Optional[List[dict]]:
+    """The served count sentences beside ``headline`` — a new field, never a rebuild
+    of it (#413 ADR "The backend serves the count sentence")."""
+    if row["kind"] == "pattern":
+        return _pattern_count_sentences(row)
+    if row["kind"] == "habit":
+        return _cause_count_sentences(row)
+    return None
 
 
 # Carb ratio is grams per unit, so raising it removes insulin and answers lows.
@@ -1061,7 +1195,7 @@ def _row(**fields) -> dict:
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
-        "chips": None, "window_scope": None,
+        "chips": None, "window_scope": None, "count_sentences": None,
         "past_setting": None, "programmed_now": None, "regime_end": None,
         "run_ids": None, "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,

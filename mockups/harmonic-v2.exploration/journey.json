@@ -89113,6 +89113,15 @@
               "lows"
             ],
             "claimed_by": "pattern:lows_after_correcting_highs",
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -91228,6 +91237,7 @@
                 "lows"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": "lower",
               "episodes": null,
@@ -91307,6 +91317,15 @@
                 "lows"
               ],
               "claimed_by": null,
+              "count_sentences": [
+                {
+                  "count": 0,
+                  "denominator": 30,
+                  "noun": "nights",
+                  "outcome": "ran low overnight",
+                  "sentence": "0 of 30 nights ran low overnight"
+                }
+              ],
               "current": null,
               "direction": null,
               "episodes": null,
@@ -91416,6 +91435,15 @@
                 "highs"
               ],
               "claimed_by": null,
+              "count_sentences": [
+                {
+                  "count": 2,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "rebounded high",
+                  "sentence": "2 of 6 lows rebounded high"
+                }
+              ],
               "current": null,
               "direction": null,
               "episodes": 2,
@@ -91528,6 +91556,7 @@
                 "meals"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -91664,6 +91693,7 @@
                 "corrections"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -91791,6 +91821,15 @@
                 "lows"
               ],
               "claimed_by": "pattern:lows_after_correcting_highs",
+              "count_sentences": [
+                {
+                  "count": 1,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "followed a correction on active insulin",
+                  "sentence": "1 of 6 lows followed a correction on active insulin"
+                }
+              ],
               "current": null,
               "direction": null,
               "episodes": 1,
@@ -91903,6 +91942,7 @@
                 "meals"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -92025,6 +92065,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -94140,6 +94189,7 @@
             "lows"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": "lower",
           "episodes": null,
@@ -94219,6 +94269,15 @@
             "lows"
           ],
           "claimed_by": null,
+          "count_sentences": [
+            {
+              "count": 0,
+              "denominator": 30,
+              "noun": "nights",
+              "outcome": "ran low overnight",
+              "sentence": "0 of 30 nights ran low overnight"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": null,
@@ -94328,6 +94387,15 @@
             "highs"
           ],
           "claimed_by": null,
+          "count_sentences": [
+            {
+              "count": 2,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "rebounded high",
+              "sentence": "2 of 6 lows rebounded high"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 2,
@@ -94440,6 +94508,7 @@
             "meals"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -94576,6 +94645,7 @@
             "corrections"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -94703,6 +94773,15 @@
             "lows"
           ],
           "claimed_by": "pattern:lows_after_correcting_highs",
+          "count_sentences": [
+            {
+              "count": 1,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "followed a correction on active insulin",
+              "sentence": "1 of 6 lows followed a correction on active insulin"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 1,
@@ -94815,6 +94894,7 @@
             "meals"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -103222,6 +103302,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -105397,7 +105486,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "5f82211a109910e3964079c8b713cf11c8b683ac6e341ff2acbd143c49b721e5",
+              "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105489,7 +105578,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "7874a8c49748ae84543486b22f343acdeac401ab01f5ab3044b4db4934bd1df6",
+              "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105577,7 +105666,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "5f82211a109910e3964079c8b713cf11c8b683ac6e341ff2acbd143c49b721e5",
+                  "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105669,7 +105758,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "7874a8c49748ae84543486b22f343acdeac401ab01f5ab3044b4db4934bd1df6",
+                  "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -116958,6 +117047,7 @@
               "lows"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": "lower",
             "episodes": null,
@@ -117037,6 +117127,15 @@
               "lows"
             ],
             "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 0,
+                "denominator": 30,
+                "noun": "nights",
+                "outcome": "ran low overnight",
+                "sentence": "0 of 30 nights ran low overnight"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": null,
@@ -117146,6 +117245,15 @@
               "highs"
             ],
             "claimed_by": null,
+            "count_sentences": [
+              {
+                "count": 2,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "rebounded high",
+                "sentence": "2 of 6 lows rebounded high"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 2,
@@ -117258,6 +117366,7 @@
               "meals"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -117394,6 +117503,7 @@
               "corrections"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -117521,6 +117631,15 @@
               "lows"
             ],
             "claimed_by": "pattern:lows_after_correcting_highs",
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -117633,6 +117752,7 @@
               "meals"
             ],
             "claimed_by": null,
+            "count_sentences": null,
             "current": null,
             "direction": null,
             "episodes": null,
@@ -133161,6 +133281,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -135278,6 +135407,7 @@
             "lows"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": "lower",
           "episodes": null,
@@ -141999,6 +142129,15 @@
             "highs"
           ],
           "claimed_by": null,
+          "count_sentences": [
+            {
+              "count": 2,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "rebounded high",
+              "sentence": "2 of 6 lows rebounded high"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 2,
@@ -178118,6 +178257,7 @@
           "lows"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": "lower",
         "episodes": null,
@@ -178197,6 +178337,15 @@
           "lows"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 0,
+            "denominator": 30,
+            "noun": "nights",
+            "outcome": "ran low overnight",
+            "sentence": "0 of 30 nights ran low overnight"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": null,
@@ -178306,6 +178455,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -178418,6 +178576,7 @@
           "meals"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -178554,6 +178713,7 @@
           "corrections"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -178681,6 +178841,15 @@
           "lows"
         ],
         "claimed_by": "pattern:lows_after_correcting_highs",
+        "count_sentences": [
+          {
+            "count": 1,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "followed a correction on active insulin",
+            "sentence": "1 of 6 lows followed a correction on active insulin"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 1,
@@ -178793,6 +178962,7 @@
           "meals"
         ],
         "claimed_by": null,
+        "count_sentences": null,
         "current": null,
         "direction": null,
         "episodes": null,
@@ -202609,6 +202779,15 @@
               "lows"
             ],
             "claimed_by": "pattern:lows_after_correcting_highs",
+            "count_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -204731,6 +204910,15 @@
                 "highs"
               ],
               "claimed_by": null,
+              "count_sentences": [
+                {
+                  "count": 2,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "rebounded high",
+                  "sentence": "2 of 6 lows rebounded high"
+                }
+              ],
               "current": null,
               "direction": null,
               "episodes": 2,
@@ -204843,6 +205031,7 @@
                 "meals"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -204979,6 +205168,7 @@
                 "corrections"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -205106,6 +205296,15 @@
                 "lows"
               ],
               "claimed_by": "pattern:lows_after_correcting_highs",
+              "count_sentences": [
+                {
+                  "count": 1,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "followed a correction on active insulin",
+                  "sentence": "1 of 6 lows followed a correction on active insulin"
+                }
+              ],
               "current": null,
               "direction": null,
               "episodes": 1,
@@ -205218,6 +205417,7 @@
                 "meals"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -205330,6 +205530,7 @@
                 "lows"
               ],
               "claimed_by": null,
+              "count_sentences": null,
               "current": null,
               "direction": null,
               "episodes": null,
@@ -205442,6 +205643,15 @@
           "highs"
         ],
         "claimed_by": null,
+        "count_sentences": [
+          {
+            "count": 2,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "rebounded high",
+            "sentence": "2 of 6 lows rebounded high"
+          }
+        ],
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -207565,6 +207775,15 @@
             "highs"
           ],
           "claimed_by": null,
+          "count_sentences": [
+            {
+              "count": 2,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "rebounded high",
+              "sentence": "2 of 6 lows rebounded high"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 2,
@@ -207677,6 +207896,7 @@
             "meals"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -207813,6 +208033,7 @@
             "corrections"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -207940,6 +208161,15 @@
             "lows"
           ],
           "claimed_by": "pattern:lows_after_correcting_highs",
+          "count_sentences": [
+            {
+              "count": 1,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "followed a correction on active insulin",
+              "sentence": "1 of 6 lows followed a correction on active insulin"
+            }
+          ],
           "current": null,
           "direction": null,
           "episodes": 1,
@@ -208052,6 +208282,7 @@
             "meals"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -208164,6 +208395,7 @@
             "lows"
           ],
           "claimed_by": null,
+          "count_sentences": null,
           "current": null,
           "direction": null,
           "episodes": null,
@@ -295337,6 +295569,7 @@
         "lows"
       ],
       "claimed_by": null,
+      "count_sentences": null,
       "current": null,
       "direction": "lower",
       "episodes": null,

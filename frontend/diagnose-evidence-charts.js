@@ -10,7 +10,6 @@ import {
   glucoseRange,
 } from './diagnose-event-comparison.js';
 import { validFindingCaseFile } from './finding-case-file-validation.js';
-import { PATTERN_COPY } from './diagnose-findings-queue.js';
 import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
@@ -150,60 +149,23 @@ function thumbnail(name, count, series = []) {
 }
 
 const validPatternEvidence = (data) => validFindingCaseFile(data)
-  && data.projection.alignment === 'event'
-  && Object.hasOwn(PATTERN_COPY, data.finding.lever);
+  && data.projection.alignment === 'event';
 
-const patternMiniLabel = (data) => {
-  const key = data?.finding?.lever;
-  const phrase = PATTERN_COPY[key].outcome.toUpperCase();
+/* The outcome word is the SERVED row's own count sentence (#413 ADR "The
+   backend serves the count sentence") — never a frontend word table keyed by
+   lever. `row` is the served rail row the mini is mounting for; the case-file
+   `data` carries no outcome word of its own. */
+const patternMiniLabel = (data, row) => {
+  const phrase = (row?.count_sentences?.[0]?.outcome || '').toUpperCase();
   return `${phrase} · ${data?.summary?.claimed ?? 0}`;
 };
 
-/* Pattern rail furniture wraps the shipped response preview. The case file
-   still supplies every point; this changes only the sanctioned inks and labels. */
-function patternQueuePreview(descriptor, range, colors) {
-  const data = descriptor.data;
-  if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
-  const option = queuePreviewOption(descriptor, range, {
-    ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
-  });
-  option.graphic = [
-    { type: 'text', left: 8, top: 5, silent: true,
-      style: { text: patternMiniLabel(data), fill: colors.misses, font: `600 9px ${FONT}` } },
-    { type: 'text', right: 8, top: 5, silent: true,
-      style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
-        font: `600 9px ${FONT}`, align: 'right' } },
-  ];
-  // Only the typical cohort carries the interquartile band in this treatment.
-  option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
-  for (const series of option.series) {
-    if (series.id.startsWith('queue:event:comparison:band:')) {
-      const paint = series.renderItem;
-      series.renderItem = (params, api) => {
-        const mark = paint(params, api);
-        if (mark.style.fill) mark.style.fill = colors.muted;
-        if (mark.style.stroke) mark.style.stroke = colors.muted;
-        return mark;
-      };
-    }
-    if (!series.id.endsWith(':median')) continue;
-    series.symbol = 'none';
-    series.showSymbol = false;
-    series.lineStyle.type = 'solid';
-  }
-  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
-  const marker = anchor.renderItem;
-  const label = PATTERN_COPY[data.finding.lever].noun === 'meals' ? 'MEAL' : 'LOW';
-  anchor.renderItem = (params, api) => ({ type: 'group', children: [
-    marker(params, api),
-    { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
-      style: { text: label, fill: colors.text, font: `600 9px ${FONT}` } },
-  ] });
-  option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
-    markLine: { silent: true, symbol: 'none', label: { show: false },
-      lineStyle: { color: colors.warn, width: 1, type: 'dashed' },
-      data: [{ yAxis: 70 }, { yAxis: 180 }] } });
-  return option;
+/* The Pattern rail mini is the shared rail instrument (#413): the case file
+   supplies every point, and `queuePreviewOption` owns the inks, the labels,
+   the named anchor and the target band for every ranked row's mini. */
+function patternQueuePreview(descriptor, range, colors, row) {
+  if (!validPatternEvidence(descriptor.data)) throw new Error('Pattern evidence is unavailable.');
+  return queuePreviewOption(descriptor, range, colors, row);
 }
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the
@@ -1013,8 +975,16 @@ const entries = [
     name: 'Eating sequence',
     modes: null,
     validateData: validEatingSequenceCase,
-    queuePreview: (descriptor, range, colors) => descriptor.data.finding.lever === 'high_carb_sequence'
-      ? eventComparisonChartOption(highCarbResponseCase(descriptor.data), range, null, true)
+    /* The High-carb mini is the SAME instrument every other ranked row's mini
+       draws (#413): cohort label and count, TYPICAL and denominator, a named
+       anchor, a dashed target band, all in the rail's own cohort palette —
+       `queuePreviewOption`'s shared cohort branch, not the case-file's own
+       renderer, which read its own comparison token rather than the rail's.
+       Repeat-eating's mini is a genuinely different shape (a carb-quintile ×
+       window-count matrix, no event to anchor on) and keeps its own chart. */
+    queuePreview: (descriptor, range, colors, row) => descriptor.data.finding.lever === 'high_carb_sequence'
+      ? queuePreviewOption({ kind: 'high-carb-response',
+        data: { projection: highCarbResponseCase(descriptor.data).projection } }, range, colors, row)
       : eatingSequenceChartOption(descriptor.data, { mini: true, palette: colors.cohorts }),
     nameFor: (row) => ({ title: row.title, meta: 'sequence cohorts · served comparison' }),
     meta: () => 'sequence cohorts · served comparison',
@@ -1088,14 +1058,16 @@ const entries = [
     }),
     option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
       eventComparisonChartOption(caseFile, range, surface, mini),
-    thumbnail: (data) => thumbnail(patternMiniLabel(data),
+    thumbnail: (data, row) => thumbnail(patternMiniLabel(data, row),
       `TYPICAL · ${data?.summary?.denominator ?? 0}`,
       [{ type: 'line', symbol: 'none', connectNulls: true,
         data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),
     coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    matches: (row) => Boolean(row?.pattern_chart)
-      && Object.hasOwn(PATTERN_COPY, row.pattern_chart.key),
+    /* The Pattern key space is the server's own roster (#413): the projection
+       serves `pattern_chart` only for a chartable Pattern, so the frontend
+       polices nothing further of its own. */
+    matches: (row) => Boolean(row?.pattern_chart),
     coordinates: (row, findings) => ({
       projection_id: findings.projection_id,
       finding_id: row.id,

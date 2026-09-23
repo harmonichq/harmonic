@@ -40,6 +40,32 @@ test('the loading frame carries no count and the error frame offers its retry', 
   assert.match(errorFrame('Day', 'This day'), /data-retry>Retry</);
 });
 
+test('the loading frame stands a count-free skeleton of stage instruments and rail rows', () => {
+  // #413: a cold destination shows a skeleton in place of the empty block —
+  // the stage's instruments in the stage, the rail's rows in the rail.
+  const loading = loadingFrame('Diagnose');
+  const [, stage] = loading.match(/<div class="gf-loading"[^>]*>([\s\S]*?)<\/section>/) || [];
+  const [, rail] = loading.match(/<aside class="pane gf-reading"[\s\S]*?<div class="gf-pane-body">([\s\S]*?)<\/aside>/) || [];
+  const [, stageMarks] = stage?.match(/<div class="gf-skeleton" aria-hidden="true">([\s\S]*?)<\/div>/) || [];
+  const [, railMarks] = rail?.match(/<div class="gf-skeleton gf-skeleton-rail" aria-hidden="true">([\s\S]*?)<\/div>/) || [];
+  assert.ok(stageMarks, 'the stage skeleton stands inside the loading block');
+  assert.ok(railMarks, 'the rail skeleton stands in the reading pane body, not in the stage');
+  for (const marks of [stageMarks, railMarks]) {
+    assert.equal(marks.replace(/<[^>]+>/g, '').trim(), '', 'a skeleton states no count, title or value');
+  }
+  assert.deepEqual(stageMarks.match(/gf-skel-(bar|eyebrow|title|chart|strip)/g),
+    ['gf-skel-bar', 'gf-skel-eyebrow', 'gf-skel-title', 'gf-skel-chart', 'gf-skel-strip'],
+    'the stage shows the window bar, the nameplate, the instrument well and the strip well');
+  assert.equal((railMarks.match(/gf-skel-row/g) || []).length, 4, 'the rail shows its rows');
+  assert.match(railMarks, /gf-skel-row gf-skel-hero/, 'the first rail row carries its mini well');
+  assert.doesNotMatch(stageMarks, /gf-skel-row/, 'no rail row stands in the stage');
+  // The status role and its label are the loading state assistive technology reads.
+  assert.match(loading, /class="gf-loading" role="status" aria-label="Loading Diagnose"/);
+  // The loading stage is its own block-flow variant, so the card holds every
+  // mark rather than a stage grid track clipping it (S114 proves the layout).
+  assert.match(loading, /<section class="pane gf-stage gf-stage-loading" aria-label="Diagnose">/);
+});
+
 test('the loading frame names what it is reading when a caller supplies the text', () => {
   assert.doesNotMatch(loadingFrame('Diagnose'), /<p>/, 'no message: no empty <p>');
   const named = loadingFrame('Changes', 'Reading change records');

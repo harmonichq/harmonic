@@ -812,5 +812,5 @@ export function retainedEvidenceContext(detail) {
     ? `${retainedWindow.start_min}-${retainedWindow.end_min}`
     : start === null || start === undefined ? '' : `${start}-${span?.end_min ?? start + 30}`;
   return { subject, from: 'changes', occurrence: '', window,
-    lever: change?.parameter || detail?.lever || '', focus: '#crumb-trail' };
+    lever: change?.parameter || detail?.lever || '' };
 }

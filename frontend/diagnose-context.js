@@ -28,15 +28,16 @@ export function createCaseContext(delegate) {
   };
 }
 
-export function evidenceDayContext({ occurrence, selected, slot, focus }) {
+/* The Diagnose-origin Day entry (ADR 428 points 4 and 5). Subject, Occurrence
+   and window are the case the workstation publishes — the same one the address
+   names — and the date, moment and lever are the Occurrence's own. The held
+   Occurrence id is also the return target, so no selector rides along. */
+export function evidenceDayContext({ occurrence, current }) {
   const at = occurrence.t || occurrence.anchor?.t || '';
   return {
     date: String(at).slice(0, 10), moment: at,
-    subject: selected?.subject || (slot ? `basal:${slot.start}` : ''),
-    occurrence: occurrence.id || selected?.occurrence || String(at).slice(0, 10),
-    lever: occurrence.cause_lever || (slot ? 'basal_rate' : ''),
-    window: Number.isFinite(selected?.window?.start_min) ? `${selected.window.start_min}-${selected.window.end_min}`
-      : slot ? `${slot.start}-${slot.end}` : '',
-    from: 'diagnose', focus,
+    subject: current?.subject || '', occurrence: current?.occurrence || '', window: current?.window || '',
+    lever: occurrence.cause_lever || '',
+    from: 'diagnose',
   };
 }

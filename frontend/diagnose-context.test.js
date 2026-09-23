@@ -21,16 +21,23 @@ test('tile loads, failed replacements and late responses do not choose a drill s
   assert.equal(context.current().subject, b.finding_id);
 });
 
-test('Day carries canonical subject, opaque occurrence, moment and source window', () => {
-  assert.deepEqual(evidenceDayContext({
-    occurrence: { id: 'opaque-7', anchor: { t: '2024-06-01 08:12:00' } },
-    selected: { subject: 'pattern:served', occurrence: 'opaque-7', window: { start_min: 360, end_min: 720 } },
-    focus: '.occ-foot button:last-child',
-  }), { date: '2024-06-01', moment: '2024-06-01 08:12:00', subject: 'pattern:served', occurrence: 'opaque-7',
-    window: '360-720', lever: '', from: 'diagnose', focus: '.occ-foot button:last-child' });
-  const night = evidenceDayContext({ occurrence: { t: '2024-06-01 03:00:00' }, slot: { start: 180, end: 210 }, focus: '#crumb-trail' });
+// ADR 428 points 4 and 5: the Day entry reads subject, Occurrence and window
+// from the one case the workstation publishes, and names its return target by
+// that Occurrence — no CSS selector travels in it.
+test('Day carries the published case, the Occurrence\'s own moment and lever, and no selector', () => {
+  const context = evidenceDayContext({
+    occurrence: { id: 'opaque-7', anchor: { t: '2024-06-01 08:12:00' }, cause_lever: 'late_bolus' },
+    current: { subject: 'pattern:served', occurrence: 'opaque-7', window: '360-720' },
+  });
+  assert.deepEqual(context, { date: '2024-06-01', moment: '2024-06-01 08:12:00', subject: 'pattern:served',
+    occurrence: 'opaque-7', window: '360-720', lever: 'late_bolus', from: 'diagnose' });
+  assert.equal(Object.hasOwn(context, 'focus'), false, 'the return target is the Occurrence id, never a selector');
+  const night = evidenceDayContext({ occurrence: { t: '2024-06-01 03:00:00', cause_lever: 'basal_rate' },
+    current: { subject: 'basal:180', occurrence: '2024-06-01', window: '180-210' } });
   assert.equal(night.subject, 'basal:180');
   assert.equal(night.occurrence, '2024-06-01');
+  assert.equal(night.window, '180-210');
+  assert.equal(night.lever, 'basal_rate');
 });
 
 test('the Day return keeps moment and evidence coordinates through the shared router', async () => {

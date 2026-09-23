@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { parseRoute, serializeRoute } from './tab-routing.js';
 
 let fetchReply = async () => ({ ok: true, json: async () => ({ items: [], history: [] }) });
 globalThis.fetch = (...args) => fetchReply(...args);
@@ -37,7 +38,10 @@ function makeRoot(overrides = {}) {
 // document) but off the surface and hidden, which is what the desk keys on.
 function host() {
   const controls = new Map();
-  const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } } };
+  // The window Diagnose registers its reader-input listener on (ADR 428);
+  // quiet unless a test hands the seat a browser() of its own.
+  const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } },
+    defaultView: { addEventListener() {} } };
   ownerDocument.createElement = () => Object.assign(makeRoot(), { ownerDocument });
   return {
     // Writing markup gives the host a fresh first element, as the DOM would.
@@ -537,7 +541,8 @@ test('return restoration requests its occurrence once while shared paints are pe
   try {
     const member = { dataset: { occurrenceId: 'opaque' }, getAttribute: () => String(selected), click: () => { clicks += 1; }, focus() {} };
     const row = { dataset: { id: 'finding:served' }, click() {} };
-    const root = makeRoot({ querySelector: () => null,
+    const openDay = { focused: 0, focus() { this.focused += 1; } };
+    const root = makeRoot({ querySelector: selector => (selector === '.occ-foot button:last-child' ? openDay : null),
       querySelectorAll: selector => selector === '.qrow[data-id]' ? [row] : selector === '.case-occurrence' ? [member] : [] });
     const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
     const destination = createDiagnoseDestination({ api: source().api,
@@ -546,7 +551,11 @@ test('return restoration requests its occurrence once while shared paints are pe
     destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served', occurrence: 'opaque' } });
     notify(); notify();
     assert.equal(clicks, 1, 'unrelated shared paints must not repeat the pending case request');
-    selected = true; notify(); destination.leave();
+    selected = true; notify();
+    // ADR 428 point 5: the entry names no selector; the held Occurrence's own
+    // Open in Day control is the return target.
+    assert.equal(openDay.focused, 1, 'the held Occurrence\'s Open in Day control takes focus');
+    destination.leave();
   } finally { globalThis.MutationObserver = previous; }
 });
 
@@ -640,4 +649,315 @@ test('S129/S131 tile activation replaces the Focus drill, while same-chart picks
     }
     destination.leave();
   } finally { fetchReply = previousFetch; }
+});
+
+/* ---------------------------------------------------------------- ADR 428 */
+
+// A browser whose history writes move its address, and whose capture-phase
+// listeners a test dispatches into as the reader's own (trusted) presses.
+function browser(address = '/diagnose') {
+  const calls = [];
+  const listeners = [];
+  const location = { pathname: '', search: '', hash: '' };
+  const move = (next) => {
+    const at = next.indexOf('?');
+    location.pathname = at < 0 ? next : next.slice(0, at);
+    location.search = at < 0 ? '' : next.slice(at);
+  };
+  move(address);
+  return {
+    location, calls, listeners,
+    history: {
+      pushState: (_state, _title, next) => { calls.push(['push', next]); move(next); },
+      replaceState: (_state, _title, next) => { calls.push(['replace', next]); move(next); },
+    },
+    addEventListener(type, run, capture) { listeners.push({ type, run, capture }); },
+    removeEventListener() {},
+    address: () => `${location.pathname}${location.search}`,
+    press(type, init = {}) {
+      for (const listener of listeners.filter(l => l.type === type && l.capture === true)) {
+        listener.run({ type, isTrusted: true, ...init });
+      }
+    },
+  };
+}
+// What the router hands the next render: the context its address names.
+const routed = page => parseRoute(page.location).context;
+const flush = async () => { for (let i = 0; i < 10; i += 1) await Promise.resolve(); };
+const afterHandlers = () => new Promise(resolve => setTimeout(resolve, 0));
+
+// A workstation stand-in that publishes the way the real one does: its Findings
+// root on every setData (the rebuild, the teardown), and whatever a test drills.
+function publishing() {
+  const view = { setData: [], refreshes: 0 };
+  view.create = ({ callbacks }) => {
+    view.callbacks = callbacks;
+    return { setData(data) { view.setData.push(data); callbacks.caseChanged?.(null); },
+      leaveSurface() {}, refresh() { view.refreshes += 1; }, setError() {} };
+  };
+  view.publish = next => view.callbacks.caseChanged(next);
+  return view;
+}
+
+function desk428({ address = '/diagnose', root: overrides = {} } = {}) {
+  const page = browser(address);
+  globalThis.window = page;
+  const served = source(); const seat = host(); seat.ownerDocument.defaultView = page;
+  const root = makeRoot(overrides);
+  root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
+  const view = publishing();
+  const destination = createDiagnoseDestination({ api: served.api, createView: view.create });
+  return { page, served, seat, view, destination };
+}
+
+// Leave to another destination: the held cleanup parks the retained root.
+function park(destination, seat, navigation, context) {
+  let held;
+  destination.mount(seat, { navigation, hold: fn => { held = fn; }, context });
+  seat.isConnected = false;
+  held(false);
+}
+
+// A basal lane cell whose pick publishes its slot, as the workstation does.
+function laneCell(publish, start = 180) {
+  const cell = { clicks: 0, getAttribute: () => `${String(start / 60).padStart(2, '0')}:00 basal slot, raise`,
+    click() { cell.clicks += 1; publish({ subject: `basal:${start}`, occurrence: null, window: `${start}-${start + 30}` }); } };
+  return cell;
+}
+
+const DAY_RETURN = { date: '2024-06-26', moment: '2024-06-26 13:55:00', subject: 'finding:late_bolus',
+  occurrence: 'o-1', lever: 'late_bolus', from: 'diagnose' };
+
+test('ADR 428 · a published case with no restoration pending replaces the address in place, and the Findings root clears it', async () => {
+  const previous = globalThis.window;
+  const { page, seat, view, destination } = desk428();
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    assert.deepEqual(page.calls, [], 'the rebuild\'s own Findings root writes nothing');
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: '0-360' });
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1&window=0-360']],
+      'replaced in place: no pushed history entry, so no new navigation');
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: '0-360' });
+    assert.equal(page.calls.length, 1, 'a same-value repaint writes nothing');
+    view.publish(null);
+    assert.deepEqual(page.calls.at(-1), ['replace', '/diagnose'], 'back at Findings the address names no case');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a re-read\'s teardown and rebuild never overwrite its contextual entry, which is restored and keeps its from', async () => {
+  const previous = globalThis.window;
+  let cell = null;
+  const env = desk428({ root: { querySelectorAll: selector => (selector === '#lane > button.lane-cell' ? [cell] : []) } });
+  const { page, seat, view, destination } = env;
+  cell = laneCell(view.publish);
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null });
+    park(destination, seat, 0, routed(page));
+    // Changes' Inspect / Back to Diagnose: a contextual entry naming another case.
+    page.history.pushState(null, '', serializeRoute({ destination: 'diagnose',
+      context: { subject: 'setting:basal_rate', window: '180-210', from: 'changes' } }));
+    page.calls.length = 0;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.equal(cell.clicks, 1, 'the contextual entry was applied: its slot is open');
+    assert.deepEqual(page.calls, [], 'neither the teardown, the rebuild nor the restoration wrote the address');
+    assert.equal(page.address(), '/diagnose?subject=setting%3Abasal_rate&window=180-210&from=changes');
+    view.publish({ subject: 'basal:180', occurrence: null, window: '180-210' });
+    assert.deepEqual(page.calls, [], 'a same-value repaint after the restoration settles writes nothing');
+    view.publish({ subject: 'basal:210', occurrence: null, window: '210-240' });
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=basal%3A210&window=210-240&from=changes']],
+      'the next case change is written, and keeps the Changes return Diagnose renders');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+async function pendingRestoration() {
+  const env = desk428({ address: '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1' });
+  const context = routed(env.page);
+  env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+  await flush();
+  env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+  return env;
+}
+
+test('ADR 428 · a pending restoration writes nothing until the reader\'s own press, which ends it before that press\'s handlers run', async () => {
+  const previous = globalThis.window;
+  try {
+    const { page, view, destination } = await pendingRestoration();
+    assert.deepEqual(page.listeners.filter(l => l.capture === true).map(l => l.type).sort(), ['keydown', 'pointerdown'],
+      'one reader-input listener, in the capture phase on the window');
+    view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null });
+    assert.deepEqual(page.calls, [], 'a publication while the restoration is pending writes nothing');
+    page.press('keydown', { key: 'Tab' });
+    page.press('keydown', { key: 'Shift' });
+    page.press('pointerdown', { isTrusted: false });
+    view.publish({ subject: 'finding:late_bolus', occurrence: null, window: '0-360' });
+    assert.deepEqual(page.calls, [], 'Tab, a bare modifier and an untrusted press leave it pending');
+    // The reader's ↓: the capture listener runs first, then the workstation's
+    // own document handler steps the Occurrence inside the same event.
+    page.press('keydown', { key: 'ArrowDown' });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-2', window: '0-360' });
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=finding%3Alate_bolus&occurrence=o-2&window=0-360']]);
+    await afterHandlers();
+    assert.equal(page.calls.length, 1, 'once the press\'s handlers ran, the same case adds no second write');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a reader press that changes nothing still leaves the address naming the case on screen', async () => {
+  const previous = globalThis.window;
+  try {
+    const { page, view, destination } = await pendingRestoration();
+    view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null });
+    page.press('pointerdown');
+    await afterHandlers();
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=finding%3Alate_bolus']],
+      'the restored entry\'s Occurrence is not on screen, so the address stops naming it');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a plain Diagnose press after a Day return is a retained return: one status read', async () => {
+  const previous = globalThis.window;
+  const { page, served, seat, view, destination } = desk428({
+    address: serializeRoute({ destination: 'diagnose', context: DAY_RETURN }) });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
+    park(destination, seat, 0, routed(page));
+    served.requests.length = 0;
+    page.history.pushState(null, '', '/diagnose'); // the topbar press: a direct entry
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.deepEqual(served.requests, ['status'], 'exactly one status read, and no guidance or evidence read');
+    assert.equal(page.address(), '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1',
+      'the address names the retained case, with no Day-entry key');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.equal(view.refreshes, 1, 'the retained root re-seats with its drill');
+    assert.equal(view.setData.filter(Boolean).length, 1, 'the payload is never re-applied');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a plain return keeps the held case but not its Changes return', async () => {
+  const previous = globalThis.window;
+  let cell = null;
+  const env = desk428({
+    address: serializeRoute({ destination: 'diagnose', context: { subject: 'setting:basal_rate', window: '180-210', from: 'changes' } }),
+    root: { querySelectorAll: selector => (selector === '#lane > button.lane-cell' ? [cell] : []) } });
+  const { page, served, seat, view, destination } = env;
+  cell = laneCell(view.publish);
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
+    assert.equal(cell.clicks, 1, 'premise: the Changes entry was restored');
+    park(destination, seat, 0, routed(page));
+    page.history.pushState(null, '', '/diagnose');
+    page.calls.length = 0; served.requests.length = 0;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=setting%3Abasal_rate&window=180-210']],
+      'the address names the held case, and no longer the Changes return');
+    await flush();
+    assert.deepEqual(served.requests, ['status']);
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    view.publish({ subject: 'basal:210', occurrence: null, window: '210-240' });
+    assert.deepEqual(page.calls.at(-1), ['replace', '/diagnose?subject=basal%3A210&window=210-240'],
+      'the entry itself dropped from=changes, so "Return to Trial" cannot come back');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a Day return to the held case keeps the drill and focuses that Occurrence\'s Open in Day control', async () => {
+  const previous = globalThis.window;
+  let focused = null;
+  const member = { dataset: { occurrenceId: 'o-1' }, getAttribute: () => 'true', focus() { focused = 'row'; } };
+  const openDay = { focus() { focused = 'open-day'; } };
+  const crumb = { focus() { focused = 'crumb'; } };
+  const { page, served, seat, view, destination } = desk428({ root: {
+    querySelectorAll: selector => (selector === '.case-occurrence' ? [member] : []),
+    querySelector: selector => (selector === '.occ-foot button:last-child' ? openDay : selector === '#crumb-trail' ? crumb : null),
+  } });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+    park(destination, seat, 0, routed(page));
+    // Open in Day from that Occurrence, then Return to Diagnose: the Day entry
+    // names the same case.
+    page.history.pushState(null, '', serializeRoute({ destination: 'diagnose', context: DAY_RETURN }));
+    served.requests.length = 0; focused = null;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.deepEqual(served.requests, ['status'], 'one status read and no guidance read');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.equal(view.setData.filter(Boolean).length, 1, 'the drill is kept, not re-applied');
+    assert.equal(focused, 'open-day', 'the return lands on the held Occurrence\'s Open in Day control');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · restoring a Finding presses the Window preset its window names', async () => {
+  const labels = ['Overnight', 'Morning', 'Afternoon', 'Evening', '24 h'];
+  for (const [subject, window, expected] of [
+    ['finding:late_bolus', '360-720', 'Morning'],
+    ['finding:late_bolus', '720-1080', 'Afternoon'],
+    ['finding:late_bolus', '1080-1440', 'Evening'],
+    ['finding:late_bolus', '0-360', 'Overnight'],
+    ['finding:late_bolus', null, '24 h'],
+    ['finding:late_bolus', '135-285', null], // a drawn window: the accepted limit
+    ['pattern:highs_after_meals', '360-720', '24 h'], // a Pattern keeps its 24 h press
+  ]) {
+    const buttons = labels.map(textContent => ({ textContent, clicks: 0, click() { this.clicks += 1; } }));
+    const seat = host();
+    const root = makeRoot({ querySelectorAll: selector => (selector === '#seg-window button' ? buttons : []) });
+    root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
+    const destination = createDiagnoseDestination({ api: source().api,
+      createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {}, context: window ? { subject, window } : { subject } });
+    assert.deepEqual(buttons.filter(button => button.clicks).map(button => button.textContent),
+      expected ? [expected] : [], `${subject} in ${window}`);
+    destination.leave();
+  }
+});
+
+// Last: it seats the desk's one router on a stand-in surface for this module.
+test('ADR 428 · the in-place write renames the current entry with no navigation, push, render or focus, and the next render hands Diagnose that context', async () => {
+  const { startDesk, registerDestination, render, view: desk } = await import('./routes.js');
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const page = browser('/diagnose');
+  page.matchMedia = () => ({ matches: false, addEventListener() {} });
+  globalThis.window = page;
+  globalThis.document = { activeElement: null, querySelectorAll: () => [] };
+  const seat = host(); seat.ownerDocument.defaultView = page;
+  Object.assign(seat, { dataset: {}, querySelector: () => null, querySelectorAll: () => [] });
+  const view = publishing();
+  const destination = createDiagnoseDestination({ api: source().api, createView: view.create });
+  const mounts = [];
+  registerDestination({ id: 'diagnose', title: 'Diagnose',
+    mount: (surface, deps) => { mounts.push(deps); destination.mount(surface, deps); } });
+  try {
+    startDesk(seat, { browser: page });
+    await flush(); // the first read answers and re-renders through the router
+    assert.ok(seat.node, 'premise: Diagnose is seated through the router');
+    const seated = mounts.length;
+    const { navigation } = mounts.at(-1);
+    desk.focusAfterRender = null;
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: '0-360' });
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1&window=0-360']],
+      'the current history entry is renamed; none is pushed');
+    assert.equal(mounts.length, seated, 'no render');
+    assert.equal(desk.focusAfterRender, null, 'no focus request');
+    render();
+    assert.deepEqual(mounts.at(-1).context, { subject: 'finding:late_bolus', occurrence: 'o-1', window: '0-360' },
+      'the next render hands Diagnose the renamed context');
+    assert.equal(mounts.at(-1).navigation, navigation, 'the write was not a navigation');
+    assert.equal(page.calls.length, 1, 'the render writes nothing further');
+  } finally { globalThis.window = previousWindow; globalThis.document = previousDocument; }
 });

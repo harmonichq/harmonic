@@ -13,11 +13,26 @@ const DEFAULT_DESTINATION = 'diagnose';
 // A contextual Day entry carries all of these; a direct one carries none
 // (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
 // target within it — "restore the exact target" is what makes the return a
-// return rather than a second arrival.
+// return rather than a second arrival. Diagnose's own entries name that target
+// by their `occurrence` instead (ADR 428).
 export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
 
 export function resolveDestination(destination) {
   return DESTINATIONS.includes(destination) ? destination : DEFAULT_DESTINATION;
+}
+
+/**
+ * The address Diagnose writes for the case on screen (ADR 428): exactly the keys
+ * its entry restoration reads, plus a `from` that names another destination,
+ * because Diagnose itself renders that return (Changes' "Return to Trial").
+ * No Day-entry key and no return-focus selector survives, and the Findings
+ * index — no case — is no context at all.
+ */
+export function caseAddress(onScreen, from = '') {
+  const context = {};
+  for (const key of ['subject', 'occurrence', 'window']) if (onScreen?.[key]) context[key] = onScreen[key];
+  if (from && String(from).split('.')[0] !== 'diagnose') context.from = from;
+  return context;
 }
 
 export function parseRoute({ pathname = PAGE, search = '' } = {}) {

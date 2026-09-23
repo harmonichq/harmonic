@@ -730,8 +730,9 @@ export const C2_STORIES = {
     assert.equal(new URL(seen(page.url())).searchParams.get('subject'), g.selected.subject);
   }, "S37"); await page.getByText(g.selected.title, { exact: false }).first().waitFor(); },
   S37b: async page => { const row = await openBasalLane(page); await waitForReplayAssertion(async seen => {
-    // An in-place drill retains the row on the focal tile; only a destination
-    // handoff publishes subject in the URL. Re-read the current drill each poll.
+    // An in-place drill retains the row on the focal tile. Since ADR 428 it
+    // also renames the address to the case on screen (a slot as basal:<start>),
+    // but this story's claim is the tile, so it re-reads the drill each poll.
     const id = seen(await page.evaluate(() => document.querySelector(
       '#tile-field .evidence-tile[data-drilled]',
     )?.dataset.chartId ?? null));

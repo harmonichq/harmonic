@@ -82,7 +82,8 @@ test('public mount reads retained evidence and failed finish/resolve retain the 
 
 test('retained inspection uses the original slot and canonical Pattern identity', () => {
   assert.deepEqual(retainedEvidenceContext({ changes: [{ parameter: 'basal_rate', slot: '03:00' }], original: { context: {} } }),
-    { subject: 'setting:basal_rate', from: 'changes', occurrence: '', window: '180-210', lever: 'basal_rate', focus: '#crumb-trail' });
+    { subject: 'setting:basal_rate', from: 'changes', occurrence: '', window: '180-210', lever: 'basal_rate' },
+    'ADR 428: the entry names no return-focus selector; Diagnose lands on its crumb by default');
   assert.equal(retainedEvidenceContext({ pattern_key: 'served-pattern', lever: 'late_bolus' }).subject, 'pattern:served-pattern');
   assert.equal(retainedEvidenceContext({ pattern_key: 'served-pattern', lever: 'late_bolus', original: {
     context: { outcome_window: { start_min: 22 * 60, end_min: 2 * 60 }, action: [{ span: { start_min: 180, end_min: 210 } }] },

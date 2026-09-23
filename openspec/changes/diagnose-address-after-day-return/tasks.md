@@ -8,7 +8,7 @@ on the base is labelled as one.
 
 ## 1. The address (routing owner)
 
-- [ ] 1.1 In `frontend/tab-routing.js`, add the case-address rule (ADR 428 point 1;
+- [x] 1.1 In `frontend/tab-routing.js`, add the case-address rule (ADR 428 point 1;
   behaviour as `docs/scope/428-case-address.spike.mjs` pins it): given the case on
   screen and the entry's `from`, it yields exactly `subject`, `occurrence`,
   `window` when present, plus `from` only when it names a destination other than
@@ -18,7 +18,7 @@ on the base is labelled as one.
   regression pins beside them hold behaviour that already passes on the base: a
   case address round-trips through `serializeRoute`/`parseRoute`, and
   `writeRoute` with `replace` calls `replaceState`, never `pushState`.
-- [ ] 1.2 In `frontend/routes.js`, add one in-place address write (ADR 428 point
+- [x] 1.2 In `frontend/routes.js`, add one in-place address write (ADR 428 point
   3): it replaces the router's held context and the current history entry's
   address through `writeRoute(..., { replace: true })`, and changes no
   destination, navigation count, render or focus. A later `render()` hands the
@@ -27,7 +27,7 @@ on the base is labelled as one.
 
 ## 2. Diagnose
 
-- [ ] 2.1 The workstation publishes the case it has on screen (ADR 428 point 4):
+- [x] 2.1 The workstation publishes the case it has on screen (ADR 428 point 4):
   `frontend/diagnose-workstation.js` exposes it from its drill stack (the rail row
   a drill came from, or the basal slot as `basal:<start>`; the selected
   Occurrence's id; the open case file's served window or the slot's span, written
@@ -38,7 +38,7 @@ on the base is labelled as one.
   S136–S138; add a node case in `frontend/diagnose-workstation.test.js` only
   where an existing export already reaches the drill stack, and extract nothing
   for testability alone.
-- [ ] 2.2 `frontend/diagnose.js` replaces the address with the case address on
+- [x] 2.2 `frontend/diagnose.js` replaces the address with the case address on
   every change to the published case while no entry restoration is pending and
   the workstation is not being torn down or rebuilt, and tracks the restoration
   exactly as ADR 428 point 2 defines it. Pending opens when `mount` decides to
@@ -62,19 +62,19 @@ on the base is labelled as one.
   published synchronously inside that same event is written; a Tab press does
   not end it; a published Findings root outside a rebuild writes `/diagnose`;
   `from=changes` survives.
-- [ ] 2.3 The Day entry (ADR 428 points 4 and 5): `evidenceDayContext` in
+- [x] 2.3 The Day entry (ADR 428 points 4 and 5): `evidenceDayContext` in
   `frontend/diagnose-context.js` takes `subject`, `occurrence` and `window` from
   the published case and no longer accepts or writes `focus`; `date`, `moment`
   and `lever` still come from the Occurrence. Update
   `frontend/diagnose-context.test.js`, which pins the selector today, so it
   asserts no `focus` key and the published case's subject, Occurrence and window.
-- [ ] 2.4 The return target (ADR 428 point 5): `restoreEntry` stops reading
+- [x] 2.4 The return target (ADR 428 point 5): `restoreEntry` stops reading
   `entry.focus` and, once the named Occurrence is held, focuses its Open in Day
   control, else the Occurrence row, else the crumb. A retained return to the held
   case places the same focus when the root re-seats. In `frontend/follow-up.js`,
   `retainedEvidenceContext` drops `focus: '#crumb-trail'`; update
   `frontend/follow-up-lifecycle.test.js`, which pins it.
-- [ ] 2.5 Retention (ADR 428 points 6 and 7): in `mount`, a return into a parked
+- [x] 2.5 Retention (ADR 428 points 6 and 7): in `mount`, a return into a parked
   Diagnose whose context names no case is a retained return whatever entry was
   held, keeps the held case (not the held `from`) as its entry and replaces the
   address with it, so "Return to Trial" does not reappear after a topbar press; a
@@ -87,17 +87,17 @@ on the base is labelled as one.
   a Day return naming the held case issues only one status read and places the
   return focus; an entry naming a different Occurrence still re-reads (the
   existing test stays green).
-- [ ] 2.6 Preset restoration (ADR 428 point 8): `restoreEntry` presses the Window
+- [x] 2.6 Preset restoration (ADR 428 point 8): `restoreEntry` presses the Window
   preset whose range equals a Finding's named window before opening its row; no
   window keeps the 24 h press; Patterns and basal slots are unchanged. Unit test in
   `frontend/diagnose.test.js` beside the existing #413 window tests.
-- [ ] 2.7 Supersede the C2 comment on S37b in `frontend/c2.replay.mjs` ("only a
+- [x] 2.7 Supersede the C2 comment on S37b in `frontend/c2.replay.mjs` ("only a
   destination handoff publishes subject in the URL") with ADR 428's rule. No story
   assertion changes.
 
 ## 3. Browser evidence and the behavior ledger
 
-- [ ] 3.1 In `frontend/desk.browser.test.mjs`, beside "a canonical Day address
+- [x] 3.1 In `frontend/desk.browser.test.mjs`, beside "a canonical Day address
   reloads through the built shell and returns through its canonical Diagnose
   door", add a test that fails first on the base: from a Day address naming a
   Finding case and an Occurrence the manufactured reads serve at 24 h and at
@@ -106,7 +106,7 @@ on the base is labelled as one.
   `focus` and no added history entry; step back along the crumb to Findings and
   assert the address is `/diagnose` with no `occurrence` or `focus`; reload and
   assert no case file is open. The canonical-door test stays unchanged and green.
-- [ ] 3.2 Add three app-only stories to `mockups/harmonic-v2-desktop.behavior.md`
+- [x] 3.2 Add three app-only stories to `mockups/harmonic-v2-desktop.behavior.md`
   in this ticket's block, recorded in a new dated `## #428 amendment — 2026-09-23`
   section following the #413/#414 pattern, each with its `C4_STORIES` body in
   `frontend/c4.replay.mjs`, its `appOnly` export and REGISTRY row in
@@ -130,7 +130,7 @@ on the base is labelled as one.
   reload after one re-opens the case. Never rewrite, re-date or replace an
   existing `★ FROZEN` block, and leave the header's inventory line alone: the
   release freeze block and that count are written once on the integration branch.
-- [ ] 3.3 Move the pinned inventory literals so this branch's own tests pass:
+- [x] 3.3 Move the pinned inventory literals so this branch's own tests pass:
   `inventory()` in `mockups/sweep/harmonic-v2-desktop/acceptance.py` to
   `{"issued": 150, "active": 131, "retired": 19}`; in
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` the plan count and the

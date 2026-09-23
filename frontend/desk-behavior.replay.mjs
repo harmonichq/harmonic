@@ -3129,6 +3129,15 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S136
+export const S136 = appOnly('HV2-14',
+  '#428 after a Day return, a key, a window choice and Backspace each rename the address to the case on screen', C4_STORIES.S136);
+// STORY:harmonic-v2-desktop:S137
+export const S137 = appOnly('HV2-34',
+  '#428 a Diagnose round trip after a Day return holds one status read and names the retained case', C4_STORIES.S137);
+// STORY:harmonic-v2-desktop:S138
+export const S138 = appOnly('HV2-14',
+  '#428 a case address reopens its preset window and Occurrence, and its Day hop returns to Open in Day by id', C4_STORIES.S138);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3186,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

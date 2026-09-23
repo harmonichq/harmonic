@@ -50,8 +50,8 @@ const COLORS = {
 // day above. data.js binds fetch once at import, so the stub is in place before
 // day.js is first imported, which is why that import is dynamic (the
 // changes.test.js pattern). data.js keeps the stub it bound; the global goes
-// back at once. The read stamp is a Denver evening, which the viewed-stamp test
-// pins its own zone for.
+// back at once. The read stamp is a Denver evening; the viewed-stamp test pins
+// that zone itself.
 const READ_AT = '2024-06-29 21:30:12';
 const STATUS = { earliest_data_day: '2024-06-23', latest_data_day: '2024-06-29', last_success_at: READ_AT };
 const dayModel = (iso) => (iso === MODEL.date ? MODEL : {

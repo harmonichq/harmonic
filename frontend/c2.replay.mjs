@@ -794,7 +794,7 @@ export const C2_STORIES = {
     await go(page, 'day'); await page.locator('.gf-stage-day').waitFor();
     const latest = await waitForReplayAssertion(async seen => {
       const iso = seen(await pressedDay());
-      check(iso, 'a fresh Day holds a recorded day');
+      check(iso, 'a fresh Day shows a recorded day');
       assert.equal(seen(await latestControl.isDisabled()), true, 'a fresh Day opens on the latest recorded day');
       return iso;
     }, "S133 fresh Day");

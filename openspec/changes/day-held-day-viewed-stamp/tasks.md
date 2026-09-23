@@ -155,7 +155,7 @@
 
 ## 5. Verification and evidence
 
-- [ ] 5.1 On the commit to be delivered, run each command below on its own and
+- [x] 5.1 On the commit to be delivered, run each command below on its own and
   record its exit code. A failure in one does not skip the rest.
   1. `node --test 'frontend/**/*.test.js'`
   2. `TZ=America/Denver node --test frontend/day.test.js`

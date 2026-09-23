@@ -1,0 +1,51 @@
+(node:64929) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/427/frontend/day.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/427/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64929) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+✔ the Day desk pairs its chronology with the Episode Log and states the day (9.076042ms)
+✔ a store that records its last fetch names that read, and the clock beside it (0.488375ms)
+✔ the week ribbon offers each recorded day and disables the ones with no data (1.024292ms)
+✔ the recorded-day and month controls disable at the recorded bounds (1.0215ms)
+✔ the month toggle opens the grid in the ribbon's place and steps within the bounds (2.167916ms)
+✔ a month still being read says so instead of drawing every day as no data (0.25975ms)
+✔ a retained Day frame has a visible, non-destructive loading treatment (0.183875ms)
+✔ each Episode Log row renders its served state word and its kind (0.971458ms)
+✔ direct entry invents no prior subject and offers no return (0.325834ms)
+✔ a contextual entry names its subject verbatim and returns to what it left (0.379375ms)
+✔ a utility entry is named for the utility and returns over the destination it was opened on (0.359292ms)
+✔ a date the read does not carry says so rather than showing an empty day as the answer (0.344916ms)
+✔ a store with no recorded day says so and offers the way back (0.047041ms)
+✔ the topbar's Day reopens the day last looked at, with no subject or return, at the plain address (ADR 427) (4.155292ms)
+✖ the viewed stamp is the reader's local clock, and a read in the same minute shows alone (1.084792ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 14
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59.948041
+
+✖ failing tests:
+
+test at frontend/day.test.js:306:1
+✖ the viewed stamp is the reader's local clock, and a read in the same minute shows alone (1.084792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 30, 2024 · 04:45'
+  - 'Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 29, 2024 · 22:45'
+  
+      at file:///Users/connor/worktrees/harmonic/427/frontend/day.test.js:314:14
+      at onPage (file:///Users/connor/worktrees/harmonic/427/frontend/day.test.js:108:11)
+      at async TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/427/frontend/day.test.js:312:5)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 30, 2024 · 04:45',
+    expected: 'Day · read <b>Jun 29, 2024 · 21:30</b> · viewed Jun 29, 2024 · 22:45',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

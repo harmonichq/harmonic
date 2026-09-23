@@ -1,28 +1,28 @@
-(node:3106) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/413-c4/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+(node:19570) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/413-c4/frontend/plan.js is not specified and it doesn't parse as CommonJS.
 Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
 To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/413-c4/package.json.
 (Use `node --trace-warnings ...` to show where the warning was created)
 # harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
 # FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
-# case-copy S113 case=basal-verdict-gallery milliseconds=184.927
+# case-copy S113 case=basal-verdict-gallery milliseconds=190.440
 # S113 synthetic case=basal-verdict-gallery (fresh copy)
 PASS S113
-# story-time S113 milliseconds=1834.348
-# case-copy S114 case=showcase milliseconds=201.617
+# story-time S113 milliseconds=1863.946
+# case-copy S114 case=showcase milliseconds=200.264
 # S114 synthetic case=showcase (fresh copy)
 PASS S114
-# story-time S114 milliseconds=7292.904
-# case-copy S115 case=showcase milliseconds=1.479
+# story-time S114 milliseconds=7670.241
+# case-copy S115 case=showcase milliseconds=1.122
 # S115 synthetic case=showcase (fresh copy)
 PASS S115
-# story-time S115 milliseconds=6909.030
-# case-copy S116 case=showcase milliseconds=1.174
+# story-time S115 milliseconds=7370.535
+# case-copy S116 case=showcase milliseconds=1.223
 # S116 synthetic case=showcase (fresh copy)
-FAIL S116 — Timed out after 30000 ms: S116 every ranked mini draws the same instrument, from the served row; saw [ null ]; S116 at least one ranked mini must be mounted to compare
-# story-time S116 milliseconds=36081.841
-# case-copy S117 case=showcase milliseconds=2.578
+PASS S116
+# story-time S116 milliseconds=7434.875
+# case-copy S117 case=showcase milliseconds=1.483
 # S117 synthetic case=showcase (fresh copy)
 PASS S117
-# story-time S117 milliseconds=6424.851
+# story-time S117 milliseconds=6835.808
 
-# executed 4 · failed 1 · deferred 0 · selected 5 · chromium launches 1
+# executed 5 · failed 0 · deferred 0 · selected 5 · chromium launches 1

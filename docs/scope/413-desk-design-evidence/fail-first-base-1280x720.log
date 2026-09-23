@@ -1,10 +1,10 @@
-(node:98902) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/413-base/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+(node:15909) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/413-base/frontend/plan.js is not specified and it doesn't parse as CommonJS.
 Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
 To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/413-base/package.json.
 (Use `node --trace-warnings ...` to show where the warning was created)
 # harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
 # FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
-# case-copy S113 case=basal-verdict-gallery milliseconds=252.334
+# case-copy S113 case=basal-verdict-gallery milliseconds=332.776
 # S113 synthetic case=basal-verdict-gallery (fresh copy)
 FAIL S113 — Timed out after 30000 ms: S113 the key stands fully visible above the cells; saw [ [ 'lane', 'lane-key' ] ]; S113 the key must render as the lane's head row, above the cells
 + actual - expected
@@ -15,15 +15,15 @@ FAIL S113 — Timed out after 30000 ms: S113 the key stands fully visible above 
 -   'lane'
   ]
 
-# story-time S113 milliseconds=31897.023
-# case-copy S114 case=showcase milliseconds=207.700
+# story-time S113 milliseconds=32068.330
+# case-copy S114 case=showcase milliseconds=207.337
 # S114 synthetic case=showcase (fresh copy)
 FAIL S114 — Timed out after 30000 ms: S114 the cold skeleton stands text-free at the reference width; saw [ 0 ]; S114 the cold loading frame must carry one stage skeleton block
 
 0 !== 1
 
-# story-time S114 milliseconds=35999.597
-# case-copy S115 case=showcase milliseconds=2.845
+# story-time S114 milliseconds=36073.162
+# case-copy S115 case=showcase milliseconds=3.119
 # S115 synthetic case=showcase (fresh copy)
 FAIL S115 — Timed out after 30000 ms: S115 causes fold under their Pattern, never as sibling rows; saw [
   [
@@ -37,12 +37,12 @@ FAIL S115 — Timed out after 30000 ms: S115 causes fold under their Pattern, ne
     'pattern:lows_after_meals'
   ]
 ]; S115 finding:meal_bolus_short must never be a sibling rail row
-# story-time S115 milliseconds=36221.441
-# case-copy S116 case=showcase milliseconds=2.955
+# story-time S115 milliseconds=36277.529
+# case-copy S116 case=showcase milliseconds=4.395
 # S116 synthetic case=showcase (fresh copy)
-FAIL S116 — Timed out after 30000 ms: S116 every ranked mini draws the same instrument, from the served row; saw [ null ]; S116 at least one ranked mini must be mounted to compare
-# story-time S116 milliseconds=36115.904
-# case-copy S117 case=showcase milliseconds=2.778
+FAIL S116 — Timed out after 30000 ms: S116 every ranked mini draws the same instrument, from the served row; saw [ [ 'EVENT · RESPONSE' ] ]; S116 finding:over_treated_low's mini must draw from its served count sentence; none is served, and it draws ["EVENT · RESPONSE"]
+# story-time S116 milliseconds=36329.110
+# case-copy S117 case=showcase milliseconds=3.296
 # S117 synthetic case=showcase (fresh copy)
 FAIL S117 — Timed out after 30000 ms: S117 a cold arrival opens on the 24 h window, unscoped; saw [ 'Overnight' ]; S117 a cold arrival with no context must open on the 24 h window
 + actual - expected
@@ -50,7 +50,7 @@ FAIL S117 — Timed out after 30000 ms: S117 a cold arrival opens on the 24 h wi
 + 'Overnight'
 - '24 h'
 
-# story-time S117 milliseconds=35830.685
+# story-time S117 milliseconds=36187.952
 
 # executed 0 · failed 5 · deferred 0 · selected 5 · chromium launches 1
 FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

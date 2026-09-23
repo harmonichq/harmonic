@@ -25,9 +25,10 @@ ledger, 142 issued, at both sizes.
 
 The new stories were proved on origin/main eec4652a with this harness laid over
 it, at 1280x720 and 1440x900:
-- S113, S114, S115 and S117 fail there at their feature assertions and pass on
-  the branch.
-- S116's base and branch runs are owed again after its lookup fix (45e6aecc).
+- All five (S113–S117) fail there at their feature assertions, run with the
+  165b83fc harness (0 executed, 5 failed of 5 selected, at each size).
+- All five pass on the branch at 165b83fc (5 executed, 0 failed, at each size).
+- The coordinator ran both, 2026-09-22.
 
 The raw logs and the requirement-by-requirement evidence are in
 `docs/scope/413-desk-design-evidence/`. Every story must pass on the commit that
@@ -2687,7 +2688,7 @@ S113 · The basal lane's head row — the served verdict key — stands wholly
             distinct marks
   status:   base eec4652a fails at its feature assertion at both sizes ("the
             key must render as the lane's head row, above the cells");
-            branch c7fdad07 passes at both sizes; coordinator-run
+            branch 165b83fc passes at both sizes; coordinator-run
             2026-09-22. Raw logs: docs/scope/413-desk-design-evidence/
             fail-first-base-{1280x720,1440x900}.log and
             pass-branch-{1280x720,1440x900}.log
@@ -2712,7 +2713,7 @@ S114 · A cold Diagnose arrival shows a text-free, shimmering skeleton in the
             `prefers-reduced-motion: reduce` before releasing the read
   status:   base eec4652a fails at its feature assertion at both sizes ("the
             cold loading frame must carry one stage skeleton block": 0);
-            branch c7fdad07 passes at both sizes; coordinator-run
+            branch 165b83fc passes at both sizes; coordinator-run
             2026-09-22. Raw logs as S113's
 ```
 
@@ -2756,7 +2757,7 @@ S115 · A Pattern owning claimed causes folds them beneath its own row, one
             served rank-one tier's rows against `data-urgent`
   status:   base eec4652a fails at its feature assertion at both sizes
             (finding:meal_bolus_short "must never be a sibling rail row");
-            branch c7fdad07 passes at both sizes; coordinator-run
+            branch 165b83fc passes at both sizes; coordinator-run
             2026-09-22. Raw logs as S113's
 ```
 
@@ -2781,12 +2782,14 @@ S116 · Every ranked rail row's mini draws the same instrument: the matched
             least one mini must be mounted. Candidates are chosen by the
             coordinate alone, so a desk serving no count sentence reaches
             this feature assertion rather than a premise failure
-  status:   the c7fdad07 runs failed on base AND branch alike ("at least one
-            ranked mini must be mounted"): the story looked for the ECharts
-            instance on the canvas's parent div rather than on `.mini`, and
-            read texts off the graphic list rather than its one normalised
-            group. 45e6aecc corrects the lookup; its base and branch reruns at
-            both sizes are owed by the coordinator
+  status:   base eec4652a fails at its feature assertion at both sizes
+            ("finding:over_treated_low's mini must draw from its served count
+            sentence", its base mini drawing ['EVENT · RESPONSE']); branch
+            165b83fc passes at both sizes; coordinator-run 2026-09-22. Raw
+            logs as S113's. The earlier c7fdad07 runs failed on base and
+            branch alike on a story-lookup defect (the ECharts instance
+            sought on the canvas's parent rather than on `.mini`), which
+            45e6aecc corrected
 ```
 
 ```
@@ -2801,7 +2804,7 @@ S117 · A cold Diagnose arrival with no contextual entry and no retained
             findings preparation's window scope on the cold seat, before any
             row is drilled or window pressed
   status:   base eec4652a fails at its feature assertion at both sizes (the
-            pressed window is "Overnight", not "24 h"); branch c7fdad07
+            pressed window is "Overnight", not "24 h"); branch 165b83fc
             passes at both sizes; coordinator-run 2026-09-22. Raw logs as
             S113's
 ```

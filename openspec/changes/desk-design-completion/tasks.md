@@ -75,7 +75,7 @@
 
 ## 4. Rendered evidence, critique and records
 
-- [ ] 4.1 Prove every new story fails on the base for its feature reason at
+- [x] 4.1 Prove every new story fails on the base for its feature reason at
   1280x720 and 1440x900, serving origin/main eec4652a from a second worktree
   through the safe start, then prove each passes on the branch. Keep the raw
   logs with the evidence.
@@ -85,7 +85,7 @@
   the cold loading frame, into `docs/scope/413-desk-design-evidence/` with a
   README that maps each #413 requirement to its story, log and captures one by
   one.
-- [ ] 4.3 Obtain an Opus 5 high-effort critique of those after-captures against
+- [x] 4.3 Obtain an Opus 5 high-effort critique of those after-captures against
   Connor's locked mockup, implement each supported finding or record the
   concrete objection beside it, and re-capture what changed.
 - [x] 4.4 Update `DESIGN.md`'s desk revise section, `mockups/INDEX.md`'s

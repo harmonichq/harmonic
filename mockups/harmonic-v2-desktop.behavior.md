@@ -2937,3 +2937,36 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #427 amendment — 2026-09-23, issue #427
+
+S133 records the shipped rule that the topbar's Day reopens the day last looked
+at (ADR 427, in `openspec/changes/day-held-day-viewed-stamp/design.md`). It is
+app-opener-only, like S113–S117. Browser execution belongs to whoever can launch
+a browser, at 1280x720 and 1440x900; a sandboxed worker never runs it. No
+inherited story is weakened, amended or retired.
+
+Sanction: Connor Griffin, 2026-09-23, answered "Q2 A" to: "Can your reply here
+count as sign-off for the UI copy and tone changes? … Yes. I record your answer
+as the approval for every change these 13 checklists call for, and write the
+wording in CONTEXT.md terms."
+
+```
+S133 · Direct Day entry reopens the day last looked at. After a selected
+       occurrence's "Open <date> in Day" opens a recorded day earlier than the
+       latest, a visit to Diagnose, then Changes, then the topbar's Day shows
+       that same day, with no Opened from and no return, at the plain /day
+       address; a reload opens the latest recorded day.
+  element:  nav.v2-nav [data-destination]; #level .case-occurrence;
+            .occ-foot button:last-child;
+            .gf-nav-col[aria-pressed="true"][data-pick]; [data-day="latest"];
+            absence of [data-day="return"]
+  source:   frontend/day.js adopt / settle
+  lock:     HV2-13; ADR 427
+  data:     showcase (35 recorded days, 2024-05-20 to 2024-06-30)
+  evidence: C2_STORIES.S133
+  status:   owed — it records shipped behavior, so the base app is expected to
+            pass; it is not a fail-first obligation. The held-day Node test in
+            frontend/day.test.js, failed against a deliberately broken
+            direct entry, carries non-vacuity.
+```

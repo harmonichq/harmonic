@@ -728,8 +728,9 @@ full month as a transient overlay (dismisses on pick / click-away) — so the ch
 and Episode Log stay above the fold on a 13" laptop. Day-switching drives one
 selected-date state from three inputs: the clickable week strip (within-week), the
 reused `daily-nav` `‹ ›` arrows (day-at-a-time, days-with-data only), and the
-expanded month (other weeks/months). Lands on the **most recent day with data**.
-The mockups' "REAL" badge marks only the captured days — a data artifact, not a
+expanded month (other weeks/months). A fresh page lands on the **most recent day
+with data**; within the page, the topbar's Day reopens the day last looked at
+(ADR 427). The mockups' "REAL" badge marks only the captured days — a data artifact, not a
 product distinction (every day with data is pickable). See ADR 0031.
 _Avoid_: heat-map (that was the Investigate lever-color encoding, superseded — Day
 speaks glucose), Investigate calendar (the surface it was promoted out of).

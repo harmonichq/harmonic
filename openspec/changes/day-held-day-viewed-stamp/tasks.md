@@ -68,7 +68,7 @@
 
 ## 3. Behavior ledger and replay
 
-- [ ] 3.1 Record S133 in `mockups/harmonic-v2-desktop.behavior.md` only
+- [x] 3.1 Record S133 in `mockups/harmonic-v2-desktop.behavior.md` only
   through a new section, `## #427 amendment — 2026-09-23, issue #427`,
   appended at the end of the file in the form of the #414 chunk 3 amendment.
   Do not rewrite, re-date or replace any existing `★ FROZEN` block. Do not
@@ -95,7 +95,7 @@
     - **status:** owed. It records shipped behavior, so the base app is
       expected to pass; it is not a fail-first obligation. Task 2.2's
       broken-variant check carries non-vacuity.
-- [ ] 3.2 Write S133's app body as `C2_STORIES.S133` in
+- [x] 3.2 Write S133's app body as `C2_STORIES.S133` in
   `frontend/c2.replay.mjs`, beside S61 and S62. Reuse that file's `go`,
   `press`, `openComparisonCase` and `choose` helpers and the
   `.occ-foot button:last-child` path its S61 takes. Diagnose's "Open <date> in
@@ -131,7 +131,7 @@
   `export const S133 = appOnly('HV2-13', '#427 the topbar's Day reopens the day last looked at; a reload opens the latest recorded day', C2_STORIES.S133);`
   (escape the apostrophe in the string literal). Register
   `['S133', S133, M()]` in `REGISTRY`.
-- [ ] 3.3 Move the replay driver's numeric inventory literals from
+- [x] 3.3 Move the replay driver's numeric inventory literals from
   147 / 128 / 19 to 148 / 129 / 19, so this branch's own tests pass:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay plan's
@@ -147,7 +147,7 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 In `CONTEXT.md` **Day navigator**, replace "Lands on the **most
+- [x] 4.1 In `CONTEXT.md` **Day navigator**, replace "Lands on the **most
   recent day with data**." with a sentence saying: a fresh page lands on the
   most recent day with data, and within the page the topbar's Day reopens the
   day last looked at (ADR 427). Do not use "held" as the domain word; CONTEXT.md

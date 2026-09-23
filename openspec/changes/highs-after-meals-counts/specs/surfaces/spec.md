@@ -50,7 +50,8 @@ its denominator remain a separate account.
 
 Each line the rail's Pattern fold gives a claimed cause SHALL print the count,
 denominator and noun of each of that cause's served fold sentences, in served
-order, never merged, and no outcome word. Under a Pattern that serves a count, a
+order, never merged, and no outcome word. For the fold, a cause's served count
+sentences are its fold sentences. Under a Pattern that serves a count, a
 rate-lever cause's first fold sentence is its count on the Pattern's own
 population. Every fold sentence the projection marks as outside the Pattern's count
 SHALL be set apart from any Pattern's-scope sentence behind the words "outside the

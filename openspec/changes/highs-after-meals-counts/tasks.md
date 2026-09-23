@@ -133,9 +133,20 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   active to 150 issued / 131 active, retired unchanged at 19, so the driver's own
   tests pass on this branch, and state the counts that
   `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out <scratch dir>`
-  prints. Leave every `★ FROZEN` block, the ledger header's
-  inventory line, `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s count
-  sentence and `mockups/INDEX.md`'s counts untouched: the release coordinator
-  writes those once, across every ticket.
+  prints. S125 and S126 bring `behavioral-missed-meal` and
+  `behavioral-correction-stacking` into the registry and no smoke story covers
+  either (S124's `behavioral-carb-undercount` is already covered by R8), so append
+  them to the fixed PR slice: `SMOKE_STORIES` in `acceptance.py` ends
+  `"R8", "R18", "S125", "S126"`; both `== 22` checks in `smoke_selection` become
+  `== 24`; and in `acceptance.test.py`
+  `SmokeSelectionTest.test_fixed_slice_is_pinned_and_covers_every_real_replay_case`
+  pins length 24 and digest
+  `03fb703acc99ed8092c1e3186fc5e0609141184715d4662ce7269409fd9af1bc`, with a
+  comment naming why the two join, as #413 did for S113. Leave every `★ FROZEN`
+  block, the ledger header's inventory line,
+  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s count sentence and
+  `mockups/INDEX.md`'s counts untouched: the release coordinator writes those
+  once, across every ticket, and reconciles the smoke slice, its length and its
+  digest across tickets.
 - [ ] 4.4 Record in each new story's status line the base fail-first and branch
   pass at 1280x720 and 1440x900, from runs the coordinator makes serially.

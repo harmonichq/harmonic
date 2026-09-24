@@ -270,7 +270,7 @@ the whole replay at module link.
 
   Commit only files a generator rewrote. The committed showcase holds no Trial
   record, so `gen_qa_e2e_db.py --check` is expected to pass unchanged.
-- [ ] 5.2 Tick this task on exactly these commands, each exiting 0:
+- [x] 5.2 Tick this task on exactly these commands, each exiting 0:
   - `npm ci && npm run build`;
   - `uv run python -m pytest` (run once, at the end; state its wall time);
   - `node --test 'frontend/**/*.test.js'`;

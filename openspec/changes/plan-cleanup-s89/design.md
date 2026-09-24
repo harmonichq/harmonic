@@ -33,7 +33,9 @@ rows).
 durable decision" check.
 
 - Reading `history[0]` alone already fails C and D, but only at the later
-  reload check, after S89 has certified the wrong record as its decision.
+  reload check. In C that is the right check: S89 certified the new decision,
+  and the reload shows its withdrawal was dropped. In D, S89 has by then
+  certified the wrong record as its decision.
 - The `applied_at` clause moves D's failure to the check where S89 certifies
   the decision.
 - Only the length clause catches E. Without it, a recording that adds two rows

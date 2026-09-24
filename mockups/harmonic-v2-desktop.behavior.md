@@ -4118,3 +4118,113 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #451 amendment — 2026-09-23
+
+S177–S179 are the fail-first obligations of ADR 451
+(`openspec/changes/setting-concern-labels/design.md`): the desk names the
+correction factor and the carb ratio in the wearer's words, prints a correction
+factor insulin first, says why its concern leads in words, names a recorded
+concern by its served name, and lets the watch dock's title name the change
+while its values wrap below. They are app-opener-only, like S101–S117, and run on
+the manufactured `isf-strengthen` case store, each story on a fresh copy
+(`CASE_STORE_DIR`). S177 joins the PR smoke slice, as the only story on that
+store. Browser execution belongs to the release coordinator at 1280x720 and
+1440x900. No story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R451 as corrected, the coordinator's widening of
+#451, and its plan-review and chunk-review rulings. It covers S177–S179 and
+nothing outside #451.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case isf-strengthen` emits.
+
+```
+S177 · On a plain arrival at Changes, the Action figure reads the served
+       selection's first instruction as "<direction> to 1 U : <recommended>
+       mg/dL"; the nameplate and the Action heading say "Ready to stage", then
+       "Staged" once the change is staged and "Ready to stage" again after Undo;
+       a concern set aside and still on screen reads "Set aside" with no status
+       words; the Changes desk prints no mg/dL/U, no ISF and no disposition code.
+  element:  .gf-reading .gf-figure; .gf-stage .gf-head .gf-sub;
+            .gf-reading .gf-section h3 .meta; .gf-desk
+  source:   frontend/changes.js actionLead, concernFrame, leadWords;
+            frontend/guidance.js statusWords; frontend/plan.js settingValue
+  lock:     none (revise; ADR 451 in openspec/changes/setting-concern-labels/design.md)
+  data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
+            eligible_action, carrying the correction factor's served
+            "strengthen" instruction
+  evidence: C4_STORIES.S177; reads /api/guidance for the served disposition and
+            first instruction, compares the figure's text and the two word
+            slots, stages and undoes through [data-set="stage"] and
+            [data-set="unstage"], then sets the concern aside through the form
+            and reads the held seat against the re-read's served set-aside row
+  status:   expected: base b03431d2 fails at its feature assertion (the figure
+            reads "strengthen to 32 " with no unit, and the nameplate prints
+            eligible_action), not at setup; the branch passes at both sizes.
+            Coordinator-run evidence pending
+```
+
+```
+S178 · On Diagnose, the correction-factor queue row is titled "Correction factor
+       · <served direction>" and its numbers read "now 1 U : <current> mg/dL →
+       1 U : <recommended> mg/dL"; its panel's heading says "Correction factor"
+       and its values read "1 U : <value> mg/dL"; staging the value seats the
+       dock's staged title "Correction factor · <served direction>" with no
+       truncation, and its detail line leads with "1 U : <current> mg/dL → 1 U :
+       <recommended> mg/dL", fully visible; the Diagnose desk prints neither
+       mg/dL/U nor ISF.
+  element:  #level .qrow[data-id="isf"] .lab, .den.nums; #level .slot-head .time;
+            #level .numrow b; .inspector > .watch .what, .how; .dw
+  source:   ciq_autotune/findings_projection.py (title);
+            frontend/diagnose-findings-queue.js assertDetail;
+            frontend/diagnose-workstation.js renderIsfLevel, renderParamLevel,
+            stagedDescriptor; frontend/watched-change-dock.js watchDockView
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; the whole-day correction-factor row asserts
+            "strengthen" and stages
+  evidence: C4_STORIES.S178; reads the served row from
+            /api/diagnose/finding-case-file-preparation, compares the row's
+            title and numbers at the queue's rounding and the panel's heading
+            and values at the panel's, stages through the panel, and measures
+            the dock: the title's scrollWidth <= clientWidth, and the detail
+            line's box within the dock and the dock within the viewport
+  status:   expected: base b03431d2 fails at its feature assertion (the row is
+            titled "ISF · strengthen"), not at setup; the branch passes at both
+            sizes. Coordinator-run evidence pending
+```
+
+```
+S179 · After staging the correction factor and recording the Plan, Changes' "What
+       was known" names the recorded concern "Correction factor" with no
+       setting: identifier, prints the recorded change as "1 U : <value> mg/dL",
+       and prints the recorded explanation, "Correction factor", as recorded.
+  element:  .gf-reading .gf-section (What was known) dd, p
+  source:   frontend/plan-view.js knownSection; ciq_autotune/api.py
+            /api/plan/history subject_titles; ciq_autotune/guidance.py
+            subject_title and the setting concern's title
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; Changes stages the served correction-factor
+            instruction and records it
+  evidence: C4_STORIES.S179; stages and records through the Plan, reads the
+            newest record's decision_context from /api/plan/history, and
+            compares the section's concern name, change value and explanation
+  status:   expected: base b03431d2 fails at its feature assertion (the section
+            prints "setting:isf", and the record's explanation is "ISF"), not at
+            setup; the branch passes at both sizes. Coordinator-run evidence
+            pending
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Changes Action figure, nameplate and Action heading words | frontend/changes.js actionLead, concernFrame; frontend/guidance.js statusWords | S177 |
+| Stage and Undo on Changes | frontend/changes.js bind ([data-set="stage"], [data-set="unstage"]) | S177 |
+| Set aside on Changes | frontend/changes.js bind (form[data-form="aside"]) | S177 |
+| Correction-factor queue row and its panel | frontend/diagnose-findings-queue.js assertDetail; frontend/diagnose-workstation.js renderIsfLevel | S178 |
+| Staged dock title and values | frontend/diagnose-workstation.js stagedDescriptor; frontend/watched-change-dock.js watchDockView, paintWatchDock | S178 |
+| Plan "What was known" | frontend/plan-view.js knownSection | S179 |

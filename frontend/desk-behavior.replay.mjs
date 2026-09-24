@@ -3192,6 +3192,15 @@ export const S149 = appOnly('ADR 432',
 // STORY:harmonic-v2-desktop:S150
 export const S150 = appOnly('ADR 432',
   '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
+// STORY:harmonic-v2-desktop:S177
+export const S177 = appOnly('ADR 451',
+  '#451 Changes reads the correction factor insulin first and says why its concern leads in words', C4_STORIES.S177);
+// STORY:harmonic-v2-desktop:S178
+export const S178 = appOnly('ADR 451',
+  '#451 Diagnose names the correction factor, and the staged dock title fits with its values below', C4_STORIES.S178);
+// STORY:harmonic-v2-desktop:S179
+export const S179 = appOnly('ADR 451',
+  '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3251,6 +3260,7 @@ export const REGISTRY = [
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
+  ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -251,7 +251,7 @@
 
 ## 5. Ledger amendment and replay
 
-- [ ] 5.1 Add `## #451 amendment — 2026-09-23` at the end of
+- [x] 5.1 Add `## #451 amendment — 2026-09-23` at the end of
   `mockups/harmonic-v2-desktop.behavior.md`. It carries:
   - the sanction line: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it
     out yourself from here"); coordinator ruling R451 as corrected, the
@@ -261,7 +261,7 @@
   - the handler inventory rows for the lines they read.
 
   No `★ FROZEN` block, header inventory line or earlier story is edited.
-- [ ] 5.2 Write the three stories in `frontend/c4.replay.mjs` (`C4_STORIES`).
+- [x] 5.2 Write the three stories in `frontend/c4.replay.mjs` (`C4_STORIES`).
   Register them in `frontend/desk-behavior.replay.mjs` (export and `REGISTRY`)
   and map each to case store isf-strengthen in `frontend/replay-cases.mjs`
   (`STORY_CASES`). Each story reads served values from its own reads, never a
@@ -285,13 +285,13 @@
     "What was known" names the subject "Correction factor" with no `setting:`
     text. It prints the change "1 U : <recommended> mg/dL" and the explanation
     "Correction factor".
-- [ ] 5.3 Add S177 to `SMOKE_STORIES` in
+- [x] 5.3 Add S177 to `SMOKE_STORIES` in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`, so the smoke slice covers
   isf-strengthen. In `acceptance.test.py`, move the slice's length checks to 25
   and re-pin its digest. Move the ledger inventory literals to issued 174 /
   active 155 / retired 19, and move every registry count the port-free tests pin
   by the three added stories.
-- [ ] 5.4 Run the port-free checks:
+- [x] 5.4 Run the port-free checks:
   - `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out
     <scratch>`, which reports issued 174 / active 155 / retired 19;
   - `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py

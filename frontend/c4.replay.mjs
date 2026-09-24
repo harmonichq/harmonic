@@ -1415,6 +1415,38 @@ export async function assertBandGlossary(page) {
   }, 'S122 Close returns focus to the caption control');
 }
 
+// #451: the correction factor in the wearer's words, on the manufactured
+// isf-strengthen store. Every expected number comes from the story's own served
+// reads. The rounding below restates each line's own: the queue trims two
+// decimals to one, the panel and the dock print two. The status words are the
+// desk's table (frontend/guidance.js).
+const queueNum451 = value => {
+  const text = Number(value).toFixed(2).replace(/0$/, '');
+  return text.endsWith('.') ? `${text}0` : text;
+};
+const panelNum451 = value => Number(value).toFixed(2);
+const correctionFactor451 = value => `1 U : ${value} mg/dL`;
+const STATUS_WORDS_451 = ['Ready to stage', 'Staged', 'Ready to start a Focus', 'Focus withheld',
+  'Action identified', 'Evidence to inspect'];
+const ENGINE_WORDS_451 = /mg\/dL\/U|\bISF\b|eligible_action|guided_investigation|active_change|pending_plan/;
+async function servedLead451(page, id) {
+  const guidance = await read(page, '/api/guidance');
+  assert.equal(guidance.disposition, 'eligible_action', `${id} premise: the case must serve an eligible action`);
+  const action = Array.isArray(guidance.selected?.action) ? guidance.selected.action[0] : null;
+  assert.equal(action?.parameter, 'isf',
+    `${id} premise: the selected concern must carry a correction-factor instruction`);
+  return { guidance, action };
+}
+/** Changes' nameplate sub-line and its Action heading's words, as rendered. */
+const changesWords451 = page => page.evaluate(() => {
+  const head = [...document.querySelectorAll('.gf-reading .gf-section h3')]
+    .find(node => node.firstChild?.textContent.trim() === 'Action');
+  return {
+    sub: document.querySelector('.gf-stage .gf-head .gf-sub')?.textContent.trim() ?? null,
+    action: head ? head.querySelector('.meta')?.textContent.trim() ?? '' : null,
+  };
+});
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -2426,6 +2458,134 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       assertSelectedFacts432('S150', file.selection.detail, seen(await selectedBlock432(page)));
     }, 'S150 a selected Highs after meals Occurrence lists its served habits');
+  },
+  // #451: fail-first on b03431d2, where the Action figure prints the bare served
+  // number, the nameplate prints the raw disposition code, and the Diagnose row,
+  // panel, dock and "What was known" name the engine's ISF and its mg/dL/U unit.
+  async S177(page) {
+    const { guidance, action } = await servedLead451(page, 'S177');
+    const priority = `${guidance.selected.priority ?? '—'} priority`;
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    await page.locator('.gf-reading .gf-figure').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const figure = seen(await page.locator('.gf-reading .gf-figure')
+        .evaluate(node => node.firstChild?.textContent ?? ''));
+      assert.equal(figure, `${action.direction} to ${correctionFactor451(action.recommended)}`,
+        'S177 the Action figure reads the served instruction, the correction factor insulin first');
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
+        'S177 an eligible setting instruction reads Ready to stage on the nameplate and the Action heading');
+      assert.doesNotMatch(seen(await page.locator('.gf-desk').innerText()), ENGINE_WORDS_451,
+        'S177 the Changes desk prints no engine unit, engine name or disposition code');
+    }, 'S177 the plain arrival reads in the wearer\'s words');
+
+    await press(page, '[data-set="stage"]');
+    await page.locator('[data-set="unstage"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Staged`, action: 'Staged' },
+        'S177 a staged change reads Staged, as the pane does');
+    }, 'S177 staged');
+    await press(page, '[data-set="unstage"]');
+    await page.locator('[data-set="stage"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
+        'S177 Undo returns the words to Ready to stage');
+    }, 'S177 unstaged');
+
+    await press(page, '[data-action="aside"]');
+    await page.locator('#aside-reason').waitFor({ timeout: 30000 });
+    await press(page, 'form[data-form="aside"] button[type="submit"]');
+    await page.locator(`[data-restore="${guidance.selected.subject}"]`).first().waitFor({ timeout: 30000 });
+    const reread = await read(page, '/api/guidance');
+    const held = reread.candidates.find(row => row.subject === guidance.selected.subject);
+    assert.ok(held?.preference?.set_aside, 'S177 premise: the concern set aside must be served set aside');
+    await waitForReplayAssertion(async seen => {
+      const { sub } = seen(await changesWords451(page));
+      assert.equal(sub, `${held.priority ?? '—'} priority · Set aside`,
+        'S177 a set-aside concern on screen carries no status words for the concern that leads next');
+      assert.ok(STATUS_WORDS_451.every(words => !sub.includes(words)), `S177 no status words on a set-aside seat: ${sub}`);
+    }, 'S177 the set-aside seat');
+  },
+  async S178(page) {
+    await fullDayDiagnose(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const row = preparation.rendered_rows.find(candidate => candidate.parameter === 'isf');
+    assert.ok(row && row.register === 'assert' && row.asserts_move === true && row.direction
+      && row.current != null && row.recommended != null,
+      'S178 premise: the case must serve an asserting, stageable correction-factor row with its numbers');
+    const title = `Correction factor · ${row.direction}`;
+    const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+    await node.waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await node.locator('.lab').innerText()).trim()), title,
+        'S178 the queue row is titled by the setting and its served direction');
+      assert.equal(seen((await node.locator('.den.nums').innerText()).trim()),
+        `now ${correctionFactor451(queueNum451(row.current))} → ${correctionFactor451(queueNum451(row.recommended))}`,
+        'S178 the queue numbers read insulin first, at the queue\'s own rounding');
+    }, 'S178 the correction-factor queue row');
+
+    await node.click();
+    await settled(page);
+    const values = `${correctionFactor451(panelNum451(row.current))} → ${correctionFactor451(panelNum451(row.recommended))}`;
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await page.locator('#level .slot-head .time').innerText()).trim()), 'Correction factor',
+        'S178 the panel heading names the setting');
+      const numbers = seen(await page.locator('#level .numrow b').allInnerTexts()).map(text => text.trim());
+      assert.equal(numbers[0], correctionFactor451(panelNum451(row.current)), 'S178 the panel\'s current value reads insulin first');
+      assert.equal(numbers[2], correctionFactor451(panelNum451(row.recommended)), 'S178 the panel\'s recommended value reads insulin first');
+      assert.doesNotMatch(seen(await page.locator('.dw').innerText()), /mg\/dL\/U|\bISF\b/,
+        'S178 the Diagnose desk prints neither the engine unit nor the engine name');
+    }, 'S178 the correction-factor panel');
+
+    await press(page, '#level .stagebtn[data-staged="false"]');
+    await page.locator('#level .stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+    await page.locator('.inspector > .watch[data-state="plan"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const dock = seen(await page.locator('.inspector > .watch').evaluate(node => {
+        const what = node.querySelector('.what'); const how = node.querySelector('.how');
+        const box = element => { const rect = element.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }; };
+        return {
+          what: what.textContent, whatFits: what.scrollWidth <= what.clientWidth,
+          how: how.textContent, howFits: how.scrollWidth <= how.clientWidth + 1 && how.scrollHeight <= how.clientHeight + 1,
+          howBox: box(how), dockBox: box(node), viewport: { width: innerWidth, height: innerHeight },
+        };
+      }));
+      assert.equal(dock.what, title, 'S178 the staged title names the setting and its served direction');
+      assert.ok(dock.whatFits, `S178 the staged title must not truncate: ${JSON.stringify(dock)}`);
+      assert.ok(dock.how.startsWith(`${values} · `), `S178 the values lead the dock's detail line: ${dock.how}`);
+      assert.ok(dock.howFits && dock.howBox.bottom <= dock.dockBox.bottom + 1 && dock.howBox.right <= dock.dockBox.right + 1
+        && dock.dockBox.top >= 0 && dock.dockBox.bottom <= dock.viewport.height + 1,
+        `S178 the dock's values must be fully visible: ${JSON.stringify(dock)}`);
+      assert.doesNotMatch(seen(await page.locator('.dw').innerText()), /mg\/dL\/U|\bISF\b/,
+        'S178 the staged Diagnose desk prints neither the engine unit nor the engine name');
+    }, 'S178 the staged dock');
+  },
+  async S179(page) {
+    await servedLead451(page, 'S179');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    const context = (await read(page, '/api/plan/history')).history[0]?.decision_context;
+    assert.ok(context?.state === 'available' && context.subjects?.[0] === 'setting:isf'
+      && context.settings?.length === 1 && Array.isArray(context.action) && context.action[0]?.parameter === 'isf',
+      'S179 premise: the recorded Plan must retain its correction-factor decision');
+    await waitForReplayAssertion(async seen => {
+      const known = seen(await page.evaluate(() => {
+        const section = [...document.querySelectorAll('.gf-reading .gf-section')]
+          .find(node => node.querySelector('h3')?.textContent.trim() === 'What was known');
+        if (!section) return null;
+        const values = [...section.querySelectorAll('dd')].map(node => node.textContent.trim());
+        return { concern: values[0], change: values[1], explanation: section.querySelector('p')?.textContent.trim(),
+          text: section.textContent };
+      }));
+      assert.ok(known, 'S179 the recorded Plan shows what was known');
+      assert.equal(known.concern, 'Correction factor', 'S179 the recorded concern is named, never its identifier');
+      assert.equal(known.change, correctionFactor451(context.settings[0].value),
+        'S179 the recorded value reads insulin first');
+      assert.equal(context.explanation, 'Correction factor', 'S179 the recorded explanation names the setting');
+      assert.equal(known.explanation, context.explanation, 'S179 the explanation prints as recorded');
+      assert.doesNotMatch(known.text, /setting:|mg\/dL\/U/, 'S179 what was known prints no identifier or engine unit');
+    }, 'S179 what was known');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

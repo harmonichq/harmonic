@@ -29,6 +29,10 @@ Coordinator rulings for #443, under Connor Griffin's Q3 delegation, 2026-09-23
   - pin the clock-site grep output;
   - reassessment `computed_at` gets its own case;
   - the floor's claims are limited to the three tables it reads.
+- **Plan-review round 2 ruling (same delegation, 2026-09-24):** one zone loader
+  in `store.py` returns the zone or `None`, catching `ZoneInfoNotFoundError`,
+  `ValueError` and `OSError`. The clock and the pull's refusal both call it, and
+  nothing else checks whether a zone loads.
 
 ### Decision 1 — One clock: `store.wall_clock_now()`
 
@@ -65,12 +69,24 @@ and they read the clock only when the store holds no record to anchor on:
 `explore_exposures.py:86`, `event_comparison.py:506`, `pending_prompts.py:421`,
 `watched_change.py:1710`, and `api.py:410,691,752,1421,1512`.
 
-### Decision 2 — An unset or unknown zone reads the process clock, and the fetch refuses it by name
+### Decision 2 — An unset or unloadable zone reads the process clock, and the fetch refuses it by name
 
-With `TIMEZONE_NAME` unset, or set to a name `zoneinfo` cannot load
-(`ZoneInfoNotFoundError`, or a malformed key's `ValueError`), `wall_clock_now`
-returns `datetime.now()`. That is exactly what every site reads today. The unset
-state is reachable:
+`store.pump_zone()` is the one zone loader. It returns `ZoneInfo(TIMEZONE_NAME)`,
+or `None` when the variable is unset or `zoneinfo` refuses the name. Measured on
+this interpreter, `zoneinfo` refuses a name three ways:
+- `ZoneInfoNotFoundError` for an unknown key (`Not/AZone`, `UTC `);
+- `ValueError` for a malformed one (`America/`, `../x`, an absolute path, an
+  embedded null);
+- `OSError` from the file lookup: `IsADirectoryError` for a region name
+  (`America`, `US`, `Etc`, `Pacific`), and `File name too long`.
+
+`pump_zone` catches all three. `wall_clock_now` and the pull's refusal both call
+it, and nothing else checks whether a zone loads. `normalize_time`'s record
+conversion still calls `ZoneInfo` itself and raises, by design: a record is
+never converted against a guessed zone.
+
+When `pump_zone()` is `None`, `wall_clock_now` returns `datetime.now()`. That is
+exactly what every site reads today. The unset state is reachable:
 
 - a local `harmonic serve` does not require the variable, so its fetch loop,
   startup reconcile and API writes can run without it;
@@ -84,13 +100,15 @@ fallback. The one path where the fallback cannot fire is the pump-read capture:
 unset (pinned by `tests/test_sync_partial.py`), so it never reaches the capture.
 A refused fetch is still recorded, stamped with the process clock.
 
-**An unknown zone never stops the loop.** `sync.pull_from_tconnect` refuses an
-unknown zone the same way it refuses an unset one: before any import, credential
-read or network call, with a `RuntimeError` naming `TIMEZONE_NAME`.
+**An unloadable zone never stops the loop.** `sync.pull_from_tconnect` refuses
+it when `pump_zone()` is `None`, the same way it refuses an unset one: before any
+import, credential read or network call, with a `RuntimeError` naming
+`TIMEZONE_NAME`.
 `run_fetch_once` records that refusal like any other failed attempt, stamped
-with the process clock, and nothing raises. On base, an unknown zone passed the
+with the process clock, and nothing raises. On base, an unloadable zone passed the
 check, logged in, captured a pump read on the process clock, and then failed on
-the first record `normalize_time` could not convert.
+the first record `normalize_time` could not convert. A region name raised
+`IsADirectoryError` there.
 
 The clock falls back rather than raise because a raising clock would also fail
 every stamped API write. It would also fail serve startup's recovery reconcile
@@ -285,7 +303,8 @@ No live document needs amending.
   - any server stamp named in Decision 1 written on a clock other than
     `TIMEZONE_NAME`'s when that variable names a known zone;
   - a fetch attempt that raises out of the loop or goes unrecorded, with the zone
-    unset, unknown or valid;
+    unset, unloadable (an unknown name, a malformed name or a region name) or
+    valid;
   - a window that ends before the pump's current date or the UTC date;
   - any change to an analyzer, classifier, staging predicate, cap or floor;
   - real data in a test, fixture or log.
@@ -298,7 +317,7 @@ No live document needs amending.
     but writes nothing out of order;
   - a stamp stored ahead of the clock by any amount holds later floored stamps
     just after it until the clock passes it;
-  - with an unknown zone, every stamp reads the process clock, as on base. The
+  - with an unloadable zone, every stamp reads the process clock, as on base. The
     fetch refuses, and names the zone in `/api/status`.
 - **Unsupported:** a browser in a zone other than `TIMEZONE_NAME` (as #427
   records); a `TIMEZONE_NAME` changed between writes for any reason other than
@@ -309,8 +328,9 @@ No live document needs amending.
     unfixed code;
   - the three transition tests (pump read, Plan, Focus) through the capture,
     reconcile and API paths, each seen failing with the floor removed;
-  - the unset-zone tests (fetch loop and API) with a broken variant, and the
-    unknown-zone fetch-loop test;
+  - the unset-zone tests (fetch loop and API) with a broken variant;
+  - the unloadable-zone case for an unknown name and a region name: the attempt
+    is recorded, nothing raises, and a stamped API write still succeeds;
   - the fetch-window tests in both zone orders, and for the CLI;
   - the pinned clock-site grep output.
 

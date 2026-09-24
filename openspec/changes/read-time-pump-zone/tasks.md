@@ -31,7 +31,7 @@ Seed stores only from committed synthetic sources:
 save the raw failing output as
 `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`:
 - the 1.1 stamp cases and the 1.1 window case in the swapped order;
-- the 1.2 unknown-zone case;
+- the fetch-loop half of the 1.2 unloadable-zone case, for both names;
 - 1.3;
 - every 1.4 case.
 
@@ -57,11 +57,20 @@ fail-first evidence is its broken-variant run, not a base run.
   - **Unset.** With `TIMEZONE_NAME` also left out, `run_fetch_once` returns
     without raising and records `last_error` naming `TIMEZONE_NAME`,
     `last_attempt_at` set, and `last_success_at` unset.
-  - **Unknown.** With `TIMEZONE_NAME="Not/AZone"` and the process pinned to UTC,
+  - **Unloadable.** Run it for `TIMEZONE_NAME="Not/AZone"` and for the region name
+    `"America"` (a subtest each), with the process pinned to UTC.
     `run_fetch_once` returns without raising and records:
     - `last_error` naming `TIMEZONE_NAME`;
     - `last_attempt_at` within two minutes of the process clock (`datetime.now()`);
     - `last_success_at` unset.
+
+    In `tests/test_wall_clock.py`, for the same two names, a stamped API write still
+    succeeds: `POST /api/carbs` with `{"t": "2024-05-01 12:00:00", "grams": 30,
+    "certainty": "exact"}` on a fresh store returns 200. Its `created_at` lies
+    within two minutes of the process clock. That write also runs the floored
+    ingestion reconcile. The fetch-loop half is base fail-first (base refuses at
+    the credential check and never names the zone). The API half passes on base,
+    where every stamp is the process clock.
 - [ ] 1.3 `tests/test_cli.py`, zones swapped, `ciq_autotune.sync.pull_from_tconnect`
   patched. `main(["fetch", "--days", "3", "--db", <temp path>])` calls the pull
   with an `end` that passes the window check and a `start` three days before it.
@@ -123,11 +132,13 @@ fail-first evidence is its broken-variant run, not a base run.
 ## 2. One clock (ADR 443, Decisions 1–6)
 
 - [ ] 2.1 `ciq_autotune/store.py`:
-  - Add `wall_clock_now(after=None)` beside `normalize_time`. It returns the
+  - Add `pump_zone()` beside `normalize_time`, the one zone loader (Decision 2).
+    It returns `ZoneInfo(TIMEZONE_NAME)`, or `None` when the variable is unset or
+    `ZoneInfo` raises `ZoneInfoNotFoundError`, `ValueError` or `OSError`.
+  - Add `wall_clock_now(after=None)` beside it. It returns the
     current UTC instant converted to `TIMEZONE_NAME` with `normalize_time`'s
     expression, naive, to the microsecond. When the variable is unset, or
-    `ZoneInfo` raises `ZoneInfoNotFoundError` or `ValueError` for it, it returns
-    `datetime.now()`. When `after` is given and the result, truncated to the
+    `pump_zone()` returns `None`, it returns `datetime.now()`. When `after` is given and the result, truncated to the
     second, is not later than `after`, it returns `after + 1 s`. The floor has no
     bound (Decision 3).
   - Add `Store.latest_server_stamp()`: the latest of
@@ -139,10 +150,11 @@ fail-first evidence is its broken-variant run, not a base run.
 - [ ] 2.2 `ciq_autotune/sync.py`:
   - Add `window_end(pump_now)`, returning the later of `pump_now.date()` and the
     current UTC date (Decision 4).
-  - In `pull_from_tconnect`, directly after the unset-zone refusal, refuse a
-    `TIMEZONE_NAME` that `ZoneInfo` cannot load. Raise a `RuntimeError` naming
-    `TIMEZONE_NAME`, before the sync-extra import, the credential read or any
-    network call (Decision 2).
+  - In `pull_from_tconnect`, directly after the unset-zone refusal, refuse when
+    `store.pump_zone()` is `None`. Raise a `RuntimeError` naming `TIMEZONE_NAME`,
+    before the sync-extra import, the credential read or any network call
+    (Decision 2). Add no other loadable-zone check anywhere; `normalize_time`
+    stays as it is.
 - [ ] 2.3 Call `wall_clock_now()` at every other site in the Decision 1 table,
   imported by name into each module:
   - `fetch_loop.py`: one reading per attempt supplies both `attempted_at` and

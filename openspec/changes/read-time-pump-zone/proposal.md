@@ -37,9 +37,10 @@ UTC. Reproduced on base, such a step writes three durable wrong states:
 
 - One clock function, `wall_clock_now`, returns now on `TIMEZONE_NAME`'s wall
   clock through the same conversion every record takes. Every stamp the server
-  writes calls it. With the variable unset, or naming no known zone, it reads the
-  process clock, as today. A fetch refuses an unknown zone by name, before any
-  network call, and the attempt is recorded.
+  writes calls it. With the variable unset, or naming no loadable zone (an unknown or
+  region name), it reads the process clock, as today. One zone loader decides
+  that for the clock and the fetch alike. A fetch refuses an unloadable zone by
+  name, before any network call, and the attempt is recorded.
 - Three writes are never stamped before the latest stored pump-read capture,
   recorded Plan or Focus pin: the pump-read capture, the follow-up write (a Plan,
   withdrawal, Focus pin or ending) and the ingestion reconcile. A clock that

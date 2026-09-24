@@ -34,9 +34,11 @@ below is recorded in `openspec/changes/read-time-pump-zone/design.md`, ADR 443.
   ruling and plan-review round 1 ruling. Upstream sends `endDate` as a
   `<day>T23:59:59Z` literal, and nothing records whether the vendor reads it as
   the pump's day or UTC's. The CLI shares the fault. `→ ADR` (Decision 4)
-- An unknown `TIMEZONE_NAME` reads the process clock for stamps, and the fetch
-  refuses it by name before any network call, so the attempt is recorded and
-  the loop never stops. Why: the plan-review round 1 ruling. A raising clock
+- An unloadable `TIMEZONE_NAME` (an unknown, malformed or region name) reads the
+  process clock for stamps, and the fetch refuses it by name before any network
+  call, so the attempt is recorded and the loop never stops. One loader,
+  `store.pump_zone()`, catches `ZoneInfoNotFoundError`, `ValueError` and
+  `OSError`, and the clock and the pull's refusal both call it (round 2 ruling). Why: the plan-review round 1 ruling. A raising clock
   would also fail stamped API writes and serve startup's recovery reconcile,
   which run on the process clock on base. `→ ADR` (Decision 2)
 - Day reads `last_success_at` alone. Why: the coordinator's Q3 ruling;
@@ -119,3 +121,13 @@ None. No follow-up issue is filed by this release.
   - Note, the floor's claims were broader than its three tables: `injected`.
   - Count: 2 authoring and 3 injected, plus the injected note. The injected
     items all trace to the widening re-author.
+- Plan-review round 2, 2026-09-24: 5 of 6 resolved; blocked on 1 blocker and 1
+  note. The coordinator's ruling was applied in one commit.
+  - Region names (`America`, `US`, `Etc`) raise `IsADirectoryError`, which
+    neither catch site handled, so the loop died unrecorded: `injected`, by the
+    round-1 fix. Reproduced on this interpreter, together with `OSError` for an
+    over-long name and `ValueError` for malformed keys.
+  - Note: the draft's clock-sites reference pointed at task 2.2, not 2.3:
+    `injected`, by the round-1 renumbering.
+  - Injected blockers are now 3 in round 1 and 1 in round 2, so they are not
+    climbing.

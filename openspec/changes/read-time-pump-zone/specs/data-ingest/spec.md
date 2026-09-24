@@ -31,15 +31,16 @@ end: 120 days for the scheduled fetch, N days for the command.
 - **THEN** the pull is asked for a window ending no earlier than the pump's
   current date and starting three days before that end
 
-### Requirement: A fetch refuses an unknown time zone before any network call
+### Requirement: A fetch refuses an unloadable time zone before any network call
 
-A fetch SHALL refuse to run when `TIMEZONE_NAME` names no known time zone, as it
-refuses when the variable is unset: before any import of the sync extra,
+A fetch SHALL refuse to run when `TIMEZONE_NAME` loads no time zone (an unknown
+name, a malformed name or a region name such as `America`), as it refuses when
+the variable is unset: before any import of the sync extra,
 credential read or network call, with an error naming `TIMEZONE_NAME`.
 
-#### Scenario: An unknown zone is refused before the login
+#### Scenario: An unloadable zone is refused before the login
 
-- **GIVEN** `TIMEZONE_NAME` is set to a name no time-zone database knows
+- **GIVEN** `TIMEZONE_NAME` is set to a name that loads no time zone
 - **WHEN** a fetch runs
 - **THEN** it raises an error naming `TIMEZONE_NAME` without reading credentials
   or contacting the vendor

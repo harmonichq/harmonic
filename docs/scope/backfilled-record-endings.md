@@ -25,11 +25,23 @@ coordinator, never to the operator.
   records.** Recorded in ADR 442. A one-line supersession pointer goes beside
   the clause in `openspec/changes/harmonic-v2/design.md`, following the
   existing ADR 397 pointer. → ADR (ADR 442)
+- **Any later detected change supersedes, whatever its setting.** Coordinator
+  ruling on Q1, 2026-09-23 (R442 corrected): the frontier's actual rule. R442's
+  "same setting" wording was an error; the old desk note was already false for
+  the live watch. → ADR (ADR 442)
+- **One cut rule for every reconcile ending, live frontier included.**
+  Coordinator ruling on Q2, 2026-09-23. The live frontier's lost detection-lag
+  days are recorded as a consequence. → ADR (ADR 442)
+- **The superseded note is reworded in this change.** Coordinator ruling on Q3,
+  2026-09-23 (fence widened). inline
+- **This change adds no word-table entry.** Coordinator ruling, 2026-09-23: the
+  #449/#450 change owns `comparisonReasonWords` and adds words for
+  `context_after_ending`, the one reason code this change introduces. It
+  integrates before this one. S157 asserts no reason-line words. → ADR (ADR 442)
 - **Grounded default: supersession is read from this reconcile's detected
   changes, not from retained records.** The frontier rule reads its successor
   from the detected candidates. A hand-saved or vanished record never
-  supersedes another. inline (pending coordinator Q1 on which later change
-  counts)
+  supersedes another. inline
 - **Grounded default: the `edit-chain` case keeps four open records.** Its
   four hand-saved records move 14 days later (05-15, 05-22, 05-23, 05-24), so
   none is past its window at the case's data tail (06-01 23:59). The spacing
@@ -76,18 +88,9 @@ coordinator, never to the operator.
 
 ## Open questions
 
-Put to the coordinator in the triage result, each with a recommended default.
-
-1. Which later change supersedes an open record inside its watch window: any
-   later detected change (the frontier's actual rule; recommended), or only a
-   later change of the same setting (R442's parenthetical)? If the second, a
-   follow-on question sets how narrow "same setting" is.
-2. Do live frontier endings also save an assessment bounded at their ending
-   instant (recommended: one rule for every reconcile-recorded Trial ending), or
-   only records ended after the fact?
-3. Widen the fence to reword the desk's superseded note, which claims "the same
-   setting" and is already false for the live frontier (recommended: yes, in
-   this ticket)?
+None. Q1 (which later change supersedes), Q2 (cut rule for live endings) and Q3
+(reword the superseded note) were answered by the coordinator on 2026-09-23 and
+are recorded under Decisions.
 
 ## Spawned tasks
 

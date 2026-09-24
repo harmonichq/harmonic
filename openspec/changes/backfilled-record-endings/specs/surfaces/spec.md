@@ -15,6 +15,7 @@ read-through time that the saved assessment carries.
 - **WHEN** the reader opens the Changes records roster
 - **THEN** the 06-01 record's row reads "Superseded by a later change" with its
   effective time, and carries no still-open cell
+- **AND** the ending's kind line carries its words and no underscore-token code
 - **AND** opening it shows a saved ending of kind `superseded` whose periods note
   reads data through the same instant the ending names
 
@@ -32,17 +33,3 @@ a later change of any setting ends a watch.
 - **THEN** the note reads "A later setting change was detected inside the watch
   window. This record keeps the period it actually observed."
 - **AND** it does not contain "same setting"
-
-### Requirement: A saved assessment bounded out by a later pump read says why in words
-
-The desk's one word table for comparison reasons SHALL carry words for
-`context_after_ending`: "its retained context was read from the pump after this
-change ended". Every reason line that prints through that table SHALL print those
-words for that code, never the code.
-
-#### Scenario: The context-after-ending reason has words
-
-- **GIVEN** the served reason `context_after_ending`
-- **WHEN** the desk's word table names it
-- **THEN** it reads "its retained context was read from the pump after this
-  change ended", with no underscore

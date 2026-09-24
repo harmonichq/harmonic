@@ -100,20 +100,20 @@ coordinator ruling R442.
   are. Run `test_case_edit_chain` in `tests/test_qa_e2e_cases.py` and confirm it
   passes unchanged.
 
-## 3. The desk says it in words (frontend)
+## 3. The superseded note (frontend)
 
 - [ ] 3.1 In `frontend/history.js`, set `ENDING_NOTE.superseded` to exactly
   "A later setting change was detected inside the watch window. This record
   keeps the period it actually observed."
-- [ ] 3.2 In `frontend/follow-up.js` `COMPARISON_REASON`, add
-  `context_after_ending: 'its retained context was read from the pump after this change ended'`.
-  #450 routes the saved-ending line through this table; do not touch
-  `endingSection`'s assessment line or any other reason line here.
-- [ ] 3.3 Node tests:
-  - `frontend/history.test.js`: `endingSection` for a `superseded` ending
-    prints task 3.1's note and no "same setting". Show it failing on base first;
-  - `frontend/follow-up.test.js`: add `context_after_ending` to `REASON_CODES`,
-    and assert its exact words.
+- [ ] 3.2 Node test in `frontend/history.test.js`: `endingSection` for a
+  `superseded` ending prints task 3.1's note and no "same setting". Show it
+  failing on base first.
+
+This change adds no word-table entry. The words for `context_after_ending`, the
+one reason code it introduces, belong to `frontend/follow-up.js`
+`COMPARISON_REASON`, which the #449/#450 change owns and extends; it integrates
+before this one. Leave `follow-up.js`, its tests and `endingSection`'s
+assessment line alone.
 
 ## 4. Behavior ledger and replay (desk contract)
 
@@ -137,12 +137,18 @@ the whole replay at module link.
 
   Feature assertions (base fails at the first):
   - the served row carries ending kind `superseded`;
-  - its roster row reads "Superseded by a later change" and has no
-    `[data-record-open="true"]` cell;
-  - opening the record shows `[data-ending-kind="superseded"]`;
+  - its roster row reads "Superseded by a later change", with no "Still open"
+    and no `[data-record-open="true"]` cell;
+  - opening the record shows `[data-ending-kind="superseded"]` reading
+    "Superseded by a later change", with no underscore-token code on that kind
+    line;
   - the saved-ending note does not contain "same setting";
   - the periods note's "data was read to" time equals the saved ending's
     "Finished" time on the same page.
+
+  S157 must not assert the words of any reason line, including the saved
+  ending's "Ending assessment" line. Those words belong to #449/#450, and the
+  full ledger covers the combination.
 
   Deliver it the way #430 delivered S142 and S143:
   - its `S157 · ` entry and handler-inventory row in the #442 section;

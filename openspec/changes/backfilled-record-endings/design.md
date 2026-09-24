@@ -43,9 +43,14 @@ Three facts were measured in process on synthetic stores
 ### Decision
 
 Settled by the coordinator's ruling R442 under the operator's delegation
-(Connor Griffin, 2026-09-23, "figure it out yourself from here"). The default
-answers to the three triage questions in the scope ledger are recorded here as
-decided; the coordinator's answers replace them before the lock is posted.
+(Connor Griffin, 2026-09-23, "figure it out yourself from here"). R442 was
+corrected on 2026-09-23 after triage, and the coordinator's rulings on the three
+triage questions settle the rest:
+
+- any later detected change supersedes, whatever its setting, which is the
+  frontier's actual rule. R442's earlier "same setting" wording was an error;
+- one cut rule applies to every reconcile ending, the live frontier included;
+- the superseded note is reworded, in this change.
 
 1. **One rule for every open record.** After a reconcile has recorded its newly
    detected changes, reconciled Plan receipts and confirmed a pending Plan, it
@@ -93,11 +98,15 @@ decided; the coordinator's answers replace them before the lock is posted.
    `capture_ending`, not in the comparison engine. A manual finish or a Focus
    ending passes the reconcile instant as its cutoff, so the check never fires
    for them.
-4. **The desk says it in words.** The desk's one word table for comparison
-   reasons gains `context_after_ending`. The superseded note no longer claims the
-   later change was to the same setting. Changes needs no other change: it
-   already reads an ended record's saved ending, and a served ending kind
-   replaces "Still open" in the roster.
+4. **The desk says it in words.** The words for `context_after_ending` belong
+   to the desk's one word table for comparison reasons. The #449/#450 change owns
+   that table and adds them; it integrates before this one. This change adds no
+   table entry. The superseded note no longer claims the later change was to the
+   same setting. The old note, "A later change to the same setting took over",
+   was already false for the live watch, which the frontier's rule supersedes on
+   a later change of any setting. Changes needs no other change: it already reads
+   an ended record's saved ending, and a served ending kind replaces "Still open"
+   in the roster.
 5. **No migration step.** An existing install records these endings at its
    next reconcile: the next fetch that writes data, the startup recovery of a
    stale frontier, or the next follow-up write. Every one of those already runs
@@ -115,19 +124,17 @@ worded reason.
 
 ### Alternatives considered
 
-- **Supersede only on a later change of the same setting.** This is R442's own
-  wording, and the wording of the desk's note. Rejected as the default because
-  the frontier's rule, which R442 names as the rule to follow, reads any later
-  detected change. Two rules would give one ending kind two meanings. It would
-  also need a new "same setting" judgment: whole parameter, or the record's own
-  slot and block, and how a whole-profile switch relates. This is open
-  question 1 in the scope ledger.
+- **Supersede only on a later change of the same setting.** This was R442's
+  first wording, and the wording of the desk's old note. Rejected by the
+  coordinator's ruling on triage question 1. The frontier's rule, which R442
+  names as the rule to follow, reads any later detected change. Two rules would
+  give one ending kind two meanings. It would also need a new "same setting"
+  judgment: whole parameter, or the record's own slot and block, and how a
+  whole-profile switch relates.
 - **Bound only endings recorded after the fact.** This keeps the live frontier's
-  `data_cutoff=now`. Rejected as the default because the contract's
-  "then-available evidence" is one rule, and the gap it keeps holds data
-  recorded under the setting that superseded the watch. The live difference is
-  the detection lag: hours for an expiry, a few days for a dose-detected
-  supersession. This is open question 2.
+  `data_cutoff=now`. Rejected by the coordinator's ruling on triage question 2.
+  The contract's "then-available evidence" is one rule, and the gap it keeps
+  holds data recorded under the setting that superseded the watch.
 - **Capture a context as of the ending instant.** The saved assessment would
   stay available on stores with later pump reads. Rejected: the contract keeps
   one retained context per record across both arms and later follow-up, and
@@ -153,6 +160,12 @@ worded reason.
   backfilled endings save an unavailable assessment (`context_after_ending`).
   The record still opens on its saved ending, and the labelled Retained context
   and Current policy reassessments stay available.
+- A live frontier ending now saves an assessment cut at its own instant, not
+  at the reconcile that noticed it. The days between the two are lost to the
+  saved assessment: up to an hour of fetch interval for an expiry, and the
+  detector's settling days for a dose-detected supersession or reversal. That
+  data stays in the store, and a Retained context or Current policy
+  reassessment still reads it, labelled as a reassessment.
 - The first reconcile after upgrade runs one reversal scan per open record. It
   runs one comparison only for records whose context is bounded. This happens
   once; afterwards only records inside their window stay open.

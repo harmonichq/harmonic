@@ -46,21 +46,23 @@ change, and is still open.
   the ending's own instant, not the reconcile time. One input cannot be bounded
   that way: the record's retained comparison context, captured when the record
   was first recorded. When that context comes from a pump read after the ending,
-  the saved assessment is unavailable, with reason `context_after_ending`. The
-  desk prints that reason in words.
+  the saved assessment is unavailable, with reason `context_after_ending`. Its
+  words come from the desk's one word table, which the #449/#450 change owns and
+  extends; that change integrates before this one.
 - **The superseded note stops naming "the same setting".** A later change of
-  any setting ends a watch, which is already true of the live watch today. The
-  desk's note for a superseded ending no longer says the later change was to the
-  same setting.
+  any setting ends a watch; the old note was already false for the live watch.
+  The desk's note for a superseded ending no longer says the later change was to
+  the same setting.
 - **Proof.** Backend tests through the reconcile path, one new desk story
   (S157) on `c4-ic`, an amended S91, and the `edit-chain` case's four open
   records kept open by moving them inside their watch window.
 
 ## Not in this change
 
-- Printing a saved ending's unavailable reason through the desk's word table on
-  the saved-ending line itself. #450 owns that routing; this change adds only its
-  own reason's words to the table.
+- Words for any comparison reason, including `context_after_ending`, and
+  printing a saved ending's unavailable reason through the desk's word table.
+  The #449/#450 change owns that table and its routing; this change adds no
+  table entry.
 - The comparison engine, evidence periods, readiness criteria, caps, floors,
   staging predicates, admission, the admission frontier, Focus endings and Plan
   receipts.

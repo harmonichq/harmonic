@@ -106,6 +106,29 @@ for (const [name, head, [r0, r1], x, align] of regionCases) {
     `${name}, width = region − 10 → ${block.lines.length} lines, every pad inside [${r0}, ${r1}] `
     + `(worst overrun ${over.toFixed(1)}px), words whole ${whole}, empty holders ${holders}`);
 }
+/* ---- 3. Each pad hugs its words (review N1) -----------------------------
+   ZRender's own break keeps the space it broke at inside the line's token, so
+   the token's pad runs a space past the words. renderCanvas breaks the lines
+   itself, between whole words, with newlines inside the token; a newline in
+   the middle of a token splits cleanly and leaves no space at a line's end. */
+const tokenTexts = (formatter, width) => parseRichText(formatter, padded(width)).lines
+  .flatMap((line) => line.tokens).filter((token) => token.text).map((token) => token.text);
+const own = tokenTexts(`{hd|AFTERNOON 12:00–18:00}{th|\n${TAIL}}`, 143.7);
+report(own.some((text) => text !== text.trimEnd()),
+  `ZRender's own break leaves a trailing space in a token → ${JSON.stringify(own)}`);
+for (const [name, formatter, [r0, r1], x, align] of [
+  ['Afternoon, parked left, broken here', `{hd|AFTERNOON 12:00–18:00}{th|\nINSUFFICIENT SAMPLE —\nthinnest bin holds 0}`,
+    [34, 187.7], 187.7, 'right'],
+  ['a head broken here, parked left', '{hd|WINDOW\n11:00–13:00}', [34, 127.1], 127.1, 'right'],
+]) {
+  const width = r1 - r0 - 2 * 5;
+  const texts = tokenTexts(formatter, width);
+  const boxes = place(parseRichText(formatter, padded(width)), x, align, width);
+  const over = Math.max(0, ...boxes.map((box) => Math.max(r0 - box.x0, box.x1 - r1)));
+  report(texts.every((text) => text === text.trim()) && over <= 0.01,
+    `${name} → ${JSON.stringify(texts)}, no token ends in a space, every pad inside [${r0}, ${r1}] `
+    + `(worst overrun ${over.toFixed(1)}px)`);
+}
 // Why not a label-level background: its box is the whole `width`, text or not.
 const labelBox = parseRichText(`{hd|24 H 00:00–24:00}{th|\n${TAIL}}`, padded(296, true));
 report(labelBox.outerWidth === 296,

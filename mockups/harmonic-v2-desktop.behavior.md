@@ -4182,9 +4182,11 @@ S183 · The glucose overview's window caption stays whole inside the chart, and
             still; reads every painted text span and pad box from the chart's
             ZRender display list, each caption's spans in reading order (line
             by line, left to right: a caption parked left paints its tail
-            first); restores the run's size and presses 24 h. It records every
-            failure by size, state and check with the measured amount, then
-            fails once, listing them all
+            first). The narrowed reading waits, bounded at 10 s, until its
+            check holds (readSettled), since the relayout lands a frame after
+            the resize. It restores the run's size and presses 24 h, records
+            every failure by size, state and check with the measured amount,
+            then fails once, listing them all
   status:   base b03431d2 with the d3e276ed harness laid over it fails at both
             sizes with 65 failures: the 24 h caption past #chart's right edge at
             832×720 and 832×560, the Evening caption past its left edge after
@@ -4192,8 +4194,11 @@ S183 · The glucose overview's window caption stays whole inside the chart, and
             Branch d3e276ed passed every 832 check and cleared the overlaps. It
             failed only on the run size's Afternoon and Evening captions, which
             it read tail first; that is a story defect, corrected by reading
-            order (coordinator-authorized, 2026-09-23). The branch re-run is
-            owed. Coordinator-run 2026-09-23
+            order (coordinator-authorized, 2026-09-23). Branch a9a2b56a passed
+            every run-size check but read the 1010 px or 850 px chart's one-line
+            Evening caption after the narrowing. That is the resize-to-the-
+            first-report race, now fixed in observeResize, with the bounded wait
+            above. The branch re-run is owed. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -4211,15 +4216,19 @@ S184 · With Diagnose at rest, the Spotlight's middle-rank verdict line keeps
   data:     basal-verdict-gallery (at rest the Spotlight opens the next-in-line
             basal slot, 00:00)
   evidence: C4_STORIES.S184 → assertSpotlightVerdict; sets 1200×736, 832×720
-            and 832×560 in turn, settles each resize, reads the Spotlight
+            and 832×560 in turn, settles each resize, then reads the Spotlight
             chart's painted text and the Keep control's box in the chart's
-            coordinates, restores the run's size, then fails once, listing
-            every failure by size
+            coordinates. Each reading waits, bounded at 10 s, until its check
+            holds (readSettled). It restores the run's size, then fails once,
+            listing every failure by size
   status:   base b03431d2 with the d3e276ed harness laid over it fails at
             832×720 and 832×560, and at 1200×736 on the 1280x720 run: the
             verdict reads ["SUPPORTED"] from the full rank the run's size drew,
             and no tally line is painted. Branch d3e276ed passes at 1280x720 and
-            1440x900. Coordinator-run 2026-09-23
+            1440x900. Branch a9a2b56a read the 1200×736 one-line verdict at
+            832×720 (26.86px past the chart, 20px under Keep): the same race as
+            S183's, now fixed. The branch re-run is owed. Coordinator-run
+            2026-09-23
 ```
 
 ```

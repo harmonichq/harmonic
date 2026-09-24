@@ -642,6 +642,11 @@ const gap = (v) => (v == null ? null : v);
  * so a rescale alone keeps the old width's text. It runs after the resize, in
  * the same frame, and never on the first report, which is the mount's own and
  * has already drawn.
+ *
+ * The frame resizes to the LATEST reported box: a narrowing can report an
+ * intermediate box and then the final one before the queued frame runs, and
+ * resizing to the first left the chart at a size its box no longer had, with
+ * the wide layout's text (ADR 455).
  */
 export function observeResize(el, getChart, relayout = null) {
   let lastW = 0; let lastH = 0; let pending = 0;
@@ -658,8 +663,8 @@ export function observeResize(el, getChart, relayout = null) {
     pending = requestAnimationFrame(() => {
       pending = 0;
       const chart = getChart();
-      if (chart && w > 0 && h > 0) {
-        chart.resize({ width: w, height: h });
+      if (chart && lastW > 0 && lastH > 0) {
+        chart.resize({ width: lastW, height: lastH });
         if (changed && relayout) relayout();
       }
       changed = false;
@@ -950,13 +955,25 @@ export function renderCanvas(el, echarts, opts) {
          the label is the region less the pad's two sides, and no line sets a
          height of its own, the padded tokens setting the pitch. Inside the
          window the tokens centre their lines, as the one-line label is centred;
-         parked, they take the parked label's own alignment. */
+         parked, they take the parked label's own alignment.
+         Each line is broken here, between whole words, by the estimate the fit
+         decisions use, which errs wide. ZRender's own break keeps the space it
+         broke at inside the line's token, so the pad ran a space past the
+         words; `overflow: 'break'` stays as the backstop. */
       labelInside = winPx - LABEL_PAD >= sideRoom;
-      labelText = `{hd|${labelHead}}${thin ? `{th|\n${tailText}}` : ''}`;
+      const lineWidth = (labelInside ? winPx - LABEL_PAD : sideRoom) - 2 * PAD_X;
+      const breakWords = (text, fontSize, opts) => text.split(' ').reduce((lines, word) => {
+        const joined = lines.length ? `${lines.at(-1)} ${word}` : null;
+        if (joined && estimateTextPx(joined, fontSize, opts) <= lineWidth) lines[lines.length - 1] = joined;
+        else lines.push(word);
+        return lines;
+      }, []).join('\n');
+      labelText = `{hd|${breakWords(labelHead, 10, capOpts)}}`
+        + (thin ? `{th|\n${breakWords(tailText, 9.5)}}` : '');
       const pad = { backgroundColor: colors.rail, padding: [2, PAD_X],
         ...(labelInside ? { align: 'center' } : {}) };
       labelFit = {
-        width: (labelInside ? winPx - LABEL_PAD : sideRoom) - 2 * PAD_X, overflow: 'break',
+        width: lineWidth, overflow: 'break',
         rich: {
           hd: { color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, ...pad },
           th: { ...labelRich.th, ...pad },

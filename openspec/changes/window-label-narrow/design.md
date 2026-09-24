@@ -243,6 +243,12 @@ inside the chart bounds (words kept whole, nothing shortened); no change at
   - no explicit line height: each padded token's own height, about 14 px,
     sets the pitch, so two lines' pads abut without covering each other's
     text;
+  - lines broken by `renderCanvas` itself, between whole words, by the same
+    estimate the fit decisions use, as newlines inside the tokens. ZRender's
+    own break keeps the space it broke at inside the line's token, so the pad
+    ran a space past the words. Added under review N1 (coordinator-authorized,
+    2026-09-23); the spike's third part shows both. `overflow: 'break'` stays
+    as the backstop;
   - the same anchor as today for its region: the window area's `insideTop`
     label inside the window, or the parked `markPoint` outside it.
 - **The target caption moves when the window caption wraps.** It takes its
@@ -271,9 +277,12 @@ header readout and the inspector.
 
 - Where one line fits, nothing moves. At 1280×720 and 1440×900 every Window
   preset's caption on the replay's store fits, and S183 asserts one line
-  there. The tightest is a thin Afternoon at 1280 wide: about 373 px estimated
-  against about 380 px of room. A two-digit bin count would tip it into the
-  wrap, which S183's desktop check would report.
+  there. The tightest is a thin Afternoon at 1280 wide (an 850 px chart):
+  372.9 px estimated with a one-digit bin count, against 380.0 px of room. A
+  two-digit count still fits (377.8 px); only a three-digit count tips it into
+  the wrap (382.8 px at 100), which S183's desktop check would report.
+  (Corrected under review N2, coordinator-authorized, 2026-09-23; the earlier
+  text said a two-digit count would tip it.)
 - The rule belongs to the chart, not to one width. A caption that overruns
   today stacks at any size: at 1200 wide a thin Afternoon caption (about 373 px
   estimated, 340 px of room) that today runs into the y-axis labels; in the
@@ -421,6 +430,14 @@ holds only if narrowing the window reaches the narrow layout.
 - **`observeResize` gains an optional relayout callback.** When the observed
   box changes size after its first report, it resizes the canvas as today and
   then calls the callback, in the same animation frame.
+- **The frame resizes to the latest reported box** (coordinator-authorized,
+  2026-09-23). Before, the queued frame resized to the size captured by the
+  report that queued it, so a second report landing before that frame was
+  dropped. The coordinator's leg on a9a2b56a then read the wide layout after a
+  narrowing at 832×720, in S183 and S184 alike. The readings were the 1010 px
+  chart's one-line Evening caption and the 1200 px Spotlight's one-line
+  verdict. Theory: those are that dropped report. A node test reproduces two
+  reports before one frame.
 - **The overview's callback repaints the chart and its brace**, as the other
   paint paths do, except while a drag owns the chart (`dragActive`).
 - **A descriptor tile's callback rebuilds its option.** `mountDescriptorChart`
@@ -500,6 +517,12 @@ reaches.
   - S185 places the All charts control by its rendered icon and word, not by
     its box, which overhangs the rail by 3.5 px (see "The canvas header at
     832"). No product change follows from either, and R455 is not widened.
+  - After a viewport change, S183's narrowed reading and each of S184's
+    readings wait, bounded, for the relayout to land. They read again
+    through the replay's retry helper until the story's own check holds, or
+    10 s pass, and the story then judges the last reading with that same
+    check. No geometry check is loosened. This came with the fix above
+    (second ruling, 2026-09-23).
 - **Ledger records.**
   - Following the release's freeze-header rule, this change records its
     stories in its own `## #455 amendment — 2026-09-23` section.

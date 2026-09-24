@@ -8,7 +8,7 @@ import {
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
   assertServedRowDescriptions432, assertSelectedFacts432,
   OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
-  canvasHeadFailures, assertCanvasHead,
+  canvasHeadFailures, assertCanvasHead, readSettled,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -2218,4 +2218,28 @@ test('S185 fails once, naming failures at two sizes', () => {
     assert.match(error.message, /\n {2}- 832×560: the title's box is 0px wide/);
     return true;
   });
+});
+
+/* #455 — A RESIZE'S RELAYOUT LANDS IN A LATER FRAME THAN THE RESIZE. The story
+   reads again until the check holds, within a bound, and judges the last
+   reading with the same check: a reading that never comes clean keeps every
+   failure, and a page error is never taken for one. */
+test('readSettled judges the first reading its check passes', async () => {
+  const readings = [{ stale: true }, { stale: true }, { stale: false }];
+  let reads = 0;
+  const reading = await readSettled(async () => readings[reads++], r => (r.stale ? ['wide layout'] : []), 'settles');
+  assert.deepEqual(reading, { stale: false });
+  assert.equal(reads, 3);
+});
+
+test('readSettled keeps the last reading when the check never passes within its bound', async () => {
+  let reads = 0;
+  const reading = await readSettled(async () => ({ read: ++reads }), () => ['still wide'], 'never settles', 120);
+  assert.ok(reads >= 2, `it read more than once (${reads})`);
+  assert.equal(reading.read, reads, 'the last reading is the one judged');
+});
+
+test('readSettled rethrows a page error rather than judging it', async () => {
+  await assert.rejects(readSettled(async () => { throw new Error('Target page closed'); }, () => [], 'page', 120),
+    /Target page closed/);
 });

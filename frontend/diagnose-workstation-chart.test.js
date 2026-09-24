@@ -584,6 +584,24 @@ test('#455 · a thin quarter-day caption at the narrowest split wraps in its roo
   }
 });
 
+/* #455 — EACH PAD HUGS ITS WORDS. ZRender's own `break` keeps the space it
+   broke at inside the line's token, so a line aligned to its pad's right edge
+   ended a space short over blank pad. The caption's lines are broken here,
+   between whole words, by the estimate the fit decisions use, and no line
+   carries a space at either end. */
+test('#455 · a wrapped caption breaks its own lines between whole words, no line ending in a space', () => {
+  const afternoon = caption455({ clientWidth: 402, window: [720, 1080], windowLabel: 'AFTERNOON 12:00–18:00' });
+  const start = xAtMinute(afternoon.el, 720);
+  assert.equal(afternoon.parked.position, 'left');
+  assert.equal(afternoon.parked.width, start - 6 - GRID.left - TOKEN_PADS_455);
+  assert.equal(afternoon.parked.formatter,
+    '{hd|AFTERNOON 12:00–18:00}{th|\nINSUFFICIENT SAMPLE —\nthinnest bin holds 0}');
+  const lines = afternoon.parked.formatter.replace(/\{(hd|th)\||\}/g, '').split('\n').filter(Boolean);
+  for (const line of lines) assert.equal(line, line.trim(), `"${line}" carries no space at its ends`);
+  assert.deepEqual(lines.join(' ').split(' '), ['AFTERNOON', '12:00–18:00', ...NOTICE_455.split(' ')],
+    'every word, whole and in order');
+});
+
 test('#455 · a window that is not thin, narrower than its head, wraps its head alone', () => {
   // 11:00–13:00 has a little more plot room on its left, so that is its side.
   // At 402 wide that side holds the 18-character head, estimated at about
@@ -598,7 +616,8 @@ test('#455 · a window that is not thin, narrower than its head, wraps its head 
   const start = xAtMinute(narrow.el, 660);
   assert.equal(narrow.inside.show, false);
   assert.equal(narrow.parked.position, 'left');
-  assert.equal(narrow.parked.formatter, '{hd|WINDOW 11:00–13:00}', 'no spread tail rides a wrapped head');
+  assert.equal(narrow.parked.formatter, '{hd|WINDOW\n11:00–13:00}',
+    'no spread tail rides a wrapped head, which breaks between its words');
   assert.equal(narrow.parked.overflow, 'break');
   assert.equal(narrow.parked.width, start - 6 - GRID.left - TOKEN_PADS_455);
   assert.deepEqual(narrow.parked.rich.hd, { ...head455, ...padded455 });
@@ -677,6 +696,31 @@ test('#455 · observeResize re-lays out after a size change, never on its first 
     observeResize({}, () => ({ resize: ({ width }) => plain.push(`resize ${width}`) }));
     size(850, 300); flush(); size(402, 300); flush();
     assert.deepEqual(plain, ['resize 850', 'resize 402'], 'with no callback a change only resizes');
+  } finally {
+    Object.assign(globalThis, saved);
+  }
+});
+
+/* #455 — TWO REPORTS BEFORE ONE FRAME. A narrowing can report an intermediate
+   box and then the final one before the queued frame runs. The frame must
+   resize to the latest report and re-lay out once; resizing to the first left
+   the chart at a size its box no longer had, with the wide layout's text. */
+test('#455 · observeResize resizes to the latest of two reports that land before one frame', () => {
+  const saved = { ResizeObserver: globalThis.ResizeObserver, requestAnimationFrame: globalThis.requestAnimationFrame };
+  const frames = [];
+  let report = null;
+  globalThis.ResizeObserver = class { constructor(callback) { report = callback; } observe() {} disconnect() {} };
+  globalThis.requestAnimationFrame = (callback) => frames.push(callback);
+  const flush = () => { while (frames.length) frames.shift()(); };
+  const size = (width, height) => report([{ contentRect: { width, height } }]);
+  try {
+    const log = [];
+    const chart = { resize: ({ width, height }) => log.push(`resize ${width}×${height}`) };
+    observeResize({}, () => chart, () => log.push('relayout'));
+    size(1010, 300); flush();
+    size(1010, 153); size(402, 153); flush();
+    assert.deepEqual(log, ['resize 1010×300', 'resize 402×153', 'relayout'],
+      'one frame, at the latest box, then one relayout');
   } finally {
     Object.assign(globalThis, saved);
   }

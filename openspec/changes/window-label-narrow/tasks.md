@@ -114,6 +114,15 @@ its new box, the chart is idle, and two animation frames have passed.
   parked left in reading order, though its tail paints first" fails on the
   earlier matcher with that exact line.
 
+  Coordinator-authorized (ruling on the a9a2b56a leg, 2026-09-23): after a
+  viewport change, the narrowed Evening reading waits, bounded, for the
+  relayout to land. `readSettled` reads again through `waitForReplayAssertion`
+  until `overviewTextFailures` finds nothing, or 10 s pass, and the story
+  judges the last reading with that same check. Node tests "readSettled judges
+  the first reading its check passes", "readSettled keeps the last reading
+  when the check never passes within its bound" and "readSettled rethrows a
+  page error rather than judging it".
+
 - [x] 1.2 Add S184, the Spotlight's verdict line. S184 opens Diagnose at rest,
   where the Spotlight shows the next-in-line basal slot. It reads the
   Spotlight chart's painted text from its host in `#tile-focal`, and the Keep
@@ -146,6 +155,10 @@ its new box, the chart is idle, and two animation frames have passed.
   Evidence: `C4_STORIES.S184` → `assertSpotlightVerdict` /
   `spotlightVerdictFailures`; node tests "S184 …" cover the six listed cases,
   the one-line check at 1200×736 and the single message.
+
+  Coordinator-authorized (the same ruling): each of S184's readings waits for
+  the relayout the same way, judged by `spotlightVerdictFailures`. S185 reads
+  CSS alone and already waits for the header to hold still.
 
 - [x] 1.3 Add S185, the canvas header. With Diagnose at rest, it sets
   832×720, 832×560, 1024×768 and the run's own size in turn. The header's rule
@@ -326,6 +339,16 @@ its new box, the chart is idle, and two animation frames have passed.
   which the inside label never sets, so without it each line would sit at the
   left of the label's width.
 
+  Coordinator-authorized (code review round 1, N1, 2026-09-23): `renderCanvas`
+  breaks a wrapped caption's lines itself, between whole words, by the
+  estimate the fit decisions use, as newlines inside the `hd` and `th` tokens.
+  ZRender's own break kept the space it broke at inside the token, so a pad
+  ran a space past its words. Node test "#455 · a wrapped caption breaks its
+  own lines between whole words, no line ending in a space" (Afternoon at 402
+  wide); the not-thin test now expects `{hd|WINDOW\n11:00–13:00}`; the spike's
+  third part shows the trailing space under ZRender's break and none here.
+  Both node tests fail on the earlier code.
+
 ## 3. The Spotlight's verdict line breaks between facts (ADR 455, second decision)
 
 - [x] 3.1 Implement surfaces **The Spotlight's middle-rank verdict line keeps
@@ -442,6 +465,12 @@ its new box, the chart is idle, and two animation frames have passed.
 
   Evidence: node test "#455 · observeResize re-lays out after a size change,
   never on its first report"; it fails on base (no relayout).
+
+  Coordinator-authorized (ruling on the a9a2b56a leg, 2026-09-23): the queued
+  frame resizes to the latest reported box, not the one captured by the report
+  that queued it. Node test "#455 · observeResize resizes to the latest of two
+  reports that land before one frame" fails on the earlier code (`resize
+  1010×153` in place of `resize 402×153`).
 
 ## 7. Records
 

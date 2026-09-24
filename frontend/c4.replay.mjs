@@ -1486,6 +1486,27 @@ async function settledResize(page, selector) {
   }, selector, { timeout: 10000 });
 }
 
+// #455: a chart re-lays out in a later animation frame than the resize that
+// prompts it, so a reading taken right after a viewport change can still show
+// the old width's layout. Read again, through the replay's retry helper, until
+// `judge` (the story's own check) finds nothing, or the bound elapses; either
+// way return the last reading, which the story then judges with that same
+// check. Nothing is loosened: a reading that never comes clean keeps every
+// failure, and an error that is not an assertion is rethrown.
+export async function readSettled(read, judge, description, timeout = 10000) {
+  let reading = null;
+  try {
+    await waitForReplayAssertion(async seen => {
+      reading = seen(await read());
+      const failures = judge(reading);
+      assert.equal(failures.length, 0, `${description}: ${failures.join('; ')}`);
+    }, description, timeout);
+  } catch (error) {
+    if (!(error.cause instanceof assert.AssertionError)) throw error;
+  }
+  return reading;
+}
+
 // #455: Diagnose at rest, with its overview and every tile drawn.
 async function diagnoseAtRest(page) {
   await openDiagnose(page);
@@ -2636,8 +2657,9 @@ export const C4_STORIES = {
   // #455: the glucose overview's text stays whole, inside the chart and
   // unstruck: every Window preset at the run's own size and at the narrowest
   // split, tall and short, and the Evening caption after the window is
-  // narrowed with nothing pressed. Each press differs from the one before it,
-  // so every check reads a fresh render. `assertOverviewText` judges.
+  // narrowed with nothing pressed, which waits, bounded, for the relayout to
+  // land (`readSettled`). Each press differs from the one before it, so every
+  // check reads a fresh render. `assertOverviewText` judges.
   async S183(page) {
     await openDiagnoseRail(page);
     const run = page.viewportSize();
@@ -2657,7 +2679,11 @@ export const C4_STORIES = {
       await choose(evening);
       await page.setViewportSize(NARROW_SPLIT_SIZES[0]);
       await settledResize(page, '#chart');
-      await look(NARROW_SPLIT_SIZES[0], 'Evening, narrowed with nothing pressed', evening);
+      const narrowed = { size: NARROW_SPLIT_SIZES[0], state: 'Evening, narrowed with nothing pressed',
+        head: evening.head, range: evening.range };
+      checks.push({ ...narrowed, reading: await readSettled(
+        () => page.locator('#chart').evaluate(readPaintedText),
+        reading => overviewTextFailures({ ...narrowed, reading }), 'S183 the narrowed overview re-lays out') });
       for (const size of NARROW_SPLIT_SIZES) {
         await page.setViewportSize(size);
         await settledResize(page, '#chart');
@@ -2676,7 +2702,8 @@ export const C4_STORIES = {
   },
   // #455: with Diagnose at rest, the Spotlight's verdict line keeps every fact
   // whole inside its chart and clear of the Keep control at 1200×736 and at the
-  // narrowest split, reached by resizing with nothing pressed.
+  // narrowest split, reached by resizing with nothing pressed. Each reading
+  // waits, bounded, for the relayout to land (`readSettled`).
   // `assertSpotlightVerdict` judges.
   async S184(page) {
     await diagnoseAtRest(page);
@@ -2686,8 +2713,10 @@ export const C4_STORIES = {
       for (const size of SPOTLIGHT_SIZES) {
         await page.setViewportSize(size);
         await settledResize(page, '#tile-focal .tile-chart');
-        checks.push({ size, oneLine: size === SPOTLIGHT_SIZES[0],
-          reading: await page.locator('#tile-focal .tile-chart').evaluate(readPaintedText, '#tile-focal .tile-pin') });
+        const check = { size, oneLine: size === SPOTLIGHT_SIZES[0] };
+        checks.push({ ...check, reading: await readSettled(
+          () => page.locator('#tile-focal .tile-chart').evaluate(readPaintedText, '#tile-focal .tile-pin'),
+          reading => spotlightVerdictFailures({ ...check, reading }), `S184 the Spotlight re-lays out at ${sizeName(size)}`) });
       }
     } finally {
       await page.setViewportSize(run);

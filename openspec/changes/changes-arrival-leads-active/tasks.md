@@ -229,9 +229,7 @@ Authorized by the release coordinator under the Q3 delegation (Connor Griffin,
   forces one guidance read. A served `draft` or `pending_plan` shows the Reading
   frame until that read answers, and Changes then redraws. The explicit Plan
   arrival, Open Plan within the visit and the record routes are unchanged.
-- [x] 8.3 Review round 2, doc only: ADR 446 decision 6 now says when the Focus
-  options read shares the arrival's request (when the arrival's first draw
-  reaches it). It also names the two rare arrivals that make one further,
-  harmless guidance read on the redraw: a cached `pending_plan` or `draft` while
-  the server now serves neither a watch nor a Plan, and a cached `active_change`
-  after the watch ended.
+- [x] 8.3 Review rounds 2 and 3, doc only: ADR 446 decision 6 states the rule.
+  The Focus options read joins the arrival's request when the arrival's first
+  draw reaches it. When that draw stops earlier (a cold page, a held Plan, a
+  cached watch) and the redraw reaches it, it makes one further read.

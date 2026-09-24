@@ -284,16 +284,9 @@ coordinator widened this ADR under the same delegation. Sanction:
    When the read answers, Changes redraws and follows the disposition the server
    serves now.
 
-   The Focus options read on the same arrival shares that request when the
-   arrival's first draw reaches it, because that draw runs while the request is
-   still in flight. Two rare arrivals make one further guidance read on the
-   redraw instead. In the first, the page holds a `pending_plan` or `draft` read
-   while the server now serves neither a watch nor a Plan. The first draw holds
-   on the Reading frame, so the Focus options read starts only on the redraw,
-   after the arrival's request has answered. In the second, the page holds
-   `active_change` after the watch has ended, and its first draw reads no Focus
-   options. The further read is harmless: it asks the server the same question
-   again and changes nothing the arrival decided.
+   The Focus options read joins the arrival's request when the arrival's first
+   draw reaches it. When that draw stops earlier (a cold page, a held Plan, a
+   cached watch) and the redraw reaches it, it makes one further read.
 
    Only the served Plan branch waits. The explicit Plan arrival and Open Plan
    within the visit are the reader's own choice, and they open the Plan at once.

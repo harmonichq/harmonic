@@ -1,7 +1,7 @@
 # Design — Explore history range
 
 The interview history and grounding for these records remain in the
-[scope ledger](../../../docs/scope/explore-history-range.md). This design records
+[scope ledger](../../../../docs/scope/explore-history-range.md). This design records
 only the decisions that the ledger marks for an ADR.
 
 ## ADR 138 — Selection and chart-only re-scope

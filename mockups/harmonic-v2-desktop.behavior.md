@@ -2768,7 +2768,7 @@ S110 · The record roster groups a served multi-member Edit into one titled entr
        record, and reloading the address reopens it.
   element:  tr.gf-edit-row, [data-edit-member], [data-record]
   source:   frontend-v2/history.js editEntryHtml / recordRoster
-  lock:     HV2-28; ADR 414 (openspec/changes/v2-desk-retention/design.md) is the
+  lock:     HV2-28; ADR 414 (openspec/changes/archive/2026-09-24-v2-desk-retention/design.md) is the
             chaining rule itself
   data:     edit-chain; three records within a day of each other chain into one
             Edit, a fourth a week earlier stays its own

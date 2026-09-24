@@ -474,7 +474,7 @@ arrangement and binds it to the serialized field, per precedence rule 3.
   on a closed Focus. This is legacy compatibility, not an asymmetry to design
   around.
 - **Day return-focus context is frontend-owned** route/URL state
-  (`openspec/changes/url-state-contract`), not a #387 payload. HV2-14 is a UI
+  (`openspec/changes/archive/2026-09-24-url-state-contract`), not a #387 payload. HV2-14 is a UI
   obligation, not a backend gap.
 - **Conflict codes and ending kinds are backend vocabulary** rendered verbatim:
   endings `user_finished, manual, reverted, superseded, expired_unreviewed,

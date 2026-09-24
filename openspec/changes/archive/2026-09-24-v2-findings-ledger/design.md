@@ -48,7 +48,7 @@ For Q5 Connor said to deal with historical Pattern naming when/if it happens. De
 - **Unsupported:** live vendor or pump writes, Focus-title migration or legacy-title backfill, legacy-window backfill, and excluded footer behavior.
 - **Evidence owed:** public Focus/history and finding-case-file interfaces; preserved immutable-ending, expiry, legacy-scope, producer-owned-policy, and stale-response invariants; and the newly observed selected-evidence, geometry, loading, and retained regression assertions.
 - **Why:** selected-window findings and durable follow-up are advisory, persisted, and rendered through a shipped surface, so bounded failures and existing safety/identity guarantees must remain explicit.
-- **Disposition:** inline; copied unchanged to `openspec/changes/v2-findings-ledger/design.md` as the admitted implementation authority.
+- **Disposition:** inline; copied unchanged to `openspec/changes/archive/2026-09-24-v2-findings-ledger/design.md` as the admitted implementation authority.
 
 ## ADR 404 — Retain the selected outcome window in Focus
 
@@ -72,7 +72,7 @@ This ordinary change owns the new requirements in its OpenSpec deltas. It amends
 the active behavioral-layer requirement that says scoped queries omit a Pattern,
 the active durable-follow-up contract, and the v2 surface contract. Historical
 text in `openspec/changes/harmonic-v2/design.md` and
-`openspec/changes/diagnose-finding-case-files/design.md` remains historical; the
+`openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md` remains historical; the
 implementation record must point to this ADR where prior wording is superseded.
 
 ### Consequences
@@ -108,7 +108,7 @@ active #404 folder.
   historical journey only for readable v2 paths, exact Plan/Trial record doors,
   and backend-served Focus withholding context. Its original navigation and
   follow-up prose remains historical.
-- From `openspec/changes/diagnose-finding-case-files/design.md`: #404 adds
+- From `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md`: #404 adds
   selected Pattern trace/marker rendering and a served parent-context route for
   nested Findings. The historical producer record retains its server-owned
   membership and stale-response rules.

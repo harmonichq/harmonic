@@ -153,7 +153,7 @@
       Diagnose surface at 1440×900 and 390×844 — under
       `openspec/changes/diagnose-token-error-surface/evidence/`, with a short
       `evidence/README.md` naming the server, the token used and the commands, in
-      the shape `openspec/changes/diagnose-align-hidden-render/evidence/` already
+      the shape `openspec/changes/archive/2026-09-24-diagnose-align-hidden-render/evidence/` already
       uses. Dark only: #304 retired the light theme.
 - [x] Renders come from a synthetic server with a deliberately wrong token. This
       change was locked against the revise-e2e server, which no longer exists on

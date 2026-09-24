@@ -362,7 +362,7 @@ vocabulary the basal night rows want, and it is precedent rather than new design
   counts. Carried into the change's proposal and spec delta. `inline`
 - **Q2 = A (operator, "your recs").** The roster groups nights under three
   headers, ran above / ran below / ran as set, with excluded nights as a count
-  line only. `→ ADR 291` (openspec/changes/basal-night-drill/design.md)
+  line only. `→ ADR 291` (openspec/changes/archive/2026-09-24-basal-night-drill/design.md)
 - **Q3 = A (operator, "your recs").** A selected night shows a detail block in
   the Finding selection block's shape: date and span, delivered vs programmed,
   in-slot mean vs roster mean, entry→exit glucose, n of N, Clear trace, Open in
@@ -370,7 +370,7 @@ vocabulary the basal night rows want, and it is precedent rather than new design
 - **Defaults adopted without objection:** the parent #305 risk contract copied
   unchanged into the change's design record; the chart keeps its verdict rail;
   arrow-key stepping and Open in Day follow the Finding roster exactly. `inline`
-- **The active change is `openspec/changes/basal-night-drill/`** (proposal,
+- **The active change is `openspec/changes/archive/2026-09-24-basal-night-drill/`** (proposal,
   tasks, design with ADR 291 and the safe-start declaration, surfaces delta),
   validated strictly. `inline`
 

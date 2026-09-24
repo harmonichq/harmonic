@@ -24,7 +24,7 @@
 - **Unsupported:** live vendor or pump writes, Focus-title migration or legacy-title backfill, legacy-window backfill, and excluded footer behavior.
 - **Evidence owed:** public Focus/history and finding-case-file interfaces; preserved immutable-ending, expiry, legacy-scope, producer-owned-policy, and stale-response invariants; and the newly observed selected-evidence, geometry, loading, and retained regression assertions.
 - **Why:** selected-window findings and durable follow-up are advisory, persisted, and rendered through a shipped surface, so bounded failures and existing safety/identity guarantees must remain explicit.
-- **Disposition:** inline; copied unchanged to `openspec/changes/v2-findings-ledger/design.md` as the admitted implementation authority.
+- **Disposition:** inline; copied unchanged to `openspec/changes/archive/2026-09-24-v2-findings-ledger/design.md` as the admitted implementation authority.
 
 ### Grounding
 
@@ -98,7 +98,7 @@ No application or replay source changed for these additions. The temporary synth
 
 ### Q1 settled — Trial expiry and late conclusion
 
-Connor selected: “Keep the expiry; surface the record and allow a late conclusion (Recommended).” Keep the existing 28-day expiry and watch-admission behavior. Make the expired Trial prominent and reachable in Changes. A late conclusion is separately dated and cannot overwrite the original expiry, ending time, or saved ending assessment. Why: recover an understandable history path without silently extending the active watch. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain expiry and record a late conclusion separately.
+Connor selected: “Keep the expiry; surface the record and allow a late conclusion (Recommended).” Keep the existing 28-day expiry and watch-admission behavior. Make the expired Trial prominent and reachable in Changes. A late conclusion is separately dated and cannot overwrite the original expiry, ending time, or saved ending assessment. Why: recover an understandable history path without silently extending the active watch. → ADR, discharged in `openspec/changes/archive/2026-09-24-v2-findings-ledger/design.md`, ADR 404 — Retain expiry and record a late conclusion separately.
 
 ## Orchestrated grounding and current frontier
 
@@ -116,7 +116,7 @@ After these answers, finish the remaining visual choices through the admitted UI
 
 ### Q2 settled — Window-scoped Pattern semantics
 
-Connor selected: “Recalculate Pattern counts and membership for the selected window; this needs broader backend changes.” The selected clock window must determine Pattern counts and membership through backend-owned computation. A whole-day Pattern with only its chart cropped does not meet this decision. Why: Pattern rows should describe the same selected scope the reader is inspecting. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Recalculate Patterns for the selected clock window.
+Connor selected: “Recalculate Pattern counts and membership for the selected window; this needs broader backend changes.” The selected clock window must determine Pattern counts and membership through backend-owned computation. A whole-day Pattern with only its chart cropped does not meet this decision. Why: Pattern rows should describe the same selected scope the reader is inspecting. → ADR, discharged in `openspec/changes/archive/2026-09-24-v2-findings-ledger/design.md`, ADR 404 — Recalculate Patterns for the selected clock window.
 
 ### Q3 settled — Reassessments load on demand
 
@@ -170,7 +170,7 @@ The selected ticket's latest decision comment is https://github.com/harmonichq/h
 
 The document worker located the current whole-feed/scoped omission promise in `openspec/specs/behavioral-layer/spec.md` and ADR 395 in `openspec/changes/harmonic-v2/design.md`; the coordinator read both cited statements. The new #404 decision supersedes this behavior. The late-conclusion contract must preserve the existing separation of original ending and reassessment in `openspec/changes/harmonic-v2/contracts.md`. Source admission must express these amendments in the owning new OpenSpec change and explicitly identify any still-active contract updates. Preserve historical decisions and archived records; do not rewrite them as if the new behavior had already existed.
 
-Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 adds the Focus comparison contract to the required document inventory. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
+Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 adds the Focus comparison contract to the required document inventory. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
 
 The static behavior worker found existing window, occurrence, fullscreen, Day and Changes stories but no measured rail-parity, long-label collision, compact-control or icon-placement assertions. Its result is an inventory, not a fresh passing freeze or complete runtime coverage. `frontend-v2/diagnose.js` currently starts Focus with only subject/from; the coordinator verified the omitted window and the backend's unscoped Focus admission. The new Focus-window contract is settled by Q6 below.
 
@@ -186,7 +186,7 @@ Scope interview decisions are settled. Preserve the consolidated disposition; do
 
 ### Q6 settled — Focus retains the selected outcome window
 
-Connor agreed that a Focus started from a named or drawn Pattern window retains that window for eligibility and follow-up. He clarified his example to evening rather than morning, confirming the coordinator's explanation: the Focus tracks the contributing behavior associated with outcomes in the selected evening window; full contributing episodes remain available even when they begin earlier. The selected window follows the outcome, rather than separately clipping the behavior's onset. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain the selected outcome window in Focus.
+Connor agreed that a Focus started from a named or drawn Pattern window retains that window for eligibility and follow-up. He clarified his example to evening rather than morning, confirming the coordinator's explanation: the Focus tracks the contributing behavior associated with outcomes in the selected evening window; full contributing episodes remain available even when they begin earlier. The selected window follows the outcome, rather than separately clipping the behavior's onset. → ADR, discharged in `openspec/changes/archive/2026-09-24-v2-findings-ledger/design.md`, ADR 404 — Retain the selected outcome window in Focus.
 
 Apply the same saved scope to both comparison arms. Changing the live Diagnose window later does not silently change an existing Focus. Preserve original historical contexts; no inferred clock window is backfilled into older Focus records. Exact timestamps and denominator membership must be grounded in the owning producers before task/source admission. Do not silently swap an exposure anchor timestamp for the selected outcome timestamp.
 

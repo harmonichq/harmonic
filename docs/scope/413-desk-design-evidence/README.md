@@ -5,7 +5,7 @@ before-and-after captures at both supported desktop sizes, and the design
 critique with each finding's disposition.
 
 **Supersession.** This map supersedes the completion claim of #404's task 3.3
-(`openspec/changes/v2-findings-ledger/tasks.md`) for three things:
+(`openspec/changes/archive/2026-09-24-v2-findings-ledger/tasks.md`) for three things:
 parent-owned Pattern members, the basal legend and verdict paint, and skeleton
 loading. That record is left as written. #413's audit and this change are the
 correction.

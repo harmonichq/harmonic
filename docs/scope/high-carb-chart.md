@@ -43,7 +43,7 @@ Transport finding: the current sequence case projection contains alignment, kind
 
 ## Accepted direction and risk
 
-Connor confirmed the response-comparison direction and backend evidence extension with “yep”. Scope is now settled to that bounded revision; the remaining steps are source admission, independent review and execution-lock approval. The implementation does not select new outcome metrics. → ADR 410 in openspec/changes/high-carb-response/design.md
+Connor confirmed the response-comparison direction and backend evidence extension with “yep”. Scope is now settled to that bounded revision; the remaining steps are source admission, independent review and execution-lock approval. The implementation does not select new outcome metrics. → ADR 410 in openspec/changes/archive/2026-09-24-high-carb-response/design.md
 
 
 - **Must prevent:** secret exposure, irreversible loss of authoritative data, silent incorrect success; fabricated glucose curves; changed detector eligibility, ranking, ownership, support floor or dosing guidance; a caption describing a different population or period than its curve; false-low observations reappearing in the new evidence.

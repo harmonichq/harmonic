@@ -39,7 +39,7 @@
   Q3). `→ issue` (#109 work order)
 - Placebo construction (spiked at triage, now shipped in
   `scripts/gen_estimator_truth.py` and recorded in
-  `openspec/changes/estimator-admission-bars/design.md`): meals
+  `openspec/changes/archive/2026-09-24-estimator-admission-bars/design.md`): meals
   dosed exactly at programmed with zero-mean, dose-independent CGM outcome noise at
   realistic ISF (~50 mg/dL/u). Dose jitter and low-ISF noise both fake a finding —
   the convex carbs/(dose+burden) pooling turns zero-mean noise into downward bias

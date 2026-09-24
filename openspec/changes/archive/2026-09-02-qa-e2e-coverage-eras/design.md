@@ -2,10 +2,10 @@
 
 ## Standing authority
 
-The archived [ADR 190](../archive/2026-09-01-qa-e2e-database/design.md#adr-190--one-showcase-first-qa-database-with-isolated-coverage-cases)
+The archived [ADR 190](../2026-09-01-qa-e2e-database/design.md#adr-190--one-showcase-first-qa-database-with-isolated-coverage-cases)
 remains authoritative for one showcase-first committed database, production
 composition, synthetic provenance, and no test-only clock seam. The archived
-[ADR 194](../archive/2026-09-01-qa-e2e-database/design.md#adr-194--dense-showcase-background-served-from-a-scratch-copy)
+[ADR 194](../2026-09-01-qa-e2e-database/design.md#adr-194--dense-showcase-background-served-from-a-scratch-copy)
 remains authoritative for the dense showcase and scratch-copy no-fetch serve. ADR
 192 below supersedes only ADR 190's coverage-membership ruling.
 

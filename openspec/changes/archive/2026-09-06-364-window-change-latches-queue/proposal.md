@@ -65,5 +65,5 @@ Finding is not among that window's rows.
   replacement pair. That behaviour is preserved unchanged.
 - No decision record. The behaviour this change restores is already recorded — by
   the `surfaces` requirement above and by the request-and-recovery contract table
-  in `openspec/changes/diagnose-finding-case-files/design.md`. This change makes
+  in `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md`. This change makes
   the code obey them; it settles nothing new.

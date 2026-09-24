@@ -1,7 +1,7 @@
 # Design — In-place Occurrence selection focus (#105)
 
 This change makes no new product or visual decision. ADR 101 in
-`openspec/changes/diagnose-occurrence-roster-keys/design.md` already settles
+`openspec/changes/archive/2026-09-24-diagnose-occurrence-roster-keys/design.md` already settles
 the render-path focus restoration for an Occurrence request: the requested
 rendered row regains focus after its asynchronous case-file render completes.
 

@@ -60,11 +60,11 @@ test, and an OpenSpec change record — but no behavior-ledger amendment and no
 operator retirement sanction.
 
 Why: the repo has two prior retirements and they differ on exactly this point.
-`openspec/changes/retire-legacy-occurrences-popup/` retired a route a user could
+`openspec/changes/archive/2026-09-24-retire-legacy-occurrences-popup/` retired a route a user could
 still reach with a stale `#diagnose?modal=occurrences` bookmark, so it owed the
 Cockpit shell ledger a permanent `R1` record carrying a named, dated, quoted
 operator sanction (enforced at `frontend/cockpit-shell.browser.test.mjs:82-107`).
-`openspec/changes/retire-staging-entry-rule/` retired an unreachable selector
+`openspec/changes/archive/2026-09-24-retire-staging-entry-rule/` retired an unreachable selector
 family with no user-observable behavior, and owed only a closed source inventory
 plus decision records — its `Impact` reads "No rendered surface … changes". The
 ribbon block has no template binding, no route and no URL parameter, so nothing

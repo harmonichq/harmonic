@@ -17,7 +17,7 @@ This list is the "touched stories" below.
   `frontend/desk-behavior.replay.mjs`, re-inventory the dock's five states and
   the stage control's two labels in the served app, and record any observed
   behavior with no story before designing.
-- [ ] 2. Failing-first node tests in `frontend/watched-change-dock.test.js`, each
+- [ ] 2. Node tests in `frontend/watched-change-dock.test.js`. Failing-first, each
   seen to fail on the unchanged dock:
   - a served draft with items, with no watch, no recorded Plan, no marks and
     `saving` false, reads "Plan · staged", named by `draftName` (ADR 460
@@ -25,29 +25,37 @@ This list is the "touched stories" below.
   - the same draft whose slot the current analysis no longer admits still
     reads "Plan · staged" and names its setting;
   - the draft's values print only where every item carries the same current
-    and proposed pair, and no direction prints from the draft;
-  - with `saving` true and no marks, the served draft is not read and the dock
-    reads idle.
-  Guards in the same file, passing before and after: the surface's own marks,
-  when they name a change, keep today's title, direction and values; a watched
-  Trial, a watched Focus and a recorded Plan each outrank a served draft.
+    and proposed pair, and no direction prints from the draft.
+  Guards in the same file, passing before and after: with `saving` true and no
+  marks, the served draft is not read and the dock reads idle; the surface's
+  own marks, when they name a change, keep today's title, direction and values;
+  a watched Trial, a watched Focus and a recorded Plan each outrank a served
+  draft.
 - [ ] 3. In `frontend/watched-change-dock.js`, give `watchDockView` the inputs
   `draft` and `saving` and export `draftName(draft) → string` (ADR 460 points 2
   and 3). #459's stage control reuses `draftName`. Update the module's header
   comment so it names the served draft as the staged state's fallback source.
-- [ ] 4. Failing-first test in `frontend/diagnose.test.js`, seen to fail on the
-  unchanged destination: on a cold seat whose `/api/plan` answer lands after the
-  payload reads, once both settle, the callbacks the destination hands the view
-  carry a `planDraft` that answers the served draft.
+- [ ] 4. Failing-first tests in `frontend/diagnose.test.js`, each seen to fail on
+  the unchanged destination: on a cold seat whose `/api/plan` answer lands after
+  the payload reads, once both settle, the callbacks the destination hands the
+  view carry a `planDraft` that answers the served draft; and on a retained
+  return (a plain top-nav press with the input revision unchanged), the
+  destination re-reads Plan state and guidance and then calls the view's
+  `refresh()` (ADR 460 point 7).
 - [ ] 5. In `frontend/diagnose.js`, pass `planDraft` from `frontend/guidance.js`
-  through Diagnose's callbacks beside `pendingPlan`. In
+  through Diagnose's callbacks beside `pendingPlan`, and on a retained return
+  re-read Plan state and guidance, the same pair a cold read starts, then
+  refresh the workstation while it is still seated and on screen (ADR 460
+  point 7). In
   `frontend/diagnose-workstation.js`, hand the dock's paint `planDraft()` as
   `draft` and the workstation's in-flight flag as `saving`.
 - [ ] 6. In `frontend/diagnose-workstation.js`:
   - raise the in-flight flag in `stageAndSettle` before the press's toggle and
     paint, keeping the re-entrancy guard (ADR 460 point 4);
   - move the boot-time seeding of the three sets of marks into one seeding
-    function over `callbacks.isStaged`, and run it at boot, on every
+    function that first clears all three sets and then asks
+    `callbacks.isStaged` for every cell, so a mark the draft no longer holds
+    drops; run it at boot, on every
     `refresh()` while no save is in flight, and after an accepted save settles
     and the flag has cleared, then repaint (ADR 460 point 5). A refused save
     keeps #358's toggle replay. `callbacks.isStaged` stays `evidenceIsStaged`
@@ -80,7 +88,7 @@ This list is the "touched stories" below.
   `mockups/harmonic-v2-desktop.behavior.md`, with its replay function in
   `frontend/c4.replay.mjs`, its registry entry in
   `frontend/desk-behavior.replay.mjs`, its case in `frontend/replay-cases.mjs`,
-  and any story-table row `frontend/c4.replay.test.js` keeps. Three legs:
+  and any story-table row `frontend/c4.replay.test.js` keeps. Four legs:
   - leg 1: open Diagnose, go to Changes, stage the leading concern's action and
     save the draft, open the change records, press Diagnose in the top nav.
     The dock reads "Plan · staged" and "Open Changes ›" lands on the Plan.
@@ -92,10 +100,18 @@ This list is the "touched stories" below.
     `/api/plan` and hold it until the Diagnose payload reads have settled
     before releasing it, then press Diagnose. The dock reads "Plan · staged".
     Failing-first on the base: the hold makes the cold seat's boot seed miss
-    the draft deterministically.
-  Lay the story's harness over e4862000 and record that base run (legs 1 and 3
-  failing at their dock assertion, leg 2 passing) and the branch run at both
-  sizes on the story's status line.
+    the draft deterministically;
+  - leg 4, where a mark must drop: stage the basal run from Diagnose, go to
+    Changes, replace the saved draft through the Plan route (`PUT /api/plan`,
+    as S146 writes its draft) with one basal row at a slot the analysis does
+    not let stage, then press Diagnose in the top nav. The staged run's lane
+    cells carry `data-staged="false"`, their control reads "Stage change", and
+    the dock reads "Plan · staged" named for the new row. Failing-first on the
+    base: the retained return keeps the old marks and the dock names the old
+    run.
+  Lay the story's harness over e4862000 and record that base run (legs 1, 3
+  and 4 failing at their mark or dock assertion, leg 2 passing) and the branch
+  run at both sizes on the story's status line.
 - [ ] 9. Raise the frozen story inventory by the one story task 8 adds,
   everywhere it is stated: the literals in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` and
@@ -109,10 +125,12 @@ This list is the "touched stories" below.
 
 ## #459 — Warn before a stage replaces the staged setting
 
-Tasks 1–10 (#460) land first on this branch. This section reads the served
-draft, `draftName` and the re-seed after a settled save that they provide. A
-Diagnose item's `family` (`basal`, `ic`, `isf`) is already the Plan item `type`
-it stages as.
+Tasks 1–10 (#460) land first on this branch. This section reads `draftName`
+and the clearing re-seed after a settled save that they provide. The warning
+reads the draft the marks read: the Plan surface's own draft, `draftItems()`,
+which holds a pick made in Changes and not yet saved ahead of the saved draft
+(ADR 459 point 1). A Diagnose item's `family` (`basal`, `ic`, `isf`) is already
+the Plan item `type` it stages as.
 
 - [ ] 11. Add the manufactured case `basal-and-carb-ratio-lower` to
   `scripts/qa_e2e_cases.py`, composing the `basal-lower` and `ic-lower` recipes
@@ -130,28 +148,37 @@ it stages as.
   this task on its own: that commit is the base for task 16's failing-first
   run.
 - [ ] 12. Node tests:
-  - failing-first, each seen to fail on task 11's commit for the right reason
-    (the assertion, not a missing import):
+  - failing-first, each seen to fail at its assertion on task 11's commit
+    (write each against a local stub of the new export first, then point it at
+    the export):
     - in `frontend/plan-view.test.js`, `replacesDraft('basal', <carb-ratio
       rows>)` is true, and `replacesDraft('basal', <basal rows>)` and
-      `replacesDraft('basal', [])` are false. Write the tests against a local
-      stub first to see the assertion fail, then point them at the export;
+      `replacesDraft('basal', [])` are false;
+    - in `frontend/plan-view.test.js`, over a stubbed transport: after an
+      unsaved carb-ratio pick in Changes (`stage(candidate)`),
+      `replacedDraftItems('basal')` answers that pick's rows, so staging basal
+      warns; and with a saved carb-ratio draft plus an unsaved basal pick,
+      `replacedDraftItems('isf')` answers the basal pick's rows, the draft the
+      marks and the dock show;
     - in `frontend/diagnose-workstation.test.js`, a stage panel whose
       `replaces` option is a change's name renders "Replace staged change"
-      with the sub-line "replaces <that name>"; an already-staged panel keeps
-      "Staged · Undo" whatever `replaces` holds;
-  - guards in `frontend/plan-view.test.js`, over a stubbed transport, passing
-    on task 11's commit and after task 13: staging a carb-ratio block and then
-    a basal slot through `stageEvidence` saves only the basal rows; staging
-    basal 02:00 and then basal 03:00 makes the second save hold both rows
-    (`basal@120,basal@180`, as `docs/scope/459-repro.mjs` prints);
-  - guard in `frontend/diagnose-workstation.test.js`: a panel with `replaces`
-    null keeps "Stage change" and "staged for Plan".
+      with the sub-line "replaces <that name>";
+  - guards, passing on task 11's commit and after:
+    - in `frontend/plan-view.test.js`, over a stubbed transport: staging a
+      carb-ratio block and then a basal slot through `stageEvidence` saves only
+      the basal rows; staging basal 02:00 and then basal 03:00 makes the second
+      save hold both rows (`basal@120,basal@180`, as
+      `docs/scope/459-repro.mjs` prints);
+    - in `frontend/diagnose-workstation.test.js`: an already-staged panel keeps
+      "Staged · Undo" whatever `replaces` holds; a panel with `replaces` null
+      keeps "Stage change" and "staged for Plan".
 - [ ] 13. In `frontend/plan-view.js`, export
   `replacesDraft(type, draftItems) → boolean`: true when `draftItems` holds a
-  row whose `type` differs from `type`. Make `stageEvidence`'s
-  keep-only-this-setting filter use it (ADR 459 point 2). The save's
-  `true`/`false` answer is unchanged.
+  row whose `type` differs from `type`. Export
+  `replacedDraftItems(type) → items | null`: `draftItems()` when
+  `replacesDraft(type, draftItems())`, else `null`. Make `stageEvidence`'s
+  keep-only-this-setting filter use `replacesDraft` (ADR 459 point 2). The
+  save's `true`/`false` answer is unchanged.
 - [ ] 14. In `frontend/diagnose-workstation.js`, ask
   `callbacks.replacing(item) → string | null` for each stage panel's item and
   hand the answer to the shared stage control as the panel option `replaces`,
@@ -160,8 +187,8 @@ it stages as.
   `frontend/diagnose-workstation.css`, let the replace state wrap inside the
   panel without truncating, leaving the staged and unstaged box unchanged.
 - [ ] 15. In `frontend/diagnose.js`, wire `replacing(item)` to answer
-  `draftName(planDraft())` when `replacesDraft(item.family,
-  planDraft()?.items || [])`, and `null` otherwise.
+  `draftName({ items })` when `replacedDraftItems(item.family)` answers
+  `items`, and `null` otherwise.
 - [ ] 16. Add one ledger story (the next unissued S id after task 8's) on
   `basal-and-carb-ratio-lower`, in a dated `## #459 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24

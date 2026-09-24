@@ -56,8 +56,9 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
    toggle and paint, not after them, so that paint already runs with `saving`
    true. The re-entrancy guard is unchanged: a press while the flag is up is
    still dropped.
-5. The workstation's three sets of marks come from one seeding function over
-   `callbacks.isStaged`, run at three moments:
+5. The workstation's three sets of marks come from one seeding function that
+   first clears all three sets and then asks `callbacks.isStaged` for every
+   cell, so a mark the draft no longer holds drops. It runs at three moments:
    - at boot;
    - on every `refresh()` while no stage save is in flight, so a repaint that
      lands mid-save never undoes the press's mark;
@@ -71,7 +72,14 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
    Changes and not yet saved. Boot seeding already reads it that way on
    e4862000, so re-seeding changes when the marks are read, not what they
    mean.
-7. Nothing on the server changes. The guidance read already reads the draft
+7. A retained return to Diagnose (a plain top-nav press while the input
+   revision is unchanged) re-reads Plan state and guidance, the same pair a
+   cold read starts, and then refreshes the workstation while it is still
+   seated and on screen. A draft save does not move the input revision, so
+   without this a draft written while Diagnose was parked, by a route or
+   another tab, would leave the Plan surface's copy stale and the re-seed
+   would keep the old marks. Both reads are query-only and uncached.
+8. Nothing on the server changes. The guidance read already reads the draft
    fresh, so the draft save keeps its no-bump exception and no second exception
    is added.
 
@@ -87,6 +95,9 @@ Each was taken as the simplest option consistent with the settled decisions:
 - The marks keep `evidenceIsStaged`'s reading, unsaved Changes picks included
   (point 6). Narrowing it to the saved draft only would change Changes'
   staging, which is outside this ticket.
+- The seed clears before it asks, and the retained return re-reads Plan state
+  and guidance (points 5 and 7), so a mark can drop when the draft changes
+  elsewhere (coordinator scope resolution, plan-review round 3).
 - The design states `?mode=slot` and `?mode=icassert` paint an at-rest staged
   mark at boot with no draft behind it. The refresh re-seed does not re-apply
   those marks. No test or story opens either state.
@@ -126,21 +137,25 @@ replaces exactly as today.
 
 **Implementation decisions.**
 
-1. The warning reads the served draft that ADR 460 hands the workstation. A
-   stage control whose item's setting differs from the served draft's setting,
-   while the draft holds items, reads "Replace staged change" with the sub-line
-   "replaces <the draft's own name>", the name ADR 460 point 3 defines. A
+1. The warning reads the same draft the marks read: the Plan surface's own
+   `draftItems()`, which holds a pick made in Changes and not yet saved ahead
+   of the saved draft (ADR 460 point 6). So the warning and the marks can never
+   disagree. A stage control whose item's setting differs from that draft's
+   setting, while the draft holds items, reads "Replace staged change" with the
+   sub-line "replaces <the draft's own name>", the name ADR 460 point 3
+   defines, applied to those items. A
    control whose item is already staged keeps "Staged · Undo". Any other
    control keeps "Stage change" and "staged for Plan".
 2. Which rows a stage drops is one fact with one implementation.
    `replacesDraft` says whether staging an item of one setting replaces the
    draft's rows, and `stageEvidence`'s keep-only-this-setting filter uses it.
-3. The re-seed after an accepted stage save (ADR 460 point 5) clears the
-   replaced setting's mark, so its control reads the replace state naming the
-   change now staged. The interfaces are `replacesDraft(type, draftItems) →
-   boolean` exported from the Plan surface, a workstation callback
-   `replacing(item) → string | null` answering `draftName` of the served draft
-   when that draft would be replaced, and a stage-panel option `replaces`
+3. The clearing re-seed after an accepted stage save (ADR 460 point 5) drops
+   the replaced setting's mark, so its control reads the replace state naming
+   the change now staged. The interfaces are `replacesDraft(type, draftItems) →
+   boolean` and `replacedDraftItems(type) → items | null` (`draftItems()` when
+   it would be replaced, else `null`), both exported from the Plan surface; a
+   workstation callback `replacing(item) → string | null` answering
+   `draftName({ items })` for those items; and a stage-panel option `replaces`
    carrying that answer to the shared stage control.
 4. The Plan spec's one-setting requirement keeps its text and gains real
    scenarios for the replacement and its notice. Its placeholder scenario stays
@@ -166,3 +181,11 @@ staged/unstaged rule is unchanged for the two existing states.
 **Consequences.** Replacing is still one press, and undoing a replacement still
 does not restore the earlier setting. The reader is now told what the press
 will drop before making it.
+
+**Decided autonomously during AFK run (plan-review round 3 scope resolution).**
+The warning reads `draftItems()`, unsaved Changes picks included, rather than
+the served draft, so it names whatever the marks and the dock show. One case
+stays as today and is out of scope: a pick of the same setting made in Changes
+and not yet saved is dropped without a warning when Diagnose stages that
+setting, because `stageEvidence` builds from the saved draft and the setting
+does not change.

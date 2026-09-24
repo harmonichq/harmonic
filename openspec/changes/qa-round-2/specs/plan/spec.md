@@ -22,11 +22,12 @@ A Plan may contain multiple segments only when they are all changes to the same 
 #### Scenario: Staging a second setting names the change it will replace, before the press
 
 - **GIVEN** the manufactured case `basal-and-carb-ratio-lower` on Diagnose, with
-  the carb-ratio row's change staged and saved as the Plan draft
+  the carb-ratio row's change staged, either saved as the Plan draft or picked
+  in Changes and not yet saved
 - **WHEN** the reader opens the basal row, before pressing anything
 - **THEN** its stage control reads "Replace staged change"
 - **AND** the control's sub-line reads "replaces " followed by the staged
-  carb-ratio change's name, the name the watch dock gives that draft
+  carb-ratio change's name, the name the watch dock gives that change
 
 #### Scenario: Pressing it replaces the staged setting
 
@@ -45,3 +46,12 @@ A Plan may contain multiple segments only when they are all changes to the same 
 - **THEN** its stage control reads "Stage change" with the sub-line
   "staged for Plan"
 - **AND** pressing it keeps the staged basal rows and adds its own
+
+#### Scenario: The warning names what Diagnose shows as staged
+
+- **GIVEN** a carb-ratio change saved as the Plan draft and a basal change
+  picked in Changes and not yet saved, so Diagnose marks the basal change as
+  staged
+- **WHEN** the reader opens the correction factor, which the analysis lets stage
+- **THEN** its stage control reads "Replace staged change" and names the basal
+  change

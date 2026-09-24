@@ -59,8 +59,10 @@ The Diagnose surface's staged marks (the lane marks, each stage control's
 staged state and the watch dock's staged line) SHALL agree with the Plan draft
 whichever of the Plan read and the Diagnose payload lands first, after a return
 to Diagnose from another destination, and after a stage save settles. The
-surface SHALL ask the staging verdict again whenever it refreshes while no
-stage save it issued is in flight, and once an accepted stage save settles. A
+surface SHALL clear its marks and ask the staging verdict again whenever it
+refreshes while no stage save it issued is in flight, and once an accepted
+stage save settles, so a mark the draft no longer holds drops. A return to
+Diagnose SHALL re-read the Plan draft and guidance before it refreshes. A
 refresh that lands while a save is in flight SHALL NOT undo the mark the press
 painted. The verdict SHALL be the Plan surface's own, unchanged: the saved
 draft, or a pick made in Changes and not yet saved. The surface SHALL derive no
@@ -107,3 +109,13 @@ lets that item stage.
 - **WHEN** Diagnose refreshes, as on a return from another destination
 - **THEN** the slot's lane cell stays marked staged and its stage control keeps
   "Staged · Undo"
+
+#### Scenario: A draft changed elsewhere drops the stale mark on return
+
+- **GIVEN** a basal run staged from Diagnose and saved
+- **WHEN** the reader goes to Changes, the saved draft is replaced through the
+  Plan route by one basal row at a slot the analysis does not let stage, and
+  the reader presses Diagnose in the top nav
+- **THEN** the run's lane cells are no longer marked staged and their stage
+  control reads "Stage change"
+- **AND** the watch dock reads "Plan · staged" named for the new row

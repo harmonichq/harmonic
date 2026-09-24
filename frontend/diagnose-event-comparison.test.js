@@ -181,3 +181,37 @@ test('#432 · every served meal dose and carbs equal the minute-0 bolus in the s
     'pattern_clock_case');
   assert.ok(checked >= 40, `checked ${checked} served meals`);
 });
+
+test('#454 · a claimed Pattern Occurrence serves its claimant sentence once, as its cause', async () => {
+  const { projectPatternCaseFile } = await import('../mockups/diagnose-event-comparison.synthetic/project.mjs');
+  const committed = JSON.parse(readFileSync(
+    new URL('../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
+  const chart = { key: 'highs_after_meals', window: { scoped: false, start_min: null, end_min: null, label: null } };
+  const [[claimedId, member]] = Object.entries(committed.pattern_attribution.highs_after_meals);
+  const claimant = member.replace('habit:', '');
+  // A clone whose claimed row the claimant drove, with its recorded sentence as the
+  // row's text: the pairing the Python producer serves.
+  const withSentence = (sentence) => {
+    const capture = structuredClone(committed);
+    const row = capture.pattern_populations.meals.find((item) => item.id === claimedId);
+    row.cause_lever = claimant;
+    row.verdicts = [...row.verdicts.filter((item) => item.classifier !== claimant), {
+      classifier: claimant, detail: sentence ?? row.text, evidence_tier: 'inferred',
+      matched: true, silence_reason: null }];
+    return { row, reason: projectPatternCaseFile(capture, {
+      patternChart: chart, alignment: 'clock', occurrenceId: claimedId }).selection.detail.reason };
+  };
+  const { row, reason } = withSentence();
+  assert.ok(row.text, 'premise: the claimed row carries its attributed narrative');
+  assert.deepEqual([reason.cause.lever, reason.cause.text], [claimant, row.text]);
+  const entry = reason.habits.find((habit) => habit.lever === claimant);
+  assert.deepEqual([entry.verdict, entry.detail], ['fired', null],
+    'the claimant line carries no sentence the cause already serves');
+  assert.ok(reason.habits.every((habit) => habit.detail !== reason.cause.text),
+    'no habit entry repeats the cause');
+  // A claimant sentence that says something the cause does not is kept.
+  const kept = withSentence('Synthetic sentence the cause does not say.').reason;
+  assert.equal(kept.cause.text, row.text);
+  assert.equal(kept.habits.find((habit) => habit.lever === claimant).detail,
+    'Synthetic sentence the cause does not say.');
+});

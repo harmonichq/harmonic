@@ -302,21 +302,25 @@ function patternState(occurrence, lever) {
 // The served reason, by the Pattern rule the Python case producer applies: the
 // claimant is fired and every other habit keeps its row-relative state, except that an
 // unclaimed row reads fired as outranked. An entry carries its classifier sentence
-// only where that recorded verdict reads as the entry's verdict.
+// only where that recorded verdict reads as the entry's verdict, and the claimant's
+// entry carries none when its sentence is the cause's text, so it is served once
+// (ADR 454).
 function patternReason(row, habits, states, claimant) {
+  const cause = claimant ? {
+    lever: claimant, title: labels[claimant],
+    text: row.cause_lever === claimant ? row.text ?? '' : '',
+  } : null;
   return {
-    cause: claimant ? {
-      lever: claimant, title: labels[claimant],
-      text: row.cause_lever === claimant ? row.text ?? '' : '',
-    } : null,
+    cause,
     habits: habits.map((lever, index) => {
       const state = states[index];
       const verdict = claimant ? (lever === claimant ? 'fired' : state)
         : (state === 'fired' ? 'outranked' : state);
       const fact = row.verdicts.find((item) => item.classifier === lever);
       const agrees = state === verdict || (!claimant && state === 'fired');
+      const detail = fact && agrees ? fact.detail ?? null : null;
       return { lever, title: labels[lever], verdict,
-        detail: fact && agrees ? fact.detail ?? null : null };
+        detail: cause && lever === cause.lever && detail === cause.text ? null : detail };
     }),
   };
 }

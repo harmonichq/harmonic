@@ -3192,6 +3192,9 @@ export const S149 = appOnly('ADR 432',
 // STORY:harmonic-v2-desktop:S150
 export const S150 = appOnly('ADR 432',
   '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
+// STORY:harmonic-v2-desktop:S182
+export const S182 = appOnly('ADR 454',
+  '#454 a claimed Pattern Occurrence prints its sentence once, on its cause line', C4_STORIES.S182);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3251,6 +3254,7 @@ export const REGISTRY = [
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
+  ['S182', S182, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

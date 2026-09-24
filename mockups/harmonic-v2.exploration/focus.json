@@ -88920,7 +88920,7 @@
                 },
                 "habits": [
                   {
-                    "detail": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                    "detail": null,
                     "lever": "correction_on_iob",
                     "title": "Correction on active insulin",
                     "verdict": "fired"
@@ -92110,7 +92110,7 @@
             },
             "habits": [
               {
-                "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "detail": null,
                 "lever": "over_treated_low",
                 "title": "Over-treated low",
                 "verdict": "fired"
@@ -92780,7 +92780,7 @@
             },
             "habits": [
               {
-                "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "detail": null,
                 "lever": "over_treated_low",
                 "title": "Over-treated low",
                 "verdict": "fired"
@@ -103074,7 +103074,7 @@
             },
             "habits": [
               {
-                "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "detail": null,
                 "lever": "over_treated_low",
                 "title": "Over-treated low",
                 "verdict": "fired"
@@ -104188,7 +104188,7 @@
             },
             "habits": [
               {
-                "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "detail": null,
                 "lever": "over_treated_low",
                 "title": "Over-treated low",
                 "verdict": "fired"
@@ -104268,7 +104268,7 @@
         {
           "comparison_context": {
             "captured_at": "2024-05-30 12:00:00",
-            "code_version": "e54f4adfd52da1dd9164418662b38fce09a705ab7bc9a06be1c5c69230bbe849",
+            "code_version": "42ac431e435181287b905a9e47f3f77d2c9a8308dac373f46aa6303f48a6d34e",
             "configuration": {
               "anchor_high_mgdl": 250.0,
               "anchor_meal_min_carbs": 10.0,
@@ -104360,7 +104360,7 @@
               "user_override_harm_low_mgdl": 80.0,
               "user_override_pump_zero_rec_u": 0.2
             },
-            "id": "9525c49b8346b7010f4d3882eac96a70398aeee256bf9c06dae14d78c88f3d29",
+            "id": "9b7255de214973ad5e3295318e056586cacbafcb43b40e048d3165ae65bffcf3",
             "input_revision": 5,
             "policy": "340:1/386:1/387:1",
             "programmed_isf": {
@@ -104448,7 +104448,7 @@
               },
               "comparison_context": {
                 "captured_at": "2024-05-30 12:00:00",
-                "code_version": "e54f4adfd52da1dd9164418662b38fce09a705ab7bc9a06be1c5c69230bbe849",
+                "code_version": "42ac431e435181287b905a9e47f3f77d2c9a8308dac373f46aa6303f48a6d34e",
                 "configuration": {
                   "anchor_high_mgdl": 250.0,
                   "anchor_meal_min_carbs": 10.0,
@@ -104540,7 +104540,7 @@
                   "user_override_harm_low_mgdl": 80.0,
                   "user_override_pump_zero_rec_u": 0.2
                 },
-                "id": "9525c49b8346b7010f4d3882eac96a70398aeee256bf9c06dae14d78c88f3d29",
+                "id": "9b7255de214973ad5e3295318e056586cacbafcb43b40e048d3165ae65bffcf3",
                 "input_revision": 5,
                 "policy": "340:1/386:1/387:1",
                 "programmed_isf": {

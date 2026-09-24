@@ -4118,3 +4118,50 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #454 amendment — 2026-09-23, issue #454
+
+S182 is the fail-first obligation of ADR 454 ("A claimed Occurrence's sentence is
+served once"): a claimed Occurrence's claimant sentence is served once, as its
+cause's text, so the selected block prints it once, on the cause line. The desk is
+unchanged; it prints what is served. S182 is app-opener-only, like S148–S150.
+Browser execution belongs to the release coordinator at 1280x720 and 1440x900, each
+story on a fresh case store (`CASE_STORE_DIR`). No story is amended or retired. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator writes the one release freeze block and reconciles the count line.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from
+here"); coordinator ruling R454. It covers S182 and nothing outside #454.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over a named
+`scripts/qa_e2e_cases.py` case store.
+
+```
+S182 · Selecting a claimed Occurrence in the Highs after meals Pattern case file
+       prints its claimant's sentence once: the served cause carries it as its
+       text, the cause line prints it, no other line of the facts list repeats
+       it, and the claimant's habit line reads its title and band label only.
+  element:  #level .case-facts .vd.cause, .vd.habit
+  source:   the served reason (ADR 454); frontend/diagnose-workstation.js
+            occurrenceFacts prints what is served
+  lock:     none (revise; ADR 454)
+  data:     pattern-near-tie; All charts, then pattern:highs_after_meals's event
+            case, the matched cohort's first member (three meals, each claimed
+            by Carb undercount, which drove each one's episode)
+  evidence: C4_STORIES.S182 → assertSentenceOnce454; reads the served detail for
+            the selected Occurrence and the rendered facts list. No selection,
+            an unclaimed Occurrence or a claimant outside the served habits is a
+            premise failure; a line other than the cause line that contains the
+            served sentence, or a claimant line that reads more than its title
+            and band label, is the feature failure
+  status:   owed, coordinator-run at both sizes: base b03431d2 with this harness
+            laid over it fails at its feature assertion ("a claimed Occurrence
+            prints its sentence once": the claimant's habit line repeats the
+            sentence), not at setup; the branch passes
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Selected Occurrence cause and claimant habit lines, each sentence once | frontend/diagnose-workstation.js occurrenceFacts, over the served reason | S182 |

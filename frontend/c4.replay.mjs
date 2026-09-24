@@ -409,6 +409,27 @@ export function assertSelectedFacts432(id, detail, block, { outcome = null } = {
   assert.doesNotMatch(block.text, /The canvas shows/, `${id} no sentence may describe the canvas`);
 }
 
+// #454: a claimed Occurrence prints its claimant's sentence once. The served cause
+// carries it as text, the rendered cause line carries it, no other rendered line
+// repeats it, and the claimant's habit line reads its title and band label only.
+export function assertSentenceOnce454(id, detail, block) {
+  assert.ok(detail && block, `${id} premise: a selected Occurrence and its rendered block`);
+  const cause = detail.reason?.cause;
+  assert.ok(cause, `${id} premise: the selected Occurrence is claimed and serves its cause`);
+  const claimant = detail.reason.habits.find(habit => habit.lever === cause.lever);
+  assert.ok(claimant, `${id} premise: the claimant is one of the served habits`);
+  assert.ok(cause.text, `${id} the served cause must carry the claimant's sentence`);
+  const [causeLine, ...extra] = block.lines.filter(line => line.kind === 'cause');
+  assert.ok(causeLine?.text.includes(cause.text) && !extra.length,
+    `${id} the cause line must carry the served sentence: ${JSON.stringify(causeLine)}`);
+  for (const line of block.lines.filter(line => line !== causeLine)) {
+    assert.ok(!line.text.includes(cause.text), `${id} the cause's sentence must print once; it repeats on: ${line.text}`);
+  }
+  assert.ok(block.lines.some(line => line.kind === 'habit'
+    && line.text === `${claimant.title} · ${BAND432[claimant.verdict]}`),
+  `${id} the claimant's habit line must read its title and band label only`);
+}
+
 const renderedRows432 = page => page.evaluate(() => [...document.querySelectorAll('#level .case-occurrence')]
   .map(node => ({ occurrenceId: node.dataset.occurrenceId || null,
     text: node.querySelector('.only')?.textContent.replace(/\s+/g, ' ').trim() ?? null })));
@@ -436,6 +457,19 @@ async function mealBolusShortCase432(page) {
   await page.getByRole('button', { name: 'All charts', exact: true }).click();
   await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
   return (await drillMeal404(page, 'event')).served;
+}
+// The chartable Highs after meals Pattern, drilled from All charts to its event case;
+// returns that case's coordinate.
+async function highsAfterMealsCase432(page, id) {
+  await fullDayDiagnose(page);
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals' && row.pattern_chart);
+  assert.ok(pattern, `${id} premise: the case store serves a chartable Highs after meals Pattern`);
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
+  await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event' };
 }
 
 // Comparison membership is grouped by a constant served cohort name. Ordinary
@@ -2408,15 +2442,7 @@ export const C4_STORIES = {
     }, 'S149 the selected matched meal reads as its facts and served reason');
   },
   async S150(page) {
-    await fullDayDiagnose(page);
-    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
-    const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals' && row.pattern_chart);
-    assert.ok(pattern, 'S150 premise: the case store serves a chartable Highs after meals Pattern');
-    await page.getByRole('button', { name: 'All charts', exact: true }).click();
-    await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
-    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
-    await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
-    const coordinate = { projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event' };
+    const coordinate = await highsAfterMealsCase432(page, 'S150');
     const served = await read(page, '/api/diagnose/finding-case-file', coordinate);
     await waitForReplayAssertion(async seen => {
       assertServedRowDescriptions432('S150', served, seen(await renderedRows432(page)));
@@ -2426,6 +2452,18 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       assertSelectedFacts432('S150', file.selection.detail, seen(await selectedBlock432(page)));
     }, 'S150 a selected Highs after meals Occurrence lists its served habits');
+  },
+  // #454: fail-first on b03431d2, where the claimant's habit line repeats the
+  // sentence the cause line already prints.
+  async S182(page) {
+    const coordinate = await highsAfterMealsCase432(page, 'S182');
+    const matched = page.locator('#level .case-occurrence[data-comparison-cohort="matched"]').first();
+    assert.ok(await matched.count(), 'S182 premise: the Highs after meals case serves a claimed meal');
+    const occ = await selectOccurrence(page, matched);
+    const file = await read(page, '/api/diagnose/finding-case-file', { ...coordinate, occ });
+    await waitForReplayAssertion(async seen => {
+      assertSentenceOnce454('S182', file.selection.detail, seen(await selectedBlock432(page)));
+    }, 'S182 a claimed Occurrence prints its sentence once');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

@@ -2,7 +2,7 @@
 
 ## 1. Analyzer and projection wording, with their generated parity
 
-- [ ] 1.1 Reword every served carb-ratio sentence in
+- [x] 1.1 Reword every served carb-ratio sentence in
   `ciq_autotune/analyzers/ic.py` to the wording design.md's carb-ratio ADR
   tables: "carb ratio" for "I:C", no prose em dash, and "identifiable meals"
   for "clean-start". This covers:
@@ -17,7 +17,7 @@
 
   Meaning and every served number are unchanged. Leave comments, docstrings and
   error messages.
-- [ ] 1.2 Extend `tests/test_annotation_register.py` with a carb-ratio catalog
+- [x] 1.2 Extend `tests/test_annotation_register.py` with a carb-ratio catalog
   built through the analyzer's own functions:
   - every `_recommend` branch;
   - each hold variant, with and without the start-high cross-reference;
@@ -30,11 +30,11 @@
   "ISF" rule. Check each sentence against the full `BANNED` list, as the basal
   and correction-strength tests do. It guards a changed behavior, so it fails
   first on the base.
-- [ ] 1.3 In `ciq_autotune/findings_projection.py`, title the correction-factor
+- [x] 1.3 In `ciq_autotune/findings_projection.py`, title the correction-factor
   row `_title("Correction factor", …)` and a carb-ratio block
   `_title(f"Carb ratio {label}", …)`; basal is unchanged. Make the same two edits
   in `mockups/findings-projection.mirror.mjs`.
-- [ ] 1.4 Regenerate every generated copy with its generator:
+- [x] 1.4 Regenerate every generated copy with its generator:
   - `frontend/__fixtures__/findings-projection.json`
     (`uv run python scripts/gen_findings_projection_fixtures.py`);
   - `frontend/__fixtures__/analysis.json`
@@ -49,7 +49,7 @@
     mockups/diagnose-workstation.synthetic`). Touch nothing else in that
     generator (#454 edits it too). No other file in that directory may move;
     if one does, stop and report.
-- [ ] 1.5 Re-dump the QA literals in `scripts/qa_e2e_cases.py` by the AGENTS.md
+- [x] 1.5 Re-dump the QA literals in `scripts/qa_e2e_cases.py` by the AGENTS.md
   coverage-era process: materialize each affected case, run `execute_case`, and
   copy the literal dump; never derive at assertion time. The affected literals
   on b03431d2 are:
@@ -63,7 +63,7 @@
   string is a hand-set serialization input, not analyzer output; leave it. Run each affected case's
   `test_case_<name>` in `tests/test_qa_e2e_cases.py`. The coordinator
   re-measures the QA budgets at integration.
-- [ ] 1.6 Tests and checks.
+- [x] 1.6 Tests and checks.
   - `tests/test_findings_projection.py`: the correction-factor row is titled
     "Correction factor …" and a carb-ratio block "Carb ratio <span> …"; the
     lookups and headline literals that quoted the old titles or sentences move

@@ -472,7 +472,7 @@ test('the queue consumes the server tier and never reclassifies a row', () => {
 });
 
 test('term 14/38 · a held row is words-first and offers no stage affordance', () => {
-  const isf = queueRows(W.low_block).find((r) => r.title === 'ISF');
+  const isf = queueRows(W.low_block).find((r) => r.title === 'Correction factor');
   assert.equal(isf.register, 'held');
   assert.equal(isf.stageable, false);
   assert.deepEqual(isf.detail, {
@@ -548,7 +548,7 @@ test('term 16 · a merged span prints its OWN support denominator, never an inve
 test('a single asserting item prints the number pair the mock shows', () => {
   const slot = queueRows(W.global).find((r) => r.title === 'Basal 05:30 · raise');
   assert.deepEqual(slot.detail, { kind: 'nums', now: 'now 0.8 U/hr → ', then: '0.96 U/hr' });
-  const ic = queueRows(W.global).find((r) => r.title.startsWith('I:C'));
+  const ic = queueRows(W.global).find((r) => r.title.startsWith('Carb ratio'));
   assert.deepEqual(ic.detail, { kind: 'nums', now: 'now 5.7 g/U → ', then: '5.0 g/U' });
 });
 

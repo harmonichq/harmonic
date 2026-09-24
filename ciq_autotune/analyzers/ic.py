@@ -1376,7 +1376,7 @@ def run_burdens(bolus_events: List[BolusEvent],
 # at the lever that is. Never appended to a tightened segment (the ratio itself is being
 # flagged) — see analyze_ic. Plain-ASCII to match the rest of the copy in this module.
 _START_HIGH_XREF = (
-    " Pre-meal BG is the bigger lever here — see the 'meals start high' finding."
+    " Pre-meal BG is the bigger lever here (see the 'meals start high' finding)."
 )
 
 
@@ -1404,7 +1404,7 @@ def _meals_start_high_finding(burdens: List[MealBurden]) -> Optional[Finding]:
         return None
     delta = median_bg0 - TARGET_BG
     summary = (
-        f"Your meals start high: the median pre-meal BG is {median_bg0:.0f} mg/dL — "
+        f"Your meals start high: the median pre-meal BG is {median_bg0:.0f} mg/dL, "
         f"about {delta:.0f} points above CIQ's {TARGET_BG:.0f} target. That pre-meal "
         f"gap, not the ratio, is doing most of the work. Bolusing a little earlier "
         f"(pre-bolus timing) and bringing a high down before you eat (a pre-meal "
@@ -1450,9 +1450,9 @@ def _segment_for(tod_min: int, segments: List[Tuple[int, float]]) -> int:
 def _recommend(programmed: Optional[float], measured: Optional[float],
                cfg: IcConfig) -> Tuple[Optional[float], str]:
     if measured is None:
-        return None, "not enough isolated carb-tagged meals to estimate I:C"
+        return None, "not enough isolated carb-tagged meals to estimate the carb ratio"
     if programmed is None:
-        return round(measured, 1), "implied I:C from post-meal correction burden"
+        return round(measured, 1), "carb ratio implied by post-meal corrections"
     # Half the gap toward the measured ratio, still capped at ±max_step_frac (#410). Moving
     # only halfway each window converges without the ping-pong a full-step chase produces
     # (forecast: full steps reversed 2–3× per 12 weeks; half-gap ~3% final error, fewest
@@ -1464,10 +1464,10 @@ def _recommend(programmed: Optional[float], measured: Optional[float],
     step_hi = programmed * (1.0 + cfg.max_step_frac)
     rec = round(min(max(half_gap, step_lo), step_hi), 1)
     if measured < programmed:
-        ann = ("post-meal corrections imply meals are under-covered — a tighter "
-               "(smaller) I:C would dose more per carb")
+        ann = ("post-meal corrections imply meals are under-covered, so a tighter "
+               "(smaller) carb ratio would dose more per carb")
     elif measured > programmed:
-        ann = "meals look slightly over-covered relative to programmed I:C"
+        ann = "meals look slightly over-covered relative to the programmed carb ratio"
     else:
         ann = "measured matches programmed"
     return rec, ann
@@ -1750,33 +1750,33 @@ def analyze_ic(
             if needed:
                 prior_action["hold_reason"] = "insufficient_supported_meals"
                 exit_text = (
-                    f"{supported} clean-start/correction-only meals are available; "
+                    f"{supported} identifiable meals are available; "
                     f"{needed} more needed before direction can be tested"
                 )
                 hold_intro = (
-                    "Prior-meal insulin cannot be separated from this meal — "
+                    "Prior-meal insulin cannot be separated from this meal: "
                     if has_prior_action_exclusions
-                    else "I:C direction needs more identifiable meals — "
+                    else "Carb ratio direction needs more identifiable meals: "
                 )
             elif sensitivity["includes_programmed"]:
                 prior_action["hold_reason"] = "sensitivity_includes_programmed"
                 exit_text = (
-                    f"{supported} clean-start/correction-only meals are available, "
+                    f"{supported} identifiable meals are available, "
                     "but their prior-action sensitivity bracket includes the "
-                    "programmed I:C"
+                    "programmed carb ratio"
                 )
-                hold_intro = "Prior-meal insulin cannot be separated from this meal — "
+                hold_intro = "Prior-meal insulin cannot be separated from this meal: "
             else:
                 prior_action["hold_reason"] = "supported_band_includes_programmed"
                 exit_text = (
-                    f"{supported} clean-start/correction-only meals are available, "
-                    "but their band still includes the programmed I:C"
+                    f"{supported} identifiable meals are available, "
+                    "but their band still includes the programmed carb ratio"
                 )
-                hold_intro = "Prior-meal insulin cannot be separated from this meal — "
+                hold_intro = "Prior-meal insulin cannot be separated from this meal: "
             row = replace(
                 row,
                 annotation=(
-                    f"{hold_intro}{exit_text}. Held at the programmed I:C."
+                    f"{hold_intro}{exit_text}. Held at the programmed carb ratio."
                     + (_START_HIGH_XREF if _START_HIGH_XREF in row.annotation else "")
                 ),
             )
@@ -1795,7 +1795,7 @@ def analyze_ic(
         if owner_block is not None and len(owner_block["member_start_mins"]) > 1:
             annotation = (
                 f"Read with the {_block_label(owner_block['start_min'], owner_block['end_min'])} "
-                f"stretch — the meals can't tell these hours apart. " + annotation
+                f"stretch: the meals can't tell these hours apart. " + annotation
             )
         out.append(replace(row, asserts_move=False, evidence=row_evidence,
                            annotation=annotation, block_id=owner))
@@ -1818,17 +1818,17 @@ def analyze_ic(
     if ic_est.n >= cfg.min_runs and ic_est.wide:
         occurrences = sorted(
             [Occurrence(t=b.t,
-                        detail=f"{b.carbs:.0f}g carbs, implied I:C {b.true_ic:.1f}")
+                        detail=f"{b.carbs:.0f}g carbs, implied carb ratio {b.true_ic:.1f}")
              for b in burdens if b.carbs],
             key=lambda o: o.t, reverse=True,
         )[:20]
         findings.append(Finding(
             detector="carb-counting",
             severity="medium",
-            summary=("The implied I:C scatters widely across meals — no single ratio "
-                     "settles out. That points at inconsistent carb counting rather "
-                     "than a wrong I:C; a steadier counting habit will help more than "
-                     "changing the ratio."),
+            summary=("The implied carb ratio scatters widely across meals, and no "
+                     "single ratio settles out. That points at inconsistent carb "
+                     "counting rather than a wrong carb ratio; a steadier counting "
+                     "habit will help more than changing the ratio."),
             evidence={"ic_estimate": ic_est.to_dict(), "n_meals": ic_est.n},
             occurrences=occurrences,
         ))
@@ -1854,24 +1854,24 @@ def analyze_ic(
         if user_u >= ciq_u:
             summary = (
                 f"After your meals, about {known_u:.0f} U of extra correction insulin "
-                f"goes in over the next {hours} h to bring BG back down — and you "
+                f"goes in over the next {hours} h to bring BG back down, and you "
                 f"deliver most of it yourself: {user_u:.0f} U across {n_user} manual "
                 f"corrections vs {ciq_u:.0f} U from Control-IQ's {n_ciq} auto-corrections. "
                 f"This isn't Control-IQ cleaning up after your meals; the manual cleanup "
                 f"is yours. It's the downstream cost of meals that start above target "
-                f"(see the pre-meal 'meals start high' finding) — starting closer to "
+                f"(see the pre-meal 'meals start high' finding). Starting closer to "
                 f"target is the same lever that shrinks this correction burden.")
         else:
             summary = (
                 f"After your meals, about {known_u:.0f} U of extra correction insulin "
-                f"goes in over the next {hours} h to bring BG back down — most of it "
+                f"goes in over the next {hours} h to bring BG back down, most of it "
                 f"delivered automatically by Control-IQ: {ciq_u:.0f} U across {n_ciq} "
                 f"auto-corrections vs {user_u:.0f} U from your {n_user} manual corrections. "
                 f"Starting meals closer to target (see the pre-meal 'meals start high' "
                 f"finding) is the lever that shrinks this correction burden.")
         occ = sorted(
             [Occurrence(t=b.t,
-                        detail=(f"{b.carbs:.0f}g meal — {b.post_correction:.1f} U "
+                        detail=(f"{b.carbs:.0f}g meal, {b.post_correction:.1f} U "
                                 f"correction after (you {b.post_correction_user:.1f} U / "
                                 f"CIQ {b.post_correction_ciq:.1f} U)"))
              for b in burdens if b.post_correction > 0],
@@ -2100,11 +2100,11 @@ def _block_annotation(state: str, label: str, recommend_ann: str,
         return (f"Not enough meals yet to tell {label} apart from the rest of "
                 "your day.")
     if state == "below-floor":
-        return ("Below the floor for a dosing change — evidence shown, no move "
+        return ("Below the floor for a dosing change: evidence shown, no move "
                 "suggested.")
     if state == "unmeasured-alone":
-        return ("Meals here always chain into neighbouring hours — read with the "
-                "rest of the day.")
+        return ("Meals here always chain into neighbouring hours, so read them with "
+                "the rest of the day.")
     if hold_reason:
         return hold_reason
     return recommend_ann
@@ -2157,7 +2157,7 @@ def _history_annotation(
 
     interval = ""
     if estimate.lo is not None and estimate.hi is not None:
-        interval = f" (CI {number(estimate.lo)}–{number(estimate.hi)})"
+        interval = f" (range {number(estimate.lo)}–{number(estimate.hi)})"
     run_noun = "meal run" if support == 1 else "meal runs"
     return (
         f"When Carb ratio was {number(past_setting)} g/U, "

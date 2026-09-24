@@ -377,7 +377,7 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(blind["register"], "blind")
         self.assertEqual(blind["reason"], str(Status.NO_DATA))
         self.assertEqual(blind["support"]["n"], 0)
-        isf = _row(rows, "ISF")
+        isf = _row(rows, "Correction factor")
         self.assertEqual(isf["register"], "held")
         self.assertIsNone(isf["direction"])
         self.assertIs(isf["asserts_move"], False)
@@ -386,7 +386,8 @@ class GroundedWindowTest(unittest.TestCase):
         # Byte-identical, both flavors: the queue transcribes, it never rewords.
         analysis = self.projection._analysis
         rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        self.assertEqual(_row(rows, "ISF")["reason"], analysis["isf"][0]["annotation"])
+        self.assertEqual(_row(rows, "Correction factor")["reason"],
+                         analysis["isf"][0]["annotation"])
         blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
         self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
                          blind_slot["safety_status"])
@@ -439,7 +440,7 @@ class GroundedWindowTest(unittest.TestCase):
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
         self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
-        self.assertIn("I:C 12:00 to 24:00 · lower", _titles(rows, "assert"))
+        self.assertIn("Carb ratio 12:00 to 24:00 · lower", _titles(rows, "assert"))
 
 
 class SpanMergingTest(unittest.TestCase):
@@ -506,7 +507,7 @@ class ChipProjectionTest(unittest.TestCase):
                         global_counts)
 
         raise_case = gen.payload()["settings_cases"]["carb_ratio_raise"]
-        self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
+        self.assertEqual(_row(raise_case["rows"], "Carb ratio 00:00 to 12:00 · raise")["chips"],
                          ["lows"])
 
     def test_episode_levers_chip_by_their_closed_outcome_kind(self):
@@ -2006,12 +2007,13 @@ class HeadlineTest(unittest.TestCase):
             "asserts_move": True, "direction": "raise",
             "current_values": [10], "recommended": 12, "estimate": {"value": 12},
             "n_runs": 8,
-            "annotation": "meals look slightly over-covered relative to programmed I:C",
+            "annotation": ("meals look slightly over-covered relative to the "
+                           "programmed carb ratio"),
         }]}
         row = self._project(analysis)[0]
         self.assertEqual(
             row["headline"],
-            "Meals look slightly over-covered relative to programmed I:C. "
+            "Meals look slightly over-covered relative to the programmed carb ratio. "
             "Measured 12 g/U across 8 meal runs against 10 programmed.")
 
     def test_carb_ratio_held_headline_strips_the_held_at_current_tail(self):
@@ -2093,7 +2095,8 @@ class HeadlineTest(unittest.TestCase):
         ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
                     "asserts_move": True, "direction": "raise",
                     "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+                    "annotation": ("meals look slightly over-covered relative to the "
+                                   "programmed carb ratio")}
         ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
                   "asserts_move": False, "held_reason": "pre-empted low; held at current",
                   "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
@@ -2151,7 +2154,8 @@ class HeadlineTest(unittest.TestCase):
         ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
                     "asserts_move": True, "direction": "raise",
                     "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+                    "annotation": ("meals look slightly over-covered relative to the "
+                                   "programmed carb ratio")}
         ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
                   "asserts_move": False, "held_reason": "pre-empted low; held at current",
                   "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
@@ -2184,7 +2188,7 @@ class HeadlineTest(unittest.TestCase):
                 "No steady nights delivered against the programmed rate "
                 "here, so nothing to say either way.",
             ("assert", "carb_ratio"):
-                "Meals look slightly over-covered relative to programmed I:C.",
+                "Meals look slightly over-covered relative to the programmed carb ratio.",
             ("held", "carb_ratio"): "Held at current: pre-empted low.",
             ("assert", "isf"):
                 "Overnight you look more sensitive to insulin than the set "

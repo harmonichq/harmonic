@@ -383,22 +383,138 @@ destinations. It includes the utility entry points. It is not a second registry.
 `--base <ref>` compares the merge-base with committed HEAD. The selector uses
 Babel's parser declared as a direct devDependency and pinned in the frontend
 lockfile (run `npm ci` first).
-It compares exported story functions, object-method stories and the transitive
-helpers and constants they reference. Imported replay helpers are followed too;
-the inherited `STORY:` comments retain their namespaced identities. The v2
-files themselves have no `STORY:` comments, so their exported registry names
-supply that identity. Both old and new graphs participate, retaining deleted
-helpers and renamed bindings in the affected set. Python's AST supplies case
-recipe and materializer dependencies without executing recipes. Shared runner,
-registry, transport, generator or acceptance-driver changes select the full
-ledger. Unrelated production changes receive the fixed smoke coverage. Selection
-errors fail; they never return a silently empty subset.
+It builds a function-level graph of every module the replay reaches by a
+relative named import, wherever that module lives, at both commits; the old and
+new graphs both participate, so a deleted key still counts as changed. Replay
+code is judged by one default: a change to a replay-side module selects the full
+ledger, and each reason names the changed key. The one exception is a change
+confined to story entries of the story tables (`C2_STORIES`, `C3_STORIES`,
+`C4_STORIES` and `C4_RETIREMENTS`) whose dependency closure, the entry included,
+is proven read-only toward shared state. Shared state is:
+- a module's own state (a top-level binding that is not an import, a function or
+  a `const` primitive);
+- any non-function binding imported from another replay-side module, and any
+  binding imported from a Node module or package (`node:assert/strict` and the
+  like); product modules stay exempt;
+- the members of a class or function binding: static fields, function-object
+  properties and `prototype`;
+- every free global name, the built-ins included (`Object`, `Array`, `JSON`,
+  `Math`, `Number`, `String`, `Boolean`, `Promise`, `Map`, `Set`, `URL`, `Date`,
+  `RegExp`, `Error`, `setTimeout`, `setInterval`, `clearTimeout`,
+  `structuredClone`, `console`, `encodeURIComponent`, `decodeURIComponent`,
+  `encodeURI`, `decodeURI`, `URLSearchParams`, as much as `process` or
+  `globalThis`), but not the primitive globals `undefined`, `NaN` and
+  `Infinity`;
+- every local alias of any of these: a variable bound to it, a `for…of` or
+  `for…in` variable over it, the parameters of any callback handed to a call
+  that receives it (`Array.from`'s mapper as much as `forEach`'s), a parameter
+  defaulted to it, and an array or object literal that spreads or contains it,
+  whose elements are aliases too.
+
+The proof is an allow-list: an entry is precise only when every reference to
+shared state in its closure sits in a recognized read position. A function
+passed to a Playwright page-evaluation method (`evaluate`, `evaluateHandle`,
+`evaluateAll`, `$eval`, `$$eval`, `waitForFunction`, `addInitScript`), or a
+module function that is not exported and is only ever handed to one, runs in the
+story's own page (a fresh browser context per story), so its free names such as
+`document` are the page's, not shared state. The per-story context's functions
+(`ctx.open`, `ctx.capturePump`, `ctx.withCase`) are accepted as clean: `ctx` is
+a per-story parameter, and those functions live in `main` and the case server,
+outside every story entry, so a change to them already selects the full ledger.
+The recognized positions are:
+- a non-computed member read used as a value;
+- the receiver of a read-only method;
+- an argument to a read-only built-in;
+- the delay (second) argument of `setTimeout` or `setInterval`;
+- the callee of `process.stdout.write` or `process.stderr.write`, output calls
+  recognized like `console` (their arguments are judged like any call's);
+- a non-computed `process.env.<name>` read, whose result is a string or
+  `undefined` and ends the chain;
+- an argument to a graph function proven by the same test not to mutate that
+  parameter;
+- a `typeof`, comparison, arithmetic, condition or template read;
+- a spread or element in a new array or object literal, which continues the
+  chain with the literal;
+- a call to a known function;
+- a call to a built-in or a Node import, or to one of its functions or methods
+  (`JSON.stringify`, `Math.max`, `Object.keys`, `Number(…)`, `new Map()`,
+  `assert.equal`), whose arguments are judged by the argument rule, so the
+  target of `Object.assign`, `Object.defineProperty` or a `Reflect` method is
+  never a read position;
+- a call to a class or function binding, or `new` of it;
+- a built-in function handed as an iterating read's callback (`.filter(Boolean)`)
+  and a built-in in a class's `extends` clause.
+
+Read-only methods and built-ins split by result. Some always return a primitive:
+`has`, `includes`, `indexOf`, `lastIndexOf`, `findIndex`, `some`, `every`,
+`join`, `toString`, `forEach`, `startsWith`, `endsWith`, `JSON.stringify`,
+`Array.isArray`, `String`, `Number`, `Boolean`, `encodeURIComponent`,
+`decodeURIComponent`, `encodeURI` and `decodeURI`. That result ends the chain.
+The others return shared state: `getStore`, `get`, `at`, `slice`, `keys`,
+`values`, `entries`, `map`, `filter`, `find`, `reduce`, `concat`, `flat`,
+`flatMap`, `Object.keys`, `Object.values`, `Object.entries`, `Array.from`,
+`structuredClone` and `URLSearchParams`. Their result is shared: the call's own
+position must be a read position, and a local bound to it is an alias. So is the
+result of a graph function that may return a parameter holding shared state. An
+inline callback of an iterating read on shared state may return into that shared
+result. `test` is not a read, since it moves `lastIndex` on a global or sticky
+pattern.
+
+Any other position plans the full ledger, among them a computed member access,
+the target of an assignment, update or `delete`, and a value passed anywhere
+else (a built-in, or a member of one such as `Array.prototype`, included),
+returned or bound by destructuring, as do a `this`, a getter or setter, and a
+write rooted outside the node's own locals. The proof errs to the full ledger
+for any use it does not recognize. It covers honest edits under this
+definition: `eval`, the `Function` constructor and a dynamic `import()` in a
+replay module stop the plan, and the nightly complete ledger, which the pull
+request's latest-nightly check reads, is the backstop for anything outside the
+model, reflection included (a write through `__proto__` or through what
+`Object.getPrototypeOf` returns, `constructor.constructor`, a direct
+`Array.prototype.push(…)`, `Object.assign` on an imported product function). It
+relies on one reading it cannot prove: that a method named like a
+page-evaluation method sends its function to the page. Each proven entry selects the stories whose dependency
+closure reaches it, and a table whose entries alone changed is judged by those
+entries. On the real tree 126 of the 132 story entries stay precise; the other
+six pass a module-level pattern to `assert.match`, pass a loop alias over a
+module-level list to `page.setViewportSize`, or read a module-level table by a
+computed key. A tainted entry's reason names the unsafe nodes it reaches. A
+change to a module's top-level statements, a helper, a constant, an import line,
+or a story function outside those tables selects the full ledger, and so does a
+registry row whose id is not its function's name. An import line is judged by
+comparing each replay-side module's import declarations whole (relative,
+`node:` and package imports alike: source, specifiers, bindings and attributes,
+in order), since a Node or package import binds no graph key; any difference
+selects the full ledger with the reason `replay-side import change: <file>`. The inherited `STORY:`
+comments retain their namespaced identities; the v2 files have none, so their
+exported registry names supply that identity. A module is product-side when the
+app's entry, `frontend/main.js` (the script `frontend/index.html` loads),
+reaches it by static import at every commit that has it as a replay module.
+Product code reaches the stories through the browser, so it keeps this section's
+policy: a changed function a story's closure reaches selects that story, and any
+other production change receives the fixed smoke coverage. The per-story runner
+(`main`'s loop and `openApp`) runs for every story, so a product function it
+reaches selects every story; its walk stops at the registry and the story
+tables. An app entry that is absent or cannot be parsed stops the plan. Python's
+AST supplies case recipe and materializer dependencies without executing
+recipes. Shared runner, registry, transport, generator or acceptance-driver
+changes select the full ledger, and so does a change to an executable file the
+replay names by a literal path without importing it: a string or template
+literal, a `require()` with or without its extension, or a `new URL(…,
+import.meta.url)`. An import the selection cannot follow (one that resolves to
+no tracked file, a dynamic `import()`, a side-effect, default, namespace or
+re-export form, or a dependency with no node in its module) stops the plan with
+an error naming the file, and so does a literal path it cannot resolve. A
+`require()` of a variable, such as the environment-named Playwright package, is
+not seen. Selection errors fail; they never return a silently empty subset.
 
 `smoke.json` records the comparison commits, changed files, affected symbols,
-case/destination coverage and selected IDs. `selection.json` distinguishes
-`smoke` and `full` receipts. A PR smoke receipt cannot be cited as full coverage.
-The other explicit browser suites and inherited ledgers retain their existing
-commands on every event.
+case/destination coverage, the replay modules the graph read at either commit
+(`replay_modules`), those it treated as product code (`product_modules`), the
+executables the replay names by path (`path_loads`) and selected IDs.
+`selection.json` distinguishes `smoke` and `full` receipts. A PR smoke receipt
+cannot be cited as full coverage. The other explicit browser suites and
+inherited ledgers retain their existing commands on every event.
 
 Main pushes and the scheduled event run every full v2 partition. ci.yml owns
 the nightly cron and both matrix inventories. Nightly runs do not publish an

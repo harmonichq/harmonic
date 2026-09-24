@@ -434,5 +434,6 @@ standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
   Episode Log group, and Close returns focus to it. Below 700px, where the
   Episode Log is a sheet, closing the Glossary returns to the open sheet, so the
   same control takes focus back.
-- **Evidence.** The desk ledger's S121 and S122 hold the replays;
-  `docs/scope/release-422-434-evidence/423/` holds the logs and captures.
+- **Evidence.** The desk ledger's S121 and S122 hold the replays; a private
+  design-evidence record — not part of the public tree — holds the logs and
+  captures.

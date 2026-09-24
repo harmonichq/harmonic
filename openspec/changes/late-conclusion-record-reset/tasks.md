@@ -1,0 +1,127 @@
+# #452 implementation checklist
+
+Sanction for the shipped-surface revision and the ledger amendment below: Q3
+delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here");
+coordinator ruling R452.
+
+## 1. One place clears everything held for the open record (desk)
+
+- [ ] 1.1 In `frontend/history.js`, make one function the only writer of
+  `memory.open`. Given the next identity (`{ kind, id }` or none), it:
+  - sets `memory.open`;
+  - clears `mode`, `record` and `error`;
+  - sets `loading` to null and bumps `readGeneration`, so a read made for the
+    record being left cannot land on the next one;
+  - clears the later-conclusion `conclusion`, `conclusionFailure` and
+    `conclusionAttempt`.
+
+  `openRecord` calls it on every open, and still drops `memory.roster` so the
+  roster re-reads. `closeRecord` calls it with none. `mount` calls it only when
+  the address names a different record than `memory.open` (the existing
+  comparison). Call it before `navigate`, which renders synchronously. Delete
+  the separate resets now in `openRecord`, `closeRecord` and `mount`'s
+  different-record branch, so no second assignment of any of those fields on an
+  identity change remains in the file.
+
+  Keep unchanged:
+  - the successful-save clear in `submitLateConclusion`;
+  - ADR 430's `memory.failed = null` in `loadRecord`;
+  - the retry re-read in `submitLateConclusion`;
+  - the `#late-conclusion-conclusion` input binding;
+  - the Day door (`[data-day-date]`);
+  - the assessment and reassessment-retry bindings.
+
+  No other file changes behavior.
+- [ ] 1.2 Rewrite the page-memory comment above `memory`, and the doc comments on
+  `openRecord` and `closeRecord`, to state the identity rule once. Name ADR 452
+  beside ADR 430's existing note. Every other comment that describes when these
+  fields clear must match the code.
+
+## 2. Tests through the roster press (desk)
+
+- [ ] 2.1 In `frontend/follow-up-lifecycle.test.js`, add tests on the #430 host
+  fake (`host()`, `seat.records`, `seat.recordClose`, `openHistoryRecord`). Give
+  the router a window fake, as the existing "a failed retained read stays with
+  its record" test does, so Back to records and a roster press write the
+  address. Set `expired = true` so every selected read serves an
+  `expired_unreviewed` ending with `late_conclusion: { state: 'unavailable' }`.
+  - (a) Different record. Open expired Trial A and type in its Later conclusion.
+    With `fail = true`, record it. A re-mount shows "Recording the later
+    conclusion failed" (premise). Press Back to records, mount the roster, and
+    press B's roster row. Once B renders its form, assert that:
+    - B's HTML contains neither A's words nor "Recording the later conclusion
+      failed";
+    - B's submit is disabled.
+
+    Then set `fail = false`, type on B and record. Assert that:
+    - the last `/conclusion` POST targets `/trials/<B>/conclusion`;
+    - its `request_id` differs from A's failed POST's `request_id`;
+    - no `selected=<B>` GET is made between the typing on B and that POST (a
+      first save, not a retry).
+  - (b) Same record. Type on expired Trial A without recording. Press Back to
+    records and press A's roster row again. Assert that A's form no longer
+    contains the typed words.
+  - Each test restores `expired`, `fail`, `lateConclusion` and
+    `globalThis.window` in its `finally`. Before restoring the window, it resets
+    the router with `navigate('diagnose')` imported from `./routes.js`.
+  - Run (a) and (b) against the unmodified `history.js` first and see both fail
+    at their feature assertions. Then implement task 1.1.
+  - Keep every existing test in the file passing, in particular:
+    - "an exact expired Trial records a later conclusion…": the same record's
+      failed save and Retry send one request id and keep the words;
+    - #430's "a failed retained read stays with its record…".
+
+## 3. The ledger records the change (desk)
+
+- [ ] 3.1 Append a section headed `## #452 amendment — 2026-09-23, issue #452` to
+  the end of `mockups/harmonic-v2-desktop.behavior.md`. It carries:
+  - the sanction line above, quoted;
+  - base `b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1`;
+  - the changed behavior, in prose. A record's Later conclusion text, failed
+    save and request id belong to that record. Opening another record or
+    leaving for the roster starts the next one empty, including a reopen of the
+    same record from the roster. A re-render of the same record, including a
+    Day return, keeps them for Retry.
+  - why no story is added, amended or retired. No replay story reads the Later
+    conclusion form. The carry-over needs two expired Trials, and the committed
+    case stores serve at most one (c4-isf and c4-profile, one each). The
+    stories that open or leave a record keep their reads and are replayed as
+    regression: S52, S105, S110, S112, S142 and S143. Story ids S180–S181 are
+    unused.
+  - a handler inventory table in the #430 amendment's form. Its rows are the
+    Later conclusion text input, Record later conclusion and its Retry, and the
+    later-conclusion clear on opening or leaving a record. Each row reads
+    `frontend/history.js` and `none — node test only
+    (frontend/follow-up-lifecycle.test.js)`.
+
+  No line in the section may begin with a story id followed by ` ·`. Do not
+  edit any ★ FROZEN block, the header's inventory line or a story body above
+  the section. Run `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py
+  inventory --out <scratch dir>`. It must still report 171 issued · 152 active
+  · 19 retired.
+
+## 4. Verification
+
+- [ ] 4.1 Worker-run, in the ticket worktree, each exiting 0:
+  `npm ci && npm run build`, `uv run python -m pytest` (once, at the end, with
+  its wall time), `node --test 'frontend/**/*.test.js'`,
+  `npx --yes @fission-ai/openspec@1 validate --all --strict`,
+  `python3 scripts/check_adr_numbers.py`,
+  `python3 scripts/check_owned_identifiers.py`,
+  `python3 scripts/check_public_allowlist.py`, and
+  `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`.
+  The fast gate includes task 2.1's two new tests. The worker runs no server,
+  browser suite or replay.
+- [ ] 4.2 Coordinator-run, port-bound, one leg at a time. First the regression
+  replay on the built branch app, at 1280x720 and then 1440x900:
+  `PLAYWRIGHT_MODULE=<module> TARGET=app VIEWPORT=<size> BASE_URL=http://127.0.0.1:8765 ONLY=S52,S105,S110,S112,S142,S143 CASE_STORE_DIR=<scratch> node frontend/desk-behavior.replay.mjs`.
+  Expected: executed 6 · failed 0 · deferred 0 · selected 6, the same as on
+  base. Next the desk browser suite's `--test-name-pattern='an expired Trial
+  distinguishes its Later conclusion input'` (2 tests), passing unchanged.
+  The complete ledger runs once at integration.
+- [ ] 4.3 Coordinator-run revision evidence, into the release's private
+  design-evidence record (not part of the public tree). On the c4-isf case
+  store, open its expired Trial from the roster, type a later conclusion, press
+  Back to records and reopen it from the roster. Render the result at 1280x720
+  and 1440x900 on base and on the branch. Base shows the typed words; the
+  branch shows an empty form.

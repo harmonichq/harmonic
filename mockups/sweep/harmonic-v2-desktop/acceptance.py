@@ -34,7 +34,7 @@ TOKEN = "synthetic-replay-token"
 SMOKE_STORIES = (
     "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
     "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "S113", "R8", "R18",
-    "S125", "S126", "S177",
+    "S125", "S126", "S177", "S187",
 )
 DRIFTS = [
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
@@ -1265,7 +1265,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 194, "active": 175, "retired": 19}
+    require(counts == {"issued": 195, "active": 176, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")

@@ -2286,6 +2286,45 @@ const LEGS460 = [
   }],
 ];
 
+/* ---- #459: the stage control warns before it replaces another setting (S187) ----
+   ADR 459, on Connor's 2026-09-24 decision: a Plan holds one setting, and a press
+   that would replace the change staged for another setting says so first, naming
+   it. basal-and-carb-ratio-lower serves a stageable basal slot and a stageable
+   carb ratio at once. The checks are gathered and the story fails once, so a
+   base run still reaches the replacement and its renders. */
+const guidanceReads459 = ctx => ctx.requests.filter(request => request.path === '/api/guidance').length;
+/** The open panel's stage control: its state, its words and its sub-line. */
+const control459 = page => page.locator('#level .stagebtn').evaluate(button => {
+  const words = button.cloneNode(true);
+  const sub = words.querySelector('.sub');
+  sub?.remove();
+  return { staged: button.dataset.staged, words: words.textContent.trim(), sub: sub?.textContent.trim() ?? null };
+});
+/** Press the open panel's unstaged control; returns once its save and the
+    guidance read it ends with have answered. */
+async function stage459(page, ctx, what) {
+  const before = guidanceReads459(ctx);
+  await press(page, '#level .stagebtn[data-staged="false"]');
+  await waitForReplayAssertion(async seen => {
+    assert.ok(seen(guidanceReads459(ctx)) > before, `S187 premise: the ${what} save's guidance read answers`);
+    assert.equal(seen(await page.locator('#level .stagebtn').getAttribute('data-staged')), 'true',
+      `S187 premise: the press stages the ${what}`);
+  }, `S187 the ${what} stage settles`);
+}
+async function openCarbRatio459(page) {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled(page);
+  await page.locator('#level .qrow[data-id^="ic:"]').first().click();
+  await page.locator('#level .stagebtn').waitFor({ timeout: 30000 });
+}
+/** A basal draft's own name, as ADR 460 point 3 spells it: its start, or its
+    first start to its last start plus half an hour. */
+function basalDraftName459(items) {
+  const starts = items.map(item => item.start_min).sort((a, b) => a - b);
+  return starts.length === 1 ? `Basal ${hhmm(starts[0])}`
+    : `Basal ${hhmm(starts[0])} to ${hhmm(starts[starts.length - 1] + 30)}`;
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -4105,6 +4144,60 @@ export const C4_STORIES = {
       }
     }
     failOnce('S186', 'the watch dock and the staged marks must follow the Plan draft', failures);
+  },
+  async S187(page, ctx) {
+    const failures = [];
+    const check = async (assertion, description) => {
+      try { await waitForReplayAssertion(assertion, description); } catch (error) {
+        failures.push(String(error?.message || error).split('\n')[0]);
+      }
+    };
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settled(page);
+    await openCarbRatio459(page);
+    assert.equal((await control459(page)).words, 'Stage change', 'S187 premise: nothing is staged yet');
+    await stage459(page, ctx, 'carb ratio');
+    const carbRatio = await waitForReplayAssertion(async seen => {
+      const dock = seen(await dock460(page));
+      assert.equal(dock.kind, 'Plan · staged', 'S187 premise: the dock reports the staged carb ratio');
+      assert.match(dock.what, /^Carb ratio /, 'S187 premise: the dock names the staged carb-ratio change');
+      return dock.what;
+    }, 'S187 the staged carb ratio');
+
+    await page.locator('#lane > .lane-cell[data-verdict="down"]').first().click();
+    await page.locator('#level .stagebtn').waitFor({ timeout: 30000 });
+    await check(async seen => {
+      const control = seen(await control459(page));
+      assert.equal(control.words, 'Replace staged change',
+        'S187 before the press, the basal control must read "Replace staged change"');
+      assert.equal(control.sub, `replaces ${carbRatio}`,
+        'S187 before the press, the basal control must name the staged carb-ratio change as the dock names it');
+      assert.equal(control.staged, 'false', 'S187 before the press, the basal control is not staged');
+    }, 'S187 the basal control warns before the press');
+    await capture(page, ctx, 'S187-replace', 'basal-and-carb-ratio-lower');
+
+    await stage459(page, ctx, 'basal');
+    const draft = await read(page, '/api/plan');
+    assert.ok(draft.items.length, 'S187 premise: the basal press saves a draft');
+    const basal = basalDraftName459(draft.items);
+    await check(async seen => {
+      assert.ok(seen(draft.items.map(item => item.type)).every(type => type === 'basal'),
+        'S187 the served draft must hold only basal rows');
+      const dock = seen(await dock460(page));
+      assert.equal(dock.kind, 'Plan · staged', 'S187 the dock must read "Plan · staged" after the replacement');
+      assert.ok(dock.what.startsWith(basal), `S187 the dock must name the basal change, ${basal}`);
+    }, 'S187 the replacement');
+    await capture(page, ctx, 'S187-replaced', 'basal-and-carb-ratio-lower');
+
+    await openCarbRatio459(page);
+    await check(async seen => {
+      const control = seen(await control459(page));
+      assert.equal(control.staged, 'false', 'S187 the replaced carb ratio must report itself unstaged');
+      assert.notEqual(control.words, 'Staged · Undo', 'S187 the replaced carb ratio must never read "Staged · Undo"');
+      assert.equal(control.words, 'Replace staged change', 'S187 the carb-ratio control must read "Replace staged change"');
+      assert.equal(control.sub, `replaces ${basal}`, 'S187 the carb-ratio control must name the staged basal change');
+    }, 'S187 the replaced carb ratio');
+    failOnce('S187', 'the stage control must warn before it replaces another setting', failures);
   },
 };
 

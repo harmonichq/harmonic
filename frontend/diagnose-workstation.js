@@ -858,11 +858,12 @@ function renderHighCarbStage(host, caseFile, range) {
  *
  * spec: { head, headQual, verdict, unit, value, current, estimate, recommended,
  *         recommendedQual, scopeSay, currentNoun, moveWord, support, sentence,
- *         canStage, isStaged, footNote, onStage }
+ *         canStage, isStaged, replaces, footNote, onStage }
  *
  * `value` spells one number; it defaults to the panel's own rounding. A setting
  * whose value carries its unit (the correction factor, ADR 451) passes its own
- * and no `unit`, so no qualifier repeats a unit.
+ * and no `unit`, so no qualifier repeats a unit. `replaces` names the change
+ * staged for another setting that a press would replace, or is null (ADR 459).
  */
 function renderParamLevel(host, spec) {
   const e = spec.estimate;
@@ -916,9 +917,15 @@ function renderParamLevel(host, spec) {
     btn.type = 'button';
     btn.className = 'stagebtn';
     btn.dataset.staged = String(spec.isStaged);
+    /* #459: a Plan holds one setting, so a press here drops a change staged for
+       another one. The control says so, naming that change, before the press;
+       once pressed it is staged and back in the staged box. */
+    const replacing = !spec.isStaged && spec.replaces;
+    if (replacing) btn.dataset.replaces = '';
     btn.innerHTML = spec.isStaged
       ? 'Staged · <span class="undo">Undo</span><span class="sub">staged for Plan</span>'
-      : 'Stage change<span class="sub">staged for Plan</span>';
+      : replacing ? `Replace staged change<span class="sub">replaces ${spec.replaces}</span>`
+        : 'Stage change<span class="sub">staged for Plan</span>';
     btn.addEventListener('click', spec.onStage);
     foot.append(btn);
   } else {
@@ -1006,6 +1013,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       : s.annotation,
     canStage,
     isStaged: staged.has(cell.i),
+    replaces: options.replaces ?? null,
     footNote: thin
       ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data: ${supportFloor == null
         ? 'the support floor is unavailable'
@@ -1073,7 +1081,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
  * asserts carries the identical stage button a slot does, and a held one prints
  * its number and interval at full contrast with nothing to stage.
  */
-function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
+function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, options = {}) {
   const b = cell.block;
   const e = b.estimate;
   const canStage = cell.asserts;
@@ -1116,6 +1124,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
     sentence: b.annotation || held,
     canStage,
     isStaged: icStaged.has(cell.id),
+    replaces: options.replaces ?? null,
     footNote: held
       ? 'The move is held for the reason above, so there is nothing to stage; the number and '
         + 'its interval are shown as measured.'
@@ -1135,7 +1144,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
 const ISF_SCOPE = 'Measured in the overnight fasting window. A daytime Correction factor is not '
   + 'separately identifiable, so this one value stands for the whole day.';
 
-export function renderIsfLevel(host, isf, isfStaged, onStage) {
+export function renderIsfLevel(host, isf, isfStaged, onStage, options = {}) {
   const e = isf.estimate;
   /* Reading the verdict off `recommended` printed "no direction asserted" over
      this level's own weaken sentence, and disagreed with the queue row that
@@ -1171,6 +1180,7 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
     sentence: isf.annotation,
     canStage,
     isStaged: isfStaged,
+    replaces: options.replaces ?? null,
     footNote: roundedNoop
       ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
       : direction === 'weaken'
@@ -3233,6 +3243,10 @@ function boot(root, data, callbacks, signal) {
      the guidance render the save triggers; this is also what drops the mark of
      a setting the save replaced. */
   let saveInFlight = false;
+  /** ADR 459: the change staged for another setting that staging `item` would
+      replace, named as the dock names it, or null. The app answers; this surface
+      decides nothing about the Plan's one-setting rule. */
+  const replacing = (item) => callbacks.replacing?.(item) ?? null;
   async function stageAndSettle(toggle, item, isStaged) {
     if (saveInFlight) return;
     saveInFlight = true;
@@ -3583,6 +3597,7 @@ function boot(root, data, callbacks, signal) {
     }
     if (f.k === 'slot') {
       const run = basalRun(f.cell);
+      const slotItem = { family: 'basal', key: f.cell.slot.__planKey, members: run.members };
       renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
         /* #372: one press acts on the whole finding. The cells that move are the
            ones the Plan draft's own predicate admitted for this frame's run —
@@ -3606,10 +3621,11 @@ function boot(root, data, callbacks, signal) {
             }
             applied = !applied;
           },
-          { family: 'basal', key: cell.slot.__planKey, members: run.members },
+          slotItem,
           () => staged.has(cell.i));
       }, {
         run,
+        replaces: replacing(slotItem),
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
         onSelect: (id) => selectNight(f, id),
@@ -3620,17 +3636,19 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'block') {
+      const blockItem = { family: 'ic', key: f.cell.block.__planKey };
       renderIcBlockLevel(host, f.cell, icStaged, (cell) => stageAndSettle(
         () => { if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id); },
-        { family: 'ic', key: cell.block.__planKey },
-        () => icStaged.has(cell.id)), demoNote);
+        blockItem,
+        () => icStaged.has(cell.id)), demoNote, { replaces: replacing(blockItem) });
       return;
     }
     if (f.k === 'isf') {
+      const isfItem = { family: 'isf', raw: isf };
       renderIsfLevel(host, isf, isfStaged, () => stageAndSettle(
         () => { isfStaged = !isfStaged; },
-        { family: 'isf', raw: isf },
-        () => isfStaged));
+        isfItem,
+        () => isfStaged), { replaces: replacing(isfItem) });
       return;
     }
     // 'factor' is the only remaining frame kind: render only the retained

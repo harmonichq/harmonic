@@ -1396,6 +1396,10 @@
   min-width: 136px; text-align: left;
 }
 .stagebtn[data-staged="true"] { background: var(--ck-sel); color: var(--mk-text); }
+/* #459: the replace state names the change it would drop, so it may be wider
+   than the fixed box. It wraps inside the panel and is never cut; the staged and
+   unstaged box above is untouched. */
+.stagebtn[data-replaces] { max-width: 100%; overflow-wrap: anywhere; }
 .stagebtn[data-staged="true"] .undo { color: var(--ck-accent); text-decoration: underline; text-underline-offset: 2px; }
 .foot-note { font-size: 11px; color: var(--mk-muted); }
 

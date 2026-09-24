@@ -8,10 +8,11 @@ import { caseAddress } from './tab-routing.js';
 import { presetLabelFor } from './diagnose-workstation.js';
 import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
-import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
+import { stageEvidence, evidenceIsStaged, loadPlanState, replacedDraftItems } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { pendingPlan, planDraft } from './guidance.js';
+import { draftName } from './watched-change-dock.js';
 import { formatStartMin } from './plan.js';
 
 // The held Occurrence's own "Open … in Day" control: the last control in the
@@ -367,6 +368,12 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         return answer;
       },
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),
+      // ADR 459: the change a stage of this item would replace, named as the
+      // dock names it. An item's family is already the Plan item type.
+      replacing: (item) => {
+        const items = replacedDraftItems(item.family);
+        return items ? draftName({ items }) : null;
+      },
       retry: read,
       pendingPlan,
       planDraft,

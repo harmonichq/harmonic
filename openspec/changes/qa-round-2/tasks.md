@@ -156,7 +156,7 @@ the Plan item `type` it stages as.
   expected case names and to `tests/test_pattern_replay.py`'s case map. Commit
   this task on its own: that commit is the base for task 16's failing-first
   run.
-- [ ] 12. Node tests:
+- [x] 12. Node tests:
   - failing-first, each seen to fail at its assertion on task 11's commit
     (write each against a local stub of the new export first, then point it at
     the export):
@@ -181,21 +181,21 @@ the Plan item `type` it stages as.
     - in `frontend/diagnose-workstation.test.js`: an already-staged panel keeps
       "Staged · Undo" whatever `replaces` holds; a panel with `replaces` null
       keeps "Stage change" and "staged for Plan".
-- [ ] 13. In `frontend/plan-view.js`, export
+- [x] 13. In `frontend/plan-view.js`, export
   `replacesDraft(type, draftItems) → boolean`: true when `draftItems` holds a
   row whose `type` differs from `type`. Export
   `replacedDraftItems(type) → items | null`: `draftItems()` when
   `replacesDraft(type, draftItems())`, else `null`. Make `stageEvidence`'s
   keep-only-this-setting filter use `replacesDraft` (ADR 459 point 2). The
   save's `true`/`false` answer is unchanged.
-- [ ] 14. In `frontend/diagnose-workstation.js`, ask
+- [x] 14. In `frontend/diagnose-workstation.js`, ask
   `callbacks.replacing(item) → string | null` for each stage panel's item and
   hand the answer to the shared stage control as the panel option `replaces`,
   for the basal slot, carb-ratio block and correction-factor panels. Render the
   replace state there (ADR 459 point 1). In
   `frontend/diagnose-workstation.css`, let the replace state wrap inside the
   panel without truncating, leaving the staged and unstaged box unchanged.
-- [ ] 15. In `frontend/diagnose.js`, wire `replacing(item)` to answer
+- [x] 15. In `frontend/diagnose.js`, wire `replacing(item)` to answer
   `draftName({ items })` when `replacedDraftItems(item.family)` answers
   `items`, and `null` otherwise.
 - [ ] 16. Add one ledger story (the next unissued S id after task 8's) on

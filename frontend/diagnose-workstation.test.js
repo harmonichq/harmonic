@@ -324,6 +324,58 @@ test('the correction-factor panel names its setting and prints each value insuli
   }
 });
 
+/* #459 (ADR 459 point 1): a stage control whose press would replace a change
+   staged for a different setting says so, and names that change, before the
+   press. `replaces` is the panel option carrying that change's name. */
+function stagePanel459(isfStaged, replaces) {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const held = fixture.inputs.analysis.isf[0];
+  const stageable = { ...held, asserts_move: true, recommended: 32,
+    evidence: { ...held.evidence, direction: 'strengthen' } };
+  const originalDocument = globalThis.document;
+  const buttons = [];
+  const element = (tagName = 'div') => {
+    const node = {
+      tagName: tagName.toUpperCase(), className: '', dataset: {}, innerHTML: '', children: [],
+      append(...children) { this.children.push(...children); },
+      addEventListener() {},
+    };
+    if (node.tagName === 'BUTTON') buttons.push(node);
+    return node;
+  };
+  try {
+    globalThis.document = { createElement: element };
+    renderIsfLevel(element(), stageable, isfStaged, () => {}, { replaces });
+  } finally {
+    globalThis.document = originalDocument;
+  }
+  assert.equal(buttons.length, 1, 'premise: the stageable panel renders one stage control');
+  return buttons[0];
+}
+
+test('#459 · a stage control that would replace another setting says so and names the change', () => {
+  const button = stagePanel459(false, 'Carb ratio 00:00–24:00');
+  assert.equal(button.dataset.staged, 'false');
+  assert.equal(button.innerHTML,
+    'Replace staged change<span class="sub">replaces Carb ratio 00:00–24:00</span>');
+});
+
+test('#459 guard · an already-staged control keeps "Staged · Undo" whatever it would replace', () => {
+  for (const replaces of [null, 'Carb ratio 00:00–24:00']) {
+    const button = stagePanel459(true, replaces);
+    assert.equal(button.dataset.staged, 'true');
+    assert.equal(button.innerHTML, 'Staged · <span class="undo">Undo</span><span class="sub">staged for Plan</span>');
+  }
+});
+
+test('#459 guard · a control that replaces nothing keeps "Stage change" and "staged for Plan"', () => {
+  const button = stagePanel459(false, null);
+  assert.equal(button.dataset.staged, 'false');
+  assert.equal(button.innerHTML, 'Stage change<span class="sub">staged for Plan</span>');
+});
+
 test('the breadcrumb names the correction-factor level in the wearer\'s words (#451)', () => {
   const chartTitle = (chartId) => (chartId === 'glucose' ? 'Glucose' : null);
   assert.equal(crumbLabel({ k: 'isf' }, chartTitle), 'Correction factor');

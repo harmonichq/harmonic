@@ -5431,3 +5431,57 @@ Additional handler inventory for this amendment:
 | Watch dock staged line from the served draft | frontend/watched-change-dock.js watchDockView, draftName | S186 |
 | Staged marks asked again on refresh and after a settled save | frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh | S186 |
 | Retained return re-reads Plan state and guidance | frontend/diagnose.js readPlan, mount | S186 |
+
+## #459 amendment — 2026-09-24, issue #459
+
+S187 is the fail-first obligation of ADR 459 (`openspec/changes/qa-round-2/design.md`):
+before a stage press on Diagnose replaces the change staged for a different
+setting, the stage control says so and names the change it will replace. It is
+app-opener-only and runs on the manufactured `basal-and-carb-ratio-lower` case
+store (`CASE_STORE_DIR`), where a basal slot and the carb ratio both assert a
+move. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+existing story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: one setting per Plan stays; warn before
+the press, naming the change it will replace (the issue's option 1). The words
+and the button geometry are ADR 459's autonomous decisions. It covers S187 and
+nothing outside #459.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 195 issued · 176
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-and-carb-ratio-lower` emits.
+
+```
+S187 · With the carb ratio's change staged from Diagnose, the basal slot's stage
+       control reads "Replace staged change" with the sub-line "replaces
+       ‹the dock's name for the carb-ratio change›" before any press. Pressing
+       it leaves the served Plan draft holding only basal rows and the dock
+       reading "Plan · staged" named for the basal change. Opened again in the
+       same visit, the carb ratio's control carries data-staged="false" and
+       reads "Replace staged change" naming the basal change, never
+       "Staged · Undo".
+  element:  #level .stagebtn, #level .stagebtn .sub; .inspector > .watch .kind, .what
+  source:   frontend/diagnose-workstation.js renderParamLevel, replacing;
+            frontend/diagnose.js replacing; frontend/plan-view.js replacesDraft,
+            replacedDraftItems, stageEvidence; frontend/watched-change-dock.js draftName
+  lock:     none (revise; ADR 459 in openspec/changes/qa-round-2/design.md)
+  data:     basal-and-carb-ratio-lower; basal 03:00 and the all-day carb ratio
+            both assert a lower move
+  evidence: C4_STORIES.S187; at 24 h opens the carb-ratio queue row and stages
+            it through its .stagebtn, waiting for the save and its guidance
+            read, and reads the dock's name for it; opens the lane's lower cell
+            and compares its control's words and sub-line; presses it, reads
+            /api/plan and the dock; reopens the carb-ratio row and compares its
+            control. The checks are gathered and the story fails once
+  status:   pending coordinator run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Stage control replace state | frontend/diagnose-workstation.js renderParamLevel, replacing | S187 |
+| Replaced-draft verdict | frontend/plan-view.js replacesDraft, replacedDraftItems; frontend/diagnose.js replacing | S187 |

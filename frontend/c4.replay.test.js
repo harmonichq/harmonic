@@ -112,6 +112,13 @@ test('S186 is a unique app-only #460 story on the basal-lower store', () => {
   assert.equal(storyCase('S186'), 'basal-lower');
 });
 
+test('S187 is a unique app-only #459 story on the basal-and-carb-ratio-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S187');
+  assert.equal(entries.length, 1, 'S187 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 459');
+  assert.equal(storyCase('S187'), 'basal-and-carb-ratio-lower');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

@@ -1,0 +1,12 @@
+(node:77735) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S89 case=basal-lower milliseconds=212.993
+# S89 synthetic case=basal-lower (fresh copy)
+PASS S89
+# story-time S89 milliseconds=3330.962
+
+# executed 1 · failed 0 · deferred 0 · selected 1 · chromium launches 1

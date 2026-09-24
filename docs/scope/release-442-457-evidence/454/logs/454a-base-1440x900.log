@@ -1,0 +1,32 @@
+(node:89908) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S182 case=pattern-near-tie milliseconds=439.712
+# S182 synthetic case=pattern-near-tie (fresh copy)
+FAIL S182 — Timed out after 30000 ms: S182 a claimed Occurrence prints its sentence once; saw [
+  {
+    text: 'May 24 · 19:00 Matched1 of 3↑ ↓ 52 g · 7.4 U at completed carb bolus Evidence factsPeak 238 mg/dL, 40 min after the bolusAttributed to Carb undercount · ran away to 238 mg/dL despite the bolus — the excursion implies ~152 g vs 52 g logged (2.9x), a likely carb undercountCarb undercount · Meets criteria · ran away to 238 mg/dL despite the bolus — the excursion implies ~152 g vs 52 g logged (2.9x), a likely carb undercount',
+    figure: '52 g · 7.4 U at completed carb bolus',
+    lines: [
+      {
+        kind: 'outcome',
+        text: 'Peak 238 mg/dL, 40 min after the bolus'
+      },
+      {
+        kind: 'cause',
+        text: 'Attributed to Carb undercount · ran away to 238 mg/dL despite the bolus — the excursion implies ~152 g vs 52 g logged (2.9x), a likely carb undercount'
+      },
+      {
+        kind: 'habit',
+        text: 'Carb undercount · Meets criteria · ran away to 238 mg/dL despite the bolus — the excursion implies ~152 g vs 52 g logged (2.9x), a likely carb undercount'
+      }
+    ]
+  }
+]; S182 the cause's sentence must print once; it repeats on: Carb undercount · Meets criteria · ran away to 238 mg/dL despite the bolus — the excursion implies ~152 g vs 52 g logged (2.9x), a likely carb undercount
+# story-time S182 milliseconds=39306.963
+
+# executed 0 · failed 1 · deferred 0 · selected 1 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

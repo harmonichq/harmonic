@@ -1,0 +1,92 @@
+SYNTHETIC — after · tree 9882bcfe · store c3-preempted · 449-C2 · 1280x720
+URL: http://127.0.0.1:8791/?to=changes&subject=history&occurrence=record%3Afocus%3A2
+Element: viewport
+Focused: body
+Note: the same record scrolled to What changed
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FOCUS · LEVER NO LONGER AVAILABLE
+Focus
+Pinned May 5, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+comparison unavailable
+the behavior this Focus watched is no longer an offered lever
+
+No glucose outcome is served for these periods.
+
+THIS FOCUS
+Lever no longer available
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Not recorded
+Recorded by Harmonic
+Not recorded
+
+This record's original context is unavailable: not recorded.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Lever no longer available
+Conclusion
+Not recorded
+Ended
+May 5, 2024 · 01:00
+Recorded
+May 5, 2024 · 01:00
+
+The behavior this Focus watched is no longer an offered lever, so the watch ended. Nothing resumes it.
+
+Ending assessment
+Unavailable · the behavior this Focus watched is no longer an offered lever
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+EVIDENCE PERIODS
+
+No period is served for this comparison, so neither Before nor After has bounds to show.
+
+WHAT CHANGED
+
+The behavior this Focus watched is no longer an offered lever. No pump setting changed.
+
+EVIDENCE ACCRUED
+OPPORTUNITIES
+
+This comparison is unavailable: the behavior this Focus watched is no longer an offered lever.
+
+No readiness is served for this comparison: the behavior this Focus watched is no longer an offered lever.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

@@ -1,0 +1,44 @@
+SYNTHETIC — before · tree b03431d2 · store isf-strengthen · 451-A1 · 1280x720
+URL: http://127.0.0.1:8791/changes
+Element: viewport
+Focused: <h2> "Action"
+Note: Changes on a plain (topbar) arrival
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FINDINGS · READ 2024-06-08
+Lows after correcting highs
+0 priority · eligible_action
+Set aside
+Stage change
+View change record
+Pump settings
+Pump settings
+MEMBERS IN THIS READ
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+MEMBER	ACTION
+Correction factor	Correction factor
+ACTION
+Lows after correcting highs
+ACTION
+ELIGIBLE_ACTION
+strengthen to 32 00:00 to 00:00
+
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+
+Priority 0 leads the available admitted actions; an exact tie breaks by canonical subject.
+
+Focus is withheld: 0 opportunities, gate 12.
+
+Inspect evidence
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

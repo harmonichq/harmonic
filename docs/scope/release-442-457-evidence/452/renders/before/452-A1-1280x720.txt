@@ -1,0 +1,181 @@
+SYNTHETIC — before · tree b03431d2 · store c4-isf · 452-A1 · 1280x720
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Aisf-all-20240601000000
+Element: viewport
+Focused: <textarea id="late-conclusion-conclusion"> ""
+Note: the expired Trial trial:isf-all-20240601000000 with a later conclusion typed (not saved)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · EXPIRED UNREVIEWED
+Correction factor · 1 U : 40 mg/dL → 1 U : 44 mg/dL
+Detected Jun 1, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+no clock envelope is retained for this record
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time in range
+observed CGM readings in eligible windows
+	100%
+3625 observed CGM readings in eligible windows
+	100%
+3601 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time below range
+observed CGM readings in eligible windows
+	0%
+3625 observed CGM readings in eligible windows
+	0%
+3601 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+3625 observed CGM readings in eligible windows
+	0%
+3601 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Rest windows with a low
+coverage-qualified Rest windows in affected hours
+	0%
+31 coverage-qualified Rest windows in affected hours
+	0%
+30 coverage-qualified Rest windows in affected hours
+	Unclear
+difference 0
+THIS TRIAL
+Expired unreviewed
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+Recorded by Harmonic
+Sep 24, 2026 · 04:37
+
+Original user decision is unavailable.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Expired unreviewed
+Conclusion
+Not recorded
+Finished
+Jun 29, 2024 · 00:00
+Recorded
+Sep 24, 2026 · 04:37
+
+The watch reached the end of its lifecycle window without being reviewed. Its observations are still here.
+
+Ending assessment
+Recorded · unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+LATER CONCLUSION
+AFTER EXPIRY
+
+Record what you observed after this Trial expired. This does not change its saved ending or resume the Trial.
+
+Later conclusion
+Record later conclusion
+
+Nothing here is sent to your pump.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to Jun 1, 2024 · 00:00 Available history → Setting change
+Trial
+Jun 1, 2024 · 00:00 to Jul 1, 2024 · 23:55 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jul 1, 2024 · 23:55.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Correction factor	1 U : 40 mg/dL	1 U : 44 mg/dL
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is available.
+
+31 of 30 qualifying fasting Rest windowsrequired
+
+31 days elapsed
+
+Criterion met.
+
+Evidence for this period is available.
+
+Contributing dates · 31
+
+May 1
+May 2
+May 3
+May 4
+May 5
+May 6
+May 7
+May 8
+30 of 30 qualifying fasting Rest windowsrequired
+
+30 days elapsed
+
+Criterion met.
+
+Evidence for this period is available.
+
+Contributing dates · 31
+
+Jun 1
+Jun 2
+Jun 3
+Jun 4
+Jun 5
+Jun 6
+Jun 7
+Jun 8
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

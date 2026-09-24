@@ -1,0 +1,56 @@
+(node:88885) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S38 case=basal-lower milliseconds=412.989
+# S38 synthetic case=basal-lower (fresh copy)
+PASS S38
+# story-time S38 milliseconds=2809.563
+# case-copy S39 case=basal-lower milliseconds=1.764
+# S39 synthetic case=basal-lower (fresh copy)
+PASS S39
+# story-time S39 milliseconds=1854.733
+# case-copy S45 case=c3-trial milliseconds=770.605
+# S45 synthetic case=c3-trial (fresh copy)
+PASS S45
+# story-time S45 milliseconds=12843.499
+# case-copy S45b case=c3-trial milliseconds=1.802
+# S45b synthetic case=c3-trial (fresh copy)
+PASS S45b
+# story-time S45b milliseconds=12406.051
+# case-copy S56 case=c3-pin milliseconds=529.363
+# S56 synthetic case=c3-pin (fresh copy)
+PASS S56
+# story-time S56 milliseconds=11699.608
+# case-copy S57 case=c3-focus milliseconds=507.204
+# S57 synthetic case=c3-focus (fresh copy)
+PASS S57
+# story-time S57 milliseconds=4119.123
+# case-copy S90 case=basal-lower milliseconds=3.192
+# S90 synthetic case=basal-lower (fresh copy)
+PASS S90
+# story-time S90 milliseconds=1671.795
+# case-copy S139 case=c3-trial milliseconds=2.808
+# S139 synthetic case=c3-trial (fresh copy)
+PASS S139
+# story-time S139 milliseconds=12551.375
+# case-copy S140 case=c3-focus milliseconds=1.820
+# S140 synthetic case=c3-focus (fresh copy)
+PASS S140
+# story-time S140 milliseconds=2998.351
+# case-copy S166 case=basal-lower milliseconds=41.289
+# S166 synthetic case=basal-lower (fresh copy)
+PASS S166
+# story-time S166 milliseconds=5704.632
+# case-copy S167 case=basal-lower milliseconds=1.391
+# S167 synthetic case=basal-lower (fresh copy)
+PASS S167
+# story-time S167 milliseconds=3740.000
+# case-copy S168 case=c3-focus milliseconds=1.486
+# S168 synthetic case=c3-focus (fresh copy)
+PASS S168
+# story-time S168 milliseconds=3043.704
+
+# executed 12 · failed 0 · deferred 0 · selected 12 · chromium launches 1

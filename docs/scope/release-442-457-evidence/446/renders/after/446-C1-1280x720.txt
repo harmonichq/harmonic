@@ -1,0 +1,143 @@
+SYNTHETIC — after · tree 9882bcfe · store basal-lower · 446-C1 · 1280x720
+URL: http://127.0.0.1:8791/?to=changes
+Element: viewport
+Focused: body
+Note: render 3 (S167) — the watched Trial with a saved draft (draft PUT /api/plan → 200 (1 item)): the nameplate
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+TRIAL · MATURING
+Basal 03:00 · 0.6 U/h → 0.54 U/h
+Detected Sep 24, 2026 · 07:44
+Inspect nights
+View change record
+Open Plan
+Pump settings
+BEFORE ONLY
+median glucose by clock
+Pump-local time
+no Before or Trial readings in these periods
+VIEW
+Before / Trial
+Available days
+Advisory only
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time below range
+target metric
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time in range
+observed CGM readings in eligible windows
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time above range
+observed CGM readings in eligible windows
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Rest windows with a low
+coverage-qualified Rest windows in affected hours
+	no coverage-qualified Rest windows in affected hours
+no coverage-qualified Rest windows in affected hours in period
+	no coverage-qualified Rest windows in affected hours
+no coverage-qualified Rest windows in affected hours in period
+	Unclear
+no difference estimable
+THIS TRIAL
+Maturing
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is unavailable: a period has no readable glucose readings yet.
+
+0 of 14 qualifying clean nights per affected slotrequired
+
+90 days elapsed
+
+Not met — still collecting.
+
+Evidence for this period is available.
+
+No contributing date has qualified in this period yet.
+
+0 of 14 qualifying clean nights per affected slotrequired
+
+0 days elapsed
+
+Not met — still collecting.
+
+Evidence for this period is available.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+WATCH MATURITY
+LIFECYCLE
+0 of 14 days1 data gap
+
+Maturing
+
+No verdict is ready while evidence accrues.
+
+Maturity is where this watch is in its own lifecycle. It is not the evidence criterion, and it does not end the observation.
+
+EVIDENCE PERIODS
+Before
+Jun 26, 2026 · 07:44 to Sep 24, 2026 · 07:44 90-day limit → Setting change
+Trial
+Sep 24, 2026 · 07:44 to Sep 24, 2026 · 07:44 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Sep 24, 2026 · 07:44.
+
+CONCLUSION
+
+This Trial cannot be finished yet: the watch is still maturing.
+
+REVERT TO PLAN
+
+Prior setting ready for Plan
+
+The prior setting is staged for manual pump programming. After programming, confirm it with a fresh pump snapshot in Plan.
+
+Open Plan
+LIMITS OF THIS READ
+
+The evidence is limited to the selected Before and Trial periods.
+
+Observed movement does not establish that the setting caused it.
+
+1 data gap remains in the post-change period.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

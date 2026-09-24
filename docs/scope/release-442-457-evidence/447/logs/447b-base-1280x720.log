@@ -1,0 +1,44 @@
+(node:82950) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S169 case=c3-trial milliseconds=596.842
+# S169 synthetic case=c3-trial (fresh copy)
+FAIL S169 — Timed out after 30000 ms: S169 the dock prints the served count; saw [ 'Ready to judge — 14 of 14 days since 05-15' ]; S169 the dock must print the served day count in Changes' words
++ actual - expected
+
++ 'Ready to judge — 14 of 14 days since 05-15'
+- 'Ready to judge — 15 days since 05-15 · 14 required'
+
+# story-time S169 milliseconds=40279.019
+# case-copy S170 case=showcase milliseconds=216.217
+# S170 synthetic case=showcase (fresh copy)
+FAIL S170 — Timed out after 30000 ms: S170 the Guide article names Changes; saw [
+  'Reading the Diagnose surface\n' +
+    '\n' +
+    'Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes.\n' +
+    '\n' +
+    'The Diagnose tab answers one question: what should I look at first? It is a single ranked queue of levers — one honest list, tuning and behavioral mixed, most worth-your-attention at the top.\n' +
+    '\n' +
+    'THE RANK\n' +
+    '\n' +
+    'Each row is scored by ∛(severity × recurrence × confidence) — how bad, how often, how sure. A big score means a lever that hurt a lot, happened repeatedly, and the engine is confident about. The equation sits behind the per-lever expander; the factor bars on the card show you the three inputs at a glance.\n' +
+    '\n' +
+    'SETTING VS. HABIT\n' +
+    '\n' +
+    'Every lever is chipped ⚙ Setting or ◈ Cause. That flavor is a chip, never a lane — the rank stays honest across both. What differs is where "accept" sends you:\n' +
+    '\n' +
+    '⚙ Setting findings (basal, ISF, or I:C) flow to The Plan tab as a proposed settings change.\n' +
+    '◈ Cause levers (late bolus, over-treated low) flow to Focus / Verify, because no pump setting fixes them.\n' +
+    '"WHY SO FEW?"\n' +
+    '\n' +
+    "A short queue is a good sign, not a broken one. The tail of the surface tells you how many opportunities the engine looked at and chose to stay quiet on, and why — thin windows, upstream causes, near-misses under threshold. Read it before you assume nothing's wrong.\n" +
+    '\n' +
+    'Open your Diagnose surface → (Diagnose here) to see your own ranked levers.'
+]; S170 the article must name no Verify
+# story-time S170 milliseconds=41304.259
+
+# executed 0 · failed 2 · deferred 0 · selected 2 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

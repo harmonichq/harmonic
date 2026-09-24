@@ -1,0 +1,18 @@
+(node:25127) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S157 case=c4-ic milliseconds=504.223
+# S157 synthetic case=c4-ic (fresh copy)
+FAIL S157 — S157 the older Trial row must carry its served superseded ending
++ actual - expected
+
++ undefined
+- 'superseded'
+
+# story-time S157 milliseconds=5618.411
+
+# executed 0 · failed 1 · deferred 0 · selected 1 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

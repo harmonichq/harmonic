@@ -1,0 +1,53 @@
+(node:50901) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S162 case=c3-trial milliseconds=739.964
+# S162 synthetic case=c3-trial (fresh copy)
+FAIL S162 — S162 the Day address must carry no return-focus key
+
+true !== false
+
+# story-time S162 milliseconds=17030.169
+# case-copy S163 case=c3-trial milliseconds=6.073
+# S163 synthetic case=c3-trial (fresh copy)
+FAIL S163 — S163 the Day address must carry no return-focus key
+
+true !== false
+
+# story-time S163 milliseconds=17350.096
+# case-copy S164 case=showcase milliseconds=493.873
+# S164 synthetic case=showcase (fresh copy)
+FAIL S164 — S164 the Day address must name the entry by its id
++ actual - expected
+
++ 'Log carbs · Jun 30 12:07'
+- 'carb:1'
+
+# story-time S164 milliseconds=24185.588
+# case-copy S165 case=showcase milliseconds=2.092
+# S165 synthetic case=showcase (fresh copy)
+FAIL S165 — S165 the Carb questions return must issue no request besides the held status check
++ actual - expected
+
++ [
++   '/api/focus',
++   '/api/guidance',
++   '/api/plan',
++   '/api/plan/history',
++   '/api/pump-settings',
++   '/api/analyze',
++   '/api/scenarios',
++   '/api/explore/time-of-day',
++   '/api/explore/exposures',
++   '/api/diagnose/finding-case-file-preparation',
++   '/api/outcomes/trend'
++ ]
+- []
+
+# story-time S165 milliseconds=27260.902
+
+# executed 0 · failed 4 · deferred 0 · selected 4 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

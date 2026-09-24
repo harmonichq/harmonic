@@ -1,0 +1,57 @@
+(node:2437) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S49 case=c3-trial milliseconds=393.647
+# S49 synthetic case=c3-trial (fresh copy)
+# case-copy S49 case=c4-missing milliseconds=426.941
+# S49 proved synthetic variant=c4-missing
+PASS S49
+# story-time S49 milliseconds=14529.402
+# case-copy S91 case=c3-trial milliseconds=0.995
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=594.321
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=698.597
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=9504.675
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=41414.586
+# case-copy S96 case=c3-history milliseconds=511.063
+# S96 synthetic case=c3-history (fresh copy)
+PASS S96
+# story-time S96 milliseconds=7444.489
+# case-copy S105 case=c3-trial milliseconds=1.412
+# S105 synthetic case=c3-trial (fresh copy)
+PASS S105
+# story-time S105 milliseconds=12466.338
+# case-copy S110 case=edit-chain milliseconds=263.142
+# S110 synthetic case=edit-chain (fresh copy)
+PASS S110
+# story-time S110 milliseconds=1387.268
+# case-copy S111 case=edit-chain milliseconds=1.429
+# S111 synthetic case=edit-chain (fresh copy)
+PASS S111
+# story-time S111 milliseconds=883.894
+# case-copy S112 case=edit-chain milliseconds=1.011
+# S112 synthetic case=edit-chain (fresh copy)
+PASS S112
+# story-time S112 milliseconds=1038.298
+# case-copy S143 case=edit-chain milliseconds=0.701
+# S143 synthetic case=edit-chain (fresh copy)
+PASS S143
+# story-time S143 milliseconds=1045.338
+# case-copy S157 case=c4-ic milliseconds=2.387
+# S157 synthetic case=c4-ic (fresh copy)
+FAIL S157 — Timed out after 30000 ms: S157 the roster row reads its ending; saw []; observation has not returned
+# story-time S157 milliseconds=33432.485
+# case-copy R18 case=c4-history milliseconds=278.308
+# R18 synthetic case=c4-history (fresh copy)
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+PASS R18
+# story-time R18 milliseconds=3376.792
+
+# executed 9 · failed 1 · deferred 0 · selected 10 · chromium launches 1

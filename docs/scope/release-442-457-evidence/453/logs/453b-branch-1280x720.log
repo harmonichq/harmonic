@@ -1,0 +1,48 @@
+(node:85042) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S38 case=basal-lower milliseconds=401.979
+# S38 synthetic case=basal-lower (fresh copy)
+PASS S38
+# story-time S38 milliseconds=2224.848
+# case-copy S39 case=basal-lower milliseconds=1.378
+# S39 synthetic case=basal-lower (fresh copy)
+PASS S39
+# story-time S39 milliseconds=1552.263
+# case-copy S40 case=basal-lower milliseconds=1.280
+# S40 synthetic case=basal-lower (fresh copy)
+PASS S40
+# story-time S40 milliseconds=1904.642
+# case-copy S41 case=basal-lower milliseconds=1.606
+# S41 synthetic case=basal-lower (fresh copy)
+PASS S41
+# story-time S41 milliseconds=2016.101
+# case-copy S42 case=basal-lower milliseconds=1.604
+# S42 synthetic case=basal-lower (fresh copy)
+PASS S42
+# story-time S42 milliseconds=5522.050
+# case-copy S89 case=basal-lower milliseconds=1.528
+# S89 synthetic case=basal-lower (fresh copy)
+PASS S89
+# story-time S89 milliseconds=3068.676
+# case-copy S90 case=basal-lower milliseconds=1.787
+# S90 synthetic case=basal-lower (fresh copy)
+PASS S90
+# story-time S90 milliseconds=1650.473
+# case-copy S105 case=c3-trial milliseconds=721.546
+# S105 synthetic case=c3-trial (fresh copy)
+PASS S105
+# story-time S105 milliseconds=24891.193
+# case-copy S145 case=basal-lower milliseconds=2.647
+# S145 synthetic case=basal-lower (fresh copy)
+PASS S145
+# story-time S145 milliseconds=5283.004
+# case-copy S146 case=basal-lower milliseconds=0.975
+# S146 synthetic case=basal-lower (fresh copy)
+PASS S146
+# story-time S146 milliseconds=3683.384
+
+# executed 10 · failed 0 · deferred 0 · selected 10 · chromium launches 1

@@ -1,0 +1,152 @@
+SYNTHETIC — before · tree b03431d2 · store c3-trial · 447-B1 · 1280x720
+URL: http://127.0.0.1:8791/changes?subject=watch
+Element: viewport
+Focused: <h2> "This trial"
+Note: Changes' Trial view opened from the dock: Watch maturity (figure and bar)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+TRIAL · READY TO JUDGE
+Basal 03:00 · 0.6 U/h → 0.54 U/h
+Detected May 15, 2024 · 00:00
+Inspect nights
+View change record
+Pump settings
+BEFORE → TRIAL
+median glucose by clock
+Pump-local time
+Trial above Before
+Trial below Before
+median glucose by clock · 1 → 1 half-hours read
+VIEW
+Before / Trial
+Available days
+Advisory only
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time in range
+observed CGM readings in eligible windows
+	100%
+78 observed CGM readings in eligible windows
+	100%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time below range
+observed CGM readings in eligible windows
+	0%
+78 observed CGM readings in eligible windows
+	0%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+78 observed CGM readings in eligible windows
+	0%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Rest windows with a low
+coverage-qualified Rest windows in affected hours
+	0%
+13 coverage-qualified Rest windows in affected hours
+	0%
+15 coverage-qualified Rest windows in affected hours
+	Unclear
+difference 0
+THIS TRIAL
+Ready to judge
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is available.
+
+12 of 14 qualifying clean nights per affected slotrequired
+
+14 days elapsed
+
+Not met — collecting.
+
+Evidence for this period is available.
+
+Contributing dates · 12
+
+May 3
+May 4
+May 5
+May 6
+May 7
+May 8
+May 9
+May 10
+0 of 14 qualifying clean nights per affected slotrequired
+
+17 days elapsed
+
+Not met — collecting.
+
+Evidence for this period is available.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+WATCH MATURITY
+LIFECYCLE
+15 days14 required · 0 data gaps
+
+Ready to judge
+
+This Trial is ready for a before-and-Trial read.
+
+Maturity is where this watch is in its own lifecycle. It is not the evidence criterion, and it does not end the observation.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to May 15, 2024 · 00:00 Available history → Setting change
+Trial
+May 15, 2024 · 00:00 to Jun 1, 2024 · 23:59 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jun 1, 2024 · 23:59.
+
+CONCLUSION
+Conclusion
+Record conclusion & finish
+
+Nothing here is sent to your pump. Changes are entered manually.
+
+REVERT TO PLAN
+
+Prior setting ready for Plan
+
+The prior setting is staged for manual pump programming. After programming, confirm it with a fresh pump snapshot in Plan.
+
+Open Plan
+LIMITS OF THIS READ
+
+The evidence is limited to the selected Before and Trial periods.
+
+Observed movement does not establish that the setting caused it.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

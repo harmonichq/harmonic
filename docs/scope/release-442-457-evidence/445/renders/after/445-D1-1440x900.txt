@@ -1,0 +1,181 @@
+SYNTHETIC — after · tree 9882bcfe · store showcase · 445-D1 · 1440x900
+URL: http://127.0.0.1:8791/diagnose?subject=finding%3Aover_treated_low&occurrence=o_28b23a9c1b6fa5ab54f21c4b88b26ea4
+Element: viewport
+Focused: <button class="gf-btn" data-action="day" data-date="2024-06-26" data-subject="question:low|2024-06-26 13:55:00" data-title="Carb questions · Jun 26 13:55" data-utility-from="questions" data-utility-label="Carb questions"> "Open Jun 26"
+Note: Carb questions over the drilled over-treated low (o_28b23a9c1b6fa5ab54f21c4b88b26ea4); the first question's Open Day (question:low|2024-06-26 13:55:00, 2024-06-26) and the Day return; focus on its Open Day landed
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+OVER-TREATED LOW
+Ranks among this window's findings.
+Showed up in 1 of 5 lows in this window.
+Full
+Keep
+CARB QUESTIONS
+Close
+
+5 of 5 open · oldest first.
+
+LOW GLUCOSE
+JUN 26 13:55 · 4 D BEFORE NOW
+12:30
+13:30
+14:30
+15:30
+12:00
+13:00
+14:00
+15:00
+70
+180
+nadir
+48
+260
+
+Did you treat this low?
+
+Glucose dropped to 48 mg/dL.
+
+Log carbs
+No
+Not sure
+Open Jun 26
+
+Or, this reading wasn't real:
+
+Not real (sensor noise / compression low)
+LOW GLUCOSE
+JUN 27 12:10 · 3 D BEFORE NOW
+10:30
+11:30
+12:30
+13:30
+11:00
+12:00
+13:00
+14:00
+70
+180
+nadir
+60
+150
+
+Did you treat this low?
+
+Glucose dropped to 60 mg/dL.
+
+Log carbs
+No
+Not sure
+Open Jun 27
+
+Or, this reading wasn't real:
+
+Not real (sensor noise / compression low)
+LOW GLUCOSE
+JUN 28 12:10 · 2 D BEFORE NOW
+10:30
+11:30
+12:30
+13:30
+11:00
+12:00
+13:00
+14:00
+70
+180
+nadir
+60
+130
+
+Did you treat this low?
+
+Glucose dropped to 60 mg/dL.
+
+Log carbs
+No
+Not sure
+Open Jun 28
+
+Or, this reading wasn't real:
+
+Not real (sensor noise / compression low)
+LOW GLUCOSE
+JUN 28 16:10 · 2 D BEFORE NOW
+14:30
+15:30
+16:30
+17:30
+15:00
+16:00
+17:00
+18:00
+70
+180
+nadir
+120
+60
+
+Did you treat this low?
+
+Glucose dropped to 60 mg/dL.
+
+Log carbs
+No
+Not sure
+Open Jun 28
+
+Or, this reading wasn't real:
+
+Not real (sensor noise / compression low)
+LOW GLUCOSE
+JUN 29 22:00 · 1 D BEFORE NOW
+20:00
+21:00
+22:00
+23:00
+70
+180
+nadir
+170
+50
+
+Did you treat this low?
+
+Glucose dropped to 50 mg/dL.
+
+Log carbs
+No
+Not sure
+Open Jun 29
+
+Or, this reading wasn't real:
+
+Not real (sensor noise / compression low)
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+5
+Guide
+Settings
+Glossary

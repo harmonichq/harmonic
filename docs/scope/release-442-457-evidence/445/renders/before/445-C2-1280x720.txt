@@ -1,0 +1,73 @@
+SYNTHETIC — before · tree b03431d2 · store showcase · 445-C2 · 1280x720
+URL: http://127.0.0.1:8791/diagnose?date=2024-06-30&subject=Log+carbs+%C2%B7+Jun+30+12%3A07&title=Log+carbs+%C2%B7+Jun+30+12%3A07&from=diagnose.carbs&focus=%5Bdata-utility-remove%3D%271%27%5D
+Element: viewport
+Focused: body
+Note: after a reload, the same entry's Open Day and Day return (drill kept); focus on the entry's Open Day did not land within 8s
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+BASAL 03:00 TO 04:00
+One cautious step down is supported at this time.
+Delivered below the programmed rate across 30 steady nights.
+Full
+Keep
+LOG CARBS
+at Sep 24 · 04:51
+Close
+AMOUNT
+
+Tap the number for an exact count · tap ~ for a rough guess.
+
+4 g
+~
+8 g
+~
+12 g
+~
+Other amount
+Log
+~ est
+Ate something, don't know how much
+WHEN
+Now
+15m ago
+30m ago
+1h ago
+Custom…
+
+One tap logs · defaults to now.
+
+LOGGED
+1
+Jun 30 12:07
+4 g
+Logged by hand
+Open Jun 30
+Remove
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

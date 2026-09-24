@@ -1,0 +1,15 @@
+(node:67516) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/c4.replay.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ S183 reads a caption parked left in reading order, though its tail paints first (1.718666ms)
+✔ S185 passes a control whose box overhangs the rail while its icon and word sit inside it (0.292958ms)
+✔ S185 fails a control whose icon runs outside the header, or which draws no icon or word (0.188208ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.262875

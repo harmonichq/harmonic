@@ -1,0 +1,57 @@
+(node:6436) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S49 case=c3-trial milliseconds=344.534
+# S49 synthetic case=c3-trial (fresh copy)
+# case-copy S49 case=c4-missing milliseconds=381.871
+# S49 proved synthetic variant=c4-missing
+PASS S49
+# story-time S49 milliseconds=13846.484
+# case-copy S91 case=c3-trial milliseconds=1.680
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=480.801
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=679.217
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=9198.436
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=40696.171
+# case-copy S96 case=c3-history milliseconds=538.790
+# S96 synthetic case=c3-history (fresh copy)
+PASS S96
+# story-time S96 milliseconds=7667.811
+# case-copy S105 case=c3-trial milliseconds=1.477
+# S105 synthetic case=c3-trial (fresh copy)
+PASS S105
+# story-time S105 milliseconds=12728.356
+# case-copy S110 case=edit-chain milliseconds=205.753
+# S110 synthetic case=edit-chain (fresh copy)
+PASS S110
+# story-time S110 milliseconds=1451.472
+# case-copy S111 case=edit-chain milliseconds=0.809
+# S111 synthetic case=edit-chain (fresh copy)
+PASS S111
+# story-time S111 milliseconds=1083.603
+# case-copy S112 case=edit-chain milliseconds=0.812
+# S112 synthetic case=edit-chain (fresh copy)
+PASS S112
+# story-time S112 milliseconds=1165.871
+# case-copy S143 case=edit-chain milliseconds=0.796
+# S143 synthetic case=edit-chain (fresh copy)
+PASS S143
+# story-time S143 milliseconds=1167.006
+# case-copy S157 case=c4-ic milliseconds=1.083
+# S157 synthetic case=c4-ic (fresh copy)
+PASS S157
+# story-time S157 milliseconds=5089.688
+# case-copy R18 case=c4-history milliseconds=232.321
+# R18 synthetic case=c4-history (fresh copy)
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+PASS R18
+# story-time R18 milliseconds=2015.663
+
+# executed 10 · failed 0 · deferred 0 · selected 10 · chromium launches 1

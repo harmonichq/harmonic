@@ -1,0 +1,42 @@
+SYNTHETIC — after · tree 9882bcfe · store c4-ic · 442-A1 · 1280x720
+URL: http://127.0.0.1:8791/?to=changes&subject=history
+Element: viewport
+Focused: body
+Note: Change records roster; the 06-01 row is record trial:carb_ratio-all-20240601000000 (changed 2024-06-01 00:00:00); served ending superseded
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+CHANGES · RECORDS
+What has been changed, and how it ended
+2 recorded
+Pump settings
+RECORD	ENDED
+
+Carb ratio
+Setting change · 5 g/U → 6 g/U
+	Still open
+Active
+
+
+Carb ratio
+Setting change · 10 g/U → 6 g/U
+	Superseded by a later change
+Jun 10, 2024 · 09:00
+RECORDS
+WHAT A RECORD KEEPS
+
+The original decision or the first time Harmonic saw the change, the observed change itself, the ending you saved, and any later reassessment — kept apart, because they answer different questions.
+
+Opening a record shows its own evidence. Nothing here is sent to your pump.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

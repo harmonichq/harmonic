@@ -1,0 +1,28 @@
+(node:94967) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S177 case=isf-strengthen milliseconds=256.243
+# S177 synthetic case=isf-strengthen (fresh copy)
+PASS S177
+# story-time S177 milliseconds=5919.145
+# case-copy S178 case=isf-strengthen milliseconds=1.018
+# S178 synthetic case=isf-strengthen (fresh copy)
+FAIL S178 — Timed out after 30000 ms: S178 the correction-factor queue row; saw [
+  'Correction factor · strengthen',
+  'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL · Whole day'
+]; S178 the queue numbers read insulin first, at the queue's own rounding
++ actual - expected
+
++ 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL · Whole day'
+- 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL'
+
+# story-time S178 milliseconds=34256.295
+# case-copy S179 case=isf-strengthen milliseconds=1.696
+# S179 synthetic case=isf-strengthen (fresh copy)
+PASS S179
+# story-time S179 milliseconds=6038.109
+
+# executed 2 · failed 1 · deferred 0 · selected 3 · chromium launches 1

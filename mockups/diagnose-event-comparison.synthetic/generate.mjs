@@ -9,9 +9,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+// Each view judges exactly the classifiers the attribution step judges at its
+// anchor kind: Correction stacking is judged at a correction, never at a low.
 const factors = {
   meals: ['carb_undercount', 'late_bolus', 'meal_over_delivery'],
-  lows: ['over_treated_low', 'correction_on_iob', 'correction_stacking'],
+  lows: ['over_treated_low', 'correction_on_iob'],
 };
 const labels = {
   carb_undercount: 'Carb undercount',
@@ -19,7 +21,6 @@ const labels = {
   meal_over_delivery: 'Meal over-delivery',
   over_treated_low: 'Over-treated low',
   correction_on_iob: 'Correction on active insulin',
-  correction_stacking: 'Correction stacking',
 };
 const patternRateFamilies = {
   highs_after_meals: 'meals', lows_after_meals: 'meals',

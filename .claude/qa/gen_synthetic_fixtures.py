@@ -29,12 +29,15 @@ from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timedelta
 
-from ciq_autotune.explore_exposures import build_exposures as build_endpoint_exposures
+from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND, build_exposures as build_endpoint_exposures
 from ciq_autotune.explore_time_of_day import build_time_of_day
 from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.analyzers.isf import isf_asserts_move
+from ciq_autotune.analyzers.scenario.anchors import AnchorKind
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, title as lever_title
+from ciq_autotune.analyzers.scenario.model_view import _KIND_LABEL
+from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.analyzers.scenario.opportunities import Opportunity, build_opportunities
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
@@ -91,18 +94,57 @@ def day_record(date, rng):
     }
 
 
-def verdicts(matched, tier, detail):
-    out = [{'classifier': 'over_treated_low', 'matched': matched,
-            'detail': detail, 'evidence_tier': tier if matched else 'not_in_data',
-            'silence_reason': None if matched else 'insufficient_data'}]
-    out.append({'classifier': 'iob_stacking', 'matched': False,
-                'detail': 'no stacked correction precedes this episode',
-                'evidence_tier': 'not_in_data', 'silence_reason': 'no_signal'})
+# Each family's anchor kind, as the exposure feed files it.
+ANCHOR_KIND = {family: kind for kind, family in _FAMILY_FOR_KIND.items()}
+# The classifiers the attribution step judges at each family's anchor kind
+# (`attribute.py`): `_low_lever` at a low, `_meal_lever` at a meal, `_high_lever` at a
+# high, and Correction stacking alone at a correction cluster's stacking dose.
+JUDGED = {
+    Exposure.LOWS: (Lever.OVER_TREATED_LOW, Lever.CORRECTION_ON_IOB),
+    Exposure.MEALS: (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS, Lever.MEAL_OVER_DELIVERY),
+    Exposure.HIGHS: (Lever.MISSED_MEAL, Lever.MEAL_BOLUS_SHORT),
+    Exposure.CORRECTION_CLUSTERS: (Lever.CORRECTION_STACKING,),
+}
+# Each claiming lever's cause, in words that carry no dose or ratio. A claim's recorded
+# verdict carries it as its sentence and the row serves it as its text, because
+# `attribute._step` makes the two one string.
+CAUSE = {
+    Lever.OVER_TREATED_LOW: 'Treated a low at {hh} and the glucose kept falling to {worst} '
+                            'before it turned — the treatment was larger than the fall needed.',
+    Lever.CORRECTION_ON_IOB: 'Corrected at {hh} with insulin still active; glucose fell to '
+                             '{worst} — the correction landed on top of the earlier one.',
+    Lever.LATE_BOLUS: 'Bolused for the meal at {hh} after glucose had already started to '
+                      'climb — the bolus came late.',
+    Lever.MISSED_MEAL: 'Glucose climbed from {hh} with no meal bolus before it — carbs may '
+                       'have gone unannounced.',
+    Lever.CORRECTION_STACKING: 'Corrected again at {hh} while the earlier correction was '
+                               'still active; glucose fell to {worst}.',
+}
+# The evidence tier each verdict state carries: a match is inferred, a calm judgment
+# observed, and an unjudgeable one not in the data.
+TIER = {'fired': 'inferred', 'clean': 'observed', 'no_data': 'not_in_data'}
+
+
+def verdicts(family, lever, matched, text):
+    """The verdicts the attribution step records at one anchor of ``family``.
+
+    On a claimed row the claiming ``lever`` reads matched with ``text`` as its
+    sentence and every other judged classifier reads calm; on an unclaimed row every
+    judged classifier reads unjudgeable.
+    """
+    out = []
+    for classifier in JUDGED[family]:
+        state = ('fired' if classifier is lever else 'clean') if matched else 'no_data'
+        own, silence, gist = RECORDED[state]
+        out.append({'classifier': classifier.value, 'matched': own,
+                    'detail': text if own else (f'Synthetic {lever_title(classifier).lower()} '
+                                                f'judgment: this Occurrence {gist}.'),
+                    'evidence_tier': TIER[state], 'silence_reason': silence})
     return out
 
 
 def occurrence(i, minute, lever, rng, matched=True, bolus=None):
-    """One attributed (or deliberately unattributed) exposure.
+    """One exposure of ``lever``'s family, claimed by ``lever`` (or deliberately not).
 
     The LEVER is the input and the title is DERIVED from it, because that is the
     relationship production guarantees: `explore_exposures` sets
@@ -115,6 +157,13 @@ def occurrence(i, minute, lever, rng, matched=True, bolus=None):
     whose drill opened another finding's evidence table. Deriving the title here
     makes the invariant structural rather than something two humans keep in sync.
 
+    The row's family is the lever's, and the row takes the shape the exposure feed
+    serves for that family (ADR 454): the anchor kind and label the episode view
+    serves, exactly the verdicts the attribution step records there (``verdicts``),
+    and on a claimed row the lever's cause sentence as its text. A High's anchor
+    glucose sits above the high-anchor threshold, where every High anchor is found.
+    Each row stays alone in its episode.
+
     ``bolus`` is the anchor bolus's ``(insulin, carbs)`` on a meal or correction row.
     Like the exposure feed, such a row serves that bolus and no anchor glucose; every
     other row serves glucose and a null bolus. The draws stay in the same order either
@@ -124,20 +173,23 @@ def occurrence(i, minute, lever, rng, matched=True, bolus=None):
     entry = round(rng.uniform(58, 78), 1)
     worst = round(entry - rng.uniform(4, 22), 1)
     insulin, carbs = bolus or (None, None)
+    family = exposure(lever)
+    kind = ANCHOR_KIND[family.value]
+    bg = (round(ScenarioConfig().anchor_high_mgdl + (entry - 58), 1)
+          if family is Exposure.HIGHS else entry)
+    text = CAUSE[lever].format(hh=hhmm(minute), worst=f'{worst:.0f}') if matched else ''
     return {
         't': f'{date} {hhmm(minute)}:00', 'date': date,
-        'bg': None if bolus else entry, 'insulin': insulin, 'carbs': carbs,
+        'bg': None if bolus else bg, 'insulin': insulin, 'carbs': carbs,
         'worst_bg': worst,
-        'kind': 'low', 'label': 'Low', 'state': 'fired' if matched else 'no_data',
+        'kind': kind, 'label': _KIND_LABEL[AnchorKind(kind)],
+        'state': 'fired' if matched else 'no_data',
         'attributed': matched,
         'attributed_levers': [Lever(lever).value] if matched else [],
         'cause_lever': Lever(lever).value if matched else None,
         'cause_title': lever_title(Lever(lever)) if matched else None,
-        'text': (f'Treated a low at {hhmm(minute)} and the glucose kept falling to {worst:.0f} '
-                 'before it turned — the treatment was larger than the fall needed.')
-        if matched else '',
-        'verdicts': verdicts(matched, 'inferred',
-                             f'glucose fell to {worst:.0f} mg/dL after the treatment'),
+        'text': text,
+        'verdicts': verdicts(family, lever, matched, text),
         'ep_id': f'{date}-ep{i}',
     }
 
@@ -203,7 +255,7 @@ def build_exposures():
     lows = [occurrence(i, m, Lever.OVER_TREATED_LOW, rng) for i, m in enumerate(spread)]
     lows += [occurrence(50 + i, m, Lever.CORRECTION_ON_IOB, rng)
              for i, m in enumerate((410, 700, 1015))]
-    # a counter-example: attributed to the family, no classifier fired
+    # two counter-examples: no lever claims them, and neither judged classifier could judge
     lows += [occurrence(60 + i, m, Lever.OVER_TREATED_LOW, rng, matched=False)
              for i, m in enumerate((160, 980))]
     lows += [occurrence(100 + i, m, Lever.OVER_TREATED_LOW, rng)
@@ -238,7 +290,9 @@ def build_exposures():
     # count is zero, the server publishes no sentence, and the whole surface is
     # certified by a fixture that can never show it.
     highs += [occurrence(83, 1310, Lever.MISSED_MEAL, rng, matched=False)]
-    clusters = [occurrence(90 + i, m, Lever.CORRECTION_ON_IOB, rng, bolus=(dose, None))
+    # Correction stacking is the one lever a correction anchor drives; Correction on
+    # active insulin is judged at a low alone (`attribute._low_lever`).
+    clusters = [occurrence(90 + i, m, Lever.CORRECTION_STACKING, rng, bolus=(dose, None))
                 for i, (m, dose) in enumerate(((610, 2.0), (900, 1.5)))]
 
     def family(rows):
@@ -523,15 +577,17 @@ def build_case_file_capture():
         else:
             roster = population
             occurrence_ids = (None,) * len(roster)
+        reasons = [recorded_reason(lever, verdict) for verdict in verdicts]
         members = tuple(Member(
             item,
             item.anchor_t + (timedelta(minutes=180)
                              if lever is Lever.OVER_TREATED_LOW else timedelta()),
             verdict,
             occurrence_id,
-            *recorded_reason(lever, verdict),
-            claim_text=(f'Synthetic {lever_title(lever).lower()} narrative: the episode '
-                        'that claims this Occurrence.' if index == 0 else ''),
+            *reasons[index],
+            # The claim's cause text is its recorded sentence, as the producer's
+            # attribution makes it (`attribute._step`).
+            claim_text=reasons[index][0][0]['detail'] if index == 0 else '',
         ) for index, (item, verdict, occurrence_id)
             in enumerate(zip(roster, verdicts, occurrence_ids)))
         # Meal over-delivery deliberately proves claimed < fired.

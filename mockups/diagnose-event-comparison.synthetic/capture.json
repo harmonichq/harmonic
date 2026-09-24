@@ -436,28 +436,21 @@
         "anchor_bg": null,
         "anchor_insulin": 2,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "correction",
         "label": "Correction cluster",
         "attributed": true,
         "attributed_levers": [
-          "correction_on_iob"
+          "correction_stacking"
         ],
-        "cause_lever": "correction_on_iob",
-        "text": "Treated a low at 10:10 and the glucose kept falling to 55 before it turned — the treatment was larger than the fall needed.",
+        "cause_lever": "correction_stacking",
+        "text": "Corrected again at 10:10 while the earlier correction was still active; glucose fell to 55.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 55 mg/dL after the treatment",
+            "classifier": "correction_stacking",
+            "detail": "Corrected again at 10:10 while the earlier correction was still active; glucose fell to 55.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
-          },
-          {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
-            "matched": false,
-            "silence_reason": "no_signal"
           }
         ],
         "trace": {
@@ -474,28 +467,21 @@
         "anchor_bg": null,
         "anchor_insulin": 1.5,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "correction",
         "label": "Correction cluster",
         "attributed": true,
         "attributed_levers": [
-          "correction_on_iob"
+          "correction_stacking"
         ],
-        "cause_lever": "correction_on_iob",
-        "text": "Treated a low at 15:00 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
+        "cause_lever": "correction_stacking",
+        "text": "Corrected again at 15:00 while the earlier correction was still active; glucose fell to 53.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 53 mg/dL after the treatment",
+            "classifier": "correction_stacking",
+            "detail": "Corrected again at 15:00 while the earlier correction was still active; glucose fell to 53.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
-          },
-          {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
-            "matched": false,
-            "silence_reason": "no_signal"
           }
         ],
         "trace": {
@@ -511,31 +497,31 @@
         "ep_id": "2020-03-03-ep80",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 08:40:00",
-        "anchor_bg": 77.8,
+        "anchor_bg": 269.8,
         "anchor_insulin": null,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "high",
         "label": "High excursion",
         "attributed": true,
         "attributed_levers": [
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
-        "text": "Treated a low at 08:40 and the glucose kept falling to 68 before it turned — the treatment was larger than the fall needed.",
+        "text": "Glucose climbed from 08:40 with no meal bolus before it — carbs may have gone unannounced.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 68 mg/dL after the treatment",
+            "classifier": "missed_meal",
+            "detail": "Glucose climbed from 08:40 with no meal bolus before it — carbs may have gone unannounced.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "meal_bolus_short",
+            "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -549,31 +535,31 @@
         "ep_id": "2020-03-01-ep81",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 13:50:00",
-        "anchor_bg": 70,
+        "anchor_bg": 262,
         "anchor_insulin": null,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "high",
         "label": "High excursion",
         "attributed": true,
         "attributed_levers": [
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
-        "text": "Treated a low at 13:50 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
+        "text": "Glucose climbed from 13:50 with no meal bolus before it — carbs may have gone unannounced.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 54 mg/dL after the treatment",
+            "classifier": "missed_meal",
+            "detail": "Glucose climbed from 13:50 with no meal bolus before it — carbs may have gone unannounced.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "meal_bolus_short",
+            "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -587,31 +573,31 @@
         "ep_id": "2020-03-02-ep82",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 20:00:00",
-        "anchor_bg": 76.4,
+        "anchor_bg": 268.4,
         "anchor_insulin": null,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "high",
         "label": "High excursion",
         "attributed": true,
         "attributed_levers": [
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
-        "text": "Treated a low at 20:00 and the glucose kept falling to 67 before it turned — the treatment was larger than the fall needed.",
+        "text": "Glucose climbed from 20:00 with no meal bolus before it — carbs may have gone unannounced.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 67 mg/dL after the treatment",
+            "classifier": "missed_meal",
+            "detail": "Glucose climbed from 20:00 with no meal bolus before it — carbs may have gone unannounced.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "meal_bolus_short",
+            "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -625,10 +611,10 @@
         "ep_id": "2020-03-03-ep83",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 21:50:00",
-        "anchor_bg": 72.1,
+        "anchor_bg": 264.1,
         "anchor_insulin": null,
         "anchor_carbs": null,
-        "kind": "low",
+        "kind": "high",
         "label": "High excursion",
         "attributed": false,
         "attributed_levers": [],
@@ -636,18 +622,18 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 68 mg/dL after the treatment",
+            "classifier": "missed_meal",
+            "detail": "Synthetic missed / unannounced meal judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "meal_bolus_short",
+            "detail": "Synthetic meal bolus fell short judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -677,17 +663,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 49 mg/dL after the treatment",
+            "detail": "Treated a low at 01:35 and the glucose kept falling to 49 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -886,17 +872,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 46 mg/dL after the treatment",
+            "detail": "Treated a low at 02:20 and the glucose kept falling to 46 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1066,17 +1052,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 48 mg/dL after the treatment",
+            "detail": "Treated a low at 03:05 and the glucose kept falling to 48 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1234,17 +1220,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 49 mg/dL after the treatment",
+            "detail": "Treated a low at 03:50 and the glucose kept falling to 49 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1394,17 +1380,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 61 mg/dL after the treatment",
+            "detail": "Treated a low at 04:35 and the glucose kept falling to 61 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1546,17 +1532,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 60 mg/dL after the treatment",
+            "detail": "Treated a low at 05:20 and the glucose kept falling to 60 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1690,17 +1676,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 53 mg/dL after the treatment",
+            "detail": "Treated a low at 08:25 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1826,17 +1812,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 51 mg/dL after the treatment",
+            "detail": "Treated a low at 10:40 and the glucose kept falling to 51 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -1994,17 +1980,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 54 mg/dL after the treatment",
+            "detail": "Treated a low at 15:05 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -2158,17 +2144,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 61 mg/dL after the treatment",
+            "detail": "Treated a low at 17:55 and the glucose kept falling to 61 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -2318,21 +2304,21 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
-        "text": "Treated a low at 06:50 and the glucose kept falling to 48 before it turned — the treatment was larger than the fall needed.",
+        "text": "Corrected at 06:50 with insulin still active; glucose fell to 48 — the correction landed on top of the earlier one.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 48 mg/dL after the treatment",
+            "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
+            "matched": false,
+            "silence_reason": "no_trigger"
+          },
+          {
+            "classifier": "correction_on_iob",
+            "detail": "Corrected at 06:50 with insulin still active; glucose fell to 48 — the correction landed on top of the earlier one.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
-          },
-          {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
-            "matched": false,
-            "silence_reason": "no_signal"
           }
         ],
         "trace": {
@@ -2490,21 +2476,21 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
-        "text": "Treated a low at 11:40 and the glucose kept falling to 43 before it turned — the treatment was larger than the fall needed.",
+        "text": "Corrected at 11:40 with insulin still active; glucose fell to 43 — the correction landed on top of the earlier one.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 43 mg/dL after the treatment",
+            "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
+            "matched": false,
+            "silence_reason": "no_trigger"
+          },
+          {
+            "classifier": "correction_on_iob",
+            "detail": "Corrected at 11:40 with insulin still active; glucose fell to 43 — the correction landed on top of the earlier one.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
-          },
-          {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
-            "matched": false,
-            "silence_reason": "no_signal"
           }
         ],
         "trace": {
@@ -2678,21 +2664,21 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
-        "text": "Treated a low at 16:55 and the glucose kept falling to 55 before it turned — the treatment was larger than the fall needed.",
+        "text": "Corrected at 16:55 with insulin still active; glucose fell to 55 — the correction landed on top of the earlier one.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 55 mg/dL after the treatment",
+            "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
+            "matched": false,
+            "silence_reason": "no_trigger"
+          },
+          {
+            "classifier": "correction_on_iob",
+            "detail": "Corrected at 16:55 with insulin still active; glucose fell to 55 — the correction landed on top of the earlier one.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
-          },
-          {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
-            "matched": false,
-            "silence_reason": "no_signal"
           }
         ],
         "trace": {
@@ -2864,17 +2850,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 45 mg/dL after the treatment",
+            "detail": "Synthetic over-treated low judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -3038,17 +3024,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 41 mg/dL after the treatment",
+            "detail": "Synthetic over-treated low judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -3206,17 +3192,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 56 mg/dL after the treatment",
+            "detail": "Treated a low at 00:55 and the glucose kept falling to 56 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -3366,17 +3352,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 59 mg/dL after the treatment",
+            "detail": "Treated a low at 06:05 and the glucose kept falling to 59 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -3518,17 +3504,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 53 mg/dL after the treatment",
+            "detail": "Treated a low at 08:35 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -3706,17 +3692,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 73 mg/dL after the treatment",
+            "detail": "Treated a low at 12:35 and the glucose kept falling to 73 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -3894,17 +3880,17 @@
         "verdicts": [
           {
             "classifier": "over_treated_low",
-            "detail": "glucose fell to 54 mg/dL after the treatment",
+            "detail": "Treated a low at 13:55 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "correction_on_iob",
+            "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -4073,28 +4059,35 @@
         "anchor_bg": null,
         "anchor_insulin": 3,
         "anchor_carbs": 30,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": true,
         "attributed_levers": [
           "late_bolus"
         ],
         "cause_lever": "late_bolus",
-        "text": "Treated a low at 07:35 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
+        "text": "Bolused for the meal at 07:35 after glucose had already started to climb — the bolus came late.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 54 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
+            "matched": false,
+            "silence_reason": "no_trigger"
+          },
+          {
+            "classifier": "late_bolus",
+            "detail": "Bolused for the meal at 07:35 after glucose had already started to climb — the bolus came late.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -4412,28 +4405,35 @@
         "anchor_bg": null,
         "anchor_insulin": 3.1,
         "anchor_carbs": 31,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": true,
         "attributed_levers": [
           "late_bolus"
         ],
         "cause_lever": "late_bolus",
-        "text": "Treated a low at 13:00 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
+        "text": "Bolused for the meal at 13:00 after glucose had already started to climb — the bolus came late.",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 53 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
+            "matched": false,
+            "silence_reason": "no_trigger"
+          },
+          {
+            "classifier": "late_bolus",
+            "detail": "Bolused for the meal at 13:00 after glucose had already started to climb — the bolus came late.",
             "evidence_tier": "inferred",
             "matched": true,
             "silence_reason": null
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
-            "evidence_tier": "not_in_data",
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence did not meet the criteria.",
+            "evidence_tier": "observed",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "no_trigger"
           }
         ],
         "trace": {
@@ -4743,7 +4743,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.1,
         "anchor_carbs": 41,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -4751,18 +4751,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 53 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -5080,7 +5087,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.3,
         "anchor_carbs": 33,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -5088,18 +5095,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 49 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -5389,7 +5403,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.4,
         "anchor_carbs": 34,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -5397,18 +5411,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 55 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -5690,7 +5711,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.5,
         "anchor_carbs": 35,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -5698,18 +5719,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 71 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -5983,7 +6011,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.6,
         "anchor_carbs": 36,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -5991,18 +6019,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 59 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -6268,7 +6303,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.7,
         "anchor_carbs": 37,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -6276,18 +6311,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 60 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -6561,7 +6603,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.8,
         "anchor_carbs": 38,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -6569,18 +6611,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 69 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -6854,7 +6903,7 @@
         "anchor_bg": null,
         "anchor_insulin": 3.9,
         "anchor_carbs": 39,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -6862,18 +6911,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 61 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -7147,7 +7203,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4,
         "anchor_carbs": 40,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -7155,18 +7211,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 63 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -7452,7 +7515,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.1,
         "anchor_carbs": 41,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -7460,18 +7523,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 45 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -7789,7 +7859,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.2,
         "anchor_carbs": 42,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -7797,18 +7867,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 60 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -8122,7 +8199,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.3,
         "anchor_carbs": 43,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -8130,18 +8207,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 66 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -8447,7 +8531,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.4,
         "anchor_carbs": 44,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -8455,18 +8539,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 54 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -8764,7 +8855,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.5,
         "anchor_carbs": 45,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -8772,18 +8863,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 51 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -9073,7 +9171,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.6,
         "anchor_carbs": 46,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -9081,18 +9179,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 70 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -9374,7 +9479,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.7,
         "anchor_carbs": 47,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -9382,18 +9487,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 50 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -9711,7 +9823,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.8,
         "anchor_carbs": 48,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -9719,18 +9831,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 64 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -10048,7 +10167,7 @@
         "anchor_bg": null,
         "anchor_insulin": 4.9,
         "anchor_carbs": 49,
-        "kind": "low",
+        "kind": "meal",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
@@ -10056,18 +10175,25 @@
         "text": "",
         "verdicts": [
           {
-            "classifier": "over_treated_low",
-            "detail": "glucose fell to 40 mg/dL after the treatment",
+            "classifier": "carb_undercount",
+            "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
             "silence_reason": "insufficient_data"
           },
           {
-            "classifier": "iob_stacking",
-            "detail": "no stacked correction precedes this episode",
+            "classifier": "late_bolus",
+            "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
             "evidence_tier": "not_in_data",
             "matched": false,
-            "silence_reason": "no_signal"
+            "silence_reason": "insufficient_data"
+          },
+          {
+            "classifier": "meal_over_delivery",
+            "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+            "evidence_tier": "not_in_data",
+            "matched": false,
+            "silence_reason": "insufficient_data"
           }
         ],
         "trace": {
@@ -19322,14 +19448,12 @@
       ],
       "factors": [
         "over_treated_low",
-        "correction_on_iob",
-        "correction_stacking"
+        "correction_on_iob"
       ],
       "default_factor": "over_treated_low",
       "factor_labels": {
         "over_treated_low": "Over-treated low",
-        "correction_on_iob": "Correction on active insulin",
-        "correction_stacking": "Correction stacking"
+        "correction_on_iob": "Correction on active insulin"
       },
       "occurrences": [
         {
@@ -19355,13 +19479,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -19370,13 +19487,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -19584,13 +19694,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -19599,13 +19702,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -19784,13 +19880,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -19799,13 +19888,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -19972,13 +20054,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -19987,13 +20062,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -20152,13 +20220,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -20167,13 +20228,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -20324,13 +20378,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -20339,13 +20386,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -20488,13 +20528,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -20503,13 +20536,6 @@
               "provenance": "current classifier matched"
             },
             "correction_on_iob": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
-            },
-            "correction_stacking": {
               "cohort": "another_factor",
               "provenance": "another current classifier matched",
               "other_factors": [
@@ -20644,13 +20670,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -20664,10 +20683,6 @@
               }
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -20831,13 +20846,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -20851,10 +20859,6 @@
               }
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -21014,13 +21018,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21034,10 +21031,6 @@
               }
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -21197,13 +21190,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21217,10 +21203,6 @@
               }
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -21388,13 +21370,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21403,10 +21378,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -21590,13 +21561,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21605,10 +21569,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -21788,13 +21748,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21803,10 +21756,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -21978,13 +21927,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -21993,10 +21935,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -22160,13 +22098,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -22175,10 +22106,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -22334,13 +22261,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -22349,10 +22269,6 @@
               "provenance": "fully judged; no factor matched"
             },
             "correction_on_iob": {
-              "cohort": "neutral",
-              "provenance": "fully judged; no factor matched"
-            },
-            "correction_stacking": {
               "cohort": "neutral",
               "provenance": "fully judged; no factor matched"
             }
@@ -22500,13 +22416,6 @@
               "detail": "Correction on active insulin matched the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -22520,13 +22429,6 @@
             "correction_on_iob": {
               "cohort": "fired",
               "provenance": "current classifier matched"
-            },
-            "correction_stacking": {
-              "cohort": "another_factor",
-              "provenance": "another current classifier matched",
-              "other_factors": [
-                "correction_on_iob"
-              ]
             }
           },
           "trace": {
@@ -22708,13 +22610,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -22723,10 +22618,6 @@
               "provenance": "not safely comparable"
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -22910,13 +22801,6 @@
               "detail": "Correction on active insulin did not match the current rule.",
               "evidence_tier": "observed",
               "silence_reason": "no_trigger"
-            },
-            {
-              "classifier": "correction_stacking",
-              "matched": false,
-              "detail": "Correction stacking did not match the current rule.",
-              "evidence_tier": "observed",
-              "silence_reason": "no_trigger"
             }
           ],
           "routes": {
@@ -22925,10 +22809,6 @@
               "provenance": "not safely comparable"
             },
             "correction_on_iob": {
-              "cohort": "excluded",
-              "provenance": "not safely comparable"
-            },
-            "correction_stacking": {
               "cohort": "excluded",
               "provenance": "not safely comparable"
             }
@@ -24434,650 +24314,6 @@
                 "105|105|4|limited",
                 "110|110|3|limited",
                 "115|120|2|limited"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:whole-day": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "supported",
-              "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-13",
-                "lows-synthetic-14",
-                "lows-synthetic-15",
-                "lows-synthetic-16",
-                "lows-synthetic-17"
-              ],
-              "points": [
-                "-60|-60|2|limited",
-                "-55|-55|3|limited",
-                "-50|-50|4|limited",
-                "-45|-45|5|supported",
-                "-40|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|115|2|limited",
-                "120|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "supported",
-              "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2",
-                "lows-synthetic-3",
-                "lows-synthetic-4",
-                "lows-synthetic-5",
-                "lows-synthetic-6",
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-60|-55|2|limited",
-                "-50|-50|3|limited",
-                "-45|-45|4|limited",
-                "-40|-40|5|supported",
-                "-35|-35|6|supported",
-                "-30|-30|7|supported",
-                "-25|90|8|supported",
-                "95|95|7|supported",
-                "100|100|6|supported",
-                "105|105|5|supported",
-                "110|110|4|limited",
-                "115|120|3|limited"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:0-360": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-14",
-                "lows-synthetic-16"
-              ],
-              "points": [
-                "-60|-60|0|withheld",
-                "-55|-50|1|withheld",
-                "-45|100|2|limited",
-                "105|110|1|withheld",
-                "115|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "supported",
-              "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2",
-                "lows-synthetic-3",
-                "lows-synthetic-4",
-                "lows-synthetic-5",
-                "lows-synthetic-6"
-              ],
-              "points": [
-                "-60|-55|1|withheld",
-                "-50|-50|2|limited",
-                "-45|-45|3|limited",
-                "-40|-40|4|limited",
-                "-35|-35|5|supported",
-                "-30|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|120|2|limited"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:360-720": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-17"
-              ],
-              "points": [
-                "-60|-45|1|withheld",
-                "-40|95|2|limited",
-                "100|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-60|-30|1|withheld",
-                "-25|90|2|limited",
-                "95|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:720-1080": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-13",
-                "lows-synthetic-15"
-              ],
-              "points": [
-                "-60|-55|1|withheld",
-                "-50|105|2|limited",
-                "110|115|1|withheld",
-                "120|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:1080-1440": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:1320-120": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-16"
-              ],
-              "points": [
-                "-60|-50|0|withheld",
-                "-45|100|1|withheld",
-                "105|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-1"
-              ],
-              "points": [
-                "-60|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:720-960": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:840-960": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:360-480": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-17"
-              ],
-              "points": [
-                "-60|-45|0|withheld",
-                "-40|95|1|withheld",
-                "100|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:455-790": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-12"
-              ],
-              "points": [
-                "-60|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-60|-30|1|withheld",
-                "-25|90|2|limited",
-                "95|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:465-780": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [
-                "lows-synthetic-12"
-              ],
-              "points": [
-                "-60|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-60|-30|1|withheld",
-                "-25|90|2|limited",
-                "95|120|1|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:720-1440": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-13",
-                "lows-synthetic-15"
-              ],
-              "points": [
-                "-60|-55|1|withheld",
-                "-50|105|2|limited",
-                "110|115|1|withheld",
-                "120|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "dense:correction_stacking:840-900": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            }
-          }
-        },
-        "sparse:correction_stacking:whole-day": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-13"
-              ],
-              "points": [
-                "-60|115|2|limited",
-                "120|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "limited",
-              "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2"
-              ],
-              "points": [
-                "-60|-55|1|withheld",
-                "-50|120|2|limited"
-              ]
-            }
-          }
-        },
-        "zero-fired:correction_stacking:whole-day": {
-          "server_owned": true,
-          "cohorts": {
-            "fired": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "near_rule": {
-              "support": "withheld",
-              "occurrence_ids": [],
-              "points": [
-                "-60|120|0|withheld"
-              ]
-            },
-            "neutral": {
-              "support": "supported",
-              "occurrence_ids": [
-                "lows-synthetic-12",
-                "lows-synthetic-13",
-                "lows-synthetic-14",
-                "lows-synthetic-15",
-                "lows-synthetic-16",
-                "lows-synthetic-17"
-              ],
-              "points": [
-                "-60|-60|2|limited",
-                "-55|-55|3|limited",
-                "-50|-50|4|limited",
-                "-45|-45|5|supported",
-                "-40|95|6|supported",
-                "100|100|5|supported",
-                "105|105|4|limited",
-                "110|110|3|limited",
-                "115|115|2|limited",
-                "120|120|1|withheld"
-              ]
-            },
-            "another_factor": {
-              "support": "supported",
-              "occurrence_ids": [
-                "lows-synthetic-1",
-                "lows-synthetic-2",
-                "lows-synthetic-3",
-                "lows-synthetic-4",
-                "lows-synthetic-5",
-                "lows-synthetic-6",
-                "lows-synthetic-7",
-                "lows-synthetic-18"
-              ],
-              "points": [
-                "-60|-55|2|limited",
-                "-50|-50|3|limited",
-                "-45|-45|4|limited",
-                "-40|-40|5|supported",
-                "-35|-35|6|supported",
-                "-30|-30|7|supported",
-                "-25|90|8|supported",
-                "95|95|7|supported",
-                "100|100|6|supported",
-                "105|105|5|supported",
-                "110|110|4|limited",
-                "115|120|3|limited"
               ]
             }
           }

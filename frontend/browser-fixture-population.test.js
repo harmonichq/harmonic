@@ -235,25 +235,47 @@ test('every chartable fixture Pattern resolves through preparation validation', 
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
+// Over-treated low is the one Cause the producer drives from two anchor kinds: its
+// low, and a rebound High it claims. The committed payload claims no rebound High, so
+// this clone makes its unclaimed High one, in the shape the producer serves.
+function withReboundHigh(exposures) {
+  const clone = structuredClone(exposures);
+  const highs = clone.exposures.highs;
+  const high = highs.occurrences.find((row) => !row.attributed);
+  const text = 'Synthetic rebound narrative: the treated low climbed into this high.';
+  Object.assign(high, {
+    attributed: true, attributed_levers: ['over_treated_low'], cause_lever: 'over_treated_low',
+    cause_title: 'Over-treated low', state: 'fired', text,
+    verdicts: [{ classifier: 'over_treated_low', matched: true, detail: text,
+      evidence_tier: 'inferred', silence_reason: null }],
+  });
+  Object.assign(highs, {
+    attributed: highs.attributed + 1, clean: highs.clean - 1, uncaused: highs.uncaused - 1,
+    levers: [...highs.levers, 'over_treated_low'],
+    by_cause: { ...highs.by_cause, 'Over-treated low': 1 },
+  });
+  return clone;
+}
+
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
   const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
-    exposures: payload.exposures,
+    exposures: withReboundHigh(payload.exposures),
     scenarios: payload.scenarios,
   }));
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection, capture);
 
-  const projected = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
+  const projected = projection.rows.find(({ id }) => id === 'finding:over_treated_low');
   assert.deepEqual(projected.appearances.map(({ family }) => family),
-    ['correction_clusters', 'lows'],
+    ['highs', 'lows'],
     'the projection sorts by family name, so the case file\'s family arrives second');
 
-  const row = preparation.rendered_rows.find(({ id }) => id === 'finding:correction_on_iob');
+  const row = preparation.rendered_rows.find(({ id }) => id === 'finding:over_treated_low');
   assert.deepEqual(row.appearances, [
     { family: 'lows', m: 10, n: 1, noun: 'lows' },
-    { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 2 },
+    { family: 'highs', noun: 'highs', n: 1, m: 4 },
   ], 'the case file\'s family leads at the case file\'s counts and the other family keeps the projection\'s');
   assert.equal(row.headline,
     'Not ranked in this window yet. Showed up in 1 of 10 lows in this window.',
@@ -281,7 +303,7 @@ test('the Afternoon fixture retains all four published behavioral Findings', () 
 
   assert.deepEqual(shown.map(({ id }) => id), [
     'finding:over_treated_low',
-    'finding:correction_on_iob',
+    'finding:correction_stacking',
     'finding:late_bolus',
     'finding:missed_meal',
   ]);

@@ -1405,6 +1405,84 @@ test('S139 and S140 fail at the label, not at a premise, when the dock still rea
   }
 });
 
+test('S169 and S170 are unique app-only C4 stories on their cases and terms', () => {
+  for (const [id, expectedCase, term] of [['S169', 'c3-trial', 'HV2-24'], ['S170', 'showcase', 'HV2-33']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// #447: a fake page for S169 — the served admission and selected Trial (15 of 14,
+// complete, changed 05-15), the dock, and the Changes Watch maturity its link opens.
+// `dock` is the dock's detail line: the branch prints the served count, the base
+// clamped it.
+function qa447CountPage(dock) {
+  const roster = { admission: { state: 'available', active_kind: 'trial', active_id: 'basal_rate-0300' } };
+  const selected = { state: 'complete', changed_at: '2024-05-15 00:00:00',
+    maturing: { days_elapsed: 15, days_required: 14, gap_count: 0 } };
+  const text = {
+    '.inspector > .watch .how': dock,
+    '[data-part="maturity"] .gf-figure': '15 days14 required · 0 data gaps',
+  };
+  const attributes = { 'progress[aria-label="Trial progress"]': { value: '14', max: '14' } };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    locator: sub => node(`${selector} ${sub}`),
+    waitFor: async () => {}, click: async () => {},
+    getAttribute: async name => attributes[selector]?.[name] ?? null,
+    innerText: async () => text[selector] ?? '',
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async href => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(href).searchParams.has('selected') ? { ...roster, selected } : roster) }) },
+    locator: node,
+  };
+}
+
+test('S169 passes when the dock prints the served count in Changes\' words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required'));
+});
+
+test('S169 fails at the dock count, not at a premise, when the dock clamps to "14 of 14"', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('Ready to judge — 14 of 14 days since 05-15')),
+    error => error.message.includes('S169 the dock must print the served day count')
+      && !error.message.includes('premise')));
+});
+
+// #447: a fake page for S170 — the served article and the Guide rendering it.
+function qa447GuidePage(line) {
+  const article = `Reading the Diagnose surface\n- ◈ Cause levers (late bolus, over-treated low) ${line}`;
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => {}, click: async () => {},
+    innerText: async () => (selector === '.gf-article' ? article : ''),
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async () => ({ status: () => 200, text: async () => `- **◈ Cause** levers ${line}` }) },
+    locator: node,
+  };
+}
+
+test('S170 passes when the Guide article sends Cause levers to a Focus followed in Changes', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S170(qa447GuidePage('flow to a Focus, followed in\n  Changes, because no pump setting fixes them.'));
+});
+
+test('S170 fails at its no-Verify assertion, not at a premise, on the base article', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S170(qa447GuidePage('flow to Focus / Verify, because\n  no pump setting fixes them.')),
+    error => error.message.includes('S170 the article must name no Verify')
+      && !error.message.includes('premise')));
+});
+
 test('S154 is a unique app-only C4 story, served from the showcase', () => {
   const entries = REGISTRY.filter(([entry]) => entry === 'S154');
   assert.equal(entries.length, 1, 'S154 is registered once');

@@ -108,10 +108,12 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   `DERIVED_ARTIFACT_STORE_SCHEMA_VERSION`, `_digest` and `source_fingerprint`
   (`test_api.py`).
 - `scripts/profile_cold_shapes.py` drops its emptied warm-only stage and flag.
+- Each sub-order commits directly on the ticket branch
+  `447-retire-verify-language` rather than on a per-chunk branch.
 
 ## 2. Shipped surfaces (sub-order 2)
 
-- [ ] 2.1 Write the failing tests first in `frontend/watched-change-dock.test.js`.
+- [x] 2.1 Write the failing tests first in `frontend/watched-change-dock.test.js`.
   (a) Rewrite the two tests that pin "14 of 14" for a ready Trial. The served
   14/14 case flattens to exactly
   `Ready to judge — 14 days since 08-11 · 14 required`. The served 15/14 case
@@ -124,7 +126,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   neither prints `‹N› of ‹R›` with ‹N› > ‹R›. Watch both fail on the base, where
   the dock prints `14 of 14 days`. The maturing test
   (`Maturing — 6 of 14 days since 08-11`) stays unchanged and green.
-- [ ] 2.2 Implement surfaces **The watch dock and Changes print one Trial day
+- [x] 2.2 Implement surfaces **The watch dock and Changes print one Trial day
   count**.
   - `frontend/follow-up.js` exports one function that returns the count words
     from a served `maturing` object and a served ready verdict: "‹n› of ‹R›
@@ -142,12 +144,12 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   - In `frontend/follow-up.test.js`, give the two maturity tests the served shape
     (add `state`), and pin the exported function's two forms.
   - No other dock state, kind label, Trial title or route changes.
-- [ ] 2.3 Run `PYTHONPATH=. uv run python docs/scope/447-day-count.repro.py
+- [x] 2.3 Run `PYTHONPATH=. uv run python docs/scope/447-day-count.repro.py
   <scratch>/served.json`, then `node docs/scope/447-day-count.repro.mjs
   <scratch>/served.json`. The node half exits 0 and prints
   `Ready to judge — 15 days since 05-15 · 14 required` and
   `15 days · 14 required · 0 data gaps`. On the base it exits 1.
-- [ ] 2.4 Write the failing test first in `tests/test_api.py`, beside the
+- [x] 2.4 Write the failing test first in `tests/test_api.py`, beside the
   existing `/api/kb/<slug>` tests. The served markdown of every authored slug
   (`start-here`, `reading-diagnose`, `reading-day`, `the-plan-tab`) contains no
   `Verify`. The whitespace-normalised `reading-diagnose` markdown contains
@@ -156,12 +158,12 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   `- **◈ Cause** levers (late bolus, over-treated low) flow to a Focus,
   followed in` / `  Changes, because no pump setting fixes them.` It stays two
   lines.
-- [ ] 2.5 Re-point the frontend lines the inventory lists:
+- [x] 2.5 Re-point the frontend lines the inventory lists:
   `frontend/diagnose-workspaces.js:43`, `frontend/follow-up.js:119, 368`,
   `frontend/verify-workstation-chart.js:1, 13`, and the assertion message at
   `frontend/desk-behavior.replay.mjs:1404`. They are comments and a message;
   no executable statement changes.
-- [ ] 2.6 Append `## #447 amendment — 2026-09-23, issue #447` to
+- [x] 2.6 Append `## #447 amendment — 2026-09-23, issue #447` to
   `mockups/harmonic-v2-desktop.behavior.md`. It quotes the sanction line from
   design.md and says that no existing story is amended or retired. It adds these
   stories in the ledger's STORY format:
@@ -177,7 +179,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 
   The ledger's frozen header, its inventory line and ACCEPTANCE.md's count
   sentence stay as they are; the release coordinator owns them.
-- [ ] 2.7 Add `C4_STORIES.S169` and `C4_STORIES.S170` to `frontend/c4.replay.mjs`.
+- [x] 2.7 Add `C4_STORIES.S169` and `C4_STORIES.S170` to `frontend/c4.replay.mjs`.
   - S169 reads the served admission and the selected Trial from
     `/api/verify/trials`. Its premises are an active Trial whose served `state`
     is `complete` and whose `days_elapsed` exceeds `days_required`. It opens
@@ -205,7 +207,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   require it to reject at its content assertion, not at a premise: for S169 the
   dock reads `Ready to judge — 14 of 14 days since 05-15`; for S170 the article
   reads `flow to Focus / Verify`.
-- [ ] 2.8 Move the pinned literal in
+- [x] 2.8 Move the pinned literal in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()` to
   `{"issued": 173, "active": 154, "retired": 19}`. In
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`:
@@ -217,10 +219,10 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out
   <scratch>` reports `{'issued': 173, 'active': 154, 'retired': 19}` with
   `missing=[] extra=[]`.
-- [ ] 2.9 Run `uv run python mockups/harmonic-v2.exploration/generate.py`, then
+- [x] 2.9 Run `uv run python mockups/harmonic-v2.exploration/generate.py`, then
   run it with `--check`. Exactly `utilities.json` moves, because it embeds the
   Guide article.
-- [ ] 2.10 These all exit 0: `node --test 'frontend/**/*.test.js'`;
+- [x] 2.10 These all exit 0: `node --test 'frontend/**/*.test.js'`;
   `uv run python -m pytest tests/test_api.py`;
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
   ReplayPlanTest InventoryProofTest SmokeSelectionTest`;

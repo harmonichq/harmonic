@@ -10,7 +10,7 @@ import test from 'node:test';
 import {
   adherenceTable, comparisonPairs, comparisonReasonWords, comparisonTables, conclusionForm,
   dailyEvidence, evidenceFigure, maturitySection, outcomesTable, periodsSection,
-  planRouteSection, readinessArm, readinessSection, saveErrorBlock,
+  planRouteSection, readinessArm, readinessSection, saveErrorBlock, trialDayCount,
 } from './follow-up.js';
 
 /* ---------------------------------------------------------------- payloads */
@@ -293,6 +293,7 @@ test('a habit’s second table is its Glucose outcomes, beside its behavior', ()
 
 test('watch maturity is labelled lifecycle metadata and its bar never overfills', () => {
   const html = maturitySection({
+    state: 'complete',
     maturing: { days_elapsed: 15, days_required: 14, gap_count: 1 },
     readiness: { label: 'Ready to judge', message: 'This Trial is ready for a before-and-Trial read.' },
   });
@@ -305,11 +306,23 @@ test('watch maturity is labelled lifecycle metadata and its bar never overfills'
 
 test('a maturing watch reads against what it still needs', () => {
   const html = maturitySection({
+    state: 'maturing',
     maturing: { days_elapsed: 6, days_required: 14, gap_count: 2 },
     readiness: { label: 'Maturing', message: 'Still collecting.' },
   });
   assert.match(html, /6 of 14 days<small>2 data gaps<\/small>/);
   assert.match(html, /<progress value="6" max="14"/);
+});
+
+test('#447 · a Trial day count takes its form from the served verdict, never a count comparison', () => {
+  assert.deepEqual(trialDayCount({ days_elapsed: 6, days_required: 14 }, false),
+    { number: '6 of 14', days: '6 of 14 days', required: null });
+  assert.deepEqual(trialDayCount({ days_elapsed: 15, days_required: 14 }, true),
+    { number: '15', days: '15 days', required: '14 required' });
+  // The served verdict decides, so a ready Trial at exactly its requirement is
+  // still "14 days · 14 required", not the maturing form.
+  assert.deepEqual(trialDayCount({ days_elapsed: 14, days_required: 14 }, true),
+    { number: '14', days: '14 days', required: '14 required' });
 });
 
 /* -------------------------------------------- the Available-days read */

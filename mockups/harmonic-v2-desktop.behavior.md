@@ -4118,3 +4118,84 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #447 amendment — 2026-09-23, issue #447
+
+S169 and S170 are the fail-first obligations of ADR 447
+(`openspec/changes/retire-verify-language/design.md`). A watched Trial's dock and
+Changes' Watch maturity print one day count, the served `days_elapsed`, in the
+words Changes already prints. The Guide's "Reading the Diagnose surface" article
+names no Verify. Both are app-opener-only, like S139 and S140. Browser execution
+belongs to the release coordinator at 1280x720 and 1440x900, each story on a fresh
+case store (`CASE_STORE_DIR`). No existing story is amended or retired. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator writes the one release freeze block and reconciles the count line and
+ACCEPTANCE.md's count sentence.
+
+Sanction: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`.
+It covers the dock's ready-state copy (S169), the Guide article's Cause-lever
+line (S170) and this amendment, and nothing outside #447. Changes' locked Watch
+maturity strings and its progress-bar clamp are unchanged.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 173 issued · 154
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the showcase
+or a named `scripts/qa_e2e_cases.py` case store.
+
+```
+S169 · A watched Trial's dock and Changes print one day count, the served
+       days_elapsed. On a complete Trial past its requirement the dock reads
+       "Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required", and Changes'
+       Watch maturity figure reads "‹N› days" with "‹R› required". Neither the
+       dock's detail nor the Watch maturity figure prints "‹N› of ‹R›" past its
+       requirement; only Changes' progress bar clamps.
+  element:  .inspector > .watch .how, .inspector > .watch .go;
+            [data-part="maturity"] .gf-figure, progress[aria-label="Trial progress"]
+  source:   frontend/follow-up.js trialDayCount, maturitySection;
+            frontend/watched-change-dock.js watchDockView
+  lock:     HV2-24, HV2-12
+  data:     c3-trial; the server serves a complete Trial at 15 of 14 days
+  evidence: C4_STORIES.S169 → trialDayCount447; reads /api/verify/trials and the
+            selected Trial, requiring an active Trial served complete with
+            days_elapsed past days_required as premises; opens Diagnose and
+            requires the dock's detail to read exactly the ready sentence built
+            from the served values; activates the dock's link, requires
+            .gf-stage-trial visible, the Watch maturity figure to start with
+            "‹N› days" and carry "‹R› required", and the progress bar at value
+            ‹R› of max ‹R›
+  status:   replay owed to the release coordinator (task 4.1). Expected: base
+            b03431d2 with this harness laid over it fails at its dock-count
+            assertion ("S169 the dock must print the served day count in
+            Changes' words") at both sizes; the branch passes at both sizes.
+            Fake-page controls in frontend/c4.replay.test.js pass on the
+            branch's text and reject the base's "14 of 14" at that assertion
+```
+
+```
+S170 · The Guide's "Reading the Diagnose surface" article names no Verify; its
+       Cause-lever line says those levers flow to a Focus, followed in Changes.
+  element:  [data-utility="guide"], [data-utility-slug="reading-diagnose"], .gf-article
+  source:   docs/kb/reading-diagnose.md, served by /api/kb/reading-diagnose;
+            frontend/utilities.js guideBody
+  lock:     HV2-33
+  data:     showcase; the served article carries its ◈ Cause line
+  evidence: C4_STORIES.S170 → guideArticle447; reads /api/kb/reading-diagnose and
+            requires its ◈ Cause line as a premise, opens the Guide and the
+            article, and requires the whitespace-normalised .gf-article text to
+            carry no "Verify" and to carry "flow to a Focus, followed in Changes"
+  status:   replay owed to the release coordinator (task 4.1). Expected: base
+            b03431d2 with this harness laid over it fails at its no-Verify
+            assertion ("S170 the article must name no Verify") at both sizes;
+            the branch passes at both sizes. Fake-page controls in
+            frontend/c4.replay.test.js pass on the branch's article and reject
+            the base's "Focus / Verify" line at that assertion
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Trial day count, both printers | frontend/follow-up.js trialDayCount | S169 |
+| Watch dock ready line | frontend/watched-change-dock.js watchDockView | S169 |
+| Guide authored article | frontend/utilities.js guideBody, docs/kb/reading-diagnose.md | S170 |

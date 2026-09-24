@@ -116,8 +116,9 @@ const days = (value) => (value == null ? '—' : `${Math.floor(value)}`);
 const percent = (value) => (value == null ? '—' : `${value}%`);
 
 // The prototype's own figure palette (harmonic-v2-glucose.js:115-126), read off
-// the live desk rather than transcribed: the shipped Verify hero takes a plain
-// dict, and these are the tokens the locked prototype resolved for it.
+// the live desk rather than transcribed: the shipped Trial hero
+// (`verify-workstation-chart.js`) takes a plain dict, and these are the tokens
+// the locked prototype resolved for it.
 export function figureColors(root) {
   const host = root || document.documentElement;
   const v = (name) => getComputedStyle(host).getPropertyValue(name).trim();
@@ -365,8 +366,9 @@ function viewSegment(mode) {
 /* ------------------------------------------------------------- the figure */
 
 /**
- * The chart host. Its figure is the shipped Verify hero over the comparison's
- * own clock envelopes, so no facsimile stands behind any reading here.
+ * The chart host. Its figure is the shipped Trial hero
+ * (`verify-workstation-chart.js`) over the comparison's own clock envelopes, so
+ * no facsimile stands behind any reading here.
  *
  * The selectors and the legend words are the prototype's
  * (harmonic-v2-glucose.js:545): a setting change's figure is
@@ -489,12 +491,28 @@ export function mountComparisonChart(host, comparison, holdCleanup = hold) {
 /* ========================= watch maturity, separately ===================== */
 
 /**
+ * A Trial's watch-maturity day count, in the words Changes prints, for both of
+ * its printers: Changes' Watch maturity and Diagnose's watch dock (#447). The
+ * count is the served `days_elapsed`, never clamped or re-derived, and the form
+ * follows the served ready verdict, never a count comparison: while maturing,
+ * "‹n› of ‹R› days"; once ready, "‹N› days" with "‹R› required". `number` is the
+ * part a printer emphasises.
+ */
+export function trialDayCount(maturing, ready) {
+  const elapsed = maturing.days_elapsed ?? 0;
+  const required = maturing.days_required ?? 0;
+  const number = ready ? `${elapsed}` : `${elapsed} of ${required}`;
+  return { number, days: `${number} days`, required: ready ? `${required} required` : null };
+}
+
+/**
  * The watch's own lifecycle progress: fourteen days to maturity, twenty-eight to
  * expiry. Retained metadata, and labelled as such — it supplies no evidence
  * readiness and it truncates no comparison bound (HV2-24).
  *
  * The bar is clamped to its maximum and never overfilled: this is the B-08
- * repair, and "15 of 14 days" must not return.
+ * repair, and "15 of 14 days" must not return. Only the bar clamps; the printed
+ * count is the served one, and its form follows the served `state`.
  */
 export function maturitySection(detail) {
   const maturing = detail.maturing;
@@ -503,11 +521,11 @@ export function maturitySection(detail) {
     return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
       <p class="gf-meta">This record carries no watch maturity.</p></section>`;
   }
-  const met = maturing.days_elapsed >= maturing.days_required;
+  const count = trialDayCount(maturing, detail.state === 'complete');
   const gaps = `${maturing.gap_count} data ${maturing.gap_count === 1 ? 'gap' : 'gaps'}`;
-  const figure = met
-    ? `${e(maturing.days_elapsed)} days<small>${e(maturing.days_required)} required · ${e(gaps)}</small>`
-    : `${e(maturing.days_elapsed)} of ${e(maturing.days_required)} days<small>${e(gaps)}</small>`;
+  const figure = count.required
+    ? `${e(count.days)}<small>${e(count.required)} · ${e(gaps)}</small>`
+    : `${e(count.days)}<small>${e(gaps)}</small>`;
   return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
     <div class="gf-figure">${figure}</div>
     <progress value="${Math.min(maturing.days_elapsed, maturing.days_required)}" max="${maturing.days_required}" aria-label="Trial progress"></progress>

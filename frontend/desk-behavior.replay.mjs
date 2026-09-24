@@ -1401,7 +1401,7 @@ export const S45 = async (page) => {
     ok(seen(await countOf(page, '.gf-stage-trial')) === 1, 'the Trial stage did not render');
     ok(seen(await countOf(page, '[data-trial-chart]')) === 1, 'the Trial evidence figure did not mount');
     ok(seen(await page.evaluate(() => document.querySelectorAll('[data-trial-chart] canvas').length)) > 0,
-      'the shipped Verify hero drew no canvas on the Trial stage');
+      'the Trial hero drew no canvas on the Trial stage');
     ok(((seen(await page.locator('.gf-stage-trial .gf-title').first().textContent())) || '').trim().length > 0,
       'the Trial nameplate has no title');
   }, "S45");
@@ -3145,6 +3145,12 @@ export const S139 = appOnly('HV2-12',
 // STORY:harmonic-v2-desktop:S140
 export const S140 = appOnly('HV2-12',
   "#429 a watched Focus's dock names Changes, and its link opens that Focus in Changes", C4_STORIES.S140);
+// STORY:harmonic-v2-desktop:S169
+export const S169 = appOnly('HV2-24',
+  "#447 a watched Trial's dock and Changes print one day count, the served one", C4_STORIES.S169);
+// STORY:harmonic-v2-desktop:S170
+export const S170 = appOnly('HV2-33',
+  "#447 the Guide's Reading the Diagnose surface article names no Verify", C4_STORIES.S170);
 // STORY:harmonic-v2-desktop:S142
 export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);
 // STORY:harmonic-v2-desktop:S143
@@ -3244,6 +3250,7 @@ export const REGISTRY = [
   ['S127', S127, J()],
   ['S133', S133, M()],
   ['S139', S139, J()], ['S140', S140, J()],
+  ['S169', S169, J()], ['S170', S170, J()],
   ['S142', S142, J()], ['S143', S143, J()],
   ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S154', S154, J()],

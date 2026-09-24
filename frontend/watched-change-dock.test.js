@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { KIND, PLAN_DETAIL, IDLE_DETAIL, IDLE_TITLE, watchDockView } from './watched-change-dock.js';
+import { maturitySection } from './follow-up.js';
 
 const TRIAL = {
   kind: 'trial', parameter: 'basal_rate', slot: '06:30', changed_at: '2026-08-11 07:00:00',
@@ -46,17 +47,41 @@ test('term 47 · a matured Trial keeps the slot and says it is readable', () => 
   const view = watchDockView({
     watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 14, days_required: 14 } },
   });
-  assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
+  assert.equal(flat(view), 'Ready to judge — 14 days since 08-11 · 14 required');
 });
 
-test('term 47 · the day count clamps to the requirement, as Changes\' progress bar does', () => {
-  // A completed Trial's bounded 14-day period spans 15 dates, so the payload's
-  // true count runs to 15; Changes' Trial progress bar clamps its value to the
-  // requirement, and the dock's count clamps the same way.
+test('#447 · a ready Trial prints the served count, in Changes\' words', () => {
+  // A completed Trial's bounded 14-day period spans 15 dates, so the server counts
+  // 15 against 14 required. The dock prints that count; only Changes' progress bar
+  // clamps, and "15 of 14" must not return (S46).
   const view = watchDockView({
     watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 15, days_required: 14 } },
   });
-  assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
+  assert.equal(flat(view), 'Ready to judge — 15 days since 08-11 · 14 required');
+  assert.deepEqual(view.detail.filter((part) => part.strong != null), [{ strong: '15' }]);
+});
+
+test('#447 · the dock and Changes print one Trial day count', () => {
+  // One served Trial, read through both printers: the dock's served
+  // `maturing.is_maturing` and Changes' served `state` are one backend fact.
+  const served = [
+    { is_maturing: true, state: 'maturing', days_elapsed: 6, days_required: 14 },
+    { is_maturing: false, state: 'complete', days_elapsed: 14, days_required: 14 },
+    { is_maturing: false, state: 'complete', days_elapsed: 15, days_required: 14 },
+  ];
+  const pastRequirement = (text) => [...text.matchAll(/(\d+) of (\d+)/g)]
+    .some(([, n, r]) => Number(n) > Number(r));
+  for (const { is_maturing, state, days_elapsed, days_required } of served) {
+    const pair = `${days_elapsed}/${days_required}`;
+    const dock = watchDockView({ watched: { ...TRIAL, maturing: { is_maturing, days_elapsed, days_required } } });
+    const [, figure, small] = maturitySection({ state, maturing: { days_elapsed, days_required, gap_count: 0 } })
+      .match(/<div class="gf-figure">(.*?)<small>(.*?)<\/small>/);
+    const dockCount = dock.detail.find((part) => part.strong != null).strong;
+    assert.equal(dockCount, figure.replace(/ days$/, ''), `${pair}: the dock and Changes print one count`);
+    assert.equal(flat(dock).match(/(\d+) required/)?.[1], small.match(/(\d+) required/)?.[1],
+      `${pair}: the dock and Changes print one requirement`);
+    assert.equal(pastRequirement(flat(dock)) || pastRequirement(figure), false, `${pair}: no count reads past its requirement`);
+  }
 });
 
 test('term 47 · a Focus takes the slot when no Trial does', () => {

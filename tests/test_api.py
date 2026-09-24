@@ -336,6 +336,15 @@ class ApiTest(unittest.TestCase):
         for slug in ("reading-diagnose", "reading-day", "the-plan-tab"):
             self.assertEqual(self.client.get(f"/api/kb/{slug}").status_code, 200)
 
+    def test_kb_articles_name_no_verify(self):
+        # #447: #416 retired Verify, so no served article names it, and the Guide
+        # sends Cause levers to a Focus that Changes follows.
+        for slug in ("start-here", "reading-diagnose", "reading-day", "the-plan-tab"):
+            self.assertNotIn("Verify", self.client.get(f"/api/kb/{slug}").text, slug)
+        article = " ".join(self.client.get("/api/kb/reading-diagnose").text.split())
+        self.assertIn("flow to a Focus, followed in Changes, because no pump setting fixes them.",
+                      article)
+
     def test_kb_article_unknown_slug_is_404(self):
         self.assertEqual(self.client.get("/api/kb/no-such-article").status_code, 404)
 

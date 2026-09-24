@@ -13,7 +13,9 @@ the Trial-matched reconciliation in the same pass, so a Trial-matched
 confirmation wins when both are available. A pump-read confirmation SHALL name no
 Trial and SHALL create no Plan–Trial relationship. A read captured at or before
 the decision SHALL never confirm a Plan. A Plan any of whose recorded items
-lacks an integer start minute or a numeric value SHALL be incomparable: no read
+lacks an integer start minute or a numeric value, or whose items today's item
+rules refuse (a row that mixes tuning families, or a carb-ratio block row whose
+end minute is 0), SHALL be incomparable: no read
 SHALL confirm it, and neither reconciliation nor its served verdict SHALL fail
 on it; it leaves pending only by withdrawal. A confirmed Plan SHALL no longer
 withhold a Focus or a new decision.

@@ -121,8 +121,9 @@ the risk contract. Every value in tests and comments is synthetic.
   with served guidance carrying a pending Plan and its verdict, a
   Pattern case's header shows no pending-Plan note and the watch panel shows the
   Plan with "Open Changes ›".
-- [ ] 3.6 Replay contract: add S147 on the `basal-lower` case, which serves both
-  a basal action and Pattern rows. After a Plan is recorded, it first selects a
+- [ ] 3.6 Replay contract: add S147 on the `pattern-near-tie` case, which serves both
+  a recordable basal action and a Pattern case that loads in both windows (every
+  `basal-lower` Pattern case file answers 404; coordinator amendment, 2026-09-23). After a Plan is recorded, it first selects a
   Pattern case in each of two windows and checks that the case-file header
   carries no pending-Plan note (the base shows one), and only then checks that
   the watch panel reads the same "Plan · awaiting pump" state in both windows
@@ -136,4 +137,4 @@ the risk contract. Every value in tests and comments is synthetic.
   (S1–S132 plus R1–R18, still 150). The header's inventory line and
   ACCEPTANCE.md's count sentence stay with the release coordinator. S147's base
   proof runs this branch's replay harness over a4d374a7 and must fail on the
-  pending-Plan note present in the `basal-lower` Pattern case's header.
+  pending-Plan note present in the `pattern-near-tie` Pattern case's header.

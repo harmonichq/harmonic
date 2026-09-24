@@ -1,6 +1,377 @@
 {
  "_generated_by": "scripts/gen_findings_projection_fixtures.py",
  "_note": "SYNTHETIC. Every window below is the real projection's own output over invented inputs run through the real engines — never hand-assembled. Regenerate with `python3 scripts/gen_findings_projection_fixtures.py`.",
+ "browser_guidance_patterns": [
+  {
+   "action": {
+    "action_id": "habit:carb_undercount",
+    "title": "Carb undercount"
+   },
+   "admission_route": "habit_threshold",
+   "chosen_member": {
+    "action": "habit:carb_undercount",
+    "admitted": true,
+    "hi": 0.2184,
+    "k": 9,
+    "kind": "habit",
+    "lo": 0.1003,
+    "price": 21,
+    "producer": "scenario",
+    "seriousness": "low",
+    "subject": "habit:carb_undercount"
+   },
+   "collapse": "remain_pattern",
+   "evidence": [],
+   "has_concern": true,
+   "kind": "pattern",
+   "members": [
+    {
+     "action": "habit:carb_undercount",
+     "action_title": "Carb undercount",
+     "admitted": true,
+     "hi": 0.2184,
+     "k": 9,
+     "kind": "habit",
+     "lo": 0.1003,
+     "price": 21,
+     "producer": "scenario",
+     "seriousness": "low",
+     "subject": "habit:carb_undercount",
+     "title": "Carb undercount"
+    },
+    {
+     "action": "habit:late_bolus",
+     "action_title": "Late bolus",
+     "admitted": true,
+     "hi": 0.2144,
+     "k": 7,
+     "kind": "habit",
+     "lo": 0.0885,
+     "price": 18,
+     "producer": "scenario",
+     "seriousness": "info",
+     "subject": "habit:late_bolus",
+     "title": "Late bolus"
+    },
+    {
+     "action": null,
+     "admitted": false,
+     "hi": null,
+     "k": 24,
+     "kind": "setting",
+     "lo": null,
+     "price": 66,
+     "producer": "tuning_levers",
+     "seriousness": null,
+     "seriousness_segments": [],
+     "subject": "setting:carb_ratio",
+     "title": "Carb ratio"
+    }
+   ],
+   "occurrence_ids": [
+    "ep2"
+   ],
+   "pattern_key": "highs_after_meals",
+   "population": [],
+   "priority": 21,
+   "priority_inputs": {
+    "member_set_fingerprint": "94bea84f7eec2f3c"
+   },
+   "readiness": {
+    "count": 20,
+    "gate": 12,
+    "reason": "Focus is ready from the backend opportunity count.",
+    "verdict": "ready"
+   },
+   "seriousness": "low",
+   "source_window": {
+    "end": "2026-08-17",
+    "start": "2026-07-18"
+   },
+   "subject": "pattern:highs_after_meals",
+   "support": {
+    "confidence": 0.8,
+    "effect": 0.44,
+    "hi": 0.2184,
+    "k": 9,
+    "lo": 0.1003,
+    "n": 60,
+    "rate": 0.15,
+    "score": 0.0441,
+    "wide": true
+   },
+   "title": "Highs after meals",
+   "unavailable": true,
+   "units": null,
+   "unknowns": [
+    "Required owner-produced guidance inputs are unavailable."
+   ]
+  },
+  {
+   "action": null,
+   "admission_route": "none",
+   "chosen_member": null,
+   "collapse": "remain_pattern",
+   "evidence": [],
+   "has_concern": true,
+   "kind": "pattern",
+   "members": [
+    {
+     "action": null,
+     "admitted": false,
+     "hi": null,
+     "k": 24,
+     "kind": "setting",
+     "lo": null,
+     "price": 66,
+     "producer": "tuning_levers",
+     "seriousness": null,
+     "seriousness_segments": [],
+     "subject": "setting:carb_ratio",
+     "title": "Carb ratio"
+    }
+   ],
+   "occurrence_ids": [],
+   "pattern_key": "lows_after_meals",
+   "population": [],
+   "priority": 0,
+   "priority_inputs": {
+    "member_set_fingerprint": "13141e472c40a768"
+   },
+   "readiness": {
+    "count": 20,
+    "gate": 12,
+    "reason": "Focus is ready from the backend opportunity count.",
+    "verdict": "ready"
+   },
+   "seriousness": null,
+   "source_window": null,
+   "subject": "pattern:lows_after_meals",
+   "support": {},
+   "title": "Lows after meals",
+   "unavailable": false,
+   "units": null,
+   "unknowns": [
+    "No supported action was admitted; the source evidence remains inspectable."
+   ]
+  },
+  {
+   "action": {
+    "action_id": "habit:over_treated_low",
+    "title": "Over-treated low"
+   },
+   "admission_route": "habit_threshold",
+   "chosen_member": {
+    "action": "habit:over_treated_low",
+    "admitted": true,
+    "hi": 0.2731,
+    "k": 8,
+    "kind": "habit",
+    "lo": 0.1221,
+    "price": 28,
+    "producer": "scenario",
+    "seriousness": "low",
+    "subject": "habit:over_treated_low"
+   },
+   "collapse": "collapse_to_member",
+   "evidence": [],
+   "has_concern": true,
+   "kind": "pattern",
+   "members": [
+    {
+     "action": "habit:over_treated_low",
+     "action_title": "Over-treated low",
+     "admitted": true,
+     "hi": 0.2731,
+     "k": 8,
+     "kind": "habit",
+     "lo": 0.1221,
+     "price": 28,
+     "producer": "scenario",
+     "seriousness": "low",
+     "subject": "habit:over_treated_low",
+     "title": "Over-treated low"
+    }
+   ],
+   "occurrence_ids": [
+    "2026-08-13-ep0"
+   ],
+   "pattern_key": "highs_after_treating_lows",
+   "population": [],
+   "priority": 28,
+   "priority_inputs": {
+    "member_set_fingerprint": "a0de7500243ef646"
+   },
+   "readiness": {
+    "count": 20,
+    "gate": 12,
+    "reason": "Focus is ready from the backend opportunity count.",
+    "verdict": "ready"
+   },
+   "seriousness": "low",
+   "source_window": {
+    "end": "2026-08-17",
+    "start": "2026-07-18"
+   },
+   "subject": "pattern:highs_after_treating_lows",
+   "support": {
+    "confidence": 0.8,
+    "effect": 0.62,
+    "hi": 0.2731,
+    "k": 8,
+    "lo": 0.1221,
+    "n": 43,
+    "rate": 0.186,
+    "score": 0.0757,
+    "wide": true
+   },
+   "title": "Highs after treating lows",
+   "unavailable": true,
+   "units": null,
+   "unknowns": [
+    "Required owner-produced guidance inputs are unavailable."
+   ]
+  },
+  {
+   "action": {
+    "action_id": "habit:correction_on_iob",
+    "title": "Correction on active insulin"
+   },
+   "admission_route": "habit_threshold",
+   "chosen_member": {
+    "action": "habit:correction_on_iob",
+    "admitted": true,
+    "hi": 0.2618,
+    "k": 8,
+    "kind": "habit",
+    "lo": 0.1165,
+    "price": 20,
+    "producer": "scenario",
+    "seriousness": "low",
+    "subject": "habit:correction_on_iob"
+   },
+   "collapse": "remain_pattern",
+   "evidence": [],
+   "has_concern": true,
+   "kind": "pattern",
+   "members": [
+    {
+     "action": "habit:correction_on_iob",
+     "action_title": "Correction on active insulin",
+     "admitted": true,
+     "hi": 0.2618,
+     "k": 8,
+     "kind": "habit",
+     "lo": 0.1165,
+     "price": 20,
+     "producer": "scenario",
+     "seriousness": "low",
+     "subject": "habit:correction_on_iob",
+     "title": "Correction on active insulin"
+    },
+    {
+     "action": null,
+     "admitted": false,
+     "hi": null,
+     "k": 0,
+     "kind": "setting",
+     "lo": null,
+     "price": 0,
+     "producer": "tuning_levers",
+     "seriousness": null,
+     "seriousness_segments": [],
+     "subject": "setting:isf",
+     "title": "Correction factor"
+    }
+   ],
+   "occurrence_ids": [
+    "ep90"
+   ],
+   "pattern_key": "lows_after_correcting_highs",
+   "population": [],
+   "priority": 20,
+   "priority_inputs": {
+    "member_set_fingerprint": "87828f7c44ee37fb"
+   },
+   "readiness": {
+    "count": 20,
+    "gate": 12,
+    "reason": "Focus is ready from the backend opportunity count.",
+    "verdict": "ready"
+   },
+   "seriousness": "low",
+   "source_window": {
+    "end": "2026-08-17",
+    "start": "2026-07-18"
+   },
+   "subject": "pattern:lows_after_correcting_highs",
+   "support": {
+    "confidence": 0.8,
+    "effect": 0.35,
+    "hi": 0.2618,
+    "k": 8,
+    "lo": 0.1165,
+    "n": 45,
+    "rate": 0.1778,
+    "score": 0.0408,
+    "wide": true
+   },
+   "title": "Lows after correcting highs",
+   "unavailable": true,
+   "units": null,
+   "unknowns": [
+    "Required owner-produced guidance inputs are unavailable."
+   ]
+  },
+  {
+   "action": null,
+   "admission_route": "none",
+   "chosen_member": null,
+   "collapse": "remain_pattern",
+   "evidence": [],
+   "has_concern": true,
+   "kind": "pattern",
+   "members": [
+    {
+     "action": null,
+     "admitted": false,
+     "hi": null,
+     "k": 0,
+     "kind": "setting",
+     "lo": null,
+     "price": 39,
+     "producer": "tuning_levers",
+     "seriousness": null,
+     "seriousness_segments": [],
+     "subject": "setting:basal_rate",
+     "title": "Basal"
+    }
+   ],
+   "occurrence_ids": [],
+   "pattern_key": "overnight_lows_no_iob",
+   "population": [],
+   "priority": 0,
+   "priority_inputs": {
+    "member_set_fingerprint": "be01b57ca95abd31"
+   },
+   "readiness": {
+    "count": 0,
+    "gate": 12,
+    "reason": "Focus is withheld: 0 opportunities, gate 12.",
+    "verdict": "withheld"
+   },
+   "seriousness": null,
+   "source_window": null,
+   "subject": "pattern:overnight_lows_no_iob",
+   "support": {},
+   "title": "Overnight lows with no insulin on board",
+   "unavailable": false,
+   "units": null,
+   "unknowns": [
+    "No supported action was admitted; the source evidence remains inspectable."
+   ]
+  }
+ ],
  "browser_outcome_patterns": [
   {
    "action": "habit:carb_undercount",

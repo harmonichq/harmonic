@@ -22,6 +22,7 @@ from datetime import date, datetime, timedelta
 from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier, SilenceReason
 from ciq_autotune.analyzers.scenario import Lever, LowPromptAnswer, assemble
 from ciq_autotune.analyzers.scenario.anchors import Anchor, AnchorKind
+from ciq_autotune.analyzers.scenario.levers import title
 from ciq_autotune.analyzers.scenario.model_view import (
     AnchorVerdict,
     _anchor_state,
@@ -322,6 +323,23 @@ class ModelViewPayloadTest(unittest.TestCase):
 
         self.assertFalse(cu["matched"])
         self.assertEqual(cu["evidence_tier"], "not_in_data")
+
+    def test_every_episode_is_served_with_its_levers_name(self):
+        # #426 (ADR 426): the model read names each episode's Lever beside its key,
+        # from the one lever name source, and serves null for an unattributed one.
+        bolus, cgm = self._carb_undercount_day()
+        bolus = bolus + [meal(16, 18, 0, carbs=40.0, dose=4.0)]
+        cgm = cgm + cgm_flat(16, 17, 10, 110, 300)
+        day = assemble_model_view(bolus, cgm, [], target=date(2026, 6, 16), isf=ISF)
+        by_lever = {episode["lever"]: episode for episode in day["episodes"]}
+        self.assertEqual(set(by_lever), {"carb_undercount", None})
+        self.assertEqual(by_lever["carb_undercount"]["lever_title"],
+                         title(Lever.CARB_UNDERCOUNT))
+        self.assertIsNone(by_lever[None]["lever_title"])
+        for lever in Lever:
+            with self.subTest(lever=lever.value):
+                self.assertTrue(title(lever))
+                self.assertNotIn("_", title(lever))
 
     def test_anchor_facts_and_payload_shape(self):
         bolus, cgm = self._carb_undercount_day()

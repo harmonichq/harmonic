@@ -27,7 +27,7 @@ function makeRoot(overrides = {}) {
   const root = {
     dataset: {}, className: '', isConnected: false, style: {},
     addEventListener() {}, querySelectorAll: () => [], querySelector: () => null,
-    remove() { root.isConnected = false; },
+    remove() { root.parentNode?.removeChild(root); root.isConnected = false; },
     ...overrides,
   };
   return root;
@@ -35,17 +35,47 @@ function makeRoot(overrides = {}) {
 
 // The park is the document body: a parked root stays connected (it is in the
 // document) but off the surface and hidden, which is what the desk keys on.
+// The host keeps a child list the way a DOM node does: appending a node moves
+// it from wherever it was, and every child the host loses is recorded in
+// `removed`, so a test can see whether a render detached the seated root.
+// `replaceChildren` stays modelled so a mount that reverts to re-seating fails
+// on that removal, not on a missing method.
 function host() {
   const controls = new Map();
-  const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } } };
+  const body = {
+    append(node) { node.parentNode?.removeChild(node); node.parentNode = body; node.isConnected = true; node.parked = true; },
+    removeChild(node) { node.parentNode = null; },
+  };
+  const ownerDocument = { body };
   ownerDocument.createElement = () => Object.assign(makeRoot(), { ownerDocument });
   return {
+    childNodes: [],
+    removed: [],
+    get firstElementChild() { return this.childNodes[0] || null; },
     // Writing markup gives the host a fresh first element, as the DOM would.
     get innerHTML() { return this._html || ''; },
-    set innerHTML(v) { this._html = v; this.firstElementChild = { dataset: {} }; },
+    set innerHTML(v) {
+      this._html = v;
+      for (const child of [...this.childNodes]) this.removeChild(child);
+      const frame = { dataset: {}, parentNode: this, remove() { frame.parentNode?.removeChild(frame); } };
+      this.childNodes.push(frame);
+    },
     isConnected: true,
     ownerDocument,
-    replaceChildren(node) { this.node = node; node.isConnected = true; node.parked = false; this.firstElementChild = node; },
+    append(node) {
+      node.parentNode?.removeChild(node);
+      this.childNodes.push(node); node.parentNode = this;
+      this.node = node; node.isConnected = true; node.parked = false;
+    },
+    removeChild(node) {
+      this.childNodes.splice(this.childNodes.indexOf(node), 1);
+      node.parentNode = null; node.isConnected = false;
+      this.removed.push(node);
+    },
+    replaceChildren(...nodes) {
+      for (const child of [...this.childNodes]) this.removeChild(child);
+      for (const node of nodes) this.append(node);
+    },
     querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
   };
 }
@@ -258,6 +288,29 @@ test('re-pressing Diagnose while on Diagnose re-reads and restores the index, ne
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
   assert.equal(setDataCalls, 1, 'the fresh seat applies the re-read payload');
   assert.equal(rowClicks, 1, 'the fresh seat runs entry restoration');
+  destination.leave();
+});
+
+// ADR 441: removing and re-inserting the seated root drops the focus held
+// inside it (an Occurrence row the reader stepped to) to the page body.
+test('an in-place render keeps the seated case file attached, never removing and re-inserting it', async () => {
+  const served = source(); const seat = host();
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  destination.mount(seat, { navigation: 0, hold() {} });
+  assert.match(seat.innerHTML, /gf-loading/, 'premise: the cold mount shows the loading frame while it reads');
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {} });
+  const root = seat.node;
+  assert.deepEqual(seat.childNodes, [root], 'the cold seat leaves the case file as the host\'s only child');
+  seat.removed.length = 0;
+  // A background guidance or Focus options read lands: the desk renders again
+  // with the same navigation, which is an in-place render.
+  destination.mount(seat, { navigation: 0, hold() {} });
+  assert.equal(seat.removed.filter(node => node === root).length, 0,
+    'the in-place render never removes the seated case file from the host');
+  assert.deepEqual(seat.childNodes, [root], 'the case file is still the host\'s only child');
+  assert.equal(root.isConnected, true);
   destination.leave();
 });
 
@@ -640,4 +693,22 @@ test('S129/S131 tile activation replaces the Focus drill, while same-chart picks
     }
     destination.leave();
   } finally { fetchReply = previousFetch; }
+});
+
+test('the watch dock\'s route tokens become Changes arrivals: `changes` names the watch, `plan` the Plan', async () => {
+  let callbacks;
+  const destination = createDiagnoseDestination({ api: source().api,
+    createView(options) { callbacks = options.callbacks; return { setData() {}, leaveSurface() {}, refresh() {}, setError() {} }; },
+  });
+  await destination.read();
+  destination.mount(host(), { navigation: 0, hold() {} });
+  const previous = globalThis.window;
+  const addresses = [];
+  globalThis.window = { location: { pathname: '/diagnose', search: '', hash: '' },
+    history: { pushState: (_state, _title, address) => addresses.push(address) } };
+  try {
+    callbacks.go('changes');
+    callbacks.go('plan');
+    assert.deepEqual(addresses, ['/changes?subject=watch', '/changes?subject=plan']);
+  } finally { globalThis.window = previous; destination.leave(); }
 });

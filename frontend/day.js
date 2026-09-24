@@ -27,6 +27,7 @@ import {
   fmtISO, monthCells, monthOf, navDaySummary, navSeverity, sparkGeom, washOpacity, weekOf, weekRibbonGeom,
 } from './nav-chart.js';
 import { canStepNext, canStepPrev, clampDay, coldArrivalDay, dayBounds, weekdayLabel } from './daily-nav.js';
+import { formatWallClock } from './carb-log.js';
 import {
   fetchCarbs, fetchDayNavigator, fetchModelView, fetchStatus, fetchTimeline,
 } from './client.js';
@@ -51,8 +52,9 @@ const AXIS_RESERVE = 24;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // The Episode Log's band words and the verdict words the ledger sorts rows by.
+// A row's Lever is named by the model read's served `lever_title`; the desk
+// keeps no Lever name table of its own (ADR 426).
 const STATE_WORD = { fired: 'finding', outranked: 'outranked', near_miss: 'also checked', clean: 'clean', no_data: 'no data' };
-const LEVER_WORD = { over_treated_low: 'over-treated low', correction_on_iob: 'correction on IOB', correction_stacking: 'stacked corrections', carb_undercount: 'carbs undercounted', late_bolus: 'late bolus', meal_over_delivery: 'meal over-delivery' };
 
 // The destination labels a return names. A utility origin names the utility
 // itself, because that is what the reader closed to get here (S76) — and it
@@ -70,8 +72,23 @@ const memory = {
 };
 
 const monthKey = (iso) => String(iso).slice(0, 7);
-const loadedDays = () => [...memory.months.values()].flat();
-const recorded = () => loadedDays().filter((row) => row.has_data).map((row) => row.iso).sort();
+
+// The loaded month reads, one row per day, in date order. Each read carries a
+// week of its neighbours; a day's own month read supplies it, and a padding row
+// stands only while its own month is not loaded (ADR 425). Everything that reads
+// the loaded days — the ribbon, the month grid and its head, stepping — reads
+// this one join, so no day is ever counted twice.
+function joinDays(months) {
+  const byDay = new Map();
+  for (const [key, rows] of months) {
+    for (const row of rows) {
+      const own = monthKey(row.iso);
+      if (own === key || !months.has(own)) byDay.set(row.iso, row);
+    }
+  }
+  return [...byDay.values()].sort((a, b) => a.iso.localeCompare(b.iso));
+}
+const recorded = () => joinDays(memory.months).filter((row) => row.has_data).map((row) => row.iso);
 const earliest = () => memory.bounds?.earliest || null;
 const latest = () => memory.bounds?.latest || null;
 
@@ -86,6 +103,9 @@ async function loadBounds() {
   memory.bounds = {
     earliest: status.earliest_data_day || null,
     latest: status.latest_data_day || null,
+    // The whole history's recorded days, from this same read, so the rail's
+    // count and span are one pair and paging the month never moves it (#425).
+    dataDays: status.data_day_count,
     // The read this desk shows: when the store last took data. A store that was
     // never fetched — the offline synthetic one, for instance — has none, and
     // the desk says what it is viewed at instead of inventing a read.
@@ -145,6 +165,8 @@ function adopt(context) {
  * contextual entry and `<destination>.<utility>` when a utility opened Day: a
  * utility's Day entry returns into that utility, over the destination it was
  * opened on, and is NAMED for the utility (S76, `Return to Carb questions`).
+ * `title` is the display name the door supplied for what the reader was on;
+ * the routing `subject` is never printed (ADR 426).
  * Null on a direct entry, which offers no return at all (HV2-13).
  */
 export function dayReturnTarget(entry = memory.entry) {
@@ -155,7 +177,7 @@ export function dayReturnTarget(entry = memory.entry) {
     destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
     label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Diagnose'),
     focus: entry.focus || null,
-    subject: entry.subject || '',
+    title: entry.title || '',
   };
 }
 
@@ -218,19 +240,20 @@ function monthGrid({ y, m }, rows, held, bounds, arrived = true) {
 }
 
 // The reading pane: the subject this entry came from, the day's own figures,
-// and the Episode Log.
+// and the Episode Log. An entry whose address carries no title (one written
+// before titles rode it) names the destination it returns to instead.
 function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
   const nudge = moved ? `<p class="gf-note">${e(date(moved))} is not among this read's recorded days. The nearest recorded day is shown.</p>` : '';
   const back = dayReturnTarget(entry);
   const subject = back
-    ? `<section class="gf-section"><h3>Opened from</h3><p>${e(back.subject)}</p>${nudge}<div class="gf-actions"><button class="gf-btn" data-day="return">Return to ${e(back.label)}</button></div></section>`
+    ? `<section class="gf-section"><h3>Opened from</h3><p>${e(back.title || back.label)}</p>${nudge}<div class="gf-actions"><button class="gf-btn" data-day="return">Return to ${e(back.label)}</button></div></section>`
     : nudge;
   const figures = `<section class="gf-section"><h3>This day</h3>${stats && stats.n
     ? `<dl><dt>Time in range</dt><dd>${stats.tir}%</dd><dt>Lows</dt><dd>${stats.low}</dd><dt>Highs</dt><dd>${stats.high}</dd><dt>Readings</dt><dd>${stats.n}</dd><dt>Range</dt><dd>${e(stats.min)}–${e(stats.max)} mg/dL</dd></dl>`
     : '<p class="gf-meta">No glucose recorded.</p>'}</section>`;
   const row = (entryRow) => {
     const r = entryRow.row;
-    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${r.lever ? ` · ${e(LEVER_WORD[r.lever] || r.lever)}` : ''}</span></button>`;
+    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${r.leverTitle ? ` · ${e(r.leverTitle)}` : ''}</span></button>`;
   };
   const band = (title, entries) => (entries.length ? `<div class="gf-log-cap">${title} · ${entries.length}</div>${entries.map(row).join('')}` : '');
   const quiet = ledger && ledger.quiet.rows.length
@@ -249,15 +272,16 @@ function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
  */
 export function dayFrame(state) {
   const {
-    iso, rows, bounds, month, monthArrived = true, stats, ledger, entry, moved, focusT,
+    iso, months, bounds, month, monthArrived = true, stats, ledger, entry, moved, focusT,
     readAt, viewedAt, isNarrow,
   } = state;
   if (!iso) {
     return emptyFrame('Day', 'No days recorded', 'This store has no recorded day yet.',
       '<button class="gf-btn primary" data-destination-action="diagnose">Return to Diagnose</button>');
   }
+  const rows = joinDays(months);
   const held = decorate(iso, rows);
-  const recordedCount = rows.filter((row) => row.has_data).length;
+  const recordedCount = bounds.dataDays;
   const sub = stats && stats.n
     ? `<b>${stats.tir}% in range</b> · ${stats.low} ${stats.low === 1 ? 'low' : 'lows'} · ${stats.high} ${stats.high === 1 ? 'high' : 'highs'} · ${stats.n} readings · ${e(stats.min)}–${e(stats.max)} mg/dL`
     : 'No glucose recorded this day.';
@@ -407,7 +431,7 @@ function bind(host) {
 function dayState() {
   return {
     iso: memory.date,
-    rows: loadedDays(),
+    months: memory.months,
     bounds: memory.bounds,
     month: memory.month,
     monthArrived: memory.months.has(memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date)),
@@ -417,7 +441,7 @@ function dayState() {
     moved: memory.moved,
     focusT: memory.focusT,
     readAt: memory.bounds.readAt,
-    viewedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    viewedAt: formatWallClock(new Date()),
     isNarrow: narrow(),
     colors: deskColors(),
   };

@@ -39,7 +39,7 @@ from ..classifiers.evidence import SilenceReason
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .attribute import AnchorVerdict, LowPromptAnswer, attribute
-from .levers import Lever
+from .levers import Lever, title as lever_title
 from .evaluation import evaluate, SEQUENCE_LEVERS
 from .severity import worst_bg
 
@@ -175,6 +175,9 @@ def _build_episode_view(
         "start": _fmt(start),
         "end": _fmt(end),
         "lever": attr.lever.value if attr.lever is not None else None,
+        # The Lever's name, served beside its key so the Day desk keeps no name
+        # table of its own (ADR 426). Null for an unattributed episode.
+        "lever_title": lever_title(attr.lever) if attr.lever is not None else None,
         "trigger": attr.trigger,
         "trigger_t": _fmt(attr.trigger_t),
         "worst_bg": worst_bg(ctx_cgm, start, end, scenario_config=scenario_config),

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel, renderLane } from './diagnose-workstation.js';
+import { buildSlotLane } from './diagnose-workstation-chart.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
@@ -332,6 +333,34 @@ test('a basal lane repaint does not reclaim focus moved to the spotlight during 
     renderLane(host, lane, lane.cells[0], new Set(), () => {});
     assert.equal(doc.activeElement, spotlight, 'the spotlight keeps focus acquired during the lane rebuild');
     assert.equal(host.children[0].getAttribute('aria-pressed'), 'true', 'retaining spotlight focus does not clear slot selection');
+  } finally { globalThis.document = originalDocument; }
+});
+
+// #433 (D6): a recurring-lows lower names why it lowers, in its title and its
+// accessible name, while a measured lower keeps the plain phrase. Both cells
+// keep the lower paint (`data-verdict="down"`).
+test('a recurring-lows lower cell says the lower comes from recurring lows', () => {
+  const originalDocument = globalThis.document;
+  const { doc, host } = laneDocument();
+  const lane = buildSlotLane([
+    { label: '00:30', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+      safety_status: 'lower', estimate: { n: 30, wide: false } },
+    { label: '05:00', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+      safety_status: 'lower (recurring lows)', estimate: { n: 0, wide: true } },
+  ]);
+  try {
+    globalThis.document = doc;
+    renderLane(host, lane, null, new Set(), () => {});
+    const [measured, recurring] = host.children;
+    assert.equal(measured.dataset.verdict, 'down');
+    assert.equal(measured.dataset.reason, undefined);
+    assert.equal(measured.title, '00:30 · suggests a lower');
+    assert.equal(measured.getAttribute('aria-label'), '00:30 basal slot, suggests a lower');
+    assert.equal(recurring.dataset.verdict, 'down');
+    assert.equal(recurring.dataset.reason, 'recurring-lows');
+    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening at this hour');
+    assert.equal(recurring.getAttribute('aria-label'),
+      '05:00 basal slot, suggests a lower because lows keep happening at this hour');
   } finally { globalThis.document = originalDocument; }
 });
 

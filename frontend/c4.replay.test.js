@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
+import {
+  historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
+  assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant,
+} from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
@@ -77,6 +80,15 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
   }
 });
 
+test('S142 and S143 are unique app-only C4 record stories with their manufactured cases', () => {
+  for (const [id, expectedCase] of [['S142', 'c3-trial'], ['S143', 'edit-chain']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-28');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
@@ -84,6 +96,31 @@ test('S115–S117 are unique app-only C4 rail stories, served from the showcase'
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
     assert.equal(storyCase(id), 'showcase');
+  }
+});
+
+test('S127 is a unique app-only Day story, served from the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S127');
+  assert.equal(entries.length, 1, 'S127 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-13');
+  assert.equal(storyCase('S127'), 'showcase');
+});
+
+test('S139 and S140 are unique app-only C4 dock stories on their watched cases', () => {
+  for (const [id, expectedCase] of [['S139', 'c3-trial'], ['S140', 'c3-focus']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-12');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+test('S151–S153 are unique app-only C4 basal-lane stories, served from the verdict gallery', () => {
+  for (const id of ['S151', 'S152', 'S153']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-17');
+    assert.equal(storyCase(id), 'basal-verdict-gallery');
   }
 });
 
@@ -244,22 +281,31 @@ test('S111 fails on a raw disposition token, and passes on the served word', asy
     /never a raw disposition token/);
 });
 
+// Routes behave as Playwright's do: the newest matching handler takes the
+// request, `continue()` sends it on, and `unroute` removes one handler. A
+// record read that is sent on renders the open record, which (ADR 430) asks for
+// its retained comparison with no control pressed.
 function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
-  const routes = new Map();
+  let routes = [];
   const fire = (pathname, search = '') => {
     const request = { url: () => `http://synthetic.invalid${pathname}${search}` };
-    for (const [pattern, handler] of routes) {
+    const params = new URLSearchParams(search);
+    const sent = async () => {
+      if (params.has('selected') && !params.has('assessment')) fire(pathname, `${search}&assessment=retained`);
+    };
+    const route = routes.find(([pattern]) => {
       const base = pattern.replace('**', '').replace('*', '');
-      if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
-    }
+      return base && pathname.startsWith(base);
+    });
+    if (route) route[1]({ request: () => request, continue: sent });
+    else sent();
   };
   const node = selector => ({
     filter() { return this; }, first() { return this; },
     waitFor: async () => {},
     click: async () => {
       if (selector.startsWith('table.gf-table [data-record]')) fire('/api/verify/trials', `?selected=${recordSelector}`);
-      if (selector === '[data-assessment="retained"]') fire('/api/verify/trials', `?selected=${recordSelector}&assessment=retained`);
     },
     getAttribute: async () => recordSelector,
     count: async () => 1,
@@ -269,14 +315,93 @@ function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
     url: () => url,
     goto: async target => { url = target; fire('/api/verify/trials', ''); },
     locator: selector => node(selector),
-    route: async (pattern, handler) => { routes.set(pattern, handler); },
-    unroute: async pattern => { routes.delete(pattern); },
+    route: async (pattern, handler) => { routes.unshift([pattern, handler]); },
+    unroute: async (pattern, handler) => { routes = routes.filter(([p, h]) => p !== pattern || h !== handler); },
   };
 }
 
-test('S112 holds the roster, record and reassessment reads in turn and reaches its final assertion', async () => {
+test('S112 holds the roster and record reads, then the retained read the record asks for itself', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S112(qa414RecordHoldPage());
+});
+
+// #430: one still-open record on a Changes roster. Pressing its row sends the
+// record read and, when `retainedOnOpen`, the retained read the record door
+// makes with no control pressed; the rendered record is read back by selector.
+function qa430RecordPage({ retainedOnOpen = true, figureState = 'paired', periods = 1, pressed = 1, stillOpen = 1,
+  canvases = figureState === 'paired' ? 1 : 0, served = { state: 'unavailable', reason: 'missing_comparison_context' },
+  figureReason = 'no retained comparison context was recorded with this change',
+  result = 'Unavailable · no retained comparison context was recorded with this change',
+  stage = 'Setting change · Still open\ncomparison unavailable' } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const listeners = new Set();
+  const send = search => {
+    const request = { url: () => `http://synthetic.invalid/api/verify/trials${search}` };
+    for (const listener of listeners) listener(request);
+  };
+  const counts = {
+    'table.gf-table tr [data-record]': 1,
+    '[data-period="before"]': periods, '[data-period="after"]': periods,
+    '[data-figure-state="paired"] .gf-chart canvas': figureState === 'paired' ? canvases : 0,
+    '[data-figure-state="unavailable"]': figureState === 'unavailable' ? 1 : 0,
+    '[data-assessment="retained"][aria-pressed="true"]': pressed,
+    '[data-unavailable="ending"]': stillOpen,
+    '.gf-stage .gf-chart canvas': canvases,
+  };
+  const text = { '[data-figure-reason]': figureReason, '[data-reassessment-state]': result, '.gf-stage': stage };
+  const node = selector => ({
+    first() { return this; },
+    locator: nested => node(`${selector} ${nested}`),
+    waitFor: async () => {},
+    count: async () => counts[selector] ?? 0,
+    innerText: async () => text[selector] ?? '',
+    getAttribute: async name => (name === 'data-record' ? 'trial:open-1' : null),
+    click: async () => {
+      send('?selected=open-1&kind=trial');
+      if (retainedOnOpen) send('?selected=open-1&kind=trial&assessment=retained');
+    },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; send(''); },
+    locator: selector => node(selector),
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    request: { get: async () => ({ status: () => 200, text: async () => '',
+      json: async () => ({ selected: { reassessment: { comparison: { availability: served } } } }) }) },
+  };
+}
+
+test('S142 opens the still-open record and finds its retained comparison with no press', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S142(qa430RecordPage());
+});
+
+test('S142 fails at its feature assertion when opening the record asks for no retained comparison', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S142(qa430RecordPage({ retainedOnOpen: false, figureState: 'not-requested', periods: 0, pressed: 0 })),
+    /S142 opening a still-open record must request its retained comparison once, with no control pressed/);
+});
+
+test('S143 reads an unavailable figure naming its reason in the result line\u2019s words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S143(qa430RecordPage({ figureState: 'unavailable', periods: 0 }));
+});
+
+test('S143 fails at its feature assertion when the record shows no unavailable figure', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'not-requested', periods: 0, figureReason: '', result: '',
+    stage: 'no clock envelope is retained for this record\n0 → 0 half-hours read',
+  }))), /S143 the figure must read as an unavailable comparison/);
+});
+
+test('S143 fails when the figure prints the served code instead of its words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'unavailable', periods: 0, figureReason: 'missing_comparison_context',
+    result: 'Unavailable · missing_comparison_context',
+  }))), /S143 the figure must name the reason in words, never its code/);
 });
 
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route
@@ -700,6 +825,11 @@ function qa413GalleryPage({
   staged = true,
   distinctSelection = true,
   marks = {},
+  // #433: the canvas pane at the run's size — how far the lane runs below its
+  // visible box, how far the pane can scroll, and whether the key wrapped
+  paneOverrun = 0,
+  paneScroll = 0,
+  keyWrapped = false,
 } = {}) {
   marks = { primary: 'rgb(224, 127, 63)', outlineStyle: 'solid', outlineColor: 'rgb(224, 127, 63)',
     fill: 'color(srgb 0.8 0.5 0.3 / 0.72)', underline: '""', underlineHeight: '2px', clipped: 0, ...marks };
@@ -708,6 +838,22 @@ function qa413GalleryPage({
   keyGlyph = keyGlyph || cellGlyph;
   keyCounts = keyCounts || verdicts;
   const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  // a key entry is its verdict, or its verdict and served reason (#433, D6)
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const lane = {
+    pane: { top: 0, bottom: 616, left: 0, right: 850, overflowY: 'auto', scrollTop: 0, scrollLeft: 0,
+      scrollHeight: 616 + paneScroll, clientHeight: 616 },
+    wrap: box(575 + paneOverrun, 616 + paneOverrun, 0, 850),
+    entries: [['Basal slots', 34, 89], ['raise 5', 100, 152], ['lower 5', 163, 218], ['hold 30', 229, 283],
+      ['insufficient 3', 294, 378], ['no data 5', 389, 460]].map(([text, left, right], i, all) => {
+      const top = 575 + (keyWrapped && i === all.length - 1 ? 16 : 0);
+      return { text, ...box(top, top + 14, left, right) };
+    }),
+  };
   const node = selector => ({
     first() { return this; },
     click: async () => {},
@@ -719,7 +865,7 @@ function qa413GalleryPage({
       if (verdict === 'down' && name === 'aria-pressed') return 'true';
       return null;
     },
-    innerText: async () => String(keyCounts[verdictOf(selector)]),
+    innerText: async () => String(keyCounts[entryOf(selector)]),
     boundingBox: async () => {
       if (selector === '#lane-wrap') return laneWrapBox;
       if (selector === '#lane-key') return keyBox;
@@ -741,6 +887,7 @@ function qa413GalleryPage({
   return {
     evaluate: async fn => {
       const src = fn.toString();
+      if (fn.name === 'laneGeometry') return lane;
       if (src.includes('lane-wrap')) return order;
       if (src.includes('outlineStyle')) return { ...marks };
       if (src.includes('lane-cell')) return { ...verdicts };
@@ -828,6 +975,204 @@ test('assertBasalLaneGallery fails when the staged mark is not an underline', as
     /the staged mark must be an underline, not a fill/);
 });
 
+// #433: S113's pane checks at the run's own size, and its key counts scoped
+// to verdict plus reason.
+test('assertBasalLaneGallery fails when the lane overruns the canvas pane at rest', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneOverrun: 44 })),
+    /the lane and every key entry must stand wholly inside the canvas pane at rest; #lane-wrap overruns it by 44px/));
+});
+
+test('assertBasalLaneGallery fails when the canvas pane has a scroll range at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneScroll: 44 })),
+    /the canvas pane must have no scroll range at this size; it scrolls 44px/));
+});
+
+test('assertBasalLaneGallery fails when the key wraps onto a second line at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ keyWrapped: true })),
+    /the key must stand on one line at this size; no data 5 wrapped below the lead entry/));
+});
+
+test('assertBasalLaneGallery counts a recurring-lows lower apart from a measured lower', async () => {
+  const verdicts = { up: 5, down: 4, 'down:recurring-lows': 1, hold: 30, insufficient: 3, nodata: 5 };
+  await assertBasalLaneGallery(qa413GalleryPage({ verdicts }));
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ verdicts, keyCounts: { ...verdicts, 'down:recurring-lows': 2 } })),
+    /the key's down:recurring-lows count must equal the served lane count/);
+});
+
+// #433: a fake page for `assertBasalLaneReachable` — S151's scenario. Each size
+// names how far the lane runs below the canvas pane's visible box at rest
+// (`below`), whether the pane can scroll that far (`scrolls`), and how far the
+// last key entry, the last cell and the chart run past its right edge
+// (`past`). A wheel moves the fake pane within its scroll range, as a browser
+// would; nothing else ever moves.
+function qa433ReachPage(sizes = {}) {
+  let viewport = { width: 1280, height: 720 };
+  let offset = 0;
+  const log = [];
+  const at = () => ({ below: 0, scrolls: true, past: 0, ...sizes[`${viewport.width}x${viewport.height}`] });
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const reading = () => {
+    const { below, scrolls, past } = at();
+    const range = scrolls ? below : 0;
+    const scrollTop = Math.min(offset, range);
+    const bottom = 400 + below - scrollTop; // the lane's bottom edge; the pane's is 400
+    return {
+      viewport: { ...viewport },
+      root: { scrollTop: 0, scrollLeft: 0, scrollHeight: viewport.height, clientHeight: viewport.height,
+        scrollWidth: viewport.width, clientWidth: viewport.width },
+      pane: { top: 100, bottom: 400, left: 0, right: 400, overflowY: scrolls ? 'auto' : 'visible',
+        scrollTop, scrollLeft: 0, scrollHeight: 300 + range, clientHeight: 300 },
+      head: box(160 - scrollTop, 190 - scrollTop, 0, 400),
+      wrap: box(bottom - 41, bottom, 0, 400 + past),
+      key: box(bottom - 41, bottom - 27, 34, past ? 400 + past : 348),
+      entries: [['Basal slots', 34, 89], ['raise 1', 100, 152], ['no data 44', 163, past ? 400 + past : 348]]
+        .map(([text, left, right]) => ({ text, ...box(bottom - 41, bottom - 27, left, right) })),
+      cells: [0, 1, 2].map(i => ({ cell: String(i), verdict: 'nodata', name: `slot ${i}`,
+        ...box(bottom - 19, bottom - 8, 34 + i * 105, i === 2 && past ? 400 + past : 134 + i * 105) })),
+      chart: box(190 - scrollTop, bottom - 41, 0, 400 + past),
+      ancestors: [{ name: '.panes', scrollTop: 0, scrollLeft: 0 }],
+    };
+  };
+  return {
+    log,
+    viewportSize: () => ({ ...viewport }),
+    setViewportSize: async size => { viewport = { ...size }; log.push(`${size.width}x${size.height}`); },
+    evaluate: async fn => {
+      if (fn.name === 'laneGeometry') return reading();
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+    mouse: {
+      move: async () => {},
+      wheel: async (_x, y) => {
+        const { below, scrolls } = at();
+        offset = Math.min(scrolls ? below : 0, Math.max(0, offset + y));
+      },
+    },
+  };
+}
+
+test('assertBasalLaneReachable passes when the pane scrolls a short window\'s lane into reach', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44 }, '832x560': { below: 44 } });
+  await assertBasalLaneReachable(page);
+  assert.deepEqual(page.log, [...LANE_REACH_SIZES.map(size => `${size.width}x${size.height}`), '1280x720'],
+    'every split size is visited, then the run\'s own size restored');
+});
+
+test('assertBasalLaneReachable fails on a key entry past the canvas pane\'s right edge', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '832x560': { past: 58.75 } })),
+    /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+});
+
+test('assertBasalLaneReachable fails on a lane below a canvas pane that cannot scroll', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '1200x560': { below: 44, scrolls: false } })),
+    /1200×560 vertical: #lane-wrap overruns the canvas pane's visible box by 44px at rest, and the pane cannot scroll \(overflow-y: visible\)/);
+});
+
+test('assertBasalLaneReachable names a vertical failure at one size and a horizontal one at another, once', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44, scrolls: false }, '832x560': { past: 58.75 } });
+  await assert.rejects(assertBasalLaneReachable(page), error => {
+    assert.match(error.message, /^S151 the basal lane must stay within reach at every split size; \d+ failures:/);
+    assert.match(error.message, /1200×560 vertical: #lane-wrap still overruns the canvas pane's visible box by 44px after wheeling the pane/);
+    assert.match(error.message, /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+    assert.match(error.message, /832×560 horizontal: #chart runs past the canvas pane's client box by 58\.75px/);
+    return true;
+  });
+  assert.equal(page.log.at(-1), '1280x720', 'the run\'s own size is restored even when checks failed');
+});
+
+// #433 (D6): a fake page for `assertRecurringLowsVariant` — S113's route on the
+// `basal-recurring-low-no-clean-median` store. That store's 05:00 slot serves no
+// steady night, so no `#level .case-occurrence` row ever renders: a wait on one
+// times out here, as it did in the browser. The defaults are the branch's lane;
+// the key-word knobs reproduce base, which counts the slot under plain "lower".
+function qa433RecurringLowsPage({
+  keyEntries = ['Basal slots', 'lower · recurring lows 1', 'no data 47'],
+  counts = { 'down:recurring-lows': 1, nodata: 47 },
+} = {}) {
+  const asked = [];
+  let panel = null;
+  const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const recurring = selector => selector.includes('[data-reason="recurring-lows"]');
+  const node = selector => {
+    asked.push(selector);
+    const self = {
+      filter() { return self; },
+      first() { return self; },
+      waitFor: async () => {
+        if (selector.includes('case-occurrence')) {
+          throw new Error('locator.waitFor: Timeout 30000ms exceeded (this store renders no steady night)');
+        }
+      },
+      click: async () => {
+        if (recurring(selector)) {
+          panel = { time: '05:00–05:30', verdict: 'lower (recurring lows)', recommended: '0.48', stage: 1,
+            text: '05:00–05:30 lower (recurring lows) Recommended 0.48 Stage change' };
+        }
+      },
+      count: async () => (selector === '#lane > button.lane-cell' ? 48
+        : recurring(selector) ? counts['down:recurring-lows'] || 0 : 0),
+      getAttribute: async name => (name === 'aria-label' && recurring(selector)
+        ? '05:00 basal slot, suggests a lower because lows keep happening at this hour' : null),
+      evaluateAll: async () => [...keyEntries],
+      innerText: async () => String(counts[entryOf(selector)]),
+      evaluate: async fn => {
+        const src = fn.toString();
+        if (src.includes("getPropertyValue('--cell')")) return `token(${verdictOf(selector)})`;
+        if (src.includes('::before')) return verdictOf(selector) === 'down' ? '""' : 'none';
+        if (src.includes('backgroundImage')) return verdictOf(selector) === 'nodata' ? 'radial-gradient(circle, ...)' : 'none';
+        throw new Error(`unexpected evaluate on ${selector}: ${src}`);
+      },
+    };
+    return self;
+  };
+  return {
+    asked,
+    // the store's served preparation: one basal Finding, the 05:00 slot's, which
+    // the old `openBasalLane` route drills before its steady-night wait
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async () => ({ ok: () => true, status: () => 200,
+      json: async () => ({ rendered_rows: [{ id: 'basal:300-330' }] }) }) },
+    locator: node,
+    getByRole: (role, { name }) => {
+      asked.push(`${role}:${name}`);
+      return { click: async () => {} };
+    },
+    waitForFunction: async () => {},
+    evaluate: async fn => {
+      if (fn.name === 'readSlotPanel') return panel && { ...panel };
+      if (fn.toString().includes('lane-cell')) return { ...counts };
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+  };
+}
+
+test('assertRecurringLowsVariant reaches the lane on a store with no steady night, never waiting for one', async () => {
+  const page = qa433RecurringLowsPage();
+  await assertRecurringLowsVariant(page);
+  assert.ok(page.asked.includes('button:24 h'), 'the route opens the 24 h rail');
+  assert.ok(page.asked.includes('#lane > button.lane-cell'), 'the route waits for the 48 basal slots');
+  assert.deepEqual(page.asked.filter(selector => selector.includes('case-occurrence')), [],
+    'the route never waits for a steady-night row, which this store never renders');
+  assert.ok(page.asked.includes('#lane > .lane-cell[data-verdict="down"][data-reason="recurring-lows"]'),
+    'the route opens the recurring-lows cell itself');
+});
+
+test('assertRecurringLowsVariant fails at the key word when the key counts the slot under plain "lower"', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRecurringLowsVariant(qa433RecurringLowsPage({
+      keyEntries: ['Basal slots', 'lower 1', 'no data 47'], counts: { down: 1, nodata: 47 },
+    })),
+    /S113 the key must read "lower · recurring lows 1"; it reads \["Basal slots","lower 1","no data 47"\]/));
+});
+
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after
 // opening the rail. `graphics` maps a row id to its mounted mini's graphic
 // texts; an absent id is an unmounted mini. The story's own in-page function
@@ -890,4 +1235,51 @@ test('assertRankedMinis fails when no candidate mini is mounted', async () => {
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertRankedMinis(qa413MiniPage({}), [minied]),
     /at least one ranked mini must be mounted/));
+});
+
+// #429: a fake page for S139/S140 — the served admission, the dock at the foot
+// of the Diagnose inspector, and the Changes landing its link opens.
+function qa429DockPage(kind, { label = 'Open Changes ›' } = {}) {
+  let url = 'http://synthetic.invalid/';
+  const roster = { admission: { state: 'available', active_kind: kind, active_id: kind === 'trial' ? 'basal:390' : 7 },
+    trials: [], focuses: [{ id: 7, pinned_at: '2026-08-04 09:00:00' }] };
+  const detail = kind === 'focus' ? 'Pinned 08-04 · adherence and outcome are read in Changes'
+    : 'Maturing — 6 of 14 days since 08-11';
+  const text = {
+    '.inspector > .watch': `${kind.toUpperCase()} · WATCHING\nThe watched change\n${detail}\n${label}`,
+    '.inspector > .watch .go': label,
+    '.inspector > .watch .how': detail,
+    '.gf-stage-trial .gf-title': 'Basal 06:30 · 0.85 → 1.05 U/hr',
+  };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    locator: sub => node(`${selector} ${sub}`),
+    waitFor: async () => {},
+    click: async () => { if (selector === '.inspector > .watch .go') url = 'http://synthetic.invalid/changes?subject=watch'; },
+    getAttribute: async name => (selector === '.inspector > .watch' && name === 'data-state' ? kind : null),
+    innerText: async () => text[selector] ?? '',
+  });
+  return {
+    url: () => url,
+    request: { get: async href => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(href).searchParams.has('selected')
+        ? { ...roster, selected: { changes: [{ slot: '06:30' }] } } : roster) }) },
+    locator: node,
+  };
+}
+
+test('S139 and S140 pass when the dock names Changes and its link lands on the watch', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S139(qa429DockPage('trial'));
+  await C4_STORIES.S140(qa429DockPage('focus'));
+});
+
+test('S139 and S140 fail at the label, not at a premise, when the dock still reads "Open Verify ›"', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [id, kind] of [['S139', 'trial'], ['S140', 'focus']]) {
+    await withReplayAssertionTimeout(10, () => assert.rejects(
+      C4_STORIES[id](qa429DockPage(kind, { label: 'Open Verify ›' })),
+      error => error.message.includes(`${id} the dock's link must read "Open Changes ›"`)
+        && !error.message.includes('premise')));
+  }
 });

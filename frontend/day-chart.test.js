@@ -29,7 +29,7 @@ function makeDay() {
     },
     episodes: [
       {
-        id: '2026-06-17-ep0', lever: 'over_treated_low', spans_midnight: false,
+        id: '2026-06-17-ep0', lever: 'over_treated_low', lever_title: 'Over-treated low', spans_midnight: false,
         trigger: 'low', trigger_t: '2026-06-17 03:00:00',
         start: '2026-06-17 03:00:00', end: '2026-06-17 05:00:00',
         steps: [{ t: '2026-06-17 03:00:00', text: 'rescued past range', evidence_tier: 'observed' }],
@@ -40,7 +40,7 @@ function makeDay() {
         ],
       },
       {
-        id: '2026-06-17-ep1', lever: null, spans_midnight: false,
+        id: '2026-06-17-ep1', lever: null, lever_title: null, spans_midnight: false,
         trigger: 'meal', trigger_t: '2026-06-17 12:00:00',
         start: '2026-06-17 11:30:00', end: '2026-06-17 13:00:00', steps: [],
         anchors: [
@@ -61,6 +61,13 @@ test('buildRows: one row per anchor, chronological, carrying episode context', (
   assert.equal(rows[0].lever, 'over_treated_low');
   assert.equal(rows[0].headline.classifier, 'over_treated_low');
   assert.equal(rows[1].kind, 'meal');
+});
+
+test('buildRows carries the episode\'s served Lever name beside its key, and none for an unattributed one', () => {
+  const rows = buildRows(makeDay());
+  assert.equal(rows[0].leverTitle, 'Over-treated low');
+  assert.equal(rows[1].lever, null);
+  assert.equal(rows[1].leverTitle, null);
 });
 
 test('reason reference keeps announced-meal ownership calm and server-owned', () => {

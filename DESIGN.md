@@ -387,6 +387,16 @@ lock, 2026-09-14). Every value painted below is served. No token in
     stage keeps a 2 px accent underline.
   - Cells release the shell's button height floor, so every cell sits inside
     the 11 px track.
+  - A lower the backend serves because lows keep recurring at that hour has
+    its own key word, "lower · recurring lows", on the lower paint and glyph.
+    Its cells are named "suggests a lower because lows keep happening at this
+    hour". The word is read from the served status alone (#433).
+  - The key stands on one line at 1280×720 and 1440×900. Near the narrowest
+    split it wraps between whole entries, taking the extra line from the chart
+    inside the fixed body, so no entry, cell or chart edge runs past the pane.
+  - On a desktop window too short for the canvas pane's row floors, the pane
+    scrolls vertically, so the lane is always within reach. At the supported
+    sizes it has no scroll range.
 - **24 h arrival.** Diagnose opens on 24 h when nothing else chooses a window.
   A contextual entry or a retained window still wins, and the workstation's
   ISF, drill, occurrence and drawn presets keep Overnight.

@@ -2323,7 +2323,7 @@ actually drives it**, not one that merely mentions it.
 | ResizeObserver ×3 | glucose.js:474, :513, :593 | S83 |
 | `[data-pick]` | day.js:204 | S63 |
 | `[data-day-row]` | day.js:205 | S67 |
-| `[data-day]` ×7 | day.js:206-226 | return S62 · month S64 · prev/next-month S65 · prev/next/latest S66 |
+| `[data-day]` ×7 | day.js:206-226 | return S62 · month S64, S127 · prev/next-month S65, S127 · prev/next/latest S66 |
 | ResizeObserver | day.js:183 | S83 |
 | `[data-slot]` | setting.js:392 | S43 (pressed) |
 | `[data-night]` | setting.js:393 | S43 (pressed) |
@@ -2937,3 +2937,437 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #425 amendment — 2026-09-23, issue #425
+
+Sanction: Connor Griffin (operator, repo owner), 2026-09-23, answered "Q1 A,
+Q2 A, defaults all fine, go"; Q2 A is the operator's dated sanction for every
+shipped-surface revision and behavior-ledger amendment the #422–#434
+checklists call for.
+
+Day's rail printed "N recorded days · <first day> to <last day>" with N counted
+from whichever month reads the desk had loaded, so paging the Month calendar
+grew it over an unchanged span. Each month read carries a week of its
+neighbours, and a month's head counted the neighbour's overlapping week again
+once that neighbour was read. The status read now serves the history's
+recorded-day count (`data_day_count`), the rail prints it, and the desk merges
+its loaded month reads to one row per day before the ribbon, the month grid,
+its head or recorded-day stepping reads them (ADR 425 in
+`openspec/changes/day-recorded-days-count/design.md`).
+
+S127 is added. No inherited story is amended, weakened or retired: S64 and S65
+still drive the month toggle and stepping, and none of S62–S67 asserted a
+count. S127 is app-opener-only, like S104; browser execution belongs to the
+coordinator at 1280x720 and 1440x900.
+
+```
+S127 · Day's rail count is the served number of recorded days in the whole
+       history, unchanged by paging the Month calendar; each month's head
+       counts its own recorded days once, never a loaded neighbour's
+       overlapping week, and reads the same before and after that neighbour
+       is loaded.
+  element:  .gf-stage-day .instrument .meta; .gf-month-toggle;
+            [data-day="prev-month"], [data-day="next-month"];
+            .gf-nav-month-head .meta; .gf-nav-cell[data-pick]
+  source:   frontend/day.js loadBounds / joinDays / dayFrame / monthGrid;
+            ciq_autotune/api.py status_endpoint (data_day_count)
+  lock:     nearest HV2-13; S64/S65 cover toggling and stepping, not the count
+  data:     showcase; arrives on its latest recorded day, opens the Month
+            calendar, pages to the earlier recorded month and back
+  evidence: C4_STORIES.S127; reads the rail's count on arrival, then after
+            each paged month's own cells land requires the rail's count
+            unchanged and the shown month's head equal to its recorded
+            (enabled) cells, and the arrival month's head equal to its first
+            reading; only then compares the rail's count with the served
+            /api/status data_day_count, so an app counting loaded rows fails on
+            the count moving, not only on the field it lacks
+  status:   base a4d374a7 with the #425 harness laid over fails at its
+            feature assertion at both sizes ("S127 loading May 2024 must not
+            move the rail's recorded-day count", 42 !== 30; 0 executed,
+            1 failed of 1 selected); branch 62c8aa84 passes at both sizes
+            (1 executed, 0 failed); coordinator-run 2026-09-23
+```
+
+## #427 amendment — 2026-09-23, issue #427
+
+S133 records the shipped rule that the topbar's Day reopens the day last looked
+at (ADR 427, in `openspec/changes/day-held-day-viewed-stamp/design.md`). It is
+app-opener-only, like S113–S117. Browser execution belongs to whoever can launch
+a browser, at 1280x720 and 1440x900; a sandboxed worker never runs it. No
+inherited story is weakened, amended or retired.
+
+Sanction: Connor Griffin, 2026-09-23, answered "Q2 A" to: "Can your reply here
+count as sign-off for the UI copy and tone changes? … Yes. I record your answer
+as the approval for every change these 13 checklists call for, and write the
+wording in CONTEXT.md terms."
+
+```
+S133 · Direct Day entry reopens the day last looked at. After a selected
+       occurrence's "Open <date> in Day" opens a recorded day earlier than the
+       latest, a visit to Diagnose, then Changes, then the topbar's Day shows
+       that same day, with no Opened from and no return, at the plain /day
+       address; a reload opens the latest recorded day.
+  element:  nav.v2-nav [data-destination]; #level .case-occurrence;
+            .occ-foot button:last-child;
+            .gf-nav-col[aria-pressed="true"][data-pick]; [data-day="latest"];
+            absence of [data-day="return"]
+  source:   frontend/day.js adopt / settle
+  lock:     HV2-13; ADR 427
+  data:     showcase (35 recorded days, 2024-05-20 to 2024-06-30)
+  evidence: C2_STORIES.S133
+  status:   replays done; renders owed at integration. It records shipped
+            behavior, so it is not a fail-first obligation. The held-day Node
+            test in frontend/day.test.js, failed against a deliberately broken
+            direct entry, carries non-vacuity. Coordinator-run 2026-09-23 on
+            330027ac: branch ONLY=S60,S133 passed at 1280x720 and 1440x900
+            (executed 2 · failed 0 at each size); base a4d374a7 with this
+            branch's harness passed ONLY=S133 at 1280x720, as expected.
+```
+
+## #429 amendment — 2026-09-23, issue #429
+
+The watch dock at the foot of the Diagnose inspector named Verify, the v1
+surface #416 retired, for a watched Trial and a watched Focus. S139 and S140 pin
+its words and where its link lands (ADR 429 in
+`openspec/changes/watch-dock-changes-destination/design.md`). No existing story
+is amended or retired. Both are app-opener-only, like S113–S117; browser
+execution belongs to the release coordinator at 1280x720 and 1440x900.
+
+Sanction:
+- The label and destination fall within ADR 397's sanctioned destination-copy
+  amendments (the operator's D3, 2026-09-23).
+- Connor Griffin's standing sanction for this release, 2026-09-23, answering
+  "Can your reply here count as sign-off for the UI copy and tone changes?":
+  "Q1 A, Q2 A, defaults all fine, go".
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 149 issued · 130
+active · 19 retired. The frozen header above and ACCEPTANCE.md's count sentence
+are reconciled once, by the release coordinator, on the integration branch.
+
+```
+S139 · A watched Trial's dock offers "Open Changes ›" and names Verify
+       nowhere; activating it lands on Changes at /changes?subject=watch,
+       showing the served Trial's own view, titled for its slot.
+  element:  .inspector > .watch, .inspector > .watch .go; .gf-stage-trial .gf-title
+  source:   frontend/watched-change-dock.js watchDockView / paintWatchDock;
+            frontend/diagnose.js go; frontend/changes.js mount (the watch arrival)
+  lock:     HV2-12
+  data:     c3-trial; the server serves an active Trial
+  evidence: C4_STORIES.S139 → watchDock429; reads /api/verify/trials and
+            requires the active Trial and its one served change's slot as
+            premises, opens Diagnose, requires the dock's watched state, its
+            link text exactly "Open Changes ›" and no "Verify" in its text,
+            activates the link, requires the address to parse (parseRoute) to
+            Changes with subject watch, and requires .gf-stage-trial visible
+            with its title carrying the admitted slot
+  status:   replays done; dock renders owed at integration. Base a4d374a7
+            with this harness laid over it fails at its label assertion at
+            both sizes ("saw [ 'Open Verify ›' ]; S139 the dock's link must
+            read "Open Changes ›""); branch f57cf730 passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-23. Raw logs land
+            in docs/scope/release-422-434-evidence/429/ on the integration branch
+```
+
+```
+S140 · A watched Focus's dock reads "Pinned ‹MM-DD› · adherence and outcome
+       are read in Changes" for its served pin date, offers "Open Changes ›"
+       and names Verify nowhere; activating it lands on Changes at
+       /changes?subject=watch, showing the served Focus's own view.
+  element:  .inspector > .watch, .inspector > .watch .how, .inspector > .watch .go;
+            .gf-stage-focus
+  source:   frontend/watched-change-dock.js watchDockView / paintWatchDock;
+            frontend/diagnose.js go; frontend/changes.js mount (the watch arrival)
+  lock:     HV2-12
+  data:     c3-focus; the server serves an active Focus
+  evidence: C4_STORIES.S140 → watchDock429; reads /api/verify/trials and
+            requires the active Focus and its served pin date as premises,
+            opens Diagnose, requires the dock's watched state, its link text
+            exactly "Open Changes ›", its detail line for that date and no
+            "Verify" in its text, activates the link, requires the address to
+            parse (parseRoute) to Changes with subject watch, and requires
+            .gf-stage-focus visible
+  status:   replays done; dock renders owed at integration. Base a4d374a7
+            with this harness laid over it fails at its label assertion at
+            both sizes ("saw [ 'Open Verify ›' ]; S140 the dock's link must
+            read "Open Changes ›""); branch f57cf730 passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-23. Raw logs land
+            in docs/scope/release-422-434-evidence/429/ on the integration branch
+```
+
+## #430 amendment — 2026-09-23, issue #430
+
+Sanction: Connor Griffin, 2026-09-23, "Q1 A, Q2 A, defaults all fine, go" —
+the standing approval for every change the release's 13 checklists call for
+("I record your answer as the approval for every change these 13 checklists
+call for"). This section changes shipped desk behavior on that sanction only.
+The decision is ADR 430 in `openspec/changes/open-record-comparison/design.md`.
+
+Base a4d374a72c8048d9d93ee4925805b91cf5674835. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c3-trial,
+edit-chain and c4-missing here, each through `CASE_STORE_DIR`. No real data is
+read. The worker ran no server and no browser; every replay below is the
+coordinator's.
+
+Changed shipped behavior:
+
+- **An open record opens on its comparison.** A change record with no saved
+  ending makes its record read, then its retained-context reassessment read,
+  with no assessment control pressed, and renders with Retained context
+  selected. An ended record still opens on its saved ending and requests
+  nothing more. The loading frame reads "Reading change records", then
+  "Computing reassessment". A reader's press holds until another record opens.
+- **The record figure says why it is empty.** It classifies from its clock
+  bins first and draws a paired or Before-only curve whenever one is served,
+  even under a served unavailable state. With no curve it names one of four
+  states — no comparison read, a saved ending that kept no curve, unavailable
+  with the reason in words, or no Before readings — mounts no chart and prints
+  no half-hours count.
+- **One vocabulary for comparison reasons.** The figure, the readiness
+  availability lines and the reassessment result line print a served reason in
+  the same words, never its code.
+- **"First seen" reads "Recorded by Harmonic"**, apart from the stage's
+  Detected time.
+- **A failed reassessment read stays on its record** (coordinator ruling, #430
+  review round 1). The base replaced the whole record with "Evidence
+  unavailable · The change records could not load" when a reassessment read
+  failed. Now the record and the read it already showed stay on screen, and the
+  stage names the failed read ("The retained-context reassessment could not
+  load: …") with a "Retry reassessment" control that re-sends that read alone.
+  A failed record or roster read keeps the destination's failure frame. Proved
+  through `mount` in `frontend/follow-up-lifecycle.test.js`; no replay story
+  asserts it.
+
+S142 and S143 are new app-opener-only stories under HV2-28. Two stories are
+amended in prose below; no story is retired.
+
+```
+S142 · Opening a still-open record from the Changes roster reads its
+       retained-context comparison with no assessment control pressed: the
+       record shows both evidence periods and a paired Before/Trial figure
+       with its chart mounted, Retained context reads as selected, and the
+       saved-ending part still says the change is still open.
+  element:  table.gf-table [data-record], [data-period], [data-figure-state],
+            [data-assessment="retained"], [data-unavailable="ending"]
+  source:   frontend/history.js mount / loadRecord / loadReassessment;
+            frontend/follow-up.js evidenceFigure
+  lock:     HV2-28; ADR 430 (openspec/changes/open-record-comparison/design.md)
+  data:     c3-trial; its one retained Trial is still open, and its retained
+            comparison is available with a clock bin both periods serve
+  evidence: C4_STORIES.S142; records every assessment read the roster press
+            makes, then reads both periods, the paired figure and its canvas,
+            the pressed assessment and the ending part
+  status:   base a4d374a7 (with the branch harness) fails at its feature
+            assertion at both sizes ("S142 opening a still-open record must
+            request its retained comparison once, with no control pressed");
+            branch f1484547 and fix head 5002272e pass at 1280x720 and
+            1440x900; coordinator-run 2026-09-23. Raw logs 430-base-4-*.log,
+            430-branch-4-*.log and 430b-branch-4-*.log, kept with the release
+            evidence (docs/scope/release-422-434-evidence/430/)
+```
+
+```
+S143 · Opening a still-open record whose retained comparison is served
+       unavailable with no clock envelope shows an unavailable figure that
+       names the reason in words — never the served code, and the same words
+       the reassessment result line prints — with no chart and none of "no
+       clock envelope is retained", "no readings yet" or "0 → 0 half-hours
+       read" on the stage.
+  element:  [data-figure-state="unavailable"], [data-figure-reason],
+            [data-reassessment-state], .gf-stage
+  source:   frontend/follow-up.js evidenceFigure / comparisonReasonWords;
+            frontend/history.js reassessmentSection
+  lock:     HV2-28; ADR 430
+  data:     edit-chain; every retained record is still open and its retained
+            comparison is served unavailable (missing_comparison_context)
+  evidence: C4_STORIES.S143; reads the served reason code from the API, opens
+            the record by its roster press, and compares the figure's reason
+            with the code and with the result line's words
+  status:   base a4d374a7 (with the branch harness) fails at its feature
+            assertion at both sizes ("S143 the figure must read as an
+            unavailable comparison"; no figure state on base); branch
+            f1484547 and fix head 5002272e pass at 1280x720 and 1440x900;
+            coordinator-run 2026-09-23. Raw logs as S142's
+```
+
+Amended S112 · 2026-09-23 · ADR 430, on the sanction above: The roster read, the record read and the retained reassessment read the open record then makes on its own, with no control pressed, each show their own named loading frame while pending — "Reading change records" for the first two and "Computing reassessment" for the third. `C4_STORIES.S112` holds the record read, installs the reassessment hold before releasing it, reads "Computing reassessment" with no press, then releases it and waits for the retained reassessment part. Its data stays edit-chain, whose open records serve an unavailable retained comparison. Recorded 2026-09-23 (coordinator-run, both sizes): base a4d374a7 with the branch harness fails at "S112 held reassessment read, requested with no control pressed"; f1484547 and 5002272e pass.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S49 · 2026-09-23 · ADR 430, on the sanction above: The story's text is unchanged. Its c4 part still opens c4-missing's open Trial through the `retained()` helper, but no longer finds the served unavailable code in the reading pane: the code (read from the API, as before) must be absent from `.gf-reading`, and the reason after "Unavailable · " on the reassessment result line must be non-empty and appear in the readiness availability line too. The replay checks the words through the rendered page and imports nothing new. Recorded 2026-09-23 (coordinator-run, both sizes): base a4d374a7 with the branch harness fails at "S49 the reading pane must name the unavailable reason in words, never its served code" (it printed `Unavailable · no_readable_period_evidence`); f1484547 and 5002272e pass.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and test that opens a record or reads the figure was
+re-read for intent, and each keeps its subject:
+
+- **S96 and S105** open ended records, so they make the Original read alone;
+  S96's Retained context and Current policy presses still each read their
+  reassessment.
+- **S110** opens an open edit-chain record and waits for the original part,
+  which now renders after the retained read as well; its address and reload
+  assertions are unchanged.
+- **The c4 `retained()` helper** (S91's c4 cases and the readiness stories)
+  presses a Retained context that is already selected. The press keeps the
+  shown reassessment and requests nothing, and the helper's wait is unchanged.
+- **S50**, both the c3 body and the desk replay's own, pins the active Trial
+  legend; `paired` and `before-only` keep "Trial above Before" and "no Trial
+  readings to compare yet".
+- **R18** opens c4-history's first Trial and first Focus by address and waits
+  up to 30 s for the original part. The Trial is open, so it now also makes
+  the retained read (served unavailable with clock views and no bins, so the
+  figure reads no-readings); the in-process read took under a second. The
+  Focus is ended.
+- **The c3 record openers** (S54, S54b, S92's finished record, S95 and the
+  preempted Focus) all open ended records. S92 counts the figure container,
+  which still renders on a saved ending.
+- **The desk browser suite's expired-record test** opens an ended record
+  whose saved ending is a bare unavailable assessment, so its figure reads
+  unavailable ("not recorded"); its Later conclusion assertions are unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Record press: record read, then retained read with no control pressed | frontend/history.js | S142, S112 |
+| Record figure state, reason words and result line | frontend/follow-up.js, history.js | S143, S49 |
+| Retry reassessment after a failed reassessment read | frontend/history.js | none — node test only (see above) |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 149 issued · 130 active · 19 retired on this branch.
+
+## #433 amendment — 2026-09-23, issue #433
+
+S151–S153 are the fail-first obligations of ADR 433 (the pinned change
+`openspec/changes/basal-strip-short-window/`): the basal lane stays within reach
+on short and narrow desktop windows, every raise and lower slot can be pointed
+at and staged there, and every key verdict agrees with its slot's panel. S113 is
+amended for the recurring-lows key word (operator decision D6) and for the
+canvas pane's at-rest checks. All four are app-opener-only, like S101–S117.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900; the
+ticket worker binds no port.
+
+### #433 sanctioned changes to shipped desk behavior — 2026-09-23
+
+Sanction: Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go" —
+the release's standing Q2 sanction for every shipped-surface revision and
+behavior-ledger amendment the 13 issue checklists call for. It covers three
+changes:
+
+- On a desktop split window too short for the canvas pane's row floors, the
+  pane scrolls vertically, where it used to clip the basal lane out of reach.
+- Near the narrowest split, the lane key wraps between whole entries, where it
+  used to cut its last entries off at the pane's edge. The lane's cells and the
+  glucose chart above them come back inside the pane with it.
+- The key moves a recurring-lows lower out of "lower" into
+  "lower · recurring lows" (D6, same date).
+
+No shipped behavior is retired. At 1280x720 and 1440x900 nothing moves: the
+pane has no scroll range there and the key stays on one line, which S113's
+amendment asserts.
+
+```
+S151 · At three desktop split windows — 1200×736, 1200×560 and 832×560 —
+       the basal lane stays within reach: every key entry, every
+       cell and the glucose chart lie horizontally inside the canvas pane at
+       rest; the lane, its key, every entry and every cell lie inside the
+       pane's visible box vertically, at rest or once the reader wheels the
+       pane; no key entry splits over lines; the document never scrolls, the
+       pane never scrolls sideways, and no other container moves.
+  element:  .canvas-pane, #canvas-head, #lane-wrap, #lane-key > span,
+            #lane > .lane-cell, #chart
+  source:   frontend/diagnose-workstation.css .canvas-pane / .lane-key (the
+            ADR 433 `min-width: 832px` block)
+  lock:     HV2-17
+  data:     basal-verdict-gallery (the case S113 uses)
+  evidence: C4_STORIES.S151 → assertBasalLaneReachable; after `openBasalLane`,
+            sets each size with page.setViewportSize, reads the pane and lane
+            geometry at rest, wheels the mouse over the pane's header rail
+            until the lane is in reach or the pane stops moving (it never sets
+            a scroll offset and never scrolls anything into view by script),
+            wheels back, and restores the run's size even when checks failed.
+            It records every failure by size and axis with the measured
+            overrun, then fails once, listing them all
+  status:   base a4d374a7, with the 7ffa57b9 harness laid over it, fails at
+            its feature assertion at both sizes with one message listing 13
+            failures: the 44px vertical clip at 1200×560 and at 832×560 (the
+            pane cannot scroll; after wheeling, the key is still 17px and the
+            cells up to 36px out of reach) and, at 832×560, the "no data 44"
+            key entry and 7 cells 58.75px and #chart 110.75px past the pane's
+            right edge. Branch 7ffa57b9 passes at both sizes. Coordinator-run
+            2026-09-23; raw logs for docs/scope/release-422-434-evidence/433/
+```
+
+```
+S152 · On the same three split windows, every cell the key counts as raise or
+       lower is reached the way S151 reaches the lane, pointed at with the
+       mouse in the centre of the part the reader sees, and selected; it opens
+       its panel with a Recommended value and the Stage change button, and
+       still lies inside the canvas pane's visible box once picked.
+  element:  #lane > .lane-cell[data-verdict="up"], [data-verdict="down"],
+            #level .slot-head, #level .numrow, #level .stagebtn
+  source:   frontend/diagnose-workstation.js renderLane / renderSlotLevel;
+            frontend/diagnose-workstation.css (the ADR 433 block)
+  lock:     HV2-17
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S152; per size and per raise or lower cell, wheels the
+            pane over its header rail until the cell lies inside the pane's
+            visible box and the viewport, clicks with page.mouse.click at the
+            centre of the cell's visible part (never a locator click, which
+            would scroll it into view), then reads the cell's aria-pressed,
+            the opened panel's slot time, Recommended value and Stage change
+            button, and the cell's box again; restores the run's size
+  status:   base a4d374a7, with the 7ffa57b9 harness laid over it, passes
+            1200×736 and fails at 1200×560 at both sizes ("00:00 basal slot,
+            suggests a raise" still overruns the canvas pane's visible box by
+            36px after wheeling the pane). Branch 7ffa57b9 passes at both
+            sizes. Coordinator-run 2026-09-23; raw logs as S151's
+```
+
+```
+S153 · Every slot the key counts as raise or lower opens a panel with a
+       Recommended value and the Stage change button; every slot it counts as
+       hold, insufficient or no data opens a panel that says no direction is
+       asserted and offers no Stage change button.
+  element:  #lane > .lane-cell, #level .slot-head, #level .numrow,
+            #level .stagebtn
+  source:   frontend/diagnose-workstation.js renderLane / renderSlotLevel
+  lock:     HV2-17
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S153; at the run's size, opens each of the 48 cells
+            once, waits for the panel's slot time to name that cell's half
+            hour, then reads its Recommended value, its Stage change buttons
+            and its text against the cell's served verdict
+  status:   passes on base a4d374a7 with the 7ffa57b9 harness laid over it
+            and on branch 7ffa57b9, at both sizes, as expected: it needs no
+            application change. Coordinator-run 2026-09-23; raw logs as S151's
+```
+
+Amended S113 · 2026-09-23 · #433 / Q2 sanction (Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go"): At the run's own size (1280x720 or 1440x900), `#lane-wrap` and every `#lane-key > span` entry stand wholly inside `.canvas-pane`'s visible box at rest, the key stands on one line (every entry shares the lead entry's top), and the pane has no scroll range. Each key count and paint check is scoped to one key entry, its verdict plus its served reason, so every count stays exact on any lane. A variant on `basal-recurring-low-no-clean-median` (scripts/qa_e2e_cases.py: a 05:00 recurring-lows lower with no steady nights) requires the key to read "lower · recurring lows 1" with no "lower" entry, the 05:00 cell to keep the lower paint token and glyph its key mark shares, its accessible name to say the lower comes from recurring lows, and its panel to read "lower (recurring lows)" with a Recommended value and the Stage change button. S113 stays the one story on that store, so the fixed PR slice and its pinned digest are unchanged. Evidence: C4_STORIES.S113 → assertBasalLaneGallery, then, through ctx.withCase, assertRecurringLowsVariant, which opens the 24 h rail and waits for the 48 slots rather than reusing `openBasalLane` (that store's 05:00 slot serves no steady night for it to wait on), then assertRecurringLowsLower; frontend/c4.replay.test.js drives these helpers on fake pages. Old fails / new passes (coordinator-run 2026-09-23; raw logs as S151's): on base a4d374a7 with the 8578895b harness laid over it, S113 passes its gallery part, the new pane checks included, then fails at both sizes at the variant's key word (it reads ["Basal slots","lower 1","no data 47"]); branch 8578895b passes at both sizes ("S113 proved synthetic variant=basal-recurring-low-no-clean-median"). The earlier 7ffa57b9 runs failed on base and branch alike before the key word, at `openBasalLane`'s wait for a steady-night row that store never renders; 8578895b gave the variant its own 24 h rail route.
+
+### #433 handler inventory
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `.canvas-pane` vertical scroll (the user agent's; no script handler), wheeled over `#canvas-head` | diagnose-workstation.css, the ADR 433 block | S151, S152 |
+| `#lane > button.lane-cell` click, pointed at its visible part on a short window | diagnose-workstation.js renderLane | S152 |
+| `#lane > button.lane-cell` click, each of the 48 slots once | diagnose-workstation.js renderLane | S153 |
+| `#lane > button.lane-cell[data-reason="recurring-lows"]` click (D6) | diagnose-workstation.js renderLane | S113 |
+
+## #426 amendment — 2026-09-23, issue #426
+
+Day stops printing internal identifiers where a served name exists (ADR 426).
+S61 and S62 are amended under Connor Griffin's sanction of 2026-09-23, release
+question Q2, answered "A": "I record your answer as the approval for every
+change these 13 checklists call for, and write the wording in CONTEXT.md
+terms." No story is added or retired, and no ★ FROZEN block, header inventory
+line or story body above this section is edited. Browser execution belongs to
+the coordinator at 1280x720 and 1440x900; the worker order prohibits serve and
+browser execution. On the base app the amended S61 fails: Opened from prints
+the routing subject `finding:over_treated_low`, and the over-treated-low row
+ends with the desk's own word, not the served Lever name.
+
+Amended S61 · 2026-09-23 · #426 / Q2 sanction: The contextual entry also carries a display title beside its canonical subject, in the address, and its Opened-from section names the subject by that served title (for a selected occurrence, the case file's served finding title), never by the routing subject; no `finding:`, `pattern:` or `basal:` text appears there. Given the Day's served model read carries at least one attributed episode and the Episode Log renders a row of one (a premise that fails loudly), each row of an attributed episode ends with that episode's served Lever name, and no row prints an underscore token. App body: frontend/c2.replay.mjs S61; fail-first proof: frontend/replay-cases.test.js, "S61 requires Day to name its origin and each attributed row by the served names". Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900 (`ONLY=S61,S62`: executed 2 · failed 0 · deferred 0 · selected 2), coordinator-run 2026-09-23; base a4d374a7 with the branch harness at 1280x720 fails it at the origin assertion (saw Opened from `finding:over_treated_low` and the 13:55 row ending `over-treated low`; executed 1 · failed 1 · selected 2). Before/after renders are owed to the coordinator's integration batch.
+
+Amended S62 · 2026-09-23 · #426 / Q2 sanction: While away, the Day desk names that subject by its served title, no longer verbatim; the return still holds and focuses the exact occurrence held when Day opened. App body: frontend/c2.replay.mjs S62, unchanged. Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900, and on base a4d374a7 with the branch harness at 1280x720, coordinator-run 2026-09-23.

@@ -320,6 +320,43 @@ class GuidanceTest(unittest.TestCase):
         self.assertIn(baseline["state"]["seriousness"],
                       (None, "info", "low", "medium", "high"))
 
+    def test_pattern_members_and_identified_actions_are_served_with_names(self):
+        # #426 (ADR 426): every Pattern member and identified action is named
+        # beside its identifier, and no name enters the set-aside comparison.
+        analysis, exposures, scenarios = _producer()
+        patterns = [row for row in build_guidance(
+            analysis=analysis, exposures=exposures, scenarios=scenarios,
+        )["candidates"] if row["kind"] == "pattern"]
+        members = [member for row in patterns for member in row["members"]]
+        self.assertEqual({member["kind"] for member in members}, {"habit", "setting"})
+        for member in members:
+            with self.subTest(member=member["subject"]):
+                self.assertTrue(member["title"])
+                self.assertNotRegex(member["title"], r"habit:|setting:|_|ISF")
+                if member["action"] is None:
+                    self.assertNotIn("action_title", member)
+                else:
+                    self.assertEqual(member["action_title"], member["title"])
+        correction_factor = next(member for member in members
+                                 if member["subject"] == "setting:isf")
+        self.assertEqual(correction_factor["title"], "Correction factor")
+        identified = [row for row in patterns if isinstance(row["action"], dict)]
+        self.assertTrue(identified, "the producer must serve an identified action")
+        for row in identified:
+            chosen = next(member for member in row["members"]
+                          if member["subject"] == row["chosen_member"]["subject"])
+            self.assertEqual(row["action"]["title"], chosen["title"])
+        for row in patterns:
+            with self.subTest(pattern=row["subject"]):
+                unnamed = {**row, "members": [
+                    {key: value for key, value in member.items()
+                     if key not in ("title", "action_title")}
+                    for member in row["members"]]}
+                if isinstance(row["action"], dict):
+                    unnamed["action"] = {key: value for key, value in row["action"].items()
+                                         if key != "title"}
+                self.assertEqual(baseline_for(row), baseline_for(unnamed))
+
     def test_setting_source_before_habit_source_is_safe(self):
         result, _execution = _qa("basal-raise")
         pattern = next(row for row in result["candidates"]

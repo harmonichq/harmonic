@@ -513,6 +513,7 @@ function bindPane(surface) {
     button.onclick = () => navigate('day', {
       date: button.dataset.date,
       subject: button.dataset.subject || '',
+      title: button.dataset.subject || '',
       from: `${currentDestination()}.${button.dataset.utilityFrom}`,
       focus: button.dataset.returnFocus || '',
     });

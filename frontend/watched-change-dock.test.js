@@ -31,7 +31,7 @@ test('term 47 · a Trial takes the slot, and takes it from a staged Plan too', (
   assert.equal(view.kind, KIND.trial);
   assert.equal(view.title, 'Basal 06:30 · 0.85 → 1.05 U/hr');
   assert.equal(flat(view), 'Maturing — 6 of 14 days since 08-11');
-  assert.deepEqual(view.route, { label: 'Open Verify', to: 'verify' });
+  assert.deepEqual(view.route, { label: 'Open Changes', to: 'changes' });
 });
 
 test('term 47 · a matured Trial keeps the slot and says it is readable', () => {
@@ -41,10 +41,10 @@ test('term 47 · a matured Trial keeps the slot and says it is readable', () => 
   assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
 });
 
-test('term 47 · the day count clamps to the requirement, matching Verify', () => {
+test('term 47 · the day count clamps to the requirement, as Changes\' progress bar does', () => {
   // A completed Trial's bounded 14-day period spans 15 dates, so the payload's
-  // true count runs to 15; Verify renders "day 14 of 14" and the dock must read
-  // the same, not contradict it one click away.
+  // true count runs to 15; Changes' Trial progress bar clamps its value to the
+  // requirement, and the dock's count clamps the same way.
   const view = watchDockView({
     watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 15, days_required: 14 } },
   });
@@ -55,8 +55,8 @@ test('term 47 · a Focus takes the slot when no Trial does', () => {
   const view = watchDockView({ watched: FOCUS, staged: STAGED });
   assert.equal(view.state, 'focus');
   assert.equal(view.title, 'Pre-bolus more before dinner');
-  assert.match(flat(view), /^Pinned 08-04 · /);
-  assert.equal(view.route.to, 'verify');
+  assert.equal(flat(view), 'Pinned 08-04 · adherence and outcome are read in Changes');
+  assert.deepEqual(view.route, { label: 'Open Changes', to: 'changes' });
 });
 
 test('term 47 · with nothing watched, a staged Plan fills the slot', () => {
@@ -88,6 +88,22 @@ test('term 47 · the four states are mutually exclusive — one object, never tw
     watchDockView({}),
   ].map((v) => v.state);
   assert.deepEqual(states, ['trial', 'focus', 'plan', 'idle']);
+});
+
+test('no dock state names Verify, the destination the desk no longer has', () => {
+  const views = [
+    watchDockView({ watched: TRIAL, staged: STAGED }),
+    watchDockView({ watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 14, days_required: 14 } } }),
+    watchDockView({ watched: FOCUS, staged: STAGED }),
+    watchDockView({ watched: null, staged: STAGED }),
+    watchDockView({}),
+  ];
+  assert.deepEqual(views.map((v) => v.state), ['trial', 'trial', 'focus', 'plan', 'idle']);
+  for (const view of views) {
+    for (const text of [view.kind, view.title, flat(view), view.route?.label ?? '']) {
+      assert.doesNotMatch(text, /Verify/, `${view.state}: ${text}`);
+    }
+  }
 });
 
 test('a whole-profile Trial names itself without inventing a number', () => {

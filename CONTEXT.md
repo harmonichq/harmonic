@@ -737,9 +737,10 @@ _Avoid_: heat-map (that was the Investigate lever-color encoding, superseded —
 speaks glucose), Investigate calendar (the surface it was promoted out of).
 
 **Episode Log**:
-The **Day** surface's reading pane: one row per **Anchor** of the day's served
-episodes, in time order, each worded by its anchor state and naming, by served
-title, the **Lever** of the episode it belongs to. The rows sit in three bands.
+The **Day** surface's reading pane: the **Anchors** of the day's served episodes,
+in time order, in three bands. The Findings and Also checked bands list theirs one
+row each, worded by its anchor state and naming, by served title, the **Lever** of
+the episode it belongs to; the Quiet band counts the rest rather than listing them.
 **Findings** lists the anchors of each episode attributed to a Lever — the one that
 drove it and any it **claimed**; its caption counts distinct **Findings**, one per
 served Lever, because each attributed episode is one **Occurrence** of its Lever's

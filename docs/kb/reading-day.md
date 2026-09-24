@@ -9,13 +9,14 @@ paired with a shape or label so the marks read without relying on color alone.
 
 ## The Episode Log
 
-Beside the chart, the **Episode Log** lists the day's anchors (a meal bolus, a
-correction, a low, a high, a suspend) one row each, in time order. A row gives the
-time, a word for what the engine made of that anchor, the anchor itself, and the
-**lever** of the episode it belongs to. Each episode gets **one lever**: the shared
-evaluator compares observed impact when supported eating-sequence evidence
-competes for it. Other matching behaviors remain inspectable as evidence, never
-stacked as separate blame.
+Beside the chart, the **Episode Log** sorts the day's anchors (a meal bolus, a
+correction, a low, a high, a suspend) into three bands, in time order. The first
+two list an anchor per row; the third counts the rest rather than listing them.
+A row gives the time, a word for what the engine made of that anchor, the anchor
+itself, and the **lever** of the episode it belongs to. Each episode gets **one
+lever**: the shared evaluator compares observed impact when supported
+eating-sequence evidence competes for it. Other matching behaviors remain
+inspectable as evidence, never stacked as separate blame.
 
 The rows sit in three bands:
 
@@ -30,7 +31,7 @@ The rows sit in three bands:
 
 A **claimed** anchor belongs to an episode another finding owns. Its row names what
 the anchor matched on its own, then ends with the finding that claimed it, and it
-keeps that finding's colour. Each band's **Glossary** control opens these
+keeps that finding's color. Each band's **Glossary** control opens these
 definitions.
 
 Press a row to ring its anchor on the chart and draw a line across every strip.

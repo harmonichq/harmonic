@@ -26,15 +26,18 @@ captures are cropped to the reading pane.
 
 ## Owed by the coordinator's runs
 
-- S121 and S122 on the ticket's base with the branch harness laid over (each must
-  fail at its feature assertion) and on the branch (each must pass), at 1280x720
-  and 1440x900.
-- S67, S68, S73c and S82 green at both sizes on the branch.
-- Before and after synthetic renders at both sizes: the `pattern-near-tie`
-  Day 2024-05-25 Episode Log (the claimed row at rest and pressed, cropped to the
-  reading pane; its tier word; the Findings caption), the Glossary opened from a
-  caption, and the `behavioral-meal-over-delivery` Meal over-delivery case file
-  footer.
+- S121 and S122 on the pre-release base `a4d374a7` with the branch harness laid
+  over (each must fail at its feature assertion, not a premise) and on the branch
+  (each must pass), at 1280x720 and 1440x900, with captures.
+- The full `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`.
+- Before and after synthetic renders at both sizes, taken in the release-wide
+  render pass at integration: the `pattern-near-tie` Day 2024-05-25 Episode Log
+  (the claimed row at rest and pressed, cropped to the reading pane; its tier
+  word; the Findings caption), the Glossary opened from a caption, and the
+  `behavioral-meal-over-delivery` Meal over-delivery case file footer.
 
-When they land, the raw logs and captures are committed here and the map's
-"(owed)" entries name the files.
+Already reported by the coordinator (2026-09-23, on `f0c529c5`): S67, S68, S73c
+and S82 passed 4 of 4 at both sizes, and the desk browser suite passed 41 of 41.
+
+When the owed runs land, the raw logs and captures are committed here and the
+map's "(owed)" entries name the files.

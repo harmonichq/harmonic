@@ -429,4 +429,4 @@ standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
   sentence case against the uppercase caption. It opens the Glossary at its
   Episode Log group, and Close returns focus to it.
 - **Evidence.** The desk ledger's S121 and S122 hold the replays;
-  `docs/scope/423-episode-log-evidence/` holds the logs and captures.
+  `docs/scope/release-422-434-evidence/423/` holds the logs and captures.

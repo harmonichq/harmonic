@@ -51,11 +51,6 @@ const CELL = { w: 100, h: 30 };
 const AXIS_RESERVE = 24;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-// An Episode Log row's state is worded by the one anchor-state map
-// (ANCHOR_STATE_WORD, ADR 423), and every Lever it names is a served title — the
-// episode's `lever_title` and its matched verdicts' `title`s. The desk keeps no
-// Lever name table of its own (ADR 426).
-
 // The Glossary group each Episode Log band caption opens the Glossary at.
 const EPISODE_LOG_GLOSSARY = '[data-glossary-group="Episode Log"]';
 

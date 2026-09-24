@@ -1625,7 +1625,7 @@ class ComparisonMeasurementTest(unittest.TestCase):
 
 
 class SequenceTrendExclusionTest(unittest.TestCase):
-    def test_supported_sequences_add_no_verify_behavior(self):
+    def test_supported_sequences_add_no_behavior_trend_series(self):
         from tests.eating_sequence_streams import sequence_episode_stream
         for lever in ("high_carb_sequence", "repeat_eating"):
             b, c, log, basal = sequence_episode_stream(lever)

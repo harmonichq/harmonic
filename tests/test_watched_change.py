@@ -110,7 +110,7 @@ class OneActiveInvariantTest(unittest.TestCase):
         self.assertEqual(active.kind, "focus")
         self.assertEqual(active.lever, "late_bolus")
 
-    def test_removed_lever_focus_is_dropped_instead_of_breaking_verify(self):
+    def test_removed_lever_focus_is_dropped_not_watched(self):
         self.store.pin_focus(
             "overnight_low_from_evening_dosing", "2026-05-06 08:00:00"
         )

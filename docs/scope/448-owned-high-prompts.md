@@ -47,5 +47,7 @@ release coordinator's direction. It executes `EXECUTION LOCK v2 448 1`, pinned t
 
 - Triage: plan review countersigned the lock (panel 1 round 2; a fresh cold panel 2
   round 2), as relayed by the coordinator.
-- Start review round 1: dispatched by the coordinator after this worker's
-  review-ready handoff.
+- Start review round 1 (Full depth, on `4e73b4cd`): converged clean, as relayed by
+  the coordinator. No finding; no fix round.
+- Task 3.4 (renders) stays unticked: the coordinator captures it in the release's
+  integration render batch.

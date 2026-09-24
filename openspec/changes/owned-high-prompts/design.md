@@ -445,3 +445,7 @@ excluded. Every tracked path dispositioned.`; every drift check reports current
 on this commit moved `focus.json` and `journey.json` only in the `code_version`
 stamp and the ids derived from it (8 lines), and `utilities.json` and `glossary.js`
 only in the two sentences Decision 3 rewords.
+
+Task 3.4 (the Guide and Glossary renders) is outside this gate and stays unticked.
+The coordinator captures it in the release's integration render batch and ticks it
+there.

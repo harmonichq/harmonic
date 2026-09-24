@@ -47,6 +47,18 @@ excludes.
   `openRecord` and `closeRecord`, to state the identity rule once. Name ADR 452
   beside ADR 430's existing note. Every other comment that describes when these
   fields clear must match the code.
+- [x] 1.3 Coordinator-authorized widening, 2026-09-23 (Q3 delegation; #452 code
+  review round 1, finding F1). This lifts 1.1's "keep unchanged" for exactly
+  the later-conclusion save's writes after its awaits (ADR 452, decision 7).
+  - `submitLateConclusion` captures `memory.open`, the object `setOpenRecord`
+    installed, when the save starts.
+  - After the retry re-read and after the conclude request, success or failure
+    alike, it writes nothing if `memory.open` is no longer that object: no
+    re-read result, no request id, no failure, no focus target, no success
+    clear and no render.
+  - `setOpenRecord`'s doc comment and the page-memory comment say so.
+  - Otherwise the successful-save clear, the retry re-read and the request-id
+    rule are unchanged.
 
 ## 2. Node tests through the roster press (desk)
 
@@ -89,6 +101,19 @@ excludes.
   router's module state on Changes for every later test in the file.
   `navigate` is imported once, beside the file's other dynamic imports, and
   every test in the file that navigates shares that import.
+- [x] 2.3 Coordinator-authorized widening, 2026-09-23 (with 1.3). The fetch stub
+  in `frontend/follow-up-lifecycle.test.js` gains a one-shot hold
+  (`holdNext`). Three tests, each seen failing first on `560098de` at its
+  feature assertion, cover the variants the review reproduced:
+  - (1) Retry in flight, then Back to records, then open B. B's form is empty
+    with no failure, the abandoned retry sends nothing, and B's first save is a
+    first save with a request id of its own.
+  - (2) A's first save fails after the switch. B shows no failure, and B's first
+    save is a first save with a fresh id.
+  - (3) A's first save succeeds after the switch. B's typed draft survives.
+
+  Each test resets the router with `navigate('diagnose')` in its `finally`,
+  through `onExpiredRoster`.
 
 ## 3. Replay story S180 (desk)
 

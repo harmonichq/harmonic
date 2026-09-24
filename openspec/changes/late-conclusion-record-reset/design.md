@@ -80,9 +80,26 @@ so the next arrival re-reads the roster.
 6. **What does not move.** The successful-save clear stays where it is. It is a
    different rule (a saved conclusion empties its own form) and it applies to
    the same record. ADR 430's `failed` clear stays where the record read lands,
-   because `failed` does not carry. The Day door, the retry re-read in the save,
-   the text binding, the conclude endpoint, request-identity rules, eligibility
-   and every saved ending are unchanged.
+   because `failed` does not carry. The Day door, the text binding, the conclude
+   endpoint, request-identity rules, eligibility and every saved ending are
+   unchanged. The save's own writes after its awaits move under decision 7.
+7. **A save in flight stays with its record** (coordinator-authorized widening,
+   2026-09-23, Q3 delegation; #452 code review round 1, finding F1). The later-conclusion
+   save captures the identity object `setOpenRecord` installed when the save
+   started, and compares it with `memory.open` after each await. Once they
+   differ, the save writes nothing at all: no retry re-read result, no request
+   id, no failure, no focus target, no success clear and no render.
+   - A Retry whose re-read returns after the record was left is abandoned
+     unsent. Sending it would need a request id, and writing that id is one of
+     the writes this drops.
+   - A first save already sent still reaches the server. Only its answer is
+     ignored.
+   - Before this, a save in flight when the reader left landed on the next
+     record. The review reproduced three variants on `560098de`: B showed A's
+     failure, B's save sent A's retry id, and A's late success cleared B's draft.
+   - This lifts task 1.1's "keep unchanged" for exactly the save's post-await
+     writes. The successful-save clear, the retry re-read and the request-id
+     rule are otherwise as before.
 
 ### Alternatives considered
 
@@ -157,3 +174,8 @@ from here"); coordinator ruling R452, and its rulings Q1 (add S180) and Q2
 - Opening or leaving a record abandons any read still in flight for the record
   left. No control reaches that state today, because the loading frames carry
   no Back to records. An abandoned read still cannot land on the next record.
+- A later-conclusion save is different, because its record keeps Back to
+  records on screen while the save is in flight. Leaving then abandons the
+  save's own writes (decision 7). A first save already sent may still be
+  recorded, and it shows when its record is next opened. A retry not yet sent is
+  not recorded.

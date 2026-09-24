@@ -86,7 +86,8 @@ export function settingValue(parameter, value) {
 // naming another record — it drops what was held for the record being left:
 // the chosen assessment, the record read, a failed destination read, any read
 // still in flight, and the Later conclusion's text, failed save and request id
-// (ADR 452). A re-render of the same record, a Day return included, keeps them.
+// (ADR 452); a later-conclusion save still in flight writes nothing when it
+// returns. A re-render of the same record, a Day return included, keeps them.
 //
 // `mode` is the reader's own choice of assessment for the open record, or null
 // until they make one: the record's default read, which its served ending
@@ -104,9 +105,12 @@ const memory = {
 };
 
 /** Set which record is open, `{ kind, id }` or null, dropping what the record
-    being left held (the rule above). Its callers run it before navigating,
-    which renders synchronously; a bumped generation keeps a read made for the
-    record being left from landing on the next. */
+    being left held (the rule above). Opening installs a new identity object,
+    so even reopening the record already open is a change. Its callers run it
+    before navigating, which renders synchronously. Nothing started for the
+    record being left lands on the next: the bumped generation drops the
+    destination's own reads, and a later-conclusion save compares the identity
+    it started under after each await and writes nothing once it differs. */
 function setOpenRecord(next) {
   readGeneration += 1;
   memory.open = next;
@@ -503,22 +507,31 @@ const failureMessage = error => error?.detail?.code
   ? `${error.detail.code} (${error.status})`
   : error?.detail || error?.message || 'no response from the store';
 
+// A save belongs to the record it started on (ADR 452). After each await it
+// writes nothing unless that record's identity is still the one open: a retry
+// whose re-read returns after the record was left is abandoned unsent, and a
+// failure or success returning then leaves the next record as it is.
 async function submitLateConclusion({ retry = false } = {}) {
   const state = memory.record;
   const detail = state?.detail;
   const conclusion = (memory.conclusion || '').trim();
   if (!detail || state.kind !== 'trial' || !conclusion) return;
+  const startedOn = memory.open;
+  const left = () => memory.open !== startedOn;
   try {
     if (retry) {
       const fresh = await fetchVerifyTrials({ kind: 'trial', selected: state.id });
+      if (left()) return;
       memory.record = { ...state, detail: { ...detail, ...fresh.selected, revision: fresh.input_revision } };
       memory.roster.revision = fresh.input_revision;
     }
     const body = { request_id: conclusionAttemptId(), input_revision: memory.record.detail.revision, conclusion };
     await concludeTrial(state.id, body);
+    if (left()) return;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
     memory.roster = null; memory.record = null;
   } catch (error) {
+    if (left()) return;
     memory.conclusionFailure = { operation: 'conclude', headline: 'Recording the later conclusion failed',
       message: failureMessage(error) };
     view.focusAfterRender = '[data-retry-save="conclude"]';

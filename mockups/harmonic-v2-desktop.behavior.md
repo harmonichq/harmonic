@@ -4147,6 +4147,13 @@ Changed shipped behavior:
 - **A re-render of the same record keeps them.** A failed save followed by a
   re-render, including a return from Day to the same record, keeps the words,
   the failure and the request id, so Retry resends the same request id.
+- **A save in flight stays with its record** (coordinator-authorized widening,
+  2026-09-23, ADR 452 decision 7). A later-conclusion save or Retry still in
+  flight when the reader leaves writes nothing into the next record: no failure,
+  no request id, and no clear of the next record's draft. A Retry whose re-read
+  returns after the record was left is abandoned unsent. Proved at node level in
+  `frontend/follow-up-lifecycle.test.js`; no replay story times a save against a
+  roster press.
 - The conclude endpoint, the request-identity rules, which Trials offer a later
   conclusion, and every saved ending are unchanged.
 
@@ -4191,6 +4198,7 @@ arrived in #411 with no ledger row; these rows record it.
 | Later conclusion text input | frontend/history.js | S180 |
 | Record later conclusion, and its Retry after a failed save | frontend/history.js | S180 |
 | Later-conclusion clear on opening or leaving a record | frontend/history.js | S180 (same record); the two-record path is node test only (frontend/follow-up-lifecycle.test.js) |
+| A later-conclusion save or Retry returning after its record was left | frontend/history.js | none — node test only (frontend/follow-up-lifecycle.test.js) |
 
 The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
 `mockups/INDEX.md`'s row and the release freeze block are the coordinator's,

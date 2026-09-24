@@ -1414,8 +1414,9 @@ test('#460 · a cold seat whose Plan read lands after the payload hands the view
 });
 
 // A retained return with a plain top-nav press: seat, park, return with the
-// input revision unchanged. `between` runs while Diagnose is parked. Answers
-// the events the reads and the view's refreshes logged after the return.
+// input revision unchanged. `between` runs (and is awaited) while Diagnose is
+// parked. Answers the events the reads and the view's refreshes logged after
+// the return.
 async function retainedReturn460(between = () => {}) {
   const previous = globalThis.window;
   const previousFetch = fetchReply;
@@ -1433,7 +1434,7 @@ async function retainedReturn460(between = () => {}) {
     destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
     await afterHandlers();
     park(destination, seat, 0, routed(page));
-    between(served);
+    await between(served);
     events.length = 0; source460.requests.length = 0;
     destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
     await flush();
@@ -1454,6 +1455,21 @@ test('#460 · a retained return re-reads Plan state and guidance, then refreshes
   assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
     `the return re-reads Plan state and guidance: ${events.join(', ')}`);
   assert.ok(events.lastIndexOf('refresh') > lastRead, `the view refreshes after both reads: ${events.join(', ')}`);
+});
+
+test('#460 · a retained return repaints when the Plan surface\'s draft moved, though guidance already served it', async () => {
+  // Changes forces a guidance read on every arrival, so a draft replaced while
+  // Diagnose was parked can reach guidance before the return; the Plan
+  // surface's own copy, which the staged marks read, is still the old one.
+  const { loadGuidance } = await import('./guidance.js');
+  const events = await retainedReturn460(async (served) => {
+    served.draft = { items: [{ type: 'basal', start_min: 0, value: 0.7 }], updated_at: 't460-elsewhere' };
+    await loadGuidance({ force: true });
+  });
+  const lastRead = Math.max(events.lastIndexOf('/api/plan'), events.lastIndexOf('/api/guidance'));
+  assert.ok(events.includes('/api/plan'), `premise: the return re-reads Plan state: ${events.join(', ')}`);
+  assert.ok(events.lastIndexOf('refresh') > lastRead,
+    `the view refreshes after the re-read moved the Plan surface's draft: ${events.join(', ')}`);
 });
 
 test('#460 · a retained return whose served Plan state has not moved repaints the view once, at the re-seat', async () => {

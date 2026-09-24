@@ -180,8 +180,9 @@ const pendingRecord = () => {
   return plan && ['pending', 'mismatch'].includes(plan.verdict.state) ? plan : null;
 };
 
-/** The draft the store holds, or the items this page staged and has not saved. */
-const draftItems = () => memory.staged || memory.plan?.items || [];
+/** The draft the store holds, or the items this page staged and has not saved.
+    Diagnose's staged marks read it through `evidenceIsStaged`. */
+export const draftItems = () => memory.staged || memory.plan?.items || [];
 
 /** Whether the store already holds the items this page staged. */
 const draftSaved = () => Boolean(memory.plan?.updated_at) && !memory.staged;

@@ -75,7 +75,9 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
 7. A retained return to Diagnose (a plain top-nav press while the input
    revision is unchanged) re-reads Plan state and guidance, the same pair a
    cold read starts, and then refreshes the workstation while it is still
-   seated and on screen. A draft save does not move the input revision, so
+   seated and on screen, when that read moved the Plan surface's draft (which
+   the marks read) or the served draft or pending Plan (which the dock reads).
+   A draft save does not move the input revision, so
    without this a draft written while Diagnose was parked, by a route or
    another tab, would leave the Plan surface's copy stale and the re-seed
    would keep the old marks. Both reads are query-only and uncached. The
@@ -110,11 +112,16 @@ Each was taken as the simplest option consistent with the settled decisions:
 - The ledger story #460 adds changes no existing story. It is recorded under
   the AFK run's delegation rather than a quoted operator sentence.
 - A retained return has already refreshed the workstation at its re-seat, so
-  after point 7's re-read it refreshes again only when the served Plan draft or
-  pending Plan moved. An unconditional second refresh rebuilt the reading pane
-  under the focus a Day return had just put on its Occurrence's Open in Day
-  control, and the desk suite's Day-return check caught it (decided
-  autonomously during AFK run, start verification round 1).
+  after point 7's re-read it refreshes again only when the read moved the Plan
+  surface's draft, the served draft or the pending Plan. An unconditional
+  second refresh rebuilt the reading pane under the focus a Day return had just
+  put on its Occurrence's Open in Day control, and the desk suite's Day-return
+  check caught it (decided autonomously during AFK run, start verification
+  round 1). The Plan surface's draft is part of that comparison because
+  Changes re-reads guidance on every arrival but not the Plan surface's copy:
+  a draft replaced before a Changes visit is already in the served draft when
+  Diagnose returns, and comparing the served draft alone kept the stale marks
+  (review round 1).
 - S186 opens the change records in place, as a history step: a saved draft
   seats Changes on the Plan, and a draft-only Plan offers no change-record door.
   Its four legs run in turn and the story fails once, naming each failed leg,

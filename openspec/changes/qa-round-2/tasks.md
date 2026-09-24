@@ -45,8 +45,9 @@ This list is the "touched stories" below.
 - [x] 5. In `frontend/diagnose.js`, pass `planDraft` from `frontend/guidance.js`
   through Diagnose's callbacks beside `pendingPlan`, and on a retained return
   re-read Plan state and guidance, the same pair a cold read starts, then
-  refresh the workstation while it is still seated and on screen (ADR 460
-  point 7). Keep the promise the `stage` callback returns, and skip that
+  refresh the workstation while it is still seated and on screen, when that
+  read moved the Plan surface's draft, the served draft or the pending Plan
+  (ADR 460 point 7). Keep the promise the `stage` callback returns, and skip that
   re-read while it is pending. In
   `frontend/diagnose-workstation.js`, hand the dock's paint `planDraft()` as
   `draft` and the workstation's in-flight flag as `saving`.

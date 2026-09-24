@@ -8,7 +8,7 @@ import { caseAddress } from './tab-routing.js';
 import { presetLabelFor } from './diagnose-workstation.js';
 import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
-import { stageEvidence, evidenceIsStaged, loadPlanState, replacedDraftItems } from './plan-view.js';
+import { draftItems, stageEvidence, evidenceIsStaged, loadPlanState, replacedDraftItems } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { pendingPlan, planDraft } from './guidance.js';
@@ -155,22 +155,25 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     ((held && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
   }
 
-  // The served Plan state the workstation's marks and watch panel read.
-  const servedPlan = () => JSON.stringify([planDraft(), pendingPlan()]);
+  // The Plan state the workstation paints: the Plan surface's own draft, which
+  // the staged marks read, and the guidance read's served draft and pending
+  // Plan, which the watch panel reads. Changes re-reads guidance on every
+  // arrival but not the Plan surface's copy, so either can move on its own.
+  const planState = () => JSON.stringify([draftItems(), planDraft(), pendingPlan()]);
 
   // The one in-place repaint waits for the Plan state and for the Focus read,
   // which carries the guidance read whose served pending Plan and Plan draft the
   // watch panel paints (#431, ADR 460). Both reads start side by side. A
   // retained return has already repainted at its re-seat, so it repaints again
-  // only when the reads moved the served Plan state: an idle repaint rebuilds
-  // the reading pane under the focus a Day return has just put back.
+  // only when the reads moved the Plan state: an idle repaint rebuilds the
+  // reading pane under the focus a Day return has just put back.
   function readPlan({ retained = false } = {}) {
-    const before = retained && servedPlan();
+    const before = retained && planState();
     Promise.all([
       readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); }),
       loadPlanState(),
     ]).then(() => {
-      if (seated && !parked && (!retained || servedPlan() !== before)) workstation.refresh();
+      if (seated && !parked && (!retained || planState() !== before)) workstation.refresh();
     }).catch(() => {});
   }
 
@@ -636,10 +639,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       }
       workstation.refresh(); showFocusAction();
       // ADR 460 point 7: a draft save does not move the input revision, so a
-      // draft written while Diagnose was parked is read here, and the refresh
-      // it ends with re-seeds the staged marks. Never while a stage save is
-      // pending: a read issued before it commits could land after it and hand
-      // back the pre-press draft; the save's own settle re-seeds instead.
+      // draft written while Diagnose was parked is read here, and when the read
+      // moves the Plan state the refresh it ends with re-seeds the staged marks.
+      // Never while a stage save is pending: a read issued before it commits
+      // could land after it and hand back the pre-press draft; the save's own
+      // settle re-seeds instead.
       if (!staging) readPlan({ retained: true });
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;

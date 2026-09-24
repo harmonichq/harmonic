@@ -4182,7 +4182,7 @@ S169 · A watched Trial's dock and Changes print one day count, the served
             Fake-page controls in frontend/c4.replay.test.js pass on the
             branch's text, reject the base's "14 of 14" at that assertion, and
             reject a TIR-first outcome table at "S169 Changes' outcomes must
-            lead with the served target metric tbr" (coordinator ruling F1)
+            lead with the served target metric tbr" (review ruling RR1)
 ```
 
 ```

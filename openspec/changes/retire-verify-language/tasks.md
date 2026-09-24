@@ -115,14 +115,23 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 - Sub-order 2's review: `verify-workstation-chart.js`'s header says it is
   byte-identical to the mock bar its opening comment, which #416 and #447
   re-pointed.
-- Whole-diff review, F1 (design.md decision 7): Changes' Trial outcome table
+- Whole-diff review rulings, labelled RR so they never collide with the plan's
+  F1–F5:
+- RR1 (design.md decision 7): Changes' Trial outcome table
   leads with the rows served for the Trial's served `target_metrics`, marked as
   its target, in the Trial view and the history record view; S169 checks it on
   `c3-trial`. CONTEXT.md's Trial and Focus entries, the surfaces delta and
   design.md say exactly that.
-- F2: `outcomes_trend.py`'s comments name the CLI as the series' only renderer.
-- F3: README's Settings list names what the desk's Settings holds.
-- F4: design.md says `_candidate`'s only caller was `detect_trial`.
+- RR2: `outcomes_trend.py`'s comments name the CLI as the series' only renderer.
+- RR3: README's Settings list names what the desk's Settings holds.
+- RR4: design.md and proposal.md say `_candidate`'s only caller was
+  `detect_trial`.
+- RR5: `MetricTrend`'s docstring names the CLI's gap mark (`·`).
+- RR6: the review rulings are labelled RR1–RR8.
+- RR7: proposal.md's What changes and Sanction name the Trial outcome table's
+  target-first order.
+- RR8: `tests/test_arc_rows_mirror.py` holds `follow-up.js` `ARC_ROWS` identical
+  to the rows the server serves for a Focus's `arc`.
 
 ## 2. Shipped surfaces (sub-order 2)
 

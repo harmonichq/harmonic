@@ -53,8 +53,13 @@ coordinator ruled that each is fixed here:
   so the dock's input stays byte-identical. The route takes no window, so neither
   its cache key nor the client carries one. The CLI's `outcomes-trend` keeps
   every series, because it is their production caller.
-- **The legacy Trial detector is deleted.** That is `detect_trial` with its one
-  private helper, and the 31 tests that exist only to test it.
+- **The legacy Trial detector is deleted.** That is `detect_trial` with the two
+  private helpers only it called (`_profile_switch_diff` and `_candidate`), and
+  the 31 tests that exist only to test it.
+- **Changes' Trial outcome table leads with its served target.** A Trial's
+  outcome table leads with the rows served for its served `target_metrics`,
+  marked as its target, the way a Focus's mapped outcome is marked; the rest keep
+  their served order (review ruling RR1). S169 checks it on `c3-trial`.
 - **The Guide.** The served "Reading the Diagnose surface" article's Cause-lever
   line stops sending the reader to "Focus / Verify". It now names a Focus
   followed in Changes.
@@ -106,9 +111,10 @@ coordinator ruled that each is fixed here:
 ## Sanction
 
 `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`,
-with the coordinator's rulings Q1–Q4 and F1–F5 on #447. It covers the dock's
-copy change, the Guide article's copy change, and the ledger amendment that adds
-S169 and S170.
+with the coordinator's rulings Q1–Q4 and F1–F5 on #447 and the whole-diff review
+rulings RR1–RR8. It covers the dock's copy change, the Guide article's copy
+change, the Trial outcome table's target-first order, and the ledger amendment
+that adds S169 and S170.
 
 ## Capabilities
 

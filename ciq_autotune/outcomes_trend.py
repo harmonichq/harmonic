@@ -377,7 +377,7 @@ class MetricTrend:
     """One glycemic metric's full trend: metadata plus a per-window value series.
 
     ``series`` values are plain numbers, or ``None`` for a window with no data (never
-    a fabricated zero) — the CLI prints a dash, never a false dip.
+    a fabricated zero) — the CLI prints the gap mark (``·``), never a false dip.
     """
 
     key: str

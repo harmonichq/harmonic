@@ -249,6 +249,7 @@ export function periodsSection(comparison, kind = 'trial') {
 // key is its own row, and the Post-meal arc is its peak and nadir rows
 // (CONTEXT.md "Post-meal arc"), the reading the server gives a Focus's arc
 // outcome. The target is served; nothing here infers it from the setting.
+// Held identical to the server's Focus arc rows by tests/test_arc_rows_mirror.py.
 const ARC_ROWS = ['peak', 'nadir'];
 const targetRows = (targets) => new Set((targets || []).flatMap((metric) => (metric === 'arc' ? ARC_ROWS : [metric])));
 

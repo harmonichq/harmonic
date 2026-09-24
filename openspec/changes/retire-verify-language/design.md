@@ -215,8 +215,8 @@ outside archived changes, frozen ledger blocks and `docs/scope/` history.
    the utility strip. The DESIGN.md left-tab bullet's "in-flight Verify
    redesign" clause is re-grounded too, because the `.card h2::before` accent no
    longer ships in `frontend/`.
-7. **Changes' Trial outcome table leads with the served target** (coordinator
-   ruling F1, whole-diff review). The re-pointed prose said Changes puts a
+7. **Changes' Trial outcome table leads with the served target** (review ruling
+   RR1, whole-diff review). The re-pointed prose said Changes puts a
    Trial's target metric first, and on the base it did not: a Trial's rows arrive
    in the served TIR, TBR, TAR order with no role, and only a Focus's served
    mapped outcome was sorted and marked. The product now makes the prose true.
@@ -226,11 +226,13 @@ outside archived changes, frozen ledger blocks and `docs/scope/` history.
    marked. The Trial view and the history record view both pass the served
    `target_metrics`. A metric key is its own row; the Post-meal arc is its peak
    and nadir rows (CONTEXT.md "Post-meal arc"), the reading the server gives a
-   Focus's arc outcome. Nothing is inferred from the setting, and no served
-   payload changes. A whole-profile Trial's `arc` target has no served row, so
+   Focus's arc outcome. `tests/test_arc_rows_mirror.py` holds that frontend copy
+   identical to the rows the server serves for a Focus's `arc` (review ruling
+   RR8), so it is never a second source of truth. Nothing is inferred from the
+   setting, and no served payload changes. A whole-profile Trial's `arc` target has no served row, so
    its TIR row leads alone. S169 checks the lead on `c3-trial` (served target
    `tbr`). Sanction: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`,
-   with the coordinator's ruling F1: a small shipped-surface revision.
+   with review ruling RR1: a small shipped-surface revision.
 
 ### Closed inventory at the base
 
@@ -253,7 +255,7 @@ may keep it as a retirement pointer.
 | `CONTEXT.md:609` | "The lead story at the top of Verify" | The **Digest** entry is deleted (Q4) |
 | `CONTEXT.md:621` | "the Verify footnote reports the sweep's result…" | The desk does not show tracked candidates; `/api/pattern-sweep` serves them |
 | `CONTEXT.md:671` | "Verify surface shows a clean before/after…" | "Changes shows a clean before-and-Trial comparison anchored to the change date" |
-| `CONTEXT.md:675` | "the before/after Verify foregrounds" | Changes' outcome table leads with the rows served for the Trial's served target metric, marked as its target (coordinator ruling F1, which made this true). Overall TIR stays: the served comparison always carries `tir` |
+| `CONTEXT.md:675` | "the before/after Verify foregrounds" | Changes' outcome table leads with the rows served for the Trial's served target metric, marked as its target (review ruling RR1, which made this true). Overall TIR stays: the served comparison always carries `tir` |
 | `CONTEXT.md:689` | "Verify tracks it in **two dimensions**" | "Changes follows it in **two dimensions**" |
 | `CONTEXT.md:701` | "(foregrounded in Verify)" | "(led by Changes and reported in the watch dock)" |
 | `CONTEXT.md:709` | "from Diagnose through Verify" | "from Diagnose through Changes" |
@@ -427,7 +429,7 @@ with the coordinator's ruling F2.
 tree search finds no import outside those tests (coordinator finding F1). Its only
 private helpers with no other caller are `_profile_switch_diff` and `_candidate`;
 `_candidate` was called only from `detect_trial`, and was deleted with it once
-sub-order 1 found no other caller (coordinator ruling F4). Every other helper it
+sub-order 1 found no other caller (review ruling RR4). Every other helper it
 calls has a production caller: `_deliberate`, `_is_revert`, `_maturing`,
 `_slot_label`, `_switch_candidates`, `basal_slot_regimes`, `dose_regimes` and
 `TrialView`. The production path is

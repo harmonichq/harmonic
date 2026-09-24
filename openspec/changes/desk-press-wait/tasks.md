@@ -54,6 +54,9 @@ run-order positions on b03431d2 (43 tests).
       `page.locator('.gf-stage-day')` to be visible right after `openDesk`,
       before the first read of Day (ADR 457 decision 4). Tests 24 and 25 stay as
       they are.
+- [ ] 2.5 `frontend/desk.browser.test.mjs` and `frontend/diagnose-replay.mjs`
+      ship in the public tree: their new or changed comments may cite ADR 457,
+      but never a `docs/scope/` or `openspec/changes/` path.
 
 ## 3. Verify without a port (worker)
 
@@ -65,8 +68,10 @@ run-order positions on b03431d2 (43 tests).
       `railRowLocator` test and R8.
 - [ ] 3.3 `npx --yes @fission-ai/openspec@1 validate --all --strict`,
       `python3 scripts/check_adr_numbers.py`,
-      `python3 scripts/check_owned_identifiers.py` and
-      `python3 scripts/check_public_allowlist.py` pass.
+      `python3 scripts/check_owned_identifiers.py`,
+      `python3 scripts/check_public_allowlist.py` and AGENTS.md's public-tree
+      scan (`build_public_tree.py`, then `check_public_links.py` and
+      `scan_public_tree.py` over a fresh directory) pass.
 
 ## 4. Verify in a browser (coordinator; serial, after `npm ci && npm run build`)
 

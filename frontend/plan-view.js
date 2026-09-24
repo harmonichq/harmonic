@@ -355,18 +355,18 @@ function planStatus() {
   const { state, confirmed_at: confirmedAt, on_pump: onPump } = plan.verdict;
   if (state === 'confirmed') {
     return `<div class="gf-status" data-state="confirmed" tabindex="-1"><p>${onPump
-      ? `✓ On pump since ${e(stamp(confirmedAt))} — the pump matches your plan.`
+      ? `✓ On pump since ${e(stamp(confirmedAt))}. The pump matches your plan.`
       : `✓ Confirmed on the pump ${e(stamp(confirmedAt))}. The latest pump read no longer matches this Plan.`}</p>${flash}</div>`;
   }
   if (state === 'mismatch') {
     const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null);
     const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param])}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
-    return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values — likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
+    return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values. This is likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
   }
   if (onPump) {
-    return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — on the pump, awaiting confirmation. The latest pump read holds this Plan; it is confirmed automatically once that read is reconciled.</p>${flash}</div>`;
+    return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending: on the pump, awaiting confirmation. The latest pump read holds this Plan; it is confirmed automatically once that read is reconciled.</p>${flash}</div>`;
   }
-  return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.</p>${flash}</div>`;
+  return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending: program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.</p>${flash}</div>`;
 }
 
 // The fields describe only the recorded Plan. A draft saved beside a pending
@@ -521,7 +521,7 @@ function bind(host) {
         // Nothing is sent anywhere: the wearer keys the flagged values in, and
         // the next fetch's profile is what settles it.
         memory.rekeyedAt = detectedAt();
-        memory.flash = 'Re-key the flagged values on your pump — this rechecks on the next fetch';
+        memory.flash = 'Re-key the flagged values on your pump. This rechecks on the next fetch';
         render();
       } else if (action === 'pump-settings') {
         openUtility('pump', button);

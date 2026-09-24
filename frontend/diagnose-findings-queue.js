@@ -26,8 +26,9 @@ export const EMPTY_LINE = 'No pattern or setting asserts a direction in this win
 export const EMPTY_SIFT_LINE = 'No findings match the current filters.';
 /** Term 42 — the sentence that lives inside the doubled gap, naming the tail. */
 export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
-/** Term 14 — a held row's reason line; the suffix is the backend's own words. */
-export const HELD_PREFIX = 'no direction asserted — ';
+/** Term 14 — a held row's reason line; the suffix is the backend's own words.
+    A colon joins the label to that clause (ADR 451: no prose em dash). */
+export const HELD_PREFIX = 'no direction asserted: ';
 
 /* Term 36 — glyph + word, at caps-label rank. The GLYPH differentiates; the hue
    only has to stay out of the way (it is `--secondary`, never a clinical token and
@@ -345,7 +346,7 @@ function detailFor(row) {
   }
   if (row.register === 'assert') return assertDetail(row);
   // held / blind — WORDS, not a number spine (term 14). The reason is verbatim
-  // backend copy; only the prefix is ours, and the lock pins it byte for byte.
+  // backend copy; only the prefix is ours, and its node test pins it.
   return { kind: 'reason', text: `${HELD_PREFIX}${row.reason || ''}` };
 }
 

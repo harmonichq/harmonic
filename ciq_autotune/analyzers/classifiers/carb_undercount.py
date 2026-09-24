@@ -190,7 +190,7 @@ def classify_carb_undercount(
         return CarbUndercountVerdict(
             matched=False,
             detail=(
-                f"the meal peaked at {peak:.0f} mg/dL — it didn't run away, so the "
+                f"the meal peaked at {peak:.0f} mg/dL and didn't run away, so the "
                 "logged carbs look about right"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -205,7 +205,7 @@ def classify_carb_undercount(
         return CarbUndercountVerdict(
             matched=False,
             detail=(
-                f"the meal ran to {peak:.0f} mg/dL, but {gate.detail} — the rise is a "
+                f"the meal ran to {peak:.0f} mg/dL, but {gate.detail}; the rise is a "
                 "recovery, not an under-covered meal"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -231,7 +231,7 @@ def classify_carb_undercount(
             matched=False,
             detail=(
                 f"peaked at {peak:.0f} mg/dL but the excursion implies only "
-                f"~{implied_carbs:.0f} g vs {logged:.0f} g logged — within counting "
+                f"~{implied_carbs:.0f} g vs {logged:.0f} g logged, within counting "
                 "range"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -246,7 +246,7 @@ def classify_carb_undercount(
     return CarbUndercountVerdict(
         matched=True,
         detail=(
-            f"ran away to {peak:.0f} mg/dL despite the bolus — the excursion implies "
+            f"ran away to {peak:.0f} mg/dL despite the bolus; the excursion implies "
             f"~{implied_carbs:.0f} g vs {logged:.0f} g logged "
             f"({ratio:.1f}x), a likely carb undercount"
         ),

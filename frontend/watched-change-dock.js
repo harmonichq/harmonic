@@ -31,7 +31,7 @@ export const KIND = {
   idle: 'Nothing being watched',
 };
 /** The sentence a 98px reserve exists to protect — it wraps and never ellipsizes. */
-export const PLAN_DETAIL = 'Staged, not applied — nothing has changed on the pump';
+export const PLAN_DETAIL = 'Staged, not applied: nothing has changed on the pump';
 export const IDLE_TITLE = 'No change staged, no trial or focus active';
 export const IDLE_DETAIL = 'Stage a change from a finding to start one.';
 

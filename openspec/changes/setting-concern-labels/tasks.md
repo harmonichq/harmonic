@@ -327,3 +327,34 @@
   on isf-strengthen): coordinator-owned, integration render phase.
 - [ ] 6.4 The complete desk ledger once per size (174 selected, zero failed,
   zero deferred): coordinator-owned, integration.
+
+## 7. Desk copy carries no prose em dash (R451, widened at the whole-diff review)
+
+- [x] 7.1 Rewrite every prose em dash in the served sentences a desk module
+  prints: the classifiers' Occurrence details, the context-gate and override
+  clauses they carry, the over-treated-low sentences, and each lever's Guide
+  meaning and recommendation (design.md, "Desk copy carries no prose em dash").
+  Reachability is proven per line. Notes, disclaimers, the nadir beat, error
+  text and CLI output stay.
+- [x] 7.2 Rewrite the desk's own prose em dashes in `frontend/*.js`: Diagnose's
+  setting panels, the record's ending and context lines, the Plan status lines
+  and re-key message, the advisory line, the dock's staged sentence, the
+  findings queue's held-row prefix ("no direction asserted: <served reason>"),
+  and the Glossary's definitions. Label separators and the empty-value glyph
+  stay.
+- [x] 7.3 Rewrite the four Guide articles in `docs/kb/`.
+- [x] 7.4 Carry the consequences:
+  - the node and pytest assertions that pin the moved text;
+  - the findings-projection fixture, with its frozen over-treated-low exposure
+    slice re-captured from the producer;
+  - the exploration, regenerated;
+  - every drift check green;
+  - the dose-ratio baseline, unchanged, because no matched text moved.
+- [x] 7.5 Guards, each failing on base: the catalog payload, the exposure
+  producer's sentences, the Glossary definitions and the Guide articles.
+- [x] 7.6 Amend S4 (the advisory line) at the end of the ledger's #451
+  amendment section. Add a dated amendment line under the lock's verbatim
+  advisory string. Move the desk browser suite's chrome assertion.
+- [ ] 7.7 Coordinator-run legs: the desk replay `ONLY=S4` at 1280x720 and
+  1440x900, and `frontend/desk.browser.test.mjs`. The complete ledger stays
+  folded into 6.4.

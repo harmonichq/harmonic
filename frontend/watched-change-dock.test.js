@@ -98,7 +98,7 @@ test('term 47 · with nothing watched, a staged Plan fills the slot', () => {
   assert.equal(view.kind, 'Plan · staged');
   assert.equal(view.title, STAGED.title);
   assert.equal(flat(view), `${STAGED.values} · ${PLAN_DETAIL}`);
-  assert.equal(PLAN_DETAIL, 'Staged, not applied — nothing has changed on the pump');
+  assert.equal(PLAN_DETAIL, 'Staged, not applied: nothing has changed on the pump');
   // A staged run whose half hours disagree serves no values; the sentence stands alone.
   assert.equal(flat(watchDockView({ staged: { ...STAGED, values: '' } })), PLAN_DETAIL);
   assert.deepEqual(view.route, { label: 'Open Changes', to: 'plan' });

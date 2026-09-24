@@ -152,7 +152,7 @@ def classify_suspend(
         return SuspendVerdict(
             matched=False,
             detail=(
-                f"suspend episode was only {duration_min:.0f} min — "
+                f"suspend episode was only {duration_min:.0f} min: a "
                 f"trivial cut (≤{min_suspend_duration_min:.0f} min threshold), "
                 "not an over-delivery signal"
             ),
@@ -174,7 +174,7 @@ def classify_suspend(
             matched=True,
             detail=(
                 f"Control-IQ suspended basal for {duration_min:.0f} min and BG "
-                f"reached {nadir_bg:.0f} mg/dL — suspend preceded a real/near low"
+                f"reached {nadir_bg:.0f} mg/dL: the suspend preceded a real/near low"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             nadir_bg=nadir_bg,
@@ -188,7 +188,7 @@ def classify_suspend(
         matched=False,
         detail=(
             f"Control-IQ suspended basal for {duration_min:.0f} min but BG stayed "
-            f"≥{near_low_mgdl:.0f} mg/dL throughout — routine predictive trimming, "
+            f"≥{near_low_mgdl:.0f} mg/dL throughout: routine predictive trimming, "
             "not an over-delivery signal"
         ),
         evidence_tier=EvidenceTier.OBSERVED,

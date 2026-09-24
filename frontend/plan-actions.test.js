@@ -207,7 +207,7 @@ test('the On pump time stays on the confirming read after a later read', async (
     pump: { profile: held, fetched_at: '2024-06-05 09:40:00' } });
   assert.equal(plan.phase(), 'On pump');
   const status = statusOf(surface.innerHTML);
-  assert.match(status, new RegExp(`✓ On pump since ${stamp('2024-06-03 08:05:00')} — the pump matches your plan\\.`));
+  assert.match(status, new RegExp(`✓ On pump since ${stamp('2024-06-03 08:05:00')}\\. The pump matches your plan\\.`));
   assert.doesNotMatch(status, new RegExp(stamp('2024-06-05 09:40:00')));
   assert.equal(field(surface.innerHTML, 'On pump'), stamp('2024-06-03 08:05:00'));
 });

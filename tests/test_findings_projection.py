@@ -1827,6 +1827,23 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertEqual(len(fired_rows), 1)
         self.assertEqual(fired_rows[0]["family"], "lows")
 
+    def test_served_occurrence_sentences_join_no_clauses_with_an_em_dash(self):
+        # ADR 451: an Occurrence's served sentence and every classifier's detail
+        # beside it print in the desk's Occurrence facts, so none joins its
+        # clauses with an em dash (DESIGN.md, Voice and user-copy register, rule 1).
+        from ciq_autotune.explore_exposures import build_exposures
+
+        cgm, bolus = gen._over_treated_fixture_events()
+        produced = build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        occurrences = [occ for family in produced.values() for occ in family["occurrences"]]
+        sentences = [occ["text"] for occ in occurrences if occ["text"]] + [
+            verdict["detail"] for occ in occurrences for verdict in occ["verdicts"]]
+        # The population reaches an attributed low, its rebound and the context gate.
+        self.assertTrue(any("over-treated" in text for text in sentences))
+        self.assertTrue(any("from-flat meal climb" in text for text in sentences))
+        for text in sentences:
+            self.assertNotIn("—", text)
+
     def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
         from ciq_autotune.explore_exposures import build_exposures
 
@@ -1839,6 +1856,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
 
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
+        # The generator reads its six selected occurrences back from the frozen
+        # fixture and never runs this producer, so each is held equal to it here:
+        # every served sentence included, the outranked low's correction-on-IOB
+        # detail among them (ADR 451). The frozen slice never carried
+        # `outcome_minute` for five of the six, so it is left out of the match.
+        def unstamped(occurrence):
+            return {key: value for key, value in occurrence.items()
+                    if key != "outcome_minute"}
+
+        selected = gen._real_over_treated_low_occurrences()
+        self.assertEqual(set(selected), {"fired", "rebound", "near_miss", "clean",
+                                         "no_data", "outranked"})
+        for name, item in selected.items():
+            family = "highs" if name == "rebound" else "lows"
+            with self.subTest(occurrence=name):
+                live = [unstamped(occ) for occ in produced[family]["occurrences"]
+                        if occ["ep_id"] == item["ep_id"] and occ["t"] == item["t"]]
+                self.assertEqual(live, [unstamped(item)])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
         self.assertEqual(fired["t"], "2026-08-13 13:55:00")
         self.assertEqual(rebound["t"], "2026-08-13 14:35:00")

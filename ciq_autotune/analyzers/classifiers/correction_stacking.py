@@ -207,7 +207,7 @@ def classify_correction_stacking(
             matched=False,
             detail=(
                 "no two user corrections landed within "
-                f"{stack_window_min:.0f} min — nothing stacked to judge"
+                f"{stack_window_min:.0f} min, so nothing stacked to judge"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             silence_reason=SilenceReason.NO_TRIGGER,
@@ -232,7 +232,7 @@ def classify_correction_stacking(
             matched=False,
             detail=(
                 f"the second correction landed with BG high ({bg_at_stack:.0f} mg/dL) "
-                f"and still rising ({slope:.1f} mg/dL/min) — a rational chase of a "
+                f"and still rising ({slope:.1f} mg/dL/min): a rational chase of a "
                 "runaway high, not an over-stack"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -256,8 +256,8 @@ def classify_correction_stacking(
         return CorrectionStackingVerdict(
             matched=False,
             detail=(
-                f"the second correction landed while {gate.detail} — a recovery, "
-                "not a fresh over-stack"
+                f"the second correction landed while {gate.detail}; it was a "
+                "recovery, not a fresh over-stack"
             ),
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=SilenceReason.UPSTREAM_CAUSE,
@@ -297,7 +297,7 @@ def classify_correction_stacking(
             matched=True,
             detail=(
                 f"a second correction landed {gap_min:.0f} min after the first with "
-                f"{iob_at_stack:.1f} U still on board and BG not high/rising — it then "
+                f"{iob_at_stack:.1f} U still on board and BG not high/rising; it then "
                 f"drove BG to {nadir_bg:.0f} mg/dL {mins_to_low:.0f} min later. Give "
                 "corrections time to act before adding more"
             ) + (override_enrichment(stack, scenario_config=scenario_config) or ""),
@@ -329,7 +329,8 @@ def classify_correction_stacking(
         silence = SilenceReason.HORIZON_EXPIRED
     return CorrectionStackingVerdict(
         matched=False,
-        detail=f"corrections landed {gap_min:.0f} min apart but {reason} — not a risky stack",
+        detail=(f"corrections landed {gap_min:.0f} min apart but {reason}, so this is "
+                "not a risky stack"),
         evidence_tier=EvidenceTier.OBSERVED,
         silence_reason=silence,
         stack_t=stack.t,

@@ -193,7 +193,7 @@ class TriggerCenteringTest(unittest.TestCase):
         anchors = collect_anchors([m1, m2], cgm, [])
         ep = EpisodeAnchors(anchors=anchors)
         trigger_step = Step(t=m2.t,
-                            text="ran away to 330 mg/dL despite the bolus — a likely "
+                            text="ran away to 330 mg/dL despite the bolus, a likely "
                                  "carb undercount",
                             evidence_tier=EvidenceTier.INFERRED)
         attr = Attribution(lever=Lever.CARB_UNDERCOUNT, trigger="meal",
@@ -399,7 +399,7 @@ class OverTreatedLowReboundArcTest(unittest.TestCase):
         ep = EpisodeAnchors(anchors=anchors)
         trigger_step = Step(
             t=nadir_t,
-            text="BG bottomed at 50 mg/dL, then rebounded to 300 mg/dL — the low "
+            text="BG bottomed at 50 mg/dL, then rebounded to 300 mg/dL; the low "
                  "was likely over-treated with fast carbs",
             evidence_tier=EvidenceTier.INFERRED,
         )

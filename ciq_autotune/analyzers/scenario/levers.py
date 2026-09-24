@@ -76,7 +76,7 @@ _META = {
     Lever.CARB_UNDERCOUNT: (
         "Carb undercount",
         Exposure.MEALS,
-        "Carbs were likely undercounted — estimate higher, or split the dose for "
+        "Carbs were likely undercounted. Estimate higher, or split the dose for "
         "big meals.",
         "You bolused for a meal, but glucose still ran away high afterward. The "
         "dose covered fewer carbs than the meal actually held.",
@@ -84,7 +84,7 @@ _META = {
     Lever.LATE_BOLUS: (
         "Late bolus",
         Exposure.MEALS,
-        "Glucose was already climbing at the dose — try bolusing ~15 min before "
+        "Glucose was already climbing at the dose. Try bolusing ~15 min before "
         "eating.",
         "Glucose was already climbing when the meal bolus landed, so the insulin "
         "spent its first stretch just catching up to a rise already underway.",
@@ -92,7 +92,7 @@ _META = {
     Lever.MEAL_OVER_DELIVERY: (
         "Meal over-delivery",
         Exposure.MEALS,
-        "The meal dose ran glucose near-low — a slightly smaller dose may leave "
+        "The meal dose ran glucose near-low. A slightly smaller dose may leave "
         "less to walk back.",
         "The meal dose was a touch strong, so glucose dropped toward a low "
         "afterward, leaving something to walk back.",
@@ -100,14 +100,14 @@ _META = {
     Lever.OVER_TREATED_LOW: (
         "Over-treated low",
         Exposure.LOWS,
-        "The low rebounded high — follow your usual low-treatment plan and recheck "
+        "The low rebounded high. Follow your usual low-treatment plan and recheck "
         "in 15 min before treating again.",
         "A low got more fast carbs than it needed and rebounded high.",
     ),
     Lever.CORRECTION_STACKING: (
         "Correction stacking",
         Exposure.CORRECTION_CLUSTERS,
-        "Corrections stacked, then went low — give one ~1–2 h to act before adding "
+        "Corrections stacked, then went low. Give one ~1–2 h to act before adding "
         "more.",
         "Corrections landed back-to-back before the first had finished working, "
         "and the combined insulin overshot into a low.",
@@ -115,7 +115,7 @@ _META = {
     Lever.CORRECTION_ON_IOB: (
         "Correction on active insulin",
         Exposure.LOWS,
-        "A correction landed on insulin still working, then went low — give one "
+        "A correction landed on insulin still working, then went low. Give one "
         "~1–2 h to act before adding more.",
         "A correction landed while an earlier dose was still active; together they "
         "carried you low.",
@@ -123,7 +123,7 @@ _META = {
     Lever.MISSED_MEAL: (
         "Missed / unannounced meal",
         Exposure.HIGHS,
-        "Glucose rose like a meal with no bolus near it — bolusing (even late) "
+        "Glucose rose like a meal with no bolus near it. Bolusing (even late) "
         "keeps the peak down.",
         "Glucose rose with the shape of a meal but no bolus sits near it. A meal "
         "that went un-bolused, or was bolused very late.",
@@ -137,11 +137,11 @@ _META = {
     Lever.MEAL_BOLUS_SHORT: (
         "Meal bolus fell short",
         Exposure.HIGHS,
-        "A correction was needed behind this meal dose — worth watching how often "
-        "that happens before changing anything.",
+        "A correction was needed behind this meal dose. It is worth watching how "
+        "often that happens before changing anything.",
         "You bolused for the meal, glucose climbed anyway, and a correction was "
         "needed afterward. The dose did not cover what followed. This says nothing "
-        "about how many carbs the meal held — only that the dose given fell short of "
+        "about how many carbs the meal held, only that the dose given fell short of "
         "the outcome.",
     ),
 }

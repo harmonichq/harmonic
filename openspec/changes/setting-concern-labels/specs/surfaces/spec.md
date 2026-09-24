@@ -317,3 +317,37 @@ visible.
 - **WHEN** the reader stages the correction factor
 - **THEN** the dock's title reads "Correction factor · <served direction>" and does not truncate
 - **AND** its detail line shows "1 U : <current> mg/dL → 1 U : <recommended> mg/dL" in full
+
+### Requirement: Desk copy joins no clauses with an em dash
+
+User copy that reaches the desk SHALL join no clauses with an em dash, and SHALL
+set off no parenthetical with one (DESIGN.md, Voice and user-copy register,
+rule 1). This covers:
+
+- every served sentence a desk module prints: an Occurrence's cause text, each
+  judged classifier's detail, and each lever's Guide meaning and recommendation;
+- the desk's own strings, including accessible labels and the Glossary's
+  definitions;
+- the Guide's articles.
+
+A dash after a short label, followed by a value or a verbless fragment, is a
+label separator and MAY remain. Examples are "Ready to judge — …", "Not met — …",
+"INSUFFICIENT SAMPLE — …", "<weekday> — no data" and "Label — value" tooltips.
+The "—" empty-value glyph MAY remain. Meaning, every served number and every
+engine code SHALL be unchanged.
+
+#### Scenario: A served Occurrence sentence reads without a prose em dash
+
+- **GIVEN** a synthetic over-treated low whose rebound the context gate explains
+- **WHEN** the exposure producer serves its Occurrences
+- **THEN** every Occurrence sentence and every classifier detail it serves contains no em dash
+
+#### Scenario: The Guide and the Glossary read without a prose em dash
+
+- **WHEN** the Guide's catalog, its four articles and the Glossary's definitions are read
+- **THEN** none contains an em dash
+
+#### Scenario: The persistent advisory line is two short sentences
+
+- **WHEN** any destination renders the persistent chrome
+- **THEN** its advisory line reads "Advisory only. Review with your clinician before changing pump settings."

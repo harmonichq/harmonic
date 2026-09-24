@@ -349,7 +349,7 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
     }));
     assert.match(chrome.identity, /Harmonic advisory/);
     assert.ok(chrome.carbs.includes('＋'), 'Log carbs lost its fullwidth plus');
-    assert.equal(chrome.advisory, 'Advisory only — review with your clinician before changing pump settings.');
+    assert.equal(chrome.advisory, 'Advisory only. Review with your clinician before changing pump settings.');
     for (const label of ['Carb questions', 'Guide', 'Settings', 'Glossary']) {
       assert.ok(chrome.utilities.some((text) => text.includes(label)), `the footer lost ${label}`);
     }

@@ -523,7 +523,7 @@ export const S4 = async (page) => {
       `the identity mark is not the locked one: ${chrome.identity}`);
     ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
       `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
-    ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',
+    ok(chrome.advisory === 'Advisory only. Review with your clinician before changing pump settings.',
       `the advisory line drifted: ${JSON.stringify(chrome.advisory)}`);
     for (const label of ['Guide', 'Settings', 'Glossary']) {
       ok(chrome.utilities.some((t) => t.includes(label)), `the footer lost ${label}: ${JSON.stringify(chrome.utilities)}`);

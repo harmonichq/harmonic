@@ -29,7 +29,7 @@
             "cited_window": null,
             "evidence_tier": "inferred",
             "t": "2024-05-24 12:05:00",
-            "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
+            "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it; bolusing ~15 min before eating would blunt the spike"
           },
           {
             "citation": {
@@ -648,7 +648,7 @@
             "cited_window": null,
             "evidence_tier": "inferred",
             "t": "2024-05-25 12:05:00",
-            "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
+            "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it; bolusing ~15 min before eating would blunt the spike"
           },
           {
             "citation": {
@@ -1269,7 +1269,7 @@
             "cited_window": null,
             "evidence_tier": "inferred",
             "t": "2024-05-26 12:05:00",
-            "text": "ran away to 360 mg/dL despite the bolus \u2014 the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
+            "text": "ran away to 360 mg/dL despite the bolus; the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
           },
           {
             "citation": {
@@ -1440,7 +1440,7 @@
         ],
         "priority": 0,
         "rank": 1,
-        "recommendation": "Glucose was already climbing at the dose \u2014 try bolusing ~15 min before eating.",
+        "recommendation": "Glucose was already climbing at the dose. Try bolusing ~15 min before eating.",
         "recurrence": 0.1477,
         "title": "Late bolus"
       }

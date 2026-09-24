@@ -8,9 +8,10 @@ exposure feed moves in the findings projection and the Pattern roster.
 Both payloads go through the real `prepare_findings_projection` and
 `build_outcome_patterns` with the browser scenarios exactly as
 `scripts/gen_findings_projection_fixtures.py` assembles them, in the whole day,
-every `WINDOWS` entry and the drawn 12:00-15:00 window. It prints every family
+every `WINDOWS` entry, the drawn 12:00-15:00 window and the windows the browser
+tests request. It prints every family
 tally, roster and row field that differs (row `evidence` lists excluded: they
-carry the rows themselves), then whether each window's row order held.
+carry the rows themselves), and each window's row order when it moved.
 """
 import json
 import pathlib
@@ -43,7 +44,11 @@ def served(path):
     projection = prepare_findings_projection(
         analysis=analysis, exposures=exposures, scenarios=scenarios)
     windows = {}
-    for name, bounds in [*g.WINDOWS.items(), ("drawn", (720, 900))]:
+    # The projection fixture's named windows, the drawn window, and the windows the
+    # browser fast-gate tests request (the four day parts and a 02:15-04:45 scope).
+    browser = [("00-06", (0, 360)), ("06-12", (360, 720)), ("12-18", (720, 1080)),
+               ("18-24", (1080, 1440)), ("0215-0445", (135, 285))]
+    for name, bounds in [*g.WINDOWS.items(), ("drawn", (720, 900)), *browser]:
         query = WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds)
         windows[name] = projection.project(query, analysis_generation=g.ANALYSIS_GENERATION)
     tallies = {family: {key: value for key, value in body.items() if key != "occurrences"}
@@ -75,8 +80,11 @@ print("== Pattern roster")
 diff(base[1], branch[1])
 for name, before in base[2].items():
     after = branch[2][name]
-    print(f"== window {name}: row order held",
-          [r["id"] for r in before["rows"]] == [r["id"] for r in after["rows"]])
+    order = [[r["id"] for r in rows["rows"]] for rows in (before, after)]
+    print(f"== window {name}: row order held", order[0] == order[1])
+    if order[0] != order[1]:
+        print("ORDER before", order[0])
+        print("ORDER after ", order[1])
     strip = lambda rows: {r["id"]: {k: v for k, v in r.items() if k != "evidence"} for r in rows}
     diff(strip(before["rows"]), strip(after["rows"]))
     diff({k: v for k, v in before.items() if k != "rows"},

@@ -2,77 +2,66 @@
 
 ## Status
 
-**Triage source for #454.** An ordinary ticket change. It touches fixture
-generators, the fixture-only Pattern case-file mirror, their committed outputs and
-the tests that read them; no shipped desk code, analyzer, staging predicate, cap or
-floor. The desk's frozen behavior ledger (`mockups/harmonic-v2-desktop.behavior.md`)
-is not amended: its replay runs on QA case stores, which this change does not reach.
+**Triage source for #454**, widened by the release coordinator's rulings
+(2026-09-23, Q3 delegation; recorded in `design.md`). It changes the case-file
+producer's served reason, the fixture generators, the fixture-only Pattern
+case-file mirror, their committed outputs and the tests that read them, and adds
+one frozen-ledger story (S182). No analyzer, staging predicate, cap or floor
+changes, and no desk module changes.
 
 ## Why
-
-Two fixture-side gaps survived #432. Each lets a synthetic capture say something the
-real producer never would, and the browser gates certify the advisory desk against
-these captures.
 
 - **The Pattern fixture mirror keeps habits outside the Pattern's rate family.** The
   Python case producer judges a Pattern row, and its selected reason, only by the
   habit members whose rate family is the Pattern's own. The fixture-only mirror the
-  browser gates read judges every habit member. The real roster admits
-  out-of-family members whenever a scenario row exists for the lever: Correction
-  stacking is a member of Lows after correcting highs but is counted over
-  correction clusters, and High-carb sequence and Repeat eating are members of
-  Highs after meals with no rate family at all. Reproduced 2026-09-23 on
-  `origin/main` b03431d2: with either member added, the mirror serves an extra
-  habit entry that the Python producer, over the same roster, drops
-  (`docs/scope/454-mirror-family.repro.mjs` fails 2 of 2;
-  `docs/scope/454-backend-family.repro.py` prints the Python answer). No committed
-  roster carries such a member, so nothing diverges yet.
-- **The manufactured exposure rows are low-shaped whatever their family.** The
-  Diagnose workstation fixture generator stamps all 46 of its manufactured exposure
-  Occurrences — 20 lows, 20 meals, 4 highs, 2 correction clusters — with kind
-  `low` and label `Low`; an `iob_stacking` verdict, which is not a classifier the
-  app has, with silence reason `no_signal`, which is outside the closed set; an
-  Over-treated low verdict on meal, high and correction rows; and, on every claimed
-  row, a low-treatment sentence as its cause text, so the claimed meal the Highs
-  after meals case file selects reads "Treated a low at 07:35 …" as its Late bolus
-  cause. #432 froze the kinds and verdicts, not the text.
+  browser gates read judges every member. The real roster admits such members
+  (Correction stacking under Lows after correcting highs; High-carb sequence and
+  Repeat eating under Highs after meals). Reproduced on `origin/main` b03431d2:
+  `docs/scope/454-mirror-family.repro.mjs` fails 2 of 2, and
+  `docs/scope/454-backend-family.repro.py` prints the producer's answer.
+- **The manufactured rows are low-shaped whatever their family.** All 46
+  manufactured exposure Occurrences carry kind `low`, a classifier the app does not
+  have (`iob_stacking`) with a silence reason outside the closed set, Over-treated
+  low verdicts on meal, high and correction rows, and a low-treatment sentence as
+  every claimed row's cause. The two correction rows are claimed by Correction on
+  active insulin, which only a low can drive. The Highs serve a low glucose. The
+  case-file capture's claimed members and the comparison capture's low rows carry
+  pairings the producer never serves.
+- **A claimed Occurrence prints its classifier sentence twice.** The served cause
+  text and the claimant's habit sentence are the same string on every claimed row
+  whose claimant drove the episode (measured over the real producers on QA case
+  stores: pattern-near-tie Highs after meals 3 of 3, Carb undercount 3 of 3, and
+  more in `design.md`), so the desk prints it on the cause line and again on the
+  claimant's line.
 
 ## What changes
 
-- The fixture-only mirror judges exactly the Pattern's in-family habit members, for
-  the row verdict and the selected reason alike, reading each lever's rate family
-  from a table the projection fixture generator freezes from the backend's
-  evidence-population policy. The hand-written, unread and partly wrong table the
-  capture publishes today is replaced by it. Two frozen Python answers, one per kind
-  of out-of-family member, hold the mirror to the producer.
-- Every manufactured exposure row carries the kind, label, judged classifiers,
-  silence reasons and cause text the real exposure feed serves for its family; a
-  claimed row carries its own lever's verdict matched, with that verdict's sentence
-  as its text; and a High row's anchor glucose is one a High anchor can carry.
-- The generators regenerate every committed artifact the change moves, in one
-  ordered pass, with each drift check green.
+- The case-file producer serves the claimant's sentence once, as the cause's text,
+  in single-habit and Pattern case files; the fixture mirror applies the same rule.
+  Story S182 proves the desk prints it once.
+- Every manufactured row carries its producer's shape; the two correction rows are
+  claimed by Correction stacking, which moves the queue exactly as `design.md`
+  lists.
+- The fixture mirror judges exactly the Pattern's in-family habit members, from a
+  table frozen from the backend's own policy, held to frozen Python answers.
+- Every committed artifact the change moves is regenerated by its generator with
+  its drift check green.
 
 ## Not in this change
 
-No analyzer, classifier, staging, cap, floor, admission, claim, family tally,
-Pattern count, queue order or sentence change; no shipped desk code. The
-correction-cluster rows keep their claim. The event-comparison capture's
-exploration-only `views` (reported to the release coordinator as a finding). The
-duplicated classifier sentence on a claimed Pattern row's cause and claimant lines,
-which production serves today (reported to the release coordinator as a finding).
-No pump write, real-data read or vendor fetch.
+No analyzer, classifier, staging, cap, floor or admission change. The Pattern
+roster does not move. Manufactured rows stay one per episode (`design.md`,
+"Row-level, not episode-level"). No pump write, real-data read or vendor fetch.
 
 ## Impact
 
+- Served: `ciq_autotune/finding_case_file.py` (the reason's sentence rule).
 - Generators: `.claude/qa/gen_synthetic_fixtures.py`,
   `scripts/gen_findings_projection_fixtures.py`,
-  `mockups/diagnose-event-comparison.synthetic/generate.mjs`.
+  `mockups/diagnose-event-comparison.synthetic/generate.mjs`,
+  `mockups/harmonic-v2.exploration/generate.py` (rerun only).
 - Fixture-only mirror: `mockups/diagnose-event-comparison.synthetic/project.mjs`.
-- Regenerated: `mockups/diagnose-workstation.synthetic/explore-exposures.capture.json`
-  and `payload.json` (checked by `scripts/check_demo_fixtures.py`),
-  `frontend/__fixtures__/findings-projection.json`
-  (`scripts/gen_findings_projection_fixtures.py --check`),
-  `mockups/diagnose-event-comparison.synthetic/capture.json`
-  (`generate.mjs --check`).
-- Tests: `frontend/browser-fixture-population.test.js`,
-  `frontend/diagnose-workstation.test.js`, `tests/test_synthetic_fixture_shapes.py`.
+- Desk contract: `mockups/harmonic-v2-desktop.behavior.md` (S182) and its replay
+  modules and inventory literals.
+- Tests: backend `tests/test_finding_case_file.py` and
+  `tests/test_synthetic_fixture_shapes.py`; node tests listed in `tasks.md`.

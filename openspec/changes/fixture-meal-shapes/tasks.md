@@ -1,79 +1,113 @@
 # #454 implementation checklist
 
-## 1. The Pattern mirror judges only its rate family
+## 1. A claimed Occurrence's sentence is served once (sub-order 1)
 
-- [ ] 1.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
+- [ ] 1.1 Implement behavioral-layer (MODIFIED) **A selected case-file Occurrence
+  serves why it was judged** in `ciq_autotune/finding_case_file.py`: one rule that
+  `_habit_reason` and `_pattern_reason` both pass their reason through, so on a
+  claimed row the claimant's entry serves a null sentence when its sentence equals
+  the cause's text. No other entry, cause, verdict, count or claim changes.
+- [ ] 1.2 In `tests/test_finding_case_file.py`, amend
+  `test_every_selected_reason_agrees_with_its_row`'s expected sentence to the rule,
+  and assert over every selected Occurrence of the `meal_facts` and
+  `correction_stacking` analyzer stores, and of a `pattern-near-tie` store
+  materialized from `scripts/qa_e2e_cases.py` (single-habit and Highs after meals
+  case files), that no habit entry's sentence equals the cause's text while each
+  cause keeps its text. Show it failing on the base for its feature reason.
+- [ ] 1.3 Apply the same rule in the fixture-only mirror
+  (`mockups/diagnose-event-comparison.synthetic/project.mjs` `patternReason`), and
+  test it through `projectPatternCaseFile` in
+  `frontend/diagnose-event-comparison.test.js` on a cloned capture whose claimed
+  row's claimant sentence equals the row's text; show it failing on the base
+  mirror.
+- [ ] 1.4 Regenerate `mockups/harmonic-v2.exploration` (`generate.py`); confirm
+  that only `focus.json`, `journey.json` and `workstation.json` move, and only by
+  claimant sentences that became null.
+- [ ] 1.5 In `frontend/c4.replay.test.js`, compose `block432`'s habit line as the
+  renderer does (a null sentence is omitted), so the S149/S150 helper tests read a
+  served null sentence the way the desk prints it.
+- [ ] 1.6 Add ledger story S182 for surfaces (MODIFIED) **A selected Occurrence
+  reads as its facts and served reason**, scenario "A claimed Occurrence prints its
+  sentence once": a dated `## #454 amendment — 2026-09-23` section in
+  `mockups/harmonic-v2-desktop.behavior.md` with the sanction line; `C4_STORIES.S182`
+  and its assertion helper in `frontend/c4.replay.mjs` (pattern-near-tie, All
+  charts, `pattern:highs_after_meals`, a claimed Occurrence selected: the served
+  cause carries text, the rendered cause line carries it, and no other rendered line
+  contains it); the export and registry entry in `frontend/desk-behavior.replay.mjs`;
+  `S182: 'pattern-near-tie'` in `frontend/replay-cases.mjs`; unit tests in
+  `frontend/c4.replay.test.js` (a unique app-only story on pattern-near-tie; the
+  helper passes on a once block and fails at its feature assertion, never its
+  premise, when a habit line repeats the cause sentence). Move the inventory
+  literals 171 · 152 · 19 to 172 · 153 · 19 in
+  `mockups/sweep/harmonic-v2-desktop/acceptance.py` and `acceptance.test.py`; run
+  `acceptance.py inventory` and the port-free classes. `SMOKE_STORIES` does not
+  change: the smoke slice already covers pattern-near-tie.
+
+## 2. Manufactured rows take their producer's shapes (sub-order 2)
+
+- [ ] 2.1 Implement behavioral-layer **Manufactured browser-gate rows carry only
+  shapes their producer can serve** in `.claude/qa/gen_synthetic_fixtures.py`
+  (`verdicts`, `occurrence`, `build_exposures`, `build_case_file_capture`) to
+  `design.md`'s row table: kind and label per family; the judged classifiers per
+  anchor kind; closed silence reasons; the correction-cluster rows claimed by
+  Correction stacking; a claimed row's own verdict matched with its detail equal to
+  the row's text and every other judged classifier calm; unclaimed rows
+  unjudgeable; High anchor glucose `250 + (draw − 58)`; each claimed case-file
+  member's claim text equal to its recorded sentence. Add, remove or reorder no
+  random draw. Correct the docstrings that describe the old shape.
+- [ ] 2.2 In `mockups/diagnose-event-comparison.synthetic/generate.mjs`, have the
+  lows comparison view judge only Over-treated low and Correction on active insulin.
+- [ ] 2.3 Add `tests/test_synthetic_fixture_shapes.py` (stdlib `unittest`) over the
+  committed `mockups/diagnose-workstation.synthetic/payload.json` exposures and the
+  event-comparison capture's views: every row's kind and label are
+  `model_view._KIND_LABEL`'s for its family; its verdicts are exactly the classifiers
+  judged at that anchor kind (a literal table citing `attribute.py`); every
+  classifier is a `Lever` value and every silence reason a `SilenceReason` value; a
+  claimed row's claiming lever is one its anchor kind can drive, and that verdict is
+  matched with `detail == text`; an unclaimed row has every verdict unmatched and an
+  empty text; a High's anchor glucose reaches `ScenarioConfig().anchor_high_mgdl`.
+  Show it failing on the base fixtures for its feature reason.
+- [ ] 2.4 Regenerate in `design.md`'s order and confirm the moved and unmoved sets
+  match `design.md`.
+- [ ] 2.5 Amend the node tests the moved facts reach, to the served values:
+  `frontend/diagnose-workstation.test.js` (`#432 · a selected Pattern Occurrence
+  lists each served habit with its band label`, and `#432 · a selected claimed meal
+  reads as its facts, cause and habit sentence`, which now prints the sentence once);
+  `frontend/browser-fixture-population.test.js` (`the Afternoon fixture retains all
+  four published behavioral Findings` reads Correction stacking where it read
+  Correction on active insulin; `browser preparation mirrors the wrapped row` keeps
+  its assertions over a test-local clone of the payload whose unclaimed High is an
+  Over-treated low rebound High, the one two-family Cause the producer serves).
+- [ ] 2.6 Run `docs/scope/454-row-shapes.measure.py` (base payload from
+  `origin/main`, regenerated payload) and return its output; it must match
+  `design.md`'s moved-fact list.
+
+## 3. The Pattern mirror judges only its rate family (sub-order 3)
+
+- [ ] 3.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
   `habit_rate_families` into `frontend/__fixtures__/findings-projection.json`: one
   entry per `Lever`, its `policy_for(lever).rate_family` value, or null.
-- [ ] 1.2 In the same generator, freeze `pattern_family_cases`, keyed by Pattern
-  key, for Lows after correcting highs with a Correction stacking scenario Pattern
-  and Highs after meals with a High-carb sequence scenario Pattern: the browser
-  inputs plus that one scenario Pattern, assembled as
-  `docs/scope/454-backend-family.repro.py` does, projected by
-  `prepare_findings_projection`, then read through `PreparedCases.case` over the
-  browser exposures. Each entry holds the Pattern's roster row, the whole clock
-  case and the clock case selected at its first Occurrence. Assert in the generator
-  that each roster row carries the out-of-family member, so a roster change that
-  drops it fails generation rather than freezing a vacuous case.
-- [ ] 1.3 In `mockups/diagnose-event-comparison.synthetic/generate.mjs`, delete the
-  hand-written lever→family table and publish the frozen `habit_rate_families` as
-  the capture's `pattern_families`, read from `findings-projection.json` beside
-  `browser_outcome_patterns`; keep every existing `buildCapture` caller working.
-- [ ] 1.4 Implement behavioral-layer **A Pattern case file judges only the habit
-  members in its rate family** in
-  `mockups/diagnose-event-comparison.synthetic/project.mjs`
-  `projectPatternCaseFile`: keep a habit member only when
-  `capture.pattern_families[lever]` equals the Pattern's family, and feed that one
-  list to both the row verdict and the selected reason. Claims stay as the capture
-  records them, so an out-of-family claimant is still the row's cause.
-- [ ] 1.5 In `frontend/browser-fixture-population.test.js`, add a test that, for
-  each `pattern_family_cases` entry, swaps its roster row into a clone of the
-  committed capture, projects the whole clock case and the case selected at the
-  first population Occurrence, and requires the frozen answer's verdict counts,
-  each row's verdict and member in order, and the selected reason. Show it failing
-  on the base `project.mjs` for its feature reason (an extra habit entry), then
-  passing.
-
-## 2. Manufactured exposure rows take the real feed's shapes
-
-- [ ] 2.1 Implement behavioral-layer **Manufactured browser-gate exposure rows
-  carry only shapes the exposure feed can serve** in
-  `.claude/qa/gen_synthetic_fixtures.py` (`verdicts`, `occurrence`,
-  `build_exposures`) to `design.md`'s row table: kind and label per family; the
-  judged classifiers per anchor kind; closed silence reasons; a claimed row's own
-  verdict matched with its detail equal to the row's text and every other judged
-  classifier calm; unclaimed rows unjudgeable; a sentence in the claiming lever's
-  own form (the Over-treated low sentence kept); correction clusters with no
-  verdict and their claim kept; High anchor glucose derived from the existing draw
-  at or above `ScenarioConfig().anchor_high_mgdl`. Add, remove or reorder no random
-  draw. Correct the docstrings that describe the old shape.
-- [ ] 2.2 Add `tests/test_synthetic_fixture_shapes.py` (stdlib `unittest`): read
-  the committed `mockups/diagnose-workstation.synthetic/payload.json` exposures
-  and require, for every row, the kind and label `model_view._KIND_LABEL` gives
-  its family's anchor kind; exactly the judged classifier set for that anchor kind
-  (a literal table citing `attribute.py`); every classifier a `Lever` value and
-  every silence reason a `SilenceReason` value; on a claimed row whose cause lever
-  is judged there, that verdict matched with `detail == text` and the others
-  unmatched; on an unclaimed row, every verdict unmatched and an empty text; a High
-  anchor glucose at or above `anchor_high_mgdl`. Show it failing on the base
-  fixture for its feature reason, then passing.
-- [ ] 2.3 Regenerate in `design.md`'s order (generator, projection fixtures,
-  `generate.mjs --write`) and confirm the moved and unmoved sets match
-  `design.md`.
-- [ ] 2.4 Run `docs/scope/454-row-shapes.measure.py` with the base payload
-  (`git show origin/main:mockups/diagnose-workstation.synthetic/payload.json`) and
-  the regenerated one; confirm only the enumerated verdict-band cells move, and
-  record the output summary under `design.md`'s measured facts.
-- [ ] 2.5 Amend `frontend/diagnose-workstation.test.js`
-  `#432 · a selected Pattern Occurrence lists each served habit with its band
-  label` to the served habit sentences, keeping every other assertion.
-
-## 3. Verification
-
-- [ ] 3.1 The worker runs the gate lines in the lock's Verification, including
-  every drift check, and the whole backend pytest once at the end, stating its
-  wall time.
-- [ ] 3.2 The coordinator runs `frontend/desk.browser.test.mjs` whole once on the
-  integrated commit (the fixtures it serves move), with the selection in the lock
-  for iteration; the desk ledger replay is unaffected and runs as the release
-  requires.
+- [ ] 3.2 In the same generator, freeze `pattern_family_cases` for Lows after
+  correcting highs with a Correction stacking scenario Pattern and Highs after meals
+  with a High-carb sequence scenario Pattern: the browser inputs plus that one
+  scenario Pattern, assembled as `docs/scope/454-backend-family.repro.py` does,
+  projected by `prepare_findings_projection`, then read through
+  `PreparedCases.case` over the browser exposures. Each entry holds the roster
+  row, the whole clock case and the clock case selected at its first Occurrence.
+  Assert in the generator that each roster row carries its out-of-family member.
+- [ ] 3.3 In `generate.mjs`, delete the hand-written lever→family table and publish
+  the frozen `habit_rate_families` as the capture's `pattern_families`, read from
+  `findings-projection.json` beside `browser_outcome_patterns`; keep every
+  `buildCapture` caller working.
+- [ ] 3.4 Implement behavioral-layer **A Pattern case file judges only the habit
+  members in its rate family** in `project.mjs` `projectPatternCaseFile`: keep a
+  habit member only when `capture.pattern_families[lever]` equals the Pattern's
+  family, and feed that one list to both the row verdict and the selected reason.
+- [ ] 3.5 In `frontend/browser-fixture-population.test.js`, for each
+  `pattern_family_cases` entry, swap its roster row into a clone of the committed
+  capture, project the whole clock case and the first-Occurrence selection, and
+  require the frozen verdict counts, each row's verdict and member in order, and the
+  selected reason. Show it failing on the base `project.mjs`; confirm
+  `docs/scope/454-mirror-family.repro.mjs` passes.
+- [ ] 3.6 Run the lock's whole worker gate on this final commit, including every
+  drift check and the backend pytest once, and state the pytest wall time.

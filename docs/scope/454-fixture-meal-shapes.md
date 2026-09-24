@@ -1,95 +1,73 @@
-# #454 scope ledger — fixture Pattern mirror family filter and real-shaped manufactured rows
+# #454 scope ledger — Pattern mirror family filter, producer-shaped rows, one served sentence
 
 Triage worker ledger for #454 (change `fixture-meal-shapes`). Grounded on
-`origin/main` b03431d2 against committed synthetic fixtures only; no case store was
-served and no port was bound. Evidence scripts:
-`docs/scope/454-mirror-family.repro.mjs` (node half of the reproduction),
-`docs/scope/454-backend-family.repro.py` (Python half) and
-`docs/scope/454-row-shapes.measure.py` (what a regenerated exposure feed moves).
+`origin/main` b03431d2 against committed synthetic fixtures and QA case stores
+materialized in process; no port was bound. Evidence scripts:
+`docs/scope/454-mirror-family.repro.mjs`, `docs/scope/454-backend-family.repro.py`
+and `docs/scope/454-row-shapes.measure.py`.
 
 ## Decisions
 
 - **R454 (coordinator ruling under the Q3 delegation, 2026-09-23): "As the issue's
-  checklist", with the coordinator's triage instruction to mirror the backend's
-  rate-family filter exactly and to put every manufactured generator row that
-  carries a kind, verdict or cause text its real producer would never serve in
-  scope.** Why: settled by the release coordinator. inline.
-- **The mirror reads the backend's own lever-to-rate-family table, frozen by the
-  projection fixture generator from the evidence-population policy, and published
-  in the event-comparison capture as `pattern_families`.** Why: `generate.mjs`
-  already publishes a hand-written `pattern_families` that nothing reads and that
-  disagrees with the backend (Meal bolus fell short reads highs; Missed /
-  unannounced meal, High-carb sequence and Repeat eating are missing); a generated
-  table replaces one hand transcription instead of adding a second. → ADR.
-- **The mirror is held to the Python case producer by frozen answers for two real
-  out-of-family rosters (Correction stacking under Lows after correcting highs;
-  High-carb sequence under Highs after meals), not by a hand-written expected
-  list.** Why: "exactly as the backend does" is only checkable against the
-  backend's own answer; the two cover a lever counted in another family and a lever
-  with no rate family. → ADR.
-- **Manufactured exposure rows take the real feed's shapes: kind and label per
-  family, exactly the classifiers judged at that anchor kind, closed silence
-  reasons, a claimed row's own verdict matched with its sentence as the row's text,
-  unclaimed rows unjudgeable.** Why: R454; every current row carries `iob_stacking`
-  (not a Lever) with `no_signal` (not a silence reason), and meal, high and
-  correction rows carry low kinds, low verdicts and a low-treatment sentence. → ADR.
-- **Default pending coordinator confirmation (Q1): the four Finding verdict bands
-  that move on their own claimed rows are accepted and recorded.** Why: the real
-  producer always carries a claimed row's own verdict matched, so no real shape
-  keeps those cells; measured, nothing else moves. → ADR.
-- **Default pending coordinator confirmation (Q2): the two correction-cluster rows
-  keep their Correction on active insulin claim.** Why: re-attributing them to
-  Correction stacking moves queue order in three windows and that Finding's
-  episodes (5 → 3), chips, count sentences and headline — a count moving
-  elsewhere, which the issue forbids; the ruling names kind, verdict and cause text,
-  all of which are fixed. → ADR.
-- **Default pending coordinator confirmation (Q3, fence widening): the High rows'
-  anchor glucose is lifted to a value a High anchor can carry.** Why: same rows,
-  same function; today 70–78 mg/dL on a High whose anchor is the peak of a run that
-  reaches 250; measured, nothing moves. → ADR.
-- **No ledger story; surface lifecycle none.** Why: the desk code is untouched and
-  the frozen ledger replays QA case stores, which this change does not reach;
-  story block S182 stays unused. inline.
-- **Flat, Targeted.** Why: slicing traits "lockstep copies" and "split-path
-  evidence" fire, but every chunk would fall under the 120k floor; no sensitivity
-  floor applies to fixture generators and a fixture-only mirror. Reviewer-memory
-  anchor: absent. inline.
+  checklist", with the instruction to mirror the backend's rate-family filter
+  exactly and to put every manufactured row carrying a kind, verdict or cause text
+  its producer never serves in scope.** Why: settled. inline.
+- **The mirror reads the backend's own lever-to-rate-family table, frozen from the
+  evidence-population policy, and is held to frozen Python answers for two real
+  out-of-family rosters.** Why: generating the capture's unread, partly wrong
+  hand table replaces a transcription; only the producer's answer checks "exactly".
+  → ADR.
+- **Manufactured rows take their producer's shapes.** Why: R454. → ADR.
+- **Q1 (coordinator, 2026-09-23): accept the four band moves on claimed rows.**
+  Why: the producer always marks a claimed row's own verdict matched. → ADR.
+- **Q2 (coordinator, 2026-09-23): re-claim the two correction-cluster rows for
+  Correction stacking and list every moved fact; the "no count moving elsewhere"
+  boundary is amended for exactly those moves.** Why: `_low_lever` is the only
+  judge of Correction on active insulin and `_correction_lever` returns Correction
+  stacking alone. → ADR.
+- **The re-claim stays row-level.** Why: no family manufactures a claimed row's
+  episode siblings; adding the stacked pair's first dose and the reached low would
+  change the twenty-row low population and credit Lows after correcting highs one
+  more claim. → ADR (design.md "Row-level, not episode-level").
+- **Q3 (coordinator, 2026-09-23): widen to the High anchor glucose.** → ADR.
+- **Q4 (coordinator, 2026-09-23): widen to the duplicated sentence; each fact prints
+  once; surface lifecycle revise; story S182.** Grounded: the duplicate is served
+  (two served fields carry the same string), so the producer serves it once, as the
+  cause's text, and the mirror follows. → ADR.
+- **S182 runs on pattern-near-tie; `SMOKE_STORIES` does not change.** Why:
+  `SmokeSelectionTest` passes on base with S150 on that store. inline.
+- **Q5 (coordinator, 2026-09-23): widen to the event-comparison capture's lows
+  comparison rows, which judge only what a low is judged by.** → ADR.
+- **The two-family join test is re-pointed to a test-local Over-treated low rebound
+  High.** Why: after the re-claim no committed Cause appears in two families, and
+  Over-treated low is the one lever the producer drives from two anchor kinds, with
+  its case-file family sorting second as the test requires. inline.
+- **Chunked, three serial sub-orders.** Why: after the widening, five slicing traits
+  fire (multiple deliverable artifacts, live run inside the ticket, split-path
+  evidence, lockstep copies, lifecycle-gated revision), and each sub-order
+  projects inside the 120k–180k band. The served rule and S182 come first; the rows
+  and the mirror's family filter follow in order, because each regenerates what the
+  next reads. Reviewer-memory anchor: absent. inline.
 
 ### Risk contract
 
-- **Must prevent:** a committed fixture that serves a kind, verdict, silence
-  reason, cause text or anchor glucose the real producer cannot serve for its
-  family; a mirror that passes its gate while diverging from the Python case
-  producer (silent incorrect success); any count, claim, admission, queue order or
-  sentence moving outside the enumerated band cells; real or copied patient data in
-  any fixture; any change under `ciq_autotune/`.
-- **Must recover:** none (build-time fixture generation, no runtime path).
-- **Accepted failure:** a drift check that fails because the chain was regenerated
-  out of order; clear stop, rerun in the documented order.
-- **Unsupported:** an out-of-family member in the committed browser roster (none
-  today; the frozen variants cover it); the event-comparison capture's
-  exploration-only `views`.
-- **Evidence owed:** a node test through `projectPatternCaseFile` that fails on the
-  base mirror against the frozen Python answers; a Python test through the
-  generator's committed output that fails on the base rows; every drift check
-  green; the measurement's before/after recorded in `design.md`.
-- **Why:** the browser gates certify the advisory desk against these fixtures; a
-  fixture the producer cannot emit certifies a state no user can reach.
-- **Disposition:** copied into `openspec/changes/fixture-meal-shapes/design.md`.
+Copied verbatim into `openspec/changes/fixture-meal-shapes/design.md` ("Risk
+contract"), which is the admitted authority.
 
 ## Open questions
 
-- Q1–Q3 above: returned to the release coordinator with the defaults shown.
-- Finding (not in #454's fence): with real-shaped rows, a claimed Pattern row's
-  cause line and its claimant's habit line print the same classifier sentence.
-  Production serves this today: the cause text is the exposure Occurrence's first
-  attributed step text, which is the claimant's matched verdict detail, and the
-  claimant's habit entry serves that same recorded detail. Returned to the
-  coordinator as a release finding.
-- Finding (not in #454's fence): the event-comparison capture's exploration-only
-  `views` rows judge Correction stacking at low anchors, which the attribution step
-  never does; they feed only `projectSyntheticCapture`. Returned to the coordinator
-  as a release finding.
+- **Q6 (new finding, returned to the coordinator).** The browser-gate population
+  (`frontend/browser-fixture-population.js` `populateFindingsProjectionInput`)
+  supplies only the whole-day Pattern roster, so in every scoped window the findings
+  mirror serves no Pattern row and folds no Cause, where the server serves both
+  Patterns and folds Late bolus and Correction on active insulin (base 06:00–12:00
+  verified). Base counts match only by coincidence. After the Q2 re-claim, the
+  mirror serves `counts.finding` 5 and `chip_counts.lows` 2 in 06:00–12:00 and
+  12:00–18:00, where the server serves 4 and 1. The Afternoon fast-gate test
+  already pins the mirror's answer. Default recommended to the coordinator: widen
+  #454's third sub-order to freeze the server's scoped rosters for the closed set of
+  windows the browser gates request, have the population supply them, and fail
+  closed for any other scoped window.
 
 ## Spawned tasks
 
@@ -97,4 +75,6 @@ None.
 
 ## Review rounds
 
-- Round 0 (triage draft): awaiting the coordinator's `/plan-review`.
+- Round 0 (triage draft, lock 1 at 99bb43cd): returned to the coordinator.
+- Round 1 (coordinator rulings Q1–Q5, 2026-09-23): change amended and re-pinned;
+  awaiting the coordinator's `/plan-review`.

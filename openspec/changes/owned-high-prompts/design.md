@@ -408,3 +408,40 @@ scenario-engine, exposures, queue, catalog and findings-projection tests passed
 suite (84 passed in 94 s). Every drift check but the design exploration reported
 current. The exploration's regeneration moved only its `code_version` stamps and
 the ids derived from them (8 lines).
+
+### Gate
+
+Run once on commit `54e05238`, serially: exit code, wall time, command.
+
+```text
+1|0|5s|npm ci && npm run build
+2|0|1058s|uv run python -m pytest
+3|0|2s|node --test 'frontend/**/*.test.js'
+4|0|1s|npx --yes @fission-ai/openspec@1 validate --all --strict
+5|0|<1s|python3 scripts/check_adr_numbers.py
+6|0|<1s|python3 scripts/check_owned_identifiers.py
+7|0|<1s|python3 scripts/check_public_allowlist.py
+8|0|3.29s|uv run python scripts/gen_chart_builder_fixtures.py --check
+9|0|1.25s|uv run python scripts/check_demo_fixtures.py
+10|0|0.37s|uv run python scripts/gen_qa_e2e_db.py --check
+11|0|11.73s|uv run python scripts/gen_findings_projection_fixtures.py --check
+12|0|0.32s|uv run python scripts/gen_ic_history_event_fixtures.py --check
+13|0|0.24s|uv run python scripts/gen_ic_block_evidence_fixtures.py --check
+14|0|0.6s|uv run python scripts/gen_basal_night_evidence_fixtures.py --check
+15|0|0.41s|uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
+16|0|0.24s|uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
+17|0|38.28s|uv run python scripts/gen_eating_sequence_fixtures.py --check
+18|0|174.25s|uv run python mockups/harmonic-v2.exploration/generate.py --check
+19|0|0.12s|node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
+```
+
+Output tails: pytest `2626 passed, 1 skipped, 402 warnings, 437 subtests passed in
+1057.72s`; the frontend line `tests 1014, pass 1014, fail 0`; OpenSpec `Totals: 78
+passed, 0 failed (78 items)`; `check-adr: 209 ADRs in 104 design.md files, all
+identities unique and issue-keyed.`; `check-owned-identifiers: 30 owned-identifier
+rules passed.`; `check-public-allowlist: 421 tracked file(s) cleared to ship, 2668
+excluded. Every tracked path dispositioned.`; every drift check reports current
+(the basal night-evidence check exits 0 silently). The exploration's regeneration
+on this commit moved `focus.json` and `journey.json` only in the `code_version`
+stamp and the ids derived from it (8 lines), and `utilities.json` and `glossary.js`
+only in the two sentences Decision 3 rewords.

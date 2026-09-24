@@ -117,7 +117,7 @@
   here?" is asked at a missed-meal rise onset that no over-treated low's rebound
   owns. An owned rise is explained by its low, which asks its own question when it
   is sub-70.
-- [ ] 3.2 Regenerate `mockups/harmonic-v2.exploration/focus.json`, `journey.json`,
+- [x] 3.2 Regenerate `mockups/harmonic-v2.exploration/focus.json`, `journey.json`,
   `utilities.json` and `glossary.js` with
   `uv run python mockups/harmonic-v2.exploration/generate.py`. In `focus.json`
   and `journey.json`, only the analyzer `code_version` stamp and the context ids
@@ -126,7 +126,7 @@
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`, each run as
   `uv run python <path> --check` except `scripts/check_demo_fixtures.py`, which
   takes no flag, and `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check`.
-- [ ] 3.3 Run the AGENTS.md pull-request gate in full, once, on the commit handed to
+- [x] 3.3 Run the AGENTS.md pull-request gate in full, once, on the commit handed to
   the coordinator. Record each command's exit code, wall time and output tail in
   `design.md` under a `### Gate` heading.
 - [ ] 3.4 (Coordinator-owned; the implementing worker does not run it or tick it.)

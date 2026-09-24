@@ -373,11 +373,33 @@ def helper(store): return 1
 QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
 '''
 
+    # ADR 457: a tree the replay entry reaches by an import, a require and two
+    # path literals — an executable it runs and a data fixture it only names.
+    helper_path = 'frontend/diagnose-replay.mjs'
+    pump_path = 'frontend/replay-pump.py'
+    runner_path = 'frontend/case-runner.js'
+    fixture_path = 'mockups/harmonic-v2.exploration/focus.json'
+    tree = {
+        replay_path: "import { locate } from './diagnose-replay.mjs';\n"
+                     "const { launch } = require('./case-runner.js');\n"
+                     "const FIXTURES = ['mockups/harmonic-v2.exploration/focus.json'];\n"
+                     "export const S2 = page => locate(page);\n"
+                     "export const S3 = page => page.read('unrelated');\n"
+                     "export const S4 = ctx => ctx.command(['python', 'frontend/replay-pump.py']);\n",
+        helper_path: "export async function locate(page) { return page.read('before'); }\n",
+        pump_path: "print('pump')\n",
+        runner_path: "module.exports = { launch() {} };\n",
+        fixture_path: '{}\n',
+    }
+
     def select(self, before, after, recipe_before=None, recipe_after=None):
+        """Select over two snapshots: whole trees, or the replay entry's source alone."""
         ids = [*acceptance.SMOKE_STORIES, 'S2', 'S3', 'S4', 'R10']
-        snapshots = {'base': {self.replay_path: before}, 'HEAD': {self.replay_path: after}}
+        snapshot = lambda value: value if isinstance(value, dict) else {self.replay_path: value}
+        snapshots = {'base': snapshot(before), 'HEAD': snapshot(after)}
         recipes = {'base': recipe_before or self.recipe, 'HEAD': recipe_after or recipe_before or self.recipe}
-        changed = [path for path in snapshots['base'] if snapshots['base'][path] != snapshots['HEAD'][path]]
+        changed = sorted(path for path in snapshots['base'].keys() | snapshots['HEAD'].keys()
+                         if snapshots['base'].get(path) != snapshots['HEAD'].get(path))
         if recipes['base'] != recipes['HEAD']:
             changed.append(self.recipe_path)
         def git(args, **kwargs):
@@ -431,6 +453,52 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
             self.assertIn('frontend/carried.replay.mjs::helper', reached)
             self.assertIn('carried:S9', graph['frontend/carried.replay.mjs::S9']['tags'])
             self.assertIn('c4-missing', {value for key in reached for value in graph[key]['strings']})
+
+    def test_an_imported_helper_edit_selects_the_stories_that_reach_it(self):
+        after = {**self.tree, self.helper_path: self.tree[self.helper_path].replace("'before'", "'after'")}
+        self.assertEqual(self.select(self.tree, after), set(acceptance.SMOKE_STORIES) | {'S2'})
+
+    def test_an_executable_the_replay_names_by_path_selects_every_story(self):
+        every = set(acceptance.SMOKE_STORIES) | {'S2', 'S3', 'S4', 'R10'}
+        for path, text in [(self.pump_path, "print('pump, changed')\n"),
+                           (self.runner_path, 'module.exports = { launch() { return 1; } };\n')]:
+            with self.subTest(path=path):
+                self.assertEqual(self.select(self.tree, {**self.tree, path: text}), every)
+
+    def test_a_data_fixture_the_replay_names_by_path_selects_only_the_fixed_slice(self):
+        after = {**self.tree, self.fixture_path: '{"regenerated": true}\n'}
+        self.assertEqual(self.select(self.tree, after), set(acceptance.SMOKE_STORIES))
+
+    def assertStops(self, tree, *named):
+        with self.assertRaises(RuntimeError) as stopped:
+            self.select(tree, tree)
+        for text in named:
+            self.assertIn(text, str(stopped.exception))
+
+    def test_an_import_of_an_untracked_file_stops_the_plan(self):
+        self.assertStops({**self.tree, self.replay_path: self.tree[self.replay_path].replace(
+            './diagnose-replay.mjs', './missing.mjs')}, 'no tracked file', 'frontend/missing.mjs')
+
+    def test_a_dynamic_import_in_an_imported_module_stops_the_plan(self):
+        self.assertStops({**self.tree, self.helper_path:
+            "export async function locate(page) { return (await import('./late.mjs')).x; }\n"},
+            'dynamic import()', self.helper_path)
+
+    def test_an_import_form_the_graph_cannot_follow_stops_the_plan(self):
+        for line, form in [("import './diagnose-replay.mjs';", 'side-effect import'),
+                           ("import helper from './diagnose-replay.mjs';", 'default import'),
+                           ("import { default as helper } from './diagnose-replay.mjs';", '{ default as … } import'),
+                           ("export { locate } from './diagnose-replay.mjs';", 'export … from'),
+                           ("export * from './diagnose-replay.mjs';", 'export * from')]:
+            with self.subTest(line=line):
+                self.assertStops({**self.tree, self.replay_path: line + '\n' + self.tree[self.replay_path]},
+                                 f"{self.replay_path}: {form} './diagnose-replay.mjs'")
+
+    def test_a_dependency_without_a_node_stops_the_plan(self):
+        self.assertStops({**self.tree,
+            self.helper_path: "async function locate(page) { return page.read('before'); }\nexport { locate as found };\n",
+            self.replay_path: self.tree[self.replay_path].replace('{ locate }', '{ found as locate }')},
+            'no node', f'{self.helper_path}::found')
 
     def test_fixed_slice_is_pinned_and_covers_every_real_replay_case(self):
         import hashlib

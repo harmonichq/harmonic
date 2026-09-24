@@ -980,6 +980,34 @@ test('a key pressed on Day leaves the parked Diagnose as it was, and the Day ret
   } finally { await close(); }
 });
 
+// ADR 457: press waits, within its bound, for its first visible match. Day's
+// read is held, so its Return control cannot exist when the press starts; the
+// press lands once the read is released. An absent control and one that stays
+// hidden still fail after the bound, naming the selector.
+test('press waits for a Day return control that renders late, and names an absent or hidden control', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
+  const { page, close } = await openDesk({ address, beforeNavigate: async page => {
+    await page.route('**/api/model-view*', async route => { await gate; await route.fallback(); });
+  } });
+  try {
+    assert.equal(await countOf(page, '[data-day="return"]'), 0, 'premise: Day paints no Return control while its read is held');
+    await Promise.all([press(page, '[data-day="return"]'), page.waitForTimeout(250).then(release)]);
+    assert.equal(await currentDestination(page), 'diagnose');
+    await assert.rejects(press(page, '[data-no-such-control]', 500),
+      { message: 'no control matched [data-no-such-control] after 500 ms' });
+    const hidden = '.gf-utility-strip [data-utility="guide"]';
+    await assert.rejects(press(page, hidden, 500), (error) => {
+      assert.ok(error.message.startsWith(hidden) && error.message.endsWith('all hidden after 500 ms'), error.message);
+      return true;
+    });
+  } finally {
+    release();
+    await close();
+  }
+});
+
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {

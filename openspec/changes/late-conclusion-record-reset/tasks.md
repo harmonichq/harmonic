@@ -235,10 +235,14 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
   - **Desk browser test.** "an expired Trial distinguishes its Later conclusion
     input from the immutable ending" passes at both sizes (2/2).
   - **Complete ledger.** It runs once at integration.
-- [ ] 5.3 Coordinator-run revision evidence, into the release's private
+- [x] 5.3 Coordinator-run revision evidence, into the release's private
   design-evidence record (not part of the public tree). On c4-isf, open the
   expired Trial from the roster, type a later conclusion, press Back to records
   and reopen it. Render the result at 1280x720 and 1440x900 on base and on the
   branch. Base shows the typed words; the branch shows an empty form.
-  Left unticked on the ticket branch. The renders belong to the coordinator's
-  integration render batch, which ticks this task with its evidence.
+  Evidence, coordinator-run 2026-09-24: 452-A1 (the later conclusion typed) and
+  452-A2 (the record reopened after Back to records), before on b03431d2 and after
+  on the release trunk 9882bcfe (served with the desk shell built at 25392ade, after
+  every ticket's desk change had merged), at 1280x720 and 1440x900, in the release's
+  evidence record. Before, the reopened form holds the typed words; after, it is
+  empty.

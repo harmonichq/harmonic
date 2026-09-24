@@ -129,10 +129,15 @@
 - [x] 3.3 Run the AGENTS.md pull-request gate in full, once, on the commit handed to
   the coordinator. Record each command's exit code, wall time and output tail in
   `design.md` under a `### Gate` heading.
-- [ ] 3.4 (Coordinator-owned; the implementing worker does not run it or tick it.)
+- [x] 3.4 (Coordinator-owned; the implementing worker does not run it or tick it.)
   Capture renders of the Guide's silence article at its Upstream cause row and of
   the Glossary's Episode Log group, on the base (`b03431d2`) and on the branch, at
   1280x720 and 1440x900, in the one theme the desk ships. #304 retired the Light
   theme: the desk is Dark with its bone reading sheet. Use the QA no-fetch serve
   AGENTS.md permits. The evidence lives in a private design-evidence record, not
   part of the public tree.
+  Evidence, coordinator-run 2026-09-24: 448-A1 (the silence article at its Upstream
+  cause row) and 448-B1 (the Glossary's Episode Log group at Quiet), before on
+  b03431d2 and after on the release trunk 9882bcfe (served with the desk shell built
+  at 25392ade, after every ticket's desk change had merged), at 1280x720 and
+  1440x900, in the release's evidence record.

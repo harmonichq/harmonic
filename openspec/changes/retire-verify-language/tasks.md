@@ -309,7 +309,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 
 ## 4. Port-bound legs (release coordinator)
 
-- [ ] 4.1 Replay `ONLY=S169,S170` on the base with this branch's harness laid
+- [x] 4.1 Replay `ONLY=S169,S170` on the base with this branch's harness laid
   over it: S169 fails at its dock-count assertion, and S170 at its no-Verify
   assertion. Replay the same two on the branch, where both pass. Replay
   `ONLY=S46,S73,S139,S140` on the branch, where all pass. Run everything at
@@ -323,5 +323,11 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   (code-identical to `2de52828`) passes S169, S170, S46, S73, S139 and S140,
   6 of 6; base `b03431d2` with the branch harness (the `ed1c29bd` run) fails
   S169, first at its dock count, and S170 at its no-Verify assertion. The desk
-  suite and fast gate ran per the chunk results. Renders: coordinator-owned,
-  integration render phase.
+  suite and fast gate ran per the chunk results. After #451 merged, the release
+  trunk 25392ade passed S169 and S170 among 15 selected stories at both sizes
+  (`# executed 15 · failed 0`). Renders, coordinator-run 2026-09-24, before on b03431d2
+  and after on the release trunk 9882bcfe (served with the desk shell built at
+  25392ade, after every ticket's desk change had merged), at 1280x720 and 1440x900,
+  in the release's evidence record: 447-A1 (the dock), 447-B1 (Watch maturity,
+  unchanged) and 447-C1 (the Guide article), with 447-C2 (the article's Cause line)
+  and 447-B2 (the Trial outcome table, review ruling RR1) beside them.

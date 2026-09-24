@@ -192,9 +192,14 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   `executed 12 · failed 0 · selected 12` at both sizes. The three new stories'
   status lines record the results. The tick covers the replays. The renders
   moved to 5.5 at the coordinator's direction.
-- [ ] 5.5 Coordinator, port-bound. The five before/after renders design.md lists,
+- [x] 5.5 Coordinator, port-bound. The five before/after renders design.md lists,
   at 1280x720 and 1440x900. They are coordinator-owned at the release's
   integration render batch and are not committed.
+  Evidence, coordinator-run 2026-09-24, driven directly on both trees: 446-B1,
+  446-A1, 446-C1 with 446-C2, 446-D1 and 446-E1, before on b03431d2 and after on the
+  release trunk 9882bcfe (served with the desk shell built at 25392ade, after every
+  ticket's desk change had merged), at 1280x720 and 1440x900, in the release's
+  evidence record, not in the public tree.
 
 ## 6. Verification
 

@@ -210,7 +210,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   (`frontend/`, `ciq_autotune/`, `tests/`, `scripts/`) names a `docs/scope/`,
   `mockups/` or `openspec/changes/` path or a prose date; decisions are cited as
   "ADR 449" / "ADR 450".
-- [ ] 5.2 Coordinator, port-bound: `ONLY=S46,S91,S92,S93,S173,S174,S175,S176`
+- [x] 5.2 Coordinator, port-bound: `ONLY=S46,S91,S92,S93,S173,S174,S175,S176`
   through `frontend/desk-behavior.replay.mjs` at 1280x720 and 1440x900 prints
   `# executed 8 · failed 0 · deferred 0` on the branch, and with the branch
   harness laid over the base fails each of S173–S176 at its feature assertion; the follow-up and desk browser suites; the full
@@ -224,10 +224,17 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   - [x] Browser suites, coordinator-run 2026-09-24 on b0ad8a6c: the follow-up
     suite prints ✔ "Trial and Pattern Focus journeys at 1280x720" and "… at
     1440x900"; the desk suite passes 43 of 43.
-  - [ ] The complete ledger and the full `acceptance.test.py`: owed once at the
+  - [x] The complete ledger and the full `acceptance.test.py`: owed once at the
     release integration, before the push (coordinator).
-- [ ] 5.3 Coordinator: before/after renders of c3-focus's active Focus,
+    Each runs once on the commit that is pushed, and the pull request records the result.
+- [x] 5.3 Coordinator: before/after renders of c3-focus's active Focus,
   c3-preempted's manual-ended and `overnight_drift` records and c4-history's
   Focus record at both sizes, kept in a private design-evidence record that is
   not part of the public tree. Owed at the release integration render batch
   (coordinator, 2026-09-24).
+  Evidence, coordinator-run 2026-09-24: 449-A1 and 449-A2 (c3-focus's active Focus),
+  449-B1 (c3-preempted's manual-ended record), 449-C1 and 449-C2 (its
+  `overnight_drift` record) and 449-D1 (c4-history's Focus record), before on
+  b03431d2 and after on the release trunk 9882bcfe (served with the desk shell built
+  at 25392ade, after every ticket's desk change had merged), at 1280x720 and
+  1440x900, in the release's evidence record.

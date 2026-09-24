@@ -289,7 +289,7 @@ the whole replay at module link.
     `dose-pair`'s older record, `c4-ic`'s 06-01 record and the frontiers of
     `pump-read-pair` and `dose-pair` report `data_tail`. The "label" and
     `late-settling-bridge` lines are unchanged from the pinned output.
-- [ ] 5.3 The coordinator owns every port-bound leg and ticks this task with its
+- [x] 5.3 The coordinator owns every port-bound leg and ticks this task with its
   evidence; the implementer runs none.
   1. On base b03431d2, served from a second worktree with this branch's replay
      harness laid over it, S157 fails at its first feature assertion. On the
@@ -301,8 +301,7 @@ the whole replay at module link.
      `acceptance.test.py` once (its `ServerLifecycleTest` binds a port), and the
      complete ledger once on the pushed commit.
 
-  Evidence, coordinator-run 2026-09-24. Left unticked until the complete ledger
-  runs at integration.
+  Evidence, coordinator-run 2026-09-24.
   - Item 1 met. Base b03431d2, with this branch's harness laid over it, fails
     S157 at its first feature assertion at 1280x720 and 1440x900: "S157 the
     older Trial row must carry its served superseded ending". Branch 782cd552,
@@ -313,10 +312,17 @@ the whole replay at module link.
     `# executed 10 · failed 0` at 1280x720 and at 1440x900.
   - Item 3 in part. On f4610aed the desk browser suite passed 43 of 43, the
     follow-up suite passed both journeys, and the full `acceptance.test.py`
-    passed (OK). The complete ledger run on the pushed commit is owed at
-    integration.
-- [ ] 5.4 The coordinator owns the synthetic before and after renders of the
+    passed (OK). After the merge, the release trunk 25392ade passed S157
+    among 15 selected stories at 1280x720 and 1440x900 (`# executed 15 ·
+    failed 0`). The complete ledger runs once on the commit that is pushed,
+    and the pull request records the result.
+- [x] 5.4 The coordinator owns the synthetic before and after renders of the
   `c4-ic` records roster and its 06-01 record, at both sizes, and ticks this
   task with them.
 
-  Owed at integration: the renders are gathered on the integration branch.
+  Evidence, coordinator-run 2026-09-24: 442-A1 (the records roster) and 442-A2 (the
+  06-01 record opened), before on b03431d2 and after on the release trunk 9882bcfe
+  (served with the desk shell built at 25392ade, after every ticket's desk change
+  had merged), at 1280x720 and 1440x900, in the release's evidence record. Before,
+  the 06-01 row reads "Still open" and "Not watched"; after, it reads "Superseded by
+  a later change" with "Jun 10, 2024 · 09:00".

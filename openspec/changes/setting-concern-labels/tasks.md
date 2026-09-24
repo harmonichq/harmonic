@@ -323,10 +323,21 @@
   sizes, never at setup. Coordinator-run 2026-09-24.
 - [x] 6.2 On 995126ad, `frontend/desk.browser.test.mjs` passes 43 of 43.
   Coordinator-run 2026-09-24.
-- [ ] 6.3 The renders design.md owes (before and after, 1280x720 and 1440x900,
+- [x] 6.3 The renders design.md owes (before and after, 1280x720 and 1440x900,
   on isf-strengthen): coordinator-owned, integration render phase.
-- [ ] 6.4 The complete desk ledger once per size (174 selected, zero failed,
+  Evidence, coordinator-run 2026-09-24: 451-A1 (Changes' plain arrival),
+  451-B1 (the Diagnose findings queue), 451-B2 (the correction-factor panel),
+  451-C1 (the dock with the correction factor staged) and 451-D1 (the recorded
+  Plan's "What was known"), before on b03431d2 and after on the release trunk
+  9882bcfe (served with the desk shell built at 25392ade, after every ticket's
+  desk change had merged), at 1280x720 and 1440x900, in the release's evidence
+  record. That shell predates the prose em-dash sweep (task 7), so these
+  captures carry every sub-order's change but not the sweep's desk strings;
+  the sweep's evidence is task 7.7's legs.
+- [x] 6.4 The complete desk ledger once per size (174 selected, zero failed,
   zero deferred): coordinator-owned, integration.
+  It runs once on the commit that is pushed, and the pull request records the
+  result.
 
 ## 7. Desk copy carries no prose em dash (R451, widened at the whole-diff review)
 
@@ -355,6 +366,14 @@
 - [x] 7.6 Amend S4 (the advisory line) at the end of the ledger's #451
   amendment section. Add a dated amendment line under the lock's verbatim
   advisory string. Move the desk browser suite's chrome assertion.
-- [ ] 7.7 Coordinator-run legs: the desk replay `ONLY=S4` at 1280x720 and
+- [x] 7.7 Coordinator-run legs: the desk replay `ONLY=S4` at 1280x720 and
   1440x900, and `frontend/desk.browser.test.mjs`. The complete ledger stays
   folded into 6.4.
+  Evidence, coordinator-run 2026-09-24 on 678fb544:
+  `ONLY=S4,S42,S142,S153,S178` printed `# executed 5 · failed 0 · deferred 0 ·
+  selected 5` at 1280x720 and at 1440x900, and the desk browser suite passed
+  43 of 43. Base b03431d2 with this branch's harness laid over it fails S4 at
+  both sizes at "the advisory line drifted", reading the old line "Advisory
+  only — review with your clinician before changing pump settings." The review
+  fix 9879f196 that followed changed only the held-row prefix, which no story
+  reads, plus tests and records.

@@ -224,17 +224,23 @@ its window or coordinate. No in-span date was added, so no pin was needed.
 - [x] 5.4 Confirm, by reading against `design.md`'s locator list, that no desk
   browser test or replay story clicks a changed queue position or asserts the old
   order, and amend any that does.
-- [ ] 5.5 Run the lock's whole worker gate on this final commit, including every
+- [x] 5.5 Run the lock's whole worker gate on this final commit, including every
   drift check, the public-tree line and the backend pytest once, and state the
   pytest wall time.
   coordinator: the whole backend pytest runs once on the integration commit before the push.
+  Coordinator, 2026-09-24: every drift check passed on the release trunk after
+  this change merged (496aacd3, 12 of 12) and again on 9882bcfe (12 of 12,
+  nothing regenerated), with the fast gate (1136 and 1153 tests) and the
+  port-free acceptance classes. The public-tree build, links and scan pass on
+  9882bcfe (425 files, 0 findings). The whole backend pytest, with its wall
+  time, runs once on the commit that is pushed, and the pull request records the result.
 
 Evidence (sub-order 5, commit 59ec95f5): the ordered whole-answer parity test failed
 on the sub-order 4 adapter at "0-360 row order". The mirror, pricing from the payload,
 put Over-treated low after the Patterns; the server leads with it. With the frozen
 inputs the mirror equals the server's projection byte for byte in the whole day and
-all three narrowed windows. Task 5.5 stays open: the whole backend pytest runs once,
-on the integration commit, before the push.
+all three narrowed windows. The whole backend pytest runs once, on the commit that is
+pushed, and the pull request records the result.
 
 Coordinator-authorized fence widening (release coordinator, 2026-09-24, Q3 delegation):
 `frontend/diagnose-workstation.test.js` joins the fence, for a sub-order 5 finding.

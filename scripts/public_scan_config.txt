@@ -140,8 +140,8 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 239 3693ecec4e9e6cabd96095880b84cf832c3b435c3afcf6a8d513e061b7540292
-dose-ratio-ack CONTEXT.md:501 | 0.2 U
+dose-ratio-baseline 250 7c57f20b1b8121a74c7155b24da379cf892e99367dbbdb4afb83fa41f27f1dc3
+dose-ratio-ack CONTEXT.md:515 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U
 dose-ratio-ack DESIGN.md:163 | 1 U : 36 mg/dL
@@ -161,7 +161,7 @@ dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:16 | 3.6 U
 dose-ratio-ack ciq_autotune/analyzers/tuning_priority.py:201 | 100 U
 dose-ratio-ack ciq_autotune/harm.py:70 | 0.1 U
 dose-ratio-ack ciq_autotune/insulin.py:220 | 0.1 U
-dose-ratio-ack ciq_autotune/pattern_sweep.py:1042 | 1 U
+dose-ratio-ack ciq_autotune/pattern_sweep.py:1043 | 1 U
 dose-ratio-ack ciq_autotune/tandemsource_map.py:207 | 65.535 U
 dose-ratio-ack docs/kb/start-here.md:12 | 4.5 U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:14830 | 0.86 U
@@ -262,16 +262,27 @@ dose-ratio-ack frontend/__fixtures__/findings-projection.json:60822 | 1.00 U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:76535 | 6 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:84178 | 6 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:91821 | 6 g/U
-dose-ratio-ack frontend/kb.test.js:186 | 0.5 U
-dose-ratio-ack frontend/kb.test.js:206 | 0.5 U
-dose-ratio-ack frontend/plan.js:697 | 0.001 U
-dose-ratio-ack frontend/plan.js:699 | 0.1 g/U
+dose-ratio-ack frontend/kb.test.js:187 | 0.5 U
+dose-ratio-ack frontend/kb.test.js:207 | 0.5 U
+dose-ratio-ack frontend/plan.js:476 | 0.001 U
+dose-ratio-ack frontend/plan.js:478 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:169 | 10 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:40 | 0.3 U
 dose-ratio-ack openspec/specs/safety/spec.md:30 | 0.1 U
 dose-ratio-ack openspec/specs/safety/spec.md:31 | 3.0 U
 dose-ratio-ack openspec/specs/safety/spec.md:72 | 0.05 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:2992 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3017 | 1 U : 32 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3023 | 9 g/U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3036 | 1 U : 32 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3119 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3135 | 1 U : 30.0 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3140 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3155 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3164 | 1 U : 30.0 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3171 | 4.8 g/U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3179 | 1 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:152 | 0.04 U
 dose-ratio-ack tests/test_analyzer_basal.py:1030 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:1031 | 0.80 U

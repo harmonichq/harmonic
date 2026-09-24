@@ -124,6 +124,27 @@ never answer from the whole day or with no Patterns.
   unfrozen scoped case file or a scoped selection
 - **THEN** each request fails with an error naming the missing window or coordinate
 
+### Requirement: The browser-gate test desk projects the server's own inputs
+
+The browser gates SHALL project their findings queue from the same inputs the
+frozen Pattern rosters are built from: the analysis with its tuning levers, the
+scenarios, the analysis generation, and the payload's exposures without
+alteration. The fixture findings mirror's answer SHALL then equal the server's
+projection of those inputs byte for byte, row order included, in the whole day and
+in each frozen scoped window, and the desk suite's analysis and scenarios reads
+SHALL serve those same frozen inputs.
+
+#### Scenario: The test desk's queue is the server's, in order
+
+- **GIVEN** the browser-gate payload and the frozen browser inputs
+- **WHEN** the mirror projects the whole day and each frozen scoped window through
+  the browser population
+- **THEN** each answer equals the server's frozen projection of the same inputs
+  byte for byte, row order included
+- **AND** in the whole day Basal 04:00, Over-treated low, Late bolus and Correction
+  on active insulin carry their server prices (39, 28, 18 and 20), and the queue
+  leads with Basal 04:00, then Over-treated low, then the Patterns
+
 ## MODIFIED Requirements
 
 ### Requirement: A selected case-file Occurrence serves why it was judged

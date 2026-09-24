@@ -42,7 +42,7 @@ and `docs/scope/454-row-shapes.measure.py`.
   High.** Why: after the re-claim no committed Cause appears in two families, and
   Over-treated low is the one lever the producer drives from two anchor kinds, with
   its case-file family sorting second as the test requires. inline.
-- **Chunked, serial sub-orders (four after round 2).** Why: after the widening, five
+- **Chunked, serial sub-orders (four after round 2, five after round 3).** Why: after the widening, five
   slicing traits fire (multiple deliverable artifacts, live run inside the ticket,
   split-path evidence, lockstep copies, lifecycle-gated revision), and each
   sub-order projects inside the 120k–180k band. The served rule and S182 come
@@ -69,26 +69,34 @@ contract"), which is the admitted authority.
   shares the projection generator, capture and Pattern mirror with sub-order 3, and
   together they would exceed the 180k target. inline.
 
+### Coordinator rulings, round 3 (2026-09-23)
+
+- **Q6a (coordinator): freeze the narrowed-window Pattern case files too; any other
+  narrowed Pattern request stops with an error naming it.** Why: the roster exposes
+  charted scoped Patterns whose headers would otherwise read the whole day
+  (00:00–06:00 Highs after meals 2 of 20 against the server's 0 of 4). → ADR.
+- **Q7 (coordinator): a fifth serial step feeds the test desk the inputs the Pattern
+  lists and prices come from, so its queue order matches the server's exactly in
+  the whole day and each frozen window; the mirror check compares order.** → ADR
+  (design.md "The test desk projects the server's own inputs").
+- **The `memberless_low` mutation is deleted.** Why: it is the one input difference
+  left once prices match; it makes the roster claim a meal the queue's exposures
+  never claim. Measured: only Lows after meals moves (k 1 → 0); guidance Patterns do
+  not. → ADR.
+- **The desk suite's analysis and scenarios stubs serve the frozen inputs too.**
+  Why: one input for every desk read, as in the app; the desk renders no scenario
+  field and no tuning lever, so nothing rendered moves. → ADR.
+- **No desk browser test or replay story encodes the old order.** Why: every
+  position-dependent locator lands on the same element or does not depend on
+  order, and no replay reads the fixture queue (design.md lists each). Three
+  fast-gate tests encoded the old prices or order and are amended. inline.
+- **Five serial sub-orders, one past the slicing rubric's practical ceiling of
+  four.** Why: the coordinator ruled a fifth step; folding it into sub-order 4
+  would push that chunk past the 180k target. Reported to the coordinator. inline.
+
 ## Open questions
 
-- **Q6a (extension of Q6, default applied, confirmation owed).** Supplying the
-  scoped roster makes charted scoped Pattern rows appear, whose headers the browser
-  population builds through the whole-day Pattern mirror (00:00–06:00 Highs after
-  meals would read 2 of 20 where the server serves 0 of 4). Default in the lock:
-  also freeze the server's scoped Pattern case files (clock and event, no selection)
-  and fail by name for any other scoped Pattern request.
-- **Q7 (new finding, returned to the coordinator).** The browser population prices
-  habit and basal rows from the payload's own scenarios and analysis (unpriced),
-  while the Pattern rosters and prices come from the projection fixture's browser
-  scenarios and tuning levers. So the fixture queue's order differs from the
-  server's for the same rows, in the whole day on base as well (server: basal 39,
-  Over-treated low 28, Highs after meals 21, Late bolus 18…; fixture: priced
-  Patterns first, the rest unpriced). Recommended default: freeze the browser
-  inputs (analysis with tuning levers, scenarios) the rosters come from and have the
-  population feed them to the mirror, so the fixture queue is the server's byte for
-  byte; this moves the whole-day and scoped order the desk suite reads, so it needs
-  its own measured list before it is locked. Until ruled, the Q6 tests compare rows
-  as a set.
+None.
 
 ## Spawned tasks
 
@@ -98,5 +106,6 @@ None.
 
 - Round 0 (triage draft, lock 1 at 99bb43cd): returned to the coordinator.
 - Round 1 (coordinator rulings Q1–Q5, 2026-09-23): change amended and re-pinned (a4b4106f).
-- Round 2 (coordinator rulings Q2 limit and Q6, 2026-09-23): change amended and re-pinned;
+- Round 2 (coordinator rulings Q2 limit and Q6, 2026-09-23): change amended and re-pinned (7b615133).
+- Round 3 (coordinator rulings Q6a and Q7, 2026-09-23): change amended and re-pinned;
   awaiting the coordinator's `/plan-review`.

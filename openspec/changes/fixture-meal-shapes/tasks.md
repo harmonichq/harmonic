@@ -131,7 +131,8 @@
 - [ ] 4.3 Implement behavioral-layer **The browser-gate findings mirror serves the
   server's scoped Pattern list or fails**: `populateFindingsProjectionInput`
   (`frontend/browser-fixture-population.js`) supplies `outcome_patterns_by_window`
-  from the frozen map unless the caller brings its own map, and
+  from the frozen map unless the caller brings its own map (sub-order 5 then
+  removes that exception), and
   `mockups/findings-projection.mirror.mjs` throws, naming the window, when a
   supplied map lacks a scoped window. `projectPatternCaseFile` answers a scoped
   coordinate only from `pattern_cases_by_window`, with the requested projection id,
@@ -145,7 +146,47 @@
   scoped selection each throw by name. Amend `the Afternoon fixture retains all four
   published behavioral Findings` to the server's shown set: Highs after meals, Lows
   after correcting highs, Over-treated low and Missed / unannounced meal, still
-  "4 in this window". Both comparisons read rows as a set; the fixture queue's order
-  is design.md's Q7 caveat.
-- [ ] 4.5 Run the lock's whole worker gate on this final commit, including every
+  "4 in this window". Both comparisons read rows as a set here; sub-order 5 makes
+  them ordered once the test desk projects the server's own inputs.
+
+## 5. The test desk projects the server's own inputs (sub-order 5)
+
+- [ ] 5.1 In `scripts/gen_findings_projection_fixtures.py`, freeze `browser_inputs`:
+  the browser analysis (the payload's analysis with the projection's tuning
+  levers), the browser scenarios, and the analysis generation, exactly as the
+  rosters use them. Build every browser roster, guidance Pattern, scoped roster,
+  scoped case and family case from the payload's exposures without alteration:
+  delete the `memberless_low` mutation, which moves the whole-day roster's Lows after
+  meals from k 1 to 0 (rate 0.05 → 0, Wilson interval 0.0151–0.1532 → 0–0.0759).
+  Freeze `browser_windows`: the server's full projection of those inputs for the
+  whole day and each frozen scoped window, replacing sub-order 4's
+  `browser_window_queues`.
+- [ ] 5.2 Implement behavioral-layer **The browser-gate test desk projects the
+  server's own inputs**: `populateFindingsProjectionInput` builds the server input
+  from the frozen analysis, scenarios, analysis generation, rosters and per-window
+  map, taking only exposures (and any event charts) from the caller. The `#395 ·
+  the browser input publishes only its renderable mini hosts in served order` test
+  (`frontend/diagnose-findings-queue.test.js`) projects `fixture.inputs` directly: it
+  reads the projection fixture's own inputs, which never needed the browser adapter,
+  and its answer is unchanged. In `frontend/desk.browser.test.mjs`, the
+  `/api/analyze` and `/api/scenarios` stubs serve the frozen browser inputs, so every
+  desk read shares one input as in the app (the desk renders no scenario field and no
+  tuning lever).
+- [ ] 5.3 In `frontend/browser-fixture-population.test.js`, replace sub-order 4's set
+  comparison with a deep equality of the mirror, through the browser population,
+  against `browser_windows` for the whole day and each frozen window, row order
+  included; show it failing on the sub-order 4 adapter. Amend the tests whose
+  expectation encoded the old prices or order: `the Afternoon fixture retains all
+  four published behavioral Findings` to the server's order (Over-treated low, Highs
+  after meals, Lows after correcting highs, Missed / unannounced meal; "4 in this
+  window"), and `browser preparation mirrors the wrapped row` to the served headline
+  "Ranks among this window's findings. Showed up in 1 of 10 lows in this window." In
+  `frontend/diagnose-findings-queue.test.js`, re-point `#413 · an unpriced claimed
+  member folds under the tail Pattern` to Correction stacking, the server's unpriced
+  member (folded under Lows after correcting highs, two fold sentences), now that
+  Late bolus carries its server price.
+- [ ] 5.4 Confirm, by reading against `design.md`'s locator list, that no desk
+  browser test or replay story clicks a changed queue position or asserts the old
+  order, and amend any that does.
+- [ ] 5.5 Run the lock's whole worker gate on this final commit, including every
   drift check and the backend pytest once, and state the pytest wall time.

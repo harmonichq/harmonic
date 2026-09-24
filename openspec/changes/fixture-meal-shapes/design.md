@@ -9,7 +9,11 @@ sentence, served once, with ledger story S182; Q5 widen to the event-comparison
 capture's comparison rows; Q2 limit, keep the re-claim to the rows themselves; Q6
 widen to the browser gate's scoped Pattern list (freeze the server's list for each
 window the browser checks use, pass it in, fail loudly for any other window, amend
-the Afternoon fast-gate test to the server's answer, list every moved fact).
+the Afternoon fast-gate test to the server's answer, list every moved fact); Q6a
+also freeze the narrowed-window Pattern case files, any other narrowed Pattern
+request failing by name; Q7 add a fifth step that feeds the test desk the inputs
+the Pattern lists and prices come from, so its queue order matches the server's
+exactly, with the mirror check comparing order.
 
 ## Verified facts (origin/main b03431d2, 2026-09-23)
 
@@ -200,17 +204,13 @@ check selects inside a scoped Pattern.
 **Why.** Q6: freeze the server's answer for each window the browser checks use, and
 fail loudly for any other. Freezing the scoped case files extends that ruling to the
 headers the roster newly exposes; without it, the fix would swap a missing Pattern
-for a Pattern with the wrong counts (coordinator confirmation owed, Q6a).
+for a Pattern with the wrong counts (coordinator confirmed, Q6a).
 
-**Order caveat (Q7, returned to the coordinator).** With the roster in, the mirror's
-Pattern rows, folds, counts and chip counts equal the server's in all three windows.
-Row order still differs. The browser population prices habit and basal rows from
-the payload's own scenarios and analysis (unpriced), while the rosters and Pattern
-prices come from the projection fixture's browser scenarios. The whole day on base
-already shows this: the server orders basal 39, Over-treated low 28, Highs after
-meals 21, Late bolus 18…, while the fixture mirror leads with the priced Patterns.
-The parity test and the Afternoon test therefore compare rows as a set until Q7 is
-ruled.
+With the roster in, the mirror's Pattern rows, folds, counts and chip counts equal
+the server's in all three windows, but row order does not until the ADR below
+("The test desk projects the server's own inputs"). So sub-order 4's tests compare
+rows as a set and sub-order 5 makes them ordered. The "After" column below gives
+sub-order 4's rows; sub-order 5's table gives the final order.
 
 **Moved facts (fixture mirror, browser windows; after the Q2 re-claim).**
 
@@ -227,6 +227,71 @@ Highs after meals, Lows after correcting highs, Over-treated low, Missed meal, s
 inside Diagnose re-addresses it in place…") now shows both Patterns in the
 00:00–06:00 queue while it holds its Over-treated low case; none of its assertions
 reads the queue.
+
+## ADR 454 — The test desk projects the server's own inputs
+
+**Grounded (base b03431d2).** The browser population feeds the findings mirror the
+payload's analysis and scenarios, which carry no tuning levers and price no habit
+Pattern, while the Pattern rosters are built from the projection fixture's browser
+analysis (with tuning levers) and browser scenarios (the projection's own plus a
+Late bolus and a Correction on active insulin Pattern). The whole-day roster is also
+built over exposures the payload does not carry: one unclaimed meal re-marked as
+claimed by Meal over-delivery (`memberless_low`, #395). So the fixture queue prices
+Patterns from one input and every other row from another. The desk reads the
+scenarios payload only to record its age, and renders no tuning lever.
+
+**Decision.** The projection generator freezes `browser_inputs` (the browser
+analysis, browser scenarios and analysis generation) and builds every browser
+roster and case from the payload's exposures unaltered, deleting the
+`memberless_low` mutation. The browser population feeds the mirror those frozen
+inputs and takes only exposures from the caller, and the desk suite's
+`/api/analyze` and `/api/scenarios` stubs serve the same frozen inputs. The
+generator freezes the server's full projection of them (`browser_windows`, whole day
+and each frozen window), and the mirror must equal it byte for byte, order
+included. Measured in scratch: all four answers are byte-equal.
+
+**Why.** Q7: the test desk's queue order must be the server's. The mutation is the
+one input difference left once the prices match: it makes the roster claim a meal
+the queue's exposures never claim, and after this change's row shapes the claimed
+row would carry an unmatched own verdict the producer never serves.
+
+**Moved facts (fixture mirror, relative to sub-order 4).**
+
+| Window | Row order before → after | Other moves |
+|---|---|---|
+| whole day | Highs after meals [Late bolus], Lows after correcting highs [Correction on active insulin, Correction stacking], Over-treated low, Missed meal, Basal 04:00, Lows after meals, Overnight lows → **Basal 04:00, Over-treated low**, Highs after meals […], Lows after correcting highs […], Missed meal, Lows after meals, Overnight lows | Basal 04:00 priority none → 39, tier noted → next in line; Over-treated low none → 28, Late bolus none → 18, Correction on active insulin none → 20, each noted → worth a look, headline "Not ranked in this window yet…" → "Ranks among this window's findings…"; Lows after meals k 1 → 0, rate 0.05 → 0, Wilson 0.0151–0.1532 → 0–0.0759 |
+| 00:00–06:00 | Highs after meals, Lows after correcting highs, Over-treated low, … → **Over-treated low**, Highs after meals, Lows after correcting highs, … | Over-treated low priced 28, worth a look, "Ranks among…" (7 of 8 lows) |
+| 02:15–04:45 | same reorder | Over-treated low priced 28, "Ranks among…" (4 of 5 lows) |
+| 12:00–18:00 | Highs after meals […], Lows after correcting highs […], Over-treated low, Missed meal → **Over-treated low**, Highs after meals […], Lows after correcting highs […], Missed meal | Over-treated low 28, Late bolus 18, Correction on active insulin 20, each worth a look, "Ranks among…" |
+
+Every window's `analysis_generation` becomes the frozen generation. Counts, chip
+counts, folds and Pattern rows do not move.
+
+**Tests whose expectation encoded the old prices or order** (all fast gate): the
+Afternoon test (server order: Over-treated low, Highs after meals, Lows after
+correcting highs, Missed meal; "4 in this window"); the join test's headline
+("Ranks among this window's findings. Showed up in 1 of 10 lows in this window.");
+`#413 · an unpriced claimed member folds under the tail Pattern`, re-pointed to
+Correction stacking, the server's unpriced member. The `#395` mini-host test
+projects its own inputs directly, and its answer is unchanged.
+
+**Desk browser tests and replay stories, read for position or order.** None
+encodes the old order:
+- `.qrow[data-id^="pattern:"]` `.first()` (the Focus-read, grouped-comparison, c2
+  and thin-basal tests) is Highs after meals before and after.
+- `.qfold` `.first()` (c2) is Highs after meals' fold before and after. It now
+  arrives closed, because Basal 04:00 is rank one, and the test already clicks a
+  closed fold open.
+- `.qrow[data-id]` `.first()` and `.qitem.member` `.first()` only wait.
+- `openRailRow` opens every closed fold.
+- By-id clicks (`finding:over_treated_low`) stay on an unclaimed row.
+- `[data-event-view="glucose"]` marks the always-present workstation shell.
+- The tests near `openRailRow`'s callers (lines 403, 466, 1234–1263) run on the
+  eating-sequence fixture.
+- No replay module imports the browser population or the findings mirror; the
+  ledger replays QA case stores.
+The one test file amended is `frontend/desk.browser.test.mjs`, and only its two
+input stubs.
 
 ## Revise lifecycle record (sub-order 1)
 
@@ -308,7 +373,7 @@ One ordered pass reaches the fixed point (the chain reads in a cycle:
 | Artifact | Moves | Check |
 |---|---|---|
 | `mockups/diagnose-workstation.synthetic/explore-exposures.capture.json`, `payload.json`, `finding-case-files.json` | rows; claimed members | `uv run python scripts/check_demo_fixtures.py` |
-| `frontend/__fixtures__/findings-projection.json` | `pattern_clock_case`; adds `habit_rate_families`, `pattern_family_cases`, `browser_outcome_patterns_by_window`, `browser_window_queues`, `browser_pattern_cases_by_window` | `uv run python scripts/gen_findings_projection_fixtures.py --check` |
+| `frontend/__fixtures__/findings-projection.json` | `pattern_clock_case`; `browser_outcome_patterns` (Lows after meals k 1 → 0); adds `habit_rate_families`, `pattern_family_cases`, `browser_outcome_patterns_by_window`, `browser_pattern_cases_by_window`, `browser_inputs`, `browser_windows` (sub-order 4's interim `browser_window_queues` is replaced by `browser_windows` in sub-order 5) | `uv run python scripts/gen_findings_projection_fixtures.py --check` |
 | `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families`; adds `pattern_cases_by_window` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
 | `mockups/harmonic-v2.exploration/focus.json`, `journey.json`, `workstation.json` | claimant sentences → null | `uv run python mockups/harmonic-v2.exploration/generate.py --check` |
 
@@ -317,7 +382,11 @@ externally generated workstation captures, and every other `--check` generator.
 
 ## Readers, legs and stories
 
-- Node fast gate: amended as tasks 1.5 and 2.5 list; new tests from 1.3, 1.6 and 3.5.
+- Node fast gate: amended as tasks 1.5, 2.5, 4.4 and 5.3 list; new tests from 1.3,
+  1.6, 3.5, 4.4 and 5.3.
+- `frontend/desk.browser.test.mjs`: its `/api/analyze` and `/api/scenarios` stubs
+  serve the frozen browser inputs (task 5.2); no assertion changes. The Q7 ADR lists
+  every position-dependent locator and shows none changes target.
 - `frontend/desk.browser.test.mjs` serves `payload.json`, `finding-case-files.json`,
   `capture.json` and `findings-projection.json` in every test; no assertion reads a
   moved field. Its Pattern-case tests — "a failed Focus read keeps a short visible
@@ -352,8 +421,10 @@ externally generated workstation captures, and every other `--check` generator.
 - **Evidence owed:** the backend test over analyzer output that fails on base for
   the repeated sentence; the mirror's once-rule and family-parity tests that fail on
   base; the generator shape test that fails on base; S182 failing on base at its
-  feature assertion and passing on the branch; every drift check green; the
-  measurement matching the table above.
+  feature assertion and passing on the branch; the scoped-window parity test that
+  fails on the base adapter; the ordered byte-parity test against the server's
+  frozen projections that fails on the sub-order 4 adapter; every drift check green;
+  the measurement matching the tables above.
 - **Why:** the browser gates certify the advisory desk against these fixtures, and
   the served reason is advisory text on the shipped desk.
 - **Disposition:** admitted with this change; the scope ledger

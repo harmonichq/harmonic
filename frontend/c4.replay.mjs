@@ -335,7 +335,8 @@ const geometry404 = page => page.evaluate(() => {
       .map(heading => heading.textContent.trim()),
     rows: [...document.querySelectorAll('#level .case-occurrence')].map(row => {
       const only = row.querySelector('.only'); const tier = row.querySelector('.tier');
-      return { comparisonCohort: row.dataset.comparisonCohort || null,
+      return { occurrenceId: row.dataset.occurrenceId || null,
+        comparisonCohort: row.dataset.comparisonCohort || null,
         description: only ? textBox(only) : null, tier: tier ? textBox(tier) : null };
     }),
   };
@@ -346,10 +347,102 @@ const overlap404 = (left, right) => ({
   y: Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)),
 });
 
+// #432: the served-description contract S148, S150 and amended S107 read. A row
+// whose anchor serves carbs reads its carbs, its dose and its served outcome; a
+// row with a dose and no carbs reads that dose then its anchor label; any other
+// row reads its anchor glucose then its label. Carbs and glucose print whole and
+// a dose to at most one decimal.
+const whole432 = value => (value == null ? '—' : String(Math.round(value)));
+const dose432 = value => (value == null ? '—' : `${Math.round(value * 10) / 10} U`);
+const figure432 = anchor => (anchor.carbs != null ? `${whole432(anchor.carbs)} g · ${dose432(anchor.insulin)}`
+  : anchor.insulin != null ? dose432(anchor.insulin) : whole432(anchor.bg));
+export function expectedDescription432(row) {
+  const figure = figure432(row.anchor);
+  if (row.anchor.carbs == null) return `${figure} · ${row.anchor.label}`;
+  return row.outcome ? `${figure} · ${row.outcome.kind} ${whole432(row.outcome.bg)}` : figure;
+}
+const BAND432 = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet',
+  outranked: 'claimed by another finding', no_data: 'not comparable' };
+
+// Each rendered roster row against its own served meal. A row is a premise only
+// while it is a served Occurrence; the served facts themselves are the feature.
+export function assertServedRowDescriptions432(id, served, rendered) {
+  assert.ok(rendered.length, `${id} premise: the drilled case renders Occurrence rows`);
+  const byId = new Map(served.occurrences.map(row => [row.id, row]));
+  for (const row of rendered) {
+    const source = byId.get(row.occurrenceId);
+    assert.ok(source, `${id} premise: rendered row ${row.occurrenceId} is a served Occurrence`);
+    assert.ok(source.anchor.carbs != null && source.anchor.insulin != null,
+      `${id} every meal row must serve its carbs and dose; ${row.occurrenceId} serves ${JSON.stringify(source.anchor)}`);
+    assert.doesNotMatch(row.text ?? '', /^—/, `${id} no meal row may lead with a dash: ${row.text}`);
+    assert.equal(row.text, expectedDescription432(source),
+      `${id} ${row.occurrenceId} must read its own served carbs, dose and outcome`);
+  }
+}
+
+// The selected block against its served detail: the anchor figure, the outcome
+// line, the served cause and every served habit with its band label, and no line
+// that only counts readings or markers or describes the canvas.
+export function assertSelectedFacts432(id, detail, block, { outcome = null } = {}) {
+  assert.ok(detail && block, `${id} premise: a selected Occurrence and its rendered block`);
+  assert.ok(detail.anchor?.carbs != null && detail.anchor.insulin != null,
+    `${id} the selected meal must serve its carbs and dose; it serves ${JSON.stringify(detail.anchor)}`);
+  assert.ok(block.figure.startsWith(figure432(detail.anchor)),
+    `${id} the figure line must read the served carbs and dose: ${block.figure}`);
+  if (outcome) {
+    assert.equal(detail.outcome?.kind, outcome, `${id} the selected meal must serve its Arc ${outcome}`);
+  }
+  const outcomeLines = block.lines.filter(line => line.kind === 'outcome').map(line => line.text);
+  assert.deepEqual(outcomeLines, detail.outcome ? [`${detail.outcome.kind === 'peak' ? 'Peak' : 'Nadir'} `
+    + `${whole432(detail.outcome.bg)} mg/dL, ${Math.round(detail.outcome.minute)} min after the bolus`] : [],
+  `${id} the outcome line must equal the served outcome`);
+  assert.ok(detail.reason, `${id} the selected Occurrence must serve its reason`);
+  const causeLines = block.lines.filter(line => line.kind === 'cause').map(line => line.text);
+  assert.deepEqual(causeLines, detail.reason.cause ? [[`Attributed to ${detail.reason.cause.title}`,
+    detail.reason.cause.text].filter(Boolean).join(' · ')] : [], `${id} the cause line must name the served cause`);
+  assert.deepEqual(block.lines.filter(line => line.kind === 'habit').map(line => line.text),
+    detail.reason.habits.map(habit => [habit.title, BAND432[habit.verdict], habit.detail].filter(Boolean).join(' · ')),
+    `${id} the block must list each served habit with its band label and sentence`);
+  for (const line of block.lines) {
+    assert.doesNotMatch(line.text, /^\d+ (glucose readings|event markers)$/, `${id} no line may be only a count: ${line.text}`);
+  }
+  assert.doesNotMatch(block.text, /The canvas shows/, `${id} no sentence may describe the canvas`);
+}
+
+const renderedRows432 = page => page.evaluate(() => [...document.querySelectorAll('#level .case-occurrence')]
+  .map(node => ({ occurrenceId: node.dataset.occurrenceId || null,
+    text: node.querySelector('.only')?.textContent.replace(/\s+/g, ' ').trim() ?? null })));
+const selectedBlock432 = page => page.evaluate(() => {
+  const detail = document.querySelector('#level .occ-detail');
+  const figure = detail?.querySelector('.occ-nums');
+  return detail && {
+    text: [detail, ...document.querySelectorAll('#level .case-facts')]
+      .map(node => node.textContent.replace(/\s+/g, ' ').trim()).join(' '),
+    figure: figure ? figure.textContent.replace(/\s+/g, ' ').trim() : '',
+    lines: [...document.querySelectorAll('#level .case-facts .vd')].map(node => ({
+      kind: [...node.classList].find(name => name !== 'vd') ?? null,
+      text: node.textContent.replace(/\s+/g, ' ').trim(),
+    })),
+  };
+});
+async function expandRoster432(page) {
+  if (await page.locator('#level .more').count()) {
+    await page.locator('#level .more').first().click();
+    await settled(page);
+  }
+}
+async function mealBolusShortCase432(page) {
+  await fullDayDiagnose(page);
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
+  return (await drillMeal404(page, 'event')).served;
+}
+
 // Comparison membership is grouped by a constant served cohort name. Ordinary
 // case rows instead retain their row-tier column, so the geometry witness must
-// prove both rendered shapes rather than treating one as the other.
-export function assertS107ComparisonGeometry(comparison, expectedCohorts) {
+// prove both rendered shapes rather than treating one as the other. #432: each
+// row's readable text is its own served description.
+export function assertS107ComparisonGeometry(comparison, expectedCohorts, served) {
   assert.deepEqual(comparison.cohortHeadings, expectedCohorts.map(cohort => cohort.name),
     'S107 comparison headings must name the exact served cohorts once');
   const groupedRows = comparison.rows.filter(row => row.comparisonCohort);
@@ -358,17 +451,22 @@ export function assertS107ComparisonGeometry(comparison, expectedCohorts) {
     assert.ok(expectedCohorts.some(cohort => cohort.key === row.comparisonCohort),
       `S107 comparison row names an unknown cohort: ${row.comparisonCohort}`);
     assert.equal(row.tier, null, 'S107 comparison rows must not repeat their grouped cohort label');
-    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated,
+    assert.ok(row.description?.text === servedDescription107(served, row) && !row.description.truncated,
       `S107 comparison event text must remain fully readable: ${JSON.stringify(row.description)}`);
   }
 }
 
-export function assertS107TierGeometry(tierRows) {
+const servedDescription107 = (served, row) => {
+  const source = served.occurrences.find(occurrence => occurrence.id === row.occurrenceId);
+  return source ? expectedDescription432(source) : null;
+};
+
+export function assertS107TierGeometry(tierRows, served) {
   assert.ok(tierRows.length, 'S107 premise: the same meal case supplies ordinary tier rows');
   const labels = new Set(tierRows.map(row => row.tier?.text).filter(Boolean));
   assert.ok(labels.size > 1, `S107 needs mixed ordinary tier labels: ${JSON.stringify([...labels])}`);
   for (const row of tierRows) {
-    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated
+    assert.ok(row.description?.text === servedDescription107(served, row) && !row.description.truncated
       && row.tier && !row.tier.truncated,
       `S107 ordinary event text and tier must remain fully readable: ${JSON.stringify(row)}`);
     const overlap = overlap404(row.description, row.tier);
@@ -377,9 +475,9 @@ export function assertS107TierGeometry(tierRows) {
   }
 }
 
-export function assertS107RosterGeometry({ comparison, tierRows, expectedCohorts }) {
-  assertS107ComparisonGeometry(comparison, expectedCohorts);
-  assertS107TierGeometry(tierRows);
+export function assertS107RosterGeometry({ comparison, tierRows, expectedCohorts, served }) {
+  assertS107ComparisonGeometry(comparison, expectedCohorts, served);
+  assertS107TierGeometry(tierRows, served);
 }
 
 async function drillMeal404(page, alignment) {
@@ -1622,7 +1720,7 @@ export const C4_STORIES = {
       });
     }
     assertS107ComparisonGeometry(drilled,
-      eventMeal.served.projection.cohorts.map(({ key, name }) => ({ key, name })));
+      eventMeal.served.projection.cohorts.map(({ key, name }) => ({ key, name })), eventMeal.served);
     assert.deepEqual(failures, [], 'S107 desk geometry must preserve labels, rails, focal placement and long cohort rows');
   },
   async S108(page) {
@@ -2286,6 +2384,48 @@ export const C4_STORIES = {
       assert.equal(shares.reduce((sum, [, count]) => sum + Number(count), 0), own.count,
         "S126 the cause lines' shares must add up to the Pattern's served count");
     }, 'S126 a folded cause shows its share of the Pattern first');
+  },
+  // #432: fail-first on a4d374a7, where every Meal bolus short row reads a dash
+  // and its constant anchor label, and the served case file carries no dose,
+  // carbs, outcome or reason.
+  async S148(page) {
+    const served = await mealBolusShortCase432(page);
+    await expandRoster432(page);
+    await waitForReplayAssertion(async seen => {
+      assertServedRowDescriptions432('S148', served, seen(await renderedRows432(page)));
+    }, 'S148 every Meal bolus short row names its own meal');
+  },
+  async S149(page) {
+    const served = await mealBolusShortCase432(page);
+    const matched = page.locator('#level .case-occurrence[data-comparison-cohort="matched"]').first();
+    assert.ok(await matched.count(), 'S149 premise: the Meal bolus short case serves a matched meal');
+    const occ = await selectOccurrence(page, matched);
+    const file = await read(page, '/api/diagnose/finding-case-file', {
+      projection_id: served.projection_id, finding_id: served.finding.id, alignment: 'event', occ,
+    });
+    await waitForReplayAssertion(async seen => {
+      assertSelectedFacts432('S149', file.selection.detail, seen(await selectedBlock432(page)), { outcome: 'peak' });
+    }, 'S149 the selected matched meal reads as its facts and served reason');
+  },
+  async S150(page) {
+    await fullDayDiagnose(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals' && row.pattern_chart);
+    assert.ok(pattern, 'S150 premise: the case store serves a chartable Highs after meals Pattern');
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
+    await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+    const coordinate = { projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event' };
+    const served = await read(page, '/api/diagnose/finding-case-file', coordinate);
+    await waitForReplayAssertion(async seen => {
+      assertServedRowDescriptions432('S150', served, seen(await renderedRows432(page)));
+    }, 'S150 every Highs after meals row names its own meal');
+    const occ = await selectOccurrence(page);
+    const file = await read(page, '/api/diagnose/finding-case-file', { ...coordinate, occ });
+    await waitForReplayAssertion(async seen => {
+      assertSelectedFacts432('S150', file.selection.detail, seen(await selectedBlock432(page)));
+    }, 'S150 a selected Highs after meals Occurrence lists its served habits');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

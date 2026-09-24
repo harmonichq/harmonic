@@ -22,9 +22,22 @@ const SUPPORT = new Set(['withheld', 'limited', 'supported']);
 
 const validCount = (value) => Number.isInteger(value) && value >= 0;
 const validNumberOrNull = (value) => value === null || Number.isFinite(value);
+// Every anchor serves its bolus's dose and carbs beside its glucose, each a number
+// or an explicit null; a missing key is a projection this client cannot read.
 const validAnchor = (anchor) => typeof anchor?.t === 'string'
   && typeof anchor.kind === 'string' && typeof anchor.label === 'string'
-  && validNumberOrNull(anchor.bg);
+  && validNumberOrNull(anchor.bg)
+  && validNumberOrNull(anchor.insulin) && validNumberOrNull(anchor.carbs);
+const validOutcome = (outcome) => outcome === null
+  || (['peak', 'nadir'].includes(outcome?.kind) && Number.isFinite(outcome.bg)
+    && typeof outcome.t === 'string' && Number.isFinite(outcome.minute));
+const validReason = (reason) => (reason?.cause === null
+  || (typeof reason?.cause?.lever === 'string' && typeof reason.cause.title === 'string'
+    && typeof reason.cause.text === 'string'))
+  && Array.isArray(reason?.habits)
+  && reason.habits.every((entry) => typeof entry?.lever === 'string'
+    && typeof entry.title === 'string' && FINDING_VERDICTS.includes(entry.verdict)
+    && (entry.detail === null || typeof entry.detail === 'string'));
 const validCohort = (cohort, identity) => validCount(cohort?.routed_count)
   && validCount(cohort.usable_count) && cohort.usable_count <= cohort.routed_count
   && SUPPORT.has(cohort.support)
@@ -68,7 +81,7 @@ export function validFindingCaseFile(caseFile) {
     || !Array.isArray(occurrences) || occurrences.length !== caseFile.summary.denominator
     || !occurrences.every((row) => recurrenceIdentity.test(row?.id || '')
       && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
-      && validAnchor(row.anchor))) return false;
+      && validAnchor(row.anchor) && validOutcome(row.outcome))) return false;
   const patternId = caseFile.finding.id.startsWith('pattern:');
   const patternCase = typeof caseFile.finding.subject === 'string';
   if (patternId !== patternCase
@@ -215,6 +228,7 @@ export function validFindingCaseFile(caseFile) {
     if (!detail || detail.id !== selection.requested_id
       || !activeIds.has(detail.id) || !namedCohort
       || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
+      || !validOutcome(detail.outcome) || !validReason(detail.reason)
       || !(FINDING_VERDICTS.includes(detail.verdict) || comparisonSelection)
       || !Array.isArray(detail.glucose)
       || !detail.glucose.every((point) => typeof point?.t === 'string'

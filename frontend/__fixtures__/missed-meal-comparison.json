@@ -13,6 +13,8 @@
    {
     "anchor": {
      "bg": 260,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
@@ -20,17 +22,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
     "id": "o_c281816958d35a86706fd0017f599a2d",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 275,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-04 12:00:00"
@@ -38,17 +45,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-04 10:00:00"
     },
     "date": "2026-01-04",
     "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 250,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-05 12:00:00"
@@ -57,6 +69,7 @@
     "comparison_anchor": null,
     "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "outcome": null,
     "verdict": "outranked"
    }
   ],
@@ -187,6 +200,8 @@
    {
     "anchor": {
      "bg": 260,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
@@ -194,17 +209,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
     "id": "o_c281816958d35a86706fd0017f599a2d",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 275,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-04 12:00:00"
@@ -212,17 +232,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-04 10:00:00"
     },
     "date": "2026-01-04",
     "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 250,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-05 12:00:00"
@@ -231,6 +256,7 @@
     "comparison_anchor": null,
     "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "outcome": null,
     "verdict": "outranked"
    }
   ],
@@ -2254,6 +2280,8 @@
    {
     "anchor": {
      "bg": 260,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
@@ -2261,17 +2289,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
     "id": "o_c281816958d35a86706fd0017f599a2d",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 275,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-04 12:00:00"
@@ -2279,17 +2312,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-04 10:00:00"
     },
     "date": "2026-01-04",
     "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 250,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-05 12:00:00"
@@ -2298,6 +2336,7 @@
     "comparison_anchor": null,
     "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "outcome": null,
     "verdict": "outranked"
    }
   ],
@@ -4134,6 +4173,8 @@
    "detail": {
     "anchor": {
      "bg": null,
+     "carbs": 40,
+     "insulin": 4,
      "kind": "completed_carb_bolus",
      "label": "Completed carb bolus",
      "t": "2026-01-03 10:00:00"
@@ -4194,6 +4235,11 @@
       "t": "2026-01-03 09:00:00"
      }
     ],
+    "outcome": null,
+    "reason": {
+     "cause": null,
+     "habits": []
+    },
     "source_corrections": [],
     "verdict": "comparison"
    },
@@ -4231,6 +4277,8 @@
    {
     "anchor": {
      "bg": 260,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
@@ -4238,17 +4286,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-03 11:45:00"
     },
     "date": "2026-01-03",
     "id": "o_c281816958d35a86706fd0017f599a2d",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 275,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-04 12:00:00"
@@ -4256,17 +4309,22 @@
     "attributed": true,
     "comparison_anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-04 10:00:00"
     },
     "date": "2026-01-04",
     "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 250,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-05 12:00:00"
@@ -4275,6 +4333,7 @@
     "comparison_anchor": null,
     "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "outcome": null,
     "verdict": "outranked"
    }
   ],
@@ -6111,6 +6170,8 @@
    "detail": {
     "anchor": {
      "bg": 110,
+     "carbs": null,
+     "insulin": null,
      "kind": "detected_rise_onset",
      "label": "Detected rise onset",
      "t": "2026-01-03 11:45:00"
@@ -6157,6 +6218,22 @@
       "t": "2026-01-03 11:55:00"
      }
     ],
+    "outcome": null,
+    "reason": {
+     "cause": {
+      "lever": "missed_meal",
+      "text": "",
+      "title": "Missed / unannounced meal"
+     },
+     "habits": [
+      {
+       "detail": null,
+       "lever": "missed_meal",
+       "title": "Missed / unannounced meal",
+       "verdict": "fired"
+      }
+     ]
+    },
     "source_corrections": [],
     "verdict": "fired"
    },
@@ -6194,6 +6271,8 @@
    {
     "anchor": {
      "bg": 260,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-03 12:00:00"
@@ -6202,11 +6281,14 @@
     "comparison_anchor": null,
     "date": "2026-01-03",
     "id": "o_c281816958d35a86706fd0017f599a2d",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 275,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-04 12:00:00"
@@ -6215,11 +6297,14 @@
     "comparison_anchor": null,
     "date": "2026-01-04",
     "id": "o_318cbbb3a65cdec87252cb3cd3dfbf38",
+    "outcome": null,
     "verdict": "fired"
    },
    {
     "anchor": {
      "bg": 250,
+     "carbs": null,
+     "insulin": null,
      "kind": "high",
      "label": "High peak",
      "t": "2026-01-05 12:00:00"
@@ -6228,6 +6313,7 @@
     "comparison_anchor": null,
     "date": "2026-01-05",
     "id": "o_c3c777ba6aceb41ce56d29ed5527a472",
+    "outcome": null,
     "verdict": "outranked"
    }
   ],

@@ -614,9 +614,12 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       const params = new URLSearchParams({ projection_id: file.projection_id, finding_id: file.finding.id, alignment: 'event', occ: id });
       const selected = seen(await read(page, `${casePath}?${params}`));
+      const { reason } = selected.selection.detail;
       const text = seen(await page.locator('#level .case-facts').innerText());
-      check(text.includes(`${selected.selection.detail.glucose.length} glucose readings`));
-      check(text.includes(`${selected.selection.detail.markers.length} event markers`));
+      // #432 amendment: the facts are the served reason, never a count of readings or markers.
+      check(!/\d+ glucose readings|\d+ event markers/.test(text), 'S25 selected facts are served facts, never counts');
+      for (const habit of reason.habits) check(text.includes(habit.title), `S25 the facts name the served habit ${habit.title}`);
+      if (reason.cause) check(text.includes(`Attributed to ${reason.cause.title}`), 'S25 the facts name the served cause');
       check((seen(await page.locator('#level .occ-detail').innerText())).includes(file.projection.cohorts.find(c => c.key === selected.selection.detail.comparison_cohort).name));
     }, "S25");
   },

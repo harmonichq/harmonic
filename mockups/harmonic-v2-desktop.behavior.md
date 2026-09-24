@@ -3941,3 +3941,107 @@ S122 · On the same Day, the Findings caption's Glossary control, operated from
 | `[data-utility-close]` click (existing) | frontend/utilities.js bindPane → close | S122 |
 
 #423 narrow close · 2026-09-23 · Q2 sanction (Connor Griffin · 2026-09-23 · "Q1 A, Q2 A, defaults all fine, go"): below 700px the Episode Log is a sheet, and a band caption's Glossary control opens the Glossary in that sheet. Closing it, by Close or by Escape, now returns to the open Episode Log sheet with focus on the same caption control. Before this, closing shut the sheet and dropped focus to the page, because the control it tried to focus was hidden. A utility opened while the sheet is closed, from the narrow utility strip, still closes onto the stage, and at desktop widths nothing changes: S69 and S122 read as written. Under S78 the next Escape then closes the sheet, one level per press. Source: frontend/utilities.js openUtility / close. Evidence: frontend/utilities.test.js "#423 · on a narrow desk, closing a utility opened from the open sheet keeps the sheet and returns focus there" (node; failed first, with "closing the Glossary shut the sheet its launcher lives in") and "#423 · on a narrow desk, a utility opened with the sheet closed still closes onto the stage". No replay story is added, because this desktop lock does not accept narrow chrome (S10b).
+
+## #432 amendment — 2026-09-23, issue #432
+
+S148–S150 are the fail-first obligations of ADR 432
+(`openspec/changes/meal-occurrence-facts/design.md`): a case-file Occurrence row
+names what the Occurrence is from its served anchor facts, and a selected
+Occurrence reads as those facts and its served reason. They are app-opener-only,
+like S101–S117. Browser execution belongs to the release coordinator at 1280x720
+and 1440x900, each story on a fresh case store (`CASE_STORE_DIR`). S25 and S107 are
+amended to read the same served facts. No story is retired. No `★ FROZEN` block
+and no header inventory line is edited here; the release coordinator writes the
+one release freeze block and reconciles the count line.
+
+Sanction: Connor Griffin, 2026-09-23, answering the release's Q2 ("Can your reply
+here count as sign-off for the UI copy and tone changes? … I record your answer as
+the approval for every change these 13 checklists call for, and write the wording
+in CONTEXT.md terms"): "Q1 A, Q2 A, defaults all fine, go." It covers S148–S150 and
+the S25 and S107 amendments below, and nothing outside #432's checklist.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the showcase
+or a named `scripts/qa_e2e_cases.py` case store.
+
+```
+S148 · Every row of the Meal bolus short response comparison names its own
+       meal: its served carbs, its dose and, when served, its peak, with the word
+       peak or nadir, and without the constant anchor label its cohort heading
+       already names; no meal row leads with a dash.
+  element:  #level .case-occurrence .only
+  source:   frontend/diagnose-workstation.js occurrenceDescription,
+            renderEventComparisonRoster, renderCaseRoster
+  lock:     none (revise; ADR 432 in openspec/changes/meal-occurrence-facts/design.md)
+  data:     showcase; All charts, then finding:meal_bolus_short's event case
+            (32 meals, each serving its dose, carbs and Arc peak)
+  evidence: C4_STORIES.S148 → assertServedRowDescriptions432; expands the
+            roster once, then reads every rendered row against its own served
+            Occurrence: the served anchor must carry dose and carbs, the row may
+            not lead with a dash, and its text must equal the served
+            description. A rendered row that is not a served Occurrence, or no
+            rendered row at all, is a premise failure. The verdict-band roster
+            renders only for a clock-aligned case file, which no chartable
+            finding's drill reaches; it prints through the same description
+            function, pinned by frontend/diagnose-workstation.test.js
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("every Meal bolus short row names its own
+            meal"), not at setup; branch 03ff4579 passes at both sizes. The first
+            branch run timed out under load (load average about 18); low-load
+            re-runs passed at 1280x720 and 1440x900. Coordinator-run 2026-09-23
+```
+
+```
+S149 · Selecting the matched meal of the Meal bolus short case shows that meal:
+       the figure line reads its served carbs and dose at the anchor label; the
+       facts list prints a Peak line whose value and minutes equal the served
+       Arc peak, the served cause (its title, then its text), and each served
+       habit with its verdict's band label and, when served, the classifier's
+       sentence; no line only counts readings or markers and no sentence
+       describes the canvas.
+  element:  #level .occ-detail .occ-nums; #level .case-facts .vd.outcome,
+            .vd.cause, .vd.habit
+  source:   frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection
+  lock:     none (revise; ADR 432)
+  data:     showcase; the matched cohort's first member of finding:meal_bolus_short
+            (it serves an Arc peak and a Meal bolus fell short cause with text)
+  evidence: C4_STORIES.S149 → assertSelectedFacts432; reads the served detail
+            for the selected Occurrence and the rendered block, and compares the
+            figure, the outcome, cause and habit lines, and the absence of
+            count-only lines and the canvas sentence
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("the selected matched meal reads as its
+            facts and served reason"), not at setup; branch 03ff4579 passes at
+            both sizes, first time. Coordinator-run 2026-09-23
+```
+
+```
+S150 · A Highs after meals Pattern case file carries the same facts: every row
+       reads its served carbs, dose and peak, and a selected Occurrence lists
+       each served habit with its band label and sentence.
+  element:  #level .case-occurrence .only; #level .case-facts .vd.habit
+  source:   frontend/diagnose-workstation.js occurrenceDescription, occurrenceFacts
+  lock:     none (revise; ADR 432)
+  data:     pattern-near-tie; All charts, then pattern:highs_after_meals
+            (three meals, each serving its dose, carbs and Arc peak)
+  evidence: C4_STORIES.S150; assertServedRowDescriptions432 over every rendered
+            row, then assertSelectedFacts432 over the first row's selection
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("every Highs after meals row names its own
+            meal"), not at setup; branch 03ff4579 passes at both sizes, first
+            time. Coordinator-run 2026-09-23
+```
+
+Amended S25 · 2026-09-23 · #432 / Q2 sanction: A selected Occurrence's evidence facts are its served facts — each served habit, and the served cause when the case file claims it — and never a count of glucose readings or event markers; the fixed sentence about what the canvas shows is retired. The replay reads the served detail and requires no count-only line. As frozen, S25 fails on this branch's build at its count-line assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S25 at its count-line assertion; as amended, S25 passes on branch 03ff4579 at both sizes (1280x720 on a low-load re-run after a load timeout; 1440x900 first time).
+
+Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S107 at the old "Completed carb bolus" readability check at 1440x900, while the 1280x720 run hit a load timeout; as amended, S107 passes on branch 03ff4579 at both sizes on low-load re-runs after load timeouts.
+
+The coordinator also ran the whole desk browser suite on 03ff4579 (40 of 40) and
+the full `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` (OK), 2026-09-23. The
+render matrix and the complete-ledger replay belong to the release integration.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
+| Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |

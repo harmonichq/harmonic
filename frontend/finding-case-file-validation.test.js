@@ -454,3 +454,62 @@ test('accepts event-to-clock transition with an unavailable announced selection'
   assert.equal(caseFile.selection.state, 'unavailable');
   assert.equal(validFindingCaseFile(caseFile), true);
 });
+
+test('#432 · accepts the served anchor dose, carbs, outcome and reason as generated', () => {
+  const selected = selectedEventCase();
+  assert.equal(validFindingCaseFile(selected), true);
+  assert.ok(selected.selection.detail.reason.habits.length);
+  const meals = eventCase();
+  assert.ok(meals.occurrences.some((row) => row.outcome?.kind === 'nadir'));
+  assert.equal(validFindingCaseFile(meals), true);
+});
+
+test('#432 · refuses an anchor missing or malforming its dose or carbs', () => {
+  for (const [key, value] of [['insulin', undefined], ['carbs', undefined], ['insulin', '4'], ['carbs', {}]]) {
+    const row = eventCase();
+    if (value === undefined) delete row.occurrences[0].anchor[key];
+    else row.occurrences[0].anchor[key] = value;
+    assert.equal(validFindingCaseFile(row), false, `roster anchor ${key}=${String(value)}`);
+    const detail = selectedEventCase();
+    if (value === undefined) delete detail.selection.detail.anchor[key];
+    else detail.selection.detail.anchor[key] = value;
+    assert.equal(validFindingCaseFile(detail), false, `detail anchor ${key}=${String(value)}`);
+  }
+  const missed = missedMealCase();
+  const attributed = missed.occurrences.find((row) => row.attributed);
+  delete attributed.comparison_anchor.carbs;
+  assert.equal(validFindingCaseFile(missed), false, 'rise-onset comparison anchor without carbs');
+});
+
+test('#432 · refuses a roster row or selected detail without a well-formed outcome', () => {
+  const mealRow = (caseFile) => caseFile.occurrences.find((row) => row.outcome);
+  for (const outcome of [undefined, { kind: 'max', bg: 120, t: '2020-03-01 11:00:00', minute: 180 },
+    { kind: 'peak', bg: '120', t: '2020-03-01 11:00:00', minute: 180 },
+    { kind: 'nadir', bg: 120, t: null, minute: 180 }]) {
+    const caseFile = eventCase();
+    if (outcome === undefined) delete mealRow(caseFile).outcome;
+    else mealRow(caseFile).outcome = outcome;
+    assert.equal(validFindingCaseFile(caseFile), false, JSON.stringify(outcome ?? 'absent'));
+  }
+  const detail = selectedEventCase();
+  delete detail.selection.detail.outcome;
+  assert.equal(validFindingCaseFile(detail), false, 'selected detail without outcome');
+});
+
+test('#432 · refuses a selected detail without a well-formed served reason', () => {
+  const broken = [
+    (reason) => { delete reason.habits; },
+    (reason) => { reason.cause = { lever: 'over_treated_low', title: 'Over-treated low' }; },
+    (reason) => { reason.habits[0].verdict = 'matched'; },
+    (reason) => { reason.habits[0].detail = 7; },
+    (reason) => { delete reason.habits[0].title; },
+  ];
+  for (const breakReason of broken) {
+    const caseFile = selectedEventCase();
+    breakReason(caseFile.selection.detail.reason);
+    assert.equal(validFindingCaseFile(caseFile), false, breakReason.toString());
+  }
+  const absent = selectedEventCase();
+  delete absent.selection.detail.reason;
+  assert.equal(validFindingCaseFile(absent), false, 'selected detail without reason');
+});

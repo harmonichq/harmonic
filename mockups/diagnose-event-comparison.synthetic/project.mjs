@@ -17,6 +17,7 @@ const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
   meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
   correction_on_iob: 'Correction on active insulin', correction_stacking: 'Correction stacking',
+  meal_bolus_short: 'Meal bolus fell short',
 };
 const boundaryLabels = {
   implied_carbs_g: ['Implied carbs', 'g'], logged_carbs_g: ['Logged carbs', 'g'],
@@ -298,17 +299,44 @@ function patternState(occurrence, lever) {
   return occurrence.cause_lever ? 'outranked' : 'clean';
 }
 
+// The served reason, by the Pattern rule the Python case producer applies: the
+// claimant is fired and every other habit keeps its row-relative state, except that an
+// unclaimed row reads fired as outranked. An entry carries its classifier sentence
+// only where that recorded verdict reads as the entry's verdict.
+function patternReason(row, habits, states, claimant) {
+  return {
+    cause: claimant ? {
+      lever: claimant, title: labels[claimant],
+      text: row.cause_lever === claimant ? row.text ?? '' : '',
+    } : null,
+    habits: habits.map((lever, index) => {
+      const state = states[index];
+      const verdict = claimant ? (lever === claimant ? 'fired' : state)
+        : (state === 'fired' ? 'outranked' : state);
+      const fact = row.verdicts.find((item) => item.classifier === lever);
+      const agrees = state === verdict || (!claimant && state === 'fired');
+      return { lever, title: labels[lever], verdict,
+        detail: fact && agrees ? fact.detail ?? null : null };
+    }),
+  };
+}
+
 function patternOccurrence(row, habits, attributedMember) {
   const claimant = attributedMember?.startsWith('habit:')
     ? attributedMember.replace('habit:', '') : null;
-  const states = habits.map((lever) => patternState(row, lever))
-    .map((state) => !claimant && state === 'fired' ? 'outranked' : state);
-  const verdict = patternVerdict(states, Boolean(claimant));
+  const states = habits.map((lever) => patternState(row, lever));
+  const verdict = patternVerdict(
+    states.map((state) => !claimant && state === 'fired' ? 'outranked' : state),
+    Boolean(claimant));
   return {
     id: row.id, date: row.date, verdict,
     member: claimant ? `habit:${claimant}` : 'clean',
-    anchor: { kind: row.kind, label: row.label, t: row.anchor_t, bg: row.anchor_bg },
+    anchor: { kind: row.kind, label: row.label, t: row.anchor_t, bg: row.anchor_bg,
+      insulin: row.anchor_insulin ?? null, carbs: row.anchor_carbs ?? null },
+    // The fixture side has no analyzer arc to read an outcome from.
+    outcome: null,
     trace: row.trace,
+    reason: patternReason(row, habits, states, claimant),
   };
 }
 
@@ -329,7 +357,7 @@ function patternCohort(key, name, bandVerdict, rows, window) {
 }
 
 function patternDetail(row, family) {
-  const { member: _member, trace, ...occurrence } = row;
+  const { member: _member, trace, reason, ...occurrence } = row;
   const boluses = trace.boluses || [];
   return {
     ...occurrence,
@@ -354,6 +382,7 @@ function patternDetail(row, family) {
       insulin: dose.insulin,
     })) : [],
     day_target: { date: row.date },
+    reason,
   };
 }
 
@@ -423,7 +452,7 @@ export function projectPatternCaseFile(capture, {
         outside_comparison: occurrences.filter((row) => !cohortIds.has(row.id)).length },
     };
   }
-  const cleanOccurrences = occurrences.map(({ trace, ...row }) => row);
+  const cleanOccurrences = occurrences.map(({ trace, reason: _reason, ...row }) => row);
   const activeIds = new Set(alignment === 'event'
     ? projection.cohorts.flatMap((cohort) => cohort.occurrence_ids)
     : occurrences.map((row) => row.id));

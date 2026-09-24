@@ -6,6 +6,7 @@ import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
+  assertServedRowDescriptions432, assertSelectedFacts432,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -38,11 +39,17 @@ test('S106 and S107 are unique app-only C4 stories with their required manufactu
 
 test('S107 keeps a grouped comparison heading distinct from readable mixed-tier case rows', () => {
   const rect = (left, right, top = 0, bottom = 10) => ({ left, right, top, bottom });
-  const event = { comparisonCohort: 'matched',
-    description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) }, tier: null };
-  const fired = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+  const meal = { id: `o_${'1'.repeat(32)}`, verdict: 'fired',
+    anchor: { t: '2024-05-24 12:05:00', kind: 'meal', label: 'Completed carb bolus', bg: null,
+      insulin: 4, carbs: 40 },
+    outcome: { kind: 'peak', bg: 149.6, t: '2024-05-24 13:35:00', minute: 90 } };
+  const served = { occurrences: [meal] };
+  const text = '40 g · 4 U · peak 150';
+  const event = { occurrenceId: meal.id, comparisonCohort: 'matched',
+    description: { text, truncated: false, ...rect(120, 260) }, tier: null };
+  const fired = { occurrenceId: meal.id, description: { text, truncated: false, ...rect(120, 260) },
     tier: { text: 'Meets criteria', ...rect(280, 360) } };
-  const near = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+  const near = { occurrenceId: meal.id, description: { text, truncated: false, ...rect(120, 260) },
     tier: { text: 'Borderline', ...rect(280, 350) } };
   const expectedCohorts = [
     { key: 'matched', name: 'Matched' },
@@ -50,23 +57,126 @@ test('S107 keeps a grouped comparison heading distinct from readable mixed-tier 
     { key: 'comparison', name: 'Other completed carb-bolus meals' },
   ];
   assert.doesNotThrow(() => assertS107RosterGeometry({
-    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts, served,
   }));
   assert.throws(() => assertS107RosterGeometry({
-    comparison: { cohortHeadings: expectedCohorts.slice(1).map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+    comparison: { cohortHeadings: expectedCohorts.slice(1).map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts, served,
   }), /exact served cohorts once/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [{ ...event, description: { ...event.description, truncated: true } }] },
-    tierRows: [fired, near], expectedCohorts,
+    tierRows: [fired, near], expectedCohorts, served,
   }), /fully readable/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
-    tierRows: [{ ...fired, tier: { ...fired.tier, truncated: true } }, near], expectedCohorts,
+    tierRows: [{ ...fired, tier: { ...fired.tier, truncated: true } }, near], expectedCohorts, served,
   }), /fully readable/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
-    tierRows: [{ ...fired, tier: { ...fired.tier, ...rect(240, 360) } }, near], expectedCohorts,
+    tierRows: [{ ...fired, tier: { ...fired.tier, ...rect(240, 360) } }, near], expectedCohorts, served,
   }), /columns overlap/);
+  // #432 amendment: readability keys on the served description, so the retired
+  // constant-label row no longer counts as readable text.
+  const retired = { ...event.description, text: '— · Completed carb bolus' };
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [{ ...event, description: retired }] },
+    tierRows: [fired, near], expectedCohorts, served,
+  }), /fully readable/);
+});
+
+test('S148–S150 are unique app-only #432 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase] of [['S148', 'showcase'], ['S149', 'showcase'], ['S150', 'pattern-near-tie']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'ADR 432');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+const servedCaseFiles432 = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+const mealCase432 = () => JSON.parse(JSON.stringify(servedCaseFiles432.cases['finding:meal_bolus_short'].event));
+// The base server's shape: an anchor with no dose or carbs, and no outcome.
+const baseShaped432 = (served) => {
+  for (const row of served.occurrences) {
+    delete row.anchor.insulin; delete row.anchor.carbs; delete row.outcome;
+  }
+  return served;
+};
+
+test('S148/S150 row descriptions pass when each rendered row reads its own served meal', () => {
+  const served = mealCase432();
+  const [first] = served.occurrences;
+  assert.deepEqual([first.anchor.carbs, first.anchor.insulin, first.outcome.kind, first.outcome.bg],
+    [40, 4, 'peak', 147.5]);
+  assert.doesNotThrow(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: first.id, text: '40 g · 4 U · peak 148' }]));
+});
+
+test('S148/S150 reach their feature assertion on the base server shape, never a premise', () => {
+  const served = baseShaped432(mealCase432());
+  const [first] = served.occurrences;
+  assert.throws(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 every meal row must serve its carbs and dose/);
+  assert.throws(() => assertServedRowDescriptions432('S148', mealCase432(),
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 no meal row may lead with a dash/);
+  assert.throws(() => assertServedRowDescriptions432('S150', mealCase432(),
+    [{ occurrenceId: first.id, text: '40 g · 4 U' }]), /S150 .* must read its own served carbs, dose and outcome/);
+});
+
+test('S148/S150 separate a setup error from the feature', () => {
+  const served = mealCase432();
+  assert.throws(() => assertServedRowDescriptions432('S148', served, []),
+    /S148 premise: the drilled case renders Occurrence rows/);
+  assert.throws(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: `o_${'9'.repeat(32)}`, text: '40 g · 4 U' }]), /S148 premise: rendered row .* is a served Occurrence/);
+});
+
+const claimedDetail432 = () => {
+  const file = servedCaseFiles432.cases['finding:carb_undercount'];
+  const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
+  return JSON.parse(JSON.stringify(file.selected_event[claimed].selection.detail));
+};
+const block432 = (detail) => {
+  const lines = [
+    { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
+    { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
+    { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+  ];
+  return { figure: '40 g · 4 U at completed carb bolus', lines,
+    text: ['Mar 1 · 08:00 Matched 40 g · 4 U at completed carb bolus', 'Evidence facts',
+      ...lines.map((line) => line.text)].join(' ') };
+};
+
+test('S149/S150 selected facts pass on the served detail and its rendered block', () => {
+  const detail = claimedDetail432();
+  assert.doesNotThrow(() => assertSelectedFacts432('S149', detail, block432(detail), { outcome: 'peak' }));
+});
+
+test('S149 reaches its feature assertion on the base server shape, never a premise', () => {
+  const detail = claimedDetail432();
+  delete detail.anchor.insulin; delete detail.anchor.carbs; delete detail.outcome; delete detail.reason;
+  const base = { figure: '— at completed carb bolus', text: 'The canvas shows the selected glucose trace and evidence markers.',
+    lines: [{ kind: null, text: '37 glucose readings' }, { kind: null, text: '4 event markers' }] };
+  assert.throws(() => assertSelectedFacts432('S149', detail, base, { outcome: 'peak' }),
+    /S149 the selected meal must serve its carbs and dose/);
+  assert.throws(() => assertSelectedFacts432('S149', null, base), /S149 premise/);
+});
+
+test('S149/S150 refuse a count-only line, the canvas sentence, or a reason that disagrees', () => {
+  const detail = claimedDetail432();
+  const counted = block432(detail);
+  counted.lines.push({ kind: null, text: '37 glucose readings' });
+  assert.throws(() => assertSelectedFacts432('S149', detail, counted), /no line may be only a count/);
+  const canvas = block432(detail);
+  canvas.text += ' The canvas shows the selected glucose trace and evidence markers.';
+  assert.throws(() => assertSelectedFacts432('S149', detail, canvas), /no sentence may describe the canvas/);
+  const silent = block432(detail);
+  silent.lines = silent.lines.filter((line) => line.kind !== 'habit');
+  assert.throws(() => assertSelectedFacts432('S150', detail, silent), /S150 the block must list each served habit/);
+  const noPeak = block432(detail);
+  noPeak.lines = noPeak.lines.filter((line) => line.kind !== 'outcome');
+  assert.throws(() => assertSelectedFacts432('S149', detail, noPeak, { outcome: 'peak' }),
+    /S149 the outcome line must equal the served outcome/);
 });
 
 test('S108–S114 are unique app-only C4 stories with their required manufactured cases', () => {

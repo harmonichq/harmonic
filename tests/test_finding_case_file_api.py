@@ -747,6 +747,14 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         for withheld in prepared["withheld_findings"]:
             self.assertEqual(set(withheld), {"finding_id", "code", "message"})
 
+    def assert_anchor_tree(self, anchor):
+        self.assertEqual(set(anchor), {"t", "kind", "label", "bg", "insulin", "carbs"})
+
+    def assert_outcome_tree(self, outcome):
+        if outcome is not None:
+            self.assertEqual(set(outcome), {"kind", "bg", "t", "minute"})
+            self.assertIn(outcome["kind"], {"peak", "nadir"})
+
     def assert_case_tree(self, case):
         self.assertEqual(set(case), {
             "schema", "projection_id", "finding", "window", "family", "summary",
@@ -760,8 +768,9 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             "fired", "outranked", "near_miss", "no_data", "clean",
         })
         for occurrence in case["occurrences"]:
-            self.assertEqual(set(occurrence), {"id", "date", "anchor", "verdict"})
-            self.assertEqual(set(occurrence["anchor"]), {"t", "kind", "label", "bg"})
+            self.assertEqual(set(occurrence), {"id", "date", "anchor", "verdict", "outcome"})
+            self.assert_anchor_tree(occurrence["anchor"])
+            self.assert_outcome_tree(occurrence["outcome"])
         projection = case["projection"]
         if projection["alignment"] == "event":
             self.assertEqual(set(projection), {
@@ -797,11 +806,20 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         detail = selection["detail"]
         if detail is not None:
             self.assertEqual(set(detail), {
-                "id", "date", "anchor", "verdict", "glucose", "markers",
-                "source_corrections", "day_target",
+                "id", "date", "anchor", "verdict", "outcome", "glucose", "markers",
+                "source_corrections", "day_target", "reason",
                 *({"comparison_cohort"} if projection["alignment"] == "event" else set()),
             })
-            self.assertEqual(set(detail["anchor"]), {"t", "kind", "label", "bg"})
+            self.assert_anchor_tree(detail["anchor"])
+            self.assert_outcome_tree(detail["outcome"])
+            self.assertEqual(set(detail["reason"]), {"cause", "habits"})
+            if detail["reason"]["cause"] is not None:
+                self.assertEqual(set(detail["reason"]["cause"]), {"lever", "title", "text"})
+            for entry in detail["reason"]["habits"]:
+                self.assertEqual(set(entry), {"lever", "title", "verdict", "detail"})
+                self.assertIn(entry["verdict"], {
+                    "fired", "outranked", "near_miss", "no_data", "clean",
+                })
             self.assertTrue(all(set(point) == {"t", "minute", "bg"}
                                 for point in detail["glucose"]))
             self.assertTrue(all(set(row) == {"seq_num", "t", "insulin"}

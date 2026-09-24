@@ -606,6 +606,56 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
   host.append(box);
 }
 
+/* ADR 432: a case-file row says what its Occurrence is, from its served anchor
+   facts alone, and the selected block reads as those facts and its served reason.
+   The form follows the served fields, never a family or lever name. A meal leads
+   with its carbs, dose and served outcome, and drops the constant anchor label
+   its cohort heading and case header already name. A correction leads with its
+   dose. A glucose anchor keeps its reading. The browser derives no outcome,
+   reason or verdict of its own. */
+const wholeReading = (value) => (value == null ? '—' : String(Math.round(value)));
+const doseReading = (value) => (value == null ? '—' : `${Math.round(value * 10) / 10} U`);
+
+function anchorFigure(anchor) {
+  if (anchor.carbs != null) return `${wholeReading(anchor.carbs)} g · ${doseReading(anchor.insulin)}`;
+  if (anchor.insulin != null) return doseReading(anchor.insulin);
+  return wholeReading(anchor.bg);
+}
+
+/* One description rule for both case-file rosters: the row's value, and the
+   anchor label only where the value does not already say what the anchor is. */
+export function occurrenceDescription(row) {
+  const figure = anchorFigure(row.anchor);
+  if (row.anchor.carbs == null) return { value: figure, label: row.anchor.label };
+  return { value: row.outcome ? `${figure} · ${row.outcome.kind} ${wholeReading(row.outcome.bg)}` : figure,
+    label: null };
+}
+
+const occurrenceText = ({ value, label }) => (label ? `${value} · ${label}` : value);
+
+/* The selected Occurrence's figure and its evidence-fact lines, printed as served. */
+export function occurrenceFacts(detail) {
+  const { outcome, reason } = detail;
+  const lines = [];
+  if (outcome) {
+    lines.push({ kind: 'outcome', text: `${outcome.kind === 'peak' ? 'Peak' : 'Nadir'} `
+      + `${wholeReading(outcome.bg)} mg/dL, ${Math.round(outcome.minute)} min after the bolus` });
+  }
+  if (reason.cause) {
+    lines.push({ kind: 'cause', text: [`Attributed to ${reason.cause.title}`, reason.cause.text]
+      .filter(Boolean).join(' · ') });
+  }
+  for (const habit of reason.habits) {
+    lines.push({ kind: 'habit', text: [habit.title,
+      VERDICT_BAND_KEY[habit.verdict] || VERDICT_RESIDUE_KEY[habit.verdict], habit.detail]
+      .filter(Boolean).join(' · ') });
+  }
+  for (const dose of detail.source_corrections) {
+    lines.push({ kind: 'source-correction', text: `${dose.t.slice(11, 16)} · ${dose.insulin} U correction` });
+  }
+  return { figure: anchorFigure(detail.anchor), lines };
+}
+
 function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore, shownCount) {
   const rows = caseFile.occurrences.filter((row) => row.verdict === verdict);
   const publishedCount = caseFile.verdict_counts[verdict];
@@ -619,12 +669,15 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
       : `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
-    rows: rows.map((row) => ({
-      id: row.id,
-      html: `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
-        <span class="only">${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}
-          <span>· ${row.anchor.label}</span></span><span class="tier">${label}</span>`,
-    })),
+    rows: rows.map((row) => {
+      const description = occurrenceDescription(row);
+      return {
+        id: row.id,
+        html: `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
+          <span class="only">${description.value}${description.label
+            ? ` <span>· ${description.label}</span>` : ''}</span><span class="tier">${label}</span>`,
+      };
+    }),
     empty: '<div class="empty">No occurrences in this verdict.</div>',
     emptyBeforeHeader: true,
   }], { selectedId, shownCount, onSelect, onMore });
@@ -661,8 +714,7 @@ export function renderEventComparisonRoster(host, caseFile, selectedId, onSelect
       rows: rows.map((row) => {
       const when = row.anchor ? `${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}`
         : `${cohort.name} ${row.index + 1}`;
-      const detail = row.anchor
-        ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
+      const detail = row.anchor ? occurrenceText(occurrenceDescription(row))
         : 'Select to see this occurrence’s glucose trace';
         return {
           id: row.id,
@@ -731,22 +783,28 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   const verdictLabel = comparison
     ? caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)?.name
     : VERDICT_BAND_KEY[detail.verdict] || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
+  const { figure, lines } = occurrenceFacts(detail);
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
       ? `<span class="pos">${at + 1} of ${comparison
         ? caseFile.projection.counts[detail.comparison_cohort] : caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
-    <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
-      <span>at ${detail.anchor.label.toLowerCase()}</span></div>
-    <div class="statline">The canvas shows the selected glucose trace and evidence markers.</div>`;
+    <div class="occ-nums">${figure}
+      <span>at ${detail.anchor.label.toLowerCase()}</span></div>`;
   host.append(box);
-  const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
-  facts.innerHTML = `<div class="lab">Evidence facts</div>
-    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.glucose.length} glucose readings</div></div>
-    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.markers.length} event markers</div></div>
-    ${detail.source_corrections.map((dose) => `<div class="vd source-correction"><span class="pip" aria-hidden="true"></span>
-      <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
-  host.append(facts);
+  // A comparison meal with no arc reading serves no fact line at all.
+  if (lines.length) {
+    const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
+    facts.innerHTML = '<div class="lab">Evidence facts</div>';
+    for (const line of lines) {
+      const row = document.createElement('div'); row.className = `vd ${line.kind}`;
+      row.innerHTML = '<span class="pip" aria-hidden="true"></span>';
+      // Served prose, set as text: a classifier sentence is never markup.
+      const text = document.createElement('div'); text.textContent = line.text;
+      row.append(text); facts.append(row);
+    }
+    host.append(facts);
+  }
   renderOccurrenceFoot(host, detail.date, onClearTrace, () => onDay(detail));
 }
 

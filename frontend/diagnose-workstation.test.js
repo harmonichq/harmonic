@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 import {
-  buildIcBlocks, queryState, renderEventComparisonRoster, renderIsfLevel, renderSlotLevel, renderLane,
+  buildIcBlocks, occurrenceDescription, occurrenceFacts, queryState, renderEventComparisonRoster, renderIsfLevel,
+  renderSlotLevel, renderLane,
 } from './diagnose-workstation.js';
 import { buildSlotLane } from './diagnose-workstation-chart.js';
 import { ANCHOR_STATE_WORD } from './day-chart.js';
@@ -98,10 +99,80 @@ test('#302 · the rail mini defines every cohort ink the shared chart reads off 
     'the cell carries no colour literal where the theme already names the value');
 });
 
-test('selected detail describes its glucose trace in product language', () => {
+const servedCaseFiles = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+const servedProjection = JSON.parse(readFileSync(new URL(
+  './__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+
+test('#432 · a case row names its Occurrence from its served anchor facts', () => {
+  const { cases } = servedCaseFiles;
+  const meal = cases['finding:carb_undercount'].clock.occurrences[0];
+  const cluster = cases['finding:correction_stacking'].clock.occurrences[0];
+  const low = cases['finding:over_treated_low'].clock.occurrences[0];
+  assert.deepEqual(occurrenceDescription(meal), { value: '40 g · 4 U · peak 148', label: null });
+  assert.deepEqual(occurrenceDescription({ ...meal, outcome: null }), { value: '40 g · 4 U', label: null });
+  assert.deepEqual(occurrenceDescription({ ...meal, outcome: { ...meal.outcome, kind: 'nadir', bg: 71.4 } }),
+    { value: '40 g · 4 U · nadir 71', label: null });
+  assert.deepEqual(occurrenceDescription(cluster), { value: '2 U', label: 'Second correction' });
+  assert.deepEqual(occurrenceDescription(low), { value: '62', label: 'Low excursion' });
+  const bolusRows = Object.values(cases).flatMap((file) => [file.clock, file.event])
+    .flatMap((file) => file.occurrences)
+    .filter((row) => row.anchor.carbs != null || row.anchor.insulin != null);
+  assert.equal(bolusRows.length, 100, 'the capture serves meal and correction rows to describe');
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
-  assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);
-  assert.doesNotMatch(source, /Occurrence's server-owned trace/);
+  for (const owner of ['renderCaseRoster', 'renderEventComparisonRoster']) {
+    const body = source.slice(source.indexOf(`function ${owner}`));
+    assert.match(body.slice(0, body.indexOf('\n}\n')), /occurrenceDescription\(row\)/,
+      `${owner} describes its rows through the one served-facts rule`);
+  }
+  for (const row of bolusRows) {
+    assert.doesNotMatch(occurrenceDescription(row).value, /^—/, JSON.stringify(row.anchor));
+  }
+});
+
+test('#432 · a selected claimed meal reads as its facts, cause and habit sentence', () => {
+  const file = servedCaseFiles.cases['finding:carb_undercount'];
+  const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
+  const detail = file.selected_event[claimed].selection.detail;
+  assert.deepEqual(occurrenceFacts(detail), {
+    figure: '40 g · 4 U',
+    lines: [
+      { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
+      { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
+      { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+    ],
+  });
+  assert.ok(detail.reason.cause.text && detail.reason.habits[0].detail);
+});
+
+test('#432 · a selected Pattern Occurrence lists each served habit with its band label', () => {
+  const detail = servedProjection.pattern_clock_case.selection.detail;
+  const { figure, lines } = occurrenceFacts(detail);
+  const [bolus] = detail.markers.filter((marker) => marker.kind === 'bolus' && marker.minute === 0);
+  assert.deepEqual([bolus.carbs, bolus.insulin], [30, 3], 'the selected meal is its own minute-0 bolus');
+  assert.equal(figure, '30 g · 3 U');
+  assert.deepEqual(lines, [
+    { kind: 'cause', text: `Attributed to Late bolus · ${detail.reason.cause.text}` },
+    { kind: 'habit', text: 'Carb undercount · claimed by another finding' },
+    { kind: 'habit', text: 'Late bolus · Meets criteria' },
+  ]);
+});
+
+test('#432 · a selected correction cluster reads its dose and source corrections, never counts', () => {
+  const file = servedCaseFiles.cases['finding:correction_stacking'];
+  const row = file.clock.occurrences[0];
+  const detail = file.selected_clock[row.id].selection.detail;
+  const { figure, lines } = occurrenceFacts(detail);
+  assert.equal(figure, '2 U');
+  assert.deepEqual(lines.map((line) => line.kind),
+    ['cause', 'habit', 'source-correction', 'source-correction']);
+  assert.deepEqual(lines.slice(2).map((line) => line.text),
+    ['08:30 · 1.5 U correction', '10:00 · 2 U correction']);
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  for (const retired of [/The canvas shows the selected glucose trace/, /glucose readings</,
+    /event markers</, /Occurrence's server-owned trace/]) {
+    assert.doesNotMatch(source, retired);
+  }
 });
 
 test('#423 · Diagnose words an outranked occurrence with the Day desk\'s claimed word', () => {

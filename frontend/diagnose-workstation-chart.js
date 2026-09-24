@@ -636,20 +636,33 @@ const gap = (v) => (v == null ? null : v);
  * observer's own callback. The pane grid animates its tracks, so a naive
  * observer -> resize -> layout chain re-fires every frame and the browser
  * reports "ResizeObserver loop completed with undelivered notifications".
+ *
+ * `relayout`, when given, re-runs the chart's layout after a size change (ADR
+ * 455): every width-dependent choice a chart makes is made when it is built,
+ * so a rescale alone keeps the old width's text. It runs after the resize, in
+ * the same frame, and never on the first report, which is the mount's own and
+ * has already drawn.
  */
-export function observeResize(el, getChart) {
+export function observeResize(el, getChart, relayout = null) {
   let lastW = 0; let lastH = 0; let pending = 0;
+  let reported = false; let changed = false;
   const observer = new ResizeObserver((entries) => {
     const box = entries[0].contentRect;
     const w = Math.round(box.width);
     const h = Math.round(box.height);
     if (w === lastW && h === lastH) return;
     lastW = w; lastH = h;
+    changed = changed || reported;
+    reported = true;
     if (pending) return;
     pending = requestAnimationFrame(() => {
       pending = 0;
       const chart = getChart();
-      if (chart && w > 0 && h > 0) chart.resize({ width: w, height: h });
+      if (chart && w > 0 && h > 0) {
+        chart.resize({ width: w, height: h });
+        if (changed && relayout) relayout();
+      }
+      changed = false;
     });
   });
   observer.observe(el);
@@ -875,11 +888,16 @@ export function renderCanvas(el, echarts, opts) {
   const support = windowSupport(envelope, [winStart, winEnd], opts.supportFloor);
   const thin = !support.supported;
 
-  /* ---- window label: fit it to the window, or move it out ------------------
+  /* ---- window label: fit it to the window, move it out, or wrap it ---------
      A narrow window used to get a label far wider than itself, which crossed
      both dashed edges and ran into the tick row and the legend. The label now
      sheds its tails in priority order and, if even the bare head does not fit,
-     moves outside to whichever side has more room — never straddling an edge.
+     moves outside to whichever side has more room, on one line, where that line
+     fits the side. Where one line fits neither the window nor that side, it
+     wraps inside whichever of the two is wider (ADR 455): the head on its own
+     line and, on a thin window, the notice on the next, each breaking only
+     between whole words and each line on its own knock-out pad. Never
+     straddling an edge.
      Nothing is lost: the spread and the count both also print in the chart
      header and the inspector. The exception is the insufficient-sample notice,
      which is a safety statement and rides with the head wherever it goes. */
@@ -898,25 +916,55 @@ export function renderCanvas(el, echarts, opts) {
   const headPx = estimateTextPx(labelHead, 10, capOpts);
   const tailPx = tailText ? estimateTextPx(`  ·  ${tailText}`, 9.5) : 0;
   const LABEL_PAD = 10;   // breathing room inside the dashed edges
+  const PAD_X = 5;        // a wrapped line's knock-out pad, each side
   const withTail = (base) => `${base}{${tailKey}|  ·  ${tailText}}`;
-
-  let labelText = labelHead;
-  let labelInside = true;
-  if (tailText && headPx + tailPx + LABEL_PAD <= winPx) {
-    labelText = withTail(labelHead);
-  } else if (!thin && headPx + LABEL_PAD <= winPx) {
-    labelText = labelHead;
-  } else {
-    labelInside = false;                       // out it goes, one line, one side
-    labelText = thin ? withTail(labelHead) : labelHead;
-  }
-  // outside: whichever margin has more room, anchored so it cannot cross an edge
+  // outside: whichever margin has more plot room, anchored so it cannot cross an edge
   const rightRoom = labelBox.left + labelBox.width - xEnd;
   const labelSide = rightRoom >= xStart - labelBox.left ? 'right' : 'left';
   const labelRich = {
     sp: { color: colors.muted, fontSize: 9.5, fontWeight: 500, letterSpacing: 0 },
     th: { color: colors.warn || colors.danger, fontSize: 9.5, fontWeight: 700, letterSpacing: 0 },
   };
+
+  let labelText = labelHead;
+  let labelInside = true;
+  let labelFit = { rich: labelRich };
+  if (tailText && headPx + tailPx + LABEL_PAD <= winPx) {
+    labelText = withTail(labelHead);
+  } else if (!thin && headPx + LABEL_PAD <= winPx) {
+    labelText = labelHead;
+  } else {
+    /* The side's room: on the right it runs to the chart's edge, because the
+       right margin holds nothing; on the left only to the plot's edge, because
+       the y-axis labels sit beyond it. */
+    const sideRoom = labelSide === 'right'
+      ? el.clientWidth - (xEnd + 6) : xStart - 6 - labelBox.left;
+    if (headPx + (thin ? tailPx : 0) <= sideRoom) {
+      labelInside = false;                     // out it goes, one line, one side
+      labelText = thin ? withTail(labelHead) : labelHead;
+    } else {
+      /* The newline OPENS the notice's token: under `overflow: 'break'` a
+         newline that ends a segment is dropped, fusing the head into the
+         notice. The pad rides the tokens, never the label, whose background
+         would span the label's whole width rather than each line's text; so
+         the label is the region less the pad's two sides, and no line sets a
+         height of its own, the padded tokens setting the pitch. Inside the
+         window the tokens centre their lines, as the one-line label is centred;
+         parked, they take the parked label's own alignment. */
+      labelInside = winPx - LABEL_PAD >= sideRoom;
+      labelText = `{hd|${labelHead}}${thin ? `{th|\n${tailText}}` : ''}`;
+      const pad = { backgroundColor: colors.rail, padding: [2, PAD_X],
+        ...(labelInside ? { align: 'center' } : {}) };
+      labelFit = {
+        width: (labelInside ? winPx - LABEL_PAD : sideRoom) - 2 * PAD_X, overflow: 'break',
+        rich: {
+          hd: { color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, ...pad },
+          th: { ...labelRich.th, ...pad },
+        },
+      };
+    }
+  }
+  const labelWraps = 'width' in labelFit;
 
   /* ---- target caption: fit it above, or drop it below the gates ------------
      Same fit-or-move act as the window label, for the third thing that crosses
@@ -939,10 +987,11 @@ export function renderCanvas(el, echarts, opts) {
       .map((minute) => xAtMinute(el, minute, displayOffset))
       .some((x) => x + GRIP_HALF > glyphLeft && x - GRIP_HALF < glyphRight);
   /* Anchored to the band's FLOOR rather than its ceiling, which lands the box
-     below the grip band without reading a plot height this module has never
-     read. Distance 0 keeps it flush to the plot's left edge, exactly as the
-     shipped placement is flush to the band's ceiling. */
-  const captionPlacement = captionStruck
+     below the grip band. Distance 0 keeps it flush to the plot's left edge,
+     exactly as the shipped placement is flush to the band's ceiling. A window
+     label that wraps fills the rows under the plot's ceiling where the caption
+     otherwise sits, so the caption takes the same floor then (ADR 455). */
+  const captionPlacement = captionStruck || labelWraps
     ? { position: 'insideBottomLeft', distance: 0 }
     : { position: 'insideStartTop', distance: 10 };
   const windowAreas = binSpans.map(([start, end], index) => [
@@ -962,7 +1011,7 @@ export function renderCanvas(el, echarts, opts) {
         show: labelInside, position: 'insideTop', distance: 5,
         color: colors.windowEdge,
         fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-        formatter: labelText, rich: labelRich,
+        formatter: labelText, ...labelFit,
       } : { show: false },
     },
     { xAxis: panning ? String(end) : envelope.labels[end] },
@@ -1026,6 +1075,16 @@ export function renderCanvas(el, echarts, opts) {
     : undefined;
   const axisRich = panning
     ? { neighbour: { color: withOpacity(colors.muted, 0.42) } } : undefined;
+  /* A Y-AXIS LABEL YIELDS TO A TARGET NUMERAL (ADR 455). The 70 and 180
+     numerals stand on an opaque pad at the plot's left edge, the y-axis label
+     column, so a tick label whose centre lands within 13px of a numeral's
+     centre (half the label's 12px line plus half the numeral's 14px padded box)
+     is struck under it. The numeral wins, because it names the target line
+     there; the hidden tick's value is plain from its neighbours. */
+  const plotTop = 20;
+  const plotBottom = 26;
+  const pxPerUnit = (el.clientHeight - plotTop - plotBottom) / (range[1] - range[0]);
+  const underNumeral = (value) => target.some((bound) => Math.abs(value - bound) * pxPerUnit < 13);
 
   const chart = echarts.getInstanceByDom(el) || echarts.init(el, null, { renderer: 'canvas' });
   const option = {
@@ -1035,7 +1094,7 @@ export function renderCanvas(el, echarts, opts) {
     grid: [
       // P4: the top gutter was ~40px of dead air between the title row and the
       // plot ceiling. The label band needs ~18px; the rest goes to the plot.
-      { left: GRID.left, right: GRID.right, top: 20, bottom: 26 },
+      { left: GRID.left, right: GRID.right, top: plotTop, bottom: plotBottom },
     ],
     /* THE LEGEND IS GONE (#258, #204). Its chips rendered as low-contrast
        artifacts rather than chart furniture, and the naming job it carried
@@ -1078,7 +1137,10 @@ export function renderCanvas(el, echarts, opts) {
       {
         type: 'value', min: range[0], max: range[1], interval: 60,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: axisText, fontSize: 10, formatter: '{value}' },
+        axisLabel: {
+          color: axisText, fontSize: 10,
+          formatter: (value) => (underNumeral(value) ? '' : String(value)),
+        },
         splitLine: { lineStyle: { color: colors.grid } },
         /* the caption sits ON the column's spine (the plot's left edge), so it
            stops being a fourth competing left edge in the top 60px */
@@ -1140,7 +1202,7 @@ export function renderCanvas(el, echarts, opts) {
               label: {
                 show: true, position: labelSide, distance: 6,
                 verticalAlign: 'top', offset: [0, 5],
-                formatter: labelText, rich: labelRich,
+                formatter: labelText, ...labelFit,
                 align: labelSide === 'right' ? 'left' : 'right',
                 color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
               },

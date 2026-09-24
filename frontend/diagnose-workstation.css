@@ -735,6 +735,16 @@
    column — 10px card inset plus the rail column's centre — with clear air
    before the Findings divider. */
 .canvas-head > .chart-headacts { grid-column: 3; }
+/* THE NARROWEST SPLIT KEEPS THE TITLE (ADR 455). Between 832 and 1023px wide
+   the provenance and the All charts control take the header's whole row, and
+   the title's column drew nothing at all. The owner ruling of 2026-08-19
+   stands: the header truncates, never wraps, and its provenance always prints
+   whole. So the control shows its icon only here, keeping its name and its
+   tooltip, "All charts", and the title takes the room, truncating with an
+   ellipsis where it must. */
+@media (min-width: 832px) and (max-width: 1023px) {
+  #explorer-trigger > span { display: none; }
+}
 /* THE FULLSCREEN CHART'S OWN VERBS, RIDING THE HEADER. The rail is a column on
    a tile and a row here, and it keeps none of the tile's recess: on the header
    band there is no margin to fill and nothing to hover a plate onto. */

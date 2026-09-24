@@ -39,7 +39,7 @@ spans alone cannot show a pad. "Settled" means `laidOutBrace404` has returned af
 After a resize with no press, it means the chart host's `clientWidth` equals
 its new box, the chart is idle, and two animation frames have passed.
 
-- [ ] 1.1 Add S183, the glucose overview's text. The caption for a preset is
+- [x] 1.1 Add S183, the glucose overview's text. The caption for a preset is
   the one group whose first span begins with that preset's head, written in
   the story as a literal: `OVERNIGHT 00:00–06:00`, `MORNING 06:00–12:00`,
   `AFTERNOON 12:00–18:00`, `EVENING 18:00–24:00` or `24 H 00:00–24:00`.
@@ -95,7 +95,17 @@ its new box, the chart is idle, and two animation frames have passed.
     column;
   - a pad box straddling a gate;
   - one message naming failures at two sizes.
-- [ ] 1.2 Add S184, the Spotlight's verdict line. S184 opens Diagnose at rest,
+
+  Evidence: `C4_STORIES.S183` → `assertOverviewText` / `overviewTextFailures`
+  in `frontend/c4.replay.mjs`; fake-geometry node tests in
+  `frontend/c4.replay.test.js` ("S183 …", eleven tests) cover the ten listed
+  cases plus the thin-path premise. Two readings are wider than the task's
+  wording, for the coordinator's review: a caption is the group whose words
+  begin with the head's words (so a head that itself wraps between words is
+  still found), and a caption on a window that is not thin may carry its
+  spread tail (`25–75 spread <n> mg/dL`) instead of the notice.
+
+- [x] 1.2 Add S184, the Spotlight's verdict line. S184 opens Diagnose at rest,
   where the Spotlight shows the next-in-line basal slot. It reads the
   Spotlight chart's painted text from its host in `#tile-focal`, and the Keep
   control's box (`#tile-focal .tile-pin`) in the host's own coordinates.
@@ -123,7 +133,12 @@ its new box, the chart is idle, and two animation frames have passed.
   - a break inside a fact;
   - a tally overlapping the verdict;
   - a missing verdict group.
-- [ ] 1.3 Add S185, the canvas header. With Diagnose at rest, it sets
+
+  Evidence: `C4_STORIES.S184` → `assertSpotlightVerdict` /
+  `spotlightVerdictFailures`; node tests "S184 …" cover the six listed cases,
+  the one-line check at 1200×736 and the single message.
+
+- [x] 1.3 Add S185, the canvas header. With Diagnose at rest, it sets
   832×720, 832×560, 1024×768 and the run's own size in turn. The header's rule
   is CSS alone, so after each resize it waits two animation frames and reads
   four things: `#canvas-head`, its title (`.head-rest h2`), the provenance
@@ -151,7 +166,13 @@ its new box, the chart is idle, and two animation frames have passed.
   - a wide header whose control hides its word;
   - a header on two lines;
   - one message naming failures at two sizes.
-- [ ] 1.4 Pin S183, S184 and S185 in `frontend/c4.replay.test.js` beside
+
+  Evidence: `C4_STORIES.S185` → `assertCanvasHead` / `canvasHeadFailures`;
+  node tests "S185 …" cover the six listed cases and a control that loses its
+  name. Each reading waits until the header's box has held still for two
+  animation frames.
+
+- [x] 1.4 Pin S183, S184 and S185 in `frontend/c4.replay.test.js` beside
   S151–S153: each is registered once, with term `HV2-11` and case
   `basal-verdict-gallery`. `SMOKE_STORIES` and its pinned hash do not change,
   because S113 already carries this case in the smoke slice.
@@ -161,6 +182,12 @@ its new box, the chart is idle, and two animation frames have passed.
   branch's own tests pass. They are in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()` and in
   `acceptance.test.py`'s counts.
+
+  Evidence: node test "S183–S185 are unique app-only C4 stories under HV2-11,
+  served from the verdict gallery"; `acceptance.py inventory` counts 174
+  issued · 155 active · 19 retired, registry 174, none missing;
+  `SMOKE_STORIES` and its hash unchanged.
+
 - [ ] 1.5 Hand the coordinator the base leg and wait for its result. The
   coordinator lays this branch's replay harness and case recipes over a base
   b03431d2 worktree and runs `ONLY=S183,S184,S185` at 1280x720 and at
@@ -180,7 +207,7 @@ its new box, the chart is idle, and two animation frames have passed.
 
 ## 2. The window caption stacks and wraps (ADR 455, first decision)
 
-- [ ] 2.1 Read UI Craft's `reference/web-implementation.md`. Then implement
+- [x] 2.1 Read UI Craft's `reference/web-implementation.md`. Then implement
   surfaces **The glucose overview's window caption stays whole inside the
   chart** in `renderCanvas` (`frontend/diagnose-workstation-chart.js`), as
   design.md's first ADR states it.
@@ -216,7 +243,12 @@ its new box, the chart is idle, and two animation frames have passed.
   it states the new rule. "Out it goes, one line, one side" no longer holds as
   written; "never straddling an edge" still holds, and S183 now measures it.
   Cite ADR 455 by number only.
-- [ ] 2.2 Add node tests in `frontend/diagnose-workstation-chart.test.js`,
+
+  Evidence: `renderCanvas` in `frontend/diagnose-workstation-chart.js`; UI
+  Craft's web reference read (evergreen Chromium baseline, a viewport media
+  query for the header band).
+
+- [x] 2.2 Add node tests in `frontend/diagnose-workstation-chart.test.js`,
   through `renderCanvas`'s emitted option, beside the existing
   window-label test:
   - a thin 24 h window at `clientWidth` 402 shows its caption inside, on the
@@ -246,9 +278,23 @@ its new box, the chart is idle, and two animation frames have passed.
 
   The existing fit-or-move test's cases stay unchanged and pass.
 
+  Evidence: node tests "#455 · …" in
+  `frontend/diagnose-workstation-chart.test.js`; on base code the four wrap
+  and yield tests fail (a parked one-line caption; a string formatter), and
+  the 850px pin passes on base and branch alike. The not-thin case reads
+  11:00–13:00: at 402 wide it parks its head on one line on the left, as
+  today; at 300 wide it wraps its head alone there.
+
+  Coordinator-authorized (plan-review note ruled by the coordinator,
+  2026-09-23): the wrapped caption inside its window keeps today's centred
+  look, so the `hd` and `th` tokens carry `align: 'center'` in that case only,
+  and the 24 h test asserts it. A rich token takes its label's own alignment,
+  which the inside label never sets, so without it each line would sit at the
+  left of the label's width.
+
 ## 3. The Spotlight's verdict line breaks between facts (ADR 455, second decision)
 
-- [ ] 3.1 Implement surfaces **The Spotlight's middle-rank verdict line keeps
+- [x] 3.1 Implement surfaces **The Spotlight's middle-rank verdict line keeps
   every fact inside the chart** in `basalEditorialOption`'s middle-rank
   branch (`frontend/diagnose-evidence-charts.js`), as design.md's second ADR
   states it:
@@ -262,7 +308,12 @@ its new box, the chart is idle, and two animation frames have passed.
 
   A line that fits stays byte-identical. The tally's own fit rule, the
   description and the full layout do not change.
-- [ ] 3.2 Add node tests in `frontend/diagnose-evidence-charts.test.js`,
+
+  Evidence: `basalEditorialOption` in `frontend/diagnose-evidence-charts.js`.
+  A line that fits keeps its text and sets no line height, so a one-line
+  verdict is unchanged.
+
+- [x] 3.2 Add node tests in `frontend/diagnose-evidence-charts.test.js`,
   through `entry.option('editorial', { data, surface: { clientWidth } })`:
   - at a 381 px seat, the replay store's slot shape (verdict word, estimate,
     range, programmed rate) gives two lines, each within the column, broken
@@ -272,9 +323,14 @@ its new box, the chart is idle, and two animation frames have passed.
     where they stood;
   - the existing middle-rank tests still pass.
 
+  Evidence: node test "the middle-rank verdict line breaks between facts at
+  the narrowest split", on the served fixture's own verdict ("INSUFFICIENT
+  EVIDENCE", the longer line; no flag is hand-set) with the replay store's
+  shape of facts; it fails on base (one unbroken line).
+
 ## 4. The header at the narrowest split (ADR 455, third decision)
 
-- [ ] 4.1 Implement surfaces **The glucose overview's header keeps its title at
+- [x] 4.1 Implement surfaces **The glucose overview's header keeps its title at
   the narrowest split** in `frontend/diagnose-workstation.css`. Add one
   `@media (min-width: 832px) and (max-width: 1023px)` block that hides
   `#explorer-trigger > span`, and nothing else. Leave `chartActionButton`'s
@@ -284,9 +340,13 @@ its new box, the chart is idle, and two animation frames have passed.
   ADR 455 by number. Name no `docs/scope/`, `mockups/` or `openspec/changes/`
   path.
 
+  Evidence: the `@media (min-width: 832px) and (max-width: 1023px)` block in
+  `frontend/diagnose-workstation.css`, after the header's control-cluster
+  rules. S185 measures it in the browser (coordinator-run).
+
 ## 5. Chart furniture yields to axis labels (ADR 455, fourth decision)
 
-- [ ] 5.1 Implement surfaces **Chart furniture never strikes an axis label**:
+- [x] 5.1 Implement surfaces **Chart furniture never strikes an axis label**:
   - In `renderCanvas`, the y-axis label formatter prints nothing for a tick
     value whose label centre would lie within 13 px of a target numeral's
     centre. The distance is measured at the plot's height
@@ -294,7 +354,11 @@ its new box, the chart is idle, and two animation frames have passed.
     prints the value as today.
   - In `basalEditorialOption`'s `furniture` series, the programmed rule ends at
     `base + 4`, the x axis's tick length, at both ranks.
-- [ ] 5.2 Add node tests, each failing on base first:
+
+  Evidence: the y-axis formatter in `renderCanvas`, and `TICK_LENGTH` shared
+  by the x axis's tick and the programmed rule in `basalEditorialOption`.
+
+- [x] 5.2 Add node tests, each failing on base first:
   - through `renderCanvas` with `clientHeight` 154 (a 108 px plot) and a range
     of 60 to 200: the formatter prints nothing for 60 and 180, and prints 120
     and 200;
@@ -306,9 +370,14 @@ its new box, the chart is idle, and two animation frames have passed.
     ranks: the rule's rect ends at or above `base + 4`, above the tick labels'
     `axisLabel.margin`.
 
+  Evidence: node tests "#455 · the y-axis labels a target numeral would strike
+  print nothing" and "the programmed rule ends at the axis tick, above the
+  tick labels, at both ranks"; both fail on base (a string formatter; the rule
+  ending at `base + 24`).
+
 ## 6. Charts re-lay out on a size change (ADR 455, fifth decision)
 
-- [ ] 6.1 Give `observeResize` (`frontend/diagnose-workstation-chart.js`) an
+- [x] 6.1 Give `observeResize` (`frontend/diagnose-workstation-chart.js`) an
   optional relayout callback. When the observed box changes size after its
   first report, the callback runs after `chart.resize`, in the same animation
   frame. With no callback it behaves as today.
@@ -323,16 +392,26 @@ its new box, the chart is idle, and two animation frames have passed.
   - `installTileMount` passes that rebuild to the observer.
 
   The two hand-built stages and the row minis pass none.
-- [ ] 6.2 Add node tests in `frontend/diagnose-workstation-chart.test.js` for
+
+  Evidence: `observeResize` in `frontend/diagnose-workstation-chart.js`;
+  `mountDescriptorChart`'s `relayout` and the overview's callback in
+  `frontend/diagnose-workstation.js`. The overview's callback also skips a
+  frame queued before the workstation's teardown (`signal.aborted`), as
+  `paintBrace` already does, because `el()` resolves ids across the document.
+
+- [x] 6.2 Add node tests in `frontend/diagnose-workstation-chart.test.js` for
   `observeResize`, with a fake `ResizeObserver` and `requestAnimationFrame`:
   - the first report resizes and does not relayout;
   - a later width change resizes, then relayouts once;
   - an unchanged size does neither;
   - with no callback, a change only resizes.
 
+  Evidence: node test "#455 · observeResize re-lays out after a size change,
+  never on its first report"; it fails on base (no relayout).
+
 ## 7. Records
 
-- [ ] 7.1 In the desk ledger `mockups/harmonic-v2-desktop.behavior.md`, add
+- [x] 7.1 In the desk ledger `mockups/harmonic-v2-desktop.behavior.md`, add
   one `## #455 amendment — 2026-09-23` section, following the #433 section's
   pattern. It holds:
   - the sanction line: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure
@@ -346,7 +425,12 @@ its new box, the chart is idle, and two animation frames have passed.
   Never rewrite, re-date or replace an existing `★ FROZEN` block. Leave the
   header's inventory line, ACCEPTANCE.md, `mockups/INDEX.md` and the release
   freeze block alone; they are coordinator-owned.
-- [ ] 7.2 Update DESIGN.md's component list, beside the "Basal lane" entry,
+
+  Evidence: the `## #455 amendment — 2026-09-23` section of the desk ledger,
+  with S183–S185 (status owed to tasks 1.5 and 8.2) and four handler-inventory
+  rows.
+
+- [x] 7.2 Update DESIGN.md's component list, beside the "Basal lane" entry,
   in plain terms and with no file or function names:
   - the glucose overview's window caption: one line where it fits, stacked
     and wrapped inside the chart on the knock-out pad where it does not, with
@@ -360,9 +444,11 @@ its new box, the chart is idle, and two animation frames have passed.
   Public files never name the release evidence folder. Say "a private
   design-evidence record — not part of the public tree".
 
+  Evidence: DESIGN.md's five entries after "Basal lane".
+
 ## 8. Verification
 
-- [ ] 8.1 Run these locally, all green; none of them binds a port:
+- [x] 8.1 Run these locally, all green; none of them binds a port:
   - `npm ci && npm run build`;
   - `node --test 'frontend/**/*.test.js'`;
   - `npx --yes @fission-ai/openspec@1 validate --all --strict`;
@@ -379,6 +465,13 @@ its new box, the chart is idle, and two animation frames have passed.
     reads only `ciq_autotune`, which this change does not touch, so it must
     report no drift. If it drifts, stop and report to the coordinator rather
     than regenerate.
+
+  Evidence: every line above exits 0 on this branch: the build; the fast gate
+  (1047 tests, 0 failed); OpenSpec strict (78 passed); the three guards; the
+  public-tree scan (0 findings); the wrap spike; the three
+  `acceptance.test.py` classes (12 tests, OK); the inventory (174 · 155 · 19);
+  and the exploration check ("current").
+
 - [ ] 8.2 Hand the coordinator the port-bound legs. It runs them and keeps
   the logs and captures in the release's private evidence folder:
   - the branch leg `ONLY=S183,S184,S185` at 1280x720 and 1440x900, all

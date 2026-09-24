@@ -401,6 +401,26 @@ lock, 2026-09-14). Every value painted below is served. No token in
   - On a desktop window too short for the canvas pane's row floors, the pane
     scrolls vertically, so the lane is always within reach. At the supported
     sizes it has no scroll range.
+- **Window caption.** The glucose overview's window caption stands on one line
+  wherever that line fits, inside its window or beside it in the roomier
+  margin. Where it fits neither, it stacks inside whichever is wider: the
+  window's name on one line and, on a thin window, the insufficient-sample
+  notice on the next, each breaking only between whole words and each line on
+  the knock-out pad the target caption wears. The target caption then sits on
+  the band's floor. No word is split, cut or dropped (#455).
+- **Axis labels under the target numerals.** A glucose axis label that would
+  sit under the 70 or 180 numeral is not printed; the numeral names the target
+  line there.
+- **Spotlight verdict line.** At the Spotlight's middle rank the verdict line
+  breaks between its facts where they do not fit one line, never inside one,
+  and the tally line and the figure move down with it. The programmed-rate rule
+  ends at the axis tick, above the tick labels.
+- **All charts at the narrowest split.** Between 832 and 1023 px wide the All
+  charts control shows its icon only, keeping its name and tooltip, so the
+  overview's title draws; the header stays one line.
+- **Resize.** The overview and the evidence charts re-lay out when the window
+  is resized, so a narrowed window gets the narrow layout rather than the wide
+  one rescaled.
 - **24 h arrival.** Diagnose opens on 24 h when nothing else chooses a window.
   A contextual entry or a retained window still wins, and the workstation's
   ISF, drill, occurrence and drawn presets keep Overnight.

@@ -1542,7 +1542,7 @@ export const OVERVIEW_PRESETS = Object.freeze([
   Object.freeze({ label: '24 h', head: '24 H 00:00–24:00', range: [0, 1440] }),
 ]);
 // #455: the narrowest split, at the tall and the short window.
-export const NARROW_SPLIT_SIZES = Object.freeze([
+const NARROW_SPLIT_SIZES = Object.freeze([
   Object.freeze({ width: 832, height: 720 }),
   Object.freeze({ width: 832, height: 560 }),
 ]);
@@ -1635,10 +1635,10 @@ export function assertOverviewText(checks) {
 
 // #455: the Spotlight's middle-rank verdict line on the replay store's 00:00
 // slot, as literals copied from its 1200×560 render, fact by fact.
-export const SPOTLIGHT_FACTS = Object.freeze(['SUPPORTED', '0.70 U/h', '(0.70–0.70)', 'programmed now 0.60']);
+const SPOTLIGHT_FACTS = Object.freeze(['SUPPORTED', '0.70 U/h', '(0.70–0.70)', 'programmed now 0.60']);
 const SPOTLIGHT_TALLY = '30 steady nights';
 // #455: S184's sizes, pressing nothing between them.
-export const SPOTLIGHT_SIZES = Object.freeze([
+const SPOTLIGHT_SIZES = Object.freeze([
   Object.freeze({ width: 1200, height: 736 }), ...NARROW_SPLIT_SIZES,
 ]);
 
@@ -1705,7 +1705,7 @@ export function assertSpotlightVerdict(checks) {
 
 // #455: S185's sizes before the run's own: the narrowest split, and the 1024px
 // tablet width of the 2026-08-19 owner ruling.
-export const CANVAS_HEAD_SIZES = Object.freeze([
+const CANVAS_HEAD_SIZES = Object.freeze([
   ...NARROW_SPLIT_SIZES, Object.freeze({ width: 1024, height: 768 }),
 ]);
 

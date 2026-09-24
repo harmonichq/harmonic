@@ -1551,7 +1551,7 @@ function boot(root, data, callbacks, signal) {
 
   function installTileMount(host, mount) {
     return { ...mount,
-      observer: observeResize(mount.resizeHost || host, () => mount.chart) };
+      observer: observeResize(mount.resizeHost || host, () => mount.chart, mount.relayout) };
   }
 
   function disposeRowMinis() {
@@ -1562,22 +1562,29 @@ function boot(root, data, callbacks, signal) {
     rowMiniMounts = [];
   }
 
+  /* A descriptor tile builds its option from its host's width, so a size
+     change rebuilds it from the same inputs at the new width rather than only
+     rescaling the old one (ADR 455). */
   function mountDescriptorChart(host, descriptor, mini, { catalog = false } = {}) {
-    const option = optionForDescriptor(
-      descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
-        mini, window: scopeWindow(), caseFile: catalog ? descriptor.data : tileCaseFile(descriptor), surface: host,
-      },
-    );
-    if (!mini && host.clientWidth <= 480) {
-      const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
-      for (const axis of axes) {
-        if (!axis?.name) continue;
-        axis.nameLocation = 'end';
-        axis.nameTextStyle = { ...axis.nameTextStyle, align: 'right' };
+    const range = sharedGlucoseRange;
+    const context = {
+      mini, window: scopeWindow(), caseFile: catalog ? descriptor.data : tileCaseFile(descriptor), surface: host,
+    };
+    const build = () => {
+      const option = optionForDescriptor(descriptor, DIAGNOSE_EVIDENCE_CHARTS, range, context);
+      if (!mini && host.clientWidth <= 480) {
+        const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
+        for (const axis of axes) {
+          if (!axis?.name) continue;
+          axis.nameLocation = 'end';
+          axis.nameTextStyle = { ...axis.nameTextStyle, align: 'right' };
+        }
       }
-    }
+      return option;
+    };
+    const option = build();
     const chart = window.echarts.init(host, null, { renderer: 'canvas' });
-    return { chart, option };
+    return { chart, option, relayout: () => chart.setOption(build(), true) };
   }
 
   function mountRowMinis(miniSlots) {
@@ -4194,7 +4201,15 @@ function boot(root, data, callbacks, signal) {
     requestCase(f, f.requestedAlignment, occurrenceFocusId);
   }, { signal });   // PORT: abortable
 
-  observeResize(el('chart'), () => chart);
+  /* The overview re-lays out on a size change (ADR 455), except while a drag
+     owns the chart, which `applyDrag()` paints until the drag finishes, and
+     after teardown: a frame queued before it would otherwise paint whichever
+     workstation holds the chart's id then. */
+  observeResize(el('chart'), () => chart, () => {
+    if (dragActive || signal.aborted) return;
+    paintChart();
+    paintBrace();
+  });
   installDrag();
   document.addEventListener('keydown', (ev) => {
     if (!onScreen()) return;

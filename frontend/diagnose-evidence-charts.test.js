@@ -572,6 +572,69 @@ test('the middle rank keeps its labels inside a 480px cell', () => {
     'the rule flies no flag where the deck has become two lines');
 });
 
+/* #455 — THE VERDICT LINE BREAKS BETWEEN ITS FACTS. At the narrowest split the
+   Spotlight's seat is about 381px, and its one verdict line ran past the Keep
+   control and the canvas edge, losing the programmed rate. The line now breaks
+   where a whole fact does not fit the column that ends at the plot's right
+   edge, and the tally and the figure move down one 14px pitch per added line.
+   The data is the served fixture with the replay store's slot shape: a
+   verdict word, an estimate, its range and a programmed rate. */
+test('the middle-rank verdict line breaks between facts at the narrowest split', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const data = { ...basal, estimate: { value: .7, lo: .7, hi: .7 } };
+  const facts = ['INSUFFICIENT EVIDENCE', '0.70 U/h', '(0.70–0.70)', 'programmed now 0.60'];
+  const wide = entry.option('editorial', { data, surface: { clientWidth: 750 } });
+  const narrow = entry.option('editorial', { data, surface: { clientWidth: 381 } });
+
+  const [wideVerdict, wideTally] = wide.graphic;
+  assert.equal(wideVerdict.style.text, facts.join(' · '), 'a line that fits stays as it was');
+  assert.equal('lineHeight' in wideVerdict.style, false);
+  assert.equal(wideTally.top, 24);
+  assert.equal(wide.grid.top, 46);
+
+  const [verdict, tally] = narrow.graphic;
+  const lines = verdict.style.text.split('\n');
+  assert.deepEqual(lines, [facts.slice(0, 3).join(' · '), facts[3]], 'the break replaces a separator');
+  const column = 381 - 14 - (14 + 26);
+  for (const line of lines) {
+    assert.ok(line.length * 11 * .62 <= column, `"${line}" stays inside the ${column}px column`);
+  }
+  assert.equal(verdict.style.lineHeight, 14);
+  assert.equal(tally.top, 24 + 14, 'the tally moves down one pitch');
+  assert.equal(narrow.grid.top, 46 + 14, 'the figure moves down one pitch');
+  assert.equal(tally.style.text, wideTally.style.text);
+});
+
+/* #455 — THE PROGRAMMED RULE ENDS AT THE AXIS TICK. It ran to 24px under the
+   axis, through the tick labels 6px below it, so a tick at the programmed rate
+   read "0.|60". It now stops at the x axis's own 4px tick, at both ranks. */
+test('the programmed rule ends at the axis tick, above the tick labels, at both ranks', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const data = { ...basal, estimate: { value: .74, lo: .6, hi: .92 } };
+  for (const [clientWidth, plot, height] of [
+    [480, { x: 14, y: 46, width: 426, height: 140 }, 240],
+    [950, { x: 28, y: 76, width: 510, height: 150 }, 307],
+  ]) {
+    const option = entry.option('editorial', { data, surface: { clientWidth } });
+    const api = {
+      coord: ([x, y]) => [plot.x + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * plot.width,
+        plot.y + (y / option.yAxis.max) * plot.height],
+      getWidth: () => clientWidth, getHeight: () => height,
+    };
+    const drawn = option.series.find(({ id }) => id === 'furniture')
+      .renderItem({ coordSys: plot, dataIndex: 0 }, api).children;
+    const rule = drawn.find(({ type, shape }) => type === 'rect' && shape.width === 1.5);
+    const base = plot.y + plot.height;
+    assert.ok(rule, `the ${clientWidth}px seat draws the rule`);
+    assert.equal(rule.shape.y + rule.shape.height, base + option.xAxis.axisTick.length,
+      `the rule ends at the axis tick in the ${clientWidth}px seat`);
+    assert.ok(rule.shape.y + rule.shape.height < base + option.xAxis.axisLabel.margin,
+      'the rule stops above the tick labels');
+  }
+});
+
 /* A ROSTER CAN SPAN A PROFILE CHANGE. `analyze_basal` measures each night against
    the rate in force THAT night and stamps the direction it found; the roster
    carries both, and `current` carries today's. The chart used to anchor every

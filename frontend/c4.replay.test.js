@@ -12,6 +12,7 @@ import {
 } from './c4.replay.mjs';
 import { queueRows, scopeNote } from './diagnose-findings-queue.js';
 import { C2_STORIES } from './c2.replay.mjs';
+import { railRowLocator } from './diagnose-replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -1268,6 +1269,48 @@ test('R8 opens finding:carb_undercount through its Pattern fold, never a raw qro
     'R8 must open the closed fold before it can reach the claimed cause');
   assert.ok(page.actions.includes('#level .qmember[data-id="finding:carb_undercount"]'),
     'R8 must click the folded .qmember row, not a sibling .qrow');
+});
+
+// ADR 457: the rail reads "Loading findings…" (no row, no fold) until it
+// settles, so a resolver that counts first finds neither shape. This rail
+// paints only once the resolver waits for it, then shows the claimed cause
+// behind one closed fold.
+function loadingRailPage(id) {
+  const clicks = [];
+  const fold = '#level .qfold[aria-expanded="false"]';
+  const member = `#level .qmember[data-id="${id}"]`;
+  let painted = false;
+  let foldOpen = false;
+  const present = selector => {
+    if (!painted) return 0;
+    if (selector === fold) return foldOpen ? 0 : 1;
+    if (selector === member) return foldOpen ? 1 : 0;
+    return 0;
+  };
+  return {
+    clicks,
+    locator: selector => ({
+      selector,
+      first() { return this; },
+      count: async () => present(selector),
+      waitFor: async () => {
+        if (!present(selector)) throw new Error(`Timeout waiting for ${selector}`);
+      },
+      click: async () => {
+        clicks.push(selector);
+        if (selector === fold) foldOpen = true;
+      },
+    }),
+    waitForFunction: async () => { painted = true; return true; },
+  };
+}
+
+test('railRowLocator waits for a settled Findings rail before it reads the row shape', async () => {
+  const id = 'finding:high_carb_sequence';
+  const page = loadingRailPage(id);
+  const row = await railRowLocator(page, id);
+  assert.equal(row.selector, `#level .qmember[data-id="${id}"]`, 'the claimed cause resolves to its folded line');
+  assert.deepEqual(page.clicks, ['#level .qfold[aria-expanded="false"]'], 'the closed fold opens before the cause is read');
 });
 
 test('R17 requires the generated finishable Trial, never a mock ready selector', async () => {

@@ -1,4 +1,4 @@
-import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from './diagnose-replay.mjs';
+import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen, railRowLocator } from './diagnose-replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -313,42 +313,22 @@ const currentDestination = (page) => page.evaluate(() =>
   document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null);
 
 /** The first VISIBLE match: the footer's launchers are the desktop affordance,
-    and the in-surface strip is narrow-only. */
-async function press(page, selector) {
-  const all = page.locator(selector);
-  const total = await all.count();
-  assert.ok(total > 0, `no control matched ${selector}`);
-  for (let i = 0; i < total; i += 1) {
-    const candidate = all.nth(i);
-    if (await candidate.isVisible()) {
-      await candidate.click();
-      await page.waitForTimeout(180);
-      return;
-    }
+    and the in-surface strip is narrow-only. It waits up to `timeout` ms for
+    that match to render (ADR 457), so a control a screen paints once its read
+    lands is pressed, not missed. One that never renders, or stays hidden,
+    fails after the bound, naming the selector. */
+async function press(page, selector, timeout = 30000) {
+  const control = page.locator(selector).filter({ visible: true }).first();
+  try {
+    await control.waitFor({ state: 'visible', timeout });
+  } catch (error) {
+    if (error.name !== 'TimeoutError') throw error;
+    const total = await page.locator(selector).count();
+    assert.ok(total > 0, `no control matched ${selector} after ${timeout} ms`);
+    assert.fail(`${selector} matched ${total} element(s), all hidden after ${timeout} ms`);
   }
-  assert.fail(`${selector} matched ${total} element(s), all hidden`);
-}
-
-/* #413 — a claimed cause is no longer a sibling `.qrow`; it folds under its
-   parent Pattern as a `.qmember`, closed on arrival unless the Pattern is
-   rank one. Every one of these generated sequence fixtures claims
-   `finding:high_carb_sequence` under `pattern:highs_after_meals`, so drilling
-   it now means opening its parent's fold first. This helper stays correct
-   for an UNCLAIMED ranked row too (a plain `.qrow` click), rather than
-   assuming which shape the served row takes. */
-async function openRailRow(page, id) {
-  const row = page.locator(`#level .qrow[data-id="${id}"]`);
-  if (await row.count()) { await row.click(); return; }
-  // Force every closed fold open — the member's line does not exist in the
-  // DOM until its parent's toggle expands it.
-  for (;;) {
-    const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
-    if (!(await closed.count())) break;
-    await closed.click();
-  }
-  const member = page.locator(`#level .qmember[data-id="${id}"]`);
-  await member.waitFor({ timeout: 30000 });
-  await member.click();
+  await control.click();
+  await page.waitForTimeout(180);
 }
 
 /* ------------------------------------------------------------------ tests */
@@ -399,7 +379,7 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
   const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720', sequenceState: 'high_carb_sequence_in_sequence' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await openRailRow(page, 'finding:high_carb_sequence');
+    await (await railRowLocator(page, 'finding:high_carb_sequence')).click();
     const chart = page.locator('#tile-focal #ec-chart');
     await page.waitForFunction(() => {
       const host = document.querySelector('#tile-focal #ec-chart');
@@ -462,7 +442,7 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
   const id = 'finding:high_carb_sequence';
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await openRailRow(page, id);
+    await (await railRowLocator(page, id)).click();
     await page.locator('#tile-focal #ec-chart').waitFor();
     const stored = input.windows.global.cases[id];
     await assertSequenceResponse(page, stored);
@@ -756,6 +736,7 @@ for (const [viewport, rows] of [['1280x720', [38, 24]], ['1440x900', [42, 26]]])
 test('Day owns its chronology, its week ribbon, its month and the Episode Log', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     assert.equal(await countOf(page, '.gf-stage-day'), 1);
     assert.equal(await countOf(page, '.gf-reading'), 1, 'Day is a paired state');
     assert.equal(Math.round((await box(page, '.gf-desk > .gf-reading')).w), 430,
@@ -890,6 +871,7 @@ test('a canonical Day address reloads through the built shell and returns throug
   const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
   const { page, close } = await openDesk({ address });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     assert.equal(await currentDestination(page), 'day');
     assert.equal(await countOf(page, '[data-day="return"]'), 1);
     assert.equal(await page.evaluate(() => location.pathname), '/day');
@@ -979,9 +961,38 @@ test('a key pressed on Day leaves the parked Diagnose as it was, and the Day ret
   } finally { await close(); }
 });
 
+// ADR 457: press waits, within its bound, for its first visible match. Day's
+// read is held, so its Return control cannot exist when the press starts; the
+// press lands once the read is released. An absent control and one that stays
+// hidden still fail after the bound, naming the selector.
+test('press waits for a Day return control that renders late, and names an absent or hidden control', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
+  const { page, close } = await openDesk({ address, beforeNavigate: async page => {
+    await page.route('**/api/model-view*', async route => { await gate; await route.fallback(); });
+  } });
+  try {
+    assert.equal(await countOf(page, '[data-day="return"]'), 0, 'premise: Day paints no Return control while its read is held');
+    await Promise.all([press(page, '[data-day="return"]'), page.waitForTimeout(250).then(release)]);
+    assert.equal(await currentDestination(page), 'diagnose');
+    await assert.rejects(press(page, '[data-no-such-control]', 500),
+      { message: 'no control matched [data-no-such-control] after 500 ms' });
+    const hidden = '.gf-utility-strip [data-utility="guide"]';
+    await assert.rejects(press(page, hidden, 500), (error) => {
+      assert.ok(error.message.startsWith(hidden) && error.message.endsWith('all hidden after 500 ms'), error.message);
+      return true;
+    });
+  } finally {
+    release();
+    await close();
+  }
+});
+
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     await press(page, '.cockpit-utilities [data-utility="guide"]');
     assert.equal(await countOf(page, '.gf-utility[data-utility="guide"]'), 1);
     // The destination underneath is still standing.
@@ -1074,6 +1085,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
 test('repeated entry and exit leaves no duplicate chart, pane or utility behind', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     const counts = () => page.evaluate(() => ({
       canvases: document.querySelectorAll('canvas').length,
       utilities: document.querySelectorAll('.gf-utility').length,
@@ -1246,13 +1258,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
         // "All charts" tile is unaffected — the explorer draws one tile per
         // descriptor regardless of rail fold state, so the response evidence
         // still renders there.
-        for (;;) {
-          const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
-          if (!(await closed.count())) break;
-          await closed.click();
-        }
-        const member = page.locator(`#level .qmember[data-id="${id}"]`);
-        await member.waitFor({ timeout: 30000 });
+        const member = await railRowLocator(page, id);
         assert.equal(await member.locator('.mini').count(), 0, 'a claimed cause carries no mini of its own');
         await member.scrollIntoViewIfNeeded();
         await captureEvidence(page, 'high_carb_sequence-mini');
@@ -1266,7 +1272,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
         await captureEvidence(page, 'high_carb_sequence-pattern-reference');
         await page.keyboard.press('Escape');
       }
-      await openRailRow(page, id);
+      await (await railRowLocator(page, id)).click();
       await page.locator('#level .sequence-comparison').waitFor();
       await assertSequenceResponse(page, stored);
       if (name === 'null_period') await assertCompactSequenceDetail(page, stored, 'unavailable');
@@ -1276,7 +1282,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       if (name === 'null_period') {
         partialMetrics = true;
         await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
-        await openRailRow(page, id);
+        await (await railRowLocator(page, id)).click();
         await page.locator('#level .sequence-supporting-detail summary').click();
         const period = page.locator('#level [data-period="post_4h"]');
         assert.deepEqual((await period.locator('.sequence-cohort').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim()), [

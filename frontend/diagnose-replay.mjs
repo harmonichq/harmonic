@@ -450,8 +450,20 @@ export function highCarbFailureScenario(defect) {
 // sibling `.qrow`. This showcase always claims `finding:high_carb_sequence`
 // under `pattern:highs_after_meals`, but the resolver stays correct for an
 // unclaimed ranked row too, rather than assuming which shape the served row
-// takes.
+// takes. ADR 457: it reads that shape only from a settled, painted rail. While
+// the rail still reads "Loading findings…" there is neither a row nor a fold,
+// so it first waits for `#level` to settle holding a row; the rail paints in
+// one pass, folds included.
 export async function railRowLocator(page, id) {
+  try {
+    await page.waitForFunction(() => {
+      const level = document.querySelector('#level');
+      return level?.dataset.loading === 'false' && Boolean(level.querySelector('.qrow'));
+    }, null, { timeout: 30000 });
+  } catch (error) {
+    if (error.name !== 'TimeoutError') throw error;
+    throw new Error(`the Findings rail never settled with a row while resolving ${id}`);
+  }
   const row = page.locator(`#level .qrow[data-id="${id}"]`);
   if (await row.count()) return row;
   for (;;) {

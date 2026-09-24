@@ -1320,6 +1320,8 @@ seed the frontier from the newest eligible existing detected candidate and retai
 older records as history; do not auto-finish or date them. Missing historical
 facts cannot be repaired by silently rerunning today's model.
 
+The Trial endings in the preceding paragraph are superseded by ADR 442 (`openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md`): a retained Trial record, including one first recorded after the fact, now ends by the one reconcile rule for every open record, dated by the detected change or the watch window, and its saved assessment reads only evidence up to that ending. All other requirements remain binding.
+
 ## ADR 386 — Keep Focus comparisons in one retained context
 
 ### Exact periods and inference context

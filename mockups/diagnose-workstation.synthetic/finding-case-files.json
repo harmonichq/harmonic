@@ -5061,12 +5061,12 @@
        "reason": {
         "cause": {
          "lever": "carb_undercount",
-         "text": "Synthetic carb undercount narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic carb undercount judgment: this Occurrence met the criteria.",
          "title": "Carb undercount"
         },
         "habits": [
          {
-          "detail": "Synthetic carb undercount judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "carb_undercount",
           "title": "Carb undercount",
           "verdict": "fired"
@@ -19382,12 +19382,12 @@
        "reason": {
         "cause": {
          "lever": "carb_undercount",
-         "text": "Synthetic carb undercount narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic carb undercount judgment: this Occurrence met the criteria.",
          "title": "Carb undercount"
         },
         "habits": [
          {
-          "detail": "Synthetic carb undercount judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "carb_undercount",
           "title": "Carb undercount",
           "verdict": "fired"
@@ -42205,12 +42205,12 @@
        "reason": {
         "cause": {
          "lever": "correction_on_iob",
-         "text": "Synthetic correction on active insulin narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic correction on active insulin judgment: this Occurrence met the criteria.",
          "title": "Correction on active insulin"
         },
         "habits": [
          {
-          "detail": "Synthetic correction on active insulin judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "correction_on_iob",
           "title": "Correction on active insulin",
           "verdict": "fired"
@@ -54335,12 +54335,12 @@
        "reason": {
         "cause": {
          "lever": "correction_on_iob",
-         "text": "Synthetic correction on active insulin narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic correction on active insulin judgment: this Occurrence met the criteria.",
          "title": "Correction on active insulin"
         },
         "habits": [
          {
-          "detail": "Synthetic correction on active insulin judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "correction_on_iob",
           "title": "Correction on active insulin",
           "verdict": "fired"
@@ -62976,12 +62976,12 @@
        "reason": {
         "cause": {
          "lever": "correction_stacking",
-         "text": "Synthetic correction stacking narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic correction stacking judgment: this Occurrence met the criteria.",
          "title": "Correction stacking"
         },
         "habits": [
          {
-          "detail": "Synthetic correction stacking judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "correction_stacking",
           "title": "Correction stacking",
           "verdict": "fired"
@@ -75175,12 +75175,12 @@
        "reason": {
         "cause": {
          "lever": "correction_stacking",
-         "text": "Synthetic correction stacking narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic correction stacking judgment: this Occurrence met the criteria.",
          "title": "Correction stacking"
         },
         "habits": [
          {
-          "detail": "Synthetic correction stacking judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "correction_stacking",
           "title": "Correction stacking",
           "verdict": "fired"
@@ -95025,12 +95025,12 @@
        "reason": {
         "cause": {
          "lever": "late_bolus",
-         "text": "Synthetic late bolus narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic late bolus judgment: this Occurrence met the criteria.",
          "title": "Late bolus"
         },
         "habits": [
          {
-          "detail": "Synthetic late bolus judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "late_bolus",
           "title": "Late bolus",
           "verdict": "fired"
@@ -109346,12 +109346,12 @@
        "reason": {
         "cause": {
          "lever": "late_bolus",
-         "text": "Synthetic late bolus narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic late bolus judgment: this Occurrence met the criteria.",
          "title": "Late bolus"
         },
         "habits": [
          {
-          "detail": "Synthetic late bolus judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "late_bolus",
           "title": "Late bolus",
           "verdict": "fired"
@@ -133163,12 +133163,12 @@
        "reason": {
         "cause": {
          "lever": "meal_bolus_short",
-         "text": "Synthetic meal bolus fell short narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic meal bolus fell short judgment: this Occurrence met the criteria.",
          "title": "Meal bolus fell short"
         },
         "habits": [
          {
-          "detail": "Synthetic meal bolus fell short judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "meal_bolus_short",
           "title": "Meal bolus fell short",
           "verdict": "fired"
@@ -149232,12 +149232,12 @@
        "reason": {
         "cause": {
          "lever": "meal_bolus_short",
-         "text": "Synthetic meal bolus fell short narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic meal bolus fell short judgment: this Occurrence met the criteria.",
          "title": "Meal bolus fell short"
         },
         "habits": [
          {
-          "detail": "Synthetic meal bolus fell short judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "meal_bolus_short",
           "title": "Meal bolus fell short",
           "verdict": "fired"
@@ -168805,12 +168805,12 @@
        "reason": {
         "cause": {
          "lever": "meal_over_delivery",
-         "text": "Synthetic meal over-delivery narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic meal over-delivery judgment: this Occurrence met the criteria.",
          "title": "Meal over-delivery"
         },
         "habits": [
          {
-          "detail": "Synthetic meal over-delivery judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "meal_over_delivery",
           "title": "Meal over-delivery",
           "verdict": "fired"
@@ -183126,12 +183126,12 @@
        "reason": {
         "cause": {
          "lever": "meal_over_delivery",
-         "text": "Synthetic meal over-delivery narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic meal over-delivery judgment: this Occurrence met the criteria.",
          "title": "Meal over-delivery"
         },
         "habits": [
          {
-          "detail": "Synthetic meal over-delivery judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "meal_over_delivery",
           "title": "Meal over-delivery",
           "verdict": "fired"
@@ -210977,12 +210977,12 @@
        "reason": {
         "cause": {
          "lever": "missed_meal",
-         "text": "Synthetic missed / unannounced meal narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic missed / unannounced meal judgment: this Occurrence met the criteria.",
          "title": "Missed / unannounced meal"
         },
         "habits": [
          {
-          "detail": "Synthetic missed / unannounced meal judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "missed_meal",
           "title": "Missed / unannounced meal",
           "verdict": "fired"
@@ -240972,12 +240972,12 @@
        "reason": {
         "cause": {
          "lever": "missed_meal",
-         "text": "Synthetic missed / unannounced meal narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic missed / unannounced meal judgment: this Occurrence met the criteria.",
          "title": "Missed / unannounced meal"
         },
         "habits": [
          {
-          "detail": "Synthetic missed / unannounced meal judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "missed_meal",
           "title": "Missed / unannounced meal",
           "verdict": "fired"
@@ -248655,12 +248655,12 @@
        "reason": {
         "cause": {
          "lever": "over_treated_low",
-         "text": "Synthetic over-treated low narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic over-treated low judgment: this Occurrence met the criteria.",
          "title": "Over-treated low"
         },
         "habits": [
          {
-          "detail": "Synthetic over-treated low judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "over_treated_low",
           "title": "Over-treated low",
           "verdict": "fired"
@@ -260785,12 +260785,12 @@
        "reason": {
         "cause": {
          "lever": "over_treated_low",
-         "text": "Synthetic over-treated low narrative: the episode that claims this Occurrence.",
+         "text": "Synthetic over-treated low judgment: this Occurrence met the criteria.",
          "title": "Over-treated low"
         },
         "habits": [
          {
-          "detail": "Synthetic over-treated low judgment: this Occurrence met the criteria.",
+          "detail": null,
           "lever": "over_treated_low",
           "title": "Over-treated low",
           "verdict": "fired"
@@ -266657,7 +266657,7 @@
        "reason": "harm gate",
        "register": "held",
        "tier": "noted",
-       "title": "I:C Evening",
+       "title": "Carb ratio Evening",
        "window_scope": "window"
       },
       {
@@ -266671,7 +266671,7 @@
        "reason": "insufficient evidence",
        "register": "held",
        "tier": "noted",
-       "title": "ISF",
+       "title": "Correction factor",
        "window_scope": "whole_day"
       }
      ],
@@ -266728,7 +266728,7 @@
       "reason": "harm gate",
       "register": "held",
       "tier": "noted",
-      "title": "I:C Evening",
+      "title": "Carb ratio Evening",
       "window_scope": "window"
      },
      {
@@ -266742,7 +266742,7 @@
       "reason": "insufficient evidence",
       "register": "held",
       "tier": "noted",
-      "title": "ISF",
+      "title": "Correction factor",
       "window_scope": "whole_day"
      }
     ],

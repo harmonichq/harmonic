@@ -1,0 +1,95 @@
+(node:31883) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S183 case=basal-verdict-gallery milliseconds=376.949
+# S183 synthetic case=basal-verdict-gallery (fresh copy)
+FAIL S183 — S183 the glucose overview's text must stay whole, inside the chart and unstruck at every size; 72 failures:
+  - 1440×900 Overnight: painted text "60" and "70" overlap by 11.51px × 1.43px
+  - 1440×900 Overnight: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 1440×900 Morning: painted text "60" and "70" overlap by 11.51px × 1.43px
+  - 1440×900 Morning: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 1440×900 Afternoon: painted text "60" and "70" overlap by 11.51px × 1.43px
+  - 1440×900 Afternoon: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 1440×900 Evening: painted text "60" and "70" overlap by 11.51px × 1.43px
+  - 1440×900 Evening: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 1440×900 24 h: painted text "60" and "70" overlap by 11.51px × 1.43px
+  - 1440×900 24 h: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" lies 67.65px outside #chart's 402×153 box
+  - 832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" reaches 101.65px left of the plot's left edge, into the y-axis label column
+  - 832×720 Evening, narrowed with nothing pressed: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 Evening, narrowed with nothing pressed: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Evening, narrowed with nothing pressed: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×720 Evening, narrowed with nothing pressed: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×720 Overnight: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 70.29px outside #chart's 402×153 box
+  - 832×720 Overnight: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 70.29px past #chart's right edge
+  - 832×720 Overnight: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 Overnight: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Morning: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 136.91px outside #chart's 402×153 box
+  - 832×720 Morning: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 136.91px past #chart's right edge
+  - 832×720 Morning: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 Morning: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Afternoon: caption span "AFTERNOON 12:00–18:00" lies 163.33px outside #chart's 402×153 box
+  - 832×720 Afternoon: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 37.58px outside #chart's 402×153 box
+  - 832×720 Afternoon: caption span "AFTERNOON 12:00–18:00" reaches 197.33px left of the plot's left edge, into the y-axis label column
+  - 832×720 Afternoon: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 71.58px left of the plot's left edge, into the y-axis label column
+  - 832×720 Afternoon: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 Afternoon: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Afternoon: painted text "180" and "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" overlap by 16.56px × 4.79px
+  - 832×720 Afternoon: painted text "180" and "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" overlap by 16.56px × 4.79px
+  - 832×720 Evening: caption span "EVENING 18:00–24:00" lies 67.65px outside #chart's 402×153 box
+  - 832×720 Evening: caption span "EVENING 18:00–24:00" reaches 101.65px left of the plot's left edge, into the y-axis label column
+  - 832×720 Evening: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 Evening: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×720 Evening: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×720 Evening: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×720 24 h: caption span "24 H 00:00–24:00" lies 44.14px outside #chart's 402×153 box
+  - 832×720 24 h: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 269.38px outside #chart's 402×153 box
+  - 832×720 24 h: caption span "24 H 00:00–24:00" reaches 44.14px past #chart's right edge
+  - 832×720 24 h: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 269.38px past #chart's right edge
+  - 832×720 24 h: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×720 24 h: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×560 Overnight: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 70.29px outside #chart's 402×153 box
+  - 832×560 Overnight: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 70.29px past #chart's right edge
+  - 832×560 Overnight: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×560 Overnight: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×560 Morning: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 136.91px outside #chart's 402×153 box
+  - 832×560 Morning: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 136.91px past #chart's right edge
+  - 832×560 Morning: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×560 Morning: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×560 Afternoon: caption span "AFTERNOON 12:00–18:00" lies 163.33px outside #chart's 402×153 box
+  - 832×560 Afternoon: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 37.58px outside #chart's 402×153 box
+  - 832×560 Afternoon: caption span "AFTERNOON 12:00–18:00" reaches 197.33px left of the plot's left edge, into the y-axis label column
+  - 832×560 Afternoon: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 71.58px left of the plot's left edge, into the y-axis label column
+  - 832×560 Afternoon: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×560 Afternoon: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×560 Afternoon: painted text "180" and "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" overlap by 16.56px × 4.79px
+  - 832×560 Afternoon: painted text "180" and "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" overlap by 16.56px × 4.79px
+  - 832×560 Evening: caption span "EVENING 18:00–24:00" lies 67.65px outside #chart's 402×153 box
+  - 832×560 Evening: caption span "EVENING 18:00–24:00" reaches 101.65px left of the plot's left edge, into the y-axis label column
+  - 832×560 Evening: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×560 Evening: painted text "180" and "180" overlap by 15.56px × 10.22px
+  - 832×560 Evening: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×560 Evening: painted text "180" and "EVENING 18:00–24:00" overlap by 16.56px × 5.04px
+  - 832×560 24 h: caption span "24 H 00:00–24:00" lies 44.14px outside #chart's 402×153 box
+  - 832×560 24 h: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 269.38px outside #chart's 402×153 box
+  - 832×560 24 h: caption span "24 H 00:00–24:00" reaches 44.14px past #chart's right edge
+  - 832×560 24 h: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 269.38px past #chart's right edge
+  - 832×560 24 h: painted text "60" and "70" overlap by 11.51px × 2.58px
+  - 832×560 24 h: painted text "180" and "180" overlap by 15.56px × 10.22px
+# story-time S183 milliseconds=14163.494
+# case-copy S184 case=basal-verdict-gallery milliseconds=1.845
+# S184 synthetic case=basal-verdict-gallery (fresh copy)
+FAIL S184 — S184 the Spotlight's verdict line must keep every fact whole inside the chart; 6 failures:
+  - 1200×736: the verdict line reads ["SUPPORTED"]; it must read ["SUPPORTED","0.70","U/h","(0.70–0.70)","programmed","now","0.60"]
+  - 1200×736: 0 painted lines begin with "30 steady nights"; exactly one tally must
+  - 832×720: the verdict line reads ["SUPPORTED"]; it must read ["SUPPORTED","0.70","U/h","(0.70–0.70)","programmed","now","0.60"]
+  - 832×720: 0 painted lines begin with "30 steady nights"; exactly one tally must
+  - 832×560: the verdict line reads ["SUPPORTED"]; it must read ["SUPPORTED","0.70","U/h","(0.70–0.70)","programmed","now","0.60"]
+  - 832×560: 0 painted lines begin with "30 steady nights"; exactly one tally must
+# story-time S184 milliseconds=31968.095
+
+# executed 0 · failed 2 · deferred 0 · selected 2 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

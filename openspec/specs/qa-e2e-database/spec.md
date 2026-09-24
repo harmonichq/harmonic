@@ -368,87 +368,76 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 
 ### Requirement: Remaining consumers migrate before revise-E2E retires
 
-The 11 executable consumers resolved from the archived migration checklist SHALL be
-accounted for by the `#319 migration` table in `design.md`. The CI drift step,
-browser-gates server, route-level fixture copy, public-link pin and test, public
-binary-policy test, agent instructions, and every direct database reference SHALL
-use the QA showcase or an explicitly emitted named case store. Only the Diagnose
-workstation behavior ledger is a database-backed browser consumer: its CI matrix
-row has `server: true`. The event-comparison replay, comparison support audit, and
-Verify behavior replay stub their own data, are not database consumers, and owe no
-migration or database proof. The already-migrated
-`harmonic-nofetch` launch entry and harness instructions SHALL remain on the QA
-scratch-copy workflow.
+Every executable consumer of a synthetic QA database SHALL use the committed QA
+showcase or a named case store that `scripts/gen_qa_e2e_db.py --case` emits. The consumers are:
 
-The CI server SHALL first copy the committed QA showcase database to
-`$RUNNER_TEMP/harmonic-qa.sqlite` and SHALL serve only that copy with
-`--no-fetch`; it SHALL never serve the committed path. `/api/health` SHALL answer
-inside the existing 30-attempt poll. The documented local serve SHALL retain
-tokenless operation, scratch-copy isolation, and `--no-fetch`. The route test
-SHALL copy the committed QA showcase into a temporary path, select
-`finding:over_treated_low`, and pin summary `{"claimed": 1, "denominator": 5,
-"noun": "lows"}`, verdict-count sum `5`, and occurrence count `5`. The QA generator and case
-tests SHALL retain the old generator test's public production-composition proof:
-analysis, exposures, scenarios, findings projection, and I:C history. The QA drift
-step SHALL remain fail-closed. `tests/test_gen_qa_e2e_db.py` SHALL also port the
-old data-boundary assertions that CLI output leaves no adjacent `-wal` or `-shm`
-sidecar and that `store.get_credentials()` is `None` on the committed showcase.
+- the CI drift step (`scripts/gen_qa_e2e_db.py --check`), which SHALL remain
+  fail-closed;
+- the desk behavior-ledger replay, the one database-backed browser consumer. It
+  SHALL give each story a fresh copy of its named case store: the committed
+  showcase is copied, and any other case is emitted by the generator. It SHALL
+  serve only that copy, with `harmonic serve --no-fetch --token '' --port 8765`,
+  never the committed path;
+- the Trial and Pattern Focus browser suite, which drives that same replay;
+- the route-level test, which SHALL copy the committed showcase into a temporary
+  path, select `finding:over_treated_low`, and pin summary `{"claimed": 1,
+  "denominator": 5, "noun": "lows"}`, verdict-count sum `5` and occurrence
+  count `5`;
+- the public-link pin with its test, which allow the showcase's path only in the
+  agent instructions, and the public binary-policy test, which keeps the
+  `.sqlite` binary out of the public tree;
+- the agent instructions and the `harmonic-nofetch` launch entry, whose
+  documented local serve SHALL stay tokenless, isolated to a scratch copy, and
+  `--no-fetch`.
 
-Only after those replacements are proved SHALL the implementation delete
-`scripts/gen_revise_e2e_db.py`, `tests/test_gen_revise_e2e_db.py`,
-`mockups/revise-e2e.synthetic/`, and the old CI drift step.
-`tests/test_revise_e2e_retired.py` SHALL fail closed on any hit from this exact
-closed-surface command and SHALL separately require the generator file and fixture
-directory to be absent:
+The desk browser suite answers the API from generated payloads and is not a
+database consumer. #416 deleted the Diagnose workstation behavior ledger and the
+event-comparison, comparison-support and v1 Trial behavior replays. None of them
+remains a consumer, and no CI job serves a showcase copy of its own.
 
-```sh
-rg -n --hidden 'revise-e2e|revise_e2e|gen_revise_e2e_db' AGENTS.md .claude .github harness scripts tests frontend mockups --glob 'AGENTS.md' --glob '.claude/**' --glob '.github/**' --glob 'harness/**' --glob 'scripts/**' --glob 'tests/**' --glob 'frontend/**' --glob 'mockups/**/*.mjs'
-```
+The QA case tests SHALL keep the public production-composition proof: each case
+runs through the production analysis, exposures, scenarios and findings
+projection, and an I:C history case is among them.
+`tests/test_gen_qa_e2e_db.py` SHALL assert that the generator's output leaves no
+adjacent `-wal` or `-shm` sidecar, and that `store.get_credentials()` is `None` on
+the committed showcase.
 
-After both serial chunks land, the coordinator SHALL repeat that same command;
-the expectation is no output and exit 1. `docs/`, `openspec/`, and
-`mockups/*.md` are excluded because they are historical records that SHALL remain
-unchanged.
-
-The committed QA showcase SHALL remain byte-identical to `origin/main`. The
-implementation SHALL leave this active change unarchived; `/ticket finalize`
-owns archival after a human merges the implementation pull request.
+The retired revise-E2E store SHALL stay retired. `scripts/gen_revise_e2e_db.py`,
+`tests/test_gen_revise_e2e_db.py` and `mockups/revise-e2e.synthetic/` stay absent.
+`tests/test_revise_e2e_retired.py` SHALL fail closed on any retired spelling in
+its executable surface: `AGENTS.md`, every file under `.claude`, `.github`,
+`scripts`, `tests` and `frontend`, and the executable `.mjs` files under
+`mockups/`. It SHALL separately require the old generator file and fixture
+directory to be absent. `docs/`, `openspec/` and the rest of `mockups/` are
+historical records outside that surface.
 
 #### Scenario: Every direct consumer has one QA successor
 
-- **WHEN** the migration completes
-- **THEN** the QA drift check is the only QA-database drift step
-- **AND** the browser server copies the committed showcase to
-  `$RUNNER_TEMP/harmonic-qa.sqlite` before serving, while the route-level API test
-  uses its own temporary copy and the measured over-treated-low literals
-- **AND** the QA-only public-link pin and binary-denial assertion remain
-- **AND** launch and harness entrypoints remain on the QA scratch workflow
+- **WHEN** the executable consumers above are inspected
+- **THEN** each names the committed QA showcase or a case store emitted by
+  `scripts/gen_qa_e2e_db.py --case`
+- **AND** no CI job serves a showcase copy of its own, and the desk browser suite
+  reads no database
 
 #### Scenario: The one database-backed browser consumer proves the migrated server
 
-- **WHEN** the browser-gates job starts its declared synthetic server
-- **THEN** it serves `$RUNNER_TEMP/harmonic-qa.sqlite` with `--no-fetch`
-- **AND** `/api/health` answers inside the existing 30-attempt poll before the
-  Diagnose workstation behavior ledger runs
-- **AND** the three stub-backed browser rows owe no database migration or proof
+- **WHEN** a desk ledger story starts
+- **THEN** its server reads a fresh scratch copy of the story's named case store
+  with `--no-fetch` on port 8765, and never the committed showcase path
 
 #### Scenario: Retirement is evidence-based
 
-- **WHEN** the committed retirement test and completion command run against the closed executable surface,
-  including `.claude/` and `.github/`
-- **THEN** any retired spelling produces a match and blocks completion
+- **WHEN** `tests/test_revise_e2e_retired.py` runs against its executable surface
+- **THEN** any retired spelling produces a failure
 - **AND** the test separately requires the old generator and fixture directory to
   be absent
-- **AND** when the command produces no output and exits 1, the old generator, test, fixture directory, and
-  CI step are absent while historical evidence remains intact
 
 #### Scenario: The showcase and active record do not move
 
-- **WHEN** task 4 reaches the pull-request boundary
-- **THEN** `git diff --quiet origin/main -- the committed QA showcase database`
-  exits zero
-- **AND** the active change remains under `openspec/changes/qa-e2e-coverage-eras/`
-  for post-merge finalization to archive
+- **WHEN** `scripts/gen_qa_e2e_db.py --check` runs
+- **THEN** the committed showcase matches what its generator produces
+- **AND** the #319 migration's decision record stays in the archived
+  `qa-e2e-coverage-eras` change, unedited
 
 ### Requirement: Agent guidance explains era upkeep and UI use
 

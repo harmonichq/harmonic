@@ -1,0 +1,96 @@
+(node:36231) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S7 case=c3-trial milliseconds=713.615
+# S7 synthetic case=c3-trial (fresh copy)
+PASS S7
+# story-time S7 milliseconds=13019.802
+# case-copy S54b case=c3-history milliseconds=1125.316
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=13931.268
+# case-copy S60 case=showcase milliseconds=389.244
+# S60 synthetic case=showcase (fresh copy)
+PASS S60
+# story-time S60 milliseconds=19941.417
+# case-copy S61 case=showcase milliseconds=2.854
+# S61 synthetic case=showcase (fresh copy)
+PASS S61
+# story-time S61 milliseconds=22457.634
+# case-copy S62 case=showcase milliseconds=3.130
+# S62 synthetic case=showcase (fresh copy)
+PASS S62
+# story-time S62 milliseconds=18666.121
+# case-copy S72b case=showcase milliseconds=2.065
+# S72b synthetic case=showcase (fresh copy)
+PASS S72b
+# story-time S72b milliseconds=15288.846
+# case-copy S76 case=showcase milliseconds=2.208
+# S76 synthetic case=showcase (fresh copy)
+PASS S76
+# story-time S76 milliseconds=19882.177
+# case-copy S108 case=showcase milliseconds=2.245
+# S108 synthetic case=showcase (fresh copy)
+PASS S108
+# story-time S108 milliseconds=17899.038
+# case-copy S133 case=showcase milliseconds=2.220
+# S133 synthetic case=showcase (fresh copy)
+PASS S133
+# story-time S133 milliseconds=26437.947
+# case-copy S142 case=c3-trial milliseconds=4.578
+# S142 synthetic case=c3-trial (fresh copy)
+PASS S142
+# story-time S142 milliseconds=11884.293
+# case-copy S136 case=showcase milliseconds=3.300
+# S136 synthetic case=showcase (fresh copy)
+PASS S136
+# story-time S136 milliseconds=25106.113
+# case-copy S137 case=showcase milliseconds=2.225
+# S137 synthetic case=showcase (fresh copy)
+PASS S137
+# story-time S137 milliseconds=24336.957
+# case-copy S138 case=showcase milliseconds=2.097
+# S138 synthetic case=showcase (fresh copy)
+PASS S138
+# story-time S138 milliseconds=27774.524
+# case-copy S162 case=c3-trial milliseconds=2.231
+# S162 synthetic case=c3-trial (fresh copy)
+PASS S162
+# story-time S162 milliseconds=14498.898
+# case-copy S163 case=c3-trial milliseconds=1.722
+# S163 synthetic case=c3-trial (fresh copy)
+PASS S163
+# story-time S163 milliseconds=12065.970
+# case-copy S164 case=showcase milliseconds=2.338
+# S164 synthetic case=showcase (fresh copy)
+FAIL S164 — S164 the return after logging must re-read Diagnose: the store moved
+# story-time S164 milliseconds=39674.751
+# case-copy S165 case=showcase milliseconds=5.310
+# S165 synthetic case=showcase (fresh copy)
+FAIL S165 — Timed out after 30000 ms: S165 the retained return; saw [
+  '24 h',
+  'Over-treated low',
+  1,
+  true,
+  {
+    subject: 'finding:over_treated_low',
+    occurrence: 'o_d4f26ff8815899a51eb191549ae449b6'
+  }
+]; S165 the address must name the retained case, with no title, from or focus
++ actual - expected
+
+  {
+-   date: '2024-06-28',
+-   from: 'diagnose',
+-   moment: '2024-06-28 12:10:00',
+    occurrence: 'o_d4f26ff8815899a51eb191549ae449b6',
+    subject: 'finding:over_treated_low',
+-   title: 'Over-treated low'
+  }
+
+# story-time S165 milliseconds=54827.365
+
+# executed 15 · failed 2 · deferred 0 · selected 17 · chromium launches 1

@@ -5583,45 +5583,38 @@
    "correction_clusters": {
     "attributed": 2,
     "by_cause": {
-     "Correction on active insulin": 2
+     "Correction stacking": 2
     },
     "clean": 0,
     "levers": [
-     "correction_on_iob"
+     "correction_stacking"
     ],
     "n": 2,
     "occurrences": [
      {
       "attributed": true,
       "attributed_levers": [
-       "correction_on_iob"
+       "correction_stacking"
       ],
       "bg": null,
       "carbs": null,
-      "cause_lever": "correction_on_iob",
-      "cause_title": "Correction on active insulin",
+      "cause_lever": "correction_stacking",
+      "cause_title": "Correction stacking",
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep90",
       "insulin": 2.0,
-      "kind": "low",
-      "label": "Low",
+      "kind": "correction",
+      "label": "Correction",
       "state": "fired",
       "t": "2020-03-01 10:10:00",
-      "text": "Treated a low at 10:10 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Corrected again at 10:10 while the earlier correction was still active; glucose fell to 55.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 55 mg/dL after the treatment",
+        "classifier": "correction_stacking",
+        "detail": "Corrected again at 10:10 while the earlier correction was still active; glucose fell to 55.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
-       },
-       {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
-        "matched": false,
-        "silence_reason": "no_signal"
        }
       ],
       "worst_bg": 55.0
@@ -5629,34 +5622,27 @@
      {
       "attributed": true,
       "attributed_levers": [
-       "correction_on_iob"
+       "correction_stacking"
       ],
       "bg": null,
       "carbs": null,
-      "cause_lever": "correction_on_iob",
-      "cause_title": "Correction on active insulin",
+      "cause_lever": "correction_stacking",
+      "cause_title": "Correction stacking",
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep91",
       "insulin": 1.5,
-      "kind": "low",
-      "label": "Low",
+      "kind": "correction",
+      "label": "Correction",
       "state": "fired",
       "t": "2020-03-02 15:00:00",
-      "text": "Treated a low at 15:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Corrected again at 15:00 while the earlier correction was still active; glucose fell to 53.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "classifier": "correction_stacking",
+        "detail": "Corrected again at 15:00 while the earlier correction was still active; glucose fell to 53.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
-       },
-       {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
-        "matched": false,
-        "silence_reason": "no_signal"
        }
       ],
       "worst_bg": 52.8
@@ -5680,32 +5666,32 @@
       "attributed_levers": [
        "missed_meal"
       ],
-      "bg": 77.8,
+      "bg": 269.8,
       "carbs": null,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep80",
       "insulin": null,
-      "kind": "low",
-      "label": "Low",
+      "kind": "high",
+      "label": "High",
       "state": "fired",
       "t": "2020-03-03 08:40:00",
-      "text": "Treated a low at 08:40 and the glucose kept falling to 68 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Glucose climbed from 08:40 with no meal bolus before it \u2014 carbs may have gone unannounced.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 68 mg/dL after the treatment",
+        "classifier": "missed_meal",
+        "detail": "Glucose climbed from 08:40 with no meal bolus before it \u2014 carbs may have gone unannounced.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "meal_bolus_short",
+        "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 68.2
@@ -5715,32 +5701,32 @@
       "attributed_levers": [
        "missed_meal"
       ],
-      "bg": 70.0,
+      "bg": 262.0,
       "carbs": null,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep81",
       "insulin": null,
-      "kind": "low",
-      "label": "Low",
+      "kind": "high",
+      "label": "High",
       "state": "fired",
       "t": "2020-03-01 13:50:00",
-      "text": "Treated a low at 13:50 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Glucose climbed from 13:50 with no meal bolus before it \u2014 carbs may have gone unannounced.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "classifier": "missed_meal",
+        "detail": "Glucose climbed from 13:50 with no meal bolus before it \u2014 carbs may have gone unannounced.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "meal_bolus_short",
+        "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 54.2
@@ -5750,32 +5736,32 @@
       "attributed_levers": [
        "missed_meal"
       ],
-      "bg": 76.4,
+      "bg": 268.4,
       "carbs": null,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep82",
       "insulin": null,
-      "kind": "low",
-      "label": "Low",
+      "kind": "high",
+      "label": "High",
       "state": "fired",
       "t": "2020-03-02 20:00:00",
-      "text": "Treated a low at 20:00 and the glucose kept falling to 67 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Glucose climbed from 20:00 with no meal bolus before it \u2014 carbs may have gone unannounced.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 67 mg/dL after the treatment",
+        "classifier": "missed_meal",
+        "detail": "Glucose climbed from 20:00 with no meal bolus before it \u2014 carbs may have gone unannounced.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "meal_bolus_short",
+        "detail": "Synthetic meal bolus fell short judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 67.1
@@ -5783,32 +5769,32 @@
      {
       "attributed": false,
       "attributed_levers": [],
-      "bg": 72.1,
+      "bg": 264.1,
       "carbs": null,
       "cause_lever": null,
       "cause_title": null,
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep83",
       "insulin": null,
-      "kind": "low",
-      "label": "Low",
+      "kind": "high",
+      "label": "High",
       "state": "no_data",
       "t": "2020-03-03 21:50:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 68 mg/dL after the treatment",
+        "classifier": "missed_meal",
+        "detail": "Synthetic missed / unannounced meal judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "meal_bolus_short",
+        "detail": "Synthetic meal bolus fell short judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 67.7
@@ -5849,17 +5835,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "detail": "Treated a low at 01:35 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 49.1
@@ -5884,17 +5870,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 46 mg/dL after the treatment",
+        "detail": "Treated a low at 02:20 and the glucose kept falling to 46 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 45.5
@@ -5919,17 +5905,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 48 mg/dL after the treatment",
+        "detail": "Treated a low at 03:05 and the glucose kept falling to 48 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 48.2
@@ -5954,17 +5940,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "detail": "Treated a low at 03:50 and the glucose kept falling to 49 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 48.9
@@ -5989,17 +5975,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 61 mg/dL after the treatment",
+        "detail": "Treated a low at 04:35 and the glucose kept falling to 61 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 60.9
@@ -6024,17 +6010,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 60 mg/dL after the treatment",
+        "detail": "Treated a low at 05:20 and the glucose kept falling to 60 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 59.9
@@ -6059,17 +6045,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "detail": "Treated a low at 08:25 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 53.4
@@ -6094,17 +6080,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 51 mg/dL after the treatment",
+        "detail": "Treated a low at 10:40 and the glucose kept falling to 51 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 50.7
@@ -6129,17 +6115,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "detail": "Treated a low at 15:05 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 54.0
@@ -6164,17 +6150,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 61 mg/dL after the treatment",
+        "detail": "Treated a low at 17:55 and the glucose kept falling to 61 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 60.8
@@ -6195,21 +6181,21 @@
       "label": "Low",
       "state": "fired",
       "t": "2020-03-03 06:50:00",
-      "text": "Treated a low at 06:50 and the glucose kept falling to 48 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Corrected at 06:50 with insulin still active; glucose fell to 48 \u2014 the correction landed on top of the earlier one.",
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 48 mg/dL after the treatment",
+        "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
+        "matched": false,
+        "silence_reason": "no_trigger"
+       },
+       {
+        "classifier": "correction_on_iob",
+        "detail": "Corrected at 06:50 with insulin still active; glucose fell to 48 \u2014 the correction landed on top of the earlier one.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
-       },
-       {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
-        "matched": false,
-        "silence_reason": "no_signal"
        }
       ],
       "worst_bg": 48.2
@@ -6230,21 +6216,21 @@
       "label": "Low",
       "state": "fired",
       "t": "2020-03-01 11:40:00",
-      "text": "Treated a low at 11:40 and the glucose kept falling to 43 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Corrected at 11:40 with insulin still active; glucose fell to 43 \u2014 the correction landed on top of the earlier one.",
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 43 mg/dL after the treatment",
+        "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
+        "matched": false,
+        "silence_reason": "no_trigger"
+       },
+       {
+        "classifier": "correction_on_iob",
+        "detail": "Corrected at 11:40 with insulin still active; glucose fell to 43 \u2014 the correction landed on top of the earlier one.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
-       },
-       {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
-        "matched": false,
-        "silence_reason": "no_signal"
        }
       ],
       "worst_bg": 43.4
@@ -6265,21 +6251,21 @@
       "label": "Low",
       "state": "fired",
       "t": "2020-03-02 16:55:00",
-      "text": "Treated a low at 16:55 and the glucose kept falling to 55 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Corrected at 16:55 with insulin still active; glucose fell to 55 \u2014 the correction landed on top of the earlier one.",
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 55 mg/dL after the treatment",
+        "detail": "Synthetic over-treated low judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
+        "matched": false,
+        "silence_reason": "no_trigger"
+       },
+       {
+        "classifier": "correction_on_iob",
+        "detail": "Corrected at 16:55 with insulin still active; glucose fell to 55 \u2014 the correction landed on top of the earlier one.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
-       },
-       {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
-        "matched": false,
-        "silence_reason": "no_signal"
        }
       ],
       "worst_bg": 54.6
@@ -6302,17 +6288,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 45 mg/dL after the treatment",
+        "detail": "Synthetic over-treated low judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 45.1
@@ -6335,17 +6321,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 41 mg/dL after the treatment",
+        "detail": "Synthetic over-treated low judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 41.0
@@ -6370,17 +6356,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 56 mg/dL after the treatment",
+        "detail": "Treated a low at 00:55 and the glucose kept falling to 56 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 55.6
@@ -6405,17 +6391,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 59 mg/dL after the treatment",
+        "detail": "Treated a low at 06:05 and the glucose kept falling to 59 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 59.2
@@ -6440,17 +6426,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "detail": "Treated a low at 08:35 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 53.1
@@ -6475,17 +6461,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 73 mg/dL after the treatment",
+        "detail": "Treated a low at 12:35 and the glucose kept falling to 73 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 72.7
@@ -6510,17 +6496,17 @@
       "verdicts": [
        {
         "classifier": "over_treated_low",
-        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "detail": "Treated a low at 13:55 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "correction_on_iob",
+        "detail": "Synthetic correction on active insulin judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 54.5
@@ -6551,25 +6537,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep70",
       "insulin": 3.0,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "fired",
       "t": "2020-03-02 07:35:00",
-      "text": "Treated a low at 07:35 and the glucose kept falling to 54 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Bolused for the meal at 07:35 after glucose had already started to climb \u2014 the bolus came late.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
+        "matched": false,
+        "silence_reason": "no_trigger"
+       },
+       {
+        "classifier": "late_bolus",
+        "detail": "Bolused for the meal at 07:35 after glucose had already started to climb \u2014 the bolus came late.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 53.6
@@ -6586,25 +6579,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep71",
       "insulin": 3.1,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "fired",
       "t": "2020-03-03 13:00:00",
-      "text": "Treated a low at 13:00 and the glucose kept falling to 53 before it turned \u2014 the treatment was larger than the fall needed.",
+      "text": "Bolused for the meal at 13:00 after glucose had already started to climb \u2014 the bolus came late.",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
+        "matched": false,
+        "silence_reason": "no_trigger"
+       },
+       {
+        "classifier": "late_bolus",
+        "detail": "Bolused for the meal at 13:00 after glucose had already started to climb \u2014 the bolus came late.",
         "evidence_tier": "inferred",
         "matched": true,
         "silence_reason": null
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
-        "evidence_tier": "not_in_data",
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence did not meet the criteria.",
+        "evidence_tier": "observed",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "no_trigger"
        }
       ],
       "worst_bg": 52.7
@@ -6619,25 +6619,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep72",
       "insulin": 4.1,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 19:10:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 53 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 53.2
@@ -6652,25 +6659,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep73",
       "insulin": 3.3,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 07:45:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 49 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 49.3
@@ -6685,25 +6699,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep74",
       "insulin": 3.4,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 13:10:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 55 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 55.2
@@ -6718,25 +6739,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep75",
       "insulin": 3.5,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 16:50:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 71 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 71.1
@@ -6751,25 +6779,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep76",
       "insulin": 3.6,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 01:20:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 59 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 59.1
@@ -6784,25 +6819,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep77",
       "insulin": 3.7,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 06:05:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 60 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 60.5
@@ -6817,25 +6859,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep78",
       "insulin": 3.8,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 12:10:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 69 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 68.7
@@ -6850,25 +6899,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep79",
       "insulin": 3.9,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 18:05:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 61 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 61.2
@@ -6883,25 +6939,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep80",
       "insulin": 4.0,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 04:50:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 63 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 62.8
@@ -6916,25 +6979,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep72",
       "insulin": 4.1,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 19:10:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 45 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 45.4
@@ -6949,25 +7019,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep82",
       "insulin": 4.2,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 15:20:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 60 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 59.6
@@ -6982,25 +7059,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep83",
       "insulin": 4.3,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 20:35:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 66 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 66.1
@@ -7015,25 +7099,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep84",
       "insulin": 4.4,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 03:25:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 54 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 54.0
@@ -7048,25 +7139,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep85",
       "insulin": 4.5,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 10:50:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 51 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 51.0
@@ -7081,25 +7179,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep86",
       "insulin": 4.6,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 16:30:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 70 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 70.2
@@ -7114,25 +7219,32 @@
       "date": "2020-03-01",
       "ep_id": "2020-03-01-ep87",
       "insulin": 4.7,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-01 05:50:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 50 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 50.4
@@ -7147,25 +7259,32 @@
       "date": "2020-03-02",
       "ep_id": "2020-03-02-ep88",
       "insulin": 4.8,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-02 14:05:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 64 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 63.7
@@ -7180,25 +7299,32 @@
       "date": "2020-03-03",
       "ep_id": "2020-03-03-ep89",
       "insulin": 4.9,
-      "kind": "low",
-      "label": "Low",
+      "kind": "meal",
+      "label": "Meal bolus",
       "state": "no_data",
       "t": "2020-03-03 19:40:00",
       "text": "",
       "verdicts": [
        {
-        "classifier": "over_treated_low",
-        "detail": "glucose fell to 40 mg/dL after the treatment",
+        "classifier": "carb_undercount",
+        "detail": "Synthetic carb undercount judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
         "silence_reason": "insufficient_data"
        },
        {
-        "classifier": "iob_stacking",
-        "detail": "no stacked correction precedes this episode",
+        "classifier": "late_bolus",
+        "detail": "Synthetic late bolus judgment: this Occurrence had too few readings to be judged.",
         "evidence_tier": "not_in_data",
         "matched": false,
-        "silence_reason": "no_signal"
+        "silence_reason": "insufficient_data"
+       },
+       {
+        "classifier": "meal_over_delivery",
+        "detail": "Synthetic meal over-delivery judgment: this Occurrence had too few readings to be judged.",
+        "evidence_tier": "not_in_data",
+        "matched": false,
+        "silence_reason": "insufficient_data"
        }
       ],
       "worst_bg": 39.8

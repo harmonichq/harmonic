@@ -1,6 +1,84 @@
 # Behavior ledger — harmonic-v2-desktop
 
 ```text
+★ FROZEN 2026-09-24 · base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1
+  · generator b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e
+  · predecessor shipped single-shell desk (#422–#434 re-freeze) · retired 19
+  · inventory 193 issued · 174 active · 19 retired
+      (equal to acceptance.py inventory()'s pinned literal)
+  · lifecycle revise · contract this ledger + frontend/desk-behavior.replay.mjs
+```
+
+This #442–#457 release re-freeze adds 22 stories and amends 6. Each is recorded
+in its ticket's dated #<issue> amendment section below. The sanction is Connor
+Griffin's (operator, repo owner) Q3 delegation of 2026-09-23, quoted with each
+ticket's ruling: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R<issue>`.
+It covers every shipped-surface revision and ledger amendment that these issues'
+checklists and the coordinator's rulings call for, and nothing outside them. No
+inherited story is weakened and none is retired; the ledger's retirements stay
+at 19.
+
+Added:
+- S157 (#442), an older detected change superseded inside its watch window
+  reading its saved ending;
+- S162–S165 (#445), Day addresses that name a date, a change record or a carb
+  entry, and the returns that land on them;
+- S166–S168 (#446), Open Plan held for one visit, and a watched Trial's and a
+  watched Focus's way to a saved draft;
+- S169–S170 (#447), one served day count on the watch dock and in Changes, and
+  a Guide article that names no Verify;
+- S173–S176 (#449 and #450), a Focus's watched behavior by its served name, and
+  served reasons printed in words;
+- S177–S179 (#451), the correction factor in the wearer's words on Changes, on
+  Diagnose and in "What was known";
+- S180 (#452), an empty Later conclusion form on reopening after a failed save;
+- S182 (#454), a claimed Occurrence's sentence printed once;
+- S183–S185 (#455), the glucose overview's window caption, the Spotlight's
+  verdict line and the canvas header kept whole at narrow sizes.
+
+Amended: S46, S91, S92 and S93 (#449 and #450); S91 also by #442; S89 (#453);
+S4 (#451's prose em-dash widening). S169, which #447 adds, also carries a #451
+line: the Trial's values lead the dock's detail line. #443, #444, #448 and #457
+change no story; #453 adds none. The fixed PR smoke slice is 25 stories, digest
+9b92ee77d0e2e046753bdb5b80eb87d6451ce18ff1c35b7ca494d4de112b6523. S177 joined
+it, as the only story on the `isf-strengthen` case store.
+
+Safe start is unchanged from the #404 freeze below: AGENTS.md's QA
+copy-then-serve command, with the showcase or a named `scripts/qa_e2e_cases.py`
+case store.
+
+Base preservation is main push CI run 35959034199 on b03431d2, which passed: the
+complete ledger, 171 issued, at both sizes. The scheduled nightly on the same
+commit (run 36011270820) failed S100 once at 1280x720. That is a product defect
+this release fixes: a background repaint emptied the fullscreen chart's keyboard
+readout and dropped its focus. S100 is unchanged; a desk-suite test and a
+forcing harness prove the fix.
+
+The new stories were proved with each ticket's harness laid over b03431d2, at
+1280x720 and 1440x900. The coordinator ran every leg. Each story's status line
+names its commits and how it failed:
+- S162–S168 and S177–S180 fail there at their feature assertions at both sizes,
+  and S169 and S170 at their content assertions at both sizes.
+- S157, S173–S176 and S182 fail there at their feature assertions at both
+  sizes.
+- S183, S184 and S185 fail there at their feature assertions at both sizes on
+  #455's final harness (575464e7): overlapping axis labels, a clipped verdict
+  line and a zero-width header title.
+- All 22 pass on their ticket branches at both sizes.
+- On the release trunk at 25392ade, S157, S169, S170, S177–S180 and S182 pass at
+  both sizes, in a 15-story run with S25, S46, S73, S139, S140, S149 and S150
+  that passed 15 of 15. The complete ledger run below covers all 22 on the
+  commit that is pushed.
+
+Raw logs, captures and renders are retained in the release's evidence record.
+The complete ledger, 193 issued, runs at both sizes once on the integration
+commit before the push. Every story must pass on the commit that is pushed. No
+failure is waived by this freeze.
+
+The earlier freezes below remain historical provenance.
+
+```text
 ★ FROZEN 2026-09-23 · base a4d374a72c8048d9d93ee4925805b91cf5674835
   · generator a4d374a72c8048d9d93ee4925805b91cf5674835 · window n/a
   · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e
@@ -4118,3 +4196,1162 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #446 amendment — 2026-09-23, issue #446
+
+Changes remembered that the reader pressed Open Plan, and nothing cleared it, so
+the topbar's Changes, Diagnose's return and the landing after a Focus pin opened
+a Plan in the watched change's seat. S166–S168 pin the rule that replaces it
+(ADR 446 in `openspec/changes/archive/2026-09-24-changes-arrival-leads-active/design.md`): the
+served active change leads every plain arrival to Changes, Open Plan holds for
+the visit it was pressed in, a Plan draft stays reachable from the watched
+Trial's and Focus's own view, and Diagnose's return names the watched change.
+No existing story is amended or retired. All three are app-opener-only, each on
+a fresh case store (`CASE_STORE_DIR`); browser execution belongs to the release
+coordinator at 1280x720 and 1440x900. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+Sanction: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R446`.
+It covers S166–S168 and nothing outside #446's rulings.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over a named
+`scripts/qa_e2e_cases.py` case store. Pump reads advance only through
+`frontend/replay-pump.py`.
+
+```
+S166 · Open Plan holds for one visit, before and after a Trial begins. In one
+       page, never reloaded after it opens at the Plan's address: Stage in the
+       Plan's own frame keeps the address and shows the Plan with Save draft
+       focused; the topbar's Changes then shows the staged concern with
+       "Staged", Undo and Open Plan; after Open Plan, a visit to Day and a
+       return by the topbar, Changes again shows that concern, not the Plan;
+       Open Plan reopens the Plan with the staged change and the reader records
+       the decision. A synthetic `match` pump read starts a Trial and a Plan
+       draft is saved while it runs. After a visit to Diagnose, the topbar's
+       Changes lands on the Trial, not the Plan, and the Trial's nameplate
+       offers Open Plan; inspecting the Trial's nights, "Return to Trial" lands
+       on the Trial.
+  element:  [data-set="stage"], [data-set="save-draft"], [data-set="unstage"],
+            [data-set="open-plan"], [data-set="record"], .gf-plan,
+            .gf-stage-trial .gf-end [data-action="open-plan"],
+            [data-follow-up-inspect], [data-action="watch"]
+  source:   frontend/changes.js mount (the arrival rule); frontend/plan-view.js
+            bind (the Plan's own Stage); frontend/follow-up.js openPlanControl;
+            frontend/diagnose.js showFocusAction
+  lock:     HV2-15
+  data:     basal-lower; premises: /api/guidance serves the selected concern's
+            basal action and /api/verify/trials admits no watched change; after
+            the `match` capture it admits an active Trial, and the draft saved
+            while it runs is served beside `active_change`
+  evidence: C4_STORIES.S166; reads the address with parseRoute after the Plan's
+            own Stage, the Plan count and the focused control; counts .gf-plan
+            and the staged concern's controls after each plain arrival; reads the
+            kicker's served phase after Open Plan; waits for Diagnose's guidance
+            read before the watched topbar arrival; reads the Trial's nameplate
+            controls and Diagnose's return label as text
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its first
+            feature assertion at both sizes ("S166 Stage in the Plan's own frame
+            must keep the Plan's address"; it saw /changes). Branch 08d3b78e
+            passes at both sizes. Coordinator-run 2026-09-24. Renders owed at the
+            integration render batch
+```
+
+```
+S167 · A watched Trial reaches its saved draft. With no Plan draft, the Trial's
+       nameplate offers no Open Plan. With a draft saved while the Trial runs, it
+       offers Open Plan beside "View change record", and the Revert to Plan
+       section still offers its own control. The nameplate's Open Plan lands at
+       /changes?subject=plan showing the saved draft unchanged; Record decision
+       there fails visibly and adds no Plan history record; the next topbar
+       Changes lands on the Trial.
+  element:  .gf-stage-trial .gf-end button, [data-part="plan-route"]
+            [data-action="plan-route"], .gf-plan, .gf-stage .gf-kicker b,
+            [data-set="record"], [data-set="retry-save"]
+  source:   frontend/follow-up.js openPlanControl / bind; frontend/plan-view.js
+            recordDecision / saveFailure; frontend/changes.js mount
+  lock:     HV2-15
+  data:     basal-lower; the served basal action is saved and recorded as a Plan
+            through PUT /api/plan and POST /api/plan/apply, then a synthetic
+            `match` pump read starts the Trial; premises: /api/verify/trials
+            admits the active Trial, and guidance serves no draft until the story
+            saves one, then serves it beside `active_change`
+  evidence: C4_STORIES.S167; reloads at /?to=changes after the capture and
+            after its own draft write; reads the nameplate's controls in order;
+            parses the address after Open Plan and compares /api/plan before
+            and after it; counts the failed-record Retry and the served Plan
+            history before and after Record decision
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S167 the Trial's nameplate must offer Open
+            Plan beside View change record"). Branch 08d3b78e passes at both
+            sizes. Coordinator-run 2026-09-24. Renders owed at the integration
+            render batch
+```
+
+```
+S168 · A watched Focus names its return and reaches its draft. With a Plan draft
+       saved while the Focus runs, Changes shows the Focus's own view. Diagnose,
+       opened from the Focus's Inspect evidence, offers "Return to Focus" and no
+       "Return to Trial"; pressing it lands on the Focus. The Focus's nameplate
+       Open Plan lands at /changes?subject=plan, showing the draft.
+  element:  [data-action="watch"], .gf-stage-focus,
+            .gf-stage-focus .gf-end [data-action="open-plan"], .gf-plan
+  source:   frontend/diagnose.js showFocusAction; frontend/follow-up.js
+            openPlanControl / bind; frontend/changes.js mount
+  lock:     HV2-15
+  data:     c3-focus; premises: /api/verify/trials admits an active Focus, and a
+            draft saved from the served pump profile is served beside
+            `active_change`
+  evidence: C4_STORIES.S168; reads Diagnose's return label before the Focus's
+            nameplate, so a base run records the crumb before it fails. Its base
+            failure at the label, not at a premise, is pinned at node level by
+            frontend/c4.replay.test.js against a page shaped like the base
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S168 Diagnose opened from the watched Focus
+            must offer "Return to Focus" and no "Return to Trial""; it saw
+            "Return to Trial"). Branch 08d3b78e passes at both sizes.
+            Coordinator-run 2026-09-24. Renders owed at the integration render
+            batch
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| The arrival rule: Open Plan cleared on each arrival | frontend/changes.js mount | S166, S167, S168 |
+| Stage in the Plan's own frame stays on the Plan | frontend/plan-view.js bind | S166 |
+| The watched change's nameplate Open Plan | frontend/follow-up.js openPlanControl, bind | S166, S167, S168 |
+| Diagnose's return names the watched change | frontend/diagnose.js showFocusAction | S166, S168 |
+
+## #453 amendment — 2026-09-23
+
+Replay S89 now certifies the Plan decision it records (ADR 453,
+`openspec/changes/archive/2026-09-24-plan-cleanup-s89`). Its story text and lock term are
+unchanged. No story is added or retired, and no ★ FROZEN block or inventory
+line is edited.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R453.
+
+Amended S89 · 2026-09-23 · #453 / Q3 delegation: the story reads the decision it records as the newest Plan history record, which the served history lists first, not the last one listed. The same check proves that record is the decision just recorded: the history holds exactly one more record than before recording, and the newest record's `applied_at` names none of the records served before it. The failed-Withdraw check reads that same newest record. S89's store holds no earlier Plan, so its passes before #453 read the same row but did not show which record they certified.
+The preceding S89 wording and results are the attributed pre-amendment record.
+
+## #452 amendment — 2026-09-23, issue #452
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R452, with its triage rulings Q1 (add S180) and
+Q2 (reopening the same record from the roster starts empty). This section
+changes shipped desk behavior on that sanction only. The decision is ADR 452 in
+`openspec/changes/archive/2026-09-24-late-conclusion-record-reset/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over the committed synthetic `scripts/qa_e2e_cases.py` case store c4-isf,
+through `CASE_STORE_DIR`. No real data is read. The worker ran no server and no
+browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **A later conclusion belongs to its record.** An expired Trial's Later
+  conclusion text, a failed save of it and that save's request id are held for
+  the one record that is open. Opening another record, or leaving for the
+  roster with Back to records, starts the next record with an empty form, no
+  failure and a request id of its own; its first save is a first save, not a
+  retry. That includes reopening the same record from the roster, as opening it
+  by its address already did. Base carried all three into the next record a
+  roster press opened.
+- **A re-render of the same record keeps them.** A failed save followed by a
+  re-render, including a return from Day to the same record, keeps the words,
+  the failure and the request id, so Retry resends the same request id.
+- **A save in flight stays with its record** (coordinator-authorized widening,
+  2026-09-23, ADR 452 decision 7). A later-conclusion save or Retry still in
+  flight when the reader leaves writes nothing into the next record: no failure,
+  no request id, and no clear of the next record's draft. A Retry whose re-read
+  returns after the record was left is abandoned unsent. Proved at node level in
+  `frontend/follow-up-lifecycle.test.js`; no replay story times a save against a
+  roster press.
+- The conclude endpoint, the request-identity rules, which Trials offer a later
+  conclusion, and every saved ending are unchanged.
+
+S180 is a new app-opener-only story under HV2-28. No story is amended or
+retired, and S181, reserved for this issue, is unused.
+
+```
+S180 · Reopening an expired Trial from the Changes roster, after its later
+       conclusion was typed and its save failed, starts with an empty Later
+       conclusion form and no failure, and the next save sends a request id of
+       its own.
+  element:  table.gf-table [data-record], #late-conclusion-conclusion,
+            [data-form="late-conclusion"], [data-save-error="conclude"],
+            [data-record-close], [data-late-conclusion="available"]
+  source:   frontend/history.js
+  lock:     HV2-28; ADR 452 (openspec/changes/archive/2026-09-24-late-conclusion-record-reset/design.md)
+  data:     c4-isf; its one retained Trial ended expired_unreviewed with no
+            later conclusion saved
+  evidence: C4_STORIES.S180; opens the expired Trial by its roster press, has
+            its first save refused by a routed synthetic answer (nothing
+            reaches the store) and records that request id, presses Back to
+            records, reopens the record by its roster press, reads an empty
+            form and no failure, then records and compares the request id the
+            save sends. The carry into a different record is proved at node
+            level in frontend/follow-up-lifecycle.test.js, because no committed
+            case store serves two expired Trials
+  status:   base b03431d2 (with the branch harness) fails at its feature
+            assertion at both sizes ("S180 reopening the record from the
+            roster must start its later conclusion empty"), with the 12
+            regression stories passing beside it; branch 560098de and review
+            fix head cd392553 pass at 1280x720 and 1440x900 (13 stories:
+            executed 13 · failed 0). Coordinator-run, reported 2026-09-24
+```
+
+Regression, replayed unchanged by the coordinator: every story that opens a
+record through `openRecord` or leaves one — the finished-change handoff (S52,
+R17, S92 and S94), the retry landings after a refused save (S53 and S57), and
+the roster presses (S54b, S105, S110, S112, S142 and S143). The desk browser
+suite's expired-Trial Later conclusion test opens its record by address and is
+unchanged.
+
+Additional handler inventory for this amendment. The Later conclusion form
+arrived in #411 with no ledger row; these rows record it.
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Later conclusion text input | frontend/history.js | S180 |
+| Record later conclusion, and its Retry after a failed save | frontend/history.js | S180 |
+| Later-conclusion clear on opening or leaving a record | frontend/history.js | S180 (same record); the two-record path is node test only (frontend/follow-up-lifecycle.test.js) |
+| A later-conclusion save or Retry returning after its record was left | frontend/history.js | none — node test only (frontend/follow-up-lifecycle.test.js) |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 172 issued · 153 active · 19 retired on this branch.
+
+## #449 amendment — 2026-09-23, issue #449 (with #450)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator rulings R449 and R450. It covers the shipped-desk
+changes and the ledger additions and amendments below, and nothing else. The
+decisions are ADR 449 and ADR 450 in
+`openspec/changes/archive/2026-09-24-focus-served-words/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c3-focus,
+c3-preempted and c4-history for the new stories, and c3-trial, c4-ic, c4-isf and
+c4-profile for the amended ones — each through `CASE_STORE_DIR`. No real data is
+read. The worker ran no server and no browser; every replay below is the
+coordinator's.
+
+Changed shipped behavior:
+
+- **The watched behavior has one served name.** The selected Focus read serves
+  `lever_title`, the watched Lever's title (or the override's), or null for a
+  stored lever that is no longer offered. The Observed behavior row of the
+  active Focus and of a Focus record, the "What this Focus watches" fallback and
+  a Focus record's "What changed" print it. A Focus on High-carb sequence or
+  Repeat eating no longer prints its key, and Correction stacking, Missed /
+  unannounced meal and Doses above pump calculation read as their nameplates do.
+  A null name reads "Watched behavior" in the row, omits the fallback paragraph
+  and reads "The behavior this Focus watched is no longer an offered lever." in
+  "What changed". The desk keeps no lever name table.
+- **Every served reason reads as words.** The saved ending's assessment, the
+  behavior and harm cells, every readiness arm's "Not met" line, a setting arm's
+  unavailable-evidence line, the Pattern opportunity line and the unreconciled
+  admission line print through the desk's one reason vocabulary; an unknown
+  code still prints as served. Codes stay in payloads and data attributes.
+- **States, verdicts, modes and a denominator read as words.** "Recorded ·
+  Concerning", a reassessment result "Context only" under a "Current policy"
+  heading, a Pattern verdict "Ready" or "Withheld", and "correction clusters".
+- **The Focus entry says why a Focus is not offered**, a pending Plan included,
+  through the Diagnose Focus context's own admission words.
+- **A refused change write reads as a sentence.** The durable 409 serves a
+  `message` beside its `code`; the Trial finish, Focus resolve, later-conclusion,
+  Plan and Focus pin failure lines print it, never `<code> (409)` or
+  "[object Object]", and the pin line prints one full stop.
+
+S173–S176 are new app-opener-only stories. Four stories are amended in replay
+only, below; no story is retired. Every new story reads the served name or code
+from the API and checks the rendered page, and no replay module imports a
+follow-up renderer, so this harness laid over the base fails at its feature
+assertions rather than at module link.
+
+```
+S173 · The active Focus names the behavior it watches by its served name — in
+       its Observed behavior row and, with no retained explanation, in "What
+       this Focus watches" — never by its lever key or its Pattern's title, and
+       each Pattern opportunity line prints its verdict as a word, never the
+       served value.
+  element:  .gf-stage-focus [data-table="adherence"] tr.gf-target td,
+            [data-part="intent"], [data-opportunity-verdict]
+  source:   frontend/follow-up.js focusFrame / adherenceTable / readinessArm;
+            ciq_autotune/watched_change.py review_trials (lever_title)
+  lock:     HV2-26; ADR 449, ADR 450
+  data:     c3-focus; an active Pattern Focus on Late bolus titled Highs after
+            meals, no retained explanation, both Pattern arms served ready
+  evidence: C4_STORIES.S173; reads the admitted Focus's served lever_title and
+            the retained comparison's verdicts, then the behavior row, the
+            intent section and every opportunity line
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (it saw the behavior row "Late bolus\nthe
+            intended behavior · meals" with no served lever_title); branch
+            b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs are kept in a private design-evidence record,
+            not part of the public tree
+```
+
+```
+S174 · A Focus ended by hand whose saved ending is served unavailable names that
+       reason in words after "Unavailable · ", never its served code; no harm
+       cell, "Not met" line or opportunity line of the record prints a served
+       code, and no opportunity line prints the bare served verdict.
+  element:  [data-ending-assessment], [data-harm], [data-criterion],
+            [data-opportunity-verdict]
+  source:   frontend/history.js endingSection; frontend/follow-up.js
+            adherenceTable / readinessArm / comparisonReasonWords
+  lock:     HV2-28; ADR 450 (R450: closes the saved-Focus-ending gap S49 leaves)
+  data:     c3-preempted; its manual Focus ending saved unavailable_adherence,
+            both behavior and harm arms and both readiness arms
+            zero_opportunities, both Pattern arms withheld
+  evidence: C4_STORIES.S174; reads the saved assessment's reason and every code
+            its adherence and readiness serve, opens the record by address and
+            reads the ending line and every harm, criterion and opportunity line
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (it saw "Unavailable · unavailable_adherence"); branch
+            b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs as S173's
+```
+
+```
+S175 · A preempted Focus record whose saved behavior arm could not be measured
+       names that reason in words in its Observed behavior cell and keeps its
+       "x of y measured" count; its still-collecting readiness arm's "Not met"
+       line is words, never "Not met — collecting.".
+  element:  [data-adherence="<side>"], [data-readiness="<side>"] [data-criterion]
+  source:   frontend/follow-up.js adherenceTable / readinessArm
+  lock:     HV2-28; ADR 450
+  data:     c4-history; its preempted Focus's saved Before arm serves
+            insufficient_measurement at 0 of 4 measured, and its Before
+            readiness arm serves withheld/collecting
+  evidence: C4_STORIES.S175; reads the saved adherence and readiness arms, opens
+            the record by address and reads the unmeasured cell and the
+            collecting arm's criterion line
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (it saw "insufficient_measurement · 0 of 4 measured");
+            branch b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs as S173's
+```
+
+```
+S176 · Each Focus record's "What changed" names the behavior it watched by its
+       served name — never its lever key, and never its Pattern's title, which
+       stays the record's nameplate — and a record whose lever is no longer
+       offered says so, naming neither its key nor "Focus" as the behavior.
+  element:  .gf-stage .gf-title, [data-record-part="change"]
+  source:   frontend/history.js changeSection / recordTitle;
+            ciq_autotune/watched_change.py review_trials (lever_title)
+  lock:     HV2-28; ADR 449 (Q1: "What changed" names the served behavior)
+  data:     c3-preempted; two Pattern Focus records on Late bolus titled Highs
+            after meals, and one overnight_drift record titled Focus whose
+            served lever_title is null
+  evidence: C4_STORIES.S176; for each record, Pattern records first, reads the
+            served title and lever_title, opens the record by address and reads
+            the nameplate and "What changed"
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (its "What changed" check); branch b0ad8a6c passes at
+            1280x720 and 1440x900; coordinator-run 2026-09-24. Raw logs as
+            S173's
+```
+
+Amended S46 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. The c3 `readiness()` helper it runs no longer requires the served `arm.reason` to appear in the arm, because that reason now prints in words: each arm's `[data-criterion]` line must be non-empty and must not read `Not met — <served reason>.`, and a Pattern arm's `[data-opportunity-verdict]` text must not be the bare served verdict (its data attribute still equals it). The replay reads the served arms from the API and imports nothing new. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S91 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. Its c3 part runs the amended c3 `readiness()` helper above, and its c4 cases (c4-ic, c4-isf, c4-profile) run the c4 `readiness()` helper, amended the same way for setting arms. The injected prose reason "Synthetic served hold" is not a code the vocabulary knows, so it still prints as served and its assertion is unchanged. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S92 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper; its ending assertion (`/unclear|no clear answer/i`) still holds, since a recorded state now prints as its word ("Unclear"). Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S93 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper on c3-focus's two Pattern arms, both served ready, so each opportunity line must read the word ("Ready"), not the served value. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
+The preceding wording and results are the attributed pre-amendment record.
+
+The coordinator also ran the follow-up browser suite (✔ "Trial and Pattern Focus
+journeys" at 1280x720 and 1440x900) and the whole desk browser suite (43 of 43)
+on b0ad8a6c, 2026-09-24. The complete ledger, the full
+`mockups/sweep/harmonic-v2-desktop/acceptance.test.py` and the renders belong to
+the release integration.
+
+Every other desk replay and browser test that reads these lines was re-read for
+intent, and each keeps its subject:
+
+- **S57, S58, S59 and S95** open the c3-focus and c3-preempted Focus frames and
+  records and read their tables, conclusion and ending kinds, none of which
+  changes text.
+- **S143 and S49** already read a comparison reason in words (ADR 430); their
+  codes are unchanged in the vocabulary.
+- **The follow-up browser leg** replays every `C3_STORIES` entry, so it runs the
+  amended helper through S46, S91, S92 and S93; no story joins C3.
+- **The desk browser suite's expired-Trial test** opens an ended record whose
+  bare saved assessment is unavailable `not_recorded`; its ending line now
+  reads "Unavailable · not recorded" instead of the code, and none of its
+  assertions reads that line.
+
+The new stories run on c3-focus, c3-preempted and c4-history, which the fixed PR
+smoke slice already covers (S57, S58, R18), so `SMOKE_STORIES` and its digest are
+unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Observed behavior row and "What this Focus watches" name | frontend/follow-up.js focusFrame, adherenceTable | S173 |
+| Pattern opportunity verdict and every readiness reason, in words | frontend/follow-up.js readinessArm | S173, S174, S175, S46, S91, S92, S93 |
+| Saved ending assessment reason and recorded state | frontend/history.js endingSection | S174 |
+| Behavior and harm cell reasons | frontend/follow-up.js adherenceTable | S174, S175 |
+| A Focus record's "What changed" | frontend/history.js changeSection | S176 |
+| Unreconciled admission line | frontend/follow-up.js mount | none — node test only |
+| Focus entry withheld copy and pin failure line | frontend/focus-entry.js mount | none — node test only |
+| Trial finish, Focus resolve and later-conclusion failure lines | frontend/follow-up.js, history.js failureMessage | none — node test only |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 175 issued · 156 active · 19 retired on this branch.
+
+## #455 amendment — 2026-09-23
+
+S183–S185 are the fail-first obligations of #455 (the pinned change
+`openspec/changes/archive/2026-09-24-window-label-narrow/`, ADR 455): at the narrowest split the
+glucose overview's window caption, the Spotlight's verdict line and the canvas
+header's title stay whole, and at every size no glucose-overview text
+overprints another. All three are app-opener-only, like S101–S117. Browser
+execution belongs to the release coordinator at 1280x720 and 1440x900, each
+story on a fresh `basal-verdict-gallery` case store; the ticket worker binds no
+port. No story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+### #455 sanctioned changes to shipped desk behavior — 2026-09-23
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R455, as amended for the two collision fixes
+("desktop sizes may change for exactly these two collision fixes and nothing
+else"). It covers six changes:
+
+- A window caption that fits on one line nowhere, neither inside its window nor
+  beside it, stacks and wraps inside the wider of the two: the window's name on
+  its own line and, on a thin window, the insufficient-sample notice under it,
+  breaking only between whole words, each line on the knock-out pad. The target
+  caption takes its existing floor placement then.
+- The Spotlight's middle-rank verdict line breaks between its facts where it
+  does not fit, and its tally line and figure move down with it.
+- Between 832 and 1023 px wide, the All charts control shows its icon only,
+  keeping its name and tooltip, so the title draws.
+- A glucose y-axis label that would sit under a target numeral is not printed,
+  at every size.
+- The Spotlight's programmed-rate rule ends at its axis tick, above the tick
+  labels, at every size.
+- The glucose overview and the evidence charts re-lay out when their size
+  changes, not only rescale.
+
+No shipped behavior is retired. At 1280x720 and 1440x900 only the two collision
+fixes are visible.
+
+```
+S183 · The glucose overview's window caption stays whole inside the chart, and
+       no text the chart paints overprints another. At the run's own size each
+       Window preset's caption stands on one line; at 832×720 and 832×560 each
+       preset's caption, and the Evening caption after the window is narrowed
+       with nothing pressed, lies inside #chart with every word whole (the
+       window's name, then on a thin window the whole insufficient-sample
+       notice), and neither its text nor its pad boxes reach into the y-axis
+       label column, past the chart's right edge, or across a window gate.
+  element:  #chart (its painted text spans and their pad boxes),
+            #seg-window buttons
+  source:   frontend/diagnose-workstation-chart.js renderCanvas (the window
+            caption, the target caption, the y-axis labels) and observeResize;
+            frontend/diagnose-workstation.js (the overview's relayout)
+  lock:     HV2-11
+  data:     basal-verdict-gallery (the case S113 uses; its 24 h window is thin)
+  evidence: C4_STORIES.S183 → assertOverviewText; presses each preset at the
+            run's size, then Evening, narrows to 832×720 with nothing pressed,
+            then presses each preset at 832×720 and at 832×560, each press
+            differing from the one before it and settled by laidOutBrace404, a
+            resize settled when the chart has taken its host's box and held
+            still; reads every painted text span and pad box from the chart's
+            ZRender display list, each caption's spans in reading order (line
+            by line, left to right: a caption parked left paints its tail
+            first). The narrowed reading waits, bounded at 10 s, until its
+            check holds (readSettled), since the relayout lands a frame after
+            the resize. It restores the run's size and presses 24 h, records
+            every failure by size, state and check with the measured amount,
+            then fails once, listing them all
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at both
+            sizes with 65 failures: the 24 h caption past #chart's right edge at
+            832×720 and 832×560, the Evening caption past its left edge after
+            the live narrowing, and the "60"/"70" and "180"/"180" overlaps.
+            Branch d3e276ed passed every 832 check and cleared the overlaps. It
+            failed only on the run size's Afternoon and Evening captions, which
+            it read tail first; that is a story defect, corrected by reading
+            order (coordinator-authorized, 2026-09-23). Branch a9a2b56a passed
+            every run-size check but read the 1010 px or 850 px chart's one-line
+            Evening caption after the narrowing. That is the resize-to-the-
+            first-report race, now fixed in observeResize, with the bounded wait
+            above. On base b03431d2 with the c13c6f7a harness laid over it,
+            S183 fails at both sizes with 72 failures, for the reasons above,
+            each measured after readSettled's bounded wait. Branch c13c6f7a
+            passes at 1280x720 and 1440x900 in each of three runs. Coordinator-
+            run 2026-09-23
+```
+
+```
+S184 · With Diagnose at rest, the Spotlight's middle-rank verdict line keeps
+       every fact — SUPPORTED, 0.70 U/h, (0.70–0.70), programmed now 0.60 —
+       whole inside its chart and clear of the Keep control, breaking only
+       between facts, with the tally line wholly below it; at 1200×736 it
+       stands on one line. Each size is reached by resizing, nothing pressed.
+  element:  #tile-focal .tile-chart (its painted text spans), #tile-focal
+            .tile-pin
+  source:   frontend/diagnose-evidence-charts.js basalEditorialOption (the
+            middle rank); frontend/diagnose-workstation.js mountDescriptorChart
+            (the tile's relayout)
+  lock:     HV2-11
+  data:     basal-verdict-gallery (at rest the Spotlight opens the next-in-line
+            basal slot, 00:00)
+  evidence: C4_STORIES.S184 → assertSpotlightVerdict; sets 1200×736, 832×720
+            and 832×560 in turn, settles each resize, then reads the Spotlight
+            chart's painted text and the Keep control's box in the chart's
+            coordinates. Each reading waits, bounded at 10 s, until its check
+            holds (readSettled). It restores the run's size, then fails once,
+            listing every failure by size
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560, and at 1200×736 on the 1280x720 run: the
+            verdict reads ["SUPPORTED"] from the full rank the run's size drew,
+            and no tally line is painted. Branch d3e276ed passes at 1280x720 and
+            1440x900. Branch a9a2b56a read the 1200×736 one-line verdict at
+            832×720 (26.86px past the chart, 20px under Keep): the same race as
+            S183's, now fixed. On base b03431d2 with the c13c6f7a harness laid
+            over it, S184 fails at both sizes with 6 failures, each measured
+            after readSettled's bounded wait. Branch c13c6f7a passes at 1280x720
+            and 1440x900 in each of three runs. Coordinator-run 2026-09-23
+```
+
+```
+S185 · With Diagnose at rest, the canvas header keeps its title, its whole
+       provenance and the All charts control (named and titled "All charts")
+       inside its box on one line at 832×720, 832×560, 1024×768 and the run's
+       own size. At the narrowest split the title shows at least a letter and
+       an ellipsis; at 1024×768 and the run's size the control shows its word
+       and the title prints whole.
+  element:  #canvas-head, #canvas-head .head-rest h2, #canvas-pool,
+            #explorer-trigger, #explorer-trigger > span
+  source:   frontend/diagnose-workstation.css (the ADR 455 832–1023px block);
+            frontend/diagnose-workstation.js chartActionButton
+  lock:     HV2-11
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S185 → assertCanvasHead; sets each size in turn, waits
+            until the header's box has held still for two animation frames,
+            reads each part's box, clientWidth and scrollWidth, the box of the
+            control's rendered icon and word, and the control's name and
+            tooltip; restores the run's size, prints every size's widths on a
+            `# S185` line, then fails once, each failure printing every part's
+            widths. The control is placed by its icon and word: its own box is
+            36px tall under the shell's button floor and overhangs the 30px
+            rail by 3.5px, with nothing visible outside it
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560 on the title's 0px box (scrollWidth 144).
+            Branch d3e276ed draws a 41.86px title there, beside a 21px icon-only
+            control. Both base and branch also failed at every size on the
+            control's 3.5px box overhang; that is a story defect, corrected by
+            placing the control by its icon and word (coordinator-authorized,
+            2026-09-23). Branch a9a2b56a, and branch c13c6f7a in each of three
+            runs, pass at 1280x720 and 1440x900 with the widths above.
+            Coordinator-run 2026-09-23. Base b03431d2 with #455's final harness
+            575464e7 laid over it fails at its feature assertion at both sizes:
+            the title's box is 0px wide at 832×720 and 832×560 (scrollWidth
+            144). Coordinator-run 2026-09-24
+```
+
+### #455 handler inventory
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `#seg-window` preset button click, at the run's size and the narrowest split | diagnose-workstation.js (the Window presets) | S183 |
+| `observeResize` relayout on `#chart` (a window resize, nothing pressed) | diagnose-workstation-chart.js observeResize; diagnose-workstation.js | S183 |
+| `observeResize` relayout on a descriptor tile (the Spotlight, nothing pressed) | diagnose-workstation-chart.js observeResize; diagnose-workstation.js installTileMount | S184 |
+| `@media (min-width: 832px) and (max-width: 1023px)` on `#explorer-trigger > span` (the user agent's; no script handler) | diagnose-workstation.css, the ADR 455 block | S185 |
+
+## #445 amendment — 2026-09-23, issue #445
+
+S162–S165 are the fail-first obligations of ADR 445: a Day link from Changes
+or a carb utility names its return target by an identity its origin owns — a
+supporting date, a Carb log entry's id, a Carb-log prompt's detector and anchor
+time — never a page selector, and the origin puts the reader back on the
+control they pressed. #444's Log carbs header rides the same change as ADR 444.
+Both decisions are recorded in the day-link-identities change's design record.
+The four stories are app-opener-only, like S136–S138: S162 and S163 run on
+c3-trial, whose active Trial and its change record list contributing dates, and
+S164 and S165 run on the showcase.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R445, and R444 for the Log carbs header. The
+coordinator's plan-review round-1 rulings of the same date — Q1, Q2 and r1-1 to
+r1-2, recorded with ADR 445 — settle the Return to Trial, the Log carbs return
+control, and the moved-store return.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over the committed synthetic showcase or a generated `scripts/qa_e2e_cases.py`
+case store through `CASE_STORE_DIR`. No real data is read. The worker ran no
+server and no browser; every replay below is the coordinator's, at 1280x720 and
+1440x900.
+
+Shipped desk behavior that changes, and no story that asserted the old fact:
+
+- **The Changes and carb-utility Day addresses carry no selector.** A
+  supporting date's Day address names the date (and, from a change record,
+  that record); a Log carbs or Carb questions Day address names its item by
+  identity as the routing subject, beside the printed "Log carbs · …" or "Carb
+  questions · …" title. No Day address carries the return-focus key, and an
+  older link that still carries one is read without it.
+- **A Changes return lands on the date's control.** Once the change's evidence
+  has rendered, focus is on the supporting-date control the reader pressed, on
+  the desktop and once per arrival. The base landed on the reading heading for
+  the active change. The narrow desk keeps its sheet-toggle focus.
+- **A carb-utility return over Diagnose is a plain return.** The utility is
+  reopened over Diagnose, which makes its one status read and keeps the drill,
+  the window and the scroll while the store has not moved since it last read;
+  the address names the retained case with no utility title, origin or
+  selector. After a carb is logged or a question answered the store has moved,
+  and Diagnose re-reads and restores the case it held (ADR 414). The base handed
+  Diagnose the utility's entry, which re-read on every return, discarded the
+  drill and left the utility's title and selector in the address.
+- **A utility opened over Day returns into Day as a direct entry.** It stays on
+  the day shown and offers no second return. The base re-adopted the utility's
+  entry and offered the same return again.
+- **Log carbs returns to the entry's Open Day control** (ruling Q2), not its
+  Remove button. Either utility's return lands on the pressed item's Open Day
+  control, or on the utility's heading when that item is no longer served.
+- **A plain utility return drops a held Return to Trial** (ruling Q1), as every
+  plain return does under ADR 428.
+- **A Diagnose rebuild under a seated utility sets no crumb focus.** The
+  inspector that holds the crumb is inert under the utility, so the default
+  landed nowhere and displaced the utility's focus.
+- **A Day address naming a utility the desk does not have returns plainly**
+  (coordinator-authorized widening, 2026-09-23, ADR 445 point 8). It offers the
+  return named for its destination and reopens nothing. The base offered
+  "Return to" that name, and pressing it stopped the desk drawing. A Node test
+  pins it (`frontend/day.test.js`).
+- **A Day address naming no destination returns plainly to Diagnose**
+  (coordinator-authorized, 2026-09-23, code review round 1 finding F1, ADR 445
+  point 8). A `from` such as `constructor` or `__proto__` offers "Return to
+  Diagnose". The base printed "Opened from function Object() { [native code] }"
+  and a return named the same. A Node test pins it (`frontend/day.test.js`).
+
+The Log carbs header (ADR 444) has no story: no replay or browser context sets
+a `timezoneId`, so the replay browser runs in the runner's zone, UTC on CI,
+where the header's date and time cannot disagree. A Node test pins its own zone
+and clock instead (`frontend/utility-day-links.test.js`).
+
+S76 is unchanged: a utility's Open Day still keeps the utility open over Day,
+and its return still reopens it.
+
+```
+S162 · On the active Trial, a contributing date opens Day with an address that
+       names the date, returns to Changes and carries no return-focus key or
+       CSS selector; Return to Changes lands focus on that date's control once
+       the Trial's evidence has rendered.
+  element:  .gf-reading [data-day-date], [data-day="return"], location,
+            document.activeElement
+  source:   frontend/follow-up.js bind ([data-day-date]) / supportingDateFocus
+            / mount; frontend/day.js bind (return); frontend/tab-routing.js
+            CONTEXT_KEYS
+  lock:     HV2-14; ADR 445 points 1, 2 and 4
+  data:     c3-trial; its active Trial's retained comparison lists
+            contributing dates, eight of a period rendered as controls
+  evidence: C4_STORIES.S162; reads the Day address, presses Return to Changes
+            and checks document.activeElement
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S162 the Day address must carry no return-focus key";
+            coordinator-run. The complete ledger runs at integration
+```
+
+```
+S163 · From the active Trial's change record, opened from the Changes roster
+       as S142 opens it, a contributing date opens Day with an address that
+       names the date and the record and carries no return-focus key or CSS
+       selector; the return reopens that record and lands focus on the date's
+       control.
+  element:  table.gf-table [data-record], [data-record-part="reassessment"],
+            .gf-reading [data-day-date], [data-day="return"], location
+  source:   frontend/history.js bind ([data-day-date]) / mount;
+            frontend/follow-up.js supportingDateFocus
+  lock:     HV2-14; ADR 445 points 1, 2 and 4
+  data:     c3-trial; the roster's first still-open record is the active
+            Trial's, and its retained comparison lists contributing dates
+  evidence: C4_STORIES.S163 (openStillOpenRecord430); reads the Day address,
+            presses the return, then checks the record address, its evidence
+            and document.activeElement
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S163 the Day address must carry no return-focus key";
+            coordinator-run. The complete ledger runs at integration
+```
+
+```
+S164 · Log carbs over a drilled Finding case with an Occurrence held: an entry
+       logged on a recorded day opens Day with an address that names it by id
+       (carb:<id>), carries its printed "Log carbs · …" title and no
+       return-focus key or CSS selector. Close, then Return to Log carbs: the
+       store moved when the entry was logged, so Diagnose re-reads (at least
+       one guidance read) and restores the same Finding with the same
+       Occurrence held, Log carbs is open over it, and once the restoration
+       settles focus is on that entry's Open Day control. After a reload of the
+       case address, the same round trip issues exactly one GET /api/status and
+       nothing else, keeps the case, puts focus on that entry's Open Day
+       control, and the address names the case with no title, from or focus.
+  element:  .cockpit-log-carbs, [data-utility-when="custom"], #ut-custom,
+            .gf-utility [data-action="day"], [data-utility-close],
+            [data-day="return"], #level .case-occurrence, #crumb-trail .here,
+            location
+  source:   frontend/utilities.js bindPane / reopenUtility / seatUtility;
+            frontend/day.js bind (return); frontend/diagnose.js mount /
+            restoreEntry
+  lock:     HV2-14; ADR 445 points 3, 4 and 7; ADR 414 retention; rulings Q2
+            and r1-1(a) to r1-1(c)
+  data:     showcase; finding:over_treated_low in the Afternoon preset with its
+            first roster Occurrence held (S138's drill), and an entry the story
+            logs at 12:07 on the latest recorded day, into its own fresh copy
+  evidence: C4_STORIES.S164; reads the served entry and the Day address. On
+            the first return it watches from the press for the re-read's GET
+            /api/analyze, which the app issues after its own second status
+            read, a round trip after the return's status answer. On the second,
+            heldStatusReturn holds /api/status while every request is counted
+            from the press until the desk settles, so a re-read decided after
+            the status answer counts too. Then the held Occurrence, the crumb,
+            the address and document.activeElement. The story's control flow is
+            pinned on a fake page in frontend/c4.replay.test.js
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S164 the Day address must name the entry by its id";
+            coordinator-run. The complete ledger runs at integration. A first
+            branch run, on 0a43c77b, failed at the story's own re-read check:
+            heldStatusReturn stops recording at the status answer, before the
+            re-read's guidance read. The server log showed that read, and the
+            story now watches from the press
+```
+
+```
+S165 · Carb questions over a drilled Finding case with a window pressed: a
+       prompt's Open Day, Close, then Return to Carb questions issues exactly
+       one GET /api/status and nothing else; the case and the pressed window
+       are unchanged, Carb questions is open with focus on that prompt's Open
+       Day control, and the address names the retained case with no title,
+       from or focus.
+  element:  [data-utility="questions"], .gf-utility [data-action="day"],
+            [data-utility-close], [data-day="return"], #seg-window
+            [aria-pressed="true"], #crumb-trail .here, location
+  source:   frontend/utilities.js reopenUtility / seatUtility; frontend/day.js
+            bind (return); frontend/diagnose.js mount (a return naming no case)
+  lock:     HV2-34; ADR 414 retention; ADR 445 points 3 and 4
+  data:     showcase; as S137 up to its Day return, then the first served
+            prompt's Open Day
+  evidence: C4_STORIES.S165; heldStatusReturn holds /api/status across Return
+            to Carb questions while every request is counted from the press
+            until the desk settles, so a re-read decided after the status answer
+            counts too. Then it compares the crumb, the pressed window and
+            document.activeElement, and the
+            address with the retained case as S137 names it (subject and
+            Occurrence). The story's control flow is pinned on a fake page in
+            frontend/c4.replay.test.js
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S165 the Carb questions return must issue no request
+            besides the held status check"; coordinator-run. The complete
+            ledger runs at integration. A first branch run, on 0a43c77b,
+            failed at the address: the story compared against the address
+            read right after the Diagnose Day return, which still carried that
+            entry's date, moment, title and from (ADR 428), not the case the
+            plain return names
+```
+
+## #442 amendment — 2026-09-23, issue #442
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R442. It covers S157, the S91 amendment below
+and the superseded-note wording, and nothing outside #442's checklist. The
+decision is ADR 442 in `openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c4-ic, c4-isf
+and c4-profile here, each through `CASE_STORE_DIR`. No real data is read. The
+worker ran no server and no browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **Every change record ends by one rule.** Each reconcile ends every retained
+  change record that has no ending, oldest first: reverted, else superseded by
+  the first later detected change outside its own Edit and inside its 28-day
+  watch window, else expired unreviewed once that window has passed. An older
+  detected change therefore reads its ending in the Changes roster and on its
+  record instead of "Still open · Not watched". A saved ending is never
+  rewritten.
+- **A saved ending reads evidence only up to its ending instant**, the live
+  watch's included. A saved assessment whose retained context came from a later
+  pump read is served unavailable (`context_after_ending`; its words belong to
+  #450).
+- **The superseded note names no setting.** It reads "A later setting change
+  was detected inside the watch window. This record keeps the period it
+  actually observed." instead of claiming the later change was to the same
+  setting, which a later change of any setting already contradicted.
+
+S157 is a new app-opener-only story under HV2-28. S91 is amended in prose
+below; no story is retired.
+
+```
+S157 · An older detected change that a later detected change superseded inside
+       its watch window reads its saved ending, never Still open: its Changes
+       roster row reads "Superseded by a later change" with its effective time
+       and carries no still-open cell; opening it shows the saved ending of kind
+       superseded in words with no underscore-token code on that line, a
+       saved-ending note that does not claim the same setting, and a periods
+       note whose data read-through time is the ending's Finished time.
+  element:  table.gf-table [data-record], td.v, [data-record-open="true"],
+            [data-record-part="ending"] [data-ending-kind], [data-part="periods"]
+  source:   ciq_autotune/watched_change.py reconcile_follow_up /
+            _end_open_records / capture_ending; frontend/history.js
+            recordRowHtml / endingSection; frontend/follow-up.js periodsSection
+  lock:     HV2-28; ADR 442 (openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md)
+  data:     c4-ic; its one reconcile records carb-ratio changes on 06-01 and
+            06-10. The 06-10 record is the watched, open Trial; the 06-01
+            record ends superseded at 06-10 09:00, its saved assessment read to
+            that instant
+  evidence: C4_STORIES.S157; reads the served roster, picks the Trial row that
+            is not the admission's active id and requires its served
+            superseded kind, then reads its roster row, opens it by its roster
+            press and reads the kind line, the ending part and the periods
+            note. It asserts no reason line's words; the complete ledger covers
+            the Ending assessment line with #450's words
+  status:   base b03431d2 (with the branch harness) fails at its first feature
+            assertion at both sizes ("S157 the older Trial row must carry its
+            served superseded ending"); branch 782cd552 (application code
+            identical to the reviewed head 0b8e22a4) passes at 1280x720 and
+            1440x900. The first branch run failed on a story defect, a `has`
+            row locator that repeated the table prefix; it was fixed in
+            e57c91bd. Coordinator-run 2026-09-24
+```
+
+Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's. Recorded 2026-09-24 (coordinator-run, both sizes): on branch 782cd552, S91 passes as amended, with S157 and the stories above (`ONLY=S157,S49,S91,S96,S105,S110,S111,S112,S143,R18`, `# executed 10 · failed 0` at 1280x720 and 1440x900). The frozen helper's failure on c4-isf is shown in process: the saved Trial arm counts 27 and is not met, while the retained read counts 30 and is met. No replay run of the frozen helper was made.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and test that reads these cases keeps its subject:
+
+- **S110, S111, S112 and S143** on edit-chain. Its four hand-saved records move
+  14 days later (05-15, 05-22, 05-23, 05-24) with their spacing kept, so every
+  watch window ends after the case's 06-01 23:59 data tail and the ending rule
+  leaves all four open: one titled three-member Edit, one flat row, four
+  still-open cells reading "Not watched", and an unavailable retained
+  comparison.
+- **S96 and S105** on c3-history and c3-trial, **S49** on c4-missing and **R18**
+  on c4-history. None of these records gains or changes an ending (this
+  change's premises): c3-history's finished record keeps its saved ending, and
+  every other record is its case's open frontier.
+- **The desk browser suite's hand-built expired record** is a served fixture
+  that no reconcile touches; its saved ending and Later conclusion assertions
+  are unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Reconcile ending rule for every open change record | ciq_autotune/watched_change.py | S157, S91 |
+| Superseded saved-ending note | frontend/history.js | S157 |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`AGENTS.md`'s registry count sentence, `mockups/INDEX.md`'s row and the release
+freeze block are the coordinator's, written once on the integration branch.
+`acceptance.py`'s pinned inventory moves to 172 issued · 153 active · 19 retired
+on this branch.
+
+## #447 amendment — 2026-09-23, issue #447
+
+S169 and S170 are the fail-first obligations of ADR 447
+(`openspec/changes/archive/2026-09-24-retire-verify-language/design.md`). A watched Trial's dock and
+Changes' Watch maturity print one day count, the served `days_elapsed`, in the
+words Changes already prints. The Guide's "Reading the Diagnose surface" article
+names no Verify. Both are app-opener-only, like S139 and S140. Browser execution
+belongs to the release coordinator at 1280x720 and 1440x900, each story on a fresh
+case store (`CASE_STORE_DIR`). No existing story is amended or retired. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator writes the one release freeze block and reconciles the count line and
+ACCEPTANCE.md's count sentence.
+
+Sanction: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`.
+It covers the dock's ready-state copy (S169), the Guide article's Cause-lever
+line (S170) and this amendment, and nothing outside #447. Changes' locked Watch
+maturity strings and its progress-bar clamp are unchanged.
+
+S170's claim is the article's statement that a Focus is followed in Changes,
+which is HV2-12's ownership rule ("Changes owns current Plan or Focus, Trial/Focus
+progress …"), so HV2-12 is its term. HV2-33 stays second because the lock's
+utilities scenario files the Guide under it, as S73 and S73c do. No lock term is
+written for Guide article content itself (coordinator ruling F-d).
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 173 issued · 154
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the showcase
+or a named `scripts/qa_e2e_cases.py` case store.
+
+```
+S169 · A watched Trial's dock and Changes print one day count, the served
+       days_elapsed. On a complete Trial past its requirement the dock reads
+       "Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required" (after the
+       Trial's values, which lead the detail line since #451), and Changes'
+       Watch maturity figure reads "‹N› days" with "‹R› required". Neither the
+       dock's detail nor the Watch maturity figure prints "‹N› of ‹R›" past its
+       requirement; only Changes' progress bar clamps. Changes' outcome table
+       leads with the Trial's served target metric, marked as its target.
+  element:  .inspector > .watch .how, .inspector > .watch .go;
+            [data-part="maturity"] .gf-figure, progress[aria-label="Trial progress"];
+            .gf-stage-trial [data-table="outcomes"] tbody tr
+  source:   frontend/follow-up.js trialDayCount, maturitySection, outcomesTable;
+            frontend/watched-change-dock.js watchDockView
+  lock:     HV2-24, HV2-12
+  data:     c3-trial; the server serves a complete Trial at 15 of 14 days,
+            target metric tbr
+  evidence: C4_STORIES.S169 → trialDayCount447; reads /api/verify/trials and the
+            selected Trial, requiring an active Trial served complete with
+            days_elapsed past days_required and one row-keyed target metric as
+            premises; opens Diagnose and
+            requires the dock's detail to read exactly the ready sentence built
+            from the served values; activates the dock's link, requires
+            .gf-stage-trial visible, the Watch maturity figure to start with
+            "‹N› days" and carry "‹R› required", the progress bar at value ‹R›
+            of max ‹R›, and the outcome table's first row to be the served
+            target's, marked gf-target
+  status:   replays done; renders taken at integration (447-A1 the dock,
+            447-B1 Watch maturity, 447-B2 the outcome table, before on
+            b03431d2 and after on the release trunk, kept in a private
+            design-evidence record). Base b03431d2 with
+            this harness laid over it fails at its dock-count assertion ("S169
+            the dock must print the served day count in Changes' words"), its
+            first content assertion, at both sizes (ed1c29bd harness); branch
+            e662c080, code-identical to 2de52828, passes at both sizes
+            (1280x720 and 1440x900), as do S46, S73, S139 and S140;
+            coordinator-run 2026-09-24. Fake-page controls in frontend/c4.replay.test.js pass on the
+            branch's text, reject the base's "14 of 14" at that assertion, and
+            reject a TIR-first outcome table at "S169 Changes' outcomes must
+            lead with the served target metric tbr" (review ruling RR1)
+```
+
+```
+S170 · The Guide's "Reading the Diagnose surface" article names no Verify; its
+       Cause-lever line says those levers flow to a Focus, followed in Changes.
+  element:  [data-utility="guide"], [data-utility-slug="reading-diagnose"], .gf-article
+  source:   docs/kb/reading-diagnose.md, served by /api/kb/reading-diagnose;
+            frontend/utilities.js guideBody
+  lock:     HV2-12, HV2-33
+  data:     showcase; the served article carries its ◈ Cause line
+  evidence: C4_STORIES.S170 → guideArticle447; reads /api/kb/reading-diagnose and
+            requires its ◈ Cause line as a premise, opens the Guide and the
+            article, and requires the whitespace-normalised .gf-article text to
+            carry no "Verify" and to carry "flow to a Focus, followed in Changes"
+  status:   replays done; renders taken at integration (447-C1 the article's
+            top, 447-C2 its Cause line, before on b03431d2 and after on the
+            release trunk, kept in a private design-evidence record). Base
+            b03431d2 with
+            this harness laid over it fails at its no-Verify assertion ("S170
+            the article must name no Verify") at both sizes (ed1c29bd harness);
+            branch e662c080, code-identical to 2de52828, passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-24. Fake-page
+            controls in
+            frontend/c4.replay.test.js pass on the branch's article and reject
+            the base's "Focus / Verify" line at that assertion
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Trial day count, both printers | frontend/follow-up.js trialDayCount | S169 |
+| Trial outcome table led by the served target | frontend/follow-up.js outcomesTable, comparisonTables; frontend/history.js record view | S169 |
+| Watch dock ready line | frontend/watched-change-dock.js watchDockView | S169 |
+| Guide authored article | frontend/utilities.js guideBody, docs/kb/reading-diagnose.md | S170 |
+
+## #454 amendment — 2026-09-23, issue #454
+
+S182 is the fail-first obligation of ADR 454 ("A claimed Occurrence's sentence is
+served once"): a claimed Occurrence's claimant sentence is served once, as its
+cause's text, so the selected block prints it once, on the cause line. The desk is
+unchanged; it prints what is served. S182 is app-opener-only, like S148–S150.
+Browser execution belongs to the release coordinator at 1280x720 and 1440x900, each
+story on a fresh case store (`CASE_STORE_DIR`). No story is amended or retired. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator writes the one release freeze block and reconciles the count line.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from
+here"); coordinator ruling R454. It covers S182 and nothing outside #454.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over a named
+`scripts/qa_e2e_cases.py` case store.
+
+```
+S182 · Selecting a claimed Occurrence in the Highs after meals Pattern case file
+       prints its claimant's sentence once: the served cause carries it as its
+       text, the cause line prints it, no other line of the facts list repeats
+       it, and the claimant's habit line reads its title and band label only.
+  element:  #level .case-facts .vd.cause, .vd.habit
+  source:   the served reason (ADR 454); frontend/diagnose-workstation.js
+            occurrenceFacts prints what is served
+  lock:     none (revise; ADR 454)
+  data:     pattern-near-tie; All charts, then pattern:highs_after_meals's event
+            case, the matched cohort's first member (three meals, each claimed
+            by Carb undercount, which drove each one's episode)
+  evidence: C4_STORIES.S182 → assertSentenceOnce454; reads the served detail for
+            the selected Occurrence and the rendered facts list. No selection,
+            an unclaimed Occurrence or a claimant outside the served habits is a
+            premise failure; a line other than the cause line that contains the
+            served sentence, or a claimant line that reads more than its title
+            and band label, is the feature failure
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S182 the cause's sentence must print once;
+            it repeats on: Carb undercount · Meets criteria · …"), not at setup;
+            branch b847be7e passes at both sizes (ONLY=S25,S149,S150,S182:
+            executed 4 · failed 0). Coordinator-run 2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Selected Occurrence cause and claimant habit lines, each sentence once | frontend/diagnose-workstation.js occurrenceFacts, over the served reason | S182 |
+
+## #451 amendment — 2026-09-23
+
+S177–S179 are the fail-first obligations of ADR 451
+(`openspec/changes/archive/2026-09-24-setting-concern-labels/design.md`): the desk names the
+correction factor and the carb ratio in the wearer's words, prints a correction
+factor insulin first, says why its concern leads in words, names a recorded
+concern by its served name, and lets the watch dock's title name the change
+while its values wrap below. They are app-opener-only, like S101–S117, and run on
+the manufactured `isf-strengthen` case store, each story on a fresh copy
+(`CASE_STORE_DIR`). S177 joins the PR smoke slice, as the only story on that
+store. Browser execution belongs to the release coordinator at 1280x720 and
+1440x900. No story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It covers S177–S179, under R451 as corrected, the coordinator's widening of #451
+and its plan-review and chunk-review rulings, and nothing outside #451.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case isf-strengthen` emits.
+
+```
+S177 · On a plain arrival at Changes, the Action figure reads the served
+       selection's first instruction as "<direction> to 1 U : <recommended>
+       mg/dL"; the nameplate and the Action heading say "Ready to stage", then
+       "Staged" once the change is staged and "Ready to stage" again after Undo;
+       a concern set aside and still on screen reads "Set aside" with no status
+       words; the Changes desk prints no mg/dL/U, no ISF and no disposition code.
+  element:  .gf-reading .gf-figure; .gf-stage .gf-head .gf-sub;
+            .gf-reading .gf-section h3 .meta; .gf-desk
+  source:   frontend/changes.js actionLead, concernFrame, leadWords;
+            frontend/guidance.js statusWords; frontend/plan.js settingValue
+  lock:     none (revise; ADR 451 in openspec/changes/archive/2026-09-24-setting-concern-labels/design.md)
+  data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
+            eligible_action, carrying the correction factor's served
+            "strengthen" instruction
+  evidence: C4_STORIES.S177; reads /api/guidance for the served disposition and
+            first instruction, compares the figure's text and the two word
+            slots, stages and undoes through [data-set="stage"] and
+            [data-set="unstage"], then sets the concern aside through the form
+            and reads the held seat against the re-read's served set-aside row
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the figure reads "strengthen to 32 " with no
+            unit), not at setup; branch 995126ad passes at both sizes.
+            Coordinator-run 2026-09-24
+```
+
+```
+S178 · On Diagnose, the correction-factor queue row is titled "Correction factor
+       · <served direction>" and its numbers line reads "now 1 U : <current> mg/dL
+       → 1 U : <recommended> mg/dL" followed by the row's served scope suffix
+       (" · Whole day" for a whole-day row); its panel's heading says
+       "Correction factor" and its values read "1 U : <value> mg/dL"; staging
+       the value seats the dock's staged title "Correction factor · <served
+       direction>" with no
+       truncation, and its detail line leads with "1 U : <current> mg/dL → 1 U :
+       <recommended> mg/dL", fully visible; the Diagnose desk prints neither
+       mg/dL/U nor ISF.
+  element:  #level .qrow[data-id="isf"] .lab, .den.nums; #level .slot-head .time;
+            #level .numrow b; .inspector > .watch .what, .how; .dw[data-state]
+  source:   ciq_autotune/findings_projection.py (title);
+            frontend/diagnose-findings-queue.js assertDetail, scopeNote;
+            frontend/diagnose-workstation.js renderIsfLevel, renderParamLevel,
+            stagedDescriptor; frontend/watched-change-dock.js watchDockView
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; the whole-day correction-factor row asserts
+            "strengthen" and stages
+  evidence: C4_STORIES.S178; reads the served row from
+            /api/diagnose/finding-case-file-preparation, compares the row's
+            title, and its numbers line at the queue's rounding followed by the
+            served scope suffix from the row's window_scope (" · Whole day"
+            here, as the served row is whole-day), with no mg/dL/U; compares the
+            panel's heading and values at the panel's rounding, stages through
+            the panel, and measures the dock: the title's scrollWidth <=
+            clientWidth, and the detail line's box within the dock and the dock
+            within the viewport
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the row is titled "ISF · strengthen"), not
+            at setup; branch 995126ad passes at both sizes, its dock geometry
+            included. Coordinator-run 2026-09-24
+```
+
+```
+S179 · After staging the correction factor and recording the Plan, Changes' "What
+       was known" names the recorded concern "Correction factor" with no
+       setting: identifier, prints the recorded change as "1 U : <value> mg/dL",
+       and prints the recorded explanation, "Correction factor", as recorded.
+  element:  .gf-reading .gf-section (What was known) dd, p
+  source:   frontend/plan-view.js knownSection; ciq_autotune/api.py
+            /api/plan/history subject_titles; ciq_autotune/guidance.py
+            subject_title and the setting concern's title
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; Changes stages the served correction-factor
+            instruction and records it
+  evidence: C4_STORIES.S179; stages and records through the Plan, reads the
+            newest record's decision_context from /api/plan/history, and
+            compares the section's concern name, change value and explanation
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the section prints "setting:isf"), not at
+            setup; branch 995126ad passes at both sizes. Coordinator-run
+            2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Changes Action figure, nameplate and Action heading words | frontend/changes.js actionLead, concernFrame; frontend/guidance.js statusWords | S177 |
+| Stage and Undo on Changes | frontend/changes.js bind ([data-set="stage"], [data-set="unstage"]) | S177 |
+| Set aside on Changes | frontend/changes.js bind (form[data-form="aside"]) | S177 |
+| Correction-factor queue row and its panel | frontend/diagnose-findings-queue.js assertDetail; frontend/diagnose-workstation.js renderIsfLevel | S178 |
+| Staged dock title and values | frontend/diagnose-workstation.js stagedDescriptor; frontend/watched-change-dock.js watchDockView, paintWatchDock | S178 |
+| Plan "What was known" | frontend/plan-view.js knownSection | S179 |
+
+Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/archive/2026-09-24-setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Base b03431d2 with this branch's harness laid over it fails S4 at "the advisory line drifted" at both sizes, and branch 678fb544 passes it at 1280x720 and 1440x900; coordinator-run 2026-09-24. S4 runs again on the trunk in the complete ledger, on the commit that is pushed.
+
+No other story's asserted text moved under this widening. S42 reads "Re-key the flagged values on your pump" and "rechecks on the next fetch", and both remain. S142 counts the open ending's `[data-unavailable="ending"]` element, not its words. S153 reads "no direction asserted" in the basal panel, which remains. The findings queue's held-row prefix now reads "no direction asserted: <served reason>"; no story, replay or browser suite reads a held row's reason line. S178 reads only the values that lead the dock's detail line; the staged sentence after them now reads "Staged, not applied: nothing has changed on the pump", one character shorter.

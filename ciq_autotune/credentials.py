@@ -26,11 +26,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .store import Store
+from .store import Store, wall_clock_now
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ def save_credentials(store: Store, email: str, password: str, region: str,
     encrypted = _fernet(key_path).encrypt(password.encode("utf-8"))
     store.set_credentials(
         email=email, password_encrypted=encrypted, region=region,
-        updated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        updated_at=wall_clock_now().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
 

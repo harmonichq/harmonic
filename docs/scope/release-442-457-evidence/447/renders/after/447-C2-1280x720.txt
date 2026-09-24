@@ -1,0 +1,66 @@
+SYNTHETIC — after · tree dd5a93bb · store showcase · 447-C2 · 1280x720
+URL: http://127.0.0.1:8791/
+Element: viewport
+Focused: <h2 class="gf-title"> "Reading the Diagnose surface"
+Note: the same article scrolled to its ◈ Cause line
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+BASAL 03:00 TO 04:00
+One cautious step down is supported at this time.
+Delivered below the programmed rate across 30 steady nights.
+Full
+Keep
+GUIDE
+Reading the app
+Close
+← All articles
+Reading the Diagnose surface
+
+Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes.
+
+The Diagnose tab answers one question: what should I look at first? It is a single ranked queue of levers: one honest list, tuning and behavioral mixed, most worth-your-attention at the top.
+
+THE RANK
+
+Each row is scored by ∛(severity × recurrence × confidence): how bad, how often, how sure. A big score means a lever that hurt a lot, happened repeatedly, and the engine is confident about. The equation sits behind the per-lever expander; the factor bars on the card show you the three inputs at a glance.
+
+SETTING VS. HABIT
+
+Every lever is chipped ⚙ Setting or ◈ Cause. That flavor is a chip, never a lane, so the rank stays honest across both. What differs is where "accept" sends you:
+
+⚙ Setting findings (basal, ISF, or I:C) flow to The Plan tab as a proposed settings change.
+◈ Cause levers (late bolus, over-treated low) flow to a Focus, followed in Changes, because no pump setting fixes them.
+"WHY SO FEW?"
+
+A short queue is a good sign, not a broken one. The tail of the surface tells you how many opportunities the engine looked at and chose to stay quiet on, and why: thin windows, upstream causes, near-misses under threshold. Read it before you assume nothing's wrong.
+
+Open your Diagnose surface → (Diagnose here) to see your own ranked levers.
+
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

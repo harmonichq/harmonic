@@ -1,10 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFocusEntry } from './focus-entry.js';
 
 const offered = { key: 'served-pattern', subject: 'pattern:served-pattern', readiness: { count: 1, gate: 12, verdict: 'ready' } };
 const source = { input_revision: 7, analysis_generation: 'served-generation' };
 const roster = { input_revision: 7, admission: { focus_pin: { available: true } }, pinnable_patterns: [offered] };
+
+// The page's own entry reads through the default client, which captures fetch
+// when it is first imported, so this stub stands before the module is.
+let servedPin = { available: true };
+let pinRefusal = null;
+globalThis.fetch = async (path, options = {}) => {
+  if (options.method === 'POST') {
+    return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: pinRefusal }) };
+  }
+  const body = String(path).endsWith('/api/guidance')
+    ? { ...source, candidates: [{ subject: offered.subject, title: 'Served Pattern' }] }
+    : { ...roster, admission: { focus_pin: servedPin } };
+  return { ok: true, json: async () => body };
+};
+const { createFocusEntry, mount } = await import('./focus-entry.js');
+const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve)); };
+function host() {
+  const buttons = {};
+  return { innerHTML: '', buttons, querySelector(selector) {
+    const [name] = selector.split(',').map(part => /data-focus="([^"]+)"/.exec(part)?.[1])
+      .filter(name => name && this.innerHTML.includes(`data-focus="${name}"`));
+    if (!name) return null;
+    buttons[name] ||= {};
+    return buttons[name];
+  } };
+}
+async function arrive(seat, navigation) {
+  const deps = { context: { subject: offered.subject }, navigation };
+  for (let step = 0; step < 3; step++) { mount(seat, deps); await flush(); }
+  return deps;
+}
 
 test('pin uses the served canonical Pattern and never chooses its member or calculates admission', async () => {
   const writes = [];
@@ -162,4 +192,35 @@ test('a remain-pattern child keeps its withheld parent context without a Focus p
     title: 'Highs after meals',
     reason: 'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
     label: 'Waiting for reconciliation', action: 'Focus unavailable', retry: false });
+});
+
+test('the entry page says in words why a Focus is not offered, never the served code', async () => {
+  for (const [reason, said] of [
+    ['pending_plan', /A recorded Plan is still pending, so Harmonic is not offering a Focus from this read\./],
+    ['reconciliation_required', /Harmonic has not reconciled the latest pump and sensor data yet/],
+    ['a_new_admission_reason', /Harmonic is not offering a Focus from this read\./],
+  ]) {
+    servedPin = { available: false, reason };
+    try {
+      const seat = host(); await arrive(seat, `withheld-${reason}`);
+      assert.match(seat.innerHTML, said, reason);
+      assert.doesNotMatch(seat.innerHTML, new RegExp(reason), reason);
+      assert.match(seat.innerHTML, /data-focus="refresh"/, 'a withheld entry offers no Start Focus');
+    } finally { servedPin = { available: true }; }
+  }
+});
+
+test('a refused pin prints the served sentence once, with one full stop before the confirmation line', async () => {
+  pinRefusal = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.',
+    input_revision: 8, admission: { state: 'available' } };
+  try {
+    const seat = host(); const deps = await arrive(seat, 'pin-refused');
+    assert.match(seat.innerHTML, /data-focus="pin"/);
+    await seat.buttons.pin.onclick();
+    mount(seat, deps);
+    assert.match(seat.innerHTML,
+      /Starting the Focus failed: New pump or sensor data arrived since this page was read\. No successful pin was confirmed\./);
+    assert.equal(seat.innerHTML.split('New pump or sensor data arrived').length - 1, 1);
+    assert.doesNotMatch(seat.innerHTML, /\.\.|stale_input_revision|\(409\)/);
+  } finally { pinRefusal = null; }
 });

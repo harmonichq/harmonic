@@ -1,0 +1,30 @@
+(node:66868) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S183 case=basal-verdict-gallery milliseconds=238.559
+# S183 synthetic case=basal-verdict-gallery (fresh copy)
+FAIL S183 — S183 the glucose overview's text must stay whole, inside the chart and unstruck at every size; 4 failures:
+  - 832×720 Evening, narrowed with nothing pressed: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" lies 205.03px outside #chart's 402×153 box
+  - 832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" straddles the window's 18:00 gate by 1.61px
+  - 832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" straddles the window's 00:00 gate by 31.79px
+  - 832×720 Evening, narrowed with nothing pressed: caption span "  ·  INSUFFICIENT SAMPLE — thinnest bin holds 0" reaches 205.03px past #chart's right edge
+# story-time S183 milliseconds=3337.933
+# case-copy S184 case=basal-verdict-gallery milliseconds=0.879
+# S184 synthetic case=basal-verdict-gallery (fresh copy)
+FAIL S184 — S184 the Spotlight's verdict line must keep every fact whole inside the chart; 2 failures:
+  - 832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" lies 26.86px outside the Spotlight chart's 358×241 box
+  - 832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" runs 20px under the Keep control
+# story-time S184 milliseconds=1542.304
+# case-copy S185 case=basal-verdict-gallery milliseconds=23.022
+# S185 synthetic case=basal-verdict-gallery (fresh copy)
+# S185 832×720 title 41.86px box, clientWidth 42, scrollWidth 144; provenance 255.14px box, clientWidth 255, scrollWidth 255; control 21px box, clientWidth 21, scrollWidth 21; word 0px box, clientWidth 0, scrollWidth 0
+# S185 832×560 title 41.86px box, clientWidth 42, scrollWidth 144; provenance 255.14px box, clientWidth 255, scrollWidth 255; control 21px box, clientWidth 21, scrollWidth 21; word 0px box, clientWidth 0, scrollWidth 0
+# S185 1024×768 title 143.94px box, clientWidth 144, scrollWidth 144; provenance 255.14px box, clientWidth 255, scrollWidth 255; control 76.86px box, clientWidth 77, scrollWidth 77; word 50.86px box, clientWidth 51, scrollWidth 51
+# S185 1280×720 title 143.94px box, clientWidth 144, scrollWidth 144; provenance 255.14px box, clientWidth 255, scrollWidth 255; control 76.86px box, clientWidth 77, scrollWidth 77; word 50.86px box, clientWidth 51, scrollWidth 51
+PASS S185
+# story-time S185 milliseconds=2039.376
+
+# executed 1 · failed 2 · deferred 0 · selected 3 · chromium launches 1

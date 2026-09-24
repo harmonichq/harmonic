@@ -20,7 +20,7 @@ function guidancePayload({ generation = 'guidance:abc:0:r8', aside = false, reas
     subject: 'setting:basal_rate',
     kind: 'setting',
     parameter: 'basal_rate',
-    title: 'Basal profile',
+    title: 'Basal',
     units: 'U/h',
     priority: 55,
     action: [{ kind: 'setting_instruction', parameter: 'basal_rate', start_min: 180, end_min: 210, direction: 'lower', units: 'U/h', recommended: 0.48 }],
@@ -232,6 +232,9 @@ test('Focus admission copy translates known backend tokens without inventing adm
     said: 'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
     label: 'Trial in progress', action: 'View Trial', route: { subject: 'trial' },
   });
+  // ADR 450: the Focus entry words a pending Plan from this same table.
+  assert.equal(guidance.admissionReason('pending_plan').said,
+    'A recorded Plan is still pending, so Harmonic is not offering a Focus from this read.');
   assert.deepEqual(guidance.admissionReason('new_backend_reason'), {
     said: 'Harmonic is not offering a Focus from this read.',
     label: 'Unavailable from this read', action: 'Focus unavailable', route: null,

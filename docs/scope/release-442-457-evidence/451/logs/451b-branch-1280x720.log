@@ -1,0 +1,29 @@
+(node:26833) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S177 case=isf-strengthen milliseconds=375.236
+# S177 synthetic case=isf-strengthen (fresh copy)
+PASS S177
+# story-time S177 milliseconds=10952.763
+# case-copy S178 case=isf-strengthen milliseconds=11.799
+# S178 synthetic case=isf-strengthen (fresh copy)
+FAIL S178 — Timed out after 30000 ms: S178 the correction-factor panel; saw [
+  'Correction factor',
+  [ '1 U : 40.00 mg/dL', '1 U : 24.00 mg/dL', '1 U : 32.00 mg/dL' ]
+]; locator.innerText: Error: strict mode violation: locator('.dw') resolved to 2 elements:
+    1) <div class="gf dw" data-sheet="closed">…</div> aka locator('div').nth(2)
+    2) <div class="dw" data-state="typical" data-event-view="glucose">…</div> aka getByText('Window OvernightMorningAfternoonEvening24 h Glucose by time of day --:-- median')
+
+Call log:
+  - waiting for locator('.dw')
+
+# story-time S178 milliseconds=37240.713
+# case-copy S179 case=isf-strengthen milliseconds=1.620
+# S179 synthetic case=isf-strengthen (fresh copy)
+PASS S179
+# story-time S179 milliseconds=6817.107
+
+# executed 2 · failed 1 · deferred 0 · selected 3 · chromium launches 1

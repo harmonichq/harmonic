@@ -40,7 +40,7 @@ export function stageItemsFor(key, analyze = {}, memberStartMins = null) {
     const block = (analyze.ic_blocks || []).find((candidate) => blockKey(candidate) === key);
     if (!block || block.asserts_move !== true || block.recommended == null) return [];
     // #581: stamp every fanned-out member row with the block it came from, so a
-    // later Plan-lifecycle edit (or Verify trial) can bind evidence back to the
+    // later Plan-lifecycle edit (or the Trial it opens) can bind evidence back to the
     // whole block rather than one arbitrary member slot. The list is a copy so
     // no downstream mutation of one item's provenance can leak into the block.
     const provenance = {

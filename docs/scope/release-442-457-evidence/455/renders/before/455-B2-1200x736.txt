@@ -1,0 +1,50 @@
+SYNTHETIC — before · tree b03431d2 · store basal-verdict-gallery · 455-B2 · 1200x736
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Focused: <button> "Afternoon"
+Note: Afternoon pressed: the caption against the y-axis labels
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+raise
+1
+lower
+1
+hold
+1
+insufficient
+1
+no data
+44
+No evidence charts in this window.
+Findings
+30 days
+Filter
+
+No pattern or setting asserts a direction in this window.
+
+Watching · 1 read
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

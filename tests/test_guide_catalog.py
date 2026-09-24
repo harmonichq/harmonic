@@ -34,6 +34,27 @@ class BuildCatalogTest(unittest.TestCase):
     def setUp(self):
         self.cat = build_catalog()
 
+    def test_the_catalog_joins_no_clauses_with_an_em_dash(self):
+        # ADR 451: the Guide prints this payload's strings (every lever's meaning
+        # and recommendation, the pipeline, the silence reasons, the worked
+        # example), so none joins its clauses with an em dash (DESIGN.md, Voice
+        # and user-copy register, rule 1).
+        def strings(node):
+            if isinstance(node, str):
+                yield node
+            elif isinstance(node, dict):
+                for value in node.values():
+                    yield from strings(value)
+            elif isinstance(node, (list, tuple)):
+                for value in node:
+                    yield from strings(value)
+
+        served = list(strings(self.cat))
+        self.assertTrue(any(text == levers.recommendation(Lever.LATE_BOLUS)
+                            for text in served))
+        for text in served:
+            self.assertNotIn("—", text)
+
     def test_top_level_shape(self):
         for key in ("engine", "pipeline", "exposures", "levers",
                     "silence_reasons", "tiers", "worked"):
@@ -59,6 +80,17 @@ class BuildCatalogTest(unittest.TestCase):
         for s in self.cat["silence_reasons"]:
             self.assertIn(s["tier"], tiers)
             self.assertTrue(s["body"])
+
+    def test_upstream_cause_names_both_of_its_sources(self):
+        # ADR 448: the context gate's recent low or suspend, and an
+        # over-treated low's rebound that owns the rise (ADR 422).
+        upstream = next(s for s in self.cat["silence_reasons"]
+                        if s["value"] == SilenceReason.UPSTREAM_CAUSE.value)
+        self.assertEqual(
+            upstream["body"],
+            "An observable recent low and/or a defensive suspend explains the move, or "
+            "the rise is the rebound of an over-treated low, which owns it. A recovery, "
+            "not the behavior itself.")
 
     def test_tiers_and_exposures_enumerate_their_enums(self):
         self.assertEqual([t["value"] for t in self.cat["tiers"]],

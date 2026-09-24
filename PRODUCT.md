@@ -10,8 +10,8 @@ A single user: a Tandem Control-IQ pump wearer analyzing their own pump/CGM
 history, self-hosting this tool against their own local SQLite store. No
 multi-tenant, no accounts beyond one optional API token. They arrive with one
 of three jobs (ADR 0027): **Diagnose** ("I've been going low after dinner" →
-ranked levers to act on), **Verify** ("I changed settings last week, did it
-help?" → outcome trends), or **Forensics** ("I crashed yesterday, what
+ranked levers to act on), **Changes** ("I changed settings last week, did it
+help?" → the watched Trial's or Focus's before-and-after), or **Forensics** ("I crashed yesterday, what
 happened?" → one day's chart). They're reading their own glucose/insulin data
 under real stakes, often already tired or stressed from the condition itself —
 not a casual analytics audience.
@@ -59,8 +59,8 @@ soften it toward warmth or playfulness.
   Don't make the default view dense with internals a first-time user doesn't
   need.
 - **Job-shaped, not feature-shaped.** Organize around what the user came to
-  do — Diagnose / Verify / Day — not around which engineering milestone shipped
-  a given analyzer (ADR 0027).
+  do — Diagnose / Changes / Day (ADR 397) — not around which engineering
+  milestone shipped a given analyzer (ADR 0027).
 - **Reuse the domain's own visual language.** Basal/ISF/I:C/behavioral
   evidence each have an established chart idiom in the shipped builders under
   `frontend/`; extend those rather than reaching for generic dashboard

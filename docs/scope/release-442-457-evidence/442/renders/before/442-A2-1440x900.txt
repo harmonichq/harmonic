@@ -1,0 +1,166 @@
+SYNTHETIC — before · tree b03431d2 · store c4-ic · 442-A2 · 1440x900
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Acarb_ratio-all-20240601000000
+Element: viewport
+Focused: <h2> "This trial"
+Note: the 06-01 record opened from the roster: record trial:carb_ratio-all-20240601000000 (changed 2024-06-01 00:00:00); served ending none
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · STILL OPEN
+Carb ratio · 10 g/U → 6 g/U
+Detected Jun 1, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+AVAILABLE OBSERVATIONS
+recomputed now
+Pump-local time
+Trial above Before
+Trial below Before
+median glucose by clock · 10 → 10 half-hours read
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time in range
+observed CGM readings in eligible windows
+	100%
+480 observed CGM readings in eligible windows
+	100%
+480 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time below range
+observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Post-meal peak (up to 3 hours)
+meals with readable peak
+	120 mg/dL
+8 meals with readable peak
+	120 mg/dL
+8 meals with readable peak
+	Context only
+difference 0
+
+Subsequent nadir (up to 6 hours)
+meals with readable nadir
+	120 mg/dL
+8 meals with readable nadir
+	120 mg/dL
+8 meals with readable nadir
+	Context only
+difference 0
+
+Starting glucose
+meals with readable bg0
+	120 mg/dL
+8 meals with readable bg0
+	120 mg/dL
+8 meals with readable bg0
+	Context only
+difference 0
+THIS TRIAL
+Still open
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+Recorded by Harmonic
+Sep 24, 2026 · 04:36
+
+Original user decision is unavailable.
+
+From the Trial record
+
+ENDING
+
+Not recorded — this change is still open.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to Jun 1, 2024 · 00:00 Available history → Setting change
+Trial
+Jun 1, 2024 · 00:00 to Jul 1, 2024 · 23:55 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jul 1, 2024 · 23:55.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Carb ratio	10 g/U	6 g/U
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is available.
+
+0 of 8 effective qualifying closed meal runsrequired
+
+31 days elapsed
+
+Not met — unmatchable_captured_membership.
+
+This period's evidence is unavailable: unmatchable_captured_membership.
+
+No contributing date has qualified in this period yet.
+
+0 of 8 effective qualifying closed meal runsrequired
+
+30 days elapsed
+
+Not met — unmatchable_captured_membership.
+
+This period's evidence is unavailable: unmatchable_captured_membership.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+RETAINED
+Original
+Retained context
+Current policy
+Computed
+Sep 24, 2026 · 04:49
+Context
+Stored context a1cce2520873
+Result
+unclear
+
+A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

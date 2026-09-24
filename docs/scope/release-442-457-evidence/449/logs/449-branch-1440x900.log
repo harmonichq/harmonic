@@ -1,0 +1,46 @@
+(node:63559) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S46 case=c3-trial milliseconds=653.121
+# S46 synthetic case=c3-trial (fresh copy)
+PASS S46
+# story-time S46 milliseconds=10773.109
+# case-copy S91 case=c3-trial milliseconds=1.906
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=683.944
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=1203.699
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=18120.956
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=66848.646
+# case-copy S92 case=c3-trial milliseconds=1.419
+# S92 synthetic case=c3-trial (fresh copy)
+PASS S92
+# story-time S92 milliseconds=10549.198
+# case-copy S93 case=c3-focus milliseconds=306.422
+# S93 synthetic case=c3-focus (fresh copy)
+PASS S93
+# story-time S93 milliseconds=2340.291
+# case-copy S173 case=c3-focus milliseconds=1.087
+# S173 synthetic case=c3-focus (fresh copy)
+PASS S173
+# story-time S173 milliseconds=2043.595
+# case-copy S174 case=c3-preempted milliseconds=605.788
+# S174 synthetic case=c3-preempted (fresh copy)
+PASS S174
+# story-time S174 milliseconds=7705.324
+# case-copy S175 case=c4-history milliseconds=250.187
+# S175 synthetic case=c4-history (fresh copy)
+PASS S175
+# story-time S175 milliseconds=1431.598
+# case-copy S176 case=c3-preempted milliseconds=1.065
+# S176 synthetic case=c3-preempted (fresh copy)
+PASS S176
+# story-time S176 milliseconds=7640.802
+
+# executed 8 · failed 0 · deferred 0 · selected 8 · chromium launches 1

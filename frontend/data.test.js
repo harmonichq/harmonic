@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ApiTransportError, makeDeps } from './data.js';
+import { ApiTransportError, failureMessage, makeDeps } from './data.js';
 
 // ---------------------------------------------------------------------------
 // Fake-fetch helpers
@@ -348,6 +348,27 @@ test('structured non-2xx detail preserves status and code on a typed error', asy
       return true;
     },
   );
+});
+
+test('a failure with no served words prints the shared words, never empty or "[object Object]"', async () => {
+  // HTTP/2 sends no status text, a proxy error page is not JSON, and a
+  // validation error serves a list. The message carries no invented words, and
+  // a failure line that follows a colon prints the shared fallback.
+  const answers = [
+    { ok: false, status: 502, statusText: '', json: async () => { throw new Error('not json'); } },
+    { ok: false, status: 422, statusText: '', json: async () => ({ detail: [{ loc: ['body'], msg: 'bad' }] }) },
+  ];
+  for (const answer of answers) {
+    await assert.rejects(
+      () => makeDeps({ fetch: async () => answer }).fetchStatus(),
+      (error) => {
+        assert.ok(error instanceof ApiTransportError);
+        assert.equal(error.message, '');
+        assert.equal(failureMessage(error), 'no response from the store');
+        return true;
+      },
+    );
+  }
 });
 
 test('non-2xx without detail falls back to statusText', async () => {

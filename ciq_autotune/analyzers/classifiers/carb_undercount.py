@@ -143,9 +143,10 @@ def classify_carb_undercount(
        and a post-meal peak → **can't judge** (``NOT_IN_DATA``).
     2. Peak under ``runaway_peak`` → the meal did not run away → **not an
        undercount** (``OBSERVED`` — the in-range curve is a hard fact).
-    3. Ran away, but the **context gate** finds an observable upstream cause (a
-       recent low and/or a defensive suspend) → the rise is a recovery, not a meal
-       the bolus under-covered → **not an undercount** (``INFERRED``).
+    3. Ran away, but the **context gate**, judged under ``scenario_config``, finds an
+       observable upstream cause (a recent low and/or a defensive suspend) → the rise
+       is a recovery, not a meal the bolus under-covered → **not an undercount**
+       (``INFERRED``).
     4. Ran away from flat with no upstream cause: infer the carbs the excursion
        implies. Implied ≥ ``undercount_ratio`` × logged **or** implied − logged ≥
        ``undercount_gap_g`` → **carb undercount** (``INFERRED`` — the true carbs are
@@ -163,7 +164,7 @@ def classify_carb_undercount(
             or logged is None or logged <= 0 or dose is None or dose <= 0):
         return CarbUndercountVerdict(
             matched=False,
-            detail="missing carbs, dose, or ISF/I:C settings — can't judge carb count",
+            detail="missing carbs, dose, correction factor or carb ratio, so the carb count can't be judged",
             evidence_tier=EvidenceTier.NOT_IN_DATA,
             silence_reason=SilenceReason.INSUFFICIENT_DATA,
             logged_carbs=logged,
@@ -189,7 +190,7 @@ def classify_carb_undercount(
         return CarbUndercountVerdict(
             matched=False,
             detail=(
-                f"the meal peaked at {peak:.0f} mg/dL — it didn't run away, so the "
+                f"the meal peaked at {peak:.0f} mg/dL and didn't run away, so the "
                 "logged carbs look about right"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -199,12 +200,12 @@ def classify_carb_undercount(
             baseline_bg=baseline,
         )
 
-    gate = upstream_cause(meal.t, cgm_readings, basal_events)
+    gate = upstream_cause(meal.t, cgm_readings, basal_events, scenario_config=scenario_config)
     if gate.explained:
         return CarbUndercountVerdict(
             matched=False,
             detail=(
-                f"the meal ran to {peak:.0f} mg/dL, but {gate.detail} — the rise is a "
+                f"the meal ran to {peak:.0f} mg/dL, but {gate.detail}; the rise is a "
                 "recovery, not an under-covered meal"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -230,7 +231,7 @@ def classify_carb_undercount(
             matched=False,
             detail=(
                 f"peaked at {peak:.0f} mg/dL but the excursion implies only "
-                f"~{implied_carbs:.0f} g vs {logged:.0f} g logged — within counting "
+                f"~{implied_carbs:.0f} g vs {logged:.0f} g logged, within counting "
                 "range"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -245,7 +246,7 @@ def classify_carb_undercount(
     return CarbUndercountVerdict(
         matched=True,
         detail=(
-            f"ran away to {peak:.0f} mg/dL despite the bolus — the excursion implies "
+            f"ran away to {peak:.0f} mg/dL despite the bolus; the excursion implies "
             f"~{implied_carbs:.0f} g vs {logged:.0f} g logged "
             f"({ratio:.1f}x), a likely carb undercount"
         ),

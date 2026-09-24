@@ -25,19 +25,21 @@ test('the utility titles are the locked pane names', () => {
   });
 });
 
-test('every utility Open Day declares its origin AND the label its return is named for', () => {
+test('every utility Open Day declares its origin, the label its return is named for, and its item by identity', () => {
   // S76 reads data-utility-from and data-utility-label off this control. The
   // first port shipped only the origin, so the story could not read the name it
-  // then had to match.
+  // then had to match. ADR 445: the return target is the item's identity, the
+  // routing subject, and no selector rides the control.
   const source = readFileSync(new URL('./utilities.js', import.meta.url), 'utf8');
   const controls = [...source.matchAll(/data-action="day"[^`]*?>Open /g)].map((match) => match[0]);
   assert.ok(controls.length >= 2, `expected the carbs and questions Open Day controls, found ${controls.length}`);
   for (const control of controls) {
     assert.match(control, /data-date=/, 'a contextual Open Day carries no date');
-    assert.match(control, /data-subject=/, 'a contextual Open Day carries no canonical subject');
+    assert.match(control, /data-subject="\$\{e\(IDENTITY\.(carbs|questions)\(/, 'a utility Open Day names its item by no identity');
+    assert.match(control, /data-title=/, 'a utility Open Day carries no printed title');
     assert.match(control, /data-utility-from=/, 'a utility Open Day declares no origin');
     assert.match(control, /data-utility-label=/, 'a utility Open Day declares no origin label');
-    assert.match(control, /data-return-focus=/, 'a utility Open Day names no precise return target');
+    assert.doesNotMatch(control, /data-return-focus=/, 'a utility Open Day still names a selector');
   }
 });
 
@@ -55,6 +57,15 @@ test('#423 · the Glossary keys each group section by its title, and calls no de
   const source = readFileSync(new URL('./utilities.js', import.meta.url), 'utf8');
   assert.match(source, /<section class="gf-section" data-glossary-group="\$\{e\(group\.title\)\}">/);
   assert.doesNotMatch(source, /v1 definitions/);
+});
+
+// ADR 451: the Glossary's definitions are sentences a reader reads, so none joins
+// its clauses with an em dash (DESIGN.md, Voice and user-copy register, rule 1).
+// A term's unit label is a short label, not a sentence, and is not read here.
+test('ADR 451 · no Glossary definition joins its clauses with an em dash', () => {
+  const defs = glossaryGroups.flatMap((group) => group.terms.map((term) => [term.term, term.def]));
+  assert.ok(defs.length > 0);
+  for (const [term, def] of defs) assert.ok(!def.includes('—'), `${term}: ${def}`);
 });
 
 // #423: a narrow desk (the 700px query matches) whose reading pane is a sheet.

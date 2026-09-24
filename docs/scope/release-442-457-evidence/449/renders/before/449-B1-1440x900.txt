@@ -1,0 +1,187 @@
+SYNTHETIC — before · tree b03431d2 · store c3-preempted · 449-B1 · 1440x900
+URL: http://127.0.0.1:8791/?to=changes&subject=history&occurrence=record%3Afocus%3A1
+Element: viewport
+Focused: body
+Note: the manual-ended Focus record record:focus:1, at its saved ending assessment
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FOCUS · ENDED BY YOU
+Highs after meals
+Pinned May 3, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+no clock envelope is retained for this record
+OBSERVED BEHAVIOR	BEFORE	AFTER	READ
+Late bolus
+the intended behavior · meals
+	no meals
+nothing to compare
+	no meals
+nothing to compare
+	Unclear
+proportion
+
+Attributed harm
+measured separately from the behavior
+	unavailable
+zero_opportunities
+	unavailable
+zero_opportunities
+	—
+no rate
+GLUCOSE OUTCOMES	BEFORE	AFTER	READ
+Post-meal peak (up to 3 hours)
+mapped outcome
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Subsequent nadir (up to 6 hours)
+mapped outcome
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Time in range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time below range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time above range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Starting glucose
+context
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+THIS FOCUS
+Ended by you
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Not recorded
+Recorded by Harmonic
+Not recorded
+
+This record's original context is unavailable: not recorded.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Ended by you
+Conclusion
+Synthetic manual ending.
+Ended
+May 4, 2024 · 00:00
+Recorded
+May 4, 2024 · 00:00
+
+You ended this Focus. Its periods and its observations are fixed at the ending.
+
+Ending assessment
+Unavailable · unavailable_adherence
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to May 3, 2024 · 00:00 Available history → Pinned
+After
+May 3, 2024 · 00:00 to May 4, 2024 · 00:00 Pinned → Effective ending
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to May 4, 2024 · 00:00.
+
+WHAT CHANGED
+
+The intended behavior: Highs after meals. No pump setting changed.
+
+EVIDENCE ACCRUED
+OPPORTUNITIES
+
+This comparison is unavailable: the watched behavior could not be measured in both periods.
+
+0 of 12 meals
+
+2 days elapsed
+
+withheld · zero_opportunities
+
+Not met — zero_opportunities.
+
+No contributing date has qualified in this period yet.
+
+0 of 12 meals
+
+1 days elapsed
+
+withheld · zero_opportunities
+
+Not met — zero_opportunities.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

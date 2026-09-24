@@ -1,0 +1,2 @@
+RUN case-cache: node <scratch>/rel2/legs/out/443-casecache/case-cache.mjs
+case-cache: exit 0, 7.966 s

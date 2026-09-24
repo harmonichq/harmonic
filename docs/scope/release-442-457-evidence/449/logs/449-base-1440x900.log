@@ -1,0 +1,131 @@
+(node:81811) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S46 case=c3-trial milliseconds=329.444
+# S46 synthetic case=c3-trial (fresh copy)
+FAIL S46 — Timed out after 30000 ms: readiness; saw [
+  'false',
+  '12 of 14 qualifying clean nights per affected slotrequired\n' +
+    '\n' +
+    '14 days elapsed\n' +
+    '\n' +
+    'Not met — collecting.\n' +
+    '\n' +
+    'Evidence for this period is available.\n' +
+    '\n' +
+    'Contributing dates · 12\n' +
+    '\n' +
+    'May 3\n' +
+    'May 4\n' +
+    'May 5\n' +
+    'May 6\n' +
+    'May 7\n' +
+    'May 8\n' +
+    'May 9\n' +
+    'May 10',
+  'Not met — collecting.'
+]; a served reason prints in words, never its code
+# story-time S46 milliseconds=36727.474
+# case-copy S91 case=c3-trial milliseconds=2.165
+# S91 synthetic case=c3-trial (fresh copy)
+FAIL S91 — Timed out after 30000 ms: readiness; saw [
+  'false',
+  '12 of 14 qualifying clean nights per affected slotrequired\n' +
+    '\n' +
+    '14 days elapsed\n' +
+    '\n' +
+    'Not met — collecting.\n' +
+    '\n' +
+    'Evidence for this period is available.\n' +
+    '\n' +
+    'Contributing dates · 12\n' +
+    '\n' +
+    'May 3\n' +
+    'May 4\n' +
+    'May 5\n' +
+    'May 6\n' +
+    'May 7\n' +
+    'May 8\n' +
+    'May 9\n' +
+    'May 10',
+  'Not met — collecting.'
+]; a served reason prints in words, never its code
+# story-time S91 milliseconds=36482.536
+# case-copy S92 case=c3-trial milliseconds=2.447
+# S92 synthetic case=c3-trial (fresh copy)
+FAIL S92 — Timed out after 30000 ms: readiness; saw [
+  'false',
+  '12 of 14 qualifying clean nights per affected slotrequired\n' +
+    '\n' +
+    '14 days elapsed\n' +
+    '\n' +
+    'Not met — collecting.\n' +
+    '\n' +
+    'Evidence for this period is available.\n' +
+    '\n' +
+    'Contributing dates · 12\n' +
+    '\n' +
+    'May 3\n' +
+    'May 4\n' +
+    'May 5\n' +
+    'May 6\n' +
+    'May 7\n' +
+    'May 8\n' +
+    'May 9\n' +
+    'May 10',
+  'Not met — collecting.'
+]; a served reason prints in words, never its code
+# story-time S92 milliseconds=36348.831
+# case-copy S93 case=c3-focus milliseconds=232.945
+# S93 synthetic case=c3-focus (fresh copy)
+FAIL S93 — Timed out after 30000 ms: readiness; saw [
+  'true',
+  '12 of 12 meals\n' +
+    '\n' +
+    '4 days elapsed\n' +
+    '\n' +
+    'ready\n' +
+    '\n' +
+    'Criterion met.\n' +
+    '\n' +
+    'Contributing dates · 4\n' +
+    '\n' +
+    'May 1\n' +
+    'May 2\n' +
+    'May 3\n' +
+    'May 4',
+  'ready',
+  'ready'
+]; a Pattern arm names its opportunity verdict in words, never its served value
+# story-time S93 milliseconds=31537.734
+# case-copy S173 case=c3-focus milliseconds=1.662
+# S173 synthetic case=c3-focus (fresh copy)
+FAIL S173 — Timed out after 30000 ms: S173 the active Focus names its behavior and verdicts in words; saw [ 'Late bolus\nthe intended behavior · meals' ]; S173 the Observed behavior row must name the served behavior: Late bolus
+the intended behavior · meals
+# story-time S173 milliseconds=31266.562
+# case-copy S174 case=c3-preempted milliseconds=453.672
+# S174 synthetic case=c3-preempted (fresh copy)
+FAIL S174 — Timed out after 30000 ms: S174 a saved Focus ending names its reason in words; saw [ 'Unavailable · unavailable_adherence' ]; S174 the saved ending must name its reason in words, never its served code: Unavailable · unavailable_adherence
+# story-time S174 milliseconds=35989.158
+# case-copy S175 case=c4-history milliseconds=233.055
+# S175 synthetic case=c4-history (fresh copy)
+FAIL S175 — Timed out after 30000 ms: S175 an unmeasured behavior names its reason in words; saw [ 'unavailable\ninsufficient_measurement · 0 of 4 measured' ]; S175 the Observed behavior cell must name its reason in words, never its served code: unavailable
+insufficient_measurement · 0 of 4 measured
+# story-time S175 milliseconds=31295.713
+# case-copy S176 case=c3-preempted milliseconds=1.929
+# S176 synthetic case=c3-preempted (fresh copy)
+FAIL S176 — Timed out after 30000 ms: S176 Focus record 3 names its behavior; saw [
+  'Highs after meals',
+  'WHAT CHANGED\n' +
+    '\n' +
+    'The intended behavior: Highs after meals. No pump setting changed.'
+]; S176 What changed must name the served behavior: WHAT CHANGED
+
+The intended behavior: Highs after meals. No pump setting changed.
+# story-time S176 milliseconds=35430.712
+
+# executed 0 · failed 8 · deferred 0 · selected 8 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

@@ -1,0 +1,68 @@
+(node:98333) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<release worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <release worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S25 case=showcase milliseconds=233.808
+# S25 synthetic case=showcase (fresh copy)
+PASS S25
+# story-time S25 milliseconds=7972.623
+# case-copy S46 case=c3-trial milliseconds=327.011
+# S46 synthetic case=c3-trial (fresh copy)
+PASS S46
+# story-time S46 milliseconds=6261.199
+# case-copy S73 case=showcase milliseconds=2.661
+# S73 synthetic case=showcase (fresh copy)
+PASS S73
+# story-time S73 milliseconds=6750.256
+# case-copy S139 case=c3-trial milliseconds=1.301
+# S139 synthetic case=c3-trial (fresh copy)
+PASS S139
+# story-time S139 milliseconds=7490.513
+# case-copy S140 case=c3-focus milliseconds=276.014
+# S140 synthetic case=c3-focus (fresh copy)
+PASS S140
+# story-time S140 milliseconds=1766.811
+# case-copy S169 case=c3-trial milliseconds=2.180
+# S169 synthetic case=c3-trial (fresh copy)
+PASS S169
+# story-time S169 milliseconds=6340.912
+# case-copy S170 case=showcase milliseconds=4.004
+# S170 synthetic case=showcase (fresh copy)
+PASS S170
+# story-time S170 milliseconds=6834.435
+# case-copy S157 case=c4-ic milliseconds=545.658
+# S157 synthetic case=c4-ic (fresh copy)
+PASS S157
+# story-time S157 milliseconds=4523.156
+# case-copy S180 case=c4-isf milliseconds=682.449
+# S180 synthetic case=c4-isf (fresh copy)
+PASS S180
+# story-time S180 milliseconds=5459.363
+# case-copy S149 case=showcase milliseconds=2.439
+# S149 synthetic case=showcase (fresh copy)
+PASS S149
+# story-time S149 milliseconds=7470.068
+# case-copy S150 case=pattern-near-tie milliseconds=264.721
+# S150 synthetic case=pattern-near-tie (fresh copy)
+PASS S150
+# story-time S150 milliseconds=5235.009
+# case-copy S182 case=pattern-near-tie milliseconds=1.801
+# S182 synthetic case=pattern-near-tie (fresh copy)
+PASS S182
+# story-time S182 milliseconds=5314.497
+# case-copy S177 case=isf-strengthen milliseconds=232.790
+# S177 synthetic case=isf-strengthen (fresh copy)
+PASS S177
+# story-time S177 milliseconds=5453.556
+# case-copy S178 case=isf-strengthen milliseconds=1.838
+# S178 synthetic case=isf-strengthen (fresh copy)
+PASS S178
+# story-time S178 milliseconds=4220.691
+# case-copy S179 case=isf-strengthen milliseconds=1.169
+# S179 synthetic case=isf-strengthen (fresh copy)
+PASS S179
+# story-time S179 milliseconds=5329.091
+
+# executed 15 · failed 0 · deferred 0 · selected 15 · chromium launches 1

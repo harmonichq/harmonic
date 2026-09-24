@@ -1,0 +1,43 @@
+(node:58814) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ S100 · a background repaint keeps the fullscreen chart's keyboard cursor, readout and focus (1116.315292ms)
+✔ S100 · leaving and re-entering fullscreen carries no cursor or focus into the new chart (949.057416ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2415.981042
+
+✖ failing tests:
+
+test at frontend/desk.browser.test.mjs:504:1
+✖ S100 · a background repaint keeps the fullscreen chart's keyboard cursor, readout and focus (1116.315292ms)
+  AssertionError [ERR_ASSERTION]: the background repaint dropped the keyboard cursor and emptied its on-screen readout
+  + actual - expected
+  
+    {
+  +   time: null,
+  +   values: []
+  -   time: '+30 min',
+  -   values: [
+  -     '136 · n6',
+  -     'unavailable',
+  -     '136 · n3'
+  -   ]
+    }
+  
+      at TestContext.<anonymous> (file://<worktrees>/base-b03431d2/frontend/desk.browser.test.mjs:528:12)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { time: null, values: [] },
+    expected: { time: '+30 min', values: [ '136 · n6', 'unavailable', '136 · n3' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

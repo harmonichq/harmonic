@@ -1,0 +1,44 @@
+SYNTHETIC — after · tree dd5a93bb · store c3-focus · 446-E1 · 1440x900
+URL: http://127.0.0.1:8791/diagnose?subject=pattern%3Ahighs_after_meals&lever=late_bolus&from=changes
+Element: viewport
+Focused: <h2 id="crumb-trail" class="trail"> "Findings›Highs after meals"
+Note: render 5 (S168) — Diagnose opened from the Focus's Inspect evidence: the crumb's return control
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+No findings in the selected window
+pooled from 8 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+No evidence charts in this window.
+Findings
+›
+Highs after meals
+Opening case file…
+Return to Focus
+Case file unavailable.
+Finding has no inspectable member.
+FOCUS · WATCHING
+Late bolus
+Pinned 05-05 · adherence and outcome are read in Changes
+Open Changes ›
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

@@ -1,0 +1,64 @@
+SYNTHETIC — after · tree dd5a93bb · store basal-verdict-gallery · 455-D1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Focused: <button> "Overnight"
+Note: Overnight pressed: the 60/180 tick labels and the Spotlight rule stub
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+raise
+1
+lower
+1
+hold
+1
+insufficient
+1
+no data
+44
+BASAL 00:00
+One cautious step up is supported at this time.
+Delivered 0.70 U/h across 30 steady nights against 0.60 programmed.
+Full
+Keep
+Findings
+2 in this window
+Filter
+1
+Next in line
+Basal 00:00 · raise
+⚙SETTING
+›
+one cautious step up is supported at this time
+now 0.6 U/hr → 0.7 U/hr
+2
+Basal 00:30 · lower
+⚙SETTING
+›
+one cautious step down is supported at this time
+now 0.6 U/hr → 0.5 U/hr
+Watching · 2 reads
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

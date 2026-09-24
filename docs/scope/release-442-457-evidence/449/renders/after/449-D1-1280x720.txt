@@ -1,0 +1,191 @@
+SYNTHETIC — after · tree dd5a93bb · store c4-history · 449-D1 · 1280x720
+URL: http://127.0.0.1:8791/?to=changes&subject=history&occurrence=record%3Afocus%3A1
+Element: viewport
+Focused: body
+Note: c4-history's Focus record record:focus:1, at its behavior cells and readiness lines
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FOCUS · PREEMPTED BY A TRIAL
+Highs after meals
+Pinned May 9, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+no clock envelope is retained for this record
+OBSERVED BEHAVIOR	BEFORE	AFTER	READ
+Late bolus
+the intended behavior · meals
+	unavailable
+too little glucose data to judge every opportunity · 0 of 4 measured
+	no meals
+nothing to compare
+	Unclear
+proportion
+
+Attributed harm
+measured separately from the behavior
+	0
+attributed harm
+	unavailable
+no opportunities in this period
+	—
+no rate
+GLUCOSE OUTCOMES	BEFORE	AFTER	READ
+Post-meal peak (up to 3 hours)
+mapped outcome
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Subsequent nadir (up to 6 hours)
+mapped outcome
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Time in range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time below range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time above range
+context
+	no readings
+no observed CGM readings in eligible windows in period
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Starting glucose
+context
+	no meals
+no meals in period
+	no meals
+no meals in period
+	Context only
+no difference estimable
+THIS FOCUS
+Preempted by a Trial
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Not recorded
+Recorded by Harmonic
+Not recorded
+
+This record's original context is unavailable: not recorded.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Preempted by a Trial
+Conclusion
+Not recorded
+Ended
+May 12, 2024 · 09:00
+Recorded
+Sep 24, 2026 · 08:23
+
+A setting change took the active-change seat. This Focus was dropped and does not resume; a later attempt is a new Focus with its own identity.
+
+Ending assessment
+Unavailable · the watched behavior could not be measured in both periods
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+EVIDENCE PERIODS
+Before
+Mar 1, 2024 · 00:00 to May 9, 2024 · 00:00 Available history → Pinned
+After
+May 9, 2024 · 00:00 to May 12, 2024 · 09:00 Pinned → Effective ending
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jun 1, 2024 · 23:59.
+
+WHAT CHANGED
+
+The intended behavior: Late bolus. No pump setting changed.
+
+EVIDENCE ACCRUED
+OPPORTUNITIES
+
+This comparison is unavailable: the watched behavior could not be measured in both periods.
+
+4 of 12 meals
+
+69 days elapsed
+
+Withheld · still collecting
+
+Not met — still collecting.
+
+Contributing dates · 4
+
+May 2
+May 3
+May 4
+May 5
+0 of 12 meals
+
+3 days elapsed
+
+Withheld · no opportunities in this period
+
+Not met — no opportunities in this period.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

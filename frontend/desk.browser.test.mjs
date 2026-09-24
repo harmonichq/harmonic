@@ -1,4 +1,4 @@
-import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from './diagnose-replay.mjs';
+import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen, railRowLocator } from './diagnose-replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
+import { BROWSER_INPUTS, populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { expandSequenceFixture } from './eating-sequence-fixture.js';
 
@@ -155,8 +155,7 @@ const icEvidence = generated('../mockups/diagnose-workstation.synthetic/ic-block
 // The generated roster has no Focus and withholds pin admission. Keep those
 // served facts; the quiet guidance stub offers no pinnable Pattern either.
 const followUp = generated('../mockups/verify-660-story.synthetic/payload.json').roster;
-const fixtureInputs = populateFindingsProjectionInput({ analysis: evidence.analyze,
-  scenarios: evidence.scenarios, exposures: evidence.exposures });
+const fixtureInputs = populateFindingsProjectionInput({ exposures: evidence.exposures });
 const preparations = new Map();
 function prepare(url) {
   const start = url.searchParams.get('start_min');
@@ -185,8 +184,8 @@ function caseFile(url) {
 }
 
 const JSON_STUBS = [
-  [/^\/api\/analyze$/, () => evidence.analyze],
-  [/^\/api\/scenarios$/, () => evidence.scenarios],
+  [/^\/api\/analyze$/, () => BROWSER_INPUTS.analysis],
+  [/^\/api\/scenarios$/, () => BROWSER_INPUTS.scenarios],
   [/^\/api\/explore\/time-of-day$/, () => evidence.evidence],
   [/^\/api\/explore\/exposures$/, () => evidence.exposures],
   [/^\/api\/outcomes\/trend$/, () => ({ points: [] })],
@@ -314,42 +313,22 @@ const currentDestination = (page) => page.evaluate(() =>
   document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null);
 
 /** The first VISIBLE match: the footer's launchers are the desktop affordance,
-    and the in-surface strip is narrow-only. */
-async function press(page, selector) {
-  const all = page.locator(selector);
-  const total = await all.count();
-  assert.ok(total > 0, `no control matched ${selector}`);
-  for (let i = 0; i < total; i += 1) {
-    const candidate = all.nth(i);
-    if (await candidate.isVisible()) {
-      await candidate.click();
-      await page.waitForTimeout(180);
-      return;
-    }
+    and the in-surface strip is narrow-only. It waits up to `timeout` ms for
+    that match to render (ADR 457), so a control a screen paints once its read
+    lands is pressed, not missed. One that never renders, or stays hidden,
+    fails after the bound, naming the selector. */
+async function press(page, selector, timeout = 30000) {
+  const control = page.locator(selector).filter({ visible: true }).first();
+  try {
+    await control.waitFor({ state: 'visible', timeout });
+  } catch (error) {
+    if (error.name !== 'TimeoutError') throw error;
+    const total = await page.locator(selector).count();
+    assert.ok(total > 0, `no control matched ${selector} after ${timeout} ms`);
+    assert.fail(`${selector} matched ${total} element(s), all hidden after ${timeout} ms`);
   }
-  assert.fail(`${selector} matched ${total} element(s), all hidden`);
-}
-
-/* #413 — a claimed cause is no longer a sibling `.qrow`; it folds under its
-   parent Pattern as a `.qmember`, closed on arrival unless the Pattern is
-   rank one. Every one of these generated sequence fixtures claims
-   `finding:high_carb_sequence` under `pattern:highs_after_meals`, so drilling
-   it now means opening its parent's fold first. This helper stays correct
-   for an UNCLAIMED ranked row too (a plain `.qrow` click), rather than
-   assuming which shape the served row takes. */
-async function openRailRow(page, id) {
-  const row = page.locator(`#level .qrow[data-id="${id}"]`);
-  if (await row.count()) { await row.click(); return; }
-  // Force every closed fold open — the member's line does not exist in the
-  // DOM until its parent's toggle expands it.
-  for (;;) {
-    const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
-    if (!(await closed.count())) break;
-    await closed.click();
-  }
-  const member = page.locator(`#level .qmember[data-id="${id}"]`);
-  await member.waitFor({ timeout: 30000 });
-  await member.click();
+  await control.click();
+  await page.waitForTimeout(180);
 }
 
 /* ------------------------------------------------------------------ tests */
@@ -370,7 +349,7 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
     }));
     assert.match(chrome.identity, /Harmonic advisory/);
     assert.ok(chrome.carbs.includes('＋'), 'Log carbs lost its fullwidth plus');
-    assert.equal(chrome.advisory, 'Advisory only — review with your clinician before changing pump settings.');
+    assert.equal(chrome.advisory, 'Advisory only. Review with your clinician before changing pump settings.');
     for (const label of ['Carb questions', 'Guide', 'Settings', 'Glossary']) {
       assert.ok(chrome.utilities.some((text) => text.includes(label)), `the footer lost ${label}`);
     }
@@ -400,7 +379,7 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
   const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720', sequenceState: 'high_carb_sequence_in_sequence' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await openRailRow(page, 'finding:high_carb_sequence');
+    await (await railRowLocator(page, 'finding:high_carb_sequence')).click();
     const chart = page.locator('#tile-focal #ec-chart');
     await page.waitForFunction(() => {
       const host = document.querySelector('#tile-focal #ec-chart');
@@ -463,7 +442,7 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
   const id = 'finding:high_carb_sequence';
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await openRailRow(page, id);
+    await (await railRowLocator(page, id)).click();
     await page.locator('#tile-focal #ec-chart').waitFor();
     const stored = input.windows.global.cases[id];
     await assertSequenceResponse(page, stored);
@@ -485,6 +464,104 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
     await assertSequenceResponse(page, scoped);
     assert.equal(await countOf(page, '#level .case-occurrence'),
       Math.min(5, scoped.event.occurrences.filter((row) => row.verdict === 'fired').length));
+  } finally { await close(); }
+});
+
+/* S100 (nightly 36011270820). Every paint rebuilds the fullscreen chart, and a
+   read the reader did not ask for can land after they have keyed its cursor
+   along: here, the drill's own case file, which the catalog pick starts and
+   nothing on screen waits for. The fullscreen mount hands the reader's place to
+   the one that replaces it; these pin that handover through the desk, and
+   that it happens only across a repaint of the same fullscreen chart. */
+const S100_FINDING = 'finding:over_treated_low';
+const fullscreenReadout = (page) => page.evaluate(() => {
+  const readout = document.querySelector('#canvas-head[data-full] #canvas-fullhead #ec-readout');
+  return readout && { time: readout.querySelector('.rd-time')?.textContent ?? null,
+    values: [...readout.querySelectorAll('.rd-pair .v')].map((value) => value.textContent) };
+});
+const servedAt = (minute) => ({ time: `+${minute} min`,
+  values: caseFiles.cases[S100_FINDING].event.projection.cohorts.map((cohort) => {
+    const point = cohort.points.find((row) => row.minute === minute);
+    return !point || point.support === 'withheld' ? 'unavailable' : `${Math.round(point.median)} · n${point.n}`;
+  }) });
+
+/** The reader's own route to the fullscreen comparison: All charts, the
+    catalog pick, then Full. `beforePick` runs just before the pick. */
+async function openS100Fullscreen(page, beforePick = () => {}) {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await railRowLocator(page, S100_FINDING);
+  await openAllCharts(page);
+  const tile = page.locator(`#tile-row .evidence-tile[data-chart-id="${S100_FINDING}"]`);
+  await tile.locator('canvas').first().waitFor({ state: 'visible' });
+  beforePick();
+  await tile.click();
+  await page.locator('#tile-focal .tile-fullscreen').click();
+  const chart = page.locator('#tile-focal #ec-chart');
+  await chart.waitFor({ state: 'visible' });
+  return chart;
+}
+
+test('S100 · a background repaint keeps the fullscreen chart\'s keyboard cursor, readout and focus', async () => {
+  const hold = { armed: false, held: 0 };
+  let release;
+  const released = new Promise((resolve) => { release = resolve; });
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720',
+    beforeNavigate: (page) => page.route((url) => url.pathname === '/api/diagnose/finding-case-file',
+      async (route) => {
+        if (!hold.armed) return route.fallback();
+        hold.held += 1;
+        await released;
+        return route.fallback();
+      }) });
+  try {
+    const chart = await openS100Fullscreen(page, () => { hold.armed = true; });
+    await chart.focus();
+    for (let step = 0; step < 6; step += 1) await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30), 'premise: the keyboard cursor reads +30 min');
+    assert.ok(hold.held > 0, 'premise: the drill\'s own case file is still in flight');
+    const keyed = await chart.elementHandle();
+    release();
+    await page.waitForFunction((old) => {
+      const now = document.querySelector('#tile-focal #ec-chart');
+      return Boolean(now) && now !== old;
+    }, keyed, { timeout: 30000 });
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30),
+      'the background repaint dropped the keyboard cursor and emptied its on-screen readout');
+    assert.match(await chart.getAttribute('aria-label'), /\. \+30 min\. /,
+      'the background repaint dropped the accessible cursor label');
+    assert.equal(await page.evaluate(() =>
+      document.activeElement === document.querySelector('#tile-focal #ec-chart')), true,
+    'the background repaint took keyboard focus off the chart');
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(35), 'the next key continues from the held cursor');
+  } finally {
+    release();
+    await close();
+  }
+});
+
+test('S100 · leaving and re-entering fullscreen carries no cursor or focus into the new chart', async () => {
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720' });
+  try {
+    const chart = await openS100Fullscreen(page);
+    // Let the drill settle, so the cursor below is read on the chart it keyed.
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+    await chart.focus();
+    for (let step = 0; step < 6; step += 1) await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30), 'premise: the keyboard cursor reads +30 min');
+    await page.keyboard.press('Escape');
+    await page.locator('#tile-field:not([data-fullscreen-tile])').waitFor();
+    assert.equal(await countOf(page, '#canvas-fullhead #ec-readout'), 0, 'leaving fullscreen left its readout behind');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    await chart.waitFor({ state: 'visible' });
+    assert.deepEqual(await fullscreenReadout(page), { time: null, values: [] },
+      're-entering fullscreen brought back the previous visit\'s cursor');
+    assert.doesNotMatch(await chart.getAttribute('aria-label'), /\+30 min/,
+      're-entering fullscreen brought back the previous visit\'s cursor label');
+    assert.equal(await page.evaluate(() => document.activeElement
+      === document.querySelector('#tile-focal .evidence-tile')), true,
+    'entering fullscreen lands on the chart\'s container, never on the chart inside it');
   } finally { await close(); }
 });
 
@@ -757,6 +834,7 @@ for (const [viewport, rows] of [['1280x720', [38, 24]], ['1440x900', [42, 26]]])
 test('Day owns its chronology, its week ribbon, its month and the Episode Log', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     assert.equal(await countOf(page, '.gf-stage-day'), 1);
     assert.equal(await countOf(page, '.gf-reading'), 1, 'Day is a paired state');
     assert.equal(Math.round((await box(page, '.gf-desk > .gf-reading')).w), 430,
@@ -891,6 +969,7 @@ test('a canonical Day address reloads through the built shell and returns throug
   const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
   const { page, close } = await openDesk({ address });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     assert.equal(await currentDestination(page), 'day');
     assert.equal(await countOf(page, '[data-day="return"]'), 1);
     assert.equal(await page.evaluate(() => location.pathname), '/day');
@@ -980,9 +1059,38 @@ test('a key pressed on Day leaves the parked Diagnose as it was, and the Day ret
   } finally { await close(); }
 });
 
+// ADR 457: press waits, within its bound, for its first visible match. Day's
+// read is held, so its Return control cannot exist when the press starts; the
+// press lands once the read is released. An absent control and one that stays
+// hidden still fail after the bound, naming the selector.
+test('press waits for a Day return control that renders late, and names an absent or hidden control', async () => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const address = `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
+  const { page, close } = await openDesk({ address, beforeNavigate: async page => {
+    await page.route('**/api/model-view*', async route => { await gate; await route.fallback(); });
+  } });
+  try {
+    assert.equal(await countOf(page, '[data-day="return"]'), 0, 'premise: Day paints no Return control while its read is held');
+    await Promise.all([press(page, '[data-day="return"]'), page.waitForTimeout(250).then(release)]);
+    assert.equal(await currentDestination(page), 'diagnose');
+    await assert.rejects(press(page, '[data-no-such-control]', 500),
+      { message: 'no control matched [data-no-such-control] after 500 ms' });
+    const hidden = '.gf-utility-strip [data-utility="guide"]';
+    await assert.rejects(press(page, hidden, 500), (error) => {
+      assert.ok(error.message.startsWith(hidden) && error.message.endsWith('all hidden after 500 ms'), error.message);
+      return true;
+    });
+  } finally {
+    release();
+    await close();
+  }
+});
+
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     await press(page, '.cockpit-utilities [data-utility="guide"]');
     assert.equal(await countOf(page, '.gf-utility[data-utility="guide"]'), 1);
     // The destination underneath is still standing.
@@ -1042,22 +1150,40 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     assert.match(address, /^\/day/);
     assert.match(address, /date=2024-06-26/);
     assert.match(address, /from=diagnose\.questions/);
+    // ADR 445: the entry names the prompt by its identity and carries no selector.
+    const day = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+    assert.ok(day.subject?.startsWith('question:'), `the Day address names no prompt identity: ${JSON.stringify(day)}`);
+    assert.equal(Object.hasOwn(day, 'focus'), false, 'the Day address carries a return-focus key');
 
     // Closing it reveals the Day desk's own return, named for that utility.
     await press(page, '[data-utility-close]');
     assert.equal(await countOf(page, '[data-day="return"]'), 1);
     const label = await page.locator('[data-day="return"]').innerText();
     assert.equal(label.trim(), 'Return to Carb questions');
+    let guidanceReads = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/analyze') guidanceReads += 1; });
     await press(page, '[data-day="return"]');
     assert.equal(await currentDestination(page), 'diagnose');
     assert.equal(await countOf(page, '.gf-utility[data-utility="questions"]'), 1,
       'the return did not reopen the utility it was named for');
+    // A plain return into the Diagnose it was opened over: no guidance re-read,
+    // and focus back on the prompt's own Open Day control.
+    const onOpenDay = (subject) => document.activeElement
+      === document.querySelector(`.gf-utility [data-action="day"][data-subject="${subject}"]`);
+    await page.waitForFunction(onOpenDay, day.subject, { timeout: 10000 }).catch(() => null);
+    assert.equal(await page.evaluate(onOpenDay, day.subject), true, 'focus did not land on the prompt\'s Open Day control');
+    assert.equal(guidanceReads, 0, 'the return re-read Diagnose');
+    const returned = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+    for (const key of ['title', 'from', 'focus']) {
+      assert.equal(Object.hasOwn(returned, key), false, `the Diagnose address carries ${key}: ${JSON.stringify(returned)}`);
+    }
   } finally { await close(); }
 });
 
 test('repeated entry and exit leaves no duplicate chart, pane or utility behind', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
     const counts = () => page.evaluate(() => ({
       canvases: document.querySelectorAll('canvas').length,
       utilities: document.querySelectorAll('.gf-utility').length,
@@ -1230,13 +1356,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
         // "All charts" tile is unaffected — the explorer draws one tile per
         // descriptor regardless of rail fold state, so the response evidence
         // still renders there.
-        for (;;) {
-          const closed = page.locator('#level .qfold[aria-expanded="false"]').first();
-          if (!(await closed.count())) break;
-          await closed.click();
-        }
-        const member = page.locator(`#level .qmember[data-id="${id}"]`);
-        await member.waitFor({ timeout: 30000 });
+        const member = await railRowLocator(page, id);
         assert.equal(await member.locator('.mini').count(), 0, 'a claimed cause carries no mini of its own');
         await member.scrollIntoViewIfNeeded();
         await captureEvidence(page, 'high_carb_sequence-mini');
@@ -1250,7 +1370,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
         await captureEvidence(page, 'high_carb_sequence-pattern-reference');
         await page.keyboard.press('Escape');
       }
-      await openRailRow(page, id);
+      await (await railRowLocator(page, id)).click();
       await page.locator('#level .sequence-comparison').waitFor();
       await assertSequenceResponse(page, stored);
       if (name === 'null_period') await assertCompactSequenceDetail(page, stored, 'unavailable');
@@ -1260,7 +1380,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       if (name === 'null_period') {
         partialMetrics = true;
         await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
-        await openRailRow(page, id);
+        await (await railRowLocator(page, id)).click();
         await page.locator('#level .sequence-supporting-detail summary').click();
         const period = page.locator('#level [data-period="post_4h"]');
         assert.deepEqual((await period.locator('.sequence-cohort').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim()), [

@@ -1,0 +1,246 @@
+(node:67834) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/frame.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67835) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S36 case=c3-trial milliseconds=419.084
+# S36 synthetic case=c3-trial (fresh copy)
+PASS S36
+# story-time S36 milliseconds=8508.098
+# case-copy S45 case=c3-trial milliseconds=1.120
+# S45 synthetic case=c3-trial (fresh copy)
+PASS S45
+# story-time S45 milliseconds=7216.128
+# case-copy S45b case=c3-trial milliseconds=2.363
+# S45b synthetic case=c3-trial (fresh copy)
+PASS S45b
+# story-time S45b milliseconds=7524.374
+# case-copy S46 case=c3-trial milliseconds=1.870
+# S46 synthetic case=c3-trial (fresh copy)
+PASS S46
+# story-time S46 milliseconds=6534.658
+# case-copy S47 case=c3-trial milliseconds=1.890
+# S47 synthetic case=c3-trial (fresh copy)
+PASS S47
+# story-time S47 milliseconds=6699.084
+# case-copy S48 case=c3-trial milliseconds=2.492
+# S48 synthetic case=c3-trial (fresh copy)
+PASS S48
+# story-time S48 milliseconds=6569.748
+# case-copy S49 case=c3-trial milliseconds=2.261
+# S49 synthetic case=c3-trial (fresh copy)
+# case-copy S49 case=c4-missing milliseconds=381.200
+# S49 proved synthetic variant=c4-missing
+PASS S49
+# story-time S49 milliseconds=12881.727
+# case-copy S50 case=c3-trial milliseconds=1.349
+# S50 synthetic case=c3-trial (fresh copy)
+PASS S50
+# story-time S50 milliseconds=6616.385
+# case-copy S51 case=c3-trial milliseconds=2.153
+# S51 synthetic case=c3-trial (fresh copy)
+PASS S51
+# story-time S51 milliseconds=6515.770
+# case-copy S52 case=c3-trial milliseconds=1.855
+# S52 synthetic case=c3-trial (fresh copy)
+PASS S52
+# story-time S52 milliseconds=7480.807
+# case-copy S54 case=c3-history milliseconds=517.724
+# S54 synthetic case=c3-history (fresh copy)
+PASS S54
+# story-time S54 milliseconds=5854.996
+# case-copy S54b case=c3-history milliseconds=1.474
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=7212.159
+# case-copy S55 case=c3-trial milliseconds=1.093
+# S55 synthetic case=c3-trial (fresh copy)
+PASS S55
+# story-time S55 milliseconds=6521.283
+# case-copy S56 case=c3-pin milliseconds=258.785
+# S56 synthetic case=c3-pin (fresh copy)
+PASS S56
+# story-time S56 milliseconds=5138.616
+# case-copy S56b case=c3-pin milliseconds=1.231
+# S56b synthetic case=c3-pin (fresh copy)
+PASS S56b
+# story-time S56b milliseconds=4270.683
+# case-copy S57 case=c3-focus milliseconds=234.193
+# S57 synthetic case=c3-focus (fresh copy)
+PASS S57
+# story-time S57 milliseconds=1798.807
+# case-copy S58 case=c3-preempted milliseconds=438.540
+# S58 synthetic case=c3-preempted (fresh copy)
+PASS S58
+# story-time S58 milliseconds=6138.071
+# case-copy S59 case=c3-focus milliseconds=0.743
+# S59 synthetic case=c3-focus (fresh copy)
+PASS S59
+# story-time S59 milliseconds=1266.579
+# case-copy S91 case=c3-trial milliseconds=1.667
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=402.567
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=669.297
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=9669.744
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=40526.704
+# case-copy S92 case=c3-trial milliseconds=1.551
+# S92 synthetic case=c3-trial (fresh copy)
+PASS S92
+# story-time S92 milliseconds=7586.644
+# case-copy S93 case=c3-focus milliseconds=1.464
+# S93 synthetic case=c3-focus (fresh copy)
+PASS S93
+# story-time S93 milliseconds=1272.850
+# case-copy S94 case=c3-trial milliseconds=1.895
+# S94 synthetic case=c3-trial (fresh copy)
+PASS S94
+# story-time S94 milliseconds=7570.947
+# case-copy S95 case=c3-preempted milliseconds=1.916
+# S95 synthetic case=c3-preempted (fresh copy)
+PASS S95
+# story-time S95 milliseconds=6441.426
+# case-copy S96 case=c3-history milliseconds=2.122
+# S96 synthetic case=c3-history (fresh copy)
+PASS S96
+# story-time S96 milliseconds=7294.000
+# case-copy S53 case=c3-trial milliseconds=1.988
+# S53 synthetic case=c3-trial (fresh copy)
+PASS S53
+# story-time S53 milliseconds=7538.418
+
+# executed 25 · failed 0 · deferred 0 · selected 25 · chromium launches 1
+✔ Trial and Pattern Focus journeys at 1280x720 (193186.068334ms)
+(node:71483) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S36 case=c3-trial milliseconds=326.876
+# S36 synthetic case=c3-trial (fresh copy)
+PASS S36
+# story-time S36 milliseconds=7600.525
+# case-copy S45 case=c3-trial milliseconds=1.276
+# S45 synthetic case=c3-trial (fresh copy)
+PASS S45
+# story-time S45 milliseconds=6774.771
+# case-copy S45b case=c3-trial milliseconds=2.191
+# S45b synthetic case=c3-trial (fresh copy)
+PASS S45b
+# story-time S45b milliseconds=7857.709
+# case-copy S46 case=c3-trial milliseconds=2.108
+# S46 synthetic case=c3-trial (fresh copy)
+PASS S46
+# story-time S46 milliseconds=6855.298
+# case-copy S47 case=c3-trial milliseconds=1.915
+# S47 synthetic case=c3-trial (fresh copy)
+PASS S47
+# story-time S47 milliseconds=6872.471
+# case-copy S48 case=c3-trial milliseconds=1.741
+# S48 synthetic case=c3-trial (fresh copy)
+PASS S48
+# story-time S48 milliseconds=7012.375
+# case-copy S49 case=c3-trial milliseconds=2.021
+# S49 synthetic case=c3-trial (fresh copy)
+# case-copy S49 case=c4-missing milliseconds=386.574
+# S49 proved synthetic variant=c4-missing
+PASS S49
+# story-time S49 milliseconds=14287.158
+# case-copy S50 case=c3-trial milliseconds=1.788
+# S50 synthetic case=c3-trial (fresh copy)
+PASS S50
+# story-time S50 milliseconds=7388.297
+# case-copy S51 case=c3-trial milliseconds=2.059
+# S51 synthetic case=c3-trial (fresh copy)
+PASS S51
+# story-time S51 milliseconds=8362.054
+# case-copy S52 case=c3-trial milliseconds=1.929
+# S52 synthetic case=c3-trial (fresh copy)
+PASS S52
+# story-time S52 milliseconds=9126.482
+# case-copy S54 case=c3-history milliseconds=533.571
+# S54 synthetic case=c3-history (fresh copy)
+PASS S54
+# story-time S54 milliseconds=8386.545
+# case-copy S54b case=c3-history milliseconds=2.092
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=9438.207
+# case-copy S55 case=c3-trial milliseconds=2.792
+# S55 synthetic case=c3-trial (fresh copy)
+PASS S55
+# story-time S55 milliseconds=8141.648
+# case-copy S56 case=c3-pin milliseconds=261.218
+# S56 synthetic case=c3-pin (fresh copy)
+PASS S56
+# story-time S56 milliseconds=6999.759
+# case-copy S56b case=c3-pin milliseconds=1.312
+# S56b synthetic case=c3-pin (fresh copy)
+PASS S56b
+# story-time S56b milliseconds=5243.688
+# case-copy S57 case=c3-focus milliseconds=250.615
+# S57 synthetic case=c3-focus (fresh copy)
+PASS S57
+# story-time S57 milliseconds=2362.296
+# case-copy S58 case=c3-preempted milliseconds=493.172
+# S58 synthetic case=c3-preempted (fresh copy)
+PASS S58
+# story-time S58 milliseconds=7962.314
+# case-copy S59 case=c3-focus milliseconds=1.164
+# S59 synthetic case=c3-focus (fresh copy)
+PASS S59
+# story-time S59 milliseconds=1641.915
+# case-copy S91 case=c3-trial milliseconds=2.712
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=440.976
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=717.766
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=10788.883
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=49268.211
+# case-copy S92 case=c3-trial milliseconds=3.488
+# S92 synthetic case=c3-trial (fresh copy)
+PASS S92
+# story-time S92 milliseconds=9894.465
+# case-copy S93 case=c3-focus milliseconds=2.441
+# S93 synthetic case=c3-focus (fresh copy)
+PASS S93
+# story-time S93 milliseconds=1782.799
+# case-copy S94 case=c3-trial milliseconds=2.291
+# S94 synthetic case=c3-trial (fresh copy)
+PASS S94
+# story-time S94 milliseconds=9384.218
+# case-copy S95 case=c3-preempted milliseconds=2.907
+# S95 synthetic case=c3-preempted (fresh copy)
+PASS S95
+# story-time S95 milliseconds=8485.043
+# case-copy S96 case=c3-history milliseconds=2.986
+# S96 synthetic case=c3-history (fresh copy)
+PASS S96
+# story-time S96 milliseconds=9434.725
+# case-copy S53 case=c3-trial milliseconds=3.353
+# S53 synthetic case=c3-trial (fresh copy)
+PASS S53
+# story-time S53 milliseconds=9076.334
+
+# executed 25 · failed 0 · deferred 0 · selected 25 · chromium launches 1
+✔ Trial and Pattern Focus journeys at 1440x900 (229815.113583ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 423049.26975

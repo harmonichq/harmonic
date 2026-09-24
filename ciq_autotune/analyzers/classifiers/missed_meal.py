@@ -185,8 +185,8 @@ def classify_missed_meal(
         return MissedMealVerdict(
             matched=False,
             detail=(
-                f"glucose was ~flat ({slope:.1f} mg/dL/min) — no significant rise "
-                "to attribute to a missed meal"
+                f"glucose was ~flat ({slope:.1f} mg/dL/min), so there is no significant "
+                "rise to attribute to a missed meal"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             silence_reason=SilenceReason.NO_TRIGGER,
@@ -201,7 +201,7 @@ def classify_missed_meal(
         return MissedMealVerdict(
             matched=False,
             detail=(
-                f"glucose was rising {slope:.1f} mg/dL/min, but {gate.detail} — "
+                f"glucose was rising {slope:.1f} mg/dL/min, but {gate.detail}; "
                 "the rise is a post-low/post-suspend recovery, not a missed meal"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -222,7 +222,7 @@ def classify_missed_meal(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min, but a meal bolus "
-                f"{minutes_ago} min ago is still likely driving absorption — "
+                f"{minutes_ago} min ago is still likely driving absorption, so "
                 "the rise is a digestion tail, not a new unannounced meal"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -243,7 +243,7 @@ def classify_missed_meal(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min with no bolus in the prior "
-                f"{digestion_lookback_min} min, but {rebound_owner.detail} — the rise "
+                f"{digestion_lookback_min} min, but {rebound_owner.detail}; the rise "
                 "belongs to that low, not a missed meal"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -259,7 +259,7 @@ def classify_missed_meal(
         detail=(
             f"glucose rising {slope:.1f} mg/dL/min with no bolus in the prior "
             f"{digestion_lookback_min} min and no recent low or suspend to explain "
-            "it — likely an unannounced or missed meal"
+            "it, likely an unannounced or missed meal"
         ),
         evidence_tier=EvidenceTier.INFERRED,
         rise_slope=slope,

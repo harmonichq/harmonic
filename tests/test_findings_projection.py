@@ -377,7 +377,7 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(blind["register"], "blind")
         self.assertEqual(blind["reason"], str(Status.NO_DATA))
         self.assertEqual(blind["support"]["n"], 0)
-        isf = _row(rows, "ISF")
+        isf = _row(rows, "Correction factor")
         self.assertEqual(isf["register"], "held")
         self.assertIsNone(isf["direction"])
         self.assertIs(isf["asserts_move"], False)
@@ -386,7 +386,8 @@ class GroundedWindowTest(unittest.TestCase):
         # Byte-identical, both flavors: the queue transcribes, it never rewords.
         analysis = self.projection._analysis
         rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        self.assertEqual(_row(rows, "ISF")["reason"], analysis["isf"][0]["annotation"])
+        self.assertEqual(_row(rows, "Correction factor")["reason"],
+                         analysis["isf"][0]["annotation"])
         blind_slot = next(s for s in analysis["basal"] if s["slot"] == 39)
         self.assertEqual(_row(rows, "Basal 19:30 to 21:00")["reason"],
                          blind_slot["safety_status"])
@@ -439,7 +440,7 @@ class GroundedWindowTest(unittest.TestCase):
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
         self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
-        self.assertIn("I:C 12:00 to 24:00 · lower", _titles(rows, "assert"))
+        self.assertIn("Carb ratio 12:00 to 24:00 · lower", _titles(rows, "assert"))
 
 
 class SpanMergingTest(unittest.TestCase):
@@ -506,7 +507,7 @@ class ChipProjectionTest(unittest.TestCase):
                         global_counts)
 
         raise_case = gen.payload()["settings_cases"]["carb_ratio_raise"]
-        self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
+        self.assertEqual(_row(raise_case["rows"], "Carb ratio 00:00 to 12:00 · raise")["chips"],
                          ["lows"])
 
     def test_episode_levers_chip_by_their_closed_outcome_kind(self):
@@ -1068,11 +1069,36 @@ class PatternProjectionTest(unittest.TestCase):
         self.assertIsNone(unadmitted["pattern_chart"])
 
     def test_memberless_patterns_keep_their_count_without_a_chart(self):
-        browser = json.loads((pathlib.Path(__file__).resolve().parents[1]
-                              / "frontend" / "__fixtures__"
+        from ciq_autotune.analyzers.scenario.levers import title
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+
+        root = pathlib.Path(__file__).resolve().parents[1]
+        browser = json.loads((root / "frontend" / "__fixtures__"
                               / "findings-projection.json").read_text())
-        pattern = next(row for row in browser["browser_outcome_patterns"]
-                       if row["key"] == "lows_after_meals")
+        exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
+                                / "payload.json").read_text())["exposures"]
+        # A memberless Pattern with k > 0: one unclaimed meal re-marked as claimed by
+        # Meal over-delivery, in the shape the producer serves (that verdict matched
+        # with its sentence as the row's text, every other judged classifier calm).
+        lever = Lever.MEAL_OVER_DELIVERY
+        meals = exposures["exposures"]["meals"]
+        meal = next(row for row in meals["occurrences"] if not row["attributed"])
+        text = "Synthetic over-delivery narrative: the meal bolus carried glucose low."
+        meal.update(attributed=True, attributed_levers=[lever.value], cause_lever=lever.value,
+                    cause_title=title(lever), state="fired", text=text)
+        for verdict in meal["verdicts"]:
+            own = verdict["classifier"] == lever.value
+            verdict.update(
+                matched=own, evidence_tier="inferred" if own else "observed",
+                silence_reason=None if own else "no_trigger",
+                detail=text if own else (f"Synthetic {title(Lever(verdict['classifier'])).lower()}"
+                                         " judgment: this Occurrence did not meet the criteria."))
+        meals.update(attributed=meals["attributed"] + 1, clean=meals["clean"] - 1,
+                     uncaused=meals["uncaused"] - 1, levers=[*meals["levers"], lever.value],
+                     by_cause={**meals["by_cause"], title(lever): 1})
+        inputs = browser["browser_inputs"]
+        pattern = next(row for row in build_outcome_patterns(
+            inputs["analysis"], exposures, inputs["scenarios"]) if row["key"] == "lows_after_meals")
         self.assertGreater(pattern["k"], 0)
         self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
 
@@ -1801,6 +1827,23 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertEqual(len(fired_rows), 1)
         self.assertEqual(fired_rows[0]["family"], "lows")
 
+    def test_served_occurrence_sentences_join_no_clauses_with_an_em_dash(self):
+        # ADR 451: an Occurrence's served sentence and every classifier's detail
+        # beside it print in the desk's Occurrence facts, so none joins its
+        # clauses with an em dash (DESIGN.md, Voice and user-copy register, rule 1).
+        from ciq_autotune.explore_exposures import build_exposures
+
+        cgm, bolus = gen._over_treated_fixture_events()
+        produced = build_exposures(gen._ScenarioFixtureStore(cgm, bolus))["exposures"]
+        occurrences = [occ for family in produced.values() for occ in family["occurrences"]]
+        sentences = [occ["text"] for occ in occurrences if occ["text"]] + [
+            verdict["detail"] for occ in occurrences for verdict in occ["verdicts"]]
+        # The population reaches an attributed low, its rebound and the context gate.
+        self.assertTrue(any("over-treated" in text for text in sentences))
+        self.assertTrue(any("from-flat meal climb" in text for text in sentences))
+        for text in sentences:
+            self.assertNotIn("—", text)
+
     def test_cross_family_episode_pair_is_emitted_by_the_real_producer(self):
         from ciq_autotune.explore_exposures import build_exposures
 
@@ -1813,6 +1856,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
 
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
+        # The generator reads its six selected occurrences back from the frozen
+        # fixture and never runs this producer, so each is held equal to it here:
+        # every served sentence included, the outranked low's correction-on-IOB
+        # detail among them (ADR 451). The frozen slice never carried
+        # `outcome_minute` for five of the six, so it is left out of the match.
+        def unstamped(occurrence):
+            return {key: value for key, value in occurrence.items()
+                    if key != "outcome_minute"}
+
+        selected = gen._real_over_treated_low_occurrences()
+        self.assertEqual(set(selected), {"fired", "rebound", "near_miss", "clean",
+                                         "no_data", "outranked"})
+        for name, item in selected.items():
+            family = "highs" if name == "rebound" else "lows"
+            with self.subTest(occurrence=name):
+                live = [unstamped(occ) for occ in produced[family]["occurrences"]
+                        if occ["ep_id"] == item["ep_id"] and occ["t"] == item["t"]]
+                self.assertEqual(live, [unstamped(item)])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
         self.assertEqual(fired["t"], "2026-08-13 13:55:00")
         self.assertEqual(rebound["t"], "2026-08-13 14:35:00")
@@ -2006,12 +2067,13 @@ class HeadlineTest(unittest.TestCase):
             "asserts_move": True, "direction": "raise",
             "current_values": [10], "recommended": 12, "estimate": {"value": 12},
             "n_runs": 8,
-            "annotation": "meals look slightly over-covered relative to programmed I:C",
+            "annotation": ("meals look slightly over-covered relative to the "
+                           "programmed carb ratio"),
         }]}
         row = self._project(analysis)[0]
         self.assertEqual(
             row["headline"],
-            "Meals look slightly over-covered relative to programmed I:C. "
+            "Meals look slightly over-covered relative to the programmed carb ratio. "
             "Measured 12 g/U across 8 meal runs against 10 programmed.")
 
     def test_carb_ratio_held_headline_strips_the_held_at_current_tail(self):
@@ -2093,7 +2155,8 @@ class HeadlineTest(unittest.TestCase):
         ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
                     "asserts_move": True, "direction": "raise",
                     "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+                    "annotation": ("meals look slightly over-covered relative to the "
+                                   "programmed carb ratio")}
         ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
                   "asserts_move": False, "held_reason": "pre-empted low; held at current",
                   "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
@@ -2151,7 +2214,8 @@ class HeadlineTest(unittest.TestCase):
         ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
                     "asserts_move": True, "direction": "raise",
                     "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
-                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+                    "annotation": ("meals look slightly over-covered relative to the "
+                                   "programmed carb ratio")}
         ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
                   "asserts_move": False, "held_reason": "pre-empted low; held at current",
                   "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
@@ -2184,7 +2248,7 @@ class HeadlineTest(unittest.TestCase):
                 "No steady nights delivered against the programmed rate "
                 "here, so nothing to say either way.",
             ("assert", "carb_ratio"):
-                "Meals look slightly over-covered relative to programmed I:C.",
+                "Meals look slightly over-covered relative to the programmed carb ratio.",
             ("held", "carb_ratio"): "Held at current: pre-empted low.",
             ("assert", "isf"):
                 "Overnight you look more sensitive to insulin than the set "

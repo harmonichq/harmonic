@@ -277,7 +277,7 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 - **Label:** uppercase-free, `.76rem` `--muted` text above the field, 500 weight.
 
 ### Navigation
-- **Tabs:** flat, bottom-bordered, `--muted` inactive / `--primary` active text+underline. Currently 8 flat entries with no visual primary/secondary grouping — the in-flight IA redesign (ADR 0027 / issue #243) will collapse this to Diagnose/Verify/Day as primaries with Plan/Guide/Settings as visually distinct supporting tabs; don't invest further in the current 8-tab treatment.
+- **Destinations:** the shipped `.v2-nav` (`frontend/chrome.css:27–29`) — three destination buttons, Diagnose, Changes and Day (ADR 397), in `--ck-meta` text on a transparent ground; the current one is marked by `--ck-text` with a `--ck-accent` border. The utilities (Log carbs, Questions, Guide, Settings, Glossary) sit in their own strip, and Pump settings is reached from Changes; neither is a destination.
 
 ### Tooltip (signature component)
 - **Style:** pure-CSS `.has-tooltip` primitive (no JS) — dark (`--text`-colored) callout bubble with a small triangle pointer, shown on `:hover` and `:focus-visible` alike. This is the system's one reusable "define a term inline" mechanism (glossary terms, chart legends) and should be reused rather than re-invented per feature.
@@ -299,7 +299,7 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 - **Don't** read this bullet's predecessor as still standing: it forbade warm parchment in the neutral ramp, and the locked Harmonic theme (#736) is exactly that — a warm sheet on a dark desk, with the ramp's saturation spent on marks instead of grounds (ADR 37 relit that sheet from parchment to bone, taking the beige out while keeping the warmth). What survives is the reason behind it: grounds stay low-chroma so only data and interaction carry colour.
 - **Don't** add gamification UI (badges, streaks, congratulatory copy, mascots) — an explicit anti-reference from PRODUCT.md; this is a clinical instrument, not a wellness app.
 - **Don't** add generic-SaaS-dashboard scaffolding — hero KPI tiles, gradient accent cards, stock unmodified chart-library defaults — another explicit PRODUCT.md anti-reference.
-- **Don't** use a `border-left` greater than 1px as a purely decorative colored stripe. The current `.card h2::before` 4px left-tab and its five sibling instances (advisory callouts, table-row grouping, warning callouts, popovers) are a known, flagged pattern — don't propagate it into new components; the in-flight Verify redesign has already dropped it ("no card accent").
+- **Don't** use a `border-left` greater than 1px as a purely decorative colored stripe. The `.card h2::before` 4px left-tab no longer ships in `frontend/`; it and its sibling instances (advisory callouts, table-row grouping, warning callouts, popovers) were a known, flagged pattern — don't reintroduce the stripe or propagate it into new components.
 - **Don't** exceed 1.5rem for any heading or display text — there is no hero/display tier in this system; a bigger number belongs in a Stat-styled card, not a page headline.
 - **Don't** rely on hover-only interaction for any state-carrying element (flag lists, calendar heat-map cells currently do this) — pair with `:focus-visible` and a keyboard path, per the existing `.has-tooltip` precedent.
 
@@ -401,6 +401,26 @@ lock, 2026-09-14). Every value painted below is served. No token in
   - On a desktop window too short for the canvas pane's row floors, the pane
     scrolls vertically, so the lane is always within reach. At the supported
     sizes it has no scroll range.
+- **Window caption.** The glucose overview's window caption stands on one line
+  wherever that line fits, inside its window or beside it in the roomier
+  margin. Where it fits neither, it stacks inside whichever is wider: the
+  window's name on one line and, on a thin window, the insufficient-sample
+  notice on the next, each breaking only between whole words and each line on
+  the knock-out pad the target caption wears. The target caption then sits on
+  the band's floor. No word is split, cut or dropped (#455).
+- **Axis labels under the target numerals.** A glucose axis label that would
+  sit under the 70 or 180 numeral is not printed; the numeral names the target
+  line there.
+- **Spotlight verdict line.** At the Spotlight's middle rank the verdict line
+  breaks between its facts where they do not fit one line, never inside one,
+  and the tally line and the figure move down with it. The programmed-rate rule
+  ends at the axis tick, above the tick labels.
+- **All charts at the narrowest split.** Between 832 and 1023 px wide the All
+  charts control shows its icon only, keeping its name and tooltip, so the
+  overview's title draws; the header stays one line.
+- **Resize.** The overview and the evidence charts re-lay out when the window
+  is resized, so a narrowed window gets the narrow layout rather than the wide
+  one rescaled.
 - **24 h arrival.** Diagnose opens on 24 h when nothing else chooses a window.
   A contextual entry or a retained window still wins, and the workstation's
   ISF, drill, occurrence and drawn presets keep Overnight.

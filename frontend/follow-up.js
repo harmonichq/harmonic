@@ -41,33 +41,38 @@
 //   evidenceFigure, figureColors,                  record read shares
 //   mountComparisonChart, dailyEvidence
 //   comparisonReasonWords                          the one reason vocabulary
+//   stateWords                                     the served inference states
 import { heroOption } from './verify-workstation-chart.js';
 import {
-  fetchVerifyTrials, finishTrial, resolveFocus,
+  failureMessage, fetchVerifyTrials, finishTrial, resolveFocus,
 } from './client.js';
 import {
   date, desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, shortDate, stamp,
 } from './frame.js';
-import { stagePrior } from './plan-view.js';
+import { planDraft } from './guidance.js';
+import { settingValue } from './plan.js';
+import { planUnderway, stagePrior } from './plan-view.js';
 import { hold, narrow, navigate, render, view } from './routes.js';
 
 const SETTING_NAME = {
   basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'Correction factor',
   target_bg: 'Target glucose', profile: 'Whole profile',
 };
-const LEVER_NAME = {
-  over_treated_low: 'Over-treated low', correction_on_iob: 'Correction on active insulin',
-  correction_stacking: 'Stacked corrections', carb_undercount: 'Carb undercount',
-  late_bolus: 'Late bolus', meal_over_delivery: 'Meal over-delivery',
-  meal_bolus_short: 'Meal bolus fell short', missed_meal: 'Missed or unannounced meal',
-  user_override: 'Override of the pump’s dose',
-};
-const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
 // The served inference states. `favorable` exists per outcome row only: the
 // overall assessment is one of these three and never favourable, so no summary
 // on this surface can claim a favourable ending (lock "Backend binding notes").
 const STATE_WORD = { concerning: 'Concerning', unclear: 'Unclear', context: 'Context only', favorable: 'Favourable' };
+
+/** A served inference state in words; a state with no word prints as served. */
+export const stateWords = (state) => STATE_WORD[state] || state;
+
 const PERIOD_WORD = { before: 'Before', after: 'After' };
+// A Pattern arm's served opportunity verdict, and the one served behavior
+// denominator that is not already words (the Correction stacking Lever's
+// Exposure). Each prints an unknown value as served (ADR 450).
+const VERDICT_WORD = { ready: 'Ready', withheld: 'Withheld' };
+const DENOMINATOR_WORD = { correction_clusters: 'correction clusters' };
+const denominatorWords = (value) => DENOMINATOR_WORD[value] || value;
 const BOUNDARY_WORD = {
   available_history: 'Available history', pin: 'Pinned', data_tail: 'Data read through',
   data_cutoff: 'Data read through', setting_change: 'Setting change',
@@ -79,7 +84,10 @@ const BOUNDARY_WORD = {
 
 // The desk's ONE vocabulary for why a comparison is unavailable (ADR 430). The
 // KEYS are the served availability reasons; the figure, the readiness lines and
-// the record's reassessment result all print these words, never the code.
+// the record's reassessment result all print these words, never the code. ADR 450
+// adds every other code the backend serves on the Focus and record lines: the
+// saved ending, the behavior and harm cells, every readiness arm, the admission
+// line and a record's original context.
 const COMPARISON_REASON = {
   missing_comparison_context: 'no retained comparison context was recorded with this change',
   unsupported_retained_execution: 'the retained context was saved by a different version of the comparison',
@@ -93,6 +101,19 @@ const COMPARISON_REASON = {
   no_readable_period_evidence: 'a period has no readable glucose readings yet',
   unavailable_adherence: 'the watched behavior could not be measured in both periods',
   not_recorded: 'not recorded',
+  collecting: 'still collecting',
+  zero_opportunities: 'no opportunities in this period',
+  insufficient_measurement: 'too little glucose data to judge every opportunity',
+  candidate_high_without_closed_attribution: 'a high after a meal has not been attributed yet',
+  attribution_exceeds_owned_population: 'more episodes were attributed than opportunities were counted',
+  unassociated_recurrence_anchor: 'an attributed episode could not be matched to an opportunity',
+  missing_override_provenance: 'some boluses do not record their override gap',
+  unreadable_harm_interval: 'the glucose after some opportunities could not be read',
+  unmatchable_captured_membership: 'the carb-ratio block recorded with this change cannot be matched in this period',
+  reconciliation_required: 'the latest pump and sensor data have not been reconciled yet',
+  legacy_not_recorded: 'this earlier record was kept before Harmonic saved its context',
+  no_readable_outcome: 'a period has no readable value for this outcome',
+  context_after_ending: 'this change’s context was recorded after it ended',
 };
 
 /** A served comparison reason in words; a code with no words prints as served. */
@@ -102,13 +123,6 @@ export const comparisonReasonWords = (code) => COMPARISON_REASON[code] || code;
 // not requested, which is neither unavailable nor empty.
 const NOT_READ = 'No comparison has been read for this record yet.';
 
-/** One programmed value in its own unit; a correction factor reads insulin first. */
-const settingValue = (parameter, value) => {
-  if (value == null) return 'not recorded';
-  if (parameter === 'isf') return `1 U : ${value} mg/dL`;
-  return `${value} ${UNIT[parameter] || ''}`.trim();
-};
-
 // A served count that may be fractional — I:C ownership weights are not rounded
 // into whole runs — printed at the precision it arrived with.
 const count = (value) => (value == null ? '—' : Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2))));
@@ -116,8 +130,9 @@ const days = (value) => (value == null ? '—' : `${Math.floor(value)}`);
 const percent = (value) => (value == null ? '—' : `${value}%`);
 
 // The prototype's own figure palette (harmonic-v2-glucose.js:115-126), read off
-// the live desk rather than transcribed: the shipped Verify hero takes a plain
-// dict, and these are the tokens the locked prototype resolved for it.
+// the live desk rather than transcribed: the shipped Trial hero
+// (`verify-workstation-chart.js`) takes a plain dict, and these are the tokens
+// the locked prototype resolved for it.
 export function figureColors(root) {
   const host = root || document.documentElement;
   const v = (name) => getComputedStyle(host).getPropertyValue(name).trim();
@@ -154,9 +169,10 @@ export function readinessArm(name, arm, { lever = null } = {}) {
   // it prints its measured and unmeasured opportunities in that place.
   const requirement = armKind === 'setting'
     ? `<small data-required="${e(count(arm.required))}">required</small>` : '';
+  const unit = denominatorWords(arm.unit);
   const figure = armKind === 'legacy-focus'
-    ? `${e(count(arm.observed))} ${e(arm.unit)}<small data-focus-population>${e(count(arm.measured))} measured · ${e(count(arm.unmeasured))} unmeasured</small>`
-    : `${e(count(armKind === 'pattern' ? arm.count : arm.observed))} of ${e(count(armKind === 'pattern' ? arm.gate : arm.required))} ${e(arm.unit)}${requirement}`;
+    ? `${e(count(arm.observed))} ${e(unit)}<small data-focus-population>${e(count(arm.measured))} measured · ${e(count(arm.unmeasured))} unmeasured</small>`
+    : `${e(count(armKind === 'pattern' ? arm.count : arm.observed))} of ${e(count(armKind === 'pattern' ? arm.gate : arm.required))} ${e(unit)}${requirement}`;
   // Elapsed days are reported alongside the evidence count and are never
   // labelled as observations of their own.
   const duration = armKind === 'legacy-focus'
@@ -167,7 +183,7 @@ export function readinessArm(name, arm, { lever = null } = {}) {
   const availability = 'available' in arm
     ? `<p class="gf-meta" data-readiness-available="${arm.available ? 'true' : 'false'}">${arm.available
         ? 'Evidence for this period is available.'
-        : `This period's evidence is unavailable: ${e(arm.reason || 'not served')}.`}</p>`
+        : `This period's evidence is unavailable: ${e(comparisonReasonWords(arm.reason || 'not served'))}.`}</p>`
     : '';
   const supporting = dates.length
     ? `<p class="gf-meta">Contributing ${dates.length === 1 ? 'date' : 'dates'} · ${dates.length}</p><div class="gf-actions" data-supporting="${e(name)}">${dates.slice(0, 8).map((iso) => `<button class="gf-btn" data-day-date="${e(iso)}"${lever ? ` data-day-lever="${e(lever)}"` : ''} data-day-subject="${e(name)}">${e(shortDate(iso))}</button>`).join('')}</div>`
@@ -175,10 +191,31 @@ export function readinessArm(name, arm, { lever = null } = {}) {
   return `<div data-readiness="${e(name)}" data-criterion-met="${met ? 'true' : 'false'}">
     <div class="gf-figure">${figure}</div>
     ${duration}
-    ${armKind === 'pattern' ? `<p class="gf-meta" data-opportunity-verdict="${e(arm.verdict)}">${e(arm.verdict)}${arm.reason ? ` · ${e(arm.reason)}` : ''}</p>` : ''}
-    <p class="gf-meta" data-criterion>${met ? 'Criterion met.' : `Not met — ${e(arm.reason || 'collecting')}.`}</p>
+    ${armKind === 'pattern' ? `<p class="gf-meta" data-opportunity-verdict="${e(arm.verdict)}">${e(VERDICT_WORD[arm.verdict] || arm.verdict)}${arm.reason ? ` · ${e(comparisonReasonWords(arm.reason))}` : ''}</p>` : ''}
+    <p class="gf-meta" data-criterion>${met ? 'Criterion met.' : `Not met — ${e(comparisonReasonWords(arm.reason || 'collecting'))}.`}</p>
     ${availability}
     ${supporting}</div>`;
+}
+
+// A Changes Day link names the supporting date it opened and no selector, and
+// Day hands the whole entry back (ADR 445). Only a well-formed ISO date becomes
+// selector text; any other date lands on the reading heading.
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const READING_HEADING = '.gf-reading > header h2';
+let returnedArrival = null;
+
+/**
+ * Where a Day return to Changes puts focus: an arrival whose context came back
+ * from a Changes Day link resolves once, on the render that first shows the
+ * change's content, to that date's supporting-date control, else the reading
+ * heading. Null for any other arrival or render, and on the narrow desk, where
+ * the dates sit in the closed reading sheet and Day's sheet-toggle focus stands.
+ * Both the active change's mount and a change record's call it.
+ */
+export function supportingDateFocus({ context = {}, navigation } = {}) {
+  if (context.from !== 'changes' || !context.date || narrow() || returnedArrival === navigation) return null;
+  returnedArrival = navigation;
+  return ISO_DATE.test(context.date) ? [`[data-day-date="${context.date}"]`, READING_HEADING] : READING_HEADING;
 }
 
 /**
@@ -244,6 +281,14 @@ export function periodsSection(comparison, kind = 'trial') {
     <p class="gf-meta">Pump-local time, half-open. Observations are limited to these periods; data was read to ${e(stamp(periods.after.data_cutoff))}.</p></section>`;
 }
 
+// A Trial's served target metric names the rows its table leads with: a metric
+// key is its own row, and the Post-meal arc is its peak and nadir rows
+// (CONTEXT.md "Post-meal arc"), the reading the server gives a Focus's arc
+// outcome. The target is served; nothing here infers it from the setting.
+// Held identical to the server's Focus arc rows by tests/test_arc_rows_mirror.py.
+const ARC_ROWS = ['peak', 'nadir'];
+const targetRows = (targets) => new Set((targets || []).flatMap((metric) => (metric === 'arc' ? ARC_ROWS : [metric])));
+
 /**
  * The served outcome rows: one Before/After table.
  *
@@ -252,7 +297,7 @@ export function periodsSection(comparison, kind = 'trial') {
  * of them becomes another (HV2-26, HV2-31). Each row keeps its own assessment
  * state, which is the only place `favorable` can appear.
  */
-export function outcomesTable(comparison, kind) {
+export function outcomesTable(comparison, kind, targets = []) {
   if (!comparison) return `<p class="gf-meta" data-outcomes="not-requested">${NOT_READ}</p>`;
   const outcomes = comparison.outcomes || [];
   if (!outcomes.length) {
@@ -278,15 +323,19 @@ export function outcomesTable(comparison, kind) {
     }
     return `<td class="v">${e(row.unit === '%' ? percent(value) : `${value} ${row.unit}`)}<small>${e(n != null ? `${n} ${row.denominator}` : row.denominator)}</small></td>`;
   };
-  // Mapped outcomes lead; the served context rows follow and are marked as
-  // context so they are never read as the Focus's own result.
-  const ordered = [...outcomes].sort((a, b) => (a.role === 'mapped_outcome' ? 0 : 1) - (b.role === 'mapped_outcome' ? 0 : 1));
+  // The record's own result leads, marked: a Focus's served mapped outcome, or a
+  // Trial's served target metric (#447). The rest keep their served order; a
+  // Focus's context rows are marked as context so they are never read as its
+  // own result.
+  const target = kind === 'trial' ? targetRows(targets) : new Set();
+  const leads = (row) => row.role === 'mapped_outcome' || target.has(row.key);
+  const ordered = [...outcomes].sort((a, b) => (leads(a) ? 0 : 1) - (leads(b) ? 0 : 1));
   // The head is the prototype's: a setting change reads Before against Trial,
   // and the habit's second table is its Glucose outcomes.
   const head = kind === 'focus'
     ? '<th scope="col">Glucose outcomes</th><th scope="col">Before</th><th scope="col">After</th>'
     : '<th scope="col">Glucose observations</th><th scope="col">Before</th><th scope="col">Trial</th>';
-  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${row.role === 'mapped_outcome' ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${row.difference > 0 ? '+' : ''}${row.difference}`)}</small></td></tr>`).join('')}</tbody></table>`;
+  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${leads(row) ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : target.has(row.key) ? 'target metric' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${row.difference > 0 ? '+' : ''}${row.difference}`)}</small></td></tr>`).join('')}</tbody></table>`;
 }
 
 /**
@@ -296,8 +345,11 @@ export function outcomesTable(comparison, kind) {
  * measurement is never filled in from them (HV2-26). Zero opportunities, an
  * absent measurement against a nonzero population, and a positive denominator
  * with zero unwanted events stay three distinct readings.
+ *
+ * The behavior is named by the Focus read's served `lever_title`, which the
+ * caller passes as `leverTitle` (ADR 449); the served lever key never prints.
  */
-export function adherenceTable(comparison) {
+export function adherenceTable(comparison, { leverTitle = null } = {}) {
   const adherence = (comparison || {}).adherence;
   if (!adherence) return '';
   const cell = (side) => {
@@ -305,35 +357,35 @@ export function adherenceTable(comparison) {
     const availability = arm.availability || {};
     const unmeasured = arm.unmeasured_opportunities || 0;
     if (!arm.opportunities) {
-      return `<td class="v" data-adherence="${e(side)}" data-adherence-state="zero-opportunities">no ${e(arm.denominator || 'opportunities')}<small>nothing to compare</small></td>`;
+      return `<td class="v" data-adherence="${e(side)}" data-adherence-state="zero-opportunities">no ${e(denominatorWords(arm.denominator || 'opportunities'))}<small>nothing to compare</small></td>`;
     }
     if (arm.rate == null) {
-      return `<td class="v" data-adherence="${e(side)}" data-adherence-state="unavailable">unavailable<small>${e(availability.reason || 'measurement unavailable')} · ${e(count(arm.measured_opportunities))} of ${e(count(arm.opportunities))} measured</small></td>`;
+      return `<td class="v" data-adherence="${e(side)}" data-adherence-state="unavailable">unavailable<small>${e(comparisonReasonWords(availability.reason || 'measurement unavailable'))} · ${e(count(arm.measured_opportunities))} of ${e(count(arm.opportunities))} measured</small></td>`;
     }
-    return `<td class="v" data-adherence="${e(side)}" data-adherence-state="available">${e(arm.numerator)} of ${e(arm.opportunities)}<small>${e(percent(Math.round(arm.rate * 1000) / 10))} of ${e(arm.denominator)}${unmeasured ? ` · ${e(count(unmeasured))} unmeasured` : ''}</small></td>`;
+    return `<td class="v" data-adherence="${e(side)}" data-adherence-state="available">${e(arm.numerator)} of ${e(arm.opportunities)}<small>${e(percent(Math.round(arm.rate * 1000) / 10))} of ${e(denominatorWords(arm.denominator))}${unmeasured ? ` · ${e(count(unmeasured))} unmeasured` : ''}</small></td>`;
   };
   const harm = (side) => {
     const arm = adherence[side] || {};
     const availability = arm.harm_availability || {};
     if (availability.state !== 'available') {
-      return `<td class="v" data-harm="${e(side)}" data-harm-state="unavailable">unavailable<small>${e(availability.reason || 'not measured')}</small></td>`;
+      return `<td class="v" data-harm="${e(side)}" data-harm-state="unavailable">unavailable<small>${e(comparisonReasonWords(availability.reason || 'not measured'))}</small></td>`;
     }
     return `<td class="v" data-harm="${e(side)}" data-harm-state="available">${e(arm.harm)}<small>attributed harm</small></td>`;
   };
   const assessment = adherence.assessment || {};
-  const lever = (adherence.before || {}).lever || (adherence.after || {}).lever;
   return `<table class="gf-table gf-trend" data-table="adherence"><thead><tr><th scope="col">Observed behavior</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Read</th></tr></thead><tbody>
-    <tr class="gf-target"><td>${e(LEVER_NAME[lever] || lever)}<small>the intended behavior · ${e((adherence.before || {}).denominator || 'opportunities')}</small></td>${cell('before')}${cell('after')}<td class="v" data-adherence-read="${e(assessment.state || 'unclear')}">${e(STATE_WORD[assessment.state] || 'unclear')}<small>${e(assessment.unit || 'proportion')}</small></td></tr>
+    <tr class="gf-target"><td>${e(leverTitle || 'Watched behavior')}<small>the intended behavior · ${e(denominatorWords((adherence.before || {}).denominator || 'opportunities'))}</small></td>${cell('before')}${cell('after')}<td class="v" data-adherence-read="${e(assessment.state || 'unclear')}">${e(STATE_WORD[assessment.state] || 'unclear')}<small>${e(assessment.unit || 'proportion')}</small></td></tr>
     <tr><td>Attributed harm<small>measured separately from the behavior</small></td>${harm('before')}${harm('after')}<td class="v">—<small>no rate</small></td></tr>
     </tbody></table>`;
 }
 
 /** The behavior table, then the mapped outcomes, in that order: the habit leads
-    with what it intended, not with glucose (HV2-26). */
-export function comparisonTables(comparison, kind) {
+    with what it intended, not with glucose (HV2-26). A Trial's table leads with
+    its served `target_metrics`. */
+export function comparisonTables(comparison, kind, { leverTitle = null, targets = [] } = {}) {
   return kind === 'focus'
-    ? `${adherenceTable(comparison)}${outcomesTable(comparison, kind)}`
-    : outcomesTable(comparison, kind);
+    ? `${adherenceTable(comparison, { leverTitle })}${outcomesTable(comparison, kind)}`
+    : outcomesTable(comparison, kind, targets);
 }
 
 /**
@@ -365,8 +417,9 @@ function viewSegment(mode) {
 /* ------------------------------------------------------------- the figure */
 
 /**
- * The chart host. Its figure is the shipped Verify hero over the comparison's
- * own clock envelopes, so no facsimile stands behind any reading here.
+ * The chart host. Its figure is the shipped Trial hero
+ * (`verify-workstation-chart.js`) over the comparison's own clock envelopes, so
+ * no facsimile stands behind any reading here.
  *
  * The selectors and the legend words are the prototype's
  * (harmonic-v2-glucose.js:545): a setting change's figure is
@@ -489,12 +542,28 @@ export function mountComparisonChart(host, comparison, holdCleanup = hold) {
 /* ========================= watch maturity, separately ===================== */
 
 /**
+ * A Trial's watch-maturity day count, in the words Changes prints, for both of
+ * its printers: Changes' Watch maturity and Diagnose's watch dock (#447). The
+ * count is the served `days_elapsed`, never clamped or re-derived, and the form
+ * follows the served ready verdict, never a count comparison: while maturing,
+ * "‹n› of ‹R› days"; once ready, "‹N› days" with "‹R› required". `number` is the
+ * part a printer emphasises.
+ */
+export function trialDayCount(maturing, ready) {
+  const elapsed = maturing.days_elapsed ?? 0;
+  const required = maturing.days_required ?? 0;
+  const number = ready ? `${elapsed}` : `${elapsed} of ${required}`;
+  return { number, days: `${number} days`, required: ready ? `${required} required` : null };
+}
+
+/**
  * The watch's own lifecycle progress: fourteen days to maturity, twenty-eight to
  * expiry. Retained metadata, and labelled as such — it supplies no evidence
  * readiness and it truncates no comparison bound (HV2-24).
  *
  * The bar is clamped to its maximum and never overfilled: this is the B-08
- * repair, and "15 of 14 days" must not return.
+ * repair, and "15 of 14 days" must not return. Only the bar clamps; the printed
+ * count is the served one, and its form follows the served `state`.
  */
 export function maturitySection(detail) {
   const maturing = detail.maturing;
@@ -503,11 +572,11 @@ export function maturitySection(detail) {
     return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
       <p class="gf-meta">This record carries no watch maturity.</p></section>`;
   }
-  const met = maturing.days_elapsed >= maturing.days_required;
+  const count = trialDayCount(maturing, detail.state === 'complete');
   const gaps = `${maturing.gap_count} data ${maturing.gap_count === 1 ? 'gap' : 'gaps'}`;
-  const figure = met
-    ? `${e(maturing.days_elapsed)} days<small>${e(maturing.days_required)} required · ${e(gaps)}</small>`
-    : `${e(maturing.days_elapsed)} of ${e(maturing.days_required)} days<small>${e(gaps)}</small>`;
+  const figure = count.required
+    ? `${e(count.days)}<small>${e(count.required)} · ${e(gaps)}</small>`
+    : `${e(count.days)}<small>${e(gaps)}</small>`;
   return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
     <div class="gf-figure">${figure}</div>
     <progress value="${Math.min(maturing.days_elapsed, maturing.days_required)}" max="${maturing.days_required}" aria-label="Trial progress"></progress>
@@ -611,12 +680,6 @@ const attemptId = (operation) => {
   return id;
 };
 
-const failureMessage = (error) => {
-  const detail = error && error.detail;
-  if (detail && typeof detail === 'object' && detail.code) return `${detail.code} (${error.status})`;
-  if (typeof detail === 'string' && detail) return detail;
-  return error && error.message ? error.message : 'no response from the store';
-};
 
 /**
  * Record the ending. The revision sent is the one the rendered evidence was read
@@ -684,6 +747,13 @@ export function planRouteSection(detail, { canOpen }) {
     ${canOpen ? '<div class="gf-actions"><button class="gf-btn" data-action="plan-route">Open Plan</button></div>' : ''}</section>`;
 }
 
+/** A Plan draft beside the watched change stays one press away: a saved draft
+    the guidance read serves, or a change this page staged or recorded. It opens
+    the draft as it stands; recording it stays the server's to refuse while the
+    change is watched, and nothing here decides that (ADR 446). */
+const openPlanControl = () => ((planDraft()?.items || []).length || planUnderway()
+  ? '<button class="gf-btn" data-action="open-plan">Open Plan</button>' : '');
+
 /** The active setting Trial: its evidence on the stage, its readiness, its
     maturity and its conclusion in the reading pane. */
 function trialFrame(state) {
@@ -691,12 +761,12 @@ function trialFrame(state) {
   const comparison = (retained || {}).comparison || null;
   const body = shown.mode === 'daily'
     ? dailyEvidence(detail, { period: shown.period, day: shown.day })
-    : comparisonTables(comparison, 'trial');
+    : comparisonTables(comparison, 'trial', { targets: detail.target_metrics });
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({
     kicker: `Trial · <b>${e((detail.readiness || {}).label || 'Active')}</b>`,
     title: e(changeTitle(detail)),
     sub: `Detected ${e(stamp(detail.changed_at))}`,
-    end: '<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>',
+    end: `<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>${openPlanControl()}`,
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${comparisonPairs(comparison).paired.length ? 'Before → Trial' : 'Before only'}</span><span class="meta">median glucose by clock</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(comparison, 'trial', figureColors())}
@@ -728,15 +798,19 @@ function focusFrame(state) {
     kicker: 'Focus · <b>Active</b>',
     title: e(changeTitle(detail)),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
-    end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
+    end: `<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>${openPlanControl()}`,
   })}
     <div class="instruments"><div class="instrument"><span class="cap">Before → After</span><span class="meta">the exact periods either side of the pin</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(comparison, 'focus', figureColors())}
     <div class="instruments"><div class="instrument"><span class="cap">Observed behavior, then glucose</span><span class="meta">${comparison ? 'read from the retained comparison' : 'no comparison read yet'}</span></div><div class="instrument gf-tools">${narrow() ? '' : '<span class="meta">Advisory only</span>'}</div></div>
-    <div class="gf-scroll">${comparisonTables(comparison, 'focus')}</div></section>`;
+    <div class="gf-scroll">${comparisonTables(comparison, 'focus', { leverTitle: detail.lever_title })}</div></section>`;
+  // The retained explanation, else the watched behavior's served name (ADR 449);
+  // an explanation the nameplate already prints is not repeated, and a Focus
+  // with neither prints no paragraph rather than its key.
+  const watches = context.explanation || detail.lever_title;
   const reading = `<aside class="pane gf-reading" aria-label="This Focus">${readingHeader('This Focus', 'Active')}<div class="gf-pane-body">
     <section class="gf-section" data-part="intent"><h3>What this Focus watches</h3>
-      ${context.explanation === detail.title ? '' : `<p>${e(context.explanation || LEVER_NAME[detail.lever] || detail.lever)}</p>`}
+      ${!watches || context.explanation === detail.title ? '' : `<p>${e(watches)}</p>`}
       <p class="gf-meta">Pinned ${e(stamp(detail.pinned_at))}. No pump setting changed.</p></section>
     ${readinessSection(comparison, { kind: 'focus' })}
     ${periodsSection(comparison, 'focus')}
@@ -753,6 +827,8 @@ function focusFrame(state) {
 function bind(host) {
   const history = host.querySelector('[data-action="history"]');
   if (history) history.onclick = () => navigate('changes', { subject: 'history' });
+  const draft = host.querySelector('[data-action="open-plan"]');
+  if (draft) draft.onclick = () => navigate('changes', { subject: 'plan' });
   const text = host.querySelector('#conclusion');
   if (text) {
     text.oninput = (event) => {
@@ -807,7 +883,7 @@ function bind(host) {
       title: changeTitle(memory.detail),
       lever: button.dataset.dayLever || null,
       occurrence: memory.detail.id, window: retainedEvidenceContext(memory.detail).window,
-      from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
+      from: 'changes',
     });
   }
   const retry = host.querySelector('[data-retry]');
@@ -831,7 +907,7 @@ export function mount(host, deps = {}) {
   // what it is waiting for, and offers no action (HV2-31).
   if (admission.state !== 'available') {
     host.innerHTML = emptyFrame('Changes', 'Not available yet',
-      `The backend cannot answer for this store yet: ${e(admission.reason || 'reconciliation required')}.`,
+      `The backend cannot answer for this store yet: ${e(comparisonReasonWords(admission.reason || 'reconciliation_required'))}.`,
       '<button class="gf-btn primary" data-retry>Retry</button>');
     bind(host);
     return;
@@ -862,6 +938,8 @@ export function mount(host, deps = {}) {
   host.innerHTML = kind === 'focus' ? focusFrame(state) : trialFrame(state);
   bind(host);
   mountComparisonChart(host, (memory.retained || {}).comparison || null, holdCleanup);
+  const back = supportingDateFocus(deps);
+  if (back) view.focusAfterRender = back;
 }
 
 /** The retained decision supplies the inspection subject and affected hours. */

@@ -359,8 +359,10 @@ own recommended component, not the user's change to it).
 
 **Carb-log prompt**:
 A carb-log question the data still owes an answer for (#128) — "did you treat this
-low?" at a sub-70 nadir, or "did you eat here?" at a missed-meal rise onset —
-derived live over the last 7 days, never stored. The review queue is an **inbox of
+low?" at a sub-70 nadir, or "did you eat here?" at a missed-meal rise onset that no
+over-treated low's rebound owns — derived live over the last 7 days, never stored.
+An owned rise is explained by its low, which asks its own question when it is
+sub-70 (#448). The review queue is an **inbox of
 open questions** — the model prompting for information it is missing — not a ledger
 that fact-checks every low or rise. A prompt exists only while its answer is
 missing; once the information is present, it drops.
@@ -416,6 +418,18 @@ insulin on board. A Pattern owns members, one rate on one denominator and one
 chart; it is the subject the app prices, leads with, sets aside and follows as a
 Focus.
 _Avoid_: shape, trend, theme, cluster, problem.
+
+**Concern**:
+One thing guidance serves to **Changes**: a setting, a habit, a Pattern or an
+investigation. Changes leads with a habit, a Pattern or an investigation; a
+setting never leads, and its instruction reaches Changes through the Pattern that
+carries it. Each is named by its served name. A concern the wearer set aside that
+the current read no longer carries is still listed, and one with no served name
+reads "A concern no longer in this read", never its identifier. Changes says in
+words why its concern leads: Ready to stage, Staged once its change is staged in
+the Plan draft, Ready to start a Focus, Focus withheld, Action identified, or
+Evidence to inspect. A set-aside concern on screen carries none of them (ADR 451).
+_Avoid_: candidate, subject (in user copy; both are the API's words).
 
 **Lever pattern**:
 A group of episodes sharing one Lever, scored and ranked — the recurring behavior a
@@ -541,8 +555,8 @@ The peak BG and subsequent nadir BG for a single meal, treated as one object.
 Peak = highest CGM in (bolus_time, bolus_time + 3 h], truncated at the next
 carb-tagged bolus. Nadir = lowest CGM in (peak_time, bolus_time + 6 h], same
 truncation. Both are absolute mg/dL values — no baseline offset. The arc is the
-instrument for "flatten the curve": peaks coming down and nadirs staying up on
-the Outcomes trend card. The two halves have split denominators: all carb-tagged
+instrument for "flatten the curve": peaks coming down and nadirs staying up in
+the CLI's outcomes trend. The two halves have split denominators: all carb-tagged
 meals for the peak series; only meals with ≥ 3 h of nadir window remaining for
 the nadir series. When rescue carbs arrested a descent, the arc records the
 arrested nadir as-is per ADR 0012 and may carry display-only rescue context on
@@ -585,41 +599,34 @@ object; there are no positive detectors.
 _Avoid_: win, success rate, positive finding, good outcome.
 
 **Localized outcome**:
-A Verify outcome card that carries a *where* — a time-of-day, day-of-week, or
-context cut ("lows cluster 02–05h", "Sundays run low") — and **no causal claim**.
-The adr-327 rule extended: a result without a defensible single cause is an
-outcome, and an outcome may carry a where. Ships only after passing **Confound
-triage** plus day-level statistics and a stability check; hides entirely when not
-currently relevant. Never pinnable as a Focus; promotion to a **Lever** is a human
-act (issue + ADR), never a runtime one (adr-362).
+An outcome that carries a *where* — a time-of-day, day-of-week, or context cut
+("lows cluster 02–05h", "Sundays run low") — and **no causal claim**. The adr-327
+rule extended: a result without a defensible single cause is an outcome, and an
+outcome may carry a where. It qualifies only after passing **Confound triage**
+plus day-level statistics and a stability check. The desk does not show it;
+`/api/pattern-sweep` serves the sweep that prices it. Never pinnable as a Focus;
+promotion to a **Lever** is a human act (issue + ADR), never a runtime one
+(adr-362).
 _Avoid_: outcome card, insight, localized finding (Finding is the behavioral-layer
 object).
 
 **Confound triage**:
-The attribution gate a **Localized outcome** must pass before display — is the
-split *caused by* what the card names, or manufactured by selection (the user's own
-behavior creates the split), carryover (the effect is inherited state, concentrated
-in the first hours and absent on clean handoffs), or time-of-day imbalance? Priced
-per card with day-level (cluster-level) inference, not reading counts. Distinct
-from a significance test: a finding can be descriptively true and still fail triage
-(adr-362's stale-site and fresh-site examples).
+The attribution gate a **Localized outcome** must pass before it qualifies — is
+the split *caused by* what the outcome names, or manufactured by selection (the
+user's own behavior creates the split), carryover (the effect is inherited state,
+concentrated in the first hours and absent on clean handoffs), or time-of-day
+imbalance? Priced per candidate with day-level (cluster-level) inference, not
+reading counts. Distinct from a significance test: a finding can be descriptively
+true and still fail triage (adr-362's stale-site and fresh-site examples). The desk
+does not show it; `/api/pattern-sweep` prices every swept cell through it.
 _Avoid_: stats gate (necessary but not this), sanity check, validation.
-
-**Digest**:
-The lead story at the top of Verify — "what changed since you last looked,"
-computed window-over-window (the same "vs prior" the outcome cards already carry).
-An active **Trial** or **Focus** always takes the top slot; otherwise only a delta
-that clears the adr-364 day-level bar may headline, and a quiet window states
-steadiness plainly ("Steady: nothing changed meaningfully") rather than hiding.
-One strict tier — no "trending" mentions (adr-365).
-_Avoid_: summary, feed, highlights, what's-new (fine as UI copy only).
 
 **Tracked candidate**:
 One cell of the **candidate sweep** that shows signal but has not cleared the bar —
 re-priced automatically as data accrues, era-bounded (its evidence restarts at the
 most recent settings regime change or data gap, so old eras never rescue or dilute
-it). Never named in the UI while unproven: the Verify footnote reports the sweep's
-result with no names, numbers, or advice. When a cell clears the bar it flips to
+it). The desk does not show tracked candidates; `/api/pattern-sweep` serves them.
+When a cell clears the bar it flips to
 "ready for review" and ships only on human sign-off (adr-365, as amended by
 adr-365-swept-candidate-space — candidates are generated by the sweep, never
 hand-picked).
@@ -636,7 +643,8 @@ the adr-364 day-level standard, **Confound triage**, era-bounded accrual, and a
 significance bar tightened for the number of cells swept (multiplicity control).
 The grammar is versioned; growing it is a reviewed change, but membership is
 never authored by hand. The six adr-364 hand candidates are its acceptance
-fixtures: a correct sweep re-derives and re-kills all six.
+fixtures: a correct sweep re-derives and re-kills all six. The desk does not show
+the sweep; `/api/pattern-sweep` serves it.
 _Avoid_: candidate engine (adr-362 rejected the layer), mining pass (uncorrected),
 scan (say sweep).
 
@@ -667,15 +675,17 @@ which the app **auto-detects** from the settings-snapshot diff / setting epoch. 
 active-profile switch starts a trial on its own, at the switch instant — the diff of
 the outgoing vs incoming profile is authoritative, so the trial does not wait for the
 dose stream to re-observe the new value.
-Because the setting is objectively in effect, *adherence is guaranteed*, so the
-Verify surface shows a clean before/after anchored to the change date and the trial
-resolves **keep-or-revert**. Each trial carries a **target metric** — inferred from
-the parameter + slot that changed (an overnight-basal lift → overnight lows / TIR),
-else **overall** (TIR + arc) for a whole-profile switch or an untargeted raw pump
-edit — which is the before/after Verify foregrounds; overall TIR is always shown
-alongside. A trial never carries a lever: the lever it *descended from* (a
-tuning-flavored Diagnose lever, applied to the pump) is not tracked on the trial, and
-the target metric is read from param+slot, not lever provenance. Prospective and
+Because the setting is objectively in effect, *adherence is guaranteed*, so
+Changes shows a clean before-and-Trial comparison anchored to the change date and
+the trial resolves **keep-or-revert**. Each trial carries a **target metric** —
+inferred from the parameter that changed (basal → time below range; ISF or target
+→ time in range; I:C → the **Post-meal arc**), else **overall** (TIR + arc) for a
+whole-profile switch or an untargeted raw pump edit. The server serves it with the
+Trial, and Changes' outcome table leads with the rows the comparison serves for
+it, marked as the Trial's target; overall TIR is always shown alongside. A trial
+never carries a lever: the lever it *descended from* (a tuning-flavored Diagnose
+lever, applied to the pump) is not tracked on the trial, and the target metric is
+read from the changed parameter, not lever provenance. Prospective and
 live — the forward-looking counterpart to the retrospective **Backtest**. Passes
 through a **Maturing** phase while post-change data accrues. A **revert** — the
 setting walked back to its exact pre-change baseline inside the maturing window —
@@ -686,19 +696,22 @@ trial itself), backtest (that is retrospective).
 **Focus**:
 A behavioral lever the user **pins by hand** to work on ("pre-bolus more for two
 weeks"). Unlike a **Trial** it is a habit with no pump artifact and no guaranteed
-adherence, so Verify tracks it in **two dimensions**: *adherence* — are you doing
+adherence, so Changes follows it in **two dimensions**: *adherence* — are you doing
 it, read from the same detector that raised the lever (pre-bolus timing, over-treat
-rate) — and *outcome* — did the **Clean rate** / **Post-meal arc** improve. A flat
-outcome on a Focus is ambiguous until read against its adherence (didn't help vs
-didn't stick); a flat outcome on a Trial is not. Resolves when it sticks or the user
-drops it.
+rate) — and *outcome* — did its mapped glucose outcome improve: the **Post-meal
+arc** for a meal habit, time below range for a lows or correction-cluster habit,
+time in range for a highs habit. Changes' outcome table leads with that mapped
+outcome and marks the other rows as context. A flat outcome on a Focus is
+ambiguous until read against its adherence (didn't help vs didn't stick); a flat
+outcome on a Trial is not. Resolves when it sticks or the user drops it.
 When started from a scoped Pattern, Focus retains that outcome clock window for
 its eligibility and both comparison arms. It keeps the full contributing episode
 as evidence; changing the Diagnose window later does not rewrite the Focus.
 _Avoid_: commitment, goal, habit (the thing changed, not the tracked object),
 working-on (fine as a UI label only).
 
-Both share one lifecycle — start → watch (foregrounded in Verify) → resolve — with
+Both share one lifecycle — start → watch (led by Changes and reported in the
+watch dock) → resolve — with
 two entry points: a **Trial** is auto-created on a detected setting change, a
 **Focus** is pinned by hand.
 
@@ -706,7 +719,7 @@ two entry points: a **Trial** is auto-created on a detected setting change, a
 The pump-ready staging area for exactly one tuning change at a time. A Plan may
 contain multiple segments only when they are one coherent profile edit for the same
 variable; it must not encourage batching unrelated basal / ISF / I:C / target
-changes. One variable at a time is the rule from Diagnose through Verify.
+changes. One variable at a time is the rule from Diagnose through Changes.
 _Avoid_: change basket, backlog, batch.
 
 A recorded Plan is **pending** until it is **confirmed** — by its matched Trial,
@@ -719,9 +732,8 @@ whose recorded items cannot be compared with a read stays pending; confirmed;
 withdrawn; superseded) with when it was confirmed and whether the latest read still holds
 it (on pump). A confirmed Plan stays confirmed when a later read stops holding
 it. Surfaces read the verdict; none decides it.
-_Avoid_: applied or entered (for confirmed), canceled or deleted (for
-withdrawn), stale, expired or abandoned (for superseded), verified (Verify is a
-tab, not a Plan state).
+_Avoid_: applied, entered or verified (for confirmed), canceled or deleted (for
+withdrawn), stale, expired or abandoned (for superseded).
 
 **Maturing**:
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet
@@ -730,23 +742,28 @@ maturing, 6 of 14 days"). Gated on the **target metric's** data accrual (enough
 post-change days to fill the Trial's **fixed 14-day maturing window** — a backend
 fact no trend or analysis window a caller selects can move), not on model
 sufficiency. Maturity accrues only within the Trial's own bounded period (from the
-change through 14 days after it), so the dock and Verify count the same days for
-the same change. Distinct from
+change through 14 days after it). The watch dock and Changes print the same served
+count, the one the readiness rule compares with the 14 required; a clamp may
+shape Changes' progress bar, never a printed number. Distinct from
 **Settling** (#95), which is the *Diagnose/Review*-side state where the engine withholds
 a fresh recommendation for a just-changed knob because the change is too recent to
 re-judge. Same underlying fact (a recent change, immature data), two different
 consumers: Maturing gates a before/after; Settling gates a recommendation. They live on
-different surfaces (Maturing on Verify / the outcomes trend, Settling on the analyze
-family) and compute on different gates — keep them separate.
+different surfaces (Maturing in Changes and the watch dock; Settling on the
+analyze family) and compute on different gates — keep them separate.
 _Avoid_: settling (that is the Diagnose-side recommendation-hold, not the Trial phase);
 warming-up, incubating.
 
 **Edit**:
 A run of retained setting changes within a day of each other, grouped for
 reading in **Changes**. Not a Plan (it stages nothing), not a Trial identity
-(each member keeps its own record and route) — purely a reading aid over
-retained Trial history: a record joins the previous retained record's Edit
-when they landed within a day of one another, else it starts a new one.
+(each member keeps its own record and route): a record joins the previous
+retained record's Edit when they landed within a day of one another, else it
+starts a new one. The same grouping also bounds how a record ends: when a
+reconcile records an ending, a change inside the record's own Edit, as that
+reconcile reads it, never supersedes it (ADR 442). A change to this grouping or
+its one-day tolerance is therefore a change to the ending rule as well as to
+the reading.
 _Avoid_: episode, session, batch.
 
 **At most one change is active at a time — Plan, Trial, and Focus all obey one

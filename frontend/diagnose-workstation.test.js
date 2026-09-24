@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 import {
-  buildIcBlocks, occurrenceDescription, occurrenceFacts, queryState, renderEventComparisonRoster, renderIsfLevel,
+  buildIcBlocks, crumbLabel, occurrenceDescription, occurrenceFacts, queryState, renderCaseHead,
+  renderEventComparisonRoster, renderIsfLevel,
   renderSlotLevel, renderLane,
 } from './diagnose-workstation.js';
 import { buildSlotLane } from './diagnose-workstation-chart.js';
@@ -139,10 +140,13 @@ test('#432 · a selected claimed meal reads as its facts, cause and habit senten
     lines: [
       { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
       { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
-      { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+      { kind: 'habit', text: 'Carb undercount · Meets criteria' },
     ],
   });
-  assert.ok(detail.reason.cause.text && detail.reason.habits[0].detail);
+  // ADR 454: the claim's cause text is the claimant's recorded sentence, so the server
+  // serves that sentence once, on the cause.
+  assert.ok(detail.reason.cause.text);
+  assert.equal(detail.reason.habits[0].detail, null);
 });
 
 test('#432 · a selected Pattern Occurrence lists each served habit with its band label', () => {
@@ -151,9 +155,15 @@ test('#432 · a selected Pattern Occurrence lists each served habit with its ban
   const [bolus] = detail.markers.filter((marker) => marker.kind === 'bolus' && marker.minute === 0);
   assert.deepEqual([bolus.carbs, bolus.insulin], [30, 3], 'the selected meal is its own minute-0 bolus');
   assert.equal(figure, '30 g · 3 U');
+  assert.deepEqual(detail.reason.habits.map((habit) => [habit.lever, habit.verdict, habit.detail]), [
+    ['carb_undercount', 'outranked',
+      'Synthetic carb undercount judgment: this Occurrence did not meet the criteria.'],
+    ['late_bolus', 'fired', null],
+  ]);
   assert.deepEqual(lines, [
     { kind: 'cause', text: `Attributed to Late bolus · ${detail.reason.cause.text}` },
-    { kind: 'habit', text: 'Carb undercount · claimed by another finding' },
+    { kind: 'habit', text: 'Carb undercount · claimed by another finding · '
+      + 'Synthetic carb undercount judgment: this Occurrence did not meet the criteria.' },
     { kind: 'habit', text: 'Late bolus · Meets criteria' },
   ]);
 });
@@ -227,19 +237,11 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
   const payload = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8',
   ));
-  const projectionFixture = JSON.parse(readFileSync(
-    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
-  ));
   const caseFiles = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
-  const served = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-    event_charts: projectionFixture.inputs.event_charts,
-  }));
+  const served = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const projection = generatedFindingProjection(id)(served, caseFiles);
   assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');
@@ -284,6 +286,69 @@ test('#223 · direction-only Correction factor detail leaves evidence ownership 
       'the rendered footer is limited to actionability');
     assert.equal(elements.some((node) => node.tagName === 'BUTTON'), false,
       'the rendered direction-only detail has no stage affordance');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('the correction-factor panel names its setting and prints each value insulin first (#451)', () => {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const held = fixture.inputs.analysis.isf[0];
+  const stageable = { ...held, asserts_move: true, recommended: 32,
+    evidence: { ...held.evidence, direction: 'strengthen' } };
+  const originalDocument = globalThis.document;
+  const element = () => ({
+    className: '', dataset: {}, innerHTML: '', children: [],
+    append(...children) { this.children.push(...children); },
+    addEventListener() {},
+  });
+  const rendered = (node) => [node.innerHTML, ...node.children.map(rendered)].join(' ');
+  try {
+    globalThis.document = { createElement: element };
+    for (const row of [held, stageable]) {
+      const host = element();
+      renderIsfLevel(host, row, false, () => {});
+      const text = rendered(host);
+      assert.match(text, /<span class="time">Correction factor<\/span>/, 'the heading names the setting');
+      assert.match(text, /daytime Correction factor is not separately identifiable/i, 'the scope sentence names it');
+      assert.match(text, /<b>1 U : 36\.00 mg\/dL<\/b>/, 'the current value keeps the panel rounding');
+      assert.doesNotMatch(text, /ISF|mg\/dL\/U/);
+    }
+    const host = element();
+    renderIsfLevel(host, stageable, false, () => {});
+    assert.match(rendered(host), /<b>1 U : 32\.00 mg\/dL<\/b>/, 'the recommended value reads insulin first');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('the breadcrumb names the correction-factor level in the wearer\'s words (#451)', () => {
+  const chartTitle = (chartId) => (chartId === 'glucose' ? 'Glucose' : null);
+  assert.equal(crumbLabel({ k: 'isf' }, chartTitle), 'Correction factor');
+  assert.equal(crumbLabel({ k: 'factors' }, chartTitle), 'Findings');
+  assert.equal(crumbLabel({ k: 'slot', cell: { label: '03:00' } }, chartTitle), '03:00 slot');
+  assert.equal(crumbLabel({ k: 'block', cell: { label: 'Evening' } }, chartTitle), 'Evening block');
+  assert.equal(crumbLabel({ k: 'chart', chartId: 'glucose' }, chartTitle), 'Glucose');
+  assert.equal(crumbLabel({ k: 'chart', chartId: 'other' }, chartTitle), 'Chart');
+});
+
+test('a case head names the peak hour\'s carb ratio block in the wearer\'s words (#451)', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tag) => new RosterElement(tag) };
+    const host = new RosterElement();
+    const clock = { buckets: [{ start_min: 1080, end_min: 1200, n: 3 }], peak_bucket_index: 0, total: 3 };
+    renderCaseHead(host, {
+      finding: { title: 'Highs after meals', lever: 'missed_meal' }, family: 'highs',
+      summary: { claimed: 3, denominator: 5 }, projection: { alignment: 'clock', clock }, window: { label: '24 h' },
+    }, { cells: [{ startMin: 0, endMin: 1440, label: '00:00', verdict: 'hold' }] }, () => {},
+    [{ label: 'Evening', span: '17:00 to 22:00', spans: [[1020, 1320]], verdict: 'hold' }], () => {});
+    const link = host.children[0].children.find((child) => child.className === 'slotlink');
+    const words = link.html.join(' ');
+    assert.match(words, /and in the Evening carb ratio block,/);
+    assert.doesNotMatch(words, /I:C/);
   } finally {
     globalThis.document = originalDocument;
   }

@@ -1,0 +1,62 @@
+(node:20653) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S52 case=c3-trial milliseconds=628.444
+# S52 synthetic case=c3-trial (fresh copy)
+PASS S52
+# story-time S52 milliseconds=13461.209
+# case-copy S54b case=c3-history milliseconds=1004.127
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=13405.167
+# case-copy S57 case=c3-focus milliseconds=383.807
+# S57 synthetic case=c3-focus (fresh copy)
+PASS S57
+# story-time S57 milliseconds=3418.890
+# case-copy S92 case=c3-trial milliseconds=1.491
+# S92 synthetic case=c3-trial (fresh copy)
+PASS S92
+# story-time S92 milliseconds=12907.836
+# case-copy S94 case=c3-trial milliseconds=1.311
+# S94 synthetic case=c3-trial (fresh copy)
+PASS S94
+# story-time S94 milliseconds=12040.513
+# case-copy S105 case=c3-trial milliseconds=1.375
+# S105 synthetic case=c3-trial (fresh copy)
+PASS S105
+# story-time S105 milliseconds=19546.549
+# case-copy S110 case=edit-chain milliseconds=317.617
+# S110 synthetic case=edit-chain (fresh copy)
+PASS S110
+# story-time S110 milliseconds=2226.273
+# case-copy S112 case=edit-chain milliseconds=4.154
+# S112 synthetic case=edit-chain (fresh copy)
+PASS S112
+# story-time S112 milliseconds=2839.589
+# case-copy S142 case=c3-trial milliseconds=2.560
+# S142 synthetic case=c3-trial (fresh copy)
+PASS S142
+# story-time S142 milliseconds=10230.147
+# case-copy S143 case=edit-chain milliseconds=1.460
+# S143 synthetic case=edit-chain (fresh copy)
+PASS S143
+# story-time S143 milliseconds=1586.437
+# case-copy S180 case=c4-isf milliseconds=992.737
+# S180 synthetic case=c4-isf (fresh copy)
+PASS S180
+# story-time S180 milliseconds=7930.817
+# case-copy S53 case=c3-trial milliseconds=1.412
+# S53 synthetic case=c3-trial (fresh copy)
+PASS S53
+# story-time S53 milliseconds=9327.876
+# case-copy R17 case=c3-trial milliseconds=1.145
+# R17 synthetic case=c3-trial (fresh copy)
+RETIRED R17 — ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)
+AMENDED R17 premise — ADR 397 · Connor Griffin · 2026-09-08; coordinator amendment 4 transcribed 2026-09-10: a served finishable Trial replaces the prototype ready scenario.
+PASS R17
+# story-time R17 milliseconds=9612.633
+
+# executed 13 · failed 0 · deferred 0 · selected 13 · chromium launches 1

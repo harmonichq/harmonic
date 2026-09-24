@@ -18,9 +18,9 @@
 //
 // THE SCHEDULE IS frontend/plan.js's, not this module's. buildDeliverable,
 // collapseDeliverable, reconcileDeliverable, effectivePlanItems and
-// segmentCapacity own construction, collapsing, the pump-precision match and the
-// capacity copy for v1 and v2 alike. Nothing here rounds a dose, compares a
-// value or counts a segment.
+// segmentCapacity own construction, collapsing, a served mismatch's
+// pump-precision rows and the capacity copy. Nothing here rounds a dose,
+// compares a value or counts a segment.
 //
 // THE STALE CONFLICT IS REAL, AND IT IS THE POINT. A decision is recorded
 // against the revision this page read. Anything that moves the store in between
@@ -30,11 +30,11 @@
 // that a write "probably" landed.
 import {
   buildDeliverable, collapseDeliverable, effectivePlanItems, formatStartMin,
-  reconcileDeliverable, segmentCapacity, PLAN_PARAMS, PLAN_PARAM_FAMILY, isStageableIsf,
+  reconcileDeliverable, segmentCapacity, settingValue, PLAN_PARAMS, PLAN_PARAM_FAMILY, isStageableIsf,
 } from './plan.js';
 import { stageItemsFor } from './diagnose-workspaces.js';
 import {
-  applyPlan, fetchPumpSettings, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
+  applyPlan, failureMessage, fetchPumpSettings, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
 } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, sheetToggle, stamp } from './frame.js';
 import {
@@ -65,7 +65,7 @@ const PARAM_FAMILY = PLAN_PARAM_FAMILY;
  */
 export function userValue(param, value) {
   if (value == null || value === '') return '';
-  return param === 'isf' ? `1 U : ${value} mg/dL` : String(value);
+  return param === 'isf' ? settingValue(param, value) : String(value);
 }
 
 /** A pump profile's schedule as the Plan reads it — one row per segment. */
@@ -257,8 +257,8 @@ async function commit(kind, run) {
 }
 
 function saveDraft() {
-  // The draft is the effective plan — the value in effect on each proposal cell,
-  // which is what plan.js says confirmation must record.
+  // The draft is the effective plan — the value in effect on each proposal cell.
+  // Recording the decision copies the saved draft into Plan history.
   const items = effectivePlanItems(rows());
   return commit('draft', () => savePlanDraft({ items }));
 }
@@ -337,7 +337,7 @@ function saveFailure() {
   // The locked copy is the sentence and nothing else. The store's conflict code
   // is transport vocabulary — it belongs in the response a test reads, not in
   // front of a wearer who cannot act on it.
-  return `<div class="gf-status" role="alert"><p class="gf-error">${e(what)}: ${e(held.error.message)}</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${e(retry)}</button></div></div>`;
+  return `<div class="gf-status" role="alert"><p class="gf-error">${e(what)}: ${e(failureMessage(held.error))}</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${e(retry)}</button></div></div>`;
 }
 
 // Shipped Plan reconciliation copy (index.html), chosen by the served verdict.
@@ -355,18 +355,18 @@ function planStatus() {
   const { state, confirmed_at: confirmedAt, on_pump: onPump } = plan.verdict;
   if (state === 'confirmed') {
     return `<div class="gf-status" data-state="confirmed" tabindex="-1"><p>${onPump
-      ? `✓ On pump since ${e(stamp(confirmedAt))} — the pump matches your plan.`
+      ? `✓ On pump since ${e(stamp(confirmedAt))}. The pump matches your plan.`
       : `✓ Confirmed on the pump ${e(stamp(confirmedAt))}. The latest pump read no longer matches this Plan.`}</p>${flash}</div>`;
   }
   if (state === 'mismatch') {
-    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null, detectedAt());
-    const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param] || cell.label)}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
-    return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values — likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
+    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null);
+    const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param])}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
+    return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values. This is likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
   }
   if (onPump) {
-    return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — on the pump, awaiting confirmation. The latest pump read holds this Plan; it is confirmed automatically once that read is reconciled.</p>${flash}</div>`;
+    return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending: on the pump, awaiting confirmation. The latest pump read holds this Plan; it is confirmed automatically once that read is reconciled.</p>${flash}</div>`;
   }
-  return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.</p>${flash}</div>`;
+  return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending: program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.</p>${flash}</div>`;
 }
 
 // The fields describe only the recorded Plan. A draft saved beside a pending
@@ -394,14 +394,19 @@ function decisionSection() {
 
 /**
  * What the store retained about the concern this decision was made from — the
- * record's own `decision_context`, not this page's recollection of it.
+ * record's own `decision_context`, not this page's recollection of it. Each
+ * recorded concern prints by its served name, never its identifier, and each
+ * recorded value in the wearer's form for the action row it was captured from;
+ * the explanation prints as recorded (ADR 451).
  */
 function knownSection() {
   const context = framePlan()?.decision_context;
   if (!context || context.state !== 'available') return '';
-  const settings = (context.settings || []).map((setting) => `${setting.value} ${setting.unit}`).join(' · ');
+  const captured = Array.isArray(context.action) ? context.action : [];
+  const settings = (context.settings || [])
+    .map((setting, index) => settingValue(captured[index]?.parameter, setting.value)).join(' · ');
   return `<section class="gf-section"><h3>What was known</h3><dl>
-    <dt>Priority</dt><dd>${e(context.subjects?.join(', ') || '')}</dd>
+    <dt>Priority</dt><dd>${e((context.subject_titles || []).filter(Boolean).join(', '))}</dd>
     <dt>Change</dt><dd>${e(settings)}</dd>
     <dt>Read at</dt><dd>${e(stamp(context.captured_at))}</dd></dl>
     <p>${e(context.explanation)}</p>
@@ -500,7 +505,8 @@ function bind(host) {
     button.onclick = () => {
       const action = button.dataset.set;
       if (action === 'stage') {
-        if (stage(selectedConcern())) { view.focusAfterRender = '[data-set="save-draft"]'; navigate('changes'); }
+        // The reader is already on the Plan: stay on it, in place (ADR 446).
+        if (stage(selectedConcern())) { view.focusAfterRender = '[data-set="save-draft"]'; render(); }
       } else if (action === 'unstage') {
         unstage(); view.focusAfterRender = '[data-set="stage"]'; render();
       } else if (action === 'save-draft') {
@@ -515,7 +521,7 @@ function bind(host) {
         // Nothing is sent anywhere: the wearer keys the flagged values in, and
         // the next fetch's profile is what settles it.
         memory.rekeyedAt = detectedAt();
-        memory.flash = 'Re-key the flagged values on your pump — this rechecks on the next fetch';
+        memory.flash = 'Re-key the flagged values on your pump. This rechecks on the next fetch';
         render();
       } else if (action === 'pump-settings') {
         openUtility('pump', button);

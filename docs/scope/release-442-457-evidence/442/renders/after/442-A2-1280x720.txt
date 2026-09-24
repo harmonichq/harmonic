@@ -1,0 +1,171 @@
+SYNTHETIC — after · tree dd5a93bb · store c4-ic · 442-A2 · 1280x720
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Acarb_ratio-all-20240601000000
+Element: viewport
+Focused: <h2> "This trial"
+Note: the 06-01 record opened from the roster: record trial:carb_ratio-all-20240601000000 (changed 2024-06-01 00:00:00); served ending superseded
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · SUPERSEDED BY A LATER CHANGE
+Carb ratio · 10 g/U → 6 g/U
+Detected Jun 1, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+no clock envelope is retained for this record
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Post-meal peak (up to 3 hours)
+target metric
+	120 mg/dL
+8 meals with readable peak
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Subsequent nadir (up to 6 hours)
+target metric
+	120 mg/dL
+8 meals with readable nadir
+	no meals
+no meals in period
+	Context only
+no difference estimable
+
+Time in range
+observed CGM readings in eligible windows
+	100%
+480 observed CGM readings in eligible windows
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time below range
+observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+480 observed CGM readings in eligible windows
+	no readings
+no observed CGM readings in eligible windows in period
+	Unclear
+no difference estimable
+
+Starting glucose
+meals with readable bg0
+	120 mg/dL
+8 meals with readable bg0
+	no meals
+no meals in period
+	Context only
+no difference estimable
+THIS TRIAL
+Superseded by a later change
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+Recorded by Harmonic
+Sep 24, 2026 · 08:20
+
+Original user decision is unavailable.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Superseded by a later change
+Conclusion
+Not recorded
+Finished
+Jun 10, 2024 · 09:00
+Recorded
+Sep 24, 2026 · 08:20
+
+A later setting change was detected inside the watch window. This record keeps the period it actually observed.
+
+Ending assessment
+Unavailable · a period has no readable glucose readings yet
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to Jun 1, 2024 · 00:00 Available history → Setting change
+Trial
+Jun 1, 2024 · 00:00 to Jun 10, 2024 · 09:00 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jun 10, 2024 · 09:00.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Carb ratio	10 g/U	6 g/U
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is unavailable: a period has no readable glucose readings yet.
+
+0 of 8 effective qualifying closed meal runsrequired
+
+31 days elapsed
+
+Not met — the carb-ratio block recorded with this change cannot be matched in this period.
+
+This period's evidence is unavailable: the carb-ratio block recorded with this change cannot be matched in this period.
+
+No contributing date has qualified in this period yet.
+
+0 of 8 effective qualifying closed meal runsrequired
+
+9 days elapsed
+
+Not met — the carb-ratio block recorded with this change cannot be matched in this period.
+
+This period's evidence is unavailable: the carb-ratio block recorded with this change cannot be matched in this period.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

@@ -18,8 +18,9 @@
  * verdict is the server's; a confirmed Plan is never served as pending, so it
  * holds no state here.
  */
+import { trialDayCount } from './follow-up.js';
 import { SETTING_NAME } from './plan-view.js';
-import { PLAN_PARAMS } from './plan.js';
+import { PLAN_PARAMS, settingValue } from './plan.js';
 
 /** Term 47 — the kind labels, byte for byte. */
 export const KIND = {
@@ -30,15 +31,14 @@ export const KIND = {
   idle: 'Nothing being watched',
 };
 /** The sentence a 98px reserve exists to protect — it wraps and never ellipsizes. */
-export const PLAN_DETAIL = 'Staged, not applied — nothing has changed on the pump';
+export const PLAN_DETAIL = 'Staged, not applied: nothing has changed on the pump';
 export const IDLE_TITLE = 'No change staged, no trial or focus active';
 export const IDLE_DETAIL = 'Stage a change from a finding to start one.';
 
-const PARAMETER = {
-  basal_rate: 'Basal', isf: 'ISF', carb_ratio: 'I:C',
-  target_bg: 'Target', profile: 'Profile',
-};
-const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U', target_bg: 'mg/dL' };
+// A Trial names its setting as the desk does; a whole profile keeps its own word.
+const TRIAL_NAME = { ...SETTING_NAME, profile: 'Profile' };
+// A correction factor carries its unit insulin first through `settingValue`.
+const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', target_bg: 'mg/dL' };
 
 const num = (value) => {
   const text = String(Number(value));
@@ -50,40 +50,55 @@ const monthDay = (stamp) => (typeof stamp === 'string' ? stamp.slice(5, 10) : ''
 /** A recorded Plan's setting in the wearer's words, from its recorded item family. */
 const planSetting = (plan) => SETTING_NAME[PLAN_PARAMS.find(({ type }) => type === plan.items[0]?.type)?.param];
 
-/** A Trial's own name for the change it is watching. */
+/** A Trial's own name for the change it is watching: its setting and slot. A
+    Trial serves no direction, and the dock derives none (ADR 451). */
 function trialTitle(trial) {
-  const name = PARAMETER[trial.parameter] || trial.parameter;
-  const unit = UNIT[trial.parameter];
-  const where = trial.slot ? `${name} ${trial.slot}` : name;
-  if (trial.before == null || trial.after == null || !unit) return where;
-  return `${where} · ${num(trial.before)} → ${num(trial.after)} ${unit}`;
+  const name = TRIAL_NAME[trial.parameter] || trial.parameter;
+  return trial.slot ? `${name} ${trial.slot}` : name;
 }
+
+/** A Trial's from→to values in the wearer's form, or '' when it serves none. */
+function trialValues(trial) {
+  if (trial.before == null || trial.after == null) return '';
+  if (trial.parameter === 'isf') {
+    return `${settingValue('isf', num(trial.before))} → ${settingValue('isf', num(trial.after))}`;
+  }
+  const unit = UNIT[trial.parameter];
+  return unit ? `${num(trial.before)} → ${num(trial.after)} ${unit}` : '';
+}
+
+/** Values lead the wrapping detail line, before its sentence (ADR 451). */
+const leading = (values) => (values ? [{ text: `${values} · ` }] : []);
 
 /**
  * The one object the dock reports, as `{ state, kind, title, detail, route }`.
  *
  * `detail` is a list of `{ text }` / `{ strong }` parts rather than markup, so the
- * painter can emphasise a count without this module writing HTML.
+ * painter can emphasise a count without this module writing HTML. `staged` is the
+ * surface's `{ count, title, values }`: the one-line title names the change, and
+ * its values lead the wrapping detail, where they are never cut off.
  */
 export function watchDockView({ watched = null, pendingPlan = null, staged = null } = {}) {
   if (watched && watched.kind === 'trial') {
     const maturing = watched.maturing || {};
     // "Maturing" and "ready to judge" are the domain's own words for a Trial's
     // watch phase (CONTEXT.md) — neither is invented here.
-    const lead = maturing.is_maturing ? 'Maturing — ' : 'Ready to judge — ';
-    // Changes' Trial progress bar clamps its value to the requirement; the dock
-    // clamps its day count the same way, so a completed Trial whose bounded period
-    // spans 15 dates never reads past its requirement here. The payload's true
-    // count is untouched — this is display only.
-    const elapsed = Math.min(maturing.days_elapsed ?? 0, maturing.days_required ?? 0);
+    const ready = !maturing.is_maturing;
+    const lead = ready ? 'Ready to judge — ' : 'Maturing — ';
+    // The dock prints the served count through Changes' own printer, so the two
+    // surfaces read one number for one Trial (#447). A completed Trial whose
+    // bounded period spans 15 dates reads "15 days · 14 required" here as it does
+    // in Changes; only Changes' progress bar clamps.
+    const count = trialDayCount(maturing, ready);
     return {
       state: 'trial',
       kind: KIND.trial,
       title: trialTitle(watched),
       detail: [
+        ...leading(trialValues(watched)),
         { text: lead },
-        { strong: `${elapsed} of ${maturing.days_required ?? 0}` },
-        { text: ` days since ${monthDay(watched.changed_at)}` },
+        { strong: count.number },
+        { text: ` days since ${monthDay(watched.changed_at)}${count.required ? ` · ${count.required}` : ''}` },
       ],
       route: { label: 'Open Changes', to: 'changes' },
     };
@@ -118,7 +133,7 @@ export function watchDockView({ watched = null, pendingPlan = null, staged = nul
       state: 'plan',
       kind: KIND.plan,
       title: staged.title,
-      detail: [{ text: PLAN_DETAIL }],
+      detail: [...leading(staged.values), { text: PLAN_DETAIL }],
       route: { label: 'Open Changes', to: 'plan' },
     };
   }

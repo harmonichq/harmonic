@@ -6,9 +6,13 @@ import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
-  assertServedRowDescriptions432, assertSelectedFacts432,
+  assertServedRowDescriptions432, assertSelectedFacts432, assertSentenceOnce454, queueNumbers451,
+  OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
+  canvasHeadFailures, assertCanvasHead, readSettled,
 } from './c4.replay.mjs';
+import { queueRows, scopeNote } from './diagnose-findings-queue.js';
 import { C2_STORIES } from './c2.replay.mjs';
+import { railRowLocator } from './diagnose-replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -92,6 +96,30 @@ test('S148–S150 are unique app-only #432 stories with their required manufactu
   }
 });
 
+test('S177–S179 are unique app-only #451 stories on the isf-strengthen store', () => {
+  for (const id of ['S177', 'S178', 'S179']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'ADR 451');
+    assert.equal(storyCase(id), 'isf-strengthen');
+  }
+});
+
+test('S178 expects the numbers line the queue prints, served scope note included', () => {
+  const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
+    .windows.low_block;
+  // Shaped like isf-strengthen's served row: asserting, whole-day, 40 → 32.
+  const served = { ...projection.rows.find(row => row.parameter === 'isf'), register: 'assert',
+    direction: 'strengthen', asserts_move: true, current: 40, recommended: 32, window_scope: 'whole_day' };
+  const [row] = queueRows({ ...projection, rows: [served] });
+  const printed = `${row.detail.now}${row.detail.then}${scopeNote(served)}`;
+  assert.equal(queueNumbers451(served), printed);
+  assert.equal(printed, 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL · Whole day');
+  assert.doesNotMatch(printed, /mg\/dL\/U/);
+  assert.equal(queueNumbers451({ ...served, window_scope: 'window' }), 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL',
+    'a windowed row carries no scope note');
+});
+
 const servedCaseFiles432 = JSON.parse(readFileSync(new URL(
   '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
 const mealCase432 = () => JSON.parse(JSON.stringify(servedCaseFiles432.cases['finding:meal_bolus_short'].event));
@@ -136,11 +164,14 @@ const claimedDetail432 = () => {
   const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
   return JSON.parse(JSON.stringify(file.selected_event[claimed].selection.detail));
 };
+// The rendered block, its habit line composed as the renderer does: a null sentence
+// is omitted.
 const block432 = (detail) => {
   const lines = [
     { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
     { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
-    { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+    { kind: 'habit', text: ['Carb undercount', 'Meets criteria', detail.reason.habits[0].detail]
+      .filter(Boolean).join(' · ') },
   ];
   return { figure: '40 g · 4 U at completed carb bolus', lines,
     text: ['Mar 1 · 08:00 Matched 40 g · 4 U at completed carb bolus', 'Evidence facts',
@@ -179,6 +210,54 @@ test('S149/S150 refuse a count-only line, the canvas sentence, or a reason that 
     /S149 the outcome line must equal the served outcome/);
 });
 
+test('S182 is a unique app-only #454 story on pattern-near-tie', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S182');
+  assert.equal(entries.length, 1, 'S182 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 454');
+  assert.equal(storyCase('S182'), 'pattern-near-tie');
+});
+
+// A claimed detail served once: the claimant's sentence is the cause's text alone.
+const onceDetail454 = () => {
+  const detail = claimedDetail432();
+  detail.reason.habits[0].detail = null;
+  return detail;
+};
+
+test('S182 passes when the claimant sentence prints once, on the cause line', () => {
+  const detail = onceDetail454();
+  assert.ok(detail.reason.cause.text, 'premise: the claimed detail serves its cause text');
+  assert.doesNotThrow(() => assertSentenceOnce454('S182', detail, block432(detail)));
+});
+
+test('S182 reaches its feature assertion when a habit line repeats the cause sentence, never a premise', () => {
+  // The base server's shape: the claimant's entry serves the cause's sentence again.
+  const repeated = onceDetail454();
+  repeated.reason.habits[0].detail = repeated.reason.cause.text;
+  assert.throws(() => assertSentenceOnce454('S182', repeated, block432(repeated)),
+    /^AssertionError.*S182 the cause's sentence must print once; it repeats on: Carb undercount · Meets criteria · /s);
+  const detail = onceDetail454();
+  const lost = block432(detail);
+  lost.lines = lost.lines.map((line) => line.kind === 'cause' ? { ...line, text: 'Attributed to Carb undercount' } : line);
+  assert.throws(() => assertSentenceOnce454('S182', detail, lost), /S182 the cause line must carry the served sentence/);
+  const renamed = block432(detail);
+  renamed.lines = renamed.lines.map((line) => line.kind === 'habit' ? { ...line, text: 'Carb undercount' } : line);
+  assert.throws(() => assertSentenceOnce454('S182', detail, renamed),
+    /S182 the claimant's habit line must read its title and band label only/);
+});
+
+test('S182 separates a setup error from the feature', () => {
+  const detail = onceDetail454();
+  const block = block432(detail);
+  assert.throws(() => assertSentenceOnce454('S182', null, block), /S182 premise: a selected Occurrence/);
+  const unclaimed = onceDetail454();
+  unclaimed.reason.cause = null;
+  assert.throws(() => assertSentenceOnce454('S182', unclaimed, block), /S182 premise: the selected Occurrence is claimed/);
+  const outside = onceDetail454();
+  outside.reason.habits = [];
+  assert.throws(() => assertSentenceOnce454('S182', outside, block), /S182 premise: the claimant is one of the served habits/);
+});
+
 test('S108–S114 are unique app-only C4 stories with their required manufactured cases', () => {
   for (const [id, expectedCase, term] of [
     ['S108', 'showcase', 'HV2-34'], ['S109', 'showcase', 'HV2-34'],
@@ -199,6 +278,206 @@ test('S142 and S143 are unique app-only C4 record stories with their manufacture
     assert.equal(entries[0][1].deferred.term, 'HV2-28');
     assert.equal(storyCase(id), expectedCase);
   }
+});
+
+test('S180 is a unique app-only C4 record story on the manufactured case serving one expired Trial', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S180');
+  assert.equal(entries.length, 1, 'S180 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-28');
+  assert.equal(storyCase('S180'), 'c4-isf');
+});
+
+test('S162–S165 are unique app-only C4 Day-return stories on their manufactured cases', () => {
+  for (const [id, expectedCase, term] of [
+    ['S162', 'c3-trial', 'HV2-14'], ['S163', 'c3-trial', 'HV2-14'],
+    ['S164', 'showcase', 'HV2-14'], ['S165', 'showcase', 'HV2-34'],
+  ]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// A fake page for the #445 carb-utility stories, S164 and S165. It keeps the
+// page's address and answers the served reads the stories make. As in the
+// app, a click that moves the desk rewrites the address at once: an Open Day
+// writes a Day address, and each Return from Day leaves the address its
+// scripted `returns` entry names. The return then plays its requests in the
+// shape the coordinator's replay of the real app showed: its GET /api/status
+// first, then — only once that read has been answered — whatever the answer set
+// off (a moved store's re-read: its own status read, then its guidance read).
+// The desk settles, and every wait on the page resolves, only once the return
+// has played out, as the app's loading frame stands until a re-read lands.
+function qa445Page({ returns, focused = true } = {}) {
+  const held = 'o-1';
+  const latest = '2024-06-28';
+  const entry = { id: 77, t: `${latest} 12:07:00` };
+  const actions = [];
+  const routes = new Map();
+  const listeners = new Set();
+  const waiters = new Set();
+  let address = {};
+  let windowLabel = '24 h';
+  let logged = false;
+  let played = 0;
+  let settling = Promise.resolve();
+  const request = pathname => ({ url: () => `http://synthetic.invalid${pathname}` });
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  const fire = pathname => {
+    actions.push(`request:${pathname}`);
+    for (const listener of [...listeners]) listener(request(pathname));
+    for (const waiter of [...waiters]) waiter.offer(pathname);
+  };
+  // No request a waiter wants arrived: time it out, as Playwright would.
+  const expire = () => { for (const waiter of [...waiters]) waiter.expire(); };
+  // A click does not wait on the network, so the return plays on after it.
+  function playReturn() {
+    const { address: left, after = [] } = returns[played++];
+    let settle;
+    settling = new Promise(resolve => { settle = resolve; });
+    const answered = async () => {
+      await tick();
+      for (const pathname of after) { fire(pathname); await tick(); }
+      await tick(); expire(); settle();
+    };
+    address = left;
+    fire('/api/status');
+    const route = [...routes.values()][0];
+    (route ? route({ request: () => request('/api/status'), continue: answered }) : answered()).catch(() => {});
+  }
+  const caseFile = { finding: { id: 'finding:over_treated_low' },
+    projection: { alignment: 'event', cohorts: [{ occurrence_ids: [held, 'o-2'] }] } };
+  const responses = [
+    { url: () => `http://synthetic.invalid/api/diagnose/finding-case-file?finding_id=${encodeURIComponent(caseFile.finding.id)}`,
+      ok: () => true, json: async () => caseFile },
+    { url: () => 'http://synthetic.invalid/api/status', ok: () => true },
+  ];
+  const served = { '/api/status': { latest_data_day: latest }, '/api/prompts': [{ detector: 'low' }] };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => { actions.push(`wait:${selector}`); },
+    count: async () => 1,
+    getAttribute: async name => (name === 'data-occurrence-id' ? held
+      : name === 'data-subject' ? `question:low|${latest} 12:10:00` : null),
+    evaluate: async () => (selector.includes('seg-window') ? windowLabel : selector.includes('crumb-trail') ? 'Over-treated low' : ''),
+    click: async () => {
+      actions.push(`click:${selector}`);
+      if (selector === 'Afternoon' || selector === '24 h') windowLabel = selector;
+      else if (selector.includes('case-occurrence')) {
+        address = { subject: caseFile.finding.id, occurrence: held, ...(windowLabel === 'Afternoon' ? { window: '720-1080' } : {}) };
+      } else if (selector.includes('occ-foot')) {
+        address = { date: latest, moment: `${latest} 12:10:00`, subject: caseFile.finding.id, title: 'Over-treated low',
+          occurrence: held, from: 'diagnose' };
+      } else if (selector.includes('gf-chips')) logged = true;
+      else if (selector.includes('data-utility-remove') || selector.includes('data-subject="carb:')) {
+        address = { date: latest, subject: `carb:${entry.id}`, title: 'Log carbs · 12:07', from: 'diagnose.carbs' };
+      } else if (selector.includes('[data-action="day"]')) {
+        address = { date: latest, subject: `question:low|${latest} 12:10:00`, title: 'Carb questions · 12:10',
+          from: 'diagnose.questions' };
+      } else if (selector === '[data-day="return"]') playReturn();
+    },
+  });
+  return {
+    _actions: actions,
+    url: () => 'http://synthetic.invalid/diagnose',
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    fill: async (selector, value) => { actions.push(`fill:${selector}=${value}`); },
+    reload: async () => { actions.push('reload'); },
+    evaluate: async (fn, arg) => {
+      const source = fn.toString();
+      if (source.includes('activeElement')) return focused;
+      if (source.includes('URLSearchParams')) return { ...address };
+      if (source.includes('case-occurrence')) return held;
+      return null;
+    },
+    waitForFunction: async () => { await settling; },
+    request: { get: async url => {
+      const { pathname } = new URL(url);
+      const body = pathname === '/api/carbs' ? { carb_entries: logged ? [entry] : [] } : served[pathname];
+      return { status: () => 200, text: async () => '', json: async () => body };
+    } },
+    route: async (pattern, handler) => { routes.set(pattern, handler); },
+    unroute: async pattern => { routes.delete(pattern); },
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    waitForResponse: predicate => {
+      const match = responses.find(response => predicate(response));
+      return match ? Promise.resolve(match) : new Promise(() => {});
+    },
+    waitForRequest: predicate => new Promise((resolve, reject) => {
+      const waiter = {
+        offer: pathname => { if (predicate(request(pathname))) { waiters.delete(waiter); resolve(request(pathname)); } },
+        expire: () => { waiters.delete(waiter); reject(new Error('synthetic waitForRequest timeout')); },
+      };
+      waiters.add(waiter);
+    }),
+  };
+}
+const CASE445 = { subject: 'finding:over_treated_low', occurrence: 'o-1' };
+const AFTERNOON445 = { ...CASE445, window: '720-1080' };
+// The address the Diagnose Day return leaves: that entry's own keys (ADR 428).
+const DAY_RETURN445 = { date: '2024-06-28', moment: '2024-06-28 12:10:00', ...CASE445, title: 'Over-treated low', from: 'diagnose' };
+
+test('S164 finds the moved return\'s re-read a round trip after its status read, then the retained return', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [
+    { address: AFTERNOON445, after: ['/api/status', '/api/analyze'] },
+    { address: AFTERNOON445 },
+  ] });
+  await C4_STORIES.S164(page);
+  const status = page._actions.indexOf('request:/api/status');
+  assert.ok(status >= 0 && page._actions.indexOf('request:/api/analyze') > status + 1,
+    'premise: the guidance read comes after the return\'s status read and the re-read\'s own');
+});
+
+test('S164 fails at its re-read when the return after logging reads nothing but status', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: AFTERNOON445 }, { address: AFTERNOON445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S164(page)),
+    /S164 the return after logging must re-read Diagnose: the store moved/);
+});
+
+test('S165 reads the retained case from an address that still carried the Day entry\'s keys before the return', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S165(qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: CASE445 }] }));
+});
+
+test('S165 fails at its address when the return leaves a title or a from in it', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: DAY_RETURN445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S165(page)),
+    /S165 the address must name the retained case, with no title, from or focus/);
+});
+
+// A return that should be retained but re-reads once its status read is
+// answered: the re-read's requests come after heldStatusReturn has stopped
+// recording, and before the desk settles.
+const LATE_REREAD445 = ['/api/status', '/api/analyze'];
+
+test('S164 fails when the return after a reload re-reads once its status read is answered', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [
+    { address: AFTERNOON445, after: ['/api/status', '/api/analyze'] },
+    { address: AFTERNOON445, after: LATE_REREAD445 },
+  ] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S164(page)),
+    /S164 the return after a reload must issue no request besides the held status check/);
+});
+
+test('S165 fails when its return re-reads once its status read is answered', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: CASE445, after: LATE_REREAD445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S165(page)),
+    /S165 the Carb questions return must issue no request besides the held status check/);
+});
+
+test('S157 is a unique app-only C4 record story on the c4-ic case', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S157');
+  assert.equal(entries.length, 1, 'S157 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-28');
+  assert.equal(storyCase('S157'), 'c4-ic');
 });
 
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
@@ -234,6 +513,72 @@ test('S139 and S140 are unique app-only C4 dock stories on their watched cases',
     assert.equal(entries[0][1].deferred.term, 'HV2-12');
     assert.equal(storyCase(id), expectedCase);
   }
+});
+
+test('S166–S168 are unique app-only #446 arrival stories on their watched cases', () => {
+  for (const [id, expectedCase] of [['S166', 'basal-lower'], ['S167', 'basal-lower'], ['S168', 'c3-focus']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-15');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// #446: a c3-focus page whose server serves an active Focus and saves a draft
+// beside it. `returnLabel` and `nameplateOpenPlan` shape it like the base (no
+// nameplate Open Plan, "Return to Trial") or like the branch.
+function focusDraftPage446({ returnLabel, nameplateOpenPlan }) {
+  let url = 'http://synthetic.invalid/';
+  let at = 'diagnose';
+  const writes = [];
+  const shown = {
+    changes: { 'nav.v2-nav [aria-current="page"][data-destination="changes"]': 1, '.gf-stage-focus': 1,
+      '.gf-stage-focus [data-follow-up-inspect]': 1,
+      '.gf-stage-focus .gf-end [data-action="open-plan"]': nameplateOpenPlan ? 1 : 0,
+      '.gf-stage-focus [data-action="open-plan"]': nameplateOpenPlan ? 1 : 0 },
+    diagnose: { '[data-action="watch"]': 1 },
+    plan: { 'nav.v2-nav [aria-current="page"][data-destination="changes"]': 1, '.gf-plan': 1 },
+  };
+  const texts = { diagnose: { '[data-action="watch"]': [returnLabel] }, plan: { '.gf-stage .gf-kicker b': ['Draft saved'] } };
+  const presses = { '.gf-stage-focus [data-follow-up-inspect]': ['diagnose', '/diagnose?from=changes'],
+    '[data-action="watch"]': ['changes', '/changes'], '.gf-stage-focus [data-action="open-plan"]': ['plan', '/changes?subject=plan'] };
+  const served = {
+    '/api/verify/trials': { admission: { state: 'available', active_kind: 'focus', active_id: 1 }, trials: [], focuses: [{ id: 1 }] },
+    '/api/pump-settings': { profile: { segments: [{ start_min: 0, basal_rate: 0.8 }] } },
+    '/api/guidance': { disposition: 'active_change', draft: { items: [{ type: 'basal', start_min: 0, value: 0.8 }] } },
+    '/api/plan': { items: [{ type: 'basal', start_min: 0, value: 0.8 }], updated_at: '2026-01-02 04:00:00' },
+  };
+  const answer = body => ({ status: () => 200, text: async () => '', json: async () => body });
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => { if (!shown[at][selector]) throw new Error(`synthetic page: ${selector} is not on ${at}`); },
+    click: async () => { const [next, path] = presses[selector]; at = next; url = new URL(path, url).href; },
+    count: async () => shown[at][selector] ?? 0,
+    allTextContents: async () => texts[at]?.[selector] ?? [],
+  });
+  return {
+    writes, url: () => url, locator: node,
+    goto: async target => { url = target; at = new URL(target).searchParams.get('subject') === 'plan' ? 'plan' : 'changes'; },
+    request: {
+      get: async target => answer(served[new URL(target).pathname]),
+      put: async (target, { data }) => { writes.push([new URL(target).pathname, data]); return answer({}); },
+    },
+  };
+}
+
+test('S168 names the Focus in its return and opens its draft on a branch-shaped page', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = focusDraftPage446({ returnLabel: 'Return to Focus', nameplateOpenPlan: true });
+  await C4_STORIES.S168(page);
+  assert.deepEqual(page.writes, [['/api/plan', { items: [{ type: 'basal', start_min: 0, value: 0.8 }] }]],
+    'S168 saves one draft beside the Focus, from the served pump profile');
+});
+
+test('S168 reaches its feature assertion on the base shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S168(
+    focusDraftPage446({ returnLabel: 'Return to Trial', nameplateOpenPlan: false }))),
+  /S168 Diagnose opened from the watched Focus must offer "Return to Focus" and no "Return to Trial"/);
 });
 
 test('S151–S153 are unique app-only C4 basal-lane stories, served from the verdict gallery', () => {
@@ -525,6 +870,255 @@ test('S143 fails when the figure prints the served code instead of its words', a
   }))), /S143 the figure must name the reason in words, never its code/);
 });
 
+// #452: the record destination's page with one expired Trial on its roster.
+// `carries` names what a reopen keeps, as the unfixed desk kept all three: the
+// typed text, the failed save and its request id.
+function qa452RecordPage({ carries = [] } = {}) {
+  const ID = 'expired-isf-synthetic';
+  const state = { view: 'none', text: '', failure: null, attempt: null, saved: null, url: 'http://synthetic.invalid/' };
+  const routes = []; const listeners = new Set(); let serial = 0;
+  const open = () => {
+    state.view = 'record';
+    if (!carries.includes('text')) state.text = '';
+    if (!carries.includes('failure')) state.failure = null;
+    if (!carries.includes('attempt')) state.attempt = null;
+  };
+  const present = {
+    'table.gf-table': () => state.view === 'roster',
+    [`table.gf-table [data-record="trial:${ID}"]`]: () => state.view === 'roster',
+    '[data-form="late-conclusion"]': () => state.view === 'record' && !state.saved,
+    '#late-conclusion-conclusion': () => state.view === 'record' && !state.saved,
+    '[data-form="late-conclusion"] [type="submit"]': () => state.view === 'record' && !state.saved,
+    '[data-save-error="conclude"]': () => state.view === 'record' && Boolean(state.failure),
+    '[data-save-error]': () => state.view === 'record' && Boolean(state.failure),
+    '[data-record-close]': () => state.view === 'record',
+    '[data-late-conclusion="available"]': () => state.view === 'record' && Boolean(state.saved),
+    '[data-late-conclusion-text]': () => state.view === 'record' && Boolean(state.saved),
+  };
+  async function submit() {
+    state.attempt ||= `conclude:synthetic-${++serial}`;
+    const body = { request_id: state.attempt, input_revision: 7, conclusion: state.text };
+    const request = { method: () => 'POST', url: () => `${state.url}api/verify/trials/${ID}/conclusion`,
+      postDataJSON: () => body };
+    for (const listener of listeners) listener(request);
+    const route = routes.find(([matcher]) => matcher.test(new URL(request.url()).pathname));
+    if (route) {
+      await route[1]({ request: () => request, fulfill: async ({ status }) => {
+        state.failure = { status };
+      } });
+      return;
+    }
+    state.saved = state.text; state.text = ''; state.failure = null; state.attempt = null;
+  }
+  const node = selector => {
+    const here = () => present[selector]?.() ?? false;
+    return {
+      locator: nested => node(`${selector} ${nested}`),
+      waitFor: async () => { if (!here()) throw new Error(`locator.waitFor: timeout waiting for ${selector}`); },
+      count: async () => (here() ? 1 : 0),
+      click: async () => {
+        if (!here()) throw new Error(`locator.click: no ${selector}`);
+        if (selector.includes('[data-record="')) open();
+        else if (selector === '[data-record-close]') state.view = 'roster';
+        else if (selector.endsWith('[type="submit"]')) await submit();
+      },
+      fill: async value => { if (!here()) throw new Error(`locator.fill: no ${selector}`); state.text = value; },
+      inputValue: async () => state.text,
+      innerText: async () => (selector === '[data-late-conclusion-text]' ? state.saved : ''),
+    };
+  };
+  return {
+    url: () => state.url,
+    goto: async target => { state.url = new URL('/', target).href; state.view = 'roster'; },
+    locator: node,
+    route: async (matcher, handler) => { routes.push([matcher, handler]); },
+    unroute: async (matcher, handler) => {
+      const at = routes.findIndex(([m, h]) => m === matcher && h === handler);
+      if (at >= 0) routes.splice(at, 1);
+    },
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    request: { get: async href => {
+      const selected = new URL(href).searchParams.get('selected');
+      const trial = { id: ID, ending: { kind: 'expired_unreviewed' } };
+      const body = selected
+        ? { trials: [trial], selected: { id: ID, original: { ending: trial.ending, late_conclusion: { state: 'unavailable' } } } }
+        : { trials: [trial], focuses: [] };
+      return { status: () => 200, text: async () => '', json: async () => body };
+    } },
+  };
+}
+
+test('S180 passes when a reopened record starts empty with a request id of its own', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S180(qa452RecordPage());
+});
+
+test('S180 fails at its feature assertion when a reopened record keeps the typed words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['text', 'failure', 'attempt'] })),
+    /S180 reopening the record from the roster must start its later conclusion empty/);
+});
+
+test('S180 fails when a reopened record keeps only the failed save', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['failure'] })),
+    /S180 reopening the record must carry no failed save/);
+});
+
+test('S180 fails when the next save reuses the refused request id', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['attempt'] })),
+    /S180 the next save must send a request id of its own/);
+});
+
+// #442: c4-ic's roster as ADR 442 serves it — the watched 06-10 carb-ratio
+// change still open, the older 06-01 one ended superseded at 06-10 09:00 — and
+// that older record as the desk renders it, read back by selector. As in
+// Playwright, a `has` locator is queried inside each outer match, and a locator
+// that matches nothing never returns its text.
+const OLDER442 = 'carb_ratio-all-20240601000000';
+const RECORD442 = `[data-record="trial:${OLDER442}"]`;
+const ROW442 = `table.gf-table tr:has(${RECORD442})`;
+function qa442RecordPage({ servedKind = 'superseded', cell = 'Superseded by a later change\nJun 10, 2024 · 09:00',
+  openCells = 0, kindLine = 'Superseded by a later change',
+  note = 'A later setting change was detected inside the watch window. This record keeps the period it actually observed.',
+  finished = 'Jun 10, 2024 · 09:00', readTo = 'Jun 10, 2024 · 09:00' } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const roster = {
+    trials: [{ id: 'carb_ratio-all-20240610090000', ending: { state: 'unavailable', reason: 'not_recorded' } },
+      { id: OLDER442, ending: servedKind ? { kind: servedKind, effective_at: '2024-06-10 09:00:00' }
+        : { state: 'unavailable', reason: 'not_recorded' } }],
+    admission: { active_kind: 'trial', active_id: 'carb_ratio-all-20240610090000' },
+  };
+  const ending = '[data-record-part="ending"]';
+  const counts = {
+    [`${ending} [data-ending-kind="superseded"]`]: kindLine === null ? 0 : 1,
+    [`${ROW442} [data-record-open="true"]`]: openCells,
+  };
+  const text = {
+    [`${ROW442} td.v`]: cell,
+    [`${ending} [data-ending-kind="superseded"]`]: kindLine ?? '',
+    [ending]: `Saved ending immutable\nHow it ended\n${kindLine}\nFinished\n${finished}\n${note}`,
+    [`${ending} dt xpath=following-sibling::dd[1]`]: finished,
+    '[data-part="periods"]': `Evidence periods\nBefore\n…\nTrial\n…\nPump-local time, half-open. Observations are limited to these periods; data was read to ${readTo}.`,
+  };
+  const node = selector => ({
+    selector,
+    first() { return this; },
+    locator: nested => node(`${selector} ${nested}`),
+    waitFor: async () => {},
+    count: async () => counts[selector] ?? 0,
+    innerText: () => (selector in text ? Promise.resolve(text[selector]) : new Promise(() => {})),
+    click: async () => { assert.equal(selector, `${ROW442} ${RECORD442}`); },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; },
+    locator: (selector, { has } = {}) => node(has ? `${selector}:has(${has.selector})` : selector),
+    request: { get: async () => ({ status: () => 200, text: async () => '', json: async () => roster }) },
+  };
+}
+
+test('S157 reads the older superseded record’s ending in the roster and on the record', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S157(qa442RecordPage());
+});
+
+test('S157 fails at its first feature assertion when the older record is served still open, as on base', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S157(qa442RecordPage({ servedKind: null })),
+    /S157 the older Trial row must carry its served superseded ending/);
+});
+
+test('S157 fails when the roster row still reads Still open or carries a still-open cell', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    cell: 'Still open\nNot watched', openCells: 1 }))), /S157 the roster row must read its ending/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    cell: 'Superseded by a later change\nStill open' }))), /S157 an ended record's roster row must not read Still open/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    openCells: 1 }))), /S157 an ended record must carry no still-open cell/);
+});
+
+test('S157 fails when the opened record shows no superseded ending, or prints its kind as a code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    kindLine: null }))), /S157 the opened record must show its saved superseded ending/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    kindLine: 'superseded' }))), /S157 the ending kind line must read its words, never an underscore-token code/);
+});
+
+test('S157 fails when the saved-ending note still claims the same setting', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    note: 'A later change to the same setting took over. This record keeps the period it actually observed.',
+  }))), /S157 the saved-ending note must not claim the same setting/);
+});
+
+test('S157 fails when the periods note reads data past the saved ending', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    readTo: 'Jul 1, 2024 · 23:55' }))), /S157 the periods note must read data to the saved ending's Finished time/);
+});
+
+// #442: S91's c4 readiness helper over an ended record whose saved ending read
+// its evidence to the ending while the retained read runs to the data tail, as
+// c4-isf serves them. `lines` is the readiness the page prints.
+function qa442ReadinessPage(lines, { rawReason = false } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const arm = (observed, met, reason = null) => ({ unit: 'qualifying fasting Rest windows', required: 30,
+    observed, criterion_met: met, reason, elapsed_days: 31 });
+  const retained = { readiness: { before: arm(31, true), after: arm(30, true) }, assessment: { state: 'unclear' } };
+  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') } };
+  const detail = { original: { ending: { kind: 'expired_unreviewed', assessment: saved } },
+    reassessment: { comparison: retained } };
+  const roster = { trials: [{ id: 'isf-all-20240601000000', parameter: 'isf' }],
+    admission: { active_kind: null, active_id: null } };
+  const printed = lines === 'saved' ? saved : retained;
+  const criterion = side => (side.criterion_met ? 'Criterion met.'
+    : rawReason ? `Not met — ${side.reason}.` : 'Not met — still collecting.');
+  const node = selector => ({
+    filter() { return this; },
+    first() { return this; },
+    waitFor: async () => {},
+    click: async () => {},
+    getAttribute: async () => String(printed.readiness[/"(\w+)"/.exec(selector)[1]].criterion_met),
+    innerText: async () => {
+      const side = printed.readiness[/"(\w+)"/.exec(selector)[1]];
+      return `${side.observed} of 30 qualifying fasting Rest windows\n${criterion(side)}`;
+    },
+    // The criterion line, as the desk prints it since ADR 450: a served reason in words.
+    locator: () => ({ innerText: async () => criterion(printed.readiness[/"(\w+)"/.exec(selector)[1]]) }),
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; },
+    locator: selector => node(selector),
+    request: { get: async target => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(target).searchParams.has('selected') ? { selected: detail } : roster) }) },
+  };
+}
+
+test('S91 readiness compares an ended record’s lines with its saved ending, and returns the retained read', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  const comparison = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
+  assert.equal(comparison.readiness.after.observed, 30);
+  assert.equal(comparison.readiness.after.criterion_met, true);
+});
+
+test('S91 readiness rejects an arm that prints its served reason code instead of words', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('saved', { rawReason: true }),
+    'qualifying fasting Rest windows', 30)), /a served reason prints in words, never its code/);
+});
+
+test('S91 readiness fails when an ended record’s lines print the retained read instead', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('retained'),
+    'qualifying fasting Rest windows', 30)), /the after readiness line must print the criterion of the comparison the page shows/);
+});
+
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route
 // synchronously (mirroring real navigation, which commits before client-side
 // fetches resolve); the loading frame's skeleton is asserted while the read
@@ -675,6 +1269,48 @@ test('R8 opens finding:carb_undercount through its Pattern fold, never a raw qro
     'R8 must open the closed fold before it can reach the claimed cause');
   assert.ok(page.actions.includes('#level .qmember[data-id="finding:carb_undercount"]'),
     'R8 must click the folded .qmember row, not a sibling .qrow');
+});
+
+// ADR 457: the rail reads "Loading findings…" (no row, no fold) until it
+// settles, so a resolver that counts first finds neither shape. This rail
+// paints only once the resolver waits for it, then shows the claimed cause
+// behind one closed fold.
+function loadingRailPage(id) {
+  const clicks = [];
+  const fold = '#level .qfold[aria-expanded="false"]';
+  const member = `#level .qmember[data-id="${id}"]`;
+  let painted = false;
+  let foldOpen = false;
+  const present = selector => {
+    if (!painted) return 0;
+    if (selector === fold) return foldOpen ? 0 : 1;
+    if (selector === member) return foldOpen ? 1 : 0;
+    return 0;
+  };
+  return {
+    clicks,
+    locator: selector => ({
+      selector,
+      first() { return this; },
+      count: async () => present(selector),
+      waitFor: async () => {
+        if (!present(selector)) throw new Error(`Timeout waiting for ${selector}`);
+      },
+      click: async () => {
+        clicks.push(selector);
+        if (selector === fold) foldOpen = true;
+      },
+    }),
+    waitForFunction: async () => { painted = true; return true; },
+  };
+}
+
+test('railRowLocator waits for a settled Findings rail before it reads the row shape', async () => {
+  const id = 'finding:high_carb_sequence';
+  const page = loadingRailPage(id);
+  const row = await railRowLocator(page, id);
+  assert.equal(row.selector, `#level .qmember[data-id="${id}"]`, 'the claimed cause resolves to its folded line');
+  assert.deepEqual(page.clicks, ['#level .qfold[aria-expanded="false"]'], 'the closed fold opens before the cause is read');
 });
 
 test('R17 requires the generated finishable Trial, never a mock ready selector', async () => {
@@ -1405,6 +2041,105 @@ test('S139 and S140 fail at the label, not at a premise, when the dock still rea
   }
 });
 
+test('S169 and S170 are unique app-only C4 stories on their cases and terms', () => {
+  for (const [id, expectedCase, term] of [['S169', 'c3-trial', 'HV2-24'], ['S170', 'showcase', 'HV2-12']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// #447: a fake page for S169 — the served admission and selected Trial (15 of 14,
+// complete, changed 05-15, target TBR), the dock, and the Changes Watch maturity
+// and outcomes its link opens. `dock` is the dock's detail line: the branch prints
+// the served count, the base clamped it. `lead` is the outcomes table's first row:
+// the branch leads with the served target, the base kept TIR first, unmarked.
+function qa447CountPage(dock, lead = { 'data-outcome': 'tbr', class: 'gf-target' }) {
+  const roster = { admission: { state: 'available', active_kind: 'trial', active_id: 'basal_rate-0300' } };
+  const selected = { state: 'complete', changed_at: '2024-05-15 00:00:00', target_metrics: ['tbr'],
+    maturing: { days_elapsed: 15, days_required: 14, gap_count: 0 } };
+  const text = {
+    '.inspector > .watch .how': dock,
+    '[data-part="maturity"] .gf-figure': '15 days14 required · 0 data gaps',
+  };
+  const attributes = { 'progress[aria-label="Trial progress"]': { value: '14', max: '14' },
+    '.gf-stage-trial [data-table="outcomes"] tbody tr': lead };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    locator: sub => node(`${selector} ${sub}`),
+    waitFor: async () => {}, click: async () => {},
+    getAttribute: async name => attributes[selector]?.[name] ?? null,
+    innerText: async () => text[selector] ?? '',
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async href => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(href).searchParams.has('selected') ? { ...roster, selected } : roster) }) },
+    locator: node,
+  };
+}
+
+test('S169 passes when the dock prints the served count in Changes\' words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required'));
+  // #451: the same count after the Trial's values, which lead the detail line.
+  await C4_STORIES.S169(qa447CountPage('0.85 → 1.05 U/hr · Ready to judge — 15 days since 05-15 · 14 required'));
+});
+
+test('S169 fails at the outcomes lead, not at a premise, when Changes keeps TIR first', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required',
+      { 'data-outcome': 'tir', class: '' })),
+    error => error.message.includes("S169 Changes' outcomes must lead with the served target metric tbr")
+      && !error.message.includes('premise')));
+});
+
+test('S169 fails at the dock count when the values ahead of it print a second count', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('14 of 14 days · Ready to judge — 15 days since 05-15 · 14 required')),
+    error => error.message.includes('S169 the dock must print the served day count')
+      && !error.message.includes('premise')));
+});
+
+test('S169 fails at the dock count, not at a premise, when the dock clamps to "14 of 14"', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('Ready to judge — 14 of 14 days since 05-15')),
+    error => error.message.includes('S169 the dock must print the served day count')
+      && !error.message.includes('premise')));
+});
+
+// #447: a fake page for S170 — the served article and the Guide rendering it.
+function qa447GuidePage(line) {
+  const article = `Reading the Diagnose surface\n- ◈ Cause levers (late bolus, over-treated low) ${line}`;
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => {}, click: async () => {},
+    innerText: async () => (selector === '.gf-article' ? article : ''),
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async () => ({ status: () => 200, text: async () => `- **◈ Cause** levers ${line}` }) },
+    locator: node,
+  };
+}
+
+test('S170 passes when the Guide article sends Cause levers to a Focus followed in Changes', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S170(qa447GuidePage('flow to a Focus, followed in\n  Changes, because no pump setting fixes them.'));
+});
+
+test('S170 fails at its no-Verify assertion, not at a premise, on the base article', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S170(qa447GuidePage('flow to Focus / Verify, because\n  no pump setting fixes them.')),
+    error => error.message.includes('S170 the article must name no Verify')
+      && !error.message.includes('premise')));
+});
+
 test('S154 is a unique app-only C4 story, served from the showcase', () => {
   const entries = REGISTRY.filter(([entry]) => entry === 'S154');
   assert.equal(entries.length, 1, 'S154 is registered once');
@@ -1899,4 +2634,536 @@ test('S122 fails when the Glossary opens without its Episode Log group in view',
 test('S122 fails when Close does not return focus to the caption control', async () => {
   await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ returns: false })),
     /S122 closing the Glossary must return focus to the Findings caption control; focus is on body/));
+});
+
+/* ----------------------------------------- #449/#450: served names and words */
+
+test('S173–S176 are unique app-only #449 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase, term] of [['S173', 'c3-focus', 'HV2-26'], ['S174', 'c3-preempted', 'HV2-28'],
+    ['S175', 'c4-history', 'HV2-28'], ['S176', 'c3-preempted', 'HV2-28']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// A page whose served reads answer from `api` and whose rendered text is
+// whatever `texts` says for the address on screen, one string per element.
+function qa449Page({ api, texts }) {
+  let url = 'http://synthetic.invalid/';
+  const all = selector => [].concat(texts(url)[selector] ?? []);
+  const node = selector => ({
+    first: () => node(selector), waitFor: async () => {},
+    count: async () => all(selector).length,
+    innerText: async () => all(selector)[0] ?? '',
+    allInnerTexts: async () => all(selector),
+  });
+  return {
+    url: () => url, goto: async target => { url = target; }, locator: node,
+    request: { get: async href => {
+      const body = api(new URL(href).searchParams);
+      return { status: () => 200, text: async () => JSON.stringify(body), json: async () => body };
+    } },
+  };
+}
+const words449 = {
+  unavailable_adherence: 'the watched behavior could not be measured in both periods',
+  zero_opportunities: 'no opportunities in this period',
+  insufficient_measurement: 'too little glucose data to judge every opportunity',
+};
+
+// c3-focus's active Pattern Focus on Late bolus, as the branch serves it.
+function activeFocus449({ served = { lever_title: 'Late bolus' }, row = 'Late bolus\nthe intended behavior · meals',
+  intent = 'What this Focus watches\nLate bolus', verdicts = ['Ready', 'Ready'] } = {}) {
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', lever: 'late_bolus', title: 'Highs after meals', ...served,
+        original: { context: { state: 'unavailable', reason: 'not_recorded' } },
+        reassessment: params.get('assessment') ? { comparison: { adherence: { before: {}, after: {} },
+          readiness: { before: { verdict: 'ready' }, after: { verdict: 'ready' } } } } : null } }
+      : { admission: { state: 'available', active_kind: 'focus', active_id: 1 }, trials: [], focuses: [{ id: 1 }] }),
+    texts: () => ({ '[data-table="adherence"] tr.gf-target td': [row, '12 of 12'], '[data-part="intent"]': intent,
+      '[data-opportunity-verdict]': verdicts }),
+  });
+}
+
+test('S173 passes when the active Focus names its served behavior and its verdicts in words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S173(activeFocus449());
+});
+
+test('S173 fails at its feature assertion on the base server shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S173(activeFocus449({ served: {} }))),
+    /S173 the Observed behavior row must name the served behavior/);
+});
+
+test('S173 fails when the row prints the lever key or the Pattern title, or a verdict prints as served', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [page, message] of [
+    [activeFocus449({ row: 'late_bolus\nthe intended behavior · meals' }), /S173 the Observed behavior row must name the served behavior/],
+    [activeFocus449({ row: 'Highs after meals\nthe intended behavior · meals' }), /S173 the Observed behavior row must name the served behavior/],
+    [activeFocus449({ intent: 'What this Focus watches\nlate_bolus' }), /S173 What this Focus watches must name the served behavior/],
+    [activeFocus449({ verdicts: ['ready', 'Ready'] }), /S173 the opportunity verdict must print as a word/],
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S173(page)), message);
+});
+
+// c3-preempted's Focus ended by hand: its saved ending is unavailable, its
+// behavior, harm and readiness arms all serve zero opportunities.
+function manualEnding449({ ending = `Unavailable · ${words449.unavailable_adherence}`,
+  harm = `unavailable\n${words449.zero_opportunities}`, criterion = `Not met — ${words449.zero_opportunities}.`,
+  verdict = `Withheld · ${words449.zero_opportunities}` } = {}) {
+  const arm = { opportunities: 0, availability: { state: 'unavailable', reason: 'zero_opportunities' },
+    harm_availability: { state: 'unavailable', reason: 'zero_opportunities' } };
+  const ready = { verdict: 'withheld', reason: 'zero_opportunities', criterion_met: false };
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', original: { ending: { kind: 'manual', assessment: {
+        state: 'unavailable', reason: 'unavailable_adherence', adherence: { before: arm, after: arm },
+        readiness: { before: ready, after: ready } } } } } }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 1, ending: { kind: 'manual' } }] }),
+    texts: () => ({ '[data-ending-assessment]': ending, '[data-harm]': [harm, harm],
+      '[data-criterion]': [criterion, criterion], '[data-opportunity-verdict]': [verdict, verdict] }),
+  });
+}
+
+test('S174 passes when a saved Focus ending and its record lines print every served reason in words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S174(manualEnding449());
+});
+
+test('S174 fails at its feature assertion when the saved ending prints its served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(manualEnding449({
+    ending: 'Unavailable · unavailable_adherence' }))), /S174 the saved ending must name its reason in words, never its served code/);
+});
+
+test('S174 fails when a harm cell, a Not met line or an opportunity line prints a served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const page of [
+    manualEnding449({ harm: 'unavailable\nzero_opportunities' }),
+    manualEnding449({ criterion: 'Not met — zero_opportunities.' }),
+    manualEnding449({ verdict: 'withheld · zero_opportunities' }),
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(page)), /S174 a served code must print in words/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(manualEnding449({
+    verdict: `withheld · ${words449.zero_opportunities}` }))), /S174 the opportunity verdict must print as a word/);
+});
+
+// c4-history's preempted Focus: an unmeasured Before arm and a collecting one.
+function unmeasured449({ cell = `unavailable\n${words449.insufficient_measurement} · 0 of 4 measured`,
+  criterion = 'Not met — still collecting.' } = {}) {
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', original: { ending: { kind: 'trial_preempted', assessment: {
+        state: 'unavailable', reason: 'unavailable_adherence',
+        adherence: { before: { opportunities: 4, measured_opportunities: 0, rate: null,
+          availability: { state: 'unavailable', reason: 'insufficient_measurement' } },
+        after: { opportunities: 0, rate: null, availability: { state: 'unavailable', reason: 'zero_opportunities' } } },
+        readiness: { before: { verdict: 'withheld', reason: 'collecting', criterion_met: false },
+          after: { verdict: 'withheld', reason: 'zero_opportunities', criterion_met: false } } } } } } }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 1, ending: { kind: 'trial_preempted' } }] }),
+    texts: () => ({ '[data-adherence="before"]': cell, '[data-readiness="before"] [data-criterion]': criterion }),
+  });
+}
+
+test('S175 passes when an unmeasured behavior cell names its reason in words and keeps its count', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S175(unmeasured449());
+});
+
+test('S175 fails at its feature assertion when the behavior cell prints its served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    cell: 'unavailable\ninsufficient_measurement · 0 of 4 measured' }))),
+  /S175 the Observed behavior cell must name its reason in words, never its served code/);
+});
+
+test('S175 fails when the measured count is dropped or the collecting arm prints its code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    cell: `unavailable\n${words449.insufficient_measurement}` }))), /S175 the Observed behavior cell must keep its measured count/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    criterion: 'Not met — collecting.' }))), /S175 a still-collecting arm must say so in words/);
+});
+
+// c3-preempted's records: a Pattern Focus on Late bolus, and a Focus whose
+// lever is no longer offered.
+function records449({ served = true, pattern = 'The intended behavior: Late bolus. No pump setting changed.',
+  outside = 'The behavior this Focus watched is no longer an offered lever. No pump setting changed.' } = {}) {
+  const detail = {
+    1: { id: 1, kind: 'focus', lever: 'late_bolus', title: 'Highs after meals', ...(served ? { lever_title: 'Late bolus' } : {}) },
+    2: { id: 2, kind: 'focus', lever: 'overnight_drift', title: 'Focus', ...(served ? { lever_title: null } : {}) },
+  };
+  return qa449Page({
+    api: params => (params.get('selected') ? { selected: detail[params.get('selected')] }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 2 }, { id: 1, pattern_key: 'highs_after_meals' }] }),
+    texts: url => {
+      const id = /record%3Afocus%3A(\d+)/.exec(url)?.[1];
+      return { '.gf-stage .gf-title': detail[id]?.title, '[data-record-part="change"]': `What changed\n${id === '1' ? pattern : outside}` };
+    },
+  });
+}
+
+test('S176 passes when each Focus record names its served behavior and the nameplate keeps its title', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S176(records449());
+});
+
+test('S176 fails at its feature assertion on the base server shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S176(records449({ served: false,
+    pattern: 'The intended behavior: Highs after meals. No pump setting changed.',
+    outside: 'The intended behavior: Focus. No pump setting changed.' }))), /S176 What changed must name the served behavior/);
+});
+
+test('S176 fails when What changed names the Pattern title, the lever key or "Focus" as the behavior', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [page, message] of [
+    [records449({ pattern: 'The intended behavior: Highs after meals. No pump setting changed.' }), /S176 What changed must name the served behavior/],
+    [records449({ pattern: 'The intended behavior: Late bolus. Highs after meals. No pump setting changed.' }), /S176 What changed must not name the behavior by the nameplate title/],
+    [records449({ outside: 'The intended behavior: Focus. No pump setting changed.' }), /S176 a record whose behavior has no served name must say it is no longer an offered lever/],
+    [records449({ outside: 'The intended behavior: overnight_drift. No pump setting changed.' }), /S176 What changed must not print the lever key/],
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S176(page)), message);
+});
+
+// #455: fake readings of the glucose overview on the narrowest split's 402×154
+// chart, whose plot runs from 34 to 350. `caption` lists the caption's spans
+// as [text, x, y, width], `pads` its pad boxes as [x, y, width, height]; the
+// target numerals and one y-axis label stand clear of both.
+const CHART455 = { width: 402, height: 154 };
+const span455 = (group, text, x, y, width, height = 10) => ({ group, text, x, y, width, height });
+function overview455({ caption, pads = [], extra = [] }) {
+  return {
+    ...CHART455,
+    spans: [
+      ...caption.map(([text, x, y, width]) => span455(0, text, x, y, width)),
+      span455(1, '70', 12, 110, 12), span455(2, '180', 6, 60, 18), span455(3, '120', 8, 82, 18),
+      ...extra,
+    ],
+    pads: pads.map(([x, y, width, height]) => ({ group: 0, x, y, width, height })),
+  };
+}
+const NOTICE455 = 'INSUFFICIENT SAMPLE — thinnest bin holds 0';
+const narrow455 = { width: 832, height: 720 };
+const day455 = OVERVIEW_PRESETS.find(({ label }) => label === '24 h');
+const check455 = (reading, extra = {}) => ({ size: narrow455, state: '24 h', head: day455.head,
+  range: day455.range, reading, ...extra });
+// the 24 h caption wrapped inside its window: the head over the notice, each
+// line on its own pad, centred inside [39, 345]
+const wrapped455 = () => overview455({
+  caption: [['24 H 00:00–24:00', 140, 25, 110], [NOTICE455, 60, 39, 250]],
+  pads: [[135, 23, 120, 14], [55, 37, 260, 14]],
+});
+
+test('S183–S185 are unique app-only C4 stories under HV2-11, served from the verdict gallery', () => {
+  for (const id of ['S183', 'S184', 'S185']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-11');
+    assert.equal(storyCase(id), 'basal-verdict-gallery');
+  }
+});
+
+test('S183 passes a caption wholly inside the chart, stacked on its pads', () => {
+  assert.deepEqual(overviewTextFailures(check455(wrapped455())), []);
+  // a window that is not thin may carry its spread tail instead of the notice
+  assert.deepEqual(overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 100, 25, 110], ['  ·  25–75 spread 27 mg/dL', 210, 25, 120]],
+  }))), []);
+});
+
+/* A line whose tokens are right-aligned, as a caption parked left of its
+   window is, is laid out from its right end, so its tail token paints before
+   its head. The caption reads in reading order: line by line, left to right. */
+test('S183 reads a caption parked left in reading order, though its tail paints first', () => {
+  const afternoon = OVERVIEW_PRESETS.find(({ label }) => label === 'Afternoon');
+  const reading = { width: 850, height: 154, pads: [], spans: [
+    span455(0, `  ·  ${NOTICE455}`, 175, 25, 232), span455(0, 'AFTERNOON 12:00–18:00', 34, 25, 141),
+    span455(1, '70', 12, 110, 12),
+  ] };
+  assert.deepEqual(overviewTextFailures({ size: { width: 1280, height: 720 }, state: 'Afternoon',
+    head: afternoon.head, range: afternoon.range, runSize: true, reading }), []);
+});
+
+test('S183 fails a caption parked past the chart\'s right edge', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 356, 25, 107], [`  ·  ${NOTICE455}`, 463, 25, 232]],
+  })));
+  assert.ok(failures.includes('832×720 24 h: caption span "24 H 00:00–24:00" lies 61px outside #chart\'s 402×154 box'),
+    failures.join('\n'));
+  assert.ok(failures.includes('832×720 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart\'s right edge'));
+  assert.ok(failures.includes(`832×720 24 h: caption span "  ·  ${NOTICE455}" reaches 293px past #chart's right edge`));
+});
+
+test('S183 fails a caption parked past the chart\'s left edge after a narrowing', () => {
+  const evening = OVERVIEW_PRESETS.find(({ label }) => label === 'Evening');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Evening, narrowed with nothing pressed',
+    head: evening.head, range: evening.range, reading: overview455({
+      caption: [['EVENING 18:00–24:00', -60, 25, 120], [`  ·  ${NOTICE455}`, 60, 25, 207]] }) });
+  assert.ok(failures.includes('832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" '
+    + 'lies 60px outside #chart\'s 402×154 box'), failures.join('\n'));
+  assert.ok(failures.includes('832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" '
+    + 'reaches 94px left of the plot\'s left edge, into the y-axis label column'));
+});
+
+test('S183 fails a word split across two spans', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 140, 25, 110], ['INSUFFICIENT SAMPLE — thin', 90, 39, 170],
+      ['nest bin holds 0', 130, 53, 100]],
+  })));
+  assert.deepEqual(failures, ['832×720 24 h: the caption reads ["24","H","00:00–24:00","INSUFFICIENT","SAMPLE","—",'
+    + '"thin","nest","bin","holds","0"]; it must read the words of "24 H 00:00–24:00", then of "INSUFFICIENT SAMPLE '
+    + '— thinnest bin holds <n>" with a whole count, every word whole']);
+});
+
+test('S183 fails a notice missing its count', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 140, 25, 110], ['INSUFFICIENT SAMPLE — thinnest bin holds', 70, 39, 240]],
+  })));
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^832×720 24 h: the caption reads .*"holds"\]; it must read the words of/);
+});
+
+test('S183 fails when the thin-path premise does not hold', () => {
+  assert.deepEqual(overviewTextFailures(check455(overview455({ caption: [['24 H 00:00–24:00', 140, 25, 110]] }),
+    { premiseThin: true })),
+  ['832×720 24 h: premise: the 24 h caption must carry the insufficient-sample notice, so the store exercises the '
+    + 'thin path']);
+});
+
+test('S183 fails two overlapping spans anywhere in the chart', () => {
+  const reading = wrapped455();
+  reading.spans.push(span455(4, 'TARGET 70–180 mg/dL', 39, 45, 99));
+  assert.deepEqual(overviewTextFailures(check455(reading)),
+    ['832×720 24 h: painted text "INSUFFICIENT SAMPLE — thinnest bin holds 0" and "TARGET 70–180 mg/dL" overlap by '
+      + '78px × 4px']);
+  // the struck y-axis label under a target numeral
+  const struck = wrapped455();
+  struck.spans.push(span455(5, '60', 10, 117.7, 12));
+  assert.deepEqual(overviewTextFailures(check455(struck)),
+    ['832×720 24 h: painted text "70" and "60" overlap by 10px × 2.3px']);
+});
+
+test('S183 fails a two-line caption at the run\'s own size', () => {
+  assert.deepEqual(overviewTextFailures(check455(wrapped455(), { runSize: true })),
+    ['832×720 24 h: the caption stands on 2 lines at the run\'s own size; it must stand on one']);
+});
+
+test('S183 fails a pad box inside the text\'s bounds that reaches into the y-axis label column', () => {
+  const evening = OVERVIEW_PRESETS.find(({ label }) => label === 'Evening');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Evening', head: evening.head,
+    range: evening.range, reading: overview455({
+      caption: [['EVENING 18:00–24:00', 140, 25, 120], ['INSUFFICIENT SAMPLE —', 150, 39, 110],
+        ['thinnest bin holds 0', 36, 53, 100]],
+      pads: [[135, 23, 130, 14], [145, 37, 120, 14], [30, 51, 110, 14]] }) });
+  assert.deepEqual(failures, ['832×720 Evening: caption pad box 3 reaches 4px left of the plot\'s left edge, into the '
+    + 'y-axis label column']);
+});
+
+test('S183 fails a pad box straddling a gate', () => {
+  const overnight = OVERVIEW_PRESETS.find(({ label }) => label === 'Overnight');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Overnight', head: overnight.head,
+    range: overnight.range, reading: overview455({
+      caption: [['OVERNIGHT 00:00–06:00', 122, 25, 125], [NOTICE455, 122, 39, 250]],
+      pads: [[110, 23, 140, 14], [117, 37, 260, 14]] }) });
+  assert.deepEqual(failures, ['832×720 Overnight: caption pad box 1 straddles the window\'s 06:00 gate by 3.83px']);
+});
+
+test('S183 fails once, naming failures at two sizes', () => {
+  const parked = () => overview455({
+    caption: [['24 H 00:00–24:00', 356, 25, 107], [`  ·  ${NOTICE455}`, 463, 25, 232]] });
+  assert.throws(() => assertOverviewText([
+    check455(parked()), { ...check455(parked()), size: { width: 832, height: 560 } }, check455(wrapped455()),
+  ]), error => {
+    assert.match(error.message, /^S183 the glucose overview's text must stay whole, inside the chart and unstruck at every size; 8 failures:/);
+    assert.match(error.message, /\n {2}- 832×720 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart's right edge/);
+    assert.match(error.message, /\n {2}- 832×560 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart's right edge/);
+    return true;
+  });
+  assert.doesNotThrow(() => assertOverviewText([check455(wrapped455())]));
+});
+
+// #455: fake readings of the Spotlight at the narrowest split: a 381×260 chart
+// with the Keep control in its top-right corner. `verdict` lists the verdict's
+// lines as [text, x, y, width]; the tally line stands at `tallyTop`.
+function spotlight455({ verdict, tallyTop = 38, keep = { x: 345, y: 6, width: 22, height: 22 } }) {
+  return {
+    width: 381, height: 260, keep, pads: [],
+    spans: [
+      ...verdict.map(([text, x, y, width]) => span455(0, text, x, y, width, 11)),
+      span455(1, '30 steady nights · 20 more · 0 less · 10 as set · 3 excluded', 14, tallyTop, 320),
+    ],
+  };
+}
+const twoLines455 = [['SUPPORTED · 0.70 U/h · (0.70–0.70)', 14, 8, 230], ['programmed now 0.60', 14, 22, 130]];
+
+test('S184 passes a verdict broken between facts, inside the chart, with the tally below it', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({ verdict: twoLines455 }) }), []);
+  assert.deepEqual(spotlightVerdictFailures({ size: { width: 1200, height: 736 }, oneLine: true,
+    reading: spotlight455({ verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 300]],
+      tallyTop: 24 }) }), []);
+});
+
+test('S184 fails the rate past the chart\'s edge and under the Keep control', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 390]], tallyTop: 24 }) }), [
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" lies 23px outside the Spotlight '
+      + 'chart\'s 381×260 box',
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" runs 22px under the Keep control',
+  ]);
+});
+
+test('S184 fails the rate under the Keep control inside the chart', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 335]], tallyTop: 24 }) }), [
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" runs 4px under the Keep control',
+  ]);
+});
+
+test('S184 fails a line break inside a fact', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now', 14, 8, 300], ['0.60', 14, 22, 30]] }) }),
+  ['832×720: a line break falls inside a fact, after "now"']);
+});
+
+test('S184 fails a tally overlapping the verdict', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455,
+    reading: spotlight455({ verdict: twoLines455, tallyTop: 24 }) }),
+  ['832×720: the tally line starts 9px above the verdict\'s last line ends']);
+});
+
+test('S184 fails a missing verdict group, and a wrapped verdict where one line must hold', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['INSUFFICIENT EVIDENCE · 0.74 U/h', 14, 8, 200]] }) }),
+  ['832×720: 0 painted lines begin with "SUPPORTED"; exactly one verdict must']);
+  assert.deepEqual(spotlightVerdictFailures({ size: { width: 1200, height: 736 }, oneLine: true,
+    reading: spotlight455({ verdict: twoLines455 }) }),
+  ['1200×736: the verdict line stands on 2 lines; at this size it must stand on one']);
+});
+
+test('S184 fails once, naming failures at two sizes', () => {
+  const past = () => spotlight455({ verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now', 14, 8, 300],
+    ['0.60', 14, 22, 30]] });
+  assert.throws(() => assertSpotlightVerdict([
+    { size: narrow455, reading: past() }, { size: { width: 832, height: 560 }, reading: past() },
+  ]), error => {
+    assert.equal(error.message, 'S184 the Spotlight\'s verdict line must keep every fact whole inside the chart; '
+      + '2 failures:\n  - 832×720: a line break falls inside a fact, after "now"\n'
+      + '  - 832×560: a line break falls inside a fact, after "now"');
+    return true;
+  });
+});
+
+// #455: fake readings of the canvas header, each part as its box, clientWidth
+// and scrollWidth. The default is the narrowest split's 402px header on one
+// line, the title truncated to a letter and an ellipsis, the control's word hidden.
+const part455 = (left, right, top, bottom, scrollWidth = right - left, shown = right > left) => ({
+  left, right, top, bottom, width: right - left, clientWidth: right - left, scrollWidth, shown });
+function head455(parts = {}) {
+  const control = parts.control ?? part455(785, 820, 44, 66);
+  return {
+    head: part455(430, 832, 40, 70), title: part455(464, 504, 47, 63, 144),
+    provenance: part455(516, 771, 48, 62), control,
+    // what the reader sees of the control: its icon (and word), inside its box
+    controlInk: { left: control.left + 4, right: control.right - 4, top: control.top + 4, bottom: control.bottom - 4 },
+    word: part455(0, 0, 0, 0, 0, false), titleFont: 13, controlName: 'All charts', controlTitle: 'All charts',
+    ...parts,
+  };
+}
+
+test('S185 passes an 832 header with a truncated title, a whole provenance and a named icon-only control', () => {
+  assert.deepEqual(canvasHeadFailures({ size: narrow455, narrow: true, reading: head455() }), []);
+  assert.deepEqual(canvasHeadFailures({ size: { width: 1280, height: 720 }, narrow: false, reading: head455({
+    title: part455(464, 608, 47, 63), word: part455(760, 810, 49, 61) }) }), []);
+});
+
+test('S185 fails a zero-width title at the narrowest split', () => {
+  assert.deepEqual(canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ title: part455(464, 464, 47, 63, 144) }) }),
+  ['832×720: the title\'s box is 0px wide, under twice its 13px type, so it cannot show a letter and an ellipsis '
+    + '(title 0px box, clientWidth 0, scrollWidth 144; provenance 255px box, clientWidth 255, scrollWidth 255; '
+    + 'control 35px box, clientWidth 35, scrollWidth 35; word 0px box, clientWidth 0, scrollWidth 0)']);
+});
+
+test('S185 fails a cut provenance', () => {
+  const failures = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ provenance: { ...part455(516, 716, 48, 62), scrollWidth: 255 } }) });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^832×720: the provenance is cut: it needs 255px and shows 200px \(title 40px box/);
+});
+
+test('S185 fails a wide header whose control hides its word', () => {
+  const failures = canvasHeadFailures({ size: { width: 1024, height: 768 }, narrow: false,
+    reading: head455({ title: part455(464, 608, 47, 63) }) });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^1024×768: the All charts control's word does not render \(/);
+});
+
+test('S185 fails a header on two lines, and a control that loses its name', () => {
+  const failures = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ control: part455(785, 820, 50, 70), controlName: null }) });
+  assert.equal(failures.length, 2);
+  assert.match(failures[0], /^832×720: the title, provenance and control do not share one line; their centres differ by 5px/);
+  assert.match(failures[1], /^832×720: the All charts control is named "null" with the tooltip "All charts"; both must be "All charts"/);
+});
+
+/* The shell's 36px button floor outranks the control's 20px height, so its
+   transparent, borderless box overhangs the 30px rail by 3.5px above and 2.5px
+   below while its icon and word sit inside the rail. The story places the
+   control by what the reader sees of it. */
+test('S185 passes a control whose box overhangs the rail while its icon and word sit inside it', () => {
+  assert.deepEqual(canvasHeadFailures({ size: { width: 1280, height: 720 }, narrow: false, reading: head455({
+    title: part455(464, 608, 47, 63), control: part455(744, 821, 36.5, 72.5), word: part455(764, 815, 48, 62),
+    controlInk: { left: 748, right: 815, top: 48, bottom: 62 } }) }), []);
+});
+
+test('S185 fails a control whose icon runs outside the header, or which draws no icon or word', () => {
+  const outside = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ controlInk: { left: 789, right: 802, top: 37, bottom: 50 } }) });
+  assert.equal(outside.length, 2);
+  assert.match(outside[0], /^832×720: the All charts control's icon and word lie 3px outside the header's box \(/);
+  assert.match(outside[1], /^832×720: the title, provenance and control do not share one line; their centres differ by 11.5px/);
+  const blank = canvasHeadFailures({ size: narrow455, narrow: true, reading: head455({ controlInk: null }) });
+  assert.equal(blank.length, 1);
+  assert.match(blank[0], /^832×720: the All charts control draws no icon or word \(/);
+});
+
+test('S185 fails once, naming failures at two sizes', () => {
+  const zero = () => head455({ title: part455(464, 464, 47, 63, 144) });
+  assert.throws(() => assertCanvasHead([
+    { size: narrow455, narrow: true, reading: zero() },
+    { size: { width: 832, height: 560 }, narrow: true, reading: zero() },
+    { size: { width: 1024, height: 768 }, narrow: false, reading: head455({ title: part455(464, 608, 47, 63),
+      word: part455(760, 810, 49, 61) }) },
+  ]), error => {
+    assert.match(error.message, /^S185 the canvas header must keep its title, provenance and All charts control on one line; 2 failures:/);
+    assert.match(error.message, /\n {2}- 832×720: the title's box is 0px wide/);
+    assert.match(error.message, /\n {2}- 832×560: the title's box is 0px wide/);
+    return true;
+  });
+});
+
+/* #455 — A RESIZE'S RELAYOUT LANDS IN A LATER FRAME THAN THE RESIZE. The story
+   reads again until the check holds, within a bound, and judges the last
+   reading with the same check: a reading that never comes clean keeps every
+   failure, and a page error is never taken for one. */
+test('readSettled judges the first reading its check passes', async () => {
+  const readings = [{ stale: true }, { stale: true }, { stale: false }];
+  let reads = 0;
+  const reading = await readSettled(async () => readings[reads++], r => (r.stale ? ['wide layout'] : []), 'settles');
+  assert.deepEqual(reading, { stale: false });
+  assert.equal(reads, 3);
+});
+
+test('readSettled keeps the last reading when the check never passes within its bound', async () => {
+  let reads = 0;
+  const reading = await readSettled(async () => ({ read: ++reads }), () => ['still wide'], 'never settles', 120);
+  assert.ok(reads >= 2, `it read more than once (${reads})`);
+  assert.equal(reading.read, reads, 'the last reading is the one judged');
+});
+
+test('readSettled rethrows a page error rather than judging it', async () => {
+  await assert.rejects(readSettled(async () => { throw new Error('Target page closed'); }, () => [], 'page', 120),
+    /Target page closed/);
 });

@@ -49,7 +49,7 @@
       ],
       "priority": 28,
       "rank": 1,
-      "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+      "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
       "recurrence": 0.1477,
       "title": "Over-treated low"
     },
@@ -152,7 +152,7 @@
           "exposure": "meals",
           "lever": "late_bolus",
           "polarity": "down_good",
-          "recommendation": "Glucose was already climbing at the dose \u2014 try bolusing ~15 min before eating.",
+          "recommendation": "Glucose was already climbing at the dose. Try bolusing ~15 min before eating.",
           "series": [
             {
               "attributed": 0,
@@ -176,7 +176,7 @@
           "exposure": "meals",
           "lever": "carb_undercount",
           "polarity": "down_good",
-          "recommendation": "Carbs were likely undercounted \u2014 estimate higher, or split the dose for big meals.",
+          "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
           "series": [
             {
               "attributed": 0,
@@ -200,7 +200,7 @@
           "exposure": "meals",
           "lever": "meal_over_delivery",
           "polarity": "down_good",
-          "recommendation": "The meal dose ran glucose near-low \u2014 a slightly smaller dose may leave less to walk back.",
+          "recommendation": "The meal dose ran glucose near-low. A slightly smaller dose may leave less to walk back.",
           "series": [
             {
               "attributed": 0,
@@ -224,7 +224,7 @@
           "exposure": "lows",
           "lever": "over_treated_low",
           "polarity": "down_good",
-          "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+          "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
           "series": [
             {
               "attributed": 0,
@@ -248,7 +248,7 @@
           "exposure": "lows",
           "lever": "correction_on_iob",
           "polarity": "down_good",
-          "recommendation": "A correction landed on insulin still working, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "A correction landed on insulin still working, then went low. Give one ~1\u20132 h to act before adding more.",
           "series": [
             {
               "attributed": 0,
@@ -272,7 +272,7 @@
           "exposure": "correction_clusters",
           "lever": "correction_stacking",
           "polarity": "down_good",
-          "recommendation": "Corrections stacked, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "Corrections stacked, then went low. Give one ~1\u20132 h to act before adding more.",
           "series": [
             {
               "attributed": 0,
@@ -299,7 +299,7 @@
           "exposure": "highs",
           "lever": "missed_meal",
           "polarity": "down_good",
-          "recommendation": "Glucose rose like a meal with no bolus near it \u2014 bolusing (even late) keeps the peak down.",
+          "recommendation": "Glucose rose like a meal with no bolus near it. Bolusing (even late) keeps the peak down.",
           "series": [
             {
               "attributed": 0,
@@ -323,7 +323,7 @@
           "exposure": "meals",
           "lever": "meal_bolus_short",
           "polarity": "down_good",
-          "recommendation": "A correction was needed behind this meal dose \u2014 worth watching how often that happens before changing anything.",
+          "recommendation": "A correction was needed behind this meal dose. It is worth watching how often that happens before changing anything.",
           "series": [
             {
               "attributed": 0,
@@ -620,7 +620,7 @@
           "exposure": "meals",
           "lever": "late_bolus",
           "polarity": "down_good",
-          "recommendation": "Glucose was already climbing at the dose \u2014 try bolusing ~15 min before eating.",
+          "recommendation": "Glucose was already climbing at the dose. Try bolusing ~15 min before eating.",
           "series": [
             {
               "attributed": 0,
@@ -654,7 +654,7 @@
           "exposure": "meals",
           "lever": "carb_undercount",
           "polarity": "down_good",
-          "recommendation": "Carbs were likely undercounted \u2014 estimate higher, or split the dose for big meals.",
+          "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
           "series": [
             {
               "attributed": 0,
@@ -688,7 +688,7 @@
           "exposure": "meals",
           "lever": "meal_over_delivery",
           "polarity": "down_good",
-          "recommendation": "The meal dose ran glucose near-low \u2014 a slightly smaller dose may leave less to walk back.",
+          "recommendation": "The meal dose ran glucose near-low. A slightly smaller dose may leave less to walk back.",
           "series": [
             {
               "attributed": 0,
@@ -722,7 +722,7 @@
           "exposure": "lows",
           "lever": "over_treated_low",
           "polarity": "down_good",
-          "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+          "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
           "series": [
             {
               "attributed": 0,
@@ -756,7 +756,7 @@
           "exposure": "lows",
           "lever": "correction_on_iob",
           "polarity": "down_good",
-          "recommendation": "A correction landed on insulin still working, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "A correction landed on insulin still working, then went low. Give one ~1\u20132 h to act before adding more.",
           "series": [
             {
               "attributed": 0,
@@ -790,7 +790,7 @@
           "exposure": "correction_clusters",
           "lever": "correction_stacking",
           "polarity": "down_good",
-          "recommendation": "Corrections stacked, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "Corrections stacked, then went low. Give one ~1\u20132 h to act before adding more.",
           "series": [
             {
               "attributed": 0,
@@ -829,7 +829,7 @@
           "exposure": "highs",
           "lever": "missed_meal",
           "polarity": "down_good",
-          "recommendation": "Glucose rose like a meal with no bolus near it \u2014 bolusing (even late) keeps the peak down.",
+          "recommendation": "Glucose rose like a meal with no bolus near it. Bolusing (even late) keeps the peak down.",
           "series": [
             {
               "attributed": 0,
@@ -863,7 +863,7 @@
           "exposure": "meals",
           "lever": "meal_bolus_short",
           "polarity": "down_good",
-          "recommendation": "A correction was needed behind this meal dose \u2014 worth watching how often that happens before changing anything.",
+          "recommendation": "A correction was needed behind this meal dose. It is worth watching how often that happens before changing anything.",
           "series": [
             {
               "attributed": 0,
@@ -89305,7 +89305,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-06-22 13:55:00",
-                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
                   },
                   {
                     "citation": {
@@ -89453,7 +89453,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-06-23 13:55:00",
-                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
                   },
                   {
                     "citation": {
@@ -89605,7 +89605,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-06-27 22:00:00",
-                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
                   },
                   {
                     "citation": {
@@ -89997,7 +89997,7 @@
                 ],
                 "priority": 28,
                 "rank": 1,
-                "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+                "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
                 "recurrence": 0.1477,
                 "title": "Over-treated low"
               }
@@ -90239,12 +90239,12 @@
                 "reason": {
                   "cause": {
                     "lever": "correction_on_iob",
-                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
                     "title": "Correction on active insulin"
                   },
                   "habits": [
                     {
-                      "detail": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                      "detail": null,
                       "lever": "correction_on_iob",
                       "title": "Correction on active insulin",
                       "verdict": "fired"
@@ -92362,7 +92362,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-06-22 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -92510,7 +92510,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-06-23 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -92662,7 +92662,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-06-27 22:00:00",
-                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
                 "citation": {
@@ -93054,7 +93054,7 @@
             ],
             "priority": 28,
             "rank": 1,
-            "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+            "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
             "recurrence": 0.1477,
             "title": "Over-treated low"
           }
@@ -93518,12 +93518,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -94188,12 +94188,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -103729,7 +103729,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-23 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -103877,7 +103877,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-24 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -104029,7 +104029,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-28 22:00:00",
-                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
                 "citation": {
@@ -104421,7 +104421,7 @@
             ],
             "priority": 28,
             "rank": 1,
-            "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+            "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
             "recurrence": 0.1477,
             "title": "Over-treated low"
           }
@@ -104663,12 +104663,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -105777,12 +105777,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -105865,7 +105865,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "e54f4adfd52da1dd9164418662b38fce09a705ab7bc9a06be1c5c69230bbe849",
+              "code_version": "3ce9b43c9c50f849e1652d4c8c2c158d6f5ed93bd43f06fc9197b69e784195cf",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105957,7 +105957,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "37598108b18f43365bdf063d89297b144325c5758c1af3857cc628436836db8d",
+              "id": "0982d49b878eb89a5a58fef373385f6ae512455b884e334b60d5263dd43cd495",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -106045,7 +106045,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "e54f4adfd52da1dd9164418662b38fce09a705ab7bc9a06be1c5c69230bbe849",
+                  "code_version": "3ce9b43c9c50f849e1652d4c8c2c158d6f5ed93bd43f06fc9197b69e784195cf",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -106137,7 +106137,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "37598108b18f43365bdf063d89297b144325c5758c1af3857cc628436836db8d",
+                  "id": "0982d49b878eb89a5a58fef373385f6ae512455b884e334b60d5263dd43cd495",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -134606,7 +134606,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-23 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -134754,7 +134754,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-24 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -134906,7 +134906,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-28 22:00:00",
-                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
                 "citation": {
@@ -135298,7 +135298,7 @@
             ],
             "priority": 28,
             "rank": 1,
-            "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+            "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
             "recurrence": 0.1477,
             "title": "Over-treated low"
           }
@@ -135540,12 +135540,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -136654,12 +136654,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -143404,7 +143404,7 @@
           ],
           "priority": 28,
           "rank": 1,
-          "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+          "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
           "recurrence": 0.1477,
           "title": "Over-treated low"
         },
@@ -204298,7 +204298,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-05-23 13:55:00",
-                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
                   },
                   {
                     "citation": {
@@ -204446,7 +204446,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-05-24 13:55:00",
-                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                    "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
                   },
                   {
                     "citation": {
@@ -204598,7 +204598,7 @@
                     "cited_window": null,
                     "evidence_tier": "inferred",
                     "t": "2024-05-28 22:00:00",
-                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
                   },
                   {
                     "citation": {
@@ -204990,7 +204990,7 @@
                 ],
                 "priority": 28,
                 "rank": 1,
-                "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+                "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
                 "recurrence": 0.1477,
                 "title": "Over-treated low"
               }
@@ -206120,12 +206120,12 @@
                 "reason": {
                   "cause": {
                     "lever": "correction_on_iob",
-                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
                     "title": "Correction on active insulin"
                   },
                   "habits": [
                     {
-                      "detail": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                      "detail": null,
                       "lever": "correction_on_iob",
                       "title": "Correction on active insulin",
                       "verdict": "fired"
@@ -207267,7 +207267,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-23 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -207415,7 +207415,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-24 13:55:00",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs"
               },
               {
                 "citation": {
@@ -207567,7 +207567,7 @@
                 "cited_window": null,
                 "evidence_tier": "inferred",
                 "t": "2024-05-28 22:00:00",
-                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
+                "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising; it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
                 "citation": {
@@ -207959,7 +207959,7 @@
             ],
             "priority": 28,
             "rank": 1,
-            "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+            "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
             "recurrence": 0.1477,
             "title": "Over-treated low"
           }
@@ -208201,12 +208201,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"
@@ -209315,12 +209315,12 @@
             "reason": {
               "cause": {
                 "lever": "over_treated_low",
-                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
                 "title": "Over-treated low"
               },
               "habits": [
                 {
-                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "detail": null,
                   "lever": "over_treated_low",
                   "title": "Over-treated low",
                   "verdict": "fired"

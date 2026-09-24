@@ -1,0 +1,158 @@
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 445-B2 · 1440x900
+URL: http://127.0.0.1:8791/changes?date=2024-05-03&subject=history&title=Basal+03%3A00+%C2%B7+0.6+U%2Fh+%E2%86%92+0.54+U%2Fh&occurrence=record%3Atrial%3Abasal_rate-03-00-20240515000000&from=changes
+Element: viewport
+Focused: <button class="gf-btn" data-day-date="2024-05-03" data-day-subject="before"> "May 3"
+Note: after Return to Changes: record trial:basal_rate-03-00-20240515000000 reopened? see URL; focus on the 2024-05-03 control landed
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · STILL OPEN
+Basal 03:00 · 0.6 U/h → 0.54 U/h
+Detected May 15, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+AVAILABLE OBSERVATIONS
+recomputed now
+Pump-local time
+Trial above Before
+Trial below Before
+median glucose by clock · 1 → 1 half-hours read
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time below range
+target metric
+	0%
+78 observed CGM readings in eligible windows
+	0%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time in range
+observed CGM readings in eligible windows
+	100%
+78 observed CGM readings in eligible windows
+	100%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+78 observed CGM readings in eligible windows
+	0%
+90 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Rest windows with a low
+coverage-qualified Rest windows in affected hours
+	0%
+13 coverage-qualified Rest windows in affected hours
+	0%
+15 coverage-qualified Rest windows in affected hours
+	Unclear
+difference 0
+THIS TRIAL
+Still open
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+Recorded by Harmonic
+May 15, 2024 · 00:00
+
+Original user decision is unavailable.
+
+From the Trial record
+
+ENDING
+
+Not recorded: this change is still open.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to May 15, 2024 · 00:00 Available history → Setting change
+Trial
+May 15, 2024 · 00:00 to Jun 1, 2024 · 23:59 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to Jun 1, 2024 · 23:59.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Basal
+03:00
+	0.6 U/h	0.54 U/h
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is available.
+
+12 of 14 qualifying clean nights per affected slotrequired
+
+14 days elapsed
+
+Not met — still collecting.
+
+Evidence for this period is available.
+
+Contributing dates · 12
+
+May 3
+May 4
+May 5
+May 6
+May 7
+May 8
+May 9
+May 10
+0 of 14 qualifying clean nights per affected slotrequired
+
+17 days elapsed
+
+Not met — still collecting.
+
+Evidence for this period is available.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+RETAINED CONTEXT
+Original
+Retained context
+Current policy
+Computed
+Sep 24, 2026 · 08:20
+Context
+Stored context 7601437821dc
+Result
+Unclear
+
+A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.
+
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

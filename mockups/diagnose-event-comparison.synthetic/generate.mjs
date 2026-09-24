@@ -9,9 +9,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+// Each view judges exactly the classifiers the attribution step judges at its
+// anchor kind: Correction stacking is judged at a correction, never at a low.
 const factors = {
   meals: ['carb_undercount', 'late_bolus', 'meal_over_delivery'],
-  lows: ['over_treated_low', 'correction_on_iob', 'correction_stacking'],
+  lows: ['over_treated_low', 'correction_on_iob'],
 };
 const labels = {
   carb_undercount: 'Carb undercount',
@@ -19,7 +21,6 @@ const labels = {
   meal_over_delivery: 'Meal over-delivery',
   over_treated_low: 'Over-treated low',
   correction_on_iob: 'Correction on active insulin',
-  correction_stacking: 'Correction stacking',
 };
 const patternRateFamilies = {
   highs_after_meals: 'meals', lows_after_meals: 'meals',
@@ -48,11 +49,6 @@ const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 465, end_min: 780 }, { start_min: 720, end_min: 1440 },
   { start_min: 840, end_min: 900 }];
 const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort === plan[index]).length;
-const patternFamily = {
-  carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
-  over_treated_low: 'lows', correction_on_iob: 'lows',
-  correction_stacking: 'correction_clusters', meal_bolus_short: 'highs',
-};
 const patternLabels = {
   meals: ['meal', 'Completed carb bolus'], lows: ['low', 'Low excursion'],
   correction_clusters: ['correction', 'Correction cluster'], highs: ['high', 'High excursion'],
@@ -293,7 +289,9 @@ function occurrence(view, index, source) {
         ? `${labels[factor]} matched the current rule.`
         : `${labels[factor]} did not match the current rule.`,
       evidence_tier: 'observed',
-      silence_reason: routes(view, cohort)[factor].cohort === 'near_rule' ? 'under_threshold' : 'no_trigger',
+      // A matched verdict carries no silence reason, as the attribution step records it.
+      silence_reason: routes(view, cohort)[factor].cohort === 'fired' ? null
+        : routes(view, cohort)[factor].cohort === 'near_rule' ? 'under_threshold' : 'no_trigger',
     })),
     routes: routes(view, cohort),
     trace,
@@ -319,7 +317,15 @@ function sourceRows(workstationExposures, family) {
   return rows;
 }
 
-export function buildCapture(workstationExposures, outcomePatterns = [], scenarios = {}) {
+// `habitRateFamilies` is the Python producer's frozen lever-to-rate-family table
+// (`habit_rate_families` in the findings-projection fixture), published as the
+// capture's `pattern_families`; the Pattern mirror judges habit members by it.
+// `patternCasesByWindow` is the Python producer's Pattern case files for each
+// narrowed window the browser checks request (`browser_pattern_cases_by_window`),
+// published as `pattern_cases_by_window`; the mirror answers a narrowed Pattern
+// coordinate only from it.
+export function buildCapture(workstationExposures, outcomePatterns = [], scenarios = {},
+  habitRateFamilies = {}, patternCasesByWindow = {}) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
   const views = {
@@ -382,7 +388,8 @@ export function buildCapture(workstationExposures, outcomePatterns = [], scenari
     fixture: 'labeled-synthetic',
     source_window: structuredClone(workstationExposures.window),
     outcome_patterns: structuredClone(outcomePatterns),
-    pattern_families: patternFamily,
+    pattern_families: structuredClone(habitRateFamilies),
+    pattern_cases_by_window: structuredClone(patternCasesByWindow),
     pattern_populations: patternPopulations,
     pattern_attribution: patternAttribution,
     views,
@@ -393,10 +400,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const workstationPayload = JSON.parse(readFileSync(
     new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8'));
   const workstationExposures = workstationPayload.exposures;
-  const outcomePatterns = JSON.parse(readFileSync(
-    new URL('../../frontend/__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
-    .browser_outcome_patterns;
-  const capture = buildCapture(workstationExposures, outcomePatterns, workstationPayload.scenarios);
+  const projection = JSON.parse(readFileSync(
+    new URL('../../frontend/__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+  const capture = buildCapture(workstationExposures, projection.browser_outcome_patterns,
+    workstationPayload.scenarios, projection.habit_rate_families,
+    projection.browser_pattern_cases_by_window);
   const serialized = JSON.stringify(capture, null, 2) + '\n';
   const target = new URL('./capture.json', import.meta.url);
   if (process.argv.includes('--check')) {

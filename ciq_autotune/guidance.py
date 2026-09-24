@@ -44,11 +44,22 @@ _MEMBER_TITLES = {
     **{f"habit:{lever.value}": lever_title(lever) for lever in Lever},
     **{f"setting:{parameter}": name for parameter, name in _SETTING_TITLES.items()},
 }
+_UNCAUSED_HIGHS_TITLE = "Highs without a detected cause"
+_SUBJECT_TITLES = {**_MEMBER_TITLES, "investigation:uncaused_highs": _UNCAUSED_HIGHS_TITLE}
 
 
 def is_preference_subject(subject):
     """Whether ``subject`` is one of the closed setting, habit, or Pattern ids."""
     return subject in _PREFERENCE_SUBJECTS
+
+
+def subject_title(subject):
+    """The served name of a setting, habit or investigation subject, else ``None``.
+
+    Keyed by the whole subject, never parsed from it (ADR 451). A Pattern needs no
+    name here: the outcome roster serves every Pattern present with its own title.
+    """
+    return _SUBJECT_TITLES.get(subject)
 
 
 def _factual(value):
@@ -162,7 +173,7 @@ def _setting(subject, parameter, members, analysis):
              for member in safe_members if member["harm"] is not None]
     priority_inputs = _priority_inputs(analysis, parameter)
     return {"subject": subject, "kind": "setting", "parameter": parameter,
-            "title": priority_inputs.get("title"), "units": _SETTING_UNITS[parameter],
+            "title": _SETTING_TITLES[parameter], "units": _SETTING_UNITS[parameter],
             "priority": priority_inputs.get("priority"),
             "priority_inputs": priority_inputs,
             "source_window": deepcopy(analysis.get("span")),
@@ -234,7 +245,7 @@ def _source_candidates(analysis, exposures, scenarios):
     highs = ((exposures.get("exposures") or {}).get("highs") or {}).get("uncaused") or 0
     if highs:
         out.append({"subject": "investigation:uncaused_highs", "kind": "investigation",
-                    "title": "Highs without a detected cause", "units": None,
+                    "title": _UNCAUSED_HIGHS_TITLE, "units": None,
                     "priority": None, "action": None, "seriousness": None, "members": [],
                     "evidence": [{"operation": "uncaused_highs", "count": highs}],
                     "support": {"count": highs}, "population": [], "occurrence_ids": [],
@@ -442,7 +453,8 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
         if row["subject"] in stored:
             row["decision"] = {key: stored[row["subject"]][key] for key in ("decided_at", "reason", "comparison_version", "state")}
     known = {row["subject"] for row in all_candidates}
-    absent = [{"subject": row["subject"], "kind": None, "title": None, "units": None,
+    absent = [{"subject": row["subject"], "kind": None,
+               "title": subject_title(row["subject"]), "units": None,
                "absent": True, "action": None, "members": [], "evidence": [],
                "support": {}, "population": [], "occurrence_ids": [], "source_window": None,
                "priority": None, "priority_inputs": {}, "seriousness": None,

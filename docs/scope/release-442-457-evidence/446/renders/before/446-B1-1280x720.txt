@@ -1,0 +1,50 @@
+SYNTHETIC — before · tree b03431d2 · store basal-lower · 446-B1 · 1280x720
+URL: http://127.0.0.1:8791/changes
+Element: viewport
+Focused: <h2> "This change"
+Note: render 2 — nothing watched: Stage in the concern, Open Plan, topbar Day, topbar Changes
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+PLAN · STAGED
+Overnight lows with no insulin on board · 03:00 to 03:30
+3 of 16 segments used · Nothing here is sent to your pump.
+Save draft
+Record decision
+Pump settings
+DELIVERABLE
+pump-ready schedule
+Pump-local time
+
+Draft not saved. Saving the draft preserves consideration.
+
+START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00 NEW BREAK	0.6 0.54	1 U : 40 mg/dL	10	110
+03:30 NEW BREAK	0.6	1 U : 40 mg/dL	10	110
+THIS CHANGE
+Staged
+DECISION
+Draft saved
+Not saved
+Decision recorded
+Not recorded
+DETECTED PUMP SETTINGS
+CAPTURED MAY 1, 2024 · 00:00
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+
+Detected schedule. The proposed schedule is the Plan beside it.
+
+Pump settings
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

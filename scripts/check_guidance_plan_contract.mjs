@@ -173,7 +173,7 @@ for (const [name, items] of [
     .some(param => row[param] !== actual[i - 1][param]));
   for (const [variant, detected] of [['exact', actual], ['split', split], ['merged', merged], ['mismatch', mismatch]]) {
     cases.push({ name: `${name}-${variant}`, segments, items, rows, actual: detected,
-      matches: reconcileDeliverable(rows, detected).state === 'confirmed' });
+      matches: reconcileDeliverable(rows, detected).groups.length === 0 });
   }
 }
 const backend = JSON.parse(execFileSync('uv', ['run', 'python', '-c', `

@@ -1,4 +1,4 @@
-"""Public contract tests for the bounded derived Verify Trial roster (#587)."""
+"""Public contract tests for the bounded derived Trial roster (#587)."""
 
 import tempfile
 import unittest

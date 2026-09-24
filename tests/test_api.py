@@ -33,12 +33,9 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.result import SCHEMA_VERSION
 from ciq_autotune.derived_artifacts import (
-    DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
     _canonical,
-    _digest,
     load_latest_prior,
     sidecar_path,
-    source_fingerprint,
 )
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store
@@ -339,6 +336,15 @@ class ApiTest(unittest.TestCase):
         for slug in ("reading-diagnose", "reading-day", "the-plan-tab"):
             self.assertEqual(self.client.get(f"/api/kb/{slug}").status_code, 200)
 
+    def test_kb_articles_name_no_verify(self):
+        # #447: #416 retired Verify, so no served article names it, and the Guide
+        # sends Cause levers to a Focus that Changes follows.
+        for slug in ("start-here", "reading-diagnose", "reading-day", "the-plan-tab"):
+            self.assertNotIn("Verify", self.client.get(f"/api/kb/{slug}").text, slug)
+        article = " ".join(self.client.get("/api/kb/reading-diagnose").text.split())
+        self.assertIn("flow to a Focus, followed in Changes, because no pump setting fixes them.",
+                      article)
+
     def test_kb_article_unknown_slug_is_404(self):
         self.assertEqual(self.client.get("/api/kb/no-such-article").status_code, 404)
 
@@ -589,8 +595,7 @@ class ApiTest(unittest.TestCase):
     def test_applying_twice_in_the_same_second_returns_409_not_500(self):
         self.client = _guidance_client(self, "basal-raise")
         items = _source_plan_items(self.client, "basal_rate")
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2026, 1, 1)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2026, 1, 1)):
             self.client.put("/api/plan", json={"items": items})
             self.assertEqual(self.client.post("/api/plan/apply").status_code, 200)
             self.client.put("/api/plan", json={"items": items})
@@ -1577,7 +1582,7 @@ class CachePreWarmTest(unittest.TestCase):
     #: The builders behind the landing set, patched to count recomputes.
     _BUILDERS = (
         ("analyze", "ciq_autotune.api", "analyze"),
-        ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
+        ("outcomes-trend", "ciq_autotune.outcomes_trend", "trend_watched_change"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
@@ -1618,7 +1623,7 @@ class CachePreWarmTest(unittest.TestCase):
         """Exactly what the browser asks for on the initial Diagnose load."""
         for path, params in (
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
-            ("/api/outcomes/trend", {"window": 30}),
+            ("/api/outcomes/trend", {}),
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
@@ -1937,10 +1942,9 @@ class CachePreWarmTest(unittest.TestCase):
         builds = []
         # Both fresh builds carry a wall-clock ``generated_at``. Freeze that input so
         # this remains a byte-for-byte adapter test rather than a scheduler-speed test.
-        with patch("ciq_autotune.analyze.datetime") as analysis_datetime, \
+        with patch("ciq_autotune.analyze.wall_clock_now", return_value=datetime(2026, 6, 30, 12, 0)), \
              patch.object(api_mod, "analyze", side_effect=lambda *args, **kwargs:
                           builds.append(1) or real(*args, **kwargs)):
-            analysis_datetime.now.return_value = datetime(2026, 6, 30, 12, 0)
             with TestClient(self.app) as client:
                 direct = client.get("/api/analyze", params={"window": 30, "pool": True})
                 self.assertEqual(direct.status_code, 200)
@@ -1975,7 +1979,7 @@ class CachePreWarmTest(unittest.TestCase):
                                           "finding-case-file": 1})
             expected_keys = (
                 ("analyze", 30, False, False),
-                ("outcomes-trend", 30), ("explore-time-of-day",),
+                ("outcomes-trend",), ("explore-time-of-day",),
                 ("analyze", 30, False, True), ("scenarios", 30),
                 ("exposures",),
                 ("isf-rest-window-evidence", 30),
@@ -2057,13 +2061,12 @@ class CachePreWarmTest(unittest.TestCase):
             raise RuntimeError("outcomes trend blew up")
 
         with self._counting_builders() as counts:
-            with patch.object(trend_mod, "summarize_trend", boom):
+            with patch.object(trend_mod, "trend_watched_change", boom):
                 with self._run_worker():
                     self.assertEqual(counts["outcomes-trend"], 0)
                     self.assertEqual(counts["analyze"], 2)
                     self.assertEqual(counts["scenarios"], 1)
-            self.assertEqual(self.client.get("/api/outcomes/trend",
-                                             params={"window": 30}).status_code, 200)
+            self.assertEqual(self.client.get("/api/outcomes/trend").status_code, 200)
             self.assertEqual(counts["outcomes-trend"], 1)
 
 

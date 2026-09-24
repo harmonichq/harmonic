@@ -11,13 +11,16 @@ export const PAGE = '/';
 export const DESTINATIONS = ['diagnose', 'changes', 'day'];
 const DEFAULT_DESTINATION = 'diagnose';
 // A contextual Day entry carries all of these; a direct one carries none
-// (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
-// target within it — "restore the exact target" is what makes the return a
-// return rather than a second arrival. Diagnose's own entries name that target
-// by their `occurrence` instead (ADR 428). `title` is the entry's display name
-// beside its routing `subject`, carried here so a reload or Back keeps the
-// name Day prints for where it was opened from (ADR 426).
-export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'title', 'occurrence', 'window', 'lever', 'from', 'focus'];
+// (HV2-13/HV2-14). `from` is the destination to return to. The precise target
+// within it — "restore the exact target" is what makes the return a return
+// rather than a second arrival — is named by an identity its origin owns and
+// resolves itself: Diagnose's `occurrence` (ADR 428), a Changes supporting
+// `date`, a carb utility's item as the `subject` (ADR 445). Never by a
+// selector: an address is external input, and an older link's `focus` is read
+// without it. `title` is the entry's display name beside its routing
+// `subject`, carried here so a reload or Back keeps the name Day prints for
+// where it was opened from (ADR 426).
+export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'title', 'occurrence', 'window', 'lever', 'from'];
 
 export function resolveDestination(destination) {
   return DESTINATIONS.includes(destination) ? destination : DEFAULT_DESTINATION;
@@ -26,7 +29,8 @@ export function resolveDestination(destination) {
 /**
  * The address Diagnose writes for the case on screen (ADR 428): exactly the keys
  * its entry restoration reads, plus a `from` that names another destination,
- * because Diagnose itself renders that return (Changes' "Return to Trial").
+ * because Diagnose itself renders that return (Changes' "Return to Trial" or
+ * "Return to Focus", named for the watched change).
  * No Day-entry key and no return-focus selector survives, and the Findings
  * index — no case — is no context at all.
  */

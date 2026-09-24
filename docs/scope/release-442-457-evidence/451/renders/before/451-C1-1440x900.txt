@@ -1,0 +1,70 @@
+SYNTHETIC — before · tree b03431d2 · store isf-strengthen · 451-C1 · 1440x900
+URL: http://127.0.0.1:8791/diagnose?subject=isf
+Element: .inspector > .watch
+Focused: body
+Note: the watch dock with the correction factor staged
+
+--- element text ---
+PLAN · STAGED
+ISF · 40.00 → 32.00 mg/dL/U
+Staged, not applied — nothing has changed on the pump
+Open Changes ›
+
+--- page text ---
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+CORRECTION FACTOR · REST WINDOWS
+Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger.
+Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed.
+Full
+Keep
+Event
+Clock
+Findings
+›
+ISF
+2,784 correction steps
+ISF
+suggests a change
+Measured in the overnight fasting window. Daytime ISF is not separately identifiable, so this one value stands for the whole day.
+CURRENT
+40.00
+mg/dL/U, programmed now
+ESTIMATE
+24.00
+mg/dL/U — the interval below brackets THIS number
+RECOMMENDED
+32.00
+mg/dL/U, one conservative step
+CI 23.99–24.00 mg/dL/U on the estimate
+2,784 correction steps · 29 fasting nights
+overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger
+Staged · Undo
+staged for Plan
+PLAN · STAGED
+ISF · 40.00 → 32.00 mg/dL/U
+Staged, not applied — nothing has changed on the pump
+Open Changes ›
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

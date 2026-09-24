@@ -1,4 +1,4 @@
-"""#660: the synthetic Verify-fixture generator must admit its slot-scoped I:C
+"""#660: the synthetic Trial-roster fixture generator must admit its slot-scoped I:C
 scenario through the ADR 581 block-corroborated path, not the legacy general-arc
 fallback.
 

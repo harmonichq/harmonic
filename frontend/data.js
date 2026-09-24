@@ -19,13 +19,22 @@
 export class ApiTransportError extends Error {
   constructor(status, detail, fallback) {
     const structured = detail && typeof detail === 'object' ? detail : null;
-    super(structured?.message || detail || fallback);
+    // Only served words become the message: a validation list never prints as
+    // "[object Object]". With none, the message is the status text, which an
+    // HTTP/2 answer leaves empty; each line supplies its own words then.
+    super((typeof structured?.message === 'string' && structured.message)
+      || (typeof detail === 'string' && detail) || fallback || '');
     this.name = 'ApiTransportError';
     this.status = status;
     this.code = structured?.code || null;
     this.detail = detail ?? null;
   }
 }
+
+/** A failed or refused write in words: the server's own sentence for a coded
+    refusal (ADR 450), never its code or status, else the transport's own
+    failure. Every failure line that follows a colon prints through it. */
+export const failureMessage = (error) => (error && error.message) || 'no response from the store';
 
 /**
  * Build a bound API namespace whose transport can be replaced.
@@ -178,16 +187,17 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   // --- outcomes trend (#131) ----------------------------------------------
 
   /**
-   * GET /api/outcomes/trend?window=N — the behavioral + glycemic scorecard across
-   * rolling `window`-day windows (oldest→newest, index-aligned series per
-   * behavior/metric). The Outcomes tab binds this.
-   * @param {number} window - window width in days (14 default)
+   * GET /api/outcomes/trend — the one watched change, `{ watched_change }` (a
+   * Trial or Focus view, or null), plus the input-data age any fixed read adds
+   * while it serves a prior answer (#447). Diagnose's watch dock reads it. The
+   * trend's rolling-window series stay on the CLI, and the watched change takes
+   * no window (#18).
    */
-  function fetchOutcomesTrend(window) {
-    return api('/api/outcomes/trend' + (window != null ? '?window=' + encodeURIComponent(window) : ''));
+  function fetchOutcomesTrend() {
+    return api('/api/outcomes/trend');
   }
 
-  // --- Verify Trial roster (#587) ----------------------------------------
+  // --- Trial roster (#587) -----------------------------------------------
 
   /**
    * GET /api/verify/trials?selected=derived-id — the bounded server-derived Trial
@@ -397,8 +407,9 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /**
    * GET /api/focus — every Focus ever pinned (active + closed, newest first) plus
-   * the pinnable-lever universe. Verify uses this to resolve the active Focus's
-   * id (the `/api/outcomes/trend` FocusView carries no id) so Retire can target it.
+   * the pinnable-lever universe. Its one caller, `focus-entry.js` (through
+   * `client.js`), reads the served pin admission, pinnable Patterns and input
+   * revision to offer and write a Pattern Focus pin.
    */
   function fetchFocuses() {
     return api('/api/focus');
@@ -415,8 +426,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
   }
 
   /**
-   * POST /api/focus — pin a behavioral lever as the active Focus (#246 Diagnose's
-   * "Pin as Focus → Verify" disposition). Rejected (409) while a Trial is live or
+   * POST /api/focus — pin a behavioral lever as the active Focus (#246's Pin as
+   * Focus disposition). Rejected (409) while a Trial is live or
    * another Focus is active, (400) for a non-pinnable tuning lever — the caller
    * surfaces the message. Returns the pinned Focus row (with its id, for undo).
    * @param {string} lever

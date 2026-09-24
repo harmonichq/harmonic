@@ -26,9 +26,9 @@
 //
 //   mount(host, deps)        the record destination's content
 //   openRecord(kind, id)     open one record on itself, before anything else
-//   selectedRecord()         which record is open, or null
-import { concludeTrial, fetchVerifyTrials } from './client.js';
+import { concludeTrial, failureMessage, fetchVerifyTrials } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, stamp } from './frame.js';
+import { settingValue } from './plan.js';
 import { hold, navigate, render, view } from './routes.js';
 // The comparison itself is the follow-up's evidence, and one record is a read of
 // it, so its renderers have one owner and this module consumes them. The
@@ -36,7 +36,7 @@ import { hold, navigate, render, view } from './routes.js';
 // Changes composition is handed both mounts by the entry module.
 import {
   comparisonReasonWords, comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
-  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock,
+  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock, stateWords, supportingDateFocus,
 } from './follow-up.js';
 
 // The backend's own ending vocabulary, rendered as the words a reader reads.
@@ -58,56 +58,75 @@ const ENDING_NOTE = {
   trial_preempted: 'A setting change took the active-change seat. This Focus was dropped and does not resume; a later attempt is a new Focus with its own identity.',
   lever_unavailable: 'The behavior this Focus watched is no longer an offered lever, so the watch ended. Nothing resumes it.',
   manual: 'You ended this Focus. Its periods and its observations are fixed at the ending.',
-  superseded: 'A later change to the same setting took over. This record keeps the period it actually observed.',
+  superseded: 'A later setting change was detected inside the watch window. This record keeps the period it actually observed.',
   reverted: 'The setting went back to its previous value on the pump, which ended the observation period.',
   expired_unreviewed: 'The watch reached the end of its lifecycle window without being reviewed. Its observations are still here.',
   user_finished: 'You recorded this ending. Harmonic did not program the pump; the change was entered by hand.',
 };
 const KIND_WORD = { trial: 'Setting change', focus: 'Focus' };
+// The three reads a record offers, named as its segment names them; the
+// reassessment heading names its served mode by the same words (ADR 450).
+const MODE_WORD = { original: 'Original', retained: 'Retained context', current: 'Current policy' };
 const STATUS_WORD = { active: 'Active', resolved: 'Resolved', dropped: 'Dropped',
   not_selected_for_watch: 'Not watched' };
 const SETTING_NAME = {
   basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'Correction factor',
   target_bg: 'Target glucose', profile: 'Whole profile',
 };
-const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
-
-/** One programmed value in its own unit; a correction factor reads insulin first. */
-export function settingValue(parameter, value) {
-  if (value == null) return 'not recorded';
-  if (parameter === 'isf') return `1 U : ${value} mg/dL`;
-  return `${value} ${UNIT[parameter] || ''}`.trim();
-}
 
 /* ------------------------------------------------------- the record's memory */
 
+// `open` is the record that is open, `{ kind, id }`, or null on the roster, and
+// `setOpenRecord` is its one writer. Whenever the identity changes — a roster
+// press, Back to records, a finished change opening its record, an address
+// naming another record — it drops what was held for the record being left:
+// the chosen assessment, the record read, a failed destination read, any read
+// still in flight, and the Later conclusion's text, failed save and request id
+// (ADR 452); a later-conclusion save still in flight writes nothing when it
+// returns. A re-render of the same record, a Day return included, keeps them.
+//
 // `mode` is the reader's own choice of assessment for the open record, or null
 // until they make one: the record's default read, which its served ending
 // decides once the record read has landed (ADR 430). `failed` is a reassessment
 // read that failed for the open record; the record it was read for stays. It
 // is cleared wherever a record read lands, so every opening of a record — by a
 // roster press, its address or a reload — reads its reassessment afresh.
+// `conclusion`, `conclusionFailure` and `conclusionAttempt` are the Later
+// conclusion form's text, its failed save and that save's request id: held
+// across a re-render so Retry resends the same request id, and emptied by a
+// successful save as well as by the identity rule.
 const memory = {
   roster: null, error: null, open: null, mode: null, failed: null,
   record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
 };
 
-export const selectedRecord = () => memory.open;
-
-/** Open one record on itself. The finished change is acknowledged before any
-    other concern is offered, so finishing hands the identity here (HV2-28). */
-export function openRecord(kind, id) {
-  memory.open = { kind, id: String(id) };
-  memory.roster = null;
-  navigate('changes', { subject: 'history', occurrence: `record:${kind}:${id}` });
-  memory.mode = null;
-  memory.record = null;
+/** Set which record is open, `{ kind, id }` or null, dropping what the record
+    being left held (the rule above). Opening installs a new identity object,
+    so even reopening the record already open is a change. Its callers run it
+    before navigating, which renders synchronously. Nothing started for the
+    record being left lands on the next: the bumped generation drops the
+    destination's own reads, and a later-conclusion save compares the identity
+    it started under after each await and writes nothing once it differs. */
+function setOpenRecord(next) {
+  readGeneration += 1;
+  memory.open = next;
+  memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
+  memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
 }
 
-/** Drop the open record, back to the roster. */
+/** Open one record on itself. The finished change is acknowledged before any
+    other concern is offered, so finishing hands the identity here (HV2-28).
+    Every open starts the record fresh, the one already open included, and
+    re-reads the roster. */
+export function openRecord(kind, id) {
+  setOpenRecord({ kind, id: String(id) });
+  memory.roster = null;
+  navigate('changes', { subject: 'history', occurrence: `record:${kind}:${id}` });
+}
+
+/** Leave the open record for the roster, which holds none. */
 function closeRecord() {
-  memory.open = null;
-  memory.record = null;
+  setOpenRecord(null);
   navigate('changes', { subject: 'history' });
 }
 
@@ -312,7 +331,7 @@ export function originalSection(original) {
 export function endingSection(ending, { kind }) {
   if (!ending || !ending.kind) {
     return `<section class="gf-section" data-record-part="ending"><h3>Ending</h3>
-      <p class="gf-meta" data-unavailable="ending">Not recorded — this ${kind === 'focus' ? 'Focus' : 'change'} is still open.</p></section>`;
+      <p class="gf-meta" data-unavailable="ending">Not recorded: this ${kind === 'focus' ? 'Focus' : 'change'} is still open.</p></section>`;
   }
   const assessment = ending.assessment || {};
   const inference = assessment.assessment || {};
@@ -325,8 +344,8 @@ export function endingSection(ending, { kind }) {
     </dl>
     ${ENDING_NOTE[ending.kind] ? `<p class="gf-meta">${e(ENDING_NOTE[ending.kind])}</p>` : ''}
     <dl><dt>Ending assessment</dt><dd data-ending-assessment="${e(assessment.state || 'unavailable')}">${assessment.state === 'available'
-      ? `Recorded · ${e(inference.state || 'unclear')}`
-      : `Unavailable · ${e(assessment.reason || 'not recorded')}`}</dd></dl>
+      ? `Recorded · ${e(stateWords(inference.state || 'unclear'))}`
+      : `Unavailable · ${e(comparisonReasonWords(assessment.reason || 'not_recorded'))}`}</dd></dl>
     ${assessment.state === 'available' && inference.reason ? `<p class="gf-meta">${e(inference.reason)}</p>` : ''}
     <p class="gf-meta">An observation period may end without a clear answer. Nothing here required a favourable result.</p></section>`;
 }
@@ -345,12 +364,17 @@ export function lateConclusionSection(conclusion, { eligible = false, state = {}
       fieldLabel: 'Later conclusion', note: 'Nothing here is sent to your pump.' })}</section>`;
 }
 
-/** The observed change: the setting, and what it became. */
+/** The observed change: the setting, and what it became. A Focus changed no
+    setting, so it names the behavior it watched by its served name (ADR 449),
+    which a Pattern's nameplate title is not. */
 export function changeSection(detail) {
   const changes = detail.changes || [];
   if (!changes.length) {
+    const behavior = detail.lever_title
+      ? `The intended behavior: ${e(detail.lever_title)}.`
+      : 'The behavior this Focus watched is no longer an offered lever.';
     return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
-      <p class="gf-meta">${detail.kind === 'focus' ? `The intended behavior: ${e(detail.title)}. No pump setting changed.` : 'Not recorded'}</p></section>`;
+      <p class="gf-meta">${detail.kind === 'focus' ? `${behavior} No pump setting changed.` : 'Not recorded'}</p></section>`;
   }
   return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
     <table class="gf-table"><thead><tr><th scope="col">Setting</th><th scope="col">Before</th><th scope="col">Detected</th></tr></thead><tbody>${changes.map((change) => `<tr><td>${e(SETTING_NAME[change.parameter] || change.parameter)}${change.slots_changed ? `<small>${e(change.slots_changed)} time slots changed${change.uniform ? ' · uniform' : ` · values shown at ${e(change.slot)}`}</small>` : change.slot ? `<small>${e(change.slot)}</small>` : ''}</td><td class="v">${e(settingValue(change.parameter, change.before))}</td><td class="v">${e(settingValue(change.parameter, change.after))}</td></tr>`).join('')}</tbody></table>
@@ -360,7 +384,7 @@ export function changeSection(detail) {
 /** The reassessment: a second, explicitly requested read, kept beside the
     original rather than in place of it. */
 export function reassessmentSection(detail, mode, { kind } = {}) {
-  const controls = `<div class="seg" role="group" aria-label="Assessment"><button data-assessment="original" aria-pressed="${mode === 'original'}">Original</button><button data-assessment="retained" aria-pressed="${mode === 'retained'}">Retained context</button><button data-assessment="current" aria-pressed="${mode === 'current'}">Current policy</button></div>`;
+  const controls = `<div class="seg" role="group" aria-label="Assessment">${Object.entries(MODE_WORD).map(([value, word]) => `<button data-assessment="${value}" aria-pressed="${mode === value}">${word}</button>`).join('')}</div>`;
   const reassessment = detail.reassessment;
   if (mode === 'original' || !reassessment) {
     // A record with no saved ending has nothing above to point at: its Original
@@ -374,14 +398,14 @@ export function reassessmentSection(detail, mode, { kind } = {}) {
   const comparison = reassessment.comparison || {};
   const availability = comparison.availability || {};
   const context = reassessment.comparison_context || {};
-  return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment <span class="meta">${e(reassessment.mode)}</span></h3>${controls}
+  return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment <span class="meta">${e(MODE_WORD[reassessment.mode] || reassessment.mode)}</span></h3>${controls}
     <dl>
       <dt>Computed</dt><dd>${e(stamp(reassessment.computed_at))}</dd>
       <dt>Context</dt><dd data-reassessment-context="${e(reassessment.mode)}">${reassessment.mode === 'current'
-        ? 'Current policy — this is not a like-for-like comparison with the saved ending.'
+        ? 'Current policy: this is not a like-for-like comparison with the saved ending.'
         : `Stored context ${e(context.id ? String(context.id).slice(0, 12) : 'unavailable')}`}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
-        ? e((comparison.assessment || {}).state || 'unclear')
+        ? e(stateWords((comparison.assessment || {}).state || 'unclear'))
         : `Unavailable · ${e(comparisonReasonWords(availability.reason || 'not_recorded'))}`}</dd>
     </dl>
     <p class="gf-meta">A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.</p></section>`;
@@ -398,7 +422,7 @@ function rosterFrame(roster) {
   })}<div class="gf-scroll">${recordRoster(roster)}</div></section>`;
   const reading = `<aside class="pane gf-reading" aria-label="Records">${readingHeader('Records')}<div class="gf-pane-body">
     <section class="gf-section"><h3>What a record keeps</h3>
-      <p>The original decision or the first time Harmonic saw the change, the observed change itself, the ending you saved, and any later reassessment — kept apart, because they answer different questions.</p>
+      <p>The original decision or the first time Harmonic saw the change, the observed change itself, the ending you saved, and any later reassessment. They are kept apart because they answer different questions.</p>
       <p class="gf-meta">Opening a record shows its own evidence. Nothing here is sent to your pump.</p></section>
   </div></aside>`;
   return desk(stage, reading);
@@ -419,11 +443,12 @@ function shownComparison(detail) {
     : { comparison: (detail.reassessment || {}).comparison || null, source: 'reassessment' };
 }
 
-/** A failed reassessment read, in the stage: which read failed, and its retry. */
+/** A failed reassessment read, in the stage: which read failed, and its retry.
+    A served sentence keeps one full stop: the line appends its own. */
 function reassessmentFailure(failed) {
   if (!failed) return '';
   const read = failed.mode === 'current' ? 'current-policy' : 'retained-context';
-  return `<div class="gf-status" role="alert" data-reassessment-failed="${e(failed.mode)}"><p class="gf-error">The ${e(read)} reassessment could not load: ${e(failureMessage(failed.error))}.</p><p class="gf-meta">The record itself is unchanged.</p><div class="gf-actions"><button class="gf-btn primary" data-retry-reassessment>Retry reassessment</button></div></div>`;
+  return `<div class="gf-status" role="alert" data-reassessment-failed="${e(failed.mode)}"><p class="gf-error">The ${e(read)} reassessment could not load: ${e(failureMessage(failed.error).replace(/\.$/, ''))}.</p><p class="gf-meta">The record itself is unchanged.</p><div class="gf-actions"><button class="gf-btn primary" data-retry-reassessment>Retry reassessment</button></div></div>`;
 }
 
 /** One open record: its evidence on the stage, its four parts in the reading. */
@@ -442,7 +467,7 @@ function recordFrame(state) {
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
-    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind)}</div></section>`;
+    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind, { leverTitle: detail.lever_title, targets: detail.target_metrics })}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.
   const pane = kind === 'focus' ? 'This Focus' : 'This trial';
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">
@@ -480,26 +505,31 @@ const conclusionAttemptId = () => {
   return memory.conclusionAttempt;
 };
 
-const failureMessage = error => error?.detail?.code
-  ? `${error.detail.code} (${error.status})`
-  : error?.detail || error?.message || 'no response from the store';
-
+// A save belongs to the record it started on (ADR 452). After each await it
+// writes nothing unless that record's identity is still the one open: a retry
+// whose re-read returns after the record was left is abandoned unsent, and a
+// failure or success returning then leaves the next record as it is.
 async function submitLateConclusion({ retry = false } = {}) {
   const state = memory.record;
   const detail = state?.detail;
   const conclusion = (memory.conclusion || '').trim();
   if (!detail || state.kind !== 'trial' || !conclusion) return;
+  const startedOn = memory.open;
+  const left = () => memory.open !== startedOn;
   try {
     if (retry) {
       const fresh = await fetchVerifyTrials({ kind: 'trial', selected: state.id });
+      if (left()) return;
       memory.record = { ...state, detail: { ...detail, ...fresh.selected, revision: fresh.input_revision } };
       memory.roster.revision = fresh.input_revision;
     }
     const body = { request_id: conclusionAttemptId(), input_revision: memory.record.detail.revision, conclusion };
     await concludeTrial(state.id, body);
+    if (left()) return;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
     memory.roster = null; memory.record = null;
   } catch (error) {
+    if (left()) return;
     memory.conclusionFailure = { operation: 'conclude', headline: 'Recording the later conclusion failed',
       message: failureMessage(error) };
     view.focusAfterRender = '[data-retry-save="conclude"]';
@@ -522,7 +552,7 @@ function bind(host) {
   }
   const close = host.querySelector('[data-record-close]');
   if (close) close.onclick = () => { closeRecord(); view.focusAfterRender = '.gf-stage .gf-title'; render(); };
-  // A press holds for this record until another opens. The mount reads what
+  // A press holds for this record while it stays open. The mount reads what
   // the chosen assessment still needs; pressing the one already shown needs
   // nothing and re-renders it as it stands. A press also clears a failed
   // reassessment read, so pressing its control again is a retry.
@@ -541,15 +571,15 @@ function bind(host) {
     render();
   };
   // A supporting date opens that day through the published door, carrying the
-  // subject and the exact control to come back to (HV2-14). This desk implements
-  // no Day of its own.
+  // subject, the record and the date, which is what the return comes back to
+  // (HV2-14, ADR 445). This desk implements no Day of its own.
   for (const button of host.querySelectorAll('[data-day-date]')) {
     button.onclick = () => navigate('day', {
       date: button.dataset.dayDate,
       subject: memory.record?.detail?.subject || 'history',
       title: recordTitle(memory.record.detail, memory.record.kind),
       lever: button.dataset.dayLever || null,
-      from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
+      from: 'changes',
       occurrence: `record:${memory.open.kind}:${memory.open.id}`,
     });
   }
@@ -569,14 +599,10 @@ function bind(host) {
 }
 
 /** The record destination's content. */
-export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
+export function mount(host, { hold: holdCleanup = hold, context = {}, navigation } = {}) {
   const match = /^record:(trial|focus):(.+)$/.exec(context.occurrence || '');
   const open = match ? { kind: match[1], id: match[2] } : null;
-  if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
-    readGeneration += 1;
-    memory.open = open; memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
-    memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
-  }
+  if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) setOpenRecord(open);
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
   if (!memory.roster) { load('roster', loadRoster); host.innerHTML = loadingFrame('Changes', 'Reading change records'); return; }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
@@ -613,4 +639,6 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   host.innerHTML = recordFrame({ ...memory.record, failed });
   bind(host);
   mountComparisonChart(host, shownComparison(memory.record.detail).comparison, holdCleanup);
+  const back = supportingDateFocus({ context, navigation });
+  if (back) view.focusAfterRender = back;
 }

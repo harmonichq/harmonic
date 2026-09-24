@@ -557,6 +557,10 @@ footer injection):
 - Superseded 2026-09-10 · coordinator amendment 13: Scope: `Scope` · `30 d` — removed from the current persistent chrome.
 - `＋Log carbs` (the mark is U+FF0B, fullwidth plus)
 - Advisory line: `Advisory only — review with your clinician before changing pump settings.`
+- Amended 2026-09-24 · ADR 451 · Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451:
+  Advisory line: `Advisory only. Review with your clinician before changing pump settings.`
+  It supersedes the advisory line above, whose prose em dash DESIGN.md's user-copy
+  register forbids.
 - Footer utilities (nav label `Utilities`): `Carb questions` with its open
   count · `Guide` · `Settings` · `Glossary`
 - Utility pane titles: `App settings` · `Pump settings` · `Log carbs` ·

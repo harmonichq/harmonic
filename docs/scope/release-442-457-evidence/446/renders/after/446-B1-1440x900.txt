@@ -1,0 +1,45 @@
+SYNTHETIC — after · tree dd5a93bb · store basal-lower · 446-B1 · 1440x900
+URL: http://127.0.0.1:8791/changes
+Element: viewport
+Focused: <h2> "Action"
+Note: render 2 — nothing watched: Stage in the concern, Open Plan, topbar Day, topbar Changes
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FINDINGS · READ 2024-06-01
+Overnight lows with no insulin on board
+97 priority · Staged
+Set aside
+Staged · Undo
+Open Plan
+View change record
+Pump settings
+Pump settings
+MEMBERS IN THIS READ
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+MEMBER	ACTION
+Basal	Basal
+ACTION
+Overnight lows with no insulin on board
+ACTION
+STAGED
+lower to 0.54 U/h03:00 to 03:30
+
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+
+Priority 97 leads the available admitted actions; an exact tie breaks by canonical subject.
+
+Focus is ready from the backend opportunity count.
+
+Inspect evidence
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

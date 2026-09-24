@@ -9,19 +9,19 @@
   "guide": {
     "articles": {
       "reading-day": {
-        "markdown": "The **Day** tab is the forensic replay: *I crashed on Tuesday \u2014 what happened?*\nIt pairs one day's glucose chart with a chronological **Episode Log**.\n\n## The chart\n\nThe sticky glucose curve runs the width of the day, banded by target range.\nBoluses, carbs, and basal changes are marked on the timeline \u2014 every color is\npaired with a shape or label so the marks read without relying on color alone.\n\n## The Episode Log\n\nBeside the chart, the **Episode Log** sorts the day's anchors (a meal bolus, a\ncorrection, a low, a high, a suspend) into three bands, in time order. The first\ntwo list an anchor per row; the third counts the rest rather than listing them.\nA row gives the time, a word for what the engine made of that anchor, the anchor\nitself, and the **lever** of the episode it belongs to, when that episode has one.\nAn episode gets at most **one lever**: the shared evaluator compares observed\nimpact when supported eating-sequence evidence competes for it. Other matching behaviors remain\ninspectable as evidence, never stacked as separate blame.\n\nThe rows sit in three bands:\n\n- **Findings** \u2014 the anchors of each episode attributed to a lever: the one that\n  drove it, marked *finding*, and any it **claimed**. The caption counts distinct\n  findings, one per lever, so two episodes of the same lever count once; claimed\n  anchors are counted beside it, never added in.\n- **Also checked** \u2014 anchors the engine stayed silent on for a reason worth\n  reading, such as falling just under a lever's bar.\n- **Quiet** \u2014 everything else, folded into one stretch and counted: clean,\n  explained, and no data.\n\nA **claimed** anchor belongs to an episode another finding owns. Its row names what\nthe anchor matched on its own, then ends with the finding that claimed it, and it\nkeeps that finding's color. Each band's **Glossary** control opens these\ndefinitions.\n\nPress a row to ring its anchor on the chart and draw a line across every strip.\nThat handoff \u2014 log row \u2194 chart \u2014 is how you read *why* the day went the way it did.\n\n> **Open your [Day surface](app:day)** to replay a specific date.\n",
+        "markdown": "The **Day** tab is the forensic replay: *I crashed on Tuesday. What happened?*\nIt pairs one day's glucose chart with a chronological **Episode Log**.\n\n## The chart\n\nThe sticky glucose curve runs the width of the day, banded by target range.\nBoluses, carbs, and basal changes are marked on the timeline. Every color is\npaired with a shape or label, so the marks read without relying on color alone.\n\n## The Episode Log\n\nBeside the chart, the **Episode Log** sorts the day's anchors (a meal bolus, a\ncorrection, a low, a high, a suspend) into three bands, in time order. The first\ntwo list an anchor per row; the third counts the rest rather than listing them.\nA row gives the time, a word for what the engine made of that anchor, the anchor\nitself, and the **lever** of the episode it belongs to, when that episode has one.\nAn episode gets at most **one lever**: the shared evaluator compares observed\nimpact when supported eating-sequence evidence competes for it. Other matching behaviors remain\ninspectable as evidence, never stacked as separate blame.\n\nThe rows sit in three bands:\n\n- **Findings** lists the anchors of each episode attributed to a lever: the one that\n  drove it, marked *finding*, and any it **claimed**. The caption counts distinct\n  findings, one per lever, so two episodes of the same lever count once; claimed\n  anchors are counted beside it, never added in.\n- **Also checked** lists anchors the engine stayed silent on for a reason worth\n  reading, such as falling just under a lever's bar.\n- **Quiet** holds everything else, folded into one stretch and counted: clean,\n  explained, and no data.\n\nA **claimed** anchor belongs to an episode another finding owns. Its row names what\nthe anchor matched on its own, then ends with the finding that claimed it, and it\nkeeps that finding's color. Each band's **Glossary** control opens these\ndefinitions.\n\nPress a row to ring its anchor on the chart and draw a line across every strip.\nThat handoff (log row \u2194 chart) is how you read *why* the day went the way it did.\n\n> **Open your [Day surface](app:day)** to replay a specific date.\n",
         "source_path": "docs/kb/reading-day.md"
       },
       "reading-diagnose": {
-        "markdown": "The **Diagnose** tab answers one question: *what should I look at first?* It is a\nsingle ranked queue of **levers** \u2014 one honest list, tuning and behavioral\nmixed, most worth-your-attention at the top.\n\n## The rank\n\nEach row is scored by `\u221b(severity \u00d7 recurrence \u00d7 confidence)` \u2014 how bad, how\noften, how sure. A big score means a lever that hurt a lot, happened repeatedly,\nand the engine is confident about. The equation sits behind the per-lever\nexpander; the factor bars on the card show you the three inputs at a glance.\n\n## Setting vs. habit\n\nEvery lever is chipped **\u2699 Setting** or **\u25c8 Cause**. That flavor is a chip, never\na lane \u2014 the rank stays honest across both. What differs is where \"accept\" sends\nyou:\n\n- **\u2699 Setting** findings (basal, ISF, or I:C) flow to\n  [The Plan tab](#the-plan-tab) as a proposed settings change.\n- **\u25c8 Cause** levers (late bolus, over-treated low) flow to Focus / Verify, because\n  no pump setting fixes them.\n\n## \"Why so few?\"\n\nA short queue is a *good* sign, not a broken one. The tail of the surface tells\nyou how many opportunities the engine looked at and chose to stay quiet on, and\nwhy \u2014 thin windows, upstream causes, near-misses under threshold. Read it before\nyou assume nothing's wrong.\n\n> **Open your [Diagnose surface](app:diagnose)** to see your own ranked levers.\n",
+        "markdown": "The **Diagnose** tab answers one question: *what should I look at first?* It is a\nsingle ranked queue of **levers**: one honest list, tuning and behavioral\nmixed, most worth-your-attention at the top.\n\n## The rank\n\nEach row is scored by `\u221b(severity \u00d7 recurrence \u00d7 confidence)`: how bad, how\noften, how sure. A big score means a lever that hurt a lot, happened repeatedly,\nand the engine is confident about. The equation sits behind the per-lever\nexpander; the factor bars on the card show you the three inputs at a glance.\n\n## Setting vs. habit\n\nEvery lever is chipped **\u2699 Setting** or **\u25c8 Cause**. That flavor is a chip, never\na lane, so the rank stays honest across both. What differs is where \"accept\" sends\nyou:\n\n- **\u2699 Setting** findings (basal, ISF, or I:C) flow to\n  [The Plan tab](#the-plan-tab) as a proposed settings change.\n- **\u25c8 Cause** levers (late bolus, over-treated low) flow to a Focus, followed in\n  Changes, because no pump setting fixes them.\n\n## \"Why so few?\"\n\nA short queue is a *good* sign, not a broken one. The tail of the surface tells\nyou how many opportunities the engine looked at and chose to stay quiet on, and\nwhy: thin windows, upstream causes, near-misses under threshold. Read it before\nyou assume nothing's wrong.\n\n> **Open your [Diagnose surface](app:diagnose)** to see your own ranked levers.\n",
         "source_path": "docs/kb/reading-diagnose.md"
       },
       "start-here": {
-        "markdown": "This tool reads *your own* Control-IQ history and tells you where your basal,\nISF, and I:C settings might be off \u2014 and where your habits, not your settings,\nare driving the highs and lows. It is **advisory**. It never touches your pump;\nit hands you a specific number and the evidence behind it to take to your\nclinician.\n\n## How to read any verdict here\n\nEvery claim carries an **evidence tier**, and the tier is the first thing to\nread:\n\n- **Observed** \u2014 a hard fact from the feed (a 4.5 U bolus at 19:15, BG hitting\n  58). Trust it plainly.\n- **Inferred** \u2014 derived from the *shape* of the curve, so it is hedged\n  (\"likely rescue carbs\"). Weigh it, don't bank on it.\n- **Not in data** \u2014 an explicit unknown the feed can't show, flagged rather than\n  guessed.\n\nThe engine would rather stay silent than assert something the feed can't\nsupport. **Silence is a verdict**, not a gap \u2014 see [How the engine reasons](#the-pipeline).\n\n## Where to go next\n\n- [Reading the Diagnose surface](#reading-diagnose) \u2014 the ranked list of what to\n  fix first. Start here on most days.\n- [Reading a Day](#reading-day) \u2014 replay a single day when you crashed and want\n  to know *why*.\n- [The Plan tab](#the-plan-tab) \u2014 the suggested basal profile, and how to act on\n  it with your clinician.\n",
+        "markdown": "This tool reads *your own* Control-IQ history and tells you where your basal,\nISF, and I:C settings might be off, and where your habits, not your settings,\nare driving the highs and lows. It is **advisory**. It never touches your pump;\nit hands you a specific number and the evidence behind it to take to your\nclinician.\n\n## How to read any verdict here\n\nEvery claim carries an **evidence tier**, and the tier is the first thing to\nread:\n\n- **Observed**: a hard fact from the feed (a 4.5 U bolus at 19:15, BG hitting\n  58). Trust it plainly.\n- **Inferred**: derived from the *shape* of the curve, so it is hedged\n  (\"likely rescue carbs\"). Weigh it, don't bank on it.\n- **Not in data**: an explicit unknown the feed can't show, flagged rather than\n  guessed.\n\nThe engine would rather stay silent than assert something the feed can't\nsupport. **Silence is a verdict**, not a gap. See [How the engine reasons](#the-pipeline).\n\n## Where to go next\n\n- [Reading the Diagnose surface](#reading-diagnose): the ranked list of what to\n  fix first. Start here on most days.\n- [Reading a Day](#reading-day): replay a single day when you crashed and want\n  to know *why*.\n- [The Plan tab](#the-plan-tab): the suggested basal profile, and how to act on\n  it with your clinician.\n",
         "source_path": "docs/kb/start-here.md"
       },
       "the-plan-tab": {
-        "markdown": "The **Plan** tab is the payoff: a **suggested basal profile** you can read next to\nyour current one, built from what Control-IQ actually delivered during clean\nwindows.\n\n## Why these numbers\n\nFor each time slot the engine takes the **median** of clean delivered basal \u2014 not\nthe mean. Control-IQ's clean delivery is right-skewed (a tail of corrective\nbasal), so the mean over-suggests; the median is the honest center. Thin slots\nget a wider interval and their `n`, never a confident-looking number over three\nreadings.\n\n## How to act on it\n\nThis is a **conversation starter for your clinician**, not a dose. The tool won't\nchange a pump setting and neither should you on its say-so alone. Bring the\nsuggested profile, the window it was built from, and the evidence \u2014 the clinician\nmakes the call.\n\n> **Open your [Plan surface](app:plan)** to see your suggested profile.\n",
+        "markdown": "The **Plan** tab is the payoff: a **suggested basal profile** you can read next to\nyour current one, built from what Control-IQ actually delivered during clean\nwindows.\n\n## Why these numbers\n\nFor each time slot the engine takes the **median** of clean delivered basal, not\nthe mean. Control-IQ's clean delivery is right-skewed (a tail of corrective\nbasal), so the mean over-suggests; the median is the honest center. Thin slots\nget a wider interval and their `n`, never a confident-looking number over three\nreadings.\n\n## How to act on it\n\nThis is a **conversation starter for your clinician**, not a dose. The tool won't\nchange a pump setting and neither should you on its say-so alone. Bring the\nsuggested profile, the window it was built from, and the evidence. The clinician\nmakes the call.\n\n> **Open your [Plan surface](app:plan)** to see your suggested profile.\n",
         "source_path": "docs/kb/the-plan-tab.md"
       }
     },
@@ -68,7 +68,7 @@
           "exposure": "meals",
           "meaning": "You bolused for a meal, but glucose still ran away high afterward. The dose covered fewer carbs than the meal actually held.",
           "measured": "meals",
-          "recommendation": "Carbs were likely undercounted \u2014 estimate higher, or split the dose for big meals.",
+          "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
           "title": "Carb undercount",
           "value": "carb_undercount"
         },
@@ -76,7 +76,7 @@
           "exposure": "meals",
           "meaning": "Glucose was already climbing when the meal bolus landed, so the insulin spent its first stretch just catching up to a rise already underway.",
           "measured": "meals",
-          "recommendation": "Glucose was already climbing at the dose \u2014 try bolusing ~15 min before eating.",
+          "recommendation": "Glucose was already climbing at the dose. Try bolusing ~15 min before eating.",
           "title": "Late bolus",
           "value": "late_bolus"
         },
@@ -84,7 +84,7 @@
           "exposure": "meals",
           "meaning": "The meal dose was a touch strong, so glucose dropped toward a low afterward, leaving something to walk back.",
           "measured": "meals",
-          "recommendation": "The meal dose ran glucose near-low \u2014 a slightly smaller dose may leave less to walk back.",
+          "recommendation": "The meal dose ran glucose near-low. A slightly smaller dose may leave less to walk back.",
           "title": "Meal over-delivery",
           "value": "meal_over_delivery"
         },
@@ -92,7 +92,7 @@
           "exposure": "lows",
           "meaning": "A low got more fast carbs than it needed and rebounded high.",
           "measured": "lows",
-          "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+          "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
           "title": "Over-treated low",
           "value": "over_treated_low"
         },
@@ -100,7 +100,7 @@
           "exposure": "correction_clusters",
           "meaning": "Corrections landed back-to-back before the first had finished working, and the combined insulin overshot into a low.",
           "measured": "correction_clusters",
-          "recommendation": "Corrections stacked, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "Corrections stacked, then went low. Give one ~1\u20132 h to act before adding more.",
           "title": "Correction stacking",
           "value": "correction_stacking"
         },
@@ -108,7 +108,7 @@
           "exposure": "lows",
           "meaning": "A correction landed while an earlier dose was still active; together they carried you low.",
           "measured": "lows",
-          "recommendation": "A correction landed on insulin still working, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "recommendation": "A correction landed on insulin still working, then went low. Give one ~1\u20132 h to act before adding more.",
           "title": "Correction on active insulin",
           "value": "correction_on_iob"
         },
@@ -116,15 +116,15 @@
           "exposure": "highs",
           "meaning": "Glucose rose with the shape of a meal but no bolus sits near it. A meal that went un-bolused, or was bolused very late.",
           "measured": "highs",
-          "recommendation": "Glucose rose like a meal with no bolus near it \u2014 bolusing (even late) keeps the peak down.",
+          "recommendation": "Glucose rose like a meal with no bolus near it. Bolusing (even late) keeps the peak down.",
           "title": "Missed / unannounced meal",
           "value": "missed_meal"
         },
         {
           "exposure": "highs",
-          "meaning": "You bolused for the meal, glucose climbed anyway, and a correction was needed afterward. The dose did not cover what followed. This says nothing about how many carbs the meal held \u2014 only that the dose given fell short of the outcome.",
+          "meaning": "You bolused for the meal, glucose climbed anyway, and a correction was needed afterward. The dose did not cover what followed. This says nothing about how many carbs the meal held, only that the dose given fell short of the outcome.",
           "measured": "meals",
-          "recommendation": "A correction was needed behind this meal dose \u2014 worth watching how often that happens before changing anything.",
+          "recommendation": "A correction was needed behind this meal dose. It is worth watching how often that happens before changing anything.",
           "title": "Meal bolus fell short",
           "value": "meal_bolus_short"
         },
@@ -203,7 +203,7 @@
           "value": "under_threshold"
         },
         {
-          "body": "An observable recent low and/or a defensive suspend explains the move. A recovery, not the behavior itself.",
+          "body": "An observable recent low and/or a defensive suspend explains the move, or the rise is the rebound of an over-treated low, which owns it. A recovery, not the behavior itself.",
           "label": "Upstream cause",
           "tier": "inferred",
           "value": "upstream_cause"

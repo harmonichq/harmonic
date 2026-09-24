@@ -1,0 +1,67 @@
+SYNTHETIC — after · tree dd5a93bb · store showcase · 448-A1 · 1440x900
+URL: http://127.0.0.1:8791/
+Element: viewport
+Focused: <h2 class="gf-title"> "The silence taxonomy: why the engine stays quiet"
+Note: Guide → the silence article at its Upstream cause row
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+BASAL 03:00 TO 04:00
+One cautious step down is supported at this time.
+Delivered below the programmed rate across 30 steady nights.
+Full
+Keep
+GUIDE
+How the engine reasons
+Close
+← All articles
+The silence taxonomy: why the engine stays quiet
+OBSERVED
+
+No trigger The behavior plainly didn't happen: a flat slope, no stack, no correction, no low. A genuinely clean opportunity.
+
+Under threshold It happened but fell short of the firing bar: the near-miss where a mis-tuned threshold hides.
+
+Prior high baseline The rise started from an already-high level, not from flat, so it isn't the from-flat run this detector looks for.
+
+Horizon expired The outcome never arrived inside the detector's window. The story ran past the edge of what it watches.
+
+INFERRED
+
+Upstream cause An observable recent low and/or a defensive suspend explains the move, or the rise is the rebound of an over-treated low, which owns it. A recovery, not the behavior itself.
+
+Owned by prior bolus A completed carb bolus in the recent lookback already owns the rise this dose landed into. A real excursion already covered, not a late meal bolus.
+
+Owned by announced meal A substantial announced meal at the low owns the rebound, so fast-carb treatment cannot be isolated from the meal response.
+
+NOT IN DATA
+
+Insufficient data The window was too sparse to judge, with not enough readings to say anything honest.
+
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

@@ -1,0 +1,49 @@
+(node:56518) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S177 case=isf-strengthen milliseconds=324.278
+# S177 synthetic case=isf-strengthen (fresh copy)
+FAIL S177 — Timed out after 30000 ms: S177 the plain arrival reads in the wearer's words; saw [ 'strengthen to 32 ' ]; S177 the Action figure reads the served instruction, the correction factor insulin first
++ actual - expected
+
++ 'strengthen to 32 '
+- 'strengthen to 1 U : 32 mg/dL'
+                 ^
+
+# story-time S177 milliseconds=36605.205
+# case-copy S178 case=isf-strengthen milliseconds=0.965
+# S178 synthetic case=isf-strengthen (fresh copy)
+FAIL S178 — Timed out after 30000 ms: S178 the correction-factor queue row; saw [ 'ISF · strengthen' ]; S178 the queue row is titled by the setting and its served direction
++ actual - expected
+
++ 'ISF · strengthen'
+- 'Correction factor · strengthen'
+
+# story-time S178 milliseconds=34434.383
+# case-copy S179 case=isf-strengthen milliseconds=0.800
+# S179 synthetic case=isf-strengthen (fresh copy)
+FAIL S179 — Timed out after 30000 ms: S179 what was known; saw [
+  {
+    concern: 'setting:isf',
+    change: '32 mg/dL/U',
+    explanation: 'ISF',
+    text: 'What was known\n' +
+      '    Prioritysetting:isf\n' +
+      '    Change32 mg/dL/U\n' +
+      '    Read atSep 24, 2026 · 06:22\n' +
+      '    ISF\n' +
+      '    '
+  }
+]; S179 the recorded concern is named, never its identifier
++ actual - expected
+
++ 'setting:isf'
+- 'Correction factor'
+
+# story-time S179 milliseconds=35433.652
+
+# executed 0 · failed 3 · deferred 0 · selected 3 · chromium launches 1
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

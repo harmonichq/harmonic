@@ -18,6 +18,7 @@
  * committed `frontend/__fixtures__/findings-projection.json`, which is the real
  * projection's own frozen output.
  */
+import { settingValue } from './plan.js';
 
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
@@ -25,8 +26,9 @@ export const EMPTY_LINE = 'No pattern or setting asserts a direction in this win
 export const EMPTY_SIFT_LINE = 'No findings match the current filters.';
 /** Term 42 — the sentence that lives inside the doubled gap, naming the tail. */
 export const TAIL_NOTE = 'Not recurring often enough to rank yet.';
-/** Term 14 — a held row's reason line; the suffix is the backend's own words. */
-export const HELD_PREFIX = 'no direction asserted — ';
+/** Term 14 — a held row's reason line; the suffix is the backend's own words.
+    A colon joins the label to that clause (ADR 451: no prose em dash). */
+export const HELD_PREFIX = 'no direction asserted: ';
 
 /* Term 36 — glyph + word, at caps-label rank. The GLYPH differentiates; the hue
    only has to stay out of the way (it is `--secondary`, never a clinical token and
@@ -51,8 +53,11 @@ export const TIER = {
 export const MIN_ROW_MINI_WIDTH = 120;
 
 /* Display units per parameter. Formatting, not policy: the projection publishes the
-   numbers and the parameter id, and a unit is how a number is spelled. */
-const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
+   numbers and the parameter id, and a unit is how a number is spelled. A correction
+   factor is spelled insulin first by the desk's one formatter (ADR 451). */
+const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U' };
+const shown = (parameter, value) =>
+  (parameter === 'isf' ? settingValue(parameter, num(value)) : `${num(value)} ${UNIT[parameter]}`);
 
 /**
  * A rate as the surface spells it: rounded to the two decimals every parameter
@@ -66,6 +71,14 @@ const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
 function num(value) {
   const text = Number(value).toFixed(2).replace(/0$/, '');
   return text.endsWith('.') ? `${text}0` : text;
+}
+
+/** The note a whole-day row that is not a Pattern carries after its detail line:
+    the served `window_scope`, in words. The queue's renderer reads it here; the
+    desk replay restates it (the replay may not import app modules), and the
+    replay's node test holds the two identical. */
+export function scopeNote(row) {
+  return row.window_scope === 'whole_day' && row.kind !== 'pattern' ? ' · Whole day' : '';
 }
 
 /** Validate the additive server coordinate as protocol data, without deciding
@@ -161,9 +174,10 @@ function assertDetail(row) {
     const support = supportPart(row);
     return support ? { kind: 'support', parts: support } : null;
   }
-  const unit = UNIT[row.parameter];
-  if (row.current != null && row.recommended != null && unit) {
-    return { kind: 'nums', now: `now ${num(row.current)} ${unit} → `, then: `${num(row.recommended)} ${unit}` };
+  const spelled = row.parameter === 'isf' || Boolean(UNIT[row.parameter]);
+  if (row.current != null && row.recommended != null && spelled) {
+    return { kind: 'nums', now: `now ${shown(row.parameter, row.current)} → `,
+      then: shown(row.parameter, row.recommended) };
   }
   const support = supportPart(row);
   return support ? { kind: 'support', parts: support } : null;
@@ -332,7 +346,7 @@ function detailFor(row) {
   }
   if (row.register === 'assert') return assertDetail(row);
   // held / blind — WORDS, not a number spine (term 14). The reason is verbatim
-  // backend copy; only the prefix is ours, and the lock pins it byte for byte.
+  // backend copy; only the prefix is ours, and its node test pins it.
   return { kind: 'reason', text: `${HELD_PREFIX}${row.reason || ''}` };
 }
 
@@ -540,9 +554,8 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // to two lines by the stylesheet
     if (row.summary) add(node, 'sum', row.summary);
     const detail = paintDetail(node, row.detail);
-    if (detail && row.raw.window_scope === 'whole_day' && !row.pattern) {
-      add(detail, 'scope-note', ' · Whole day');
-    }
+    const note = scopeNote(row.raw);
+    if (detail && note) add(detail, 'scope-note', note);
     /* Chart-backed Watching rows use the same evidence preview as ranked rows
        when the reader expands them. The workstation registry decides whether
        a descriptor actually exists; rows without one lose the empty host. */

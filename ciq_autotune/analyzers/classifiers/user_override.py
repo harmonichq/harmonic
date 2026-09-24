@@ -104,7 +104,7 @@ def override_enrichment(
             f"adding +{gap:.1f} U it didn’t ask for."
         )
     return (
-        f" You overrode the pump here — it calculated {corr:.1f} U, "
+        f" You overrode the pump here: it calculated {corr:.1f} U, "
         f"you gave +{gap:.1f} U more."
     )
 

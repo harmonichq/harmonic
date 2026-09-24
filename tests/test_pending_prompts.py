@@ -4,7 +4,8 @@ Covers the two halves of the seam:
 
 * :func:`build_candidates` — reuse of the existing detection: a matched
   ``missed-meal`` rise and every sub-70 low become one prompt each; near-lows
-  (71–75) and un-matched rises do not.
+  (71–75) and un-matched rises do not; and a High that an over-treated low's
+  rebound owns in the shared evaluation raises no missed-meal prompt (ADR 448).
 * :func:`pending_prompts` — the answered-match (with anchor tolerance across a
   recomputation drift), the 7-day expiry (silent drop), and the oldest-first
   display cap. All exercised across the seam with plain data.
@@ -13,6 +14,8 @@ Covers the two halves of the seam:
 import unittest
 from datetime import datetime, timedelta
 
+from ciq_autotune.analyzers.classifiers import classify_missed_meal
+from ciq_autotune.analyzers.scenario import Lever, LowPromptAnswer, evaluate
 from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading, format_t
 from ciq_autotune.pending_prompts import (
     ANCHOR_TOLERANCE,
@@ -80,6 +83,84 @@ def carb(day, hh, mm, *, source="manual", grams=15.0, certainty="exact"):
     )
 
 
+def cgm_legs(t0, start_bg, *legs):
+    """5-min CGM from ``t0`` at ``start_bg``, then each ``(minutes, to_bg)`` leg as a line."""
+    values = [float(start_bg)]
+    for minutes, to_bg in legs:
+        steps = minutes // 5
+        frm = values[-1]
+        values += [frm + (to_bg - frm) * k / steps for k in range(1, steps + 1)]
+    return cgm_series(t0, values)
+
+
+REBOUND_T0 = datetime(2026, 6, 10, 13, 0, 0)
+REBOUND_NADIR_T = REBOUND_T0 + timedelta(hours=1)
+
+
+def a_rebound(nadir, rise_min):
+    """A low bottoming at ``nadir`` at 14:00 that rebounds, with no bolus, into a High.
+
+    Flat 110, a 30-min fall to the nadir, a straight ``rise_min``-min climb to 270, then
+    a slow fall back through range. The climb crosses 250 mg/dL about
+    ``rise_min * (250 - nadir) / (270 - nadir)`` minutes after the nadir.
+    """
+    return cgm_legs(REBOUND_T0, 110, (30, 110), (30, nadir), (rise_min, 270),
+                    (60, 180), (60, 144))
+
+
+def first_at_or_above(cgm, bg):
+    return next(r.t for r in cgm if r.bg >= bg)
+
+
+def detector_times(prompts):
+    return [(p.detector, p.anchor_t) for p in prompts]
+
+
+SEQUENCE_WEEK_DAY0 = datetime(2026, 6, 1)
+
+
+def a_sequence_won_week():
+    """ADR 448's sequence-won week: a High-carb sequence wins an owned High's Episode.
+
+    Six carb-tagged meal boluses a day for 7 days (42 sequences), 3.5–4 h apart. Ten
+    are 90 g or more — every 09:30 breakfast and three 21:10 dinners — and glucose
+    sits at 230 through most of the 4-hour window after nine of them, so a High-carb
+    sequence finding is supported. On 06-06 the 99 g breakfast is followed by a
+    72 mg/dL near-low at 12:00 and a rebound crossing 250 mg/dL at 12:55.
+    """
+    slots = [(1, 15), (5, 20), (9, 30), (13, 35), (17, 40), (21, 10)]
+    special_day = 5
+    big = {(d, 2): 91.0 + d for d in range(7)} | {(1, 5): 90.0, (3, 5): 90.5, (4, 5): 90.8}
+    big[(special_day, 2)] = 99.0
+    bolus, bg = [], {}
+    t = SEQUENCE_WEEK_DAY0
+    while t < SEQUENCE_WEEK_DAY0 + timedelta(days=7, hours=6):
+        bg[t] = 110.0
+        t += timedelta(minutes=5)
+    seq = 0
+    for d in range(7):
+        for s, (h, m) in enumerate(slots):
+            at = SEQUENCE_WEEK_DAY0 + timedelta(days=d, hours=h, minutes=m)
+            carbs = big.get((d, s), 20.0 + (seq % 40))
+            seq += 1
+            bolus.append(BolusEvent(t=at, insulin=carbs / 10.0, carbs=carbs,
+                                    completion="Completed", carb_ratio=10.0, seq_num=seq))
+            if (d, s) in big and (d, s) != (special_day, 2):
+                for k in range(6, 42):               # 30 min .. 3.5 h after: a 230 plateau
+                    bg[at + timedelta(minutes=5 * k)] = 230.0
+    b = SEQUENCE_WEEK_DAY0 + timedelta(days=special_day, hours=11)
+    for k in range(13):                               # 11:00 -> 12:00: 110 -> 72
+        bg[b + timedelta(minutes=5 * k)] = 110.0 - (110.0 - 72.0) * k / 12
+    for k in range(13):                               # 12:00 -> 13:00: 72 -> 270
+        bg[b + timedelta(hours=1, minutes=5 * k)] = 72.0 + (270.0 - 72.0) * k / 12
+    for k in range(13):                               # 13:00 -> 14:00: 270 -> 180
+        bg[b + timedelta(hours=2, minutes=5 * k)] = 270.0 - 90.0 * k / 12
+    for k in range(1, 5):                             # 14:00 -> 14:20: 180 -> 110
+        bg[b + timedelta(hours=3, minutes=5 * k)] = 180.0 - 70.0 * k / 4
+    cgm = [CgmReading(t=t, bg=bg[t], type="EGV") for t in sorted(bg)]
+    return bolus, cgm
+
+
 NOW = datetime(2026, 6, 30, 12, 0, 0)
 
 
@@ -118,6 +199,74 @@ class BuildCandidatesTest(unittest.TestCase):
         bolus = [BolusEvent(t=cgm[0].t - timedelta(minutes=10), insulin=6.0, carbs=45.0)]
         mm = [c for c in build_candidates(bolus, cgm) if c.detector == DETECTOR_MISSED_MEAL]
         self.assertEqual(mm, [])
+
+
+class OwnedHighTest(unittest.TestCase):
+    """A High an over-treated low's rebound owns raises no missed-meal prompt (ADR 448).
+
+    The queue reads the shared evaluation's ownership record and judges no low or
+    rebound itself. The missed-meal classifier alone matches every owned onset here,
+    so a missing prompt is the ownership read, not the classifier.
+    """
+
+    def test_slow_rebound_after_a_sub70_low_raises_only_the_low_prompt(self):
+        for rise_min in (120, 165):          # the 250 crossing lands 110 and 150 min after
+            with self.subTest(rise_min=rise_min):
+                cgm = a_rebound(55, rise_min)
+                onset = first_at_or_above(cgm, 250)
+                # Past the context gate's 90-min lookback, so the gate alone misses the low.
+                self.assertGreater(onset - REBOUND_NADIR_T, timedelta(minutes=90))
+                self.assertTrue(classify_missed_meal(onset, cgm).matched)
+                self.assertEqual(detector_times(build_candidates([], cgm)),
+                                 [(DETECTOR_LOW, REBOUND_NADIR_T)])
+
+    def test_near_low_rebound_raises_no_prompt(self):
+        for rise_min in (70, 120):           # the 250 crossing lands 65 and 110 min after
+            with self.subTest(rise_min=rise_min):
+                cgm = a_rebound(72, rise_min)
+                self.assertTrue(classify_missed_meal(first_at_or_above(cgm, 250), cgm).matched)
+                self.assertEqual(detector_times(build_candidates([], cgm)), [])
+
+    def test_unbolused_rise_with_no_low_still_raises_its_prompt(self):
+        cgm = cgm_legs(REBOUND_T0, 110, (60, 110), (120, 270), (60, 180), (60, 144))
+        self.assertEqual(detector_times(build_candidates([], cgm)),
+                         [(DETECTOR_MISSED_MEAL, first_at_or_above(cgm, 250))])
+
+    def test_rise_after_the_rebound_settles_in_range_still_raises_its_prompt(self):
+        # The low fires over-treated (a 200 rebound), then dwells at 120 for an hour —
+        # past the 30-min settle that ends its rebound — before an unbolused rise.
+        cgm = cgm_legs(REBOUND_T0, 110, (30, 110), (30, 55), (45, 200), (30, 120),
+                       (60, 120), (100, 270), (60, 180))
+        self.assertIn(Lever.OVER_TREATED_LOW,
+                      [ep.attribution.lever for ep in evaluate([], cgm).episodes])
+        self.assertEqual(detector_times(build_candidates([], cgm)),
+                         [(DETECTOR_LOW, REBOUND_NADIR_T),
+                          (DETECTOR_MISSED_MEAL, first_at_or_above(cgm, 250))])
+
+    def test_a_refuted_low_owns_nothing_so_its_rebound_high_is_asked_about(self):
+        cgm = a_rebound(55, 120)
+        refuted = [LowPromptAnswer(anchor_t=REBOUND_NADIR_T, answer="no")]
+        self.assertEqual(detector_times(build_candidates([], cgm, low_answers=refuted)),
+                         [(DETECTOR_LOW, REBOUND_NADIR_T),
+                          (DETECTOR_MISSED_MEAL, first_at_or_above(cgm, 250))])
+        for answer in (LowPromptAnswer(anchor_t=REBOUND_NADIR_T, answer="not-sure"),
+                       LowPromptAnswer(anchor_t=REBOUND_NADIR_T, answer="carbs",
+                                       carb_t=REBOUND_NADIR_T, carb_grams=15.0)):
+            with self.subTest(answer=answer.answer):
+                self.assertEqual(detector_times(build_candidates([], cgm, low_answers=[answer])),
+                                 [(DETECTOR_LOW, REBOUND_NADIR_T)])
+
+    def test_a_sequence_won_episode_keeps_its_owned_high(self):
+        bolus, cgm = a_sequence_won_week()
+        onset = datetime(2026, 6, 6, 12, 55)
+        self.assertEqual(first_at_or_above([r for r in cgm if r.t.day == 6], 250), onset)
+        self.assertTrue(classify_missed_meal(onset, cgm, bolus).matched)
+        self.assertEqual(detector_times(c for c in build_candidates(bolus, cgm)
+                                        if c.detector == DETECTOR_MISSED_MEAL), [])
+        episode = next(ep for ep in evaluate(bolus, cgm).episodes
+                       if ep.start <= onset < ep.end)
+        self.assertIs(episode.attribution.lever, Lever.HIGH_CARB_SEQUENCE)
+        self.assertIn(onset, [high.reach_start for high, _ in episode.attribution.owned_highs])
 
 
 # --- pending_prompts: answered-match -----------------------------------------
@@ -399,6 +548,48 @@ class CarbCoverageStoreTest(unittest.TestCase):
                 CarbEntry(t=open_before[0].anchor_t, grams=15.0,
                           certainty="exact", source="manual"))
             self.assertEqual(build_pending_prompts(store), [])
+        finally:
+            store.close()
+
+
+class OwnedHighStoreTest(unittest.TestCase):
+    """The store-facing wrapper reads ownership under the Scenario's own low answers.
+
+    Those answers follow #467's endpoint rule: a `no` recorded after the latest reading
+    is not yet known, so it restores the High's question only once data reaches it.
+    """
+
+    def _store_with_slow_rebound(self):
+        from ciq_autotune.store import Store
+        store = Store.open(":memory:")
+        store.upsert_cgm([{
+            "EventDateTime": format_t(r.t),
+            "Readings (CGM / BGM)": str(r.bg), "Description": "EGV",
+        } for r in a_rebound(55, 120)])
+        return store
+
+    def test_a_known_no_restores_the_rebound_high_question(self):
+        cgm = a_rebound(55, 120)
+        store = self._store_with_slow_rebound()
+        try:
+            self.assertEqual(detector_times(build_pending_prompts(store)),
+                             [(DETECTOR_LOW, REBOUND_NADIR_T)])
+            store.record_prompt_response(detector=DETECTOR_LOW, anchor_t=REBOUND_NADIR_T,
+                                         answer="no", answered_at=cgm[-1].t)
+            open_now = [p for p in build_pending_prompts(store) if p.answer is None]
+            self.assertEqual(detector_times(open_now),
+                             [(DETECTOR_MISSED_MEAL, first_at_or_above(cgm, 250))])
+        finally:
+            store.close()
+
+    def test_a_no_recorded_after_the_latest_reading_does_not_restore_it(self):
+        store = self._store_with_slow_rebound()
+        try:
+            # The store stamps wall-clock time, after every synthetic reading.
+            store.record_prompt_response(detector=DETECTOR_LOW, anchor_t=REBOUND_NADIR_T,
+                                         answer="no")
+            self.assertNotIn(DETECTOR_MISSED_MEAL,
+                             [p.detector for p in build_pending_prompts(store)])
         finally:
             store.close()
 

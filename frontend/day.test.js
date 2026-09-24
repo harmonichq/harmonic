@@ -76,8 +76,12 @@ const { evidenceDayContext } = await import('./diagnose-context.js');
 globalThis.fetch = unstubbed;
 
 // The page the desk is seated on: a plain host, and a browser whose history
-// moves its location, so a test reads back the address navigate wrote.
-const seat = { innerHTML: '', dataset: {}, querySelectorAll: () => [], querySelector: () => null };
+// moves its location, so a test reads back the address navigate wrote. The
+// host hands Day's binding its return control whenever the rendered desk
+// offers one, so a test can press it the way a reader does.
+const returnControl = { dataset: { day: 'return' } };
+const seat = { innerHTML: '', dataset: {}, querySelector: () => null,
+  querySelectorAll: (selector) => (selector === '[data-day]' && seat.innerHTML.includes('data-day="return"') ? [returnControl] : []) };
 const location = { pathname: '/day', search: '', hash: '' };
 const goTo = (address) => {
   const url = new URL(address, 'http://desk.test');
@@ -263,8 +267,7 @@ test('a contextual entry names the served title it was opened from and returns t
 
   const back = dayReturnTarget(entry);
   assert.deepEqual(back, {
-    utility: null, destination: 'diagnose', label: 'Diagnose',
-    focus: null, title: 'Highs after meals',
+    utility: null, destination: 'diagnose', label: 'Diagnose', title: 'Highs after meals',
   });
 });
 
@@ -278,12 +281,25 @@ test('a basal-slot entry names the setting and its half-hour range', () => {
 
 test('an entry whose address carries no title names the way back, never its subject', () => {
   // An address written before titles rode it, or edited by hand.
-  const entry = { date: '2024-06-26', subject: 'pattern:served', from: 'diagnose', focus: '#crumb-trail' };
+  const entry = { date: '2024-06-26', subject: 'pattern:served', from: 'diagnose' };
   const markup = dayFrame(state({ entry }));
   assert.equal(openedFrom(markup), 'Diagnose');
   assert.doesNotMatch(markup, ID_TEXT, 'the Day desk printed a routing id');
-  const utility = dayFrame(state({ entry: { date: '2024-06-26', subject: 'pattern:served', from: 'changes.questions' } }));
+  const utility = dayFrame(state({ entry: { date: '2024-06-26', subject: 'question:low|2024-06-26 13:55:00', from: 'changes.questions' } }));
   assert.equal(openedFrom(utility), 'Carb questions');
+});
+
+test('a `from` naming no destination returns plainly to Diagnose and prints no label the address made up', () => {
+  // An address is external input (ADR 445 point 8): a name every object
+  // inherits is not a destination.
+  for (const from of ['constructor', '__proto__']) {
+    const entry = { date: '2024-06-26', subject: 'crafted', from };
+    const markup = dayFrame(state({ entry }));
+    assert.doesNotMatch(markup, /function |\[object Object\]/, `${from}: Day printed a label the address made up`);
+    assert.equal(openedFrom(markup), 'Diagnose', `${from}: "Opened from" names no destination`);
+    assert.match(markup, /data-day="return">Return to Diagnose</, `${from}: the return is not named for Diagnose`);
+    assert.deepEqual(dayReturnTarget(entry), { utility: null, destination: 'diagnose', label: 'Diagnose', title: '' });
+  }
 });
 
 test('each attributed Episode Log row ends with its episode\'s served Lever name', () => {
@@ -425,11 +441,21 @@ test('#423 · the Glossary explains the Episode Log bands', () => {
   for (const count of ['clean', 'explained', 'no data']) assert.match(quiet, new RegExp(count), `Quiet does not name its ${count} count`);
 });
 
+test('#448 · the Glossary\'s Quiet "explained" count names both upstream-cause sources', () => {
+  // ADR 448: a recent low or suspend, and an over-treated low's rebound.
+  const group = glossaryGroups.find((g) => g.title === 'Episode Log');
+  const quiet = group.terms.find((t) => t.term === 'Quiet').def;
+  assert.ok(
+    quiet.includes('explained (a recent low or a defensive suspend already explains the move, or the rise is the rebound of an over-treated low)'),
+    `Quiet's explained clause names only the context gate: ${quiet}`,
+  );
+});
+
 test('a utility entry is named for the utility and returns over the destination it was opened on', () => {
   // S76 and the lock's verbatim `Return to Carb questions`.
   const entry = {
-    date: '2024-06-26', subject: 'Questions · Jun 26 13:55',
-    from: 'diagnose.questions', focus: "[data-question-card='q-7'] [data-action='day']",
+    date: '2024-06-26', subject: 'question:low|2024-06-26 13:55:00',
+    title: 'Carb questions · 13:55', from: 'diagnose.questions',
   };
   assert.match(dayFrame(state({ entry })), /data-day="return">Return to Carb questions</);
   const back = dayReturnTarget(entry);
@@ -513,10 +539,7 @@ test('the topbar\'s Day reopens the day last looked at, with no subject or retur
   await onPage(async () => {
     assert.deepEqual(pressed(seat.innerHTML), ['2024-06-29'], 'a fresh page did not open the latest recorded day');
 
-    navigate('day', {
-      date: '2024-06-26', from: 'diagnose', subject: 'Selected occurrence · Jun 26 13:55',
-      focus: ".gf-member-row[data-occ='occ-7']",
-    });
+    navigate('day', { date: '2024-06-26', from: 'diagnose', subject: 'Selected occurrence · Jun 26 13:55' });
     await arrived();
     assert.deepEqual(pressed(seat.innerHTML), ['2024-06-26']);
     assert.match(seat.innerHTML, /<h3>Opened from<\/h3>/);
@@ -555,4 +578,87 @@ test('the viewed stamp is the reader\'s local clock, and a read in the same minu
     if (zone === undefined) delete process.env.TZ;
     else process.env.TZ = zone;
   }
+});
+
+// ADR 445 point 3. A utility's Day return hands the utility its item's
+// identity and moves to the destination underneath with no context: the entry
+// names the utility's item, not that destination's case.
+const { seatUtility, seatedUtility } = await import('./utilities.js');
+const returned = () => `${location.pathname}${location.search}`;
+
+// An address is external input: one naming a utility the desk does not have
+// offers the plain return to its destination, and reopens no utility for the
+// seat layer to draw.
+test('a Day address naming an unknown utility offers no utility return, and the next seat draws nothing', async () => {
+  await onPage(async () => {
+    try {
+      navigate('day', { date: '2024-06-26', subject: 'crafted', from: 'diagnose.bogus' });
+      await arrived();
+      assert.doesNotMatch(seat.innerHTML, /Return to bogus/, 'Day offered a return into a utility the desk does not have');
+      assert.match(seat.innerHTML, /data-day="return">Return to Diagnose</);
+      returnControl.onclick();
+      await arrived();
+      assert.equal(seatedUtility(), null, 'the return reopened a utility the desk does not have');
+      // The seat layer the next render runs, over a desk with a reading pane.
+      let drawn = null;
+      const { querySelector } = seat;
+      seat.insertAdjacentHTML = () => {};
+      seat.querySelector = (selector) => (selector === '.gf-desk > .gf-reading' ? { set outerHTML(markup) { drawn = markup; } }
+        : selector === '.gf-utility-strip' ? { toggleAttribute() {} } : null);
+      globalThis.document.querySelector = () => null;
+      try {
+        assert.doesNotThrow(() => seatUtility('diagnose'));
+        assert.equal(drawn, null, 'the seat layer drew a utility pane');
+      } finally { seat.querySelector = querySelector; delete seat.insertAdjacentHTML; }
+    } finally { navigate('diagnose'); }
+  });
+});
+
+test('a utility entry\'s Return reopens the utility and returns plainly, naming nothing of the entry in the address', async () => {
+  await onPage(async () => {
+    try {
+      navigate('day', { date: '2024-06-26', subject: 'question:low|2024-06-26 13:55:00',
+        title: 'Carb questions · 13:55', from: 'diagnose.questions' });
+      await arrived();
+      assert.match(seat.innerHTML, /data-day="return">Return to Carb questions</, 'premise: Day offers the utility return');
+      returnControl.onclick();
+      await arrived();
+      assert.equal(returned(), '/diagnose', 'the return wrote a Day key, title or from into the Diagnose address');
+      assert.equal(seatedUtility(), 'questions', 'the return did not reopen the utility it is named for');
+    } finally { navigate('diagnose'); }
+  });
+});
+
+test('a utility opened over Day returns into Day as a direct entry: the same day, no second return, the utility seated', async () => {
+  await onPage(async () => {
+    try {
+      navigate('day', { date: '2024-06-24', subject: 'carb:41', title: 'Log carbs · 13:55', from: 'day.carbs' });
+      await arrived();
+      assert.deepEqual(pressed(seat.innerHTML), ['2024-06-24']);
+      assert.match(seat.innerHTML, /data-day="return">Return to Log carbs</, 'premise: Day offers the utility return');
+      returnControl.onclick();
+      await arrived();
+      assert.deepEqual(pressed(seat.innerHTML), ['2024-06-24'], 'the return moved off the day it was opened on');
+      assert.ok(!seat.innerHTML.includes('Opened from'), 'the return re-adopted the utility\'s entry');
+      assert.ok(!seat.innerHTML.includes('data-day="return"'), 'the return offered the same return a second time');
+      assert.equal(returned(), '/day');
+      assert.equal(seatedUtility(), 'carbs', 'the return did not reopen Log carbs over Day');
+    } finally { navigate('diagnose'); }
+  });
+});
+
+test('regression pin: a Changes entry\'s Return still hands back its date, occurrence and from', async () => {
+  const entry = { date: '2024-06-26', subject: 'setting:basal_rate', title: 'Basal 03:00 · 0.6 U/h → 0.54 U/h',
+    occurrence: 'trial-synthetic', window: '180-210', lever: 'basal_rate', from: 'changes' };
+  await onPage(async () => {
+    try {
+      navigate('day', entry);
+      await arrived();
+      returnControl.onclick();
+      await arrived();
+      assert.equal(location.pathname, '/changes');
+      const { parseRoute } = await import('./tab-routing.js');
+      assert.deepEqual(parseRoute(location).context, entry);
+    } finally { navigate('diagnose'); }
+  });
 });

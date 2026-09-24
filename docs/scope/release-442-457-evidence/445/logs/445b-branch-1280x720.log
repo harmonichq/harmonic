@@ -1,0 +1,76 @@
+(node:67593) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S7 case=c3-trial milliseconds=504.103
+# S7 synthetic case=c3-trial (fresh copy)
+PASS S7
+# story-time S7 milliseconds=9349.886
+# case-copy S54b case=c3-history milliseconds=704.851
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=9488.087
+# case-copy S60 case=showcase milliseconds=266.780
+# S60 synthetic case=showcase (fresh copy)
+PASS S60
+# story-time S60 milliseconds=12059.028
+# case-copy S61 case=showcase milliseconds=1.235
+# S61 synthetic case=showcase (fresh copy)
+PASS S61
+# story-time S61 milliseconds=11938.474
+# case-copy S62 case=showcase milliseconds=1.299
+# S62 synthetic case=showcase (fresh copy)
+PASS S62
+# story-time S62 milliseconds=12499.506
+# case-copy S72b case=showcase milliseconds=1.280
+# S72b synthetic case=showcase (fresh copy)
+PASS S72b
+# story-time S72b milliseconds=10124.019
+# case-copy S76 case=showcase milliseconds=1.216
+# S76 synthetic case=showcase (fresh copy)
+PASS S76
+# story-time S76 milliseconds=11732.322
+# case-copy S108 case=showcase milliseconds=1.372
+# S108 synthetic case=showcase (fresh copy)
+PASS S108
+# story-time S108 milliseconds=11600.321
+# case-copy S133 case=showcase milliseconds=1.339
+# S133 synthetic case=showcase (fresh copy)
+PASS S133
+# story-time S133 milliseconds=16705.072
+# case-copy S142 case=c3-trial milliseconds=1.476
+# S142 synthetic case=c3-trial (fresh copy)
+PASS S142
+# story-time S142 milliseconds=9592.091
+# case-copy S136 case=showcase milliseconds=4.012
+# S136 synthetic case=showcase (fresh copy)
+PASS S136
+# story-time S136 milliseconds=14707.053
+# case-copy S137 case=showcase milliseconds=1.343
+# S137 synthetic case=showcase (fresh copy)
+PASS S137
+# story-time S137 milliseconds=14274.658
+# case-copy S138 case=showcase milliseconds=1.307
+# S138 synthetic case=showcase (fresh copy)
+PASS S138
+# story-time S138 milliseconds=15415.402
+# case-copy S162 case=c3-trial milliseconds=2.127
+# S162 synthetic case=c3-trial (fresh copy)
+PASS S162
+# story-time S162 milliseconds=9664.346
+# case-copy S163 case=c3-trial milliseconds=1.088
+# S163 synthetic case=c3-trial (fresh copy)
+PASS S163
+# story-time S163 milliseconds=9014.893
+# case-copy S164 case=showcase milliseconds=1.181
+# S164 synthetic case=showcase (fresh copy)
+PASS S164
+# story-time S164 milliseconds=30586.796
+# case-copy S165 case=showcase milliseconds=3.440
+# S165 synthetic case=showcase (fresh copy)
+PASS S165
+# story-time S165 milliseconds=17855.720
+
+# executed 17 · failed 0 · deferred 0 · selected 17 · chromium launches 1

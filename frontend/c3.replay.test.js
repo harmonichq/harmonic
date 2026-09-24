@@ -320,3 +320,53 @@ test('S03 reports all four failed touch claims and runs each gesture once', asyn
   }));
   assert.equal(touches, 2, 'neither the failed left wait nor the right wait repeats its action');
 });
+
+// #449 amendment (ADR 450): the shared readiness helper S46, S91, S92 and S93
+// run reads a served reason and a Pattern verdict in words, never the code.
+function readinessPage(kind, arms, rendered) {
+  const page = apiPage(url => (url.searchParams.get('selected')
+    ? { selected: { id: 'synthetic', kind, reassessment: { comparison: { readiness: arms, assessment: { state: 'unclear' } } } } }
+    : { admission: { state: 'available', active_kind: kind, active_id: 'synthetic' }, trials: [], focuses: [] }));
+  page.goto = async () => {};
+  const node = selector => ({
+    waitFor: async () => {}, locator: nested => node(`${selector} ${nested}`),
+    count: async () => (selector === '[data-form="finish"]' ? 1 : 0),
+    getAttribute: async name => rendered[selector]?.attrs?.[name] ?? null,
+    innerText: async () => rendered[selector]?.text ?? '',
+  });
+  page.locator = node;
+  return page;
+}
+function patternArms({ verdict = 'Ready' } = {}) {
+  const arm = { unit: 'meals', observed: 12, count: 12, gate: 12, verdict: 'ready', criterion_met: true,
+    reason: null, elapsed_days: 4, required_elapsed_days: null };
+  const rendered = {};
+  for (const side of ['before', 'after']) {
+    const at = `[data-readiness="${side}"]`;
+    rendered[at] = { attrs: { 'data-criterion-met': 'true' }, text: `12 of 12 meals\n4 days elapsed\n${verdict}\nCriterion met.` };
+    rendered[`${at} [data-opportunity-verdict]`] = { attrs: { 'data-opportunity-verdict': 'ready' }, text: verdict };
+    rendered[`${at} [data-elapsed]`] = { text: '4 days elapsed' };
+    rendered[`${at} [data-criterion]`] = { text: 'Criterion met.' };
+  }
+  return readinessPage('focus', { before: arm, after: arm }, rendered);
+}
+function settingArms({ criterion = 'Not met — still collecting.' } = {}) {
+  const arm = { unit: 'nights', observed: 3, required: 14, criterion_met: false, reason: 'collecting', available: true };
+  const rendered = { '[data-part="maturity"]': { text: 'Watch maturity\n6 of 14 days' } };
+  for (const side of ['before', 'after']) {
+    const at = `[data-readiness="${side}"]`;
+    rendered[at] = { attrs: { 'data-criterion-met': 'false' }, text: `3 of 14 nights\nrequired\n${criterion}` };
+    rendered[`${at} [data-criterion]`] = { text: criterion };
+  }
+  return readinessPage('trial', { before: arm, after: arm }, rendered);
+}
+test('S93 reads a Pattern arm’s opportunity verdict as a word, and rejects the bare served verdict', async () => {
+  await C3_STORIES.S93(patternArms());
+  await assert.rejects(withReplayAssertionTimeout(100, () => C3_STORIES.S93(patternArms({ verdict: 'ready' }))),
+    /a Pattern arm names its opportunity verdict in words, never its served value/);
+});
+test('S46 reads a served readiness reason in words, and rejects the raw "Not met — <code>." line', async () => {
+  await C3_STORIES.S46(settingArms());
+  await assert.rejects(withReplayAssertionTimeout(100, () => C3_STORIES.S46(settingArms({ criterion: 'Not met — collecting.' }))),
+    /a served reason prints in words, never its code/);
+});

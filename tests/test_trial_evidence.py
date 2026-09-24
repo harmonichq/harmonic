@@ -1,6 +1,6 @@
-"""The Verify workstation's per-period breakdown, read through the roster (#660).
+"""The selected Trial's per-period breakdown, read through the roster (#660).
 
-Every assertion here goes through ``review_trials(selected=...)`` — the surface's
+Every assertion here goes through ``review_trials(selected=...)`` — the roster's
 one front door — on fixtures built to the real event shapes, so a change that
 moves the derivation without moving the interface is caught. Nothing is hand-set:
 the "all day"/"varies" scopes come out of two real profiles being diffed, which is

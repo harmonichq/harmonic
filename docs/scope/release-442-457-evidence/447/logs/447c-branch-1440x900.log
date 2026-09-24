@@ -1,0 +1,32 @@
+(node:46132) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S46 case=c3-trial milliseconds=325.294
+# S46 synthetic case=c3-trial (fresh copy)
+PASS S46
+# story-time S46 milliseconds=6375.471
+# case-copy S73 case=showcase milliseconds=189.945
+# S73 synthetic case=showcase (fresh copy)
+PASS S73
+# story-time S73 milliseconds=7138.938
+# case-copy S139 case=c3-trial milliseconds=1.489
+# S139 synthetic case=c3-trial (fresh copy)
+PASS S139
+# story-time S139 milliseconds=6374.238
+# case-copy S140 case=c3-focus milliseconds=223.436
+# S140 synthetic case=c3-focus (fresh copy)
+PASS S140
+# story-time S140 milliseconds=1605.252
+# case-copy S169 case=c3-trial milliseconds=0.966
+# S169 synthetic case=c3-trial (fresh copy)
+PASS S169
+# story-time S169 milliseconds=6473.840
+# case-copy S170 case=showcase milliseconds=2.639
+# S170 synthetic case=showcase (fresh copy)
+PASS S170
+# story-time S170 milliseconds=6939.791
+
+# executed 6 · failed 0 · deferred 0 · selected 6 · chromium launches 1

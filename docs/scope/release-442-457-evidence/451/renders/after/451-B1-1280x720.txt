@@ -1,0 +1,70 @@
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-B1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Focused: <button> "24 h"
+Note: Diagnose at 24 h: the findings queue
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+CORRECTION FACTOR · REST WINDOWS
+Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger.
+Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed.
+Full
+Keep
+Event
+Clock
+Findings
+6 findings · 30 days
+Filter
+1
+Next in line
+Correction factor · strengthen
+⚙SETTING
+›
+overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger
+now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL · Whole day
+
+Worth a look
+
+2
+Lows after correcting highs
+◇PATTERN
+›
+0 of 0 lows followed a correction
+
+Not recurring often enough to rank yet.
+
+Highs after meals
+›
+Highs after treating lows
+›
+Lows after meals
+›
+Overnight lows with no insulin on board
+›
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

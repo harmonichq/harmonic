@@ -1,0 +1,19 @@
+(node:58194) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<ticket worktree>/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <ticket worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Day owns its chronology, its week ribbon, its month and the Episode Log (1769.352292ms)
+✔ a canonical Day address reloads through the built shell and returns through its canonical Diagnose door (755.485458ms)
+✔ after a Day return, acting inside Diagnose re-addresses it in place, and its Findings address reloads with no case open (1146.779958ms)
+✔ a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read (1924.511667ms)
+✔ press waits for a Day return control that renders late, and names an absent or hidden control (1774.620167ms)
+✔ a utility takes the reading pane's seat, marks its launcher, and gives focus back on Close (837.079292ms)
+✔ repeated entry and exit leaves no duplicate chart, pane or utility behind (3476.306292ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12040.388958

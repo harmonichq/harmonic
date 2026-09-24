@@ -1,0 +1,110 @@
+(node:55568) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<base worktree>/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <base worktree>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S7 case=c3-trial milliseconds=566.489
+# S7 synthetic case=c3-trial (fresh copy)
+PASS S7
+# story-time S7 milliseconds=11140.586
+# case-copy S54b case=c3-history milliseconds=849.446
+# S54b synthetic case=c3-history (fresh copy)
+PASS S54b
+# story-time S54b milliseconds=12169.102
+# case-copy S60 case=showcase milliseconds=317.752
+# S60 synthetic case=showcase (fresh copy)
+PASS S60
+# story-time S60 milliseconds=17258.528
+# case-copy S61 case=showcase milliseconds=1.532
+# S61 synthetic case=showcase (fresh copy)
+PASS S61
+# story-time S61 milliseconds=15722.584
+# case-copy S62 case=showcase milliseconds=1.682
+# S62 synthetic case=showcase (fresh copy)
+PASS S62
+# story-time S62 milliseconds=20065.427
+# case-copy S72b case=showcase milliseconds=3.111
+# S72b synthetic case=showcase (fresh copy)
+PASS S72b
+# story-time S72b milliseconds=12504.175
+# case-copy S76 case=showcase milliseconds=1.626
+# S76 synthetic case=showcase (fresh copy)
+PASS S76
+# story-time S76 milliseconds=14948.128
+# case-copy S108 case=showcase milliseconds=1.442
+# S108 synthetic case=showcase (fresh copy)
+PASS S108
+# story-time S108 milliseconds=13873.774
+# case-copy S133 case=showcase milliseconds=1.222
+# S133 synthetic case=showcase (fresh copy)
+PASS S133
+# story-time S133 milliseconds=19975.905
+# case-copy S142 case=c3-trial milliseconds=2.413
+# S142 synthetic case=c3-trial (fresh copy)
+PASS S142
+# story-time S142 milliseconds=8333.400
+# case-copy S136 case=showcase milliseconds=1.347
+# S136 synthetic case=showcase (fresh copy)
+PASS S136
+# story-time S136 milliseconds=14788.974
+# case-copy S137 case=showcase milliseconds=1.310
+# S137 synthetic case=showcase (fresh copy)
+PASS S137
+# story-time S137 milliseconds=15479.055
+# case-copy S138 case=showcase milliseconds=1.191
+# S138 synthetic case=showcase (fresh copy)
+PASS S138
+# story-time S138 milliseconds=13543.386
+# case-copy S162 case=c3-trial milliseconds=2.166
+# S162 synthetic case=c3-trial (fresh copy)
+FAIL S162 — S162 the Day address must carry no return-focus key
+
+true !== false
+
+# story-time S162 milliseconds=8308.658
+# case-copy S163 case=c3-trial milliseconds=2.109
+# S163 synthetic case=c3-trial (fresh copy)
+FAIL S163 — S163 the Day address must carry no return-focus key
+
+true !== false
+
+# story-time S163 milliseconds=8845.672
+# case-copy S164 case=showcase milliseconds=1.014
+# S164 synthetic case=showcase (fresh copy)
+FAIL S164 — S164 the Day address must name the entry by its id
++ actual - expected
+
++ 'Log carbs · Jun 30 12:07'
+- 'carb:1'
+
+# story-time S164 milliseconds=15085.652
+# case-copy S165 case=showcase milliseconds=1.161
+# S165 synthetic case=showcase (fresh copy)
+FAIL S165 — S165 the Carb questions return must issue no request besides the held status check
++ actual - expected
+
++ [
++   '/api/focus',
++   '/api/guidance',
++   '/api/plan',
++   '/api/plan/history',
++   '/api/pump-settings',
++   '/api/analyze',
++   '/api/scenarios',
++   '/api/explore/time-of-day',
++   '/api/explore/exposures',
++   '/api/diagnose/finding-case-file-preparation',
++   '/api/outcomes/trend',
++   '/api/diagnose/finding-case-file-preparation',
++   '/api/diagnose/finding-case-file',
++   '/api/diagnose/finding-case-file',
++   '/api/diagnose/finding-case-file',
++   '/api/diagnose/basal-night-evidence',
++   '/api/diagnose/isf-rest-window-evidence'
++ ]
+- []
+
+# story-time S165 milliseconds=16183.304
+
+# executed 13 · failed 4 · deferred 0 · selected 17 · chromium launches 1

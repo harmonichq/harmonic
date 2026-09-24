@@ -1,7 +1,7 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { hhmm, xAtMinute } from './diagnose-workstation-chart.js';
+import { GRID, hhmm, xAtMinute } from './diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -28,6 +28,11 @@ async function capture(page, ctx, id, caseName) {
   });
 }
 async function retained(page) {
+  return (await openRetained(page)).reassessment.comparison;
+}
+// The case's watched (else first) Trial record, opened with its retained
+// reassessment shown; the served selected detail comes back whole.
+async function openRetained(page) {
   const roster = await read(page, '/api/verify/trials');
   assert.ok(roster.trials.length, 'manufactured case must retain a Trial');
   const id = roster.admission.active_kind === 'trial' ? roster.admission.active_id : roster.trials[0].id;
@@ -38,17 +43,20 @@ async function retained(page) {
   await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
   await press(page, '[data-assessment="retained"]');
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
-  return detail.reassessment.comparison;
+  return detail;
 }
 // #413: land on the rail at 24 h without drilling into any row — S113/S114's
 // `openBasalLane`/`heldRequest414` both open something specific; this story
 // pair needs the plain rail listing itself.
 async function openDiagnoseRail(page) {
+  await openDiagnose(page);
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled(page);
+}
+async function openDiagnose(page) {
   await press(page, 'nav.v2-nav [data-destination="diagnose"]');
   await page.waitForFunction(() =>
     document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'diagnose');
-  await settled(page);
-  await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settled(page);
 }
 // #429: the watch dock at the foot of the Diagnose inspector names Changes, and
@@ -96,17 +104,90 @@ async function watchDock429(page, id, kind) {
       `${id} the Trial's own view must be titled for the admitted Trial's slot ${slot}`);
   }, `${id} Changes shows the admitted Trial`);
 }
-async function readiness(page, unit, required) {
-  const comparison = await retained(page);
+// #447: a watched Trial's dock and Changes' Watch maturity print one day count,
+// the served `days_elapsed`, and Changes' outcomes lead with the Trial's served
+// target metric. The admission and the selected Trial are read first, so a case
+// serving no complete Trial past its requirement, or no row-keyed target, fails
+// at a premise, never at the count.
+async function trialDayCount447(page) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.active_kind, 'trial', 'S169 premise: the case must serve an active Trial');
+  const selected = (await read(page, '/api/verify/trials', { kind: 'trial', selected: roster.admission.active_id })).selected;
+  assert.equal(selected?.state, 'complete', 'S169 premise: the active Trial must be served complete');
+  const { days_elapsed: n, days_required: r } = selected.maturing;
+  assert.ok(n > r, `S169 premise: the served count must run past its requirement (${n} against ${r})`);
+  const target = selected.target_metrics?.length === 1 && selected.target_metrics[0] !== 'arc'
+    ? selected.target_metrics[0] : null;
+  assert.ok(target, `S169 premise: the Trial must serve one row-keyed target metric (${JSON.stringify(selected.target_metrics)})`);
+  const ready = `Ready to judge — ${n} days since ${selected.changed_at.slice(5, 10)} · ${r} required`;
+
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  const dock = page.locator('.inspector > .watch');
+  // #451: the dock's detail line leads with the Trial's values when it has them;
+  // those values carry no second day count.
+  await waitForReplayAssertion(async seen => {
+    const how = seen((await dock.locator('.how').innerText()).trim());
+    const values = how === ready ? '' : how.endsWith(` · ${ready}`) ? how.slice(0, -` · ${ready}`.length) : null;
+    assert.ok(values !== null && !/\bdays?\b|required/.test(values),
+      `S169 the dock must print the served day count in Changes' words, once: ${how}`);
+  }, 'S169 the dock prints the served count');
+  await dock.locator('.go').click();
+  await page.locator('.gf-stage-trial').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForReplayAssertion(async seen => {
+    const figure = seen(await page.locator('[data-part="maturity"] .gf-figure').innerText()).replace(/\s+/g, ' ').trim();
+    assert.ok(figure.startsWith(`${n} days`), `S169 the Watch maturity figure must print the served count: ${figure}`);
+    assert.ok(figure.includes(`${r} required`), `S169 the Watch maturity figure must print the requirement: ${figure}`);
+    const bar = page.locator('progress[aria-label="Trial progress"]');
+    assert.equal(seen(await bar.getAttribute('value')), String(r), 'S169 only the progress bar clamps, at its requirement');
+    assert.equal(seen(await bar.getAttribute('max')), String(r), 'S169 the progress bar runs to the requirement');
+  }, 'S169 Changes prints the same count');
+  await waitForReplayAssertion(async seen => {
+    const lead = page.locator('.gf-stage-trial [data-table="outcomes"] tbody tr').first();
+    assert.equal(seen(await lead.getAttribute('data-outcome')), target,
+      `S169 Changes' outcomes must lead with the served target metric ${target}`);
+    assert.match(seen(await lead.getAttribute('class')) || '', /\bgf-target\b/,
+      'S169 the served target row must be marked as the Trial\'s target');
+  }, 'S169 Changes leads with the served target');
+}
+// #447: the Guide's "Reading the Diagnose surface" article names no Verify, and
+// its Cause-lever line sends those levers to a Focus that Changes follows.
+async function guideArticle447(page) {
+  const response = await page.request.get(new URL('/api/kb/reading-diagnose', page.url()).href, { timeout: 30000 });
+  assert.equal(response.status(), 200, 'S170 premise: the Guide article must be served');
+  assert.match(await response.text(), /◈ Cause/, 'S170 premise: the served article must carry its ◈ Cause line');
+  await press(page, '[data-utility="guide"]');
+  await press(page, '[data-utility-slug="reading-diagnose"]');
+  await waitForReplayAssertion(async seen => {
+    const article = seen(await page.locator('.gf-article').innerText()).replace(/\s+/g, ' ');
+    assert.doesNotMatch(article, /Verify/, 'S170 the article must name no Verify');
+    assert.ok(article.includes('flow to a Focus, followed in Changes'),
+      'S170 the Cause-lever line must send levers to a Focus, followed in Changes');
+  }, 'S170 the Guide article names Changes');
+}
+// #442: the page's readiness lines print the comparison the page shows, which
+// is an ended record's saved ending assessment, else the retained reassessment.
+// The returned comparison, and every S91 assertion on it, stays the retained read.
+export async function readiness(page, unit, required) {
+  const detail = await openRetained(page);
+  const comparison = detail.reassessment.comparison;
+  const ending = detail.original.ending;
+  const shown = ending.kind ? ending.assessment : comparison;
   await waitForReplayAssertion(async seen => {
     for (const side of ['before', 'after']) {
       const arm = comparison.readiness[side];
       assert.equal(arm.unit, unit); assert.equal(arm.required, required);
+      const printed = shown.readiness[side];
       const node = page.locator(`[data-readiness="${side}"]`);
-      assert.equal(seen(await node.getAttribute('data-criterion-met')), String(arm.criterion_met));
+      assert.equal(seen(await node.getAttribute('data-criterion-met')), String(printed.criterion_met),
+        `the ${side} readiness line must print the criterion of the comparison the page shows`);
       const copy = seen(await node.innerText());
-      assert.ok(copy.includes(unit)); assert.ok(copy.includes(String(arm.observed)));
-      if (arm.reason) assert.ok(copy.includes(arm.reason));
+      assert.ok(copy.includes(unit));
+      assert.ok(copy.includes(String(printed.observed)),
+        `the ${side} readiness line must print the count of the comparison the page shows`);
+      // #449 amendment (ADR 450): a served reason prints in words, never its code.
+      const criterion = seen(await node.locator('[data-criterion]').innerText()).trim();
+      assert.ok(criterion, 'each arm states its criterion');
+      if (printed.reason) assert.notEqual(criterion, `Not met — ${printed.reason}.`, 'a served reason prints in words, never its code');
     }
   }, "readiness");
   return comparison;
@@ -409,6 +490,27 @@ export function assertSelectedFacts432(id, detail, block, { outcome = null } = {
   assert.doesNotMatch(block.text, /The canvas shows/, `${id} no sentence may describe the canvas`);
 }
 
+// #454: a claimed Occurrence prints its claimant's sentence once. The served cause
+// carries it as text, the rendered cause line carries it, no other rendered line
+// repeats it, and the claimant's habit line reads its title and band label only.
+export function assertSentenceOnce454(id, detail, block) {
+  assert.ok(detail && block, `${id} premise: a selected Occurrence and its rendered block`);
+  const cause = detail.reason?.cause;
+  assert.ok(cause, `${id} premise: the selected Occurrence is claimed and serves its cause`);
+  const claimant = detail.reason.habits.find(habit => habit.lever === cause.lever);
+  assert.ok(claimant, `${id} premise: the claimant is one of the served habits`);
+  assert.ok(cause.text, `${id} the served cause must carry the claimant's sentence`);
+  const [causeLine, ...extra] = block.lines.filter(line => line.kind === 'cause');
+  assert.ok(causeLine?.text.includes(cause.text) && !extra.length,
+    `${id} the cause line must carry the served sentence: ${JSON.stringify(causeLine)}`);
+  for (const line of block.lines.filter(line => line !== causeLine)) {
+    assert.ok(!line.text.includes(cause.text), `${id} the cause's sentence must print once; it repeats on: ${line.text}`);
+  }
+  assert.ok(block.lines.some(line => line.kind === 'habit'
+    && line.text === `${claimant.title} · ${BAND432[claimant.verdict]}`),
+  `${id} the claimant's habit line must read its title and band label only`);
+}
+
 const renderedRows432 = page => page.evaluate(() => [...document.querySelectorAll('#level .case-occurrence')]
   .map(node => ({ occurrenceId: node.dataset.occurrenceId || null,
     text: node.querySelector('.only')?.textContent.replace(/\s+/g, ' ').trim() ?? null })));
@@ -436,6 +538,19 @@ async function mealBolusShortCase432(page) {
   await page.getByRole('button', { name: 'All charts', exact: true }).click();
   await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
   return (await drillMeal404(page, 'event')).served;
+}
+// The chartable Highs after meals Pattern, drilled from All charts to its event case;
+// returns that case's coordinate.
+async function highsAfterMealsCase432(page, id) {
+  await fullDayDiagnose(page);
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals' && row.pattern_chart);
+  assert.ok(pattern, `${id} premise: the case store serves a chartable Highs after meals Pattern`);
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
+  await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event' };
 }
 
 // Comparison membership is grouped by a constant served cohort name. Ordinary
@@ -647,6 +762,54 @@ async function openStillOpenRecord430(page, storyId) {
     .locator('[data-record]').first();
   assert.ok(await open.count(), `${storyId} premise: the roster serves a still-open record`);
   return open;
+}
+
+// #445 (ADR 445): a Day link from Changes or a carb utility names its return
+// target by an identity its origin owns, and the return lands on the control
+// the reader pressed. A value reads as a selector when it carries a bracket or
+// leads with a class or id mark.
+function identityAddress445(storyId, day) {
+  assert.equal(Object.hasOwn(day, 'focus'), false, `${storyId} the Day address must carry no return-focus key`);
+  assert.ok(!Object.values(day).some(value => /[[\]]|^[.#]/.test(value)),
+    `${storyId} the Day address must carry no CSS selector: ${JSON.stringify(day)}`);
+}
+const focusedOn445 = (page, selector) => page.evaluate(selector =>
+  document.activeElement === document.querySelector(selector), selector);
+// The reading pane's first supporting-date control, once the change's evidence
+// has rendered it.
+async function supportingDate445(page, storyId) {
+  const control = page.locator('.gf-reading [data-day-date]').first();
+  await control.waitFor({ timeout: 30000 });
+  const date = await control.getAttribute('data-day-date');
+  assert.match(date, /^\d{4}-\d{2}-\d{2}$/, `${storyId} premise: a supporting date names an ISO date`);
+  return { control, date };
+}
+// Text of a control in the inspector, which a seated utility hides: innerText
+// reads nothing from a hidden element, so these read its text content.
+const text445 = (page, selector) => page.locator(selector).evaluate(node => node.textContent.trim());
+// S138's drill: the showcase's over-treated low in the Afternoon preset, its
+// first roster Occurrence held.
+async function heldAfternoonCase445(page) {
+  const subject = 'finding:over_treated_low';
+  await press(page, '[data-destination="diagnose"]'); await settled(page);
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click(); await settled(page);
+  const row = page.locator(`#level .qrow[data-id="${subject}"]`);
+  await row.waitFor({ timeout: 30000 });
+  await row.click();
+  await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { subject, held: await selectOccurrence(page) };
+}
+// Every request a Return from Day issues, from the press until the desk has
+// settled. heldStatusReturn holds the status read and stops recording at its
+// answer; a re-read Diagnose decides on that answer comes after it, and keeps
+// the loading frame standing until it lands, so this listens through
+// heldStatusReturn's own closing waitForDesk.
+async function wholeReturn445(page, storyId) {
+  const requests = [];
+  const onRequest = request => requests.push(new URL(request.url()).pathname);
+  page.on('request', onRequest);
+  try { await heldStatusReturn(page, storyId, '[data-day="return"]'); } finally { page.off('request', onRequest); }
+  return requests;
 }
 
 // Holds the next request matching `pattern` that also satisfies `matches`
@@ -1415,6 +1578,576 @@ export async function assertBandGlossary(page) {
   }, 'S122 Close returns focus to the caption control');
 }
 
+// #446 · 2026-09-23. The served active change leads every plain arrival to
+// Changes, and Open Plan holds for one visit (ADR 446). Every read inside a
+// retried assertion is a count or a text list, which never waits, so a failure
+// names the frame that took the seat. The premises come from the production
+// routes first, so a case serving the wrong state fails there, never at a label.
+const url446 = (page, path) => new URL(path, page.url()).href;
+async function seat446(page) {
+  const count = selector => page.locator(selector).count();
+  return {
+    changes: await count('nav.v2-nav [aria-current="page"][data-destination="changes"]'),
+    trial: await count('.gf-stage-trial'), focus: await count('.gf-stage-focus'), plan: await count('.gf-plan'),
+  };
+}
+async function admitted446(page, id, kind) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', `${id} premise: the case must publish available follow-up admission`);
+  assert.equal(roster.admission.active_kind, kind, `${id} premise: the server must admit ${kind ? `an active ${kind}` : 'no watched change'}`);
+}
+/** The served concern's basal action, as the Plan items staging it would save. */
+function basalItems446(guidance, id) {
+  const action = guidance.selected?.action || [];
+  assert.ok(action.length && action.every(row => row.parameter === 'basal_rate'),
+    `${id} premise: the served concern must carry a basal action to stage`);
+  return action.flatMap(row => (row.member_start_mins || [row.start_min])
+    .map(start => ({ type: 'basal', start_min: start, value: row.recommended })));
+}
+/** Save a draft while the change is watched and require the guidance read to serve
+    it beside the active change. The items restore the recorded Plan's source value
+    at each slot, as S146 saves them: values the store already held. */
+async function draftWhileWatched446(page, id, items = null) {
+  if (!items) {
+    const [recorded] = (await read(page, '/api/plan/history')).history;
+    const source = recorded?.deliverable?.source_profile?.segments;
+    assert.ok(source?.length, `${id} premise: the recorded Plan must serve its source profile`);
+    const at = minute => [...source].reverse().find(row => row.start_min <= minute).basal_rate;
+    items = recorded.items.map(item => ({ type: item.type, start_min: item.start_min, value: at(item.start_min) }));
+  }
+  const saved = await page.request.put(url446(page, '/api/plan'), { data: { items } });
+  assert.equal(saved.status(), 200, `${id} premise: a Plan draft saves while the change is watched: ${await saved.text()}`);
+  const guidance = await read(page, '/api/guidance');
+  assert.equal(guidance.disposition, 'active_change', `${id} premise: the server still serves the active change`);
+  assert.ok((guidance.draft?.items || []).length > 0, `${id} premise: the guidance read serves the saved draft`);
+  return read(page, '/api/plan');
+}
+async function topbar446(page, destination) {
+  await press(page, `nav.v2-nav [data-destination="${destination}"]`);
+  await page.waitForFunction(id => document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === id,
+    destination, { timeout: 30000 });
+}
+/** Changes shows the watched Trial or Focus, and not the Plan. */
+async function watched446(page, id, kind, step) {
+  await waitForReplayAssertion(async seen => {
+    const shown = seen(await seat446(page));
+    assert.equal(shown.plan, 0, `${id} ${step} must not show the Plan in the watched ${kind}'s seat`);
+    assert.ok(shown.changes === 1 && shown[kind] === 1, `${id} ${step} must show the watched ${kind}'s own view`);
+  }, `${id} ${step} lands on the watched ${kind}`);
+}
+/** The Plan at its explicit address, showing a saved draft. */
+async function planDraft446(page, id, step) {
+  await waitForReplayAssertion(async seen => {
+    const route = parseRoute(new URL(seen(page.url())));
+    assert.deepEqual([route.destination, route.context.subject], ['changes', 'plan'],
+      `${id} ${step} must land at /changes?subject=plan`);
+    assert.equal(seen((await seat446(page)).plan), 1, `${id} ${step} must show the Plan`);
+    // The kicker is set in capitals by CSS; its <b> carries the served phase.
+    assert.deepEqual(seen(await page.locator('.gf-stage .gf-kicker b').allTextContents()), ['Draft saved'],
+      `${id} ${step} must show the saved draft`);
+  }, `${id} ${step} opens the saved draft`);
+}
+/** The nameplate's controls, in order, for a watched Trial's or Focus's view. */
+const nameplate446 = (page, kind) => page.locator(`.gf-stage-${kind} .gf-end button`)
+  .evaluateAll(buttons => buttons.map(button => button.dataset.action || (button.hasAttribute('data-follow-up-inspect') ? 'inspect' : '')));
+
+// #449/#450 (ADR 449, ADR 450). Every served name and code is read from the
+// API and compared with the rendered page; nothing here imports a renderer, so
+// this harness laid over the base fails at its feature assertions, not at link.
+const focusDetail449 = async (page, id, assessment) => (await read(page, '/api/verify/trials',
+  { kind: 'focus', selected: id, ...(assessment ? { assessment } : {}) })).selected;
+async function openFocusRecord449(page, id) {
+  await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:focus:${id}`)}`, page.url()).href);
+  await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
+}
+// Every served code a saved Focus ending can print on its record lines.
+function endingCodes449(assessment) {
+  const codes = new Set(assessment.reason ? [assessment.reason] : []);
+  for (const side of ['before', 'after']) {
+    const arm = (assessment.adherence || {})[side] || {};
+    for (const reason of [arm.availability?.reason, arm.harm_availability?.reason,
+      ((assessment.readiness || {})[side] || {}).reason]) if (reason) codes.add(reason);
+  }
+  return codes;
+}
+// No line on the page prints a served code, nor a bare served verdict.
+function assertWordsOnly449(id, texts, codes, verdicts = []) {
+  for (const text of texts) {
+    for (const code of codes) assert.ok(!text.includes(code), `${id} a served code must print in words: ${text}`);
+    for (const verdict of verdicts) {
+      assert.notEqual(text.split(' · ')[0].trim(), verdict, `${id} the opportunity verdict must print as a word, never its served value`);
+    }
+  }
+}
+
+/* ---- #455: Diagnose chart text at the narrowest split (S183–S185) ---------
+   Each story checks every size and state before it judges, then fails once,
+   listing every failure by size, state and check with the measured amount in
+   px. Each restores the run's size even when checks failed, and none sets a
+   scroll offset. The judgments are pure and exported, so fake geometry drives
+   them in node. */
+
+// #455: runs in the page (handed to `locator.evaluate`), so it closes over
+// nothing. Every non-empty text span the chart on `host` paints, and every
+// background box a text element draws (a rich token's knock-out pad), in the
+// host's own pixels with each element's transform applied, grouped by the text
+// element that owns them, in paint order. Given `keepSelector`, it also reads
+// that control's box in the host's coordinates.
+function readPaintedText(host, keepSelector = null) {
+  const chart = globalThis.echarts.getInstanceByDom(host);
+  if (!chart) return null;
+  const owners = new Map();
+  const spans = [];
+  const pads = [];
+  for (const item of chart.getZr().storage.getDisplayList()) {
+    const owner = item.parent;
+    if (owner?.type !== 'text' || (item.type !== 'tspan' && item.type !== 'rect')) continue;
+    if (item.invisible || item.style?.opacity === 0) continue;
+    const text = item.type === 'tspan' ? String(item.style.text ?? '') : null;
+    if (text !== null && !text.trim()) continue;
+    if (!owners.has(owner)) owners.set(owner, owners.size);
+    const rect = item.getBoundingRect().clone();
+    if (item.transform) rect.applyTransform(item.transform);
+    const box = { group: owners.get(owner), x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    if (text === null) pads.push(box);
+    else spans.push({ ...box, text });
+  }
+  const keepNode = keepSelector && document.querySelector(keepSelector);
+  const hostBox = host.getBoundingClientRect();
+  const keepBox = keepNode?.getBoundingClientRect();
+  return {
+    width: host.clientWidth, height: host.clientHeight, spans, pads,
+    keep: keepBox ? { x: keepBox.x - hostBox.x, y: keepBox.y - hostBox.y,
+      width: keepBox.width, height: keepBox.height } : null,
+  };
+}
+
+// #455: a resize with no press has settled when the chart on `selector` has
+// been resized to its host's content box, that box has held still for a frame,
+// the chart is idle, and two more animation frames have passed.
+async function settledResize(page, selector) {
+  await page.waitForFunction(async selector => {
+    await document.fonts.ready;
+    const host = document.querySelector(selector);
+    const chart = host && globalThis.echarts.getInstanceByDom(host);
+    if (!chart) return false;
+    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    const box = () => {
+      const style = getComputedStyle(host);
+      return [host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+        host.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)];
+    };
+    const [width, height] = box();
+    await frame();
+    const [nextWidth, nextHeight] = box();
+    if (nextWidth !== width || nextHeight !== height
+      || Math.abs(chart.getWidth() - width) > 1 || Math.abs(chart.getHeight() - height) > 1
+      || !chart.getZr().animation.isFinished()) return false;
+    await frame(); await frame();
+    return true;
+  }, selector, { timeout: 10000 });
+}
+
+// #455: a chart re-lays out in a later animation frame than the resize that
+// prompts it, so a reading taken right after a viewport change can still show
+// the old width's layout. Read again, through the replay's retry helper, until
+// `judge` (the story's own check) finds nothing, or the bound elapses; either
+// way return the last reading, which the story then judges with that same
+// check. Nothing is loosened: a reading that never comes clean keeps every
+// failure, and an error that is not an assertion is rethrown.
+export async function readSettled(read, judge, description, timeout = 10000) {
+  let reading = null;
+  try {
+    await waitForReplayAssertion(async seen => {
+      reading = seen(await read());
+      const failures = judge(reading);
+      assert.equal(failures.length, 0, `${description}: ${failures.join('; ')}`);
+    }, description, timeout);
+  } catch (error) {
+    if (!(error.cause instanceof assert.AssertionError)) throw error;
+  }
+  return reading;
+}
+
+// #455: Diagnose at rest, with its overview and every tile drawn.
+async function diagnoseAtRest(page) {
+  await openDiagnose(page);
+  await waitForCharts(page);
+}
+
+const spanRight = box => box.x + box.width;
+const spanBottom = box => box.y + box.height;
+// How far a box runs outside `[0, width] × [0, height]`: 0 inside, with 1px of
+// slack for subpixel layout.
+const outsideBy = (box, width, height) => {
+  const over = Math.max(-box.x, spanRight(box) - width, -box.y, spanBottom(box) - height);
+  return over > 1 ? over : 0;
+};
+// The two boxes' shared extent on each axis; they overlap when both exceed 1px.
+const overlapOf = (a, b) => ({
+  x: Math.min(spanRight(a), spanRight(b)) - Math.max(a.x, b.x),
+  y: Math.min(spanBottom(a), spanBottom(b)) - Math.max(a.y, b.y),
+});
+const overlaps = (a, b) => { const shared = overlapOf(a, b); return shared.x > 1 && shared.y > 1; };
+// Spans on one line share a top within 1px.
+const linesOf = spans => spans.reduce((lines, span) => {
+  const line = lines.find(([first]) => Math.abs(first.y - span.y) <= 1);
+  if (line) line.push(span); else lines.push([span]);
+  return lines;
+}, []);
+// A text element's spans in reading order: line by line from the top, each
+// line left to right. Paint order is not reading order: ZRender lays a line of
+// right-aligned tokens from its right end, so a caption parked left of its
+// window paints its tail before its head.
+const readingOrder = spans => linesOf([...spans].sort((a, b) => a.y - b.y))
+  .flatMap(line => line.sort((a, b) => a.x - b.x));
+// A caption's or a verdict's words: its spans' text in reading order, split on
+// whitespace, the `·` separator ignored. A word split across two spans reads
+// as two words, so it can never match the whole word it was cut from.
+const wordsOf = texts => texts.join(' ').split(/\s+/).filter(word => word && word !== '·');
+// The painted text elements, each with its spans in reading order and its pad
+// boxes.
+const textGroups = reading => {
+  const groups = new Map();
+  const group = id => groups.get(id) ?? groups.set(id, { spans: [], pads: [] }).get(id);
+  for (const span of reading.spans) group(span.group).spans.push(span);
+  for (const pad of reading.pads) group(pad.group).pads.push(pad);
+  return [...groups.values()].filter(({ spans }) => spans.length)
+    .map(({ spans, pads }) => ({ spans: readingOrder(spans), pads }));
+};
+const sizeName = size => `${size.width}×${size.height}`;
+const failOnce = (story, what, failures) => {
+  if (failures.length) {
+    assert.fail(`${story} ${what}; ${failures.length} failure${failures.length === 1 ? '' : 's'}:\n  - `
+      + failures.join('\n  - '));
+  }
+};
+
+// #455: the Window presets, in S183's order, each with its caption's head as
+// the overview prints it, written here as literals.
+export const OVERVIEW_PRESETS = Object.freeze([
+  Object.freeze({ label: 'Overnight', head: 'OVERNIGHT 00:00–06:00', range: [0, 360] }),
+  Object.freeze({ label: 'Morning', head: 'MORNING 06:00–12:00', range: [360, 720] }),
+  Object.freeze({ label: 'Afternoon', head: 'AFTERNOON 12:00–18:00', range: [720, 1080] }),
+  Object.freeze({ label: 'Evening', head: 'EVENING 18:00–24:00', range: [1080, 1440] }),
+  Object.freeze({ label: '24 h', head: '24 H 00:00–24:00', range: [0, 1440] }),
+]);
+// #455: the narrowest split, at the tall and the short window.
+const NARROW_SPLIT_SIZES = Object.freeze([
+  Object.freeze({ width: 832, height: 720 }),
+  Object.freeze({ width: 832, height: 560 }),
+]);
+const NOTICE_WORDS = ['INSUFFICIENT', 'SAMPLE', '—', 'thinnest', 'bin', 'holds'];
+const SPREAD_WORDS = ['25–75', 'spread', null, 'mg/dL'];
+const WHOLE_COUNT = /^\d+$/;
+
+// #455: every way the glucose overview's text fails one check, one line each,
+// named by size, state and check with the measured amount. `check` carries the
+// size, the state's name, the preset's head and range, whether this is the
+// run's own size (`runSize`, where the caption must stand on one line) and
+// whether this check carries the thin-path premise (`premiseThin`), and the
+// `readPaintedText` reading of #chart.
+export function overviewTextFailures({ size, state, head, range, runSize = false, premiseThin = false, reading }) {
+  const at = `${sizeName(size)} ${state}`;
+  if (!reading) return [`${at}: #chart draws no chart`];
+  const failures = [];
+  const headWords = wordsOf([head]);
+  const captions = textGroups(reading).filter(({ spans }) => {
+    const words = wordsOf(spans.map(span => span.text));
+    return headWords.every((word, index) => words[index] === word);
+  });
+  if (captions.length !== 1) {
+    failures.push(`${at}: ${captions.length} painted captions begin with "${head}"; exactly one must`);
+  } else {
+    const [caption] = captions;
+    const words = wordsOf(caption.spans.map(span => span.text));
+    const thin = caption.spans.some(span => span.text.includes('INSUFFICIENT'));
+    const tail = words.slice(headWords.length);
+    const tailWhole = thin
+      ? tail.length === NOTICE_WORDS.length + 1 && NOTICE_WORDS.every((word, index) => tail[index] === word)
+        && WHOLE_COUNT.test(tail.at(-1))
+      : !tail.length || (tail.length === SPREAD_WORDS.length
+        && SPREAD_WORDS.every((word, index) => (word === null ? WHOLE_COUNT.test(tail[index]) : tail[index] === word)));
+    if (!tailWhole) {
+      failures.push(`${at}: the caption reads ${JSON.stringify(words)}; it must read the words of "${head}"`
+        + (thin ? ', then of "INSUFFICIENT SAMPLE — thinnest bin holds <n>" with a whole count' : '')
+        + ', every word whole');
+    }
+    if (premiseThin && !thin) {
+      failures.push(`${at}: premise: the 24 h caption must carry the insufficient-sample notice, so the store `
+        + 'exercises the thin path');
+    }
+    for (const span of caption.spans) {
+      const over = outsideBy(span, reading.width, reading.height);
+      if (over) {
+        failures.push(`${at}: caption span "${span.text}" lies ${px(over)} outside #chart's `
+          + `${reading.width}×${reading.height} box`);
+      }
+    }
+    const lines = linesOf(caption.spans);
+    if (runSize && lines.length > 1) {
+      failures.push(`${at}: the caption stands on ${lines.length} lines at the run's own size; it must stand on one`);
+    }
+    const gates = range.map(minute => ({ minute, x: xAtMinute({ clientWidth: reading.width }, minute) }));
+    const boxes = [...caption.spans.map(span => ({ name: `caption span "${span.text}"`, ...span })),
+      ...caption.pads.map((pad, index) => ({ name: `caption pad box ${index + 1}`, ...pad }))];
+    for (const box of boxes) {
+      const left = GRID.left - box.x;
+      if (left > 1) {
+        failures.push(`${at}: ${box.name} reaches ${px(left)} left of the plot's left edge, into the y-axis `
+          + 'label column');
+      }
+      const right = spanRight(box) - reading.width;
+      if (right > 1) failures.push(`${at}: ${box.name} reaches ${px(right)} past #chart's right edge`);
+      for (const gate of gates) {
+        const straddle = Math.min(gate.x - box.x, spanRight(box) - gate.x);
+        if (straddle > 1) {
+          failures.push(`${at}: ${box.name} straddles the window's ${hhmm(gate.minute)} gate by ${px(straddle)}`);
+        }
+      }
+    }
+  }
+  const spans = reading.spans;
+  for (const [index, a] of spans.entries()) {
+    for (const b of spans.slice(index + 1)) {
+      if (!overlaps(a, b)) continue;
+      const shared = overlapOf(a, b);
+      failures.push(`${at}: painted text "${a.text}" and "${b.text}" overlap by ${px(shared.x)} × ${px(shared.y)}`);
+    }
+  }
+  return failures;
+}
+
+// #455: S183's judgment over every check it took, failing once.
+export function assertOverviewText(checks) {
+  failOnce('S183', 'the glucose overview\'s text must stay whole, inside the chart and unstruck at every size',
+    checks.flatMap(overviewTextFailures));
+}
+
+// #455: the Spotlight's middle-rank verdict line on the replay store's 00:00
+// slot, as literals copied from its 1200×560 render, fact by fact.
+const SPOTLIGHT_FACTS = Object.freeze(['SUPPORTED', '0.70 U/h', '(0.70–0.70)', 'programmed now 0.60']);
+const SPOTLIGHT_TALLY = '30 steady nights';
+// #455: S184's sizes, pressing nothing between them.
+const SPOTLIGHT_SIZES = Object.freeze([
+  Object.freeze({ width: 1200, height: 736 }), ...NARROW_SPLIT_SIZES,
+]);
+
+// #455: every way the Spotlight's verdict line fails one check, one line each.
+// `oneLine` marks the size at which the verdict must stand on one line.
+export function spotlightVerdictFailures({ size, oneLine = false, reading }) {
+  const at = sizeName(size);
+  if (!reading) return [`${at}: the Spotlight draws no chart`];
+  const groups = textGroups(reading);
+  const verdicts = groups.filter(({ spans }) => spans[0].text.startsWith(SPOTLIGHT_FACTS[0]));
+  if (verdicts.length !== 1) {
+    return [`${at}: ${verdicts.length} painted lines begin with "${SPOTLIGHT_FACTS[0]}"; exactly one verdict must`];
+  }
+  const [{ spans }] = verdicts;
+  const failures = [];
+  for (const span of spans) {
+    const over = outsideBy(span, reading.width, reading.height);
+    if (over) {
+      failures.push(`${at}: verdict span "${span.text}" lies ${px(over)} outside the Spotlight chart's `
+        + `${reading.width}×${reading.height} box`);
+    }
+    if (reading.keep && overlaps(span, reading.keep)) {
+      failures.push(`${at}: verdict span "${span.text}" runs ${px(overlapOf(span, reading.keep).x)} under the `
+        + 'Keep control');
+    }
+  }
+  const words = wordsOf(spans.map(span => span.text));
+  const expected = wordsOf(SPOTLIGHT_FACTS);
+  const lines = linesOf(spans);
+  if (JSON.stringify(words) !== JSON.stringify(expected)) {
+    failures.push(`${at}: the verdict line reads ${JSON.stringify(words)}; it must read ${JSON.stringify(expected)}`);
+  } else {
+    // a break may fall only where one fact ends and the next begins
+    const ends = SPOTLIGHT_FACTS.map((_, index) => wordsOf(SPOTLIGHT_FACTS.slice(0, index + 1)).length);
+    let count = 0;
+    for (const line of lines.slice(0, -1)) {
+      count += wordsOf(line.map(span => span.text)).length;
+      if (!ends.includes(count)) {
+        failures.push(`${at}: a line break falls inside a fact, after "${expected[count - 1]}"`);
+      }
+    }
+  }
+  if (oneLine && lines.length > 1) {
+    failures.push(`${at}: the verdict line stands on ${lines.length} lines; at this size it must stand on one`);
+  }
+  const tallies = groups.filter(group => group.spans[0].text.startsWith(SPOTLIGHT_TALLY));
+  if (tallies.length !== 1) {
+    failures.push(`${at}: ${tallies.length} painted lines begin with "${SPOTLIGHT_TALLY}"; exactly one tally must`);
+  } else {
+    const verdictBottom = Math.max(...spans.map(spanBottom));
+    const tallyTop = Math.min(...tallies[0].spans.map(span => span.y));
+    if (verdictBottom - tallyTop > 1) {
+      failures.push(`${at}: the tally line starts ${px(verdictBottom - tallyTop)} above the verdict's last line ends`);
+    }
+  }
+  return failures;
+}
+
+// #455: S184's judgment over every size it read, failing once.
+export function assertSpotlightVerdict(checks) {
+  failOnce('S184', 'the Spotlight\'s verdict line must keep every fact whole inside the chart',
+    checks.flatMap(spotlightVerdictFailures));
+}
+
+// #455: S185's sizes before the run's own: the narrowest split, and the 1024px
+// tablet width of the 2026-08-19 owner ruling.
+const CANVAS_HEAD_SIZES = Object.freeze([
+  ...NARROW_SPLIT_SIZES, Object.freeze({ width: 1024, height: 768 }),
+]);
+
+// #455: runs in the page. The canvas header, its title, provenance and All
+// charts control with the control's word, each with its box, clientWidth and
+// scrollWidth, once the header's box has held still for two frames; and the
+// box of what the reader sees of the control, its rendered icon and word
+// (`controlInk`). The control's own box is taller than the header rail: the
+// shell's 36px button floor outranks its 20px height, and its transparent,
+// borderless box overhangs the rail by 3.5px while its icon and word sit
+// inside it (ADR 455).
+async function readCanvasHead() {
+  await document.fonts.ready;
+  const head = document.querySelector('#canvas-head');
+  const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  for (let last = null, still = 0, count = 0; head && still < 2 && count < 60; count += 1) {
+    await frame();
+    const now = JSON.stringify(head.getBoundingClientRect());
+    still = now === last ? still + 1 : 0;
+    last = now;
+  }
+  const part = node => {
+    if (!node) return null;
+    const { left, right, top, bottom, width } = node.getBoundingClientRect();
+    return { left, right, top, bottom, width, clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
+      shown: node.getClientRects().length > 0 && width > 0 };
+  };
+  const title = head?.querySelector('.head-rest h2');
+  const control = document.querySelector('#explorer-trigger');
+  const inks = [...(control?.children ?? [])].map(child => child.getBoundingClientRect())
+    .filter(box => box.width > 0 && box.height > 0);
+  const edge = (pick, key) => pick(...inks.map(box => box[key]));
+  return {
+    controlInk: inks.length ? { left: edge(Math.min, 'left'), right: edge(Math.max, 'right'),
+      top: edge(Math.min, 'top'), bottom: edge(Math.max, 'bottom') } : null,
+    head: part(head), title: part(title), provenance: part(document.querySelector('#canvas-pool')),
+    control: part(control), word: part(document.querySelector('#explorer-trigger > span')),
+    titleFont: title ? parseFloat(getComputedStyle(title).fontSize) : null,
+    controlName: control?.getAttribute('aria-label') ?? null,
+    controlTitle: control?.getAttribute('title') ?? null,
+  };
+}
+
+// #455: every header part's box width, clientWidth and scrollWidth, as S185
+// prints them in each failure and in its measurement line.
+const headWidths = reading => ['title', 'provenance', 'control', 'word'].map(name => {
+  const part = reading[name];
+  return part ? `${name} ${px(part.width)} box, clientWidth ${part.clientWidth}, scrollWidth ${part.scrollWidth}`
+    : `${name} absent`;
+}).join('; ');
+
+// #455: every way the canvas header fails at one size, one line each, each
+// printing every part's widths. `narrow` marks the narrowest split, where the
+// title need only show a letter and an ellipsis; elsewhere the control shows
+// its word and the title prints whole. The control is placed by what the
+// reader sees of it, its icon and word, not by its overhanging box.
+export function canvasHeadFailures({ size, narrow, reading }) {
+  const at = sizeName(size);
+  const parts = ['title', 'provenance', 'control'];
+  const measured = headWidths(reading);
+  const failures = [];
+  const fail = message => failures.push(`${at}: ${message} (${measured})`);
+  const seen = name => (name === 'control' ? reading.control && reading.controlInk : reading[name]);
+  const shown = parts.filter(seen);
+  for (const name of parts.filter(name => !seen(name))) {
+    fail(name === 'control' && reading.control ? 'the All charts control draws no icon or word'
+      : `the header has no ${name}`);
+  }
+  for (const name of shown) {
+    const box = seen(name);
+    const over = reading.head && Math.max(reading.head.left - box.left, box.right - reading.head.right,
+      reading.head.top - box.top, box.bottom - reading.head.bottom);
+    if (!reading.head || over > 1) {
+      fail(`${name === 'control' ? 'the All charts control\'s icon and word lie' : `the ${name} lies`} `
+        + `${px(over || 0)} outside the header's box`);
+    }
+  }
+  const centres = shown.map(name => (seen(name).top + seen(name).bottom) / 2);
+  const spread = centres.length ? Math.max(...centres) - Math.min(...centres) : 0;
+  if (spread > 2) fail(`the title, provenance and control do not share one line; their centres differ by ${px(spread)}`);
+  const { provenance, title, word } = reading;
+  if (provenance && provenance.scrollWidth > provenance.clientWidth) {
+    fail(`the provenance is cut: it needs ${provenance.scrollWidth}px and shows ${provenance.clientWidth}px`);
+  }
+  if (reading.controlName !== 'All charts' || reading.controlTitle !== 'All charts') {
+    fail(`the All charts control is named "${reading.controlName}" with the tooltip "${reading.controlTitle}"; `
+      + 'both must be "All charts"');
+  }
+  if (narrow) {
+    if (title && title.width < 2 * reading.titleFont) {
+      fail(`the title's box is ${px(title.width)} wide, under twice its ${reading.titleFont}px type, so it cannot `
+        + 'show a letter and an ellipsis');
+    }
+  } else {
+    if (!word?.shown) fail('the All charts control\'s word does not render');
+    if (title && title.scrollWidth > title.clientWidth) {
+      fail(`the title is cut: it needs ${title.scrollWidth}px and shows ${title.clientWidth}px`);
+    }
+  }
+  return failures;
+}
+
+// #455: S185's judgment over every size it read, failing once.
+export function assertCanvasHead(checks) {
+  failOnce('S185', 'the canvas header must keep its title, provenance and All charts control on one line',
+    checks.flatMap(canvasHeadFailures));
+}
+
+// #451: the correction factor in the wearer's words, on the manufactured
+// isf-strengthen store. Every expected number comes from the story's own served
+// reads. The rounding below restates each line's own: the queue trims two
+// decimals to one, the panel and the dock print two. The queue's served-scope
+// note is restated the same way, because the base overlay runs this harness over
+// an app with no shared source for it; this replay's node test pins the
+// restatement to the queue's own printing. The status words are the desk's table
+// (frontend/guidance.js).
+const queueNum451 = value => {
+  const text = Number(value).toFixed(2).replace(/0$/, '');
+  return text.endsWith('.') ? `${text}0` : text;
+};
+const panelNum451 = value => Number(value).toFixed(2);
+const correctionFactor451 = value => `1 U : ${value} mg/dL`;
+/** The note a served whole-day row that is not a Pattern carries after its line. */
+const scopeNote451 = row => (row.window_scope === 'whole_day' && row.kind !== 'pattern' ? ' · Whole day' : '');
+/** The served correction-factor row's queue numbers line, as the queue prints it:
+    both values insulin first at the queue's rounding, then the row's served scope
+    note. */
+export const queueNumbers451 = row =>
+  `now ${correctionFactor451(queueNum451(row.current))} → ${correctionFactor451(queueNum451(row.recommended))}`
+  + scopeNote451(row);
+const STATUS_WORDS_451 = ['Ready to stage', 'Staged', 'Ready to start a Focus', 'Focus withheld',
+  'Action identified', 'Evidence to inspect'];
+const ENGINE_WORDS_451 = /mg\/dL\/U|\bISF\b|eligible_action|guided_investigation|active_change|pending_plan/;
+async function servedLead451(page, id) {
+  const guidance = await read(page, '/api/guidance');
+  assert.equal(guidance.disposition, 'eligible_action', `${id} premise: the case must serve an eligible action`);
+  const action = Array.isArray(guidance.selected?.action) ? guidance.selected.action[0] : null;
+  assert.equal(action?.parameter, 'isf',
+    `${id} premise: the selected concern must carry a correction-factor instruction`);
+  return { guidance, action };
+}
+/** Changes' nameplate sub-line and its Action heading's words, as rendered. */
+const changesWords451 = page => page.evaluate(() => {
+  const head = [...document.querySelectorAll('.gf-reading .gf-section h3')]
+    .find(node => node.firstChild?.textContent.trim() === 'Action');
+  return {
+    sub: document.querySelector('.gf-stage .gf-head .gf-sub')?.textContent.trim() ?? null,
+    action: head ? head.querySelector('.meta')?.textContent.trim() ?? '' : null,
+  };
+});
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -1680,6 +2413,154 @@ export const C4_STORIES = {
     assert.equal(address.pathname, '/changes', 'S147 Open Changes lands on Changes');
     assert.equal(address.searchParams.get('subject'), 'plan', 'S147 Open Changes opens the Plan, never the watched-change address');
   },
+  // #446 · 2026-09-23. Open Plan holds for one visit, before and after a Trial
+  // begins. The page loads once, at the Plan's address, and is never reloaded:
+  // a reload discards the remembered state this story is about.
+  async S166(page, ctx) {
+    assert.ok(ctx.capturePump, 'S166 requires CASE_STORE_DIR for a synthetic pump capture');
+    basalItems446(await read(page, '/api/guidance'), 'S166');
+    await admitted446(page, 'S166', null);
+    await page.goto(url446(page, '/?to=changes&subject=plan'));
+    // 1. Stage in the Plan's own frame keeps the Plan, with Save draft in hand.
+    await press(page, '[data-set="stage"]');
+    await waitForReplayAssertion(async seen => {
+      const route = parseRoute(new URL(seen(page.url())));
+      assert.deepEqual([route.destination, route.context.subject], ['changes', 'plan'],
+        "S166 Stage in the Plan's own frame must keep the Plan's address");
+      assert.equal(seen((await seat446(page)).plan), 1, "S166 Stage in the Plan's own frame must keep the Plan");
+      assert.equal(seen(await page.evaluate(() => document.activeElement?.dataset?.set || null)), 'save-draft',
+        'S166 Save draft must take focus');
+    }, "S166 the Plan's own Stage keeps the Plan");
+    // 2. A plain arrival shows the staged concern, and so does a return after Open Plan.
+    const stagedConcern = step => waitForReplayAssertion(async seen => {
+      assert.equal(seen((await seat446(page)).plan), 0, `S166 ${step} must not reopen the Plan`);
+      const end = seen(await page.locator('.gf-stage .gf-end').allTextContents()).join(' ');
+      const controls = seen({ undo: await page.locator('.gf-stage [data-set="unstage"]').count(),
+        openPlan: await page.locator('.gf-stage [data-set="open-plan"]').count() });
+      assert.ok(/Staged/.test(end) && controls.undo === 1 && controls.openPlan === 1,
+        `S166 ${step} must show the staged concern with Staged, Undo and Open Plan`);
+    }, `S166 ${step} shows the staged concern`);
+    await topbar446(page, 'changes');
+    await stagedConcern("the topbar's Changes");
+    await press(page, '[data-set="open-plan"]');
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
+    await topbar446(page, 'day');
+    await topbar446(page, 'changes');
+    await stagedConcern('a return from Day by the topbar');
+    // 3. Open Plan reopens the Plan with the staged change; record the decision.
+    await press(page, '[data-set="open-plan"]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('.gf-stage .gf-kicker b').allTextContents()), ['Staged'],
+        'S166 Open Plan must reopen the Plan with the staged change');
+    }, 'S166 Open Plan reopens the staged change');
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    // 4. A synthetic `match` pump read starts a Trial; a draft is saved while it runs.
+    await ctx.capturePump('match');
+    await admitted446(page, 'S166', 'trial');
+    await draftWhileWatched446(page, 'S166');
+    // 5. Diagnose's first read in this page refreshes guidance and the Plan state;
+    //    then the topbar's Changes lands on the Trial, which offers the draft.
+    const refreshed = page.waitForResponse(response =>
+      new URL(response.url()).pathname === '/api/guidance' && response.ok(), { timeout: 60000 });
+    await topbar446(page, 'diagnose');
+    await refreshed;
+    await settled(page);
+    await topbar446(page, 'changes');
+    await watched446(page, 'S166', 'trial', "the topbar's Changes after an earlier Open Plan");
+    await waitForReplayAssertion(async seen => {
+      assert.ok(seen(await nameplate446(page, 'trial')).includes('open-plan'),
+        "S166 the watched Trial's nameplate must offer Open Plan while a draft is saved");
+    }, 'S166 the Trial offers its draft');
+    // 6. Diagnose's return from the Trial's nights lands on the Trial.
+    await press(page, '.gf-stage-trial [data-follow-up-inspect]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('[data-action="watch"]').allTextContents()).map(text => text.trim()),
+        ['Return to Trial'], 'S166 Diagnose opened from the watched Trial must offer "Return to Trial"');
+    }, 'S166 Diagnose offers the return to the Trial');
+    await press(page, '[data-action="watch"]');
+    await watched446(page, 'S166', 'trial', '"Return to Trial"');
+  },
+  // #446 · 2026-09-23. A watched Trial reaches the draft saved beside it, and the
+  // server, not the desk, refuses to record it. The page reloads after every
+  // write the story makes through its own requests, so it reads the store.
+  async S167(page, ctx) {
+    assert.ok(ctx.capturePump, 'S167 requires CASE_STORE_DIR for a synthetic pump capture');
+    const items = basalItems446(await read(page, '/api/guidance'), 'S167');
+    const drafted = await page.request.put(url446(page, '/api/plan'), { data: { items } });
+    assert.equal(drafted.status(), 200, 'S167 premise: the Plan draft saves');
+    const applied = await page.request.post(url446(page, '/api/plan/apply'), { data: {} });
+    assert.equal(applied.status(), 200, `S167 premise: the Plan decision records: ${await applied.text()}`);
+    await ctx.capturePump('match');
+    await admitted446(page, 'S167', 'trial');
+    const watching = await read(page, '/api/guidance');
+    assert.equal(watching.disposition, 'active_change', 'S167 premise: the server serves the active Trial');
+    assert.equal((watching.draft?.items || []).length, 0, 'S167 premise: no draft is served before the story saves one');
+    // 1. With no draft, the Trial's nameplate offers no Open Plan.
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S167', 'trial', 'an arrival with no draft');
+    assert.ok(!(await nameplate446(page, 'trial')).includes('open-plan'),
+      "S167 with no draft, the Trial's nameplate must offer no Open Plan");
+    // 2. With a draft saved while it runs, it offers Open Plan beside View change
+    //    record, and the Revert to Plan section keeps its own control.
+    const saved = await draftWhileWatched446(page, 'S167');
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S167', 'trial', 'an arrival with a saved draft');
+    await waitForReplayAssertion(async seen => {
+      const end = seen(await nameplate446(page, 'trial'));
+      assert.equal(end[end.indexOf('history') + 1], 'open-plan',
+        "S167 the Trial's nameplate must offer Open Plan beside View change record");
+      assert.equal(seen(await page.locator('[data-part="plan-route"] [data-action="plan-route"]').count()), 1,
+        'S167 the Revert to Plan section must keep its own control');
+    }, 'S167 the Trial offers its draft');
+    // 3. The nameplate's Open Plan: the explicit Plan arrival, the draft unchanged.
+    await press(page, '.gf-stage-trial [data-action="open-plan"]');
+    await planDraft446(page, 'S167', "the Trial's Open Plan");
+    const after = await read(page, '/api/plan');
+    assert.deepEqual([after.items, after.updated_at], [saved.items, saved.updated_at],
+      "S167 the Trial's Open Plan must leave the saved draft unchanged");
+    // 4. Record decision is refused by the server while the Trial is watched.
+    const recorded = (await read(page, '/api/plan/history')).history.length;
+    await press(page, '[data-set="record"]');
+    await waitForReplayAssertion(async seen => {
+      const desk = seen(await page.locator('.gf-desk').allTextContents()).join(' ');
+      assert.ok(/Recording the decision failed/.test(desk) && seen(await page.locator('[data-set="retry-save"]').count()) === 1,
+        'S167 Record decision must fail visibly while the Trial is watched');
+      assert.equal(seen((await read(page, '/api/plan/history')).history.length), recorded,
+        'S167 a refused record must add no Plan history record');
+    }, 'S167 the server refuses the record');
+    // 5. The next topbar Changes lands on the Trial.
+    await topbar446(page, 'changes');
+    await watched446(page, 'S167', 'trial', "the next topbar Changes");
+  },
+  // #446 · 2026-09-23. A watched Focus names its return and reaches its draft.
+  // Diagnose's return label is read before the nameplate, so a base run
+  // captures the crumb before it fails.
+  async S168(page) {
+    await admitted446(page, 'S168', 'focus');
+    const [segment] = (await read(page, '/api/pump-settings')).profile?.segments || [];
+    assert.ok(segment, 'S168 premise: the case must serve a pump profile');
+    await draftWhileWatched446(page, 'S168', [{ type: 'basal', start_min: segment.start_min, value: segment.basal_rate }]);
+    // 1. Changes shows the Focus's own view.
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S168', 'focus', 'an arrival with a saved draft');
+    // 2. Diagnose, opened from the Focus's Inspect evidence, names the Focus.
+    await press(page, '.gf-stage-focus [data-follow-up-inspect]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('[data-action="watch"]').allTextContents()).map(text => text.trim()),
+        ['Return to Focus'], 'S168 Diagnose opened from the watched Focus must offer "Return to Focus" and no "Return to Trial"');
+    }, 'S168 Diagnose names the Focus in its return');
+    // 3. It lands on the Focus.
+    await press(page, '[data-action="watch"]');
+    await watched446(page, 'S168', 'focus', '"Return to Focus"');
+    // 4. The Focus's nameplate Open Plan opens the draft at the Plan's address.
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.gf-stage-focus .gf-end [data-action="open-plan"]').count()), 1,
+        "S168 the watched Focus's nameplate must offer Open Plan while a draft is saved");
+    }, 'S168 the Focus offers its draft');
+    await press(page, '.gf-stage-focus [data-action="open-plan"]');
+    await planDraft446(page, 'S168', "the Focus's Open Plan");
+  },
   async S107(page) {
     await fullDayDiagnose(page);
     await filterParity404(page);
@@ -1893,6 +2774,113 @@ export const C4_STORIES = {
         assert.ok(!stage.includes(phrase), `S143 the stage must not say "${phrase}"`);
       }
     }, 'S143 an unavailable record names its reason');
+  },
+  // #452 (ADR 452): a record's later conclusion — its typed words, a failed
+  // save and that save's request id — stays with the record it was typed on.
+  // Leaving the record for the roster and reopening it from there starts an
+  // empty form whose next save sends a request id of its own. The carry into a
+  // different expired Trial is proved at node level, because no committed case
+  // store serves two; this proves the same rule on the one this store serves.
+  async S180(page) {
+    await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
+    await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+    const roster = await read(page, '/api/verify/trials');
+    const expired = (roster.trials || []).filter(row => row.ending?.kind === 'expired_unreviewed');
+    assert.ok(expired.length >= 1, 'S180 premise: the store serves an expired Trial');
+    const { id } = expired[0];
+    const record = await read(page, '/api/verify/trials', { kind: 'trial', selected: id });
+    assert.notEqual(record.selected.original.late_conclusion?.state, 'available',
+      'S180 premise: the expired Trial has no later conclusion saved');
+
+    const CONCLUSION_POST = /\/api\/verify\/trials\/[^/]+\/conclusion$/;
+    const row = page.locator(`table.gf-table [data-record="trial:${id}"]`);
+    const form = page.locator('[data-form="late-conclusion"]');
+    const field = page.locator('#late-conclusion-conclusion');
+    await row.click();
+    await form.waitFor({ timeout: 30000 });
+
+    // The first save is refused by a routed synthetic answer, so nothing reaches
+    // the store; its request id is recorded from the routed request.
+    const refused = [];
+    const refuse = async route => {
+      refused.push(route.request().postDataJSON());
+      await route.fulfill({ status: 503, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Synthetic refusal' }) });
+    };
+    await page.route(CONCLUSION_POST, refuse);
+    try {
+      await field.fill('Synthetic observation typed before leaving');
+      await form.locator('[type="submit"]').click();
+      await page.locator('[data-save-error="conclude"]').waitFor({ timeout: 30000 });
+    } finally { await page.unroute(CONCLUSION_POST, refuse); }
+    assert.equal(refused.length, 1, 'S180 premise: the routed save must be sent once and refused');
+
+    await page.locator('[data-record-close]').click();
+    await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+    await row.click();
+    await form.waitFor({ timeout: 30000 });
+    assert.equal(await field.inputValue(), '',
+      'S180 reopening the record from the roster must start its later conclusion empty');
+    assert.equal(await page.locator('[data-save-error]').count(), 0,
+      'S180 reopening the record must carry no failed save');
+
+    const posted = [];
+    const listener = request => {
+      if (request.method() === 'POST' && CONCLUSION_POST.test(new URL(request.url()).pathname)) {
+        posted.push(request.postDataJSON());
+      }
+    };
+    page.on('request', listener);
+    try {
+      await field.fill('Synthetic observation recorded after reopening');
+      await form.locator('[type="submit"]').click();
+      await page.locator('[data-late-conclusion="available"]').waitFor({ timeout: 30000 });
+    } finally { page.off('request', listener); }
+    assert.equal(posted.length, 1, 'S180 the next save must be sent once');
+    assert.notEqual(posted[0].request_id, refused[0].request_id,
+      'S180 the next save must send a request id of its own');
+    assert.equal(await page.locator('[data-late-conclusion-text]').innerText(),
+      'Synthetic observation recorded after reopening', 'S180 the next save must record the later conclusion');
+  },
+  // #442 (ADR 442): an older detected change that a later one superseded reads
+  // its saved ending in the roster and on its record, never "Still open". The
+  // words of every reason line belong to the full ledger, not to this story.
+  async S157(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.ok(roster.trials.length >= 2, 'S157 premise: the case serves two or more Trial rows');
+    assert.equal(roster.admission.active_kind, 'trial', 'S157 premise: the case serves an active Trial');
+    const older = roster.trials.find(trial => trial.id !== roster.admission.active_id);
+    assert.equal((older.ending || {}).kind, 'superseded',
+      'S157 the older Trial row must carry its served superseded ending');
+    await editChainRoster414(page);
+    // A `has` locator is queried inside each row, so it names the button alone.
+    const record = `[data-record="trial:${older.id}"]`;
+    const row = page.locator('table.gf-table tr', { has: page.locator(record) });
+    const button = row.locator(record);
+    await waitForReplayAssertion(async seen => {
+      const cell = seen(await row.locator('td.v').innerText()).trim();
+      assert.ok(cell.startsWith('Superseded by a later change'), `S157 the roster row must read its ending: ${cell}`);
+      assert.ok(!cell.includes('Still open'), `S157 an ended record's roster row must not read Still open: ${cell}`);
+      assert.equal(seen(await row.locator('[data-record-open="true"]').count()), 0,
+        'S157 an ended record must carry no still-open cell');
+    }, 'S157 the roster row reads its ending');
+    await button.click();
+    await page.locator('[data-record-part="ending"] [data-ending-kind]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const kind = page.locator('[data-record-part="ending"] [data-ending-kind="superseded"]');
+      assert.equal(seen(await kind.count()), 1, 'S157 the opened record must show its saved superseded ending');
+      const words = seen(await kind.innerText()).trim();
+      assert.equal(words, 'Superseded by a later change',
+        `S157 the ending kind line must read its words, never an underscore-token code: ${words}`);
+      const ending = seen(await page.locator('[data-record-part="ending"]').innerText());
+      assert.ok(!ending.includes('same setting'), 'S157 the saved-ending note must not claim the same setting');
+      const finished = seen(await page.locator('[data-record-part="ending"] dt', { hasText: 'Finished' })
+        .locator('xpath=following-sibling::dd[1]').innerText()).trim();
+      const note = seen(await page.locator('[data-part="periods"]').innerText());
+      const readTo = (/data was read to (.+?)\.\s*$/.exec(note.trim()) || [])[1];
+      assert.ok(finished, 'S157 the saved ending must name its Finished time');
+      assert.equal(readTo, finished, 'S157 the periods note must read data to the saved ending\'s Finished time');
+    }, 'S157 the opened record reads its saved superseded ending');
   },
   // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
   // whichever basal slot the CASE_STORE_DIR case ranks first; the
@@ -2111,6 +3099,10 @@ export const C4_STORIES = {
   async S139(page) { await watchDock429(page, 'S139', 'trial'); },
   // #429: the same for a watched Focus, including its detail line.
   async S140(page) { await watchDock429(page, 'S140', 'focus'); },
+  // #447: the dock and Changes print one Trial day count, the served one.
+  async S169(page) { await trialDayCount447(page); },
+  // #447: the Guide's Diagnose article names no Verify.
+  async S170(page) { await guideArticle447(page); },
   // #433: the basal lane stays within reach on short and narrow desktop
   // windows. `assertBasalLaneReachable` is the scenario, exported so a fake
   // page can drive it.
@@ -2226,6 +3218,96 @@ export const C4_STORIES = {
         `S154 the tile's accessible description must name each served reason: ${label}`);
     }, 'S154 the tile description names the served reasons');
   },
+  // #455: the glucose overview's text stays whole, inside the chart and
+  // unstruck: every Window preset at the run's own size and at the narrowest
+  // split, tall and short, and the Evening caption after the window is
+  // narrowed with nothing pressed, which waits, bounded, for the relayout to
+  // land (`readSettled`). Each press differs from the one before it, so every
+  // check reads a fresh render. `assertOverviewText` judges.
+  async S183(page) {
+    await openDiagnoseRail(page);
+    const run = page.viewportSize();
+    const checks = [];
+    const look = async (size, state, preset, extra = {}) => checks.push({ size, state, head: preset.head,
+      range: preset.range, reading: await page.locator('#chart').evaluate(readPaintedText), ...extra });
+    const choose = async preset => {
+      await page.getByRole('button', { name: preset.label, exact: true }).click();
+      await laidOutBrace404(page, { label: preset.label, range: preset.range });
+    };
+    const evening = OVERVIEW_PRESETS.find(preset => preset.label === 'Evening');
+    try {
+      for (const preset of OVERVIEW_PRESETS) {
+        await choose(preset);
+        await look(run, preset.label, preset, { runSize: true });
+      }
+      await choose(evening);
+      await page.setViewportSize(NARROW_SPLIT_SIZES[0]);
+      await settledResize(page, '#chart');
+      const narrowed = { size: NARROW_SPLIT_SIZES[0], state: 'Evening, narrowed with nothing pressed',
+        head: evening.head, range: evening.range };
+      checks.push({ ...narrowed, reading: await readSettled(
+        () => page.locator('#chart').evaluate(readPaintedText),
+        reading => overviewTextFailures({ ...narrowed, reading }), 'S183 the narrowed overview re-lays out') });
+      for (const size of NARROW_SPLIT_SIZES) {
+        await page.setViewportSize(size);
+        await settledResize(page, '#chart');
+        for (const preset of OVERVIEW_PRESETS) {
+          await choose(preset);
+          await look(size, preset.label, preset,
+            { premiseThin: size === NARROW_SPLIT_SIZES[0] && preset.label === '24 h' });
+        }
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settled(page);
+    assertOverviewText(checks);
+  },
+  // #455: with Diagnose at rest, the Spotlight's verdict line keeps every fact
+  // whole inside its chart and clear of the Keep control at 1200×736 and at the
+  // narrowest split, reached by resizing with nothing pressed. Each reading
+  // waits, bounded, for the relayout to land (`readSettled`).
+  // `assertSpotlightVerdict` judges.
+  async S184(page) {
+    await diagnoseAtRest(page);
+    const run = page.viewportSize();
+    const checks = [];
+    try {
+      for (const size of SPOTLIGHT_SIZES) {
+        await page.setViewportSize(size);
+        await settledResize(page, '#tile-focal .tile-chart');
+        const check = { size, oneLine: size === SPOTLIGHT_SIZES[0] };
+        checks.push({ ...check, reading: await readSettled(
+          () => page.locator('#tile-focal .tile-chart').evaluate(readPaintedText, '#tile-focal .tile-pin'),
+          reading => spotlightVerdictFailures({ ...check, reading }), `S184 the Spotlight re-lays out at ${sizeName(size)}`) });
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    assertSpotlightVerdict(checks);
+  },
+  // #455: with Diagnose at rest, the canvas header keeps its title, whole
+  // provenance and named All charts control on one line at the narrowest split,
+  // at 1024×768 and at the run's own size. The header's rule is CSS alone, so
+  // each reading follows the resize once the header has held still for two
+  // animation frames. `assertCanvasHead` judges.
+  async S185(page) {
+    await diagnoseAtRest(page);
+    const run = page.viewportSize();
+    const checks = [];
+    try {
+      for (const size of [...CANVAS_HEAD_SIZES, run]) {
+        await page.setViewportSize(size);
+        checks.push({ size, narrow: size.width < 1024, reading: await page.evaluate(readCanvasHead) });
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    // the measured widths at every size, passing or not, for the change's record
+    for (const { size, reading } of checks) process.stdout.write(`# S185 ${sizeName(size)} ${headWidths(reading)}\n`);
+    assertCanvasHead(checks);
+  },
   // #428 (ADR 428): after a Day return, every change to the case on screen —
   // here a key, a window choice and Backspace, none of them a Diagnose click —
   // renames the address in place, and a reload reopens what was on screen.
@@ -2323,6 +3405,158 @@ export const C4_STORIES = {
         'S138 the return must focus that Occurrence\'s Open in Day control');
     }, 'S138 the return focus');
   },
+  // #445 (ADR 445): a contributing date of the active Trial opens Day naming
+  // that date and no selector, and Return to Changes lands on its control.
+  async S162(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'trial', 'S162 premise: the case must serve an active Trial');
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    await page.locator('.gf-stage-trial').waitFor({ timeout: 30000 });
+    const { control, date } = await supportingDate445(page, 'S162');
+    await control.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.date, date, 'S162 the Day address must name the supporting date');
+    assert.equal(day.from, 'changes', 'S162 the Day address must return to Changes');
+    identityAddress445('S162', day);
+    await press(page, '[data-day="return"]');
+    await page.locator('.gf-stage-trial').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await focusedOn445(page, `[data-day-date="${date}"]`)), true,
+        `S162 Return to Changes must land focus on the ${date} control once the evidence has rendered`);
+    }, 'S162 the return focus');
+  },
+  // #445: the same from the Trial's change record, reached as S142 reaches it.
+  async S163(page) {
+    const open = await openStillOpenRecord430(page, 'S163');
+    const record = `record:${await open.getAttribute('data-record')}`;
+    await open.click();
+    await page.locator('[data-record-part="reassessment"]').waitFor({ timeout: 30000 });
+    const { control, date } = await supportingDate445(page, 'S163');
+    await control.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.date, date, 'S163 the Day address must name the supporting date');
+    assert.equal(day.occurrence, record, 'S163 the Day address must name the record');
+    assert.equal(day.from, 'changes', 'S163 the Day address must return to Changes');
+    identityAddress445('S163', day);
+    await press(page, '[data-day="return"]');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await address428(page)).occurrence, record, 'S163 the return must reopen the same record');
+      assert.equal(seen(await page.locator('[data-record-part="reassessment"]').count()), 1,
+        'S163 the reopened record must show its evidence');
+      assert.equal(seen(await focusedOn445(page, `[data-day-date="${date}"]`)), true,
+        `S163 the return must land focus on the ${date} control`);
+    }, 'S163 the return reopens the record on its date');
+  },
+  // #445: Log carbs over a drilled case, on both return paths. Logging moves
+  // the store, so the first return re-reads and restores the case (ADR 414);
+  // after a reload Diagnose has read the moved store, so the second is retained.
+  async S164(page) {
+    const { subject, held } = await heldAfternoonCase445(page);
+    const caseAddress = { subject, occurrence: held, window: '720-1080' };
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await address428(page)), caseAddress, 'S164 premise: the address names the held case');
+    }, 'S164 premise: the held case');
+    const { latest_data_day: latest } = await read(page, '/api/status');
+    const at = `${latest} 12:07:00`;
+    const before = new Set((await read(page, '/api/carbs')).carb_entries.map(entry => entry.id));
+    await press(page, '.cockpit-log-carbs');
+    await press(page, '[data-utility-when="custom"]');
+    await page.fill('#ut-custom', `${latest}T12:07`);
+    await press(page, '.gf-utility .gf-chips [data-certainty="exact"]');
+    const entry = await waitForReplayAssertion(async seen => {
+      const logged = seen(await read(page, '/api/carbs')).carb_entries
+        .find(row => row.t === at && !before.has(row.id));
+      assert.ok(logged, `S164 premise: the entry logged at ${at} must be served`);
+      return logged;
+    }, 'S164 premise: the logged entry');
+    // Found by its Remove control, which the base names the same way.
+    const opener = `.gf-entry-row:has([data-utility-remove="${entry.id}"]) [data-action="day"]`;
+    const control = `.gf-utility [data-action="day"][data-subject="carb:${entry.id}"]`;
+    await press(page, opener);
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.subject, `carb:${entry.id}`, 'S164 the Day address must name the entry by its id');
+    assert.ok(day.title?.startsWith('Log carbs · '), `S164 the Day address must carry the printed title: ${JSON.stringify(day)}`);
+    identityAddress445('S164', day);
+
+    await press(page, '[data-utility-close]');
+    // The moved store's re-read makes its own status read first, so its
+    // guidance read lands a round trip after the return's status answer —
+    // after the window heldStatusReturn records. Watch for it from the press.
+    const reread = page.waitForRequest(request => new URL(request.url()).pathname === '/api/analyze', { timeout: 30000 })
+      .then(() => true, () => false);
+    await press(page, '[data-day="return"]');
+    assert.ok(await reread, 'S164 the return after logging must re-read Diagnose: the store moved');
+    await waitForDesk(page);
+    await waitForHeld428(page, held);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="carbs"]').count()), 1,
+        'S164 Log carbs must be open over the restored case');
+      assert.deepEqual(seen(await address428(page)), caseAddress, 'S164 the address must name the restored case');
+      assert.equal(seen(await focusedOn445(page, control)), true,
+        'S164 focus must land on the entry\'s Open Day control once the restoration settles');
+    }, 'S164 the return after logging');
+
+    await page.reload();
+    await waitForHeld428(page, held);
+    await settled(page);
+    const trailBefore = await text445(page, '#crumb-trail .here');
+    await press(page, '.cockpit-log-carbs');
+    await press(page, control);
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    await press(page, '[data-utility-close]');
+    const kept = await wholeReturn445(page, 'S164');
+    assert.deepEqual(kept.filter(path => path !== '/api/status'), [],
+      'S164 the return after a reload must issue no request besides the held status check');
+    assert.equal(kept.filter(path => path === '/api/status').length, 1,
+      'S164 the return after a reload must issue exactly one GET /api/status');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await heldOccurrence428(page)), held, 'S164 the retained case must keep its Occurrence');
+      assert.equal(seen(await text445(page, '#crumb-trail .here')), trailBefore, 'S164 the drilled case must remain open');
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="carbs"]').count()), 1,
+        'S164 Log carbs must be open over the retained case');
+      assert.deepEqual(seen(await address428(page)), caseAddress,
+        'S164 the address must name the retained case, with no title, from or focus');
+      assert.equal(seen(await focusedOn445(page, control)), true, 'S164 focus must land on the entry\'s Open Day control');
+    }, 'S164 the return after a reload');
+  },
+  // #445: Carb questions over a drilled case with a window pressed (S137's
+  // path) is a retained return: one status read, the case and window kept.
+  async S165(page) {
+    // After its Day return the address still carries that entry's own keys
+    // until the case changes (ADR 428); a plain return names the case alone,
+    // as S137 reads it.
+    const { subject, first } = await heldCaseThroughDay428(page, 'S165');
+    const trailBefore = await text445(page, '#crumb-trail .here');
+    const windowBefore = await text445(page, '#seg-window [aria-pressed="true"]');
+    const caseAddress = { subject, occurrence: first };
+    assert.ok((await read(page, '/api/prompts')).length > 0, 'S165 premise: the showcase must serve a carb question');
+    await press(page, '[data-utility="questions"]');
+    const open = page.locator('.gf-utility [data-action="day"][data-date]').filter({ visible: true }).first();
+    await open.waitFor({ timeout: 30000 });
+    const identity = await open.getAttribute('data-subject');
+    await open.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    await press(page, '[data-utility-close]');
+    const requests = await wholeReturn445(page, 'S165');
+    assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
+      'S165 the Carb questions return must issue no request besides the held status check');
+    assert.equal(requests.filter(path => path === '/api/status').length, 1,
+      'S165 the Carb questions return must issue exactly one GET /api/status');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await text445(page, '#seg-window [aria-pressed="true"]')), windowBefore,
+        'S165 the pressed window must remain pressed');
+      assert.equal(seen(await text445(page, '#crumb-trail .here')), trailBefore, 'S165 the drilled case must remain open');
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="questions"]').count()), 1,
+        'S165 Carb questions must be open over the retained case');
+      assert.equal(seen(await focusedOn445(page, `.gf-utility [data-action="day"][data-subject="${identity}"]`)), true,
+        'S165 focus must land on the prompt\'s Open Day control');
+      assert.deepEqual(seen(await address428(page)), caseAddress,
+        'S165 the address must name the retained case, with no title, from or focus');
+    }, 'S165 the retained return');
+  },
   // #424: a same-population comparison's caption names each served cohort as its
   // section heading does, links the band's words once, adds up to the header
   // denominator and prints nothing outside the comparison.
@@ -2408,15 +3642,7 @@ export const C4_STORIES = {
     }, 'S149 the selected matched meal reads as its facts and served reason');
   },
   async S150(page) {
-    await fullDayDiagnose(page);
-    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
-    const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals' && row.pattern_chart);
-    assert.ok(pattern, 'S150 premise: the case store serves a chartable Highs after meals Pattern');
-    await page.getByRole('button', { name: 'All charts', exact: true }).click();
-    await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
-    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
-    await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
-    const coordinate = { projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event' };
+    const coordinate = await highsAfterMealsCase432(page, 'S150');
     const served = await read(page, '/api/diagnose/finding-case-file', coordinate);
     await waitForReplayAssertion(async seen => {
       assertServedRowDescriptions432('S150', served, seen(await renderedRows432(page)));
@@ -2426,6 +3652,151 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       assertSelectedFacts432('S150', file.selection.detail, seen(await selectedBlock432(page)));
     }, 'S150 a selected Highs after meals Occurrence lists its served habits');
+  },
+  // #454: fail-first on b03431d2, where the claimant's habit line repeats the
+  // sentence the cause line already prints.
+  async S182(page) {
+    const coordinate = await highsAfterMealsCase432(page, 'S182');
+    const matched = page.locator('#level .case-occurrence[data-comparison-cohort="matched"]').first();
+    assert.ok(await matched.count(), 'S182 premise: the Highs after meals case serves a claimed meal');
+    const occ = await selectOccurrence(page, matched);
+    const file = await read(page, '/api/diagnose/finding-case-file', { ...coordinate, occ });
+    await waitForReplayAssertion(async seen => {
+      assertSentenceOnce454('S182', file.selection.detail, seen(await selectedBlock432(page)));
+    }, 'S182 a claimed Occurrence prints its sentence once');
+  },
+  // #451: fail-first on b03431d2, where the Action figure prints the bare served
+  // number, the nameplate prints the raw disposition code, and the Diagnose row,
+  // panel, dock and "What was known" name the engine's ISF and its mg/dL/U unit.
+  async S177(page) {
+    const { guidance, action } = await servedLead451(page, 'S177');
+    const priority = `${guidance.selected.priority ?? '—'} priority`;
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    await page.locator('.gf-reading .gf-figure').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const figure = seen(await page.locator('.gf-reading .gf-figure')
+        .evaluate(node => node.firstChild?.textContent ?? ''));
+      assert.equal(figure, `${action.direction} to ${correctionFactor451(action.recommended)}`,
+        'S177 the Action figure reads the served instruction, the correction factor insulin first');
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
+        'S177 an eligible setting instruction reads Ready to stage on the nameplate and the Action heading');
+      assert.doesNotMatch(seen(await page.locator('.gf-desk').innerText()), ENGINE_WORDS_451,
+        'S177 the Changes desk prints no engine unit, engine name or disposition code');
+    }, 'S177 the plain arrival reads in the wearer\'s words');
+
+    await press(page, '[data-set="stage"]');
+    await page.locator('[data-set="unstage"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Staged`, action: 'Staged' },
+        'S177 a staged change reads Staged, as the pane does');
+    }, 'S177 staged');
+    await press(page, '[data-set="unstage"]');
+    await page.locator('[data-set="stage"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await changesWords451(page)), { sub: `${priority} · Ready to stage`, action: 'Ready to stage' },
+        'S177 Undo returns the words to Ready to stage');
+    }, 'S177 unstaged');
+
+    await press(page, '[data-action="aside"]');
+    await page.locator('#aside-reason').waitFor({ timeout: 30000 });
+    await press(page, 'form[data-form="aside"] button[type="submit"]');
+    // Both the nameplate and the set-aside section carry this Restore; either one
+    // proves the write and its re-read have landed.
+    await page.locator(`[data-restore="${guidance.selected.subject}"]`).first().waitFor({ timeout: 30000 });
+    const reread = await read(page, '/api/guidance');
+    const held = reread.candidates.find(row => row.subject === guidance.selected.subject);
+    assert.ok(held?.preference?.set_aside, 'S177 premise: the concern set aside must be served set aside');
+    await waitForReplayAssertion(async seen => {
+      const { sub } = seen(await changesWords451(page));
+      assert.equal(sub, `${held.priority ?? '—'} priority · Set aside`,
+        'S177 a set-aside concern on screen carries no status words for the concern that leads next');
+      assert.ok(STATUS_WORDS_451.every(words => !sub.includes(words)), `S177 no status words on a set-aside seat: ${sub}`);
+    }, 'S177 the set-aside seat');
+  },
+  async S178(page) {
+    await fullDayDiagnose(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const row = preparation.rendered_rows.find(candidate => candidate.parameter === 'isf');
+    assert.ok(row && row.register === 'assert' && row.asserts_move === true && row.direction
+      && row.current != null && row.recommended != null,
+      'S178 premise: the case must serve an asserting, stageable correction-factor row with its numbers');
+    const title = `Correction factor · ${row.direction}`;
+    const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+    await node.waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await node.locator('.lab').innerText()).trim()), title,
+        'S178 the queue row is titled by the setting and its served direction');
+      const numbers = seen((await node.locator('.den.nums').innerText()).trim());
+      assert.equal(numbers, queueNumbers451(row),
+        'S178 the queue numbers read insulin first, at the queue\'s own rounding, then the row\'s served scope');
+      assert.doesNotMatch(numbers, /mg\/dL\/U/, 'S178 the queue numbers never print the engine unit');
+    }, 'S178 the correction-factor queue row');
+
+    await node.click();
+    await settled(page);
+    const values = `${correctionFactor451(panelNum451(row.current))} → ${correctionFactor451(panelNum451(row.recommended))}`;
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await page.locator('#level .slot-head .time').innerText()).trim()), 'Correction factor',
+        'S178 the panel heading names the setting');
+      const numbers = seen(await page.locator('#level .numrow b').allInnerTexts()).map(text => text.trim());
+      assert.equal(numbers[0], correctionFactor451(panelNum451(row.current)), 'S178 the panel\'s current value reads insulin first');
+      assert.equal(numbers[2], correctionFactor451(panelNum451(row.recommended)), 'S178 the panel\'s recommended value reads insulin first');
+      // `.dw[data-state]` is the Diagnose workstation root alone: the desk surface
+      // around it carries the `dw` theme class too, but no `data-state`.
+      assert.doesNotMatch(seen(await page.locator('.dw[data-state]').innerText()), /mg\/dL\/U|\bISF\b/,
+        'S178 the Diagnose desk prints neither the engine unit nor the engine name');
+    }, 'S178 the correction-factor panel');
+
+    await press(page, '#level .stagebtn[data-staged="false"]');
+    await page.locator('#level .stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+    await page.locator('.inspector > .watch[data-state="plan"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const dock = seen(await page.locator('.inspector > .watch').evaluate(node => {
+        const what = node.querySelector('.what'); const how = node.querySelector('.how');
+        const box = element => { const rect = element.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }; };
+        return {
+          what: what.textContent, whatFits: what.scrollWidth <= what.clientWidth,
+          how: how.textContent, howFits: how.scrollWidth <= how.clientWidth + 1 && how.scrollHeight <= how.clientHeight + 1,
+          howBox: box(how), dockBox: box(node), viewport: { width: innerWidth, height: innerHeight },
+        };
+      }));
+      assert.equal(dock.what, title, 'S178 the staged title names the setting and its served direction');
+      assert.ok(dock.whatFits, `S178 the staged title must not truncate: ${JSON.stringify(dock)}`);
+      assert.ok(dock.how.startsWith(`${values} · `), `S178 the values lead the dock's detail line: ${dock.how}`);
+      assert.ok(dock.howFits && dock.howBox.bottom <= dock.dockBox.bottom + 1 && dock.howBox.right <= dock.dockBox.right + 1
+        && dock.dockBox.top >= 0 && dock.dockBox.bottom <= dock.viewport.height + 1,
+        `S178 the dock's values must be fully visible: ${JSON.stringify(dock)}`);
+      assert.doesNotMatch(seen(await page.locator('.dw[data-state]').innerText()), /mg\/dL\/U|\bISF\b/,
+        'S178 the staged Diagnose desk prints neither the engine unit nor the engine name');
+    }, 'S178 the staged dock');
+  },
+  async S179(page) {
+    await servedLead451(page, 'S179');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    const context = (await read(page, '/api/plan/history')).history[0]?.decision_context;
+    assert.ok(context?.state === 'available' && context.subjects?.[0] === 'setting:isf'
+      && context.settings?.length === 1 && Array.isArray(context.action) && context.action[0]?.parameter === 'isf',
+      'S179 premise: the recorded Plan must retain its correction-factor decision');
+    await waitForReplayAssertion(async seen => {
+      const known = seen(await page.evaluate(() => {
+        const section = [...document.querySelectorAll('.gf-reading .gf-section')]
+          .find(node => node.querySelector('h3')?.textContent.trim() === 'What was known');
+        if (!section) return null;
+        const values = [...section.querySelectorAll('dd')].map(node => node.textContent.trim());
+        return { concern: values[0], change: values[1], explanation: section.querySelector('p')?.textContent.trim(),
+          text: section.textContent };
+      }));
+      assert.ok(known, 'S179 the recorded Plan shows what was known');
+      assert.equal(known.concern, 'Correction factor', 'S179 the recorded concern is named, never its identifier');
+      assert.equal(known.change, correctionFactor451(context.settings[0].value),
+        'S179 the recorded value reads insulin first');
+      assert.equal(context.explanation, 'Correction factor', 'S179 the recorded explanation names the setting');
+      assert.equal(known.explanation, context.explanation, 'S179 the explanation prints as recorded');
+      assert.doesNotMatch(known.text, /setting:|mg\/dL\/U/, 'S179 what was known prints no identifier or engine unit');
+    }, 'S179 what was known');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
@@ -2471,6 +3842,116 @@ export const C4_STORIES = {
       }, "S49");
       await capture(fresh, ctx, 'S49-c4-missing', 'c4-missing');
     });
+  },
+  // ADR 449/450: the active Focus names its behavior by its served name, and its
+  // opportunity verdicts in words.
+  async S173(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'focus', 'S173 premise: the case must serve an active Focus');
+    const id = roster.admission.active_id;
+    const detail = await focusDetail449(page, id);
+    const comparison = (await focusDetail449(page, id, 'retained')).reassessment.comparison;
+    assert.ok(comparison.adherence, 'S173 premise: the retained comparison must serve Observed behavior rows');
+    const verdicts = Object.values(comparison.readiness || {}).map(arm => arm.verdict).filter(Boolean);
+    assert.ok(verdicts.length, 'S173 premise: the retained comparison must serve a Pattern opportunity verdict');
+    await page.goto(new URL('/?to=changes', page.url()).href);
+    await page.locator('.gf-stage-focus [data-table="adherence"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const name = detail.lever_title;
+      const row = seen(await page.locator('[data-table="adherence"] tr.gf-target td').first().innerText()).trim();
+      assert.ok(name && row.startsWith(name), `S173 the Observed behavior row must name the served behavior: ${row}`);
+      assert.ok(!row.includes(detail.lever), 'S173 the Observed behavior row must not print the lever key');
+      if (!detail.original?.context?.explanation) {
+        const intent = seen(await page.locator('[data-part="intent"]').innerText());
+        assert.ok(intent.includes(name), `S173 What this Focus watches must name the served behavior: ${intent}`);
+      }
+      const lines = seen(await page.locator('[data-opportunity-verdict]').allInnerTexts());
+      assert.equal(lines.length, verdicts.length, 'S173 premise: every served Pattern arm shows its opportunity line');
+      assertWordsOnly449('S173', lines, [], verdicts);
+    }, 'S173 the active Focus names its behavior and verdicts in words');
+  },
+  // ADR 450, R450: a saved Focus ending names its served reason in words, and so
+  // does every line of the record that the saved comparison serves.
+  async S174(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const row = roster.focuses.find(focus => focus.ending?.kind === 'manual');
+    assert.ok(row, 'S174 premise: the case must retain a Focus ended by hand');
+    const assessment = (await focusDetail449(page, row.id)).original.ending.assessment || {};
+    assert.equal(assessment.state, 'unavailable', 'S174 premise: the saved ending assessment must be served unavailable');
+    assert.ok(assessment.reason, 'S174 premise: the saved ending must serve its reason');
+    const codes = endingCodes449(assessment);
+    await openFocusRecord449(page, row.id);
+    await waitForReplayAssertion(async seen => {
+      const line = seen(await page.locator('[data-ending-assessment]').innerText()).trim();
+      const words = line.startsWith('Unavailable · ') ? line.slice('Unavailable · '.length).trim() : '';
+      assert.ok(words && !words.includes(assessment.reason),
+        `S174 the saved ending must name its reason in words, never its served code: ${line}`);
+      assert.ok(seen(await page.locator('[data-harm]').count()) > 0, 'S174 premise: the record shows its harm cells');
+      assert.ok(seen(await page.locator('[data-criterion]').count()) > 0, 'S174 premise: the record shows its readiness lines');
+      const verdicts = Object.values(assessment.readiness || {}).map(arm => arm.verdict).filter(Boolean);
+      for (const selector of ['[data-harm]', '[data-criterion]', '[data-opportunity-verdict]']) {
+        assertWordsOnly449('S174', seen(await page.locator(selector).allInnerTexts()), codes, verdicts);
+      }
+    }, 'S174 a saved Focus ending names its reason in words');
+  },
+  // ADR 450: an unmeasured behavior cell names its reason in words and keeps
+  // its measured count; a still-collecting arm says so in words.
+  async S175(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const row = roster.focuses.find(focus => focus.ending?.kind);
+    assert.ok(row, 'S175 premise: the case must retain an ended Focus');
+    const assessment = (await focusDetail449(page, row.id)).original.ending.assessment || {};
+    const unmeasured = ['before', 'after'].map(side => [side, (assessment.adherence || {})[side] || {}])
+      .filter(([, arm]) => arm.opportunities && arm.rate == null && arm.availability?.reason);
+    assert.ok(unmeasured.length, 'S175 premise: the saved ending must serve an unmeasured behavior arm');
+    const collecting = ['before', 'after'].filter(side => {
+      const arm = (assessment.readiness || {})[side] || {};
+      return arm.reason === 'collecting' && !arm.criterion_met;
+    });
+    assert.ok(collecting.length, 'S175 premise: the saved ending must serve a still-collecting readiness arm');
+    await openFocusRecord449(page, row.id);
+    await waitForReplayAssertion(async seen => {
+      for (const [side, arm] of unmeasured) {
+        const cell = seen(await page.locator(`[data-adherence="${side}"]`).innerText());
+        assert.ok(!cell.includes(arm.availability.reason),
+          `S175 the Observed behavior cell must name its reason in words, never its served code: ${cell}`);
+        assert.ok(cell.includes(`${arm.measured_opportunities} of ${arm.opportunities} measured`),
+          `S175 the Observed behavior cell must keep its measured count: ${cell}`);
+      }
+      for (const side of collecting) {
+        const line = seen(await page.locator(`[data-readiness="${side}"] [data-criterion]`).innerText()).trim();
+        assert.ok(line.startsWith('Not met — ') && line !== 'Not met — collecting.',
+          `S175 a still-collecting arm must say so in words: ${line}`);
+      }
+    }, 'S175 an unmeasured behavior names its reason in words');
+  },
+  // ADR 449, Q1: a Focus record's "What changed" names the watched behavior by
+  // its served name while the nameplate keeps the Focus's own title.
+  async S176(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const patterned = roster.focuses.filter(focus => focus.pattern_key);
+    const plain = roster.focuses.filter(focus => !focus.pattern_key);
+    assert.ok(patterned.length && plain.length,
+      'S176 premise: the case must retain a Pattern Focus record and a record with no Pattern');
+    for (const row of [...patterned, ...plain]) {
+      const detail = await focusDetail449(page, row.id);
+      await openFocusRecord449(page, row.id);
+      await waitForReplayAssertion(async seen => {
+        assert.equal(seen(await page.locator('.gf-stage .gf-title').first().innerText()).trim(), detail.title,
+          'S176 the nameplate must keep the served title');
+        const change = seen(await page.locator('[data-record-part="change"]').innerText());
+        assert.ok(!change.includes(detail.lever), `S176 What changed must not print the lever key: ${change}`);
+        if (row.pattern_key || detail.lever_title) {
+          assert.ok(detail.lever_title && change.includes(`The intended behavior: ${detail.lever_title}.`),
+            `S176 What changed must name the served behavior: ${change}`);
+          if (detail.title !== detail.lever_title) assert.ok(!change.includes(detail.title),
+            `S176 What changed must not name the behavior by the nameplate title: ${change}`);
+        } else {
+          assert.ok(change.includes('no longer an offered lever') && !/intended behavior: Focus\b/.test(change),
+            `S176 a record whose behavior has no served name must say it is no longer an offered lever: ${change}`);
+        }
+      }, `S176 Focus record ${row.id} names its behavior`);
+    }
   },
 };
 

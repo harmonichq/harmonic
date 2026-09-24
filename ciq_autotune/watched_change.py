@@ -10,8 +10,9 @@ detected mid-Focus *preempts and drops* the Focus. So the outcomes payload expos
 **single** active watched-change object, never two lists.
 
 The target metric a Trial foregrounds is inferred from the changed parameter + slot
-and always selects an **existing** ``/api/outcomes/trend`` series (ADR 0028 §4 — never
-invent a metric): basal→``tbr``, ISF→``tir``, I:C→``arc``, target→``tir``, a
+and always selects an **existing** series of the CLI trend, ``summarize_trend``
+(ADR 0028 §4 — never invent a metric; ``/api/outcomes/trend`` serves only the
+watched change, #447): basal→``tbr``, ISF→``tir``, I:C→``arc``, target→``tir``, a
 whole-profile / untargeted edit→overall (``tir`` + ``arc``). A Trial never carries a
 lever — the "inherited from a Diagnose lever" branch is cut (ADR 0029 §3).
 
@@ -25,7 +26,8 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Union
+from functools import cached_property
+from typing import Dict, List, Optional
 
 from .epochs import _DOSE_ATTR, _MIN_EPOCH_DAYS, _settled_days
 from .analyzers.scenario.anchors import _is_meal
@@ -35,13 +37,14 @@ from .analyzers.scenario.levers import (
     exposure as lever_exposure,
     title as lever_title,
 )
+from .store import wall_clock_now
 from .trial_evidence import trial_breakdown
 
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
 
 # The changed parameter → the existing trend series its before/after is read off
-# (ADR 0028 §4). Every value here is a series ``/api/outcomes/trend`` already emits
-# (``tir``/``tbr`` in ``metrics``, ``arc`` the top-level arc object).
+# (ADR 0028 §4). Every value here is a series the CLI trend (``summarize_trend``)
+# already emits (``tir``/``tbr`` in ``metrics``, ``arc`` the top-level arc object).
 _TARGET_METRIC: Dict[str, List[str]] = {
     "basal_rate": ["tbr"],
     "isf": ["tir"],
@@ -54,8 +57,8 @@ _PROFILE_TARGET = ["tir", "arc"]
 
 # A Trial's maturing window is a fixed backend fact — 14 days of target-metric
 # data-days — never a caller's trend or analysis window (#18): the dock and the
-# Verify roster must report the same maturity for the same change no matter what
-# window the surface was tiled at.
+# Trial roster (``/api/verify/trials``) that Changes reads must report the same
+# maturity for the same change no matter what window the surface was tiled at.
 TRIAL_WINDOW_DAYS = 14
 _MATURE_WINDOW = timedelta(days=TRIAL_WINDOW_DAYS)
 
@@ -247,14 +250,6 @@ def _slot_label(slot: int, slot_minutes: int = 30) -> str:
     return f"{m // 60:02d}:{m % 60:02d}"
 
 
-def _candidate(parameter, slot, regimes: List[Regime]) -> Optional[_Cand]:
-    """The latest change-point in ``regimes`` as a candidate, or ``None`` if constant."""
-    if len(regimes) < 2:
-        return None
-    return _Cand(parameter, slot, regimes[-1].start,
-                 regimes[-2].value, regimes[-1].value, regimes)
-
-
 def _is_revert(regimes: List[Regime], mature_window: timedelta) -> bool:
     """Was the latest change a walk-back to the exact pre-change baseline, in-window?
 
@@ -378,170 +373,6 @@ def _switch_candidates(snapshots, mature_window: timedelta) -> List[_Cand]:
             cands.append(_Cand("profile", None, sw.at, None, None, [],
                                switch=True, reverted=i in closed))
     return cands
-
-
-def detect_trial(basal_events, bolus_events, snapshots, *, now: datetime,
-                 cgm_readings=(), plan_history=None
-                 ) -> Optional[TrialView]:
-    """The active Trial from the setting-change epoch, or ``None`` (ADR 0029).
-
-    Collects each parameter's latest change-point (ISF/I:C/target from the
-    dose-stamped stream, basal per-slot from the dense feed) within the watch horizon,
-    **plus every active-profile switch in the settings snapshots**, which is a
-    candidate in its own right (#463) — the switch diff is authoritative (#331), so a
-    Trial starts at the switch instant instead of waiting for the dose stream's
-    two-day debounce to re-observe the new value. Then, newest change first:
-
-    * skips a **revert** (walk-back to baseline in-window) — that setting's Trial
-      closed and spawns no second Trial (:func:`_is_revert`) — and considers the next
-      most-recent change, so a revert on one parameter doesn't hide a live Trial on
-      another;
-    * classifies the surviving anchor as a **whole-profile switch** (target = overall
-      TIR + arc) when two or more parameters moved together, or an ``active_idp``
-      switch shows in the snapshot changelog; else maps the single parameter to its
-      target series.
-
-    A change older than the watch horizon (``_WATCH_HORIZON``) has matured into
-    the status quo and is not surfaced.
-    """
-    watch_start = now - _WATCH_HORIZON
-    mature_window = _MATURE_WINDOW
-
-    cands: List[_Cand] = []
-    for p in ("isf", "carb_ratio", "target_bg"):
-        c = _candidate(p, None, dose_regimes(bolus_events, p))
-        if c is not None:
-            cands.append(c)
-    basal_cand: Optional[_Cand] = None
-    for s, regs in basal_slot_regimes(basal_events).items():
-        c = _candidate("basal_rate", _slot_label(s), regs)
-        if c is not None and (basal_cand is None or c.start > basal_cand.start):
-            basal_cand = c
-    if basal_cand is not None:
-        cands.append(basal_cand)
-    cands.extend(_switch_candidates(snapshots, mature_window))
-    # A later dose observation of the value established by a profile switch
-    # corroborates that switch; it does not create a newer change. Keep genuinely
-    # different resulting values eligible as their own candidates. Match before
-    # applying the watch horizon so late observations cannot resurrect an aged-out
-    # switch as a new Trial.
-    live_switches = [c for c in cands if c.switch and not c.reverted]
-    cands = [
-        c for c in cands
-        if c.switch or not any(
-            s.start < c.start
-            and s.parameter == c.parameter
-            and s.before == c.before
-            and s.after == c.after
-            for s in live_switches
-        )
-    ]
-    # #518 declared fallback: a BLOCK-SCOPED carb-ratio edit opens no Trial in v1.
-    # Watching one stretch honestly means recording the arc it covered AT STAGE TIME —
-    # a later profile edit re-partitions the blocks underneath a live Trial, so a Trial
-    # that re-derives its own arc can end up watching a stretch that no longer exists.
-    # That needs the arc persisted with the Plan, which is deliberately not in this
-    # change, so a segment-scoped carb-ratio candidate is dropped rather than watched
-    # wrongly. A WHOLE-PARAMETER carb-ratio change (the dose-stamped, slot-less
-    # candidate) is unaffected and still opens its Trial as before.
-    #
-    # Dropped HERE, after the corroboration match above and not before it: a late dose
-    # observation of the value a segment switch established must still be recognised as
-    # corroborating that switch, or removing the switch would let the observation
-    # resurrect an aged-out change as a brand-new whole-parameter Trial (#463).
-    cands = [c for c in cands
-             if not (c.parameter == "carb_ratio" and c.slot is not None)]
-    cands = [c for c in cands if c.start > watch_start]
-    # Newest change first; a reverted change closes without surfacing, so fall through
-    # to the next-most-recent live change rather than blanking the whole payload.
-    anchor: Optional[_Cand] = None
-    for c in sorted(cands, key=lambda c: c.start, reverse=True):
-        if c.reverted if c.switch else _is_revert(c.regimes, mature_window):
-            continue
-        anchor = c
-        break
-    if anchor is None:
-        return None
-
-    # An ``active_idp`` switch near the anchor is classified by diffing the outgoing
-    # vs incoming profile (the duplicate-and-switch workflow, #331): exactly one
-    # changed parameter is a *targeted* Trial on that knob, two or more stay
-    # whole-profile. The diff is authoritative for a switch, replacing the old
-    # any-switch→profile override. Absent a switch, the dose/basal stream decides:
-    # two parameters moving together read as one whole-profile edit.
-    switch = None if anchor.switch else _profile_switch_diff(snapshots, anchor.start)
-    if anchor.switch:
-        # Already classified off the authoritative diff when the candidate was built.
-        parameter, slot = anchor.parameter, anchor.slot
-        before, after = anchor.before, anchor.after
-        changed_at = anchor.start
-        target = (_PROFILE_TARGET if parameter == "profile"
-                  else _TARGET_METRIC[parameter])
-    elif switch is not None:
-        switch_at, diffs = switch
-        changed_at = switch_at
-        if len(diffs) == 1:
-            d = diffs[0]
-            parameter, slot, before, after = d.parameter, d.slot, d.before, d.after
-            target = _TARGET_METRIC[parameter]
-        else:  # zero (outgoing profile gone) or ≥2 changed → whole-profile
-            parameter, slot, before, after = "profile", None, None, None
-            target = _PROFILE_TARGET
-    else:
-        changed_at = anchor.start
-        near = {c.parameter for c in cands
-                if abs((anchor.start - c.start)) <= _PROFILE_TOLERANCE}
-        if len(near) >= 2:
-            parameter, slot, before, after = "profile", None, None, None
-            target = _PROFILE_TARGET
-        else:
-            parameter, slot = anchor.parameter, anchor.slot
-            before, after = anchor.before, anchor.after
-            target = _TARGET_METRIC[parameter]
-
-    # The target's data-day timeline: post-meal instants for the arc, CGM otherwise.
-    data_times = ([b.t for b in bolus_events if _is_meal(b)] if target[0] == "arc"
-                  else [r.t for r in cgm_readings])
-    # Maturity accrues only within the Trial's own bounded period — the same
-    # ``min(now, changed_at + mature_window)`` cap :func:`review_trials` applies —
-    # so the dock and the Verify roster count the same days for the same change.
-    trial_end = min(now, changed_at + mature_window)
-    return TrialView(
-        parameter=parameter,
-        changed_at=changed_at.strftime(_DT_FMT),
-        target_metrics=target,
-        maturing=_maturing(changed_at, trial_end, TRIAL_WINDOW_DAYS, data_times),
-        slot=slot,
-        before=before,
-        after=after,
-        deliberate=_deliberate(parameter, changed_at, plan_history),
-    )
-
-
-def _profile_switch_diff(snapshots, anchor: datetime):
-    """The parameters that moved at an active-profile switch near ``anchor`` (#331).
-
-    Finds the nearest ``active_idp`` switch in the snapshot changelog and diffs the
-    outgoing vs incoming active profile in the post-switch snapshot, returning
-    ``(switch_at, [ParameterDiff, ...])``. Returns ``None`` when no switch is within
-    ``_PROFILE_TOLERANCE`` (the dose/basal stream then classifies the change). An
-    empty diff list — outgoing profile deleted, or the two profiles are identical —
-    falls through to whole-profile at the caller.
-    """
-    if not snapshots:
-        return None
-    from .settings import changelog, diff_profiles
-    by_time = {s.captured_at: s for s in snapshots}
-    for ch in changelog(snapshots):
-        if ch.parameter != "active_idp" or abs(ch.at - anchor) > _PROFILE_TOLERANCE:
-            continue
-        snap = by_time.get(ch.at)
-        old = snap.settings.by_idp(ch.old_schedule) if snap else None
-        new = snap.settings.by_idp(ch.new_schedule) if snap else None
-        if old is None or new is None:
-            return (ch.at, [])  # outgoing/incoming profile gone → whole-profile
-        return (ch.at, diff_profiles(old, new))
-    return None
 
 
 # --- Focus (the pinned behavioral lever) -----------------------------------
@@ -701,6 +532,16 @@ def _review_focus_title(record):
     return _focus_meta(record["lever"])[0] if is_pinnable(record["lever"]) else "Focus"
 
 
+def _review_lever_title(lever):
+    """The watched behavior's one served name (ADR 449): the nameplate's own title
+    source, never the Pattern title. A stored lever that is no longer a Lever or
+    the override has none, and the record still reads."""
+    try:
+        return _focus_meta(lever)[0]
+    except ValueError:
+        return None
+
+
 def _group_edits(retained_records: List[dict]) -> tuple:
     """Chain RETAINED trial records into Edits (ADR 414).
 
@@ -709,6 +550,10 @@ def _group_edits(retained_records: List[dict]) -> tuple:
     new edit, keyed off its own id. Returns ``(id -> edit key, edits summary
     list)``; ``parameters`` on each summary is ordered by first occurrence within
     the edit (sub-order 2 renders "Basal ×11 · Carb ratio" from that order).
+
+    Two callers read it: the roster, and the reconcile's ending rule, where a
+    change inside a record's own Edit never supersedes it (ADR 442). A change to
+    this grouping or its tolerance therefore changes how records end too.
     """
     ordered = sorted(retained_records, key=lambda r: datetime.fromisoformat(r["changed_at"]))
     id_to_key: Dict[str, str] = {}
@@ -773,7 +618,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         if record is None:
             raise KeyError(identity)
         detail = {"id": identity, "lever": record["lever"], "status": record["status"],
-                  "title": _review_focus_title(record)}
+                  "title": _review_focus_title(record), "lever_title": _review_lever_title(record["lever"])}
     detail.update(kind=kind, admission=admission,
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),
@@ -790,7 +635,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         else:
             comparison = compare_follow_up(store, record=record, data_cutoff=now,
                                            input_revision=store.input_data_revision(), context_mode=assessment)
-        detail["reassessment"] = {"mode": assessment, "computed_at": datetime.now().strftime(_DT_FMT),
+        detail["reassessment"] = {"mode": assessment, "computed_at": wall_clock_now().strftime(_DT_FMT),
                                   "input_revision": store.input_data_revision(), **comparison}
     result["selected"] = detail
     return result
@@ -798,7 +643,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
 
 @dataclass(frozen=True)
 class _ReviewTrial:
-    """One private Verify candidate and the data-accrual facts it owns."""
+    """One retained Trial candidate on the roster and the data-accrual facts it owns."""
 
     view: TrialView
     gap_count: int
@@ -814,9 +659,9 @@ def _review_candidates(basal, bolus, snapshots, plan_history, *,
                        horizon_start: datetime) -> List[_Cand]:
     """Every current/recent derived Trial candidate, excluding closed loops.
 
-    The legacy singleton only needs the newest candidate.  Verify instead keeps the
-    bounded historical set here, so reversion suppression and switch corroboration
-    remain local rather than making a frontend recreate setting history.
+    The Trial roster keeps the bounded historical set here, so reversion
+    suppression and switch corroboration remain local rather than making a
+    frontend recreate setting history.
 
     Block-scoped I:C changes are handled apart from the generic switch diff (#581):
     a slot-scoped ``carb_ratio`` switch candidate is dropped here and re-derived by
@@ -1223,9 +1068,9 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
         "plan_route": _prior_plan_route(view, trial.members),
         "limits": _trial_limits(trial),
     })
-    # The Verify workstation's paired reads (#660): the settings diff, the
-    # Before-vs-Trial envelopes, the rescue log, and the per-day accrual, each
-    # scoped to the two periods above.
+    # The selected Trial's paired reads (#660), which Changes' Trial view renders:
+    # the settings diff, the Before-vs-Trial envelopes, the rescue log, and the
+    # per-day accrual, each scoped to the two periods above.
     detail.update(trial_breakdown(
         store,
         parameter=view.parameter,
@@ -1535,16 +1380,27 @@ def follow_up_admission(store, *, now):
 
 
 def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutoff, conclusion=None):
-    """Save the comparison and release this identity in the caller's transaction."""
-    from .follow_up_comparison import compare_follow_up
+    """Save the comparison and release this identity in the caller's transaction.
+
+    The data cutoff bounds every evidence read but the retained context, which
+    was read once when the record was first recorded. A context whose pump read
+    is later than the cutoff, or that names none, saves the assessment
+    unavailable instead (ADR 442).
+    """
+    from .follow_up_comparison import compare_follow_up, comparison_envelope
     if "kind" in record["ending"]:
         return record
     ending = {"version": "386:1", "state": "available", "kind": kind,
               "effective_at": effective_at.strftime(_DT_FMT),
               "recorded_at": recorded_at.strftime(_DT_FMT), "conclusion": conclusion}
     proposed = {**record, "ending": ending}
-    compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
-                                 input_revision=store.input_data_revision())
+    context = record["comparison_context"]
+    source = (context.get("source_snapshot") or {}).get("captured_at")
+    if context.get("state") == "available" and (source is None or datetime.fromisoformat(source) > data_cutoff):
+        compared = comparison_envelope(context, "retained", "context_after_ending")
+    else:
+        compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
+                                     input_revision=store.input_data_revision())
     comparison = compared["comparison"]
     ending["assessment"] = {**{key: value for key, value in comparison.items() if key != "views"},
                             "version": "386:1", **comparison["availability"],
@@ -1562,9 +1418,36 @@ def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutof
     return store.save_follow_up_record(proposed)
 
 
-def _reversal_at(store, record):
+class _ReversalHistory:
+    """The detector's history the reversal check reads, each part read once.
+
+    One reconcile shares one instance across every open record it evaluates
+    (ADR 442), so a pass costs one scan of each history rather than one per
+    record. The pass writes only follow-up records, never these inputs.
+    """
+
+    def __init__(self, store):
+        self._store = store
+        self._doses = {}
+
+    @cached_property
+    def switches(self):
+        return _profile_switches(self._store.settings_snapshots())
+
+    @cached_property
+    def slots(self):
+        return basal_slot_regimes(self._store.basal_events())
+
+    def doses(self, parameter):
+        if parameter not in self._doses:
+            self._doses[parameter] = dose_regimes(self._store.bolus_events(), parameter)
+        return self._doses[parameter]
+
+
+def _reversal_at(store, record, history=None):
+    history = _ReversalHistory(store) if history is None else history
     start = datetime.fromisoformat(record["changed_at"])
-    switches = _profile_switches(store.settings_snapshots())
+    switches = history.switches
     for previous, current in zip(switches, switches[1:]):
         if previous.at == start and _switch_reverts(previous, current, _MATURE_WINDOW):
             return current.at
@@ -1572,13 +1455,45 @@ def _reversal_at(store, record):
         return None
     if record["parameter"] == "basal_rate":
         hour, minute = map(int, record["slot"].split(":"))
-        regimes = basal_slot_regimes(store.basal_events()).get((hour * 60 + minute) // 30, [])
+        regimes = history.slots.get((hour * 60 + minute) // 30, [])
     else:
-        regimes = dose_regimes(store.bolus_events(), record["parameter"])
+        regimes = history.doses(record["parameter"])
     for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
         if changed.start == start and _is_revert([previous, changed, returned], _MATURE_WINDOW):
             return returned.start
     return None
+
+
+def _end_open_records(store, trials, *, now, recorded_at):
+    """End every retained Trial record by one rule, oldest first (ADR 442).
+
+    ``reverted`` at the detector's reversal; else ``superseded`` at the first of
+    this reconcile's detected changes after the record, outside its own Edit and
+    inside its watch window; else ``expired_unreviewed`` once that window has
+    passed. Each saved assessment reads evidence only up to its ending instant.
+    Every detected change has a retained record by now, so each has an Edit.
+    The detector's history is read once for the whole pass.
+    """
+    records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+    edit_of, _ = _group_edits(records)
+    history = _ReversalHistory(store)
+    starts = sorted((datetime.fromisoformat(t.view.changed_at), edit_of[_review_id(t.view, t.block)])
+                    for t in trials)
+    for retained in records:
+        record = store.follow_up_record("trial", retained["id"])
+        if "kind" in record["ending"]:
+            continue
+        changed = datetime.fromisoformat(record["changed_at"])
+        expiry = changed + _WATCH_HORIZON
+        reversal = _reversal_at(store, record, history)
+        successor = next((start for start, edit in starts
+                          if changed < start < expiry and edit != edit_of[record["id"]]), None)
+        if reversal is not None:
+            capture_ending(store, record, kind="reverted", effective_at=reversal, recorded_at=recorded_at, data_cutoff=reversal)
+        elif successor is not None:
+            capture_ending(store, record, kind="superseded", effective_at=successor, recorded_at=recorded_at, data_cutoff=successor)
+        elif now >= expiry:
+            capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=expiry)
 
 
 def reconcile_follow_up(store, *, now, recorded_at):
@@ -1608,25 +1523,12 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
         _reconcile_plan(store, record, recorded_at)
     _confirm_from_read(store, recorded_at)
+    _end_open_records(store, trials, now=now, recorded_at=recorded_at)
     newest = trials[0] if trials else None
     later = newest is not None and (not frontier or frontier["detected_at"] is None or newest.view.changed_at > frontier["detected_at"])
-    old = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
-    if old and "kind" not in old["ending"]:
-        reversal = _reversal_at(store, old)
-        expiry = datetime.fromisoformat(old["changed_at"]) + _WATCH_HORIZON
-        if reversal is not None:
-            capture_ending(store, old, kind="reverted", effective_at=reversal, recorded_at=recorded_at, data_cutoff=now)
-        elif later and datetime.fromisoformat(newest.view.changed_at) < expiry:
-            capture_ending(store, old, kind="superseded", effective_at=datetime.fromisoformat(newest.view.changed_at), recorded_at=recorded_at, data_cutoff=now)
-        elif now >= expiry:
-            capture_ending(store, old, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     if later:
         identity = _review_id(newest.view, newest.block)
         frontier = store.advance_follow_up_frontier(identity, newest.view.changed_at, reconciled_input_revision=store.input_data_revision())
-        record = store.follow_up_record("trial", identity)
-        expiry = datetime.fromisoformat(record["changed_at"]) + _WATCH_HORIZON
-        if expiry <= now and "kind" not in record["ending"]:
-            capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     focus = store.active_focus()
     if focus:
         focus = _focus_identity(store, focus)
@@ -1709,4 +1611,4 @@ def reconcile_ingested_follow_up(store):
              + [row.t for row in store.bolus_events()] + [row.captured_at for row in store.settings_snapshots()])
     now = max(times) if times else datetime.now()
     with store.follow_up_transaction():
-        return reconcile_follow_up(store, now=now, recorded_at=datetime.now())
+        return reconcile_follow_up(store, now=now, recorded_at=wall_clock_now(after=store.latest_server_stamp()))

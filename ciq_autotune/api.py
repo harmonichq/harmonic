@@ -74,7 +74,7 @@ from .derived_artifacts import (
     rebuild_findings, rebuild_ic_history,
     rebuild_ic_block_evidence,
 )
-from .store import Store
+from .store import Store, wall_clock_now
 from .guidance import baseline_for, is_preference_subject
 
 logger = logging.getLogger(__name__)
@@ -107,6 +107,37 @@ DESTINATION_PAGES = tuple(f"{PAGE}{destination}" for destination in DESTINATIONS
 _KB_DIR = Path(__file__).resolve().parent.parent / "docs" / "kb"
 _KB_SLUG_RE = re.compile(r"[a-z0-9-]+")
 
+# ADR 450: a refused durable Plan, Trial, Focus or later-conclusion write names
+# its reason in a sentence, served beside its code as every other coded refusal
+# here already is. The keys are every code a lifecycle write can raise, plus the
+# handler's default; an unknown code is served as its own message.
+_RECONCILE_REFUSED = "Harmonic's change records could not be reconciled, so nothing was recorded."
+_REFUSAL_MESSAGES = {
+    "request_identity_mismatch": "This request was already recorded for a different change.",
+    "late_conclusion_mismatch": "A different later conclusion is already recorded for this Trial.",
+    "stale_input_revision": "New pump or sensor data arrived since this page was read.",
+    "stale_source": "The findings changed since this page was read.",
+    "ineligible_source": "This finding is not offering an action from the current read.",
+    "stale_draft": "The Plan draft changed since this page was read.",
+    "occupied_admission": "Another change is already being watched, or a recorded Plan is still pending.",
+    "missing_source_profile": "No pump profile has been read to record this Plan against.",
+    "ineligible_draft": "The Plan draft no longer matches the action this read offers.",
+    "nonpending_plan": "This Plan is no longer pending.",
+    "nonactive_subject": "This change is no longer the one being watched.",
+    "immature_trial": "This Trial is still maturing.",
+    "trial_not_expired": "This Trial did not expire unreviewed, so it takes no later conclusion.",
+    "transaction_aborted": "The save stopped partway, so nothing was recorded.",
+    "legacy_ending_unavailable": ("This earlier Focus ended before Harmonic saved endings, "
+                                  "so no ending can be recorded for it now."),
+    "unknown_request_subject": "This change has no record to save against, so nothing was recorded.",
+    "transaction_required": _RECONCILE_REFUSED,
+    "orphan_base_record": _RECONCILE_REFUSED,
+    "base_record_mismatch": _RECONCILE_REFUSED,
+    "invalid_reconciliation_identity": _RECONCILE_REFUSED,
+    "invalid_frontier_trial": _RECONCILE_REFUSED,
+    "lifecycle_conflict": "Another change was recorded at the same time, so nothing was saved.",
+}
+
 
 def _analysis_payload(result) -> dict:
     """Render the analysis with its backend-owned basal support floor."""
@@ -114,8 +145,10 @@ def _analysis_payload(result) -> dict:
 
 
 def _latest_instant(store) -> Optional[datetime]:
-    """The most recent data instant in ``store`` — the ``now`` trial detection uses
-    (mirrors ``summarize_trend``'s default so the pin guard sees the same anchor)."""
+    """The most recent data instant in ``store``, settings snapshots included: the
+    ``now`` this API's follow-up reads and writes use. It counts snapshots as the
+    ingestion reconcile does; the Outcomes trend's anchor does not
+    (``outcomes_trend.trend_watched_change``, #447), so the two can differ."""
     times = ([e.t for e in store.basal_events()]
              + [r.t for r in store.cgm_readings()]
              + [b.t for b in store.bolus_events()]
@@ -714,21 +747,20 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return cache.get_or_compute(("outcomes", window), compute)
 
     @app.get("/api/outcomes/trend")
-    def outcomes_trend_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
-        """The Outcomes trend (#131): a behavioral + glycemic scorecard across rolling
-        ``window``-day windows (oldest→newest, index-aligned), each behavior and metric
-        emitting a series so the frontend can show movement. Behaviors use the fixed
-        current-profile ISF and each meal's Dose-stamped I:C across all windows. A third
-        versioned result, standalone like ``/api/outcomes`` — not a field on the
-        AnalysisResult."""
-        from .outcomes_trend import summarize_trend
+    def outcomes_trend_endpoint(_: None = Depends(require_token)) -> dict:
+        """The one active watched change (#244) that Diagnose's watch dock reports:
+        ``{"watched_change": …}``, a Trial or Focus view or ``null``, at the Outcomes
+        trend's own anchor (#447). The trend's rolling-window series are the CLI
+        ``outcomes-trend``'s; no desk surface reads them, so this neither computes nor
+        serves them. The watched change does not depend on a window (#18), so the
+        route takes none, and its cache and warm key carry none."""
+        from .outcomes_trend import trend_watched_change
 
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                return summarize_trend(store, window_days=window).to_dict()
+        def watched(store) -> dict:
+            view = trend_watched_change(store)
+            return {"watched_change": view.to_dict() if view is not None else None}
 
-        key = ("outcomes-trend", window)
-        return fixed_response(fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict()))
+        return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1", watched))
 
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
@@ -859,7 +891,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             try:
                 store.save_guidance_preference(
-                    subject, decided_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    subject, decided_at=wall_clock_now().strftime("%Y-%m-%d %H:%M:%S"),
                     reason=reason, expected_revision=current["input_revision"], **baseline)
             except ValueError as error:
                 raise HTTPException(status_code=409, detail=str(error)) from error
@@ -1314,10 +1346,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     # --- carb-log prompt review queue (#128) -------------------------------
     # Prompts are derived LIVE over the last 7 days (no stored prompt rows): the
-    # `missed-meal` classifier's matched rises + every sub-70 low, minus anything
-    # already answered in prompt_responses. Answering 'carbs' creates the carb
-    # entry AND the response row in ONE transaction (never one without the other),
-    # so the delete-resurrects invariant holds. No bulk-answer path exists.
+    # `missed-meal` classifier's matched rises that no over-treated low's rebound
+    # owns (an owned rise is explained by its low, ADR 448) + every sub-70 low,
+    # minus anything already answered in prompt_responses. Answering 'carbs'
+    # creates the carb entry AND the response row in ONE transaction (never one
+    # without the other), so the delete-resurrects invariant holds. No bulk-answer
+    # path exists.
 
     _PROMPT_DETECTORS = ("missed-meal", "low")
     # ``false-low`` (#381) is a low-prompt-only answer: it records that the sub-70
@@ -1510,7 +1544,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                         if source is not None and source["input_revision"] != store.input_data_revision():
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = _latest_instant(store) or datetime.now()
-                        recorded_at = datetime.now()
+                        recorded_at = wall_clock_now(after=store.latest_server_stamp())
                         admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
                                      if reconcile else None)
                         record = mutate(store, admission, source, now, recorded_at)
@@ -1538,7 +1572,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
             with Store.open_queryonly(db_path) as store:
                 current = follow_up_read(store)
-            detail = {"code": getattr(error, "reason", "lifecycle_conflict"), **current}
+            code = getattr(error, "reason", "lifecycle_conflict")
+            detail = {"code": code, "message": _REFUSAL_MESSAGES.get(code, code), **current}
             raise HTTPException(status_code=409, detail=detail if durable else str(error))
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error))
@@ -1574,7 +1609,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.put("/api/plan")
     def put_plan_endpoint(items: list = Body(..., embed=True), _: None = Depends(require_token)) -> dict:
-        updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        updated_at = wall_clock_now().strftime("%Y-%m-%d %H:%M:%S.%f")
         with Store.open(db_path) as store:
             try:
                 store.save_plan_draft(items, updated_at)
@@ -1627,10 +1662,22 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
+        from .guidance import subject_title
         from .watched_change import with_plan_verdicts
+
+        def named(record):
+            # Each recorded subject's served name, computed on read and never
+            # stored (ADR 451). Only an available context records subjects.
+            context = record["decision_context"]
+            if context["state"] != "available":
+                return record
+            titles = [subject_title(subject) for subject in context["subjects"]]
+            return {**record, "decision_context": {**context, "subject_titles": titles}}
+
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
-            return {"history": with_plan_verdicts(store, store.follow_up_records("plan")),
+            return {"history": [named(record) for record in
+                                with_plan_verdicts(store, store.follow_up_records("plan"))],
                     **follow_up_read(store)}
 
     @app.post("/api/plan/history/withdraw")
@@ -1820,7 +1867,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def warm_roster():
         return (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
+            ("outcomes-trend", outcomes_trend_endpoint),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
             ("explore-time-of-day", explore_time_of_day_endpoint),

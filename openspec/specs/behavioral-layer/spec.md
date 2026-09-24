@@ -262,7 +262,8 @@ explicit witness and SHALL NOT fall back to the trigger when it is missing.
 Legacy occurrences SHALL retain their existing membership behavior. New lever
 metadata SHALL use Meals display affinity with a custom `sequences` recurrence
 population; this SHALL NOT charge sequence counts to a legacy Exposure clean-rate
-account. Neither new lever SHALL enter the existing Verify behavior-trend roster.
+account. Neither new lever SHALL enter the CLI outcomes trend's behavior roster
+(`summarize_trend` `behaviors`).
 Legacy levers SHALL retain their existing rollup mechanism using final winning counts.
 
 #### Scenario: Analyzer output reaches a scoped finding
@@ -284,8 +285,8 @@ Legacy levers SHALL retain their existing rollup mechanism using final winning c
 
 #### Scenario: Sequence counts do not masquerade as meal clean-rate counts
 - **GIVEN** a sequence owns several episodes while legacy levers retain other winning occurrences
-- **WHEN** clean-rate accounts and the Verify behavior-trend roster are produced
-- **THEN** sequence counts enter neither the legacy Exposure accounts nor a new trend tile
+- **WHEN** clean-rate accounts and the CLI outcomes trend's behavior roster (`summarize_trend` `behaviors`) are produced
+- **THEN** sequence counts enter neither the legacy Exposure accounts nor a new behavior-roster row
 - **AND** legacy winners keep their existing rollup mechanism without converting the noun sequences to an Exposure
 
 ### Requirement: Habit associations preserve bounded episode ownership
@@ -574,10 +575,12 @@ outranked on an unclaimed row as the roster maps it, with the claimant's entry
 fired on a claimed row. Each entry SHALL carry the classifier's recorded sentence
 at that anchor only when that recorded verdict reads as the entry's verdict (or
 as fired for an entry an unclaimed Pattern row maps to outranked), and a null
-sentence otherwise. A correction cluster SHALL be judged by its Correction
-stacking verdict. The Missed / unannounced meal comparison's announced-meal detail
-SHALL serve its bolus's dose and carbs, its Arc peak, and a reason with no cause
-and no habit entries.
+sentence otherwise. On a claimed row, the claimant's entry SHALL carry a null
+sentence when its recorded sentence is the cause's text, so the reason serves that
+sentence once, as the cause's text. A correction cluster SHALL be judged by its
+Correction stacking verdict. The Missed / unannounced meal comparison's
+announced-meal detail SHALL serve its bolus's dose and carbs, its Arc peak, and a
+reason with no cause and no habit entries.
 
 #### Scenario: A meal claimed by Meal bolus short inside a Pattern
 
@@ -598,6 +601,18 @@ and no habit entries.
   unclaimed Pattern row's verdict is its highest-precedence entry or clean when it
   has none, and a claimed row is fired
 - **AND** every served sentence's recorded verdict reads as its entry's verdict
+
+#### Scenario: A claimed row serves its sentence once
+
+- **GIVEN** analyzer output in which a claimant's recorded sentence at the claimed
+  anchor is also its attributed narrative, as for Carb undercount, Over-treated
+  low, Correction on active insulin, Correction stacking and Missed / unannounced
+  meal
+- **WHEN** a claimed Occurrence is selected in a single-habit case file and in a
+  Pattern case file
+- **THEN** the cause carries that sentence as its text
+- **AND** the claimant's habit entry carries a null sentence, and no habit entry's
+  sentence equals the cause's text
 
 ### Requirement: The findings projection serves each count-bearing row's count sentences
 
@@ -637,3 +652,240 @@ change.
 - **THEN** every member has exactly one entry, the two Patterns counted in meals
   serve different outcome words, and the fixture-only browser mirror answers the
   same sentences window for window
+
+### Requirement: A Carb-log prompt asks about eating only at a rise no over-treated low owns
+
+The Carb-log prompt queue SHALL raise no "did you eat here?" prompt for a High
+that the shared evaluation records as owned by an over-treated low's rebound,
+whatever the missed-meal classifier returns for it. The queue SHALL read that
+ownership from the shared evaluation walk over the queue's own window, under the
+same scenario configuration and the same low-prompt answers the Scenario
+evaluation reads, including their endpoint rule. It SHALL NOT judge a low, a
+rebound or ownership itself. A High that no low owns SHALL be judged exactly as
+before. Every sub-70 low SHALL keep its own "did you treat this low?" prompt. A
+low refuted by a `no` answer owns nothing, so its rebound High SHALL be judged on
+its own. When an eating-sequence candidate wins an Episode and the shared
+evaluation rebuilds that Episode's attribution, the rebuilt attribution SHALL keep
+the Episode's owned Highs, as it keeps the Episode's anchor verdicts. No detector,
+staging predicate, cap, support floor, segmentation rule, rebound horizon, bar or
+meal stop, or context-gate default SHALL change.
+
+#### Scenario: A slow rebound after a sub-70 low raises only the low's prompt
+
+- **GIVEN** a synthetic day on which a sub-70 low rebounds, with no bolus, into a
+  High whose 250 mg/dL crossing comes more than 90 minutes after the nadir
+- **WHEN** the prompt queue derives its candidates
+- **THEN** it raises one "did you treat this low?" prompt at the nadir
+- **AND** it raises no "did you eat here?" prompt for the High
+
+#### Scenario: A near-low's rebound raises no prompt
+
+- **GIVEN** a 72 mg/dL nadir that rebounds into a High, within 90 minutes of the
+  nadir or later
+- **WHEN** the prompt queue derives its candidates
+- **THEN** it raises no prompt for the near-low or for the High
+
+#### Scenario: A refuted low's rebound High is asked about
+
+- **GIVEN** the slow rebound above and a `no` answer to its low's prompt that was
+  recorded by the queue's endpoint
+- **WHEN** the prompt queue derives its candidates
+- **THEN** it raises a "did you eat here?" prompt at the High's onset
+
+#### Scenario: A sequence-won Episode keeps its ownership record
+
+- **GIVEN** a synthetic week in which a High-carb sequence finding is supported and
+  its candidate wins the Episode of a High that an over-treated near-low owns
+- **WHEN** the shared evaluation runs and the prompt queue derives its candidates
+- **THEN** that Episode's attribution still records the High as owned
+- **AND** the queue raises no "did you eat here?" prompt for it
+
+#### Scenario: A rise beyond the rebound is still asked about
+
+- **GIVEN** a sub-70 low whose rebound settles in range before a later unbolused
+  rise crosses 250 mg/dL
+- **WHEN** the prompt queue derives its candidates
+- **THEN** it raises a "did you eat here?" prompt at that rise's onset
+
+### Requirement: Every classifier judges the context gate under its scenario configuration
+
+Every behavioral classifier that consults the shared context gate SHALL judge it
+under the scenario configuration it was given, never under the gate's defaults,
+so a changed gate low line or lookback reaches its verdict. This includes late
+bolus and carb undercount.
+
+#### Scenario: A configured gate moves the late-bolus and carb-undercount verdicts
+
+- **GIVEN** a from-flat pre-bolus rise whose only low reading sits outside the
+  default gate but inside a configured lookback or under a configured low line
+- **WHEN** the late-bolus or carb-undercount classifier judges the meal under that
+  configuration
+- **THEN** the context gate explains the rise and the classifier does not match,
+  with silence reason `upstream_cause`
+- **AND** under the default configuration the same meal still matches
+
+### Requirement: Every reader-facing definition of upstream cause names both of its sources
+
+The Guide's silence article, served from the catalog, and the Glossary's Quiet
+entry SHALL define upstream cause (the Quiet stretch's "explained" count) by both
+of its sources: an observable recent low or defensive suspend that explains the
+move, and the rebound of an over-treated low that owns the rise. Neither SHALL
+describe it as the context gate alone. No label, evidence tier, order or other
+entry of either SHALL change.
+
+#### Scenario: The catalog serves both sources
+
+- **WHEN** the catalog is read
+- **THEN** its `upstream_cause` silence reason's body names a recent low or
+  defensive suspend and an over-treated low's rebound
+
+#### Scenario: The Glossary's Quiet entry names both sources
+
+- **WHEN** the Glossary's Episode Log group is read
+- **THEN** the Quiet entry's "explained" count names a recent low or defensive
+  suspend and an over-treated low's rebound
+
+### Requirement: A Pattern case file judges only the habit members in its rate family
+
+A Pattern case file SHALL judge each roster row, and each selected Occurrence's
+reason, by exactly the Pattern's habit members whose lever's rate family is the
+Pattern's own rate family, where a lever's rate family is its evidence-population
+policy's closed recurrence account. A member outside that family — a Sequence
+habit, which has no rate family, or Correction stacking, which is counted over
+correction clusters, under Lows after correcting highs — SHALL contribute no state
+to a row's verdict and no habit entry to a reason, while it MAY still claim a row as
+one of the Pattern's rate levers and be named as that row's cause. The fixture-only
+Pattern case-file mirror the browser gates read SHALL apply the same rule, reading
+each lever's rate family from a table its fixture generator freezes from that same
+policy, and SHALL be held to the Python case producer by that producer's frozen
+answers for rosters that admit an out-of-family member.
+
+#### Scenario: An out-of-family member is judged by neither side
+
+- **GIVEN** the browser-gate inputs with one added scenario Pattern for Correction
+  stacking, whose real roster then carries `habit:correction_stacking` under Lows
+  after correcting highs, and likewise one for High-carb sequence under Highs after
+  meals
+- **WHEN** the Python case producer and the fixture-only mirror each serve that
+  Pattern's clock case, whole and selected at its first Occurrence
+- **THEN** both serve the same verdict counts and the same verdict and member for
+  every row, in order
+- **AND** both selected reasons carry habit entries for in-family levers only —
+  Correction on active insulin; Carb undercount and Late bolus — and are equal
+
+#### Scenario: The mirror's family table is the policy's
+
+- **GIVEN** the committed event-comparison capture
+- **WHEN** its lever rate-family table is regenerated from the evidence-population
+  policy
+- **THEN** it carries one entry per Lever, equal to that Lever's rate family or
+  null, and its drift check fails when the committed table differs
+
+### Requirement: Manufactured browser-gate rows carry only shapes their producer can serve
+
+Every exposure Occurrence the Diagnose workstation fixture generator manufactures
+SHALL carry only what the real exposure feed can serve for its family: the anchor
+kind and label the episode view serves for that family (low · Low, meal · Meal
+bolus, high · High, correction · Correction); exactly the classifier verdicts the
+attribution step judges at that anchor kind (a low: Over-treated low and Correction
+on active insulin; a meal: Carb undercount, Late bolus and Meal over-delivery; a
+high: Missed / unannounced meal and Meal bolus fell short; a correction: Correction
+stacking, and only as its episode's stacking dose or last correction); each silence
+reason from the closed silence-reason set; a claim only by a lever the attribution
+step can drive from that anchor kind, so a correction row is claimed by Correction
+stacking and never by Correction on active insulin, which only a low drives; on a
+claimed row, its claiming lever's verdict matched, with that verdict's sentence as
+the row's cause text, and every other judged classifier unmatched; on an unclaimed
+row, every judged classifier unmatched and no cause text; and on a High, an anchor
+glucose at or above the high-anchor threshold. A manufactured case-file member its
+lever claims SHALL carry its recorded sentence as its cause text, as the producer's
+attribution does. The event-comparison capture's comparison rows SHALL judge at each
+anchor only the classifiers the attribution step judges at that anchor kind. Each
+row's identity, time, date, dose, carbs, worst reading and state SHALL be
+unchanged, and so SHALL the Pattern roster. The findings projection SHALL move only
+as the unchanged projection reads these rows: the claimed rows' verdict bands, and
+the rows, appearances, chips, counts and sentences the correction rows' Correction
+stacking claim moves, each recorded in the change's design.
+
+#### Scenario: Every manufactured row is a servable shape
+
+- **GIVEN** the committed workstation payload
+- **WHEN** each of its exposure Occurrences is read
+- **THEN** its kind, label and judged classifier set are its family's
+- **AND** no verdict names a classifier that is not a Lever or a silence reason
+  outside the closed set
+- **AND** a claimed row's claiming lever is one its anchor kind can drive, and that
+  lever's verdict reads matched with its detail equal to the row's text
+- **AND** a High's anchor glucose reaches the high-anchor threshold
+
+#### Scenario: The projection moves only as the rows require
+
+- **GIVEN** the workstation payload before and after its rows took these shapes
+- **WHEN** the findings projection is served in the whole day and every browser
+  window
+- **THEN** the Pattern roster, and every row other than Late bolus, Missed /
+  unannounced meal, Over-treated low, Correction on active insulin and Correction
+  stacking, keep their membership, order, sentences and headline
+- **AND** in the whole day Late bolus reads 2 fired where it read 2 outranked,
+  Missed / unannounced meal 3 fired where it read 3 outranked, and Over-treated low
+  15 fired and 3 outranked where it read 18 and 0
+- **AND** in the whole day Correction on active insulin appears in lows only, with
+  3 episodes, 3 fired and 15 outranked, and a Correction stacking row follows it,
+  showing up in 2 of 2 correction clusters
+
+#### Scenario: A claimed meal's cause reads as its own lever
+
+- **GIVEN** the Highs after meals clock case the projection fixture freezes
+- **WHEN** its claimed meal is selected
+- **THEN** its anchor kind is meal and its cause text is the Late bolus sentence
+
+### Requirement: The browser-gate findings mirror serves the server's scoped Pattern list or fails
+
+For every scoped window the browser gates request of the fixture findings mirror,
+the gates SHALL supply the server's own Pattern roster for that window and the
+server's own Pattern case files for each Pattern the server charts there, frozen by
+the projection fixture generator from the same browser inputs as the whole-day
+roster. The mirror SHALL then serve the server's Pattern rows, folded causes, counts
+and chip counts for that window, and the fixture Pattern case-file mirror SHALL
+answer those Patterns' scoped case files exactly as frozen. A scoped request for a
+window with no frozen roster, a scoped Pattern case file that is not frozen, or a
+selection inside a scoped Pattern case file SHALL fail naming what is missing,
+never answer from the whole day or with no Patterns.
+
+#### Scenario: A scoped browser window carries the server's Patterns
+
+- **GIVEN** the browser-gate payload and the 00:00–06:00, 02:15–04:45 and
+  12:00–18:00 windows
+- **WHEN** the mirror projects each window through the browser population
+- **THEN** its Pattern rows, folded causes, counts and chip counts equal the
+  server's for that window
+- **AND** each scoped Pattern row's prepared header carries the frozen scoped case
+  file's summary and verdict counts
+
+#### Scenario: Any other scoped request fails by name
+
+- **GIVEN** the browser-gate payload
+- **WHEN** the mirror is asked for an unfrozen window, or the Pattern mirror for an
+  unfrozen scoped case file or a scoped selection
+- **THEN** each request fails with an error naming the missing window or coordinate
+
+### Requirement: The browser-gate test desk projects the server's own inputs
+
+The browser gates SHALL project their findings queue from the same inputs the
+frozen Pattern rosters are built from: the analysis with its tuning levers, the
+scenarios, the analysis generation, and the payload's exposures without
+alteration. The fixture findings mirror's answer SHALL then equal the server's
+projection of those inputs byte for byte, row order included, in the whole day and
+in each frozen scoped window, and the desk suite's analysis and scenarios reads
+SHALL serve those same frozen inputs.
+
+#### Scenario: The test desk's queue is the server's, in order
+
+- **GIVEN** the browser-gate payload and the frozen browser inputs
+- **WHEN** the mirror projects the whole day and each frozen scoped window through
+  the browser population
+- **THEN** each answer equals the server's frozen projection of the same inputs
+  byte for byte, row order included
+- **AND** in the whole day Basal 07:00 (basal:420-450), Over-treated low, Late bolus and Correction
+  on active insulin carry their server prices (39, 28, 18 and 20), and the queue
+  leads with Basal 07:00 (basal:420-450), then Over-treated low, then the Patterns

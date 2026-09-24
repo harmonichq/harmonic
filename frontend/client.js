@@ -11,6 +11,7 @@
 // idiom and naming them here.
 export {
   ApiTransportError,
+  failureMessage,
   // the desk's own clock and recorded-day bounds
   fetchStatus,
   fetchDayNavigator,

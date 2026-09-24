@@ -1,4 +1,4 @@
-"""Build the Verify workstation's replay fixtures through the model's own code.
+"""Build the Trial roster replay fixtures through the model's own code.
 
 Two outputs, both derived from one store so the mock side and the app side render
 the SAME numbers (mock-to-app-process.md, R2):

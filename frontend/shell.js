@@ -15,7 +15,7 @@ export const DESTINATIONS = [
   ['day', 'Day'],
 ];
 
-export const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
+export const ADVISORY = 'Advisory only. Review with your clinician before changing pump settings.';
 
 // The footer utilities, in the locked order. Pump settings is deliberately
 // absent: it is reached from Changes (HV2-12), never from this strip.

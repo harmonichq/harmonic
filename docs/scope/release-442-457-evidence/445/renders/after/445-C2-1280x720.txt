@@ -1,0 +1,73 @@
+SYNTHETIC — after · tree dd5a93bb · store showcase · 445-C2 · 1280x720
+URL: http://127.0.0.1:8791/diagnose?subject=finding%3Aover_treated_low&occurrence=o_28b23a9c1b6fa5ab54f21c4b88b26ea4&window=720-1080
+Element: viewport
+Focused: <button class="linkbtn" data-action="day" data-date="2024-06-30" data-subject="carb:1" data-title="Log carbs · Jun 30 12:07" data-utility-from="carbs" data-utility-label="Log carbs"> "Open Jun 30"
+Note: after a reload, the same entry's Open Day and Day return (drill kept); focus on the entry's Open Day landed
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+OVER-TREATED LOW
+Ranks among this window's findings.
+Showed up in 1 of 4 lows in this window.
+Full
+Keep
+LOG CARBS
+at Sep 24 · 08:21
+Close
+AMOUNT
+
+Tap the number for an exact count · tap ~ for a rough guess.
+
+4 g
+~
+8 g
+~
+12 g
+~
+Other amount
+Log
+~ est
+Ate something, don't know how much
+WHEN
+Now
+15m ago
+30m ago
+1h ago
+Custom…
+
+One tap logs · defaults to now.
+
+LOGGED
+1
+Jun 30 12:07
+4 g
+Logged by hand
+Open Jun 30
+Remove
+Advisory only. Review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

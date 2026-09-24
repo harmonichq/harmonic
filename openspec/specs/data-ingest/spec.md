@@ -16,6 +16,7 @@ Tandem Source rejects event-log requests spanning more than 31 days, so the inge
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Events are keyed on the pump's monotonic sequence number, not timestamp, for idempotency
 
 The system SHALL satisfy the following:
@@ -26,6 +27,7 @@ Every event the pump emits carries a stable sequence number set once by the pump
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Pump event timestamps arrive as UTC and must be converted; CGM timestamps arrive as local wall-clock and must not be converted
 
 The system SHALL satisfy the following:
@@ -36,6 +38,7 @@ The pump feed (basal, bolus, IOB events) carries `eventTimestamp` as a tz-aware 
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: A configured timezone is mandatory; a fetch refuses to run without it
 
 The system SHALL satisfy the following:
@@ -46,6 +49,7 @@ Every basal profile is a wall-clock schedule (00:00, 00:30, etc.), so the analys
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The CGM source is the `LidCgmData*` family, not `LidBgReadingTaken`
 
 The system SHALL satisfy the following:
@@ -56,6 +60,7 @@ The dense continuous-glucose series (~288 readings per day) comes from `LidCgmDa
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: No dense insulin-on-board series exists in this feed; bolus-only IOB must be reconstructed
 
 The system SHALL satisfy the following:
@@ -66,3 +71,48 @@ Tandem Source has no dense, continuous IOB telemetry (the old event-based IOB se
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+### Requirement: A fetch window ends no earlier than the pump's current date
+
+The scheduled fetch's window, and `harmonic fetch --days N`'s, SHALL end no
+earlier than the calendar date of the pump's wall clock at that fetch, whatever
+zone the process runs in. It SHALL end on the later of that date and the current
+UTC date, because the vendor request labels its end as a UTC day and nothing
+records which day the vendor reads. It SHALL start the window length before its
+end: 120 days for the scheduled fetch, N days for the command.
+
+#### Scenario: A server a day ahead of the pump asks through the later date
+
+- **GIVEN** the server process's calendar date is a day later than the pump's
+- **WHEN** a scheduled fetch attempt runs
+- **THEN** the pull is asked for a window ending on the later of the pump's
+  current date and the UTC date
+- **AND** starting 120 days before that end
+
+#### Scenario: A server a day behind the pump still asks for the pump's day
+
+- **GIVEN** the server process's calendar date is a day earlier than the pump's
+- **WHEN** a scheduled fetch attempt runs
+- **THEN** the pull is asked for a window ending no earlier than the pump's
+  current date, so that day's records are requested
+
+#### Scenario: The fetch command ends no earlier than the pump's day
+
+- **GIVEN** the process's calendar date is a day earlier than the pump's
+- **WHEN** `harmonic fetch --days 3` runs
+- **THEN** the pull is asked for a window ending no earlier than the pump's
+  current date and starting three days before that end
+
+### Requirement: A fetch refuses an unloadable time zone before any network call
+
+A fetch SHALL refuse to run when `TIMEZONE_NAME` loads no time zone (an unknown
+name, a malformed name or a region name such as `America`), as it refuses when
+the variable is unset: before any import of the sync extra,
+credential read or network call, with an error naming `TIMEZONE_NAME`.
+
+#### Scenario: An unloadable zone is refused before the login
+
+- **GIVEN** `TIMEZONE_NAME` is set to a name that loads no time zone
+- **WHEN** a fetch runs
+- **THEN** it raises an error naming `TIMEZONE_NAME` without reading credentials
+  or contacting the vendor

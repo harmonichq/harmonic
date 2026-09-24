@@ -106,10 +106,11 @@ def classify_late_bolus(
        the bolus. Too sparse to fit → **not late** (can't judge; ``NOT_IN_DATA``).
     2. Slope at/under ``rising_slope`` → BG was ~flat, the bolus led the rise →
        **not late** (``OBSERVED`` — the flat pre-bolus curve is a hard fact).
-    3. Slope rising, but the **context gate** finds an observable upstream cause (a
-       recent low and/or a defensive suspend) → the rise is a recovery, not a meal
-       climb → **not late** (``INFERRED`` — the gate's trigger is observed, but
-       attributing the rise to it rather than to a meal is a shape inference).
+    3. Slope rising, but the **context gate**, judged under ``scenario_config``,
+       finds an observable upstream cause (a recent low and/or a defensive suspend) →
+       the rise is a recovery, not a meal climb → **not late** (``INFERRED`` — the
+       gate's trigger is observed, but attributing the rise to it rather than to a
+       meal is a shape inference).
     4. Slope rising, gate finds nothing, but a **completed carb bolus** landed
        within :data:`PRIOR_CARB_BOLUS_LOOKBACK_MIN` minutes before this one → the
        rise is owned by that earlier dose's fast-carb excursion, still in flight,
@@ -149,7 +150,7 @@ def classify_late_bolus(
         return LateBolusVerdict(
             matched=False,
             detail=(
-                f"glucose was ~flat ({slope:.1f} mg/dL/min) before the bolus — the "
+                f"glucose was ~flat ({slope:.1f} mg/dL/min) before the bolus, so the "
                 "dose led the rise"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -159,13 +160,13 @@ def classify_late_bolus(
             gate=None,
         )
 
-    gate = upstream_cause(meal.t, cgm_readings, basal_events)
+    gate = upstream_cause(meal.t, cgm_readings, basal_events, scenario_config=scenario_config)
     if gate.explained:
         return LateBolusVerdict(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but "
-                f"{gate.detail} — not a late meal bolus"
+                f"{gate.detail}; this is not a late meal bolus"
             ),
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=SilenceReason.UPSTREAM_CAUSE,
@@ -182,7 +183,7 @@ def classify_late_bolus(
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but a "
                 f"carb bolus ({prior.carbs:.0f} g) {mins_before:.0f} min earlier is "
-                "still absorbing — this rise is owned by that earlier dose, not a "
+                "still absorbing, so this rise is owned by that earlier dose, not a "
                 "late meal bolus"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -197,8 +198,8 @@ def classify_late_bolus(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but BG "
-                f"was already {bg_at_bolus:.0f} mg/dL (clearly high) at bolus time — "
-                "rise is from a prior high baseline, not a from-flat meal spike"
+                f"was already {bg_at_bolus:.0f} mg/dL (clearly high) at bolus time, so "
+                "the rise is from a prior high baseline, not a from-flat meal spike"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             silence_reason=SilenceReason.PRIOR_HIGH_BASELINE,
@@ -211,7 +212,7 @@ def classify_late_bolus(
         matched=True,
         detail=(
             f"glucose was already rising {slope:.1f} mg/dL/min before the bolus, with "
-            "no recent low or suspend to explain it — bolusing ~15 min before eating "
+            "no recent low or suspend to explain it; bolusing ~15 min before eating "
             "would blunt the spike"
         ),
         evidence_tier=EvidenceTier.INFERRED,

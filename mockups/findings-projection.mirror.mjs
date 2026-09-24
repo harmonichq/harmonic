@@ -397,7 +397,7 @@ function icRows(analysis, window) {
       register,
       kind: 'setting',
       parameter: 'carb_ratio',
-      title: title(`I:C ${label}`, register, direction),
+      title: title(`Carb ratio ${label}`, register, direction),
       label: block.label ?? null,
       priority: asserts ? leverPriority(analysis, 'carb_ratio') : null,
       span: { start_min: startMin, end_min: endMin, label },
@@ -430,7 +430,7 @@ function isfRows(analysis) {
       register,
       kind: 'setting',
       parameter: 'isf',
-      title: title('ISF', register, direction),
+      title: title('Correction factor', register, direction),
       label: entry.label ?? null,
       priority: entry.asserts_move === true ? leverPriority(analysis, 'isf') : null,
       span: null,
@@ -954,9 +954,14 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
   rows = [...rows, ...findingRows(exposures, scenarios, query),
     ...historyRows(analysis, query)];
-  const outcomePatterns = inputs.outcome_patterns_by_window?.[
-    bounds ? `${bounds.start_min}-${bounds.end_min}` : 'whole_day'
-  ];
+  const windowKey = bounds ? `${bounds.start_min}-${bounds.end_min}` : 'whole_day';
+  // A supplied per-window roster is the server's, frozen per window; a narrowed
+  // window it lacks has no server answer to mirror, so it fails by name (ADR 454).
+  if (query.scoped && inputs.outcome_patterns_by_window
+      && !Object.hasOwn(inputs.outcome_patterns_by_window, windowKey)) {
+    throw new Error(`findings mirror has no frozen Pattern roster for window ${windowKey}`);
+  }
+  const outcomePatterns = inputs.outcome_patterns_by_window?.[windowKey];
   const patterns = new Map();
   {
     const byId = new Map(rows.map((r) => [r.id, r]));

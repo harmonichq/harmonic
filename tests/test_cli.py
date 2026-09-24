@@ -120,6 +120,29 @@ class DbResolutionTest(unittest.TestCase):
         self.assertIn("/somewhere/else/mine.db", banner.getvalue())
 
 
+class FetchWindowTest(unittest.TestCase):
+    """ADR 443: ``fetch --days`` ends its window on the pump's day or UTC's,
+    whichever is later, with the process a day behind the pump."""
+
+    def test_days_window_ends_no_earlier_than_the_pump_day(self):
+        from datetime import timedelta
+        from unittest.mock import patch
+
+        from tests.test_wall_clock import (
+            PROCESS_ZONE, PUMP_ZONE, assert_window_end, pin_process_zone, pin_pump_zone,
+        )
+        pin_process_zone(self, PUMP_ZONE)
+        pin_pump_zone(self, PROCESS_ZONE)
+        with tempfile.NamedTemporaryFile(suffix=".db") as db, \
+                patch("ciq_autotune.cli._load_env"), \
+                patch("ciq_autotune.sync.pull_from_tconnect", return_value={}) as pull, \
+                redirect_stdout(StringIO()):
+            self.assertEqual(main(["fetch", "--days", "3", "--db", db.name]), 0)
+        end = pull.call_args.kwargs["end"]
+        assert_window_end(self, end, PROCESS_ZONE)
+        self.assertEqual(pull.call_args.kwargs["start"], end - timedelta(days=3))
+
+
 class CliIdentityTest(unittest.TestCase):
     def test_help_names_harmonic_as_the_program(self):
         output = StringIO()

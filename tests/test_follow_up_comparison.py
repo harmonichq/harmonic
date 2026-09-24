@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from ciq_autotune.follow_up_comparison import capture_comparison_context, compare_follow_up
+from ciq_autotune.follow_up_comparison import capture_comparison_context, compare_follow_up, comparison_envelope
 from ciq_autotune.store import Store
 from ciq_autotune.events import CgmReading
 from tests.test_outcomes_trend import _FakeStore, _snapshot_with_ic
@@ -73,6 +73,19 @@ class FollowUpComparisonTest(unittest.TestCase):
         result = self.compare(store, record, datetime(2026, 6, 12), context_mode="current")
         self.assertEqual(result["context_mode"], "current")
         self.assertTrue(all(r["assessment"]["state"] == "context" for r in result["outcomes"]))
+
+    def test_exported_envelope_is_the_early_unavailable_return(self):
+        store = self.store(cgm_ramp(11, 15, 40, 180, 1.4, 140))
+        available = capture_comparison_context(store, at=datetime(2026, 6, 11), input_revision=1)
+        for context, reason in (({"version": "386:1", "state": "unavailable", "reason": "not_recorded"},
+                                 "missing_comparison_context"),
+                                ({**available, "code_version": "retired"}, "unsupported_retained_execution")):
+            with self.subTest(reason=reason):
+                record = {"kind": "trial", "id": "isf-all-20260610000000", "parameter": "isf", "slot": None,
+                          "changed_at": "2026-06-10 00:00:00", "comparison_context": context}
+                returned = compare_follow_up(store, record=record, data_cutoff=datetime(2026, 6, 12),
+                                             input_revision=2)
+                self.assertEqual(comparison_envelope(context, "retained", reason), returned)
 
     def test_retained_context_survives_profile_change_and_record_is_unchanged(self):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot

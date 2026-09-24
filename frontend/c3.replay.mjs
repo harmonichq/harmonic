@@ -72,11 +72,19 @@ async function readiness(page, kind = 'trial') {
       assert.ok(copy.includes(arm.unit));
       assert.ok(copy.includes(String(arm.observed)), 'the served count stays readable');
       if (arm.verdict) {
-        assert.equal(seen(await node.locator('[data-opportunity-verdict]').getAttribute('data-opportunity-verdict')), arm.verdict);
+        const verdict = node.locator('[data-opportunity-verdict]');
+        assert.equal(seen(await verdict.getAttribute('data-opportunity-verdict')), arm.verdict);
+        // #449 amendment (ADR 450): the served verdict prints as a word.
+        assert.notEqual(seen(await verdict.innerText()).split(' · ')[0].trim(), arm.verdict,
+          'a Pattern arm names its opportunity verdict in words, never its served value');
         assert.ok(copy.includes(`${arm.count} of ${arm.gate}`));
         assert.doesNotMatch(seen(await node.locator('[data-elapsed]').innerText()), /of .*days elapsed/);
       }
-      if (arm.reason) assert.ok(copy.includes(arm.reason));
+      // #449 amendment (ADR 450): a served reason prints in words, so the arm's
+      // criterion line names it and is never the raw code.
+      const criterion = seen(await node.locator('[data-criterion]').innerText()).trim();
+      assert.ok(criterion, 'each arm states its criterion');
+      if (arm.reason) assert.notEqual(criterion, `Not met — ${arm.reason}.`, 'a served reason prints in words, never its code');
     }
   }, "readiness");
   return context;

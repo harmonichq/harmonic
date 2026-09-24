@@ -9,7 +9,7 @@ fresh scratch directories. Never point a command at a live wearer database.
 
 The ticket branch was merged before the amendment work, carrying #342's twelve
 sequence recipes and the rail's 183 issued / 168 active / 15 retired inventory.
-The desk ledger now holds 171 issued entries: 152 active and 19 permanent
+The desk ledger now holds 193 issued entries: 174 active and 19 permanent
 retirements. `acceptance.py inventory()` pins that literal and checks it before
 any story in every wrapper replay. #413 added S113–S117 on 2026-09-22:
 - S113, the lane key and verdict paint;
@@ -20,6 +20,8 @@ any story in every wrapper replay. #413 added S113–S117 on 2026-09-22:
 The #422–#434 release added 24 stories on 2026-09-23: S121–S122, S124–S127,
 S133, S136–S140, S142–S143 and S145–S154. Its re-freeze header names each
 story's issue.
+The #442–#457 release added 22 stories on 2026-09-24: S157, S162–S170, S173–S180
+and S182–S185. Its re-freeze header names each story's issue.
 The ledger's re-freeze header states the same counts.
 R18 is now registered and uses `c4-history`, whose actual API input includes a
 historical I:C row beside current basal evidence and retained Trial/Focus records.
@@ -168,8 +170,8 @@ repair. To isolate those assertions,
 with port 8765 free:
 
 ```sh
-TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1280x720 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1440x900 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1280x720 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1440x900 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1440" node frontend/desk-behavior.replay.mjs
 ```
 
 ## Amendment render commands: R18, units, missing outcomes and named eyes
@@ -180,10 +182,10 @@ also executes its three c4 setting variants; S49 also executes c4-missing.
 Their `S91-c4-*` and `S49-c4-missing` captures name the exact source case.
 
 ```sh
-TARGET=app VIEWPORT=1280x720 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1280" CAPTURE_DIR="$evidence/amendment-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1440x900 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1440" CAPTURE_DIR="$evidence/amendment-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1280x720 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1280" CAPTURE_DIR="$evidence/eyes-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1440x900 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1440" CAPTURE_DIR="$evidence/eyes-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app VIEWPORT=1280x720 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1280" CAPTURE_DIR="$evidence/amendment-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1440" CAPTURE_DIR="$evidence/amendment-1440" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1280x720 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1280" CAPTURE_DIR="$evidence/eyes-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1440" CAPTURE_DIR="$evidence/eyes-1440" node frontend/desk-behavior.replay.mjs
 ```
 
 For HV2-06 the coordinator names their judgment of dense Diagnose, paired Trial
@@ -221,20 +223,11 @@ or failed run is identified explicitly; it is not a successful timing proof.
 
 | Browser leg | Measured runner wall time | Job ceiling | Headroom above sample |
 | --- | --- | --- | --- |
-| Day lifecycle | 0m57s | 5 min | 4m03s |
-| Diagnose workstation | 4m37s | 10 min | 5m23s |
-| Diagnose canvas composition | 2m32s | 6 min | 3m28s |
-| Cockpit shell | 1m10s | 6 min | 4m50s |
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
-| V2 desk | 0m47s | 5 min | 4m13s |
-| V2 Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
-| V2 full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
-| V2 PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
-| First-plan reconcile | 0m38s | 5 min | 4m22s |
-| Diagnose workstation behaviour ledger | 10m32s successful | 21 min | 10m28s |
-| Diagnose event comparisons | 1m29s | 6 min | 4m31s |
-| Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
-| Verify behaviour ledger | 0m36s | 5 min | 4m24s |
+| Desk | 0m47s | 5 min | 4m13s |
+| Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
+| Full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
+| PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
 
 The full-ledger replay process ceiling is 960 seconds for a shard, leaving five
 minutes inside its CI job for setup, server teardown and retention. Unsharded
@@ -330,8 +323,9 @@ is shared across commands, shards or commits.
 For each non-showcase registry case it generates two stores and compares
 logical SQLite dumps using the existing generator's dump rule. `c3-history`
 generation stamps observation metadata with the wall clock; the comparison
-freezes `watched_change.datetime` for both generations instead of dropping
-fields. Normal replay generation uses its existing clock. The check also
+freezes `watched_change.wall_clock_now` for the observation stamp and
+`watched_change.datetime` for the data-time anchor, for both generations,
+instead of dropping fields. Normal replay generation uses its existing clock. The check also
 mutates each story copy and its derived file, then requires the next copy to
 match the prepared template byte-for-byte with no derived file. CI runs this
 browser-free check without running the removed copy-then-reconcile benchmark.
@@ -383,22 +377,138 @@ destinations. It includes the utility entry points. It is not a second registry.
 `--base <ref>` compares the merge-base with committed HEAD. The selector uses
 Babel's parser declared as a direct devDependency and pinned in the frontend
 lockfile (run `npm ci` first).
-It compares exported story functions, object-method stories and the transitive
-helpers and constants they reference. Imported replay helpers are followed too;
-the inherited `STORY:` comments retain their namespaced identities. The v2
-files themselves have no `STORY:` comments, so their exported registry names
-supply that identity. Both old and new graphs participate, retaining deleted
-helpers and renamed bindings in the affected set. Python's AST supplies case
-recipe and materializer dependencies without executing recipes. Shared runner,
-registry, transport, generator or acceptance-driver changes select the full
-ledger. Unrelated production changes receive the fixed smoke coverage. Selection
-errors fail; they never return a silently empty subset.
+It builds a function-level graph of every module the replay reaches by a
+relative named import, wherever that module lives, at both commits; the old and
+new graphs both participate, so a deleted key still counts as changed. Replay
+code is judged by one default: a change to a replay-side module selects the full
+ledger, and each reason names the changed key. The one exception is a change
+confined to story entries of the story tables (`C2_STORIES`, `C3_STORIES`,
+`C4_STORIES` and `C4_RETIREMENTS`) whose dependency closure, the entry included,
+is proven read-only toward shared state. Shared state is:
+- a module's own state (a top-level binding that is not an import, a function or
+  a `const` primitive);
+- any non-function binding imported from another replay-side module, and any
+  binding imported from a Node module or package (`node:assert/strict` and the
+  like); product modules stay exempt;
+- the members of a class or function binding: static fields, function-object
+  properties and `prototype`;
+- every free global name, the built-ins included (`Object`, `Array`, `JSON`,
+  `Math`, `Number`, `String`, `Boolean`, `Promise`, `Map`, `Set`, `URL`, `Date`,
+  `RegExp`, `Error`, `setTimeout`, `setInterval`, `clearTimeout`,
+  `structuredClone`, `console`, `encodeURIComponent`, `decodeURIComponent`,
+  `encodeURI`, `decodeURI`, `URLSearchParams`, as much as `process` or
+  `globalThis`), but not the primitive globals `undefined`, `NaN` and
+  `Infinity`;
+- every local alias of any of these: a variable bound to it, a `for…of` or
+  `for…in` variable over it, the parameters of any callback handed to a call
+  that receives it (`Array.from`'s mapper as much as `forEach`'s), a parameter
+  defaulted to it, and an array or object literal that spreads or contains it,
+  whose elements are aliases too.
+
+The proof is an allow-list: an entry is precise only when every reference to
+shared state in its closure sits in a recognized read position. A function
+passed to a Playwright page-evaluation method (`evaluate`, `evaluateHandle`,
+`evaluateAll`, `$eval`, `$$eval`, `waitForFunction`, `addInitScript`), or a
+module function that is not exported and is only ever handed to one, runs in the
+story's own page (a fresh browser context per story), so its free names such as
+`document` are the page's, not shared state. The per-story context's functions
+(`ctx.open`, `ctx.capturePump`, `ctx.withCase`) are accepted as clean: `ctx` is
+a per-story parameter, and those functions live in `main` and the case server,
+outside every story entry, so a change to them already selects the full ledger.
+The recognized positions are:
+- a non-computed member read used as a value;
+- the receiver of a read-only method;
+- an argument to a read-only built-in;
+- the delay (second) argument of `setTimeout` or `setInterval`;
+- the callee of `process.stdout.write` or `process.stderr.write`, output calls
+  recognized like `console` (their arguments are judged like any call's);
+- a non-computed `process.env.<name>` read, whose result is a string or
+  `undefined` and ends the chain;
+- an argument to a graph function proven by the same test not to mutate that
+  parameter;
+- a `typeof`, comparison, arithmetic, condition or template read;
+- a spread or element in a new array or object literal, which continues the
+  chain with the literal;
+- a call to a known function;
+- a call to a built-in or a Node import, or to one of its functions or methods
+  (`JSON.stringify`, `Math.max`, `Object.keys`, `Number(…)`, `new Map()`,
+  `assert.equal`), whose arguments are judged by the argument rule, so the
+  target of `Object.assign`, `Object.defineProperty` or a `Reflect` method is
+  never a read position;
+- a call to a class or function binding, or `new` of it;
+- a built-in function handed as an iterating read's callback (`.filter(Boolean)`)
+  and a built-in in a class's `extends` clause.
+
+Read-only methods and built-ins split by result. Some always return a primitive:
+`has`, `includes`, `indexOf`, `lastIndexOf`, `findIndex`, `some`, `every`,
+`join`, `toString`, `forEach`, `startsWith`, `endsWith`, `JSON.stringify`,
+`Array.isArray`, `String`, `Number`, `Boolean`, `encodeURIComponent`,
+`decodeURIComponent`, `encodeURI` and `decodeURI`. That result ends the chain.
+The others return shared state: `getStore`, `get`, `at`, `slice`, `keys`,
+`values`, `entries`, `map`, `filter`, `find`, `reduce`, `concat`, `flat`,
+`flatMap`, `Object.keys`, `Object.values`, `Object.entries`, `Array.from`,
+`structuredClone` and `URLSearchParams`. Their result is shared: the call's own
+position must be a read position, and a local bound to it is an alias. So is the
+result of a graph function that may return a parameter holding shared state. An
+inline callback of an iterating read on shared state may return into that shared
+result. `test` is not a read, since it moves `lastIndex` on a global or sticky
+pattern.
+
+Any other position plans the full ledger, among them a computed member access,
+the target of an assignment, update or `delete`, and a value passed anywhere
+else (a built-in, or a member of one such as `Array.prototype`, included),
+returned or bound by destructuring, as do a `this`, a getter or setter, and a
+write rooted outside the node's own locals. The proof errs to the full ledger
+for any use it does not recognize. It covers honest edits under this
+definition: `eval`, the `Function` constructor and a dynamic `import()` in a
+replay module stop the plan, and the nightly complete ledger, which the pull
+request's latest-nightly check reads, is the backstop for anything outside the
+model, reflection included (a write through `__proto__` or through what
+`Object.getPrototypeOf` returns, `constructor.constructor`, a direct
+`Array.prototype.push(…)`, `Object.assign` on an imported product function). It
+relies on one reading it cannot prove: that a method named like a
+page-evaluation method sends its function to the page. Each proven entry selects the stories whose dependency
+closure reaches it, and a table whose entries alone changed is judged by those
+entries. On the real tree 126 of the 132 story entries stay precise; the other
+six pass a module-level pattern to `assert.match`, pass a loop alias over a
+module-level list to `page.setViewportSize`, or read a module-level table by a
+computed key. A tainted entry's reason names the unsafe nodes it reaches. A
+change to a module's top-level statements, a helper, a constant, an import line,
+or a story function outside those tables selects the full ledger, and so does a
+registry row whose id is not its function's name. An import line is judged by
+comparing each replay-side module's import declarations whole (relative,
+`node:` and package imports alike: source, specifiers, bindings and attributes,
+in order), since a Node or package import binds no graph key; any difference
+selects the full ledger with the reason `replay-side import change: <file>`. The inherited `STORY:`
+comments retain their namespaced identities; the v2 files have none, so their
+exported registry names supply that identity. A module is product-side when the
+app's entry, `frontend/main.js` (the script `frontend/index.html` loads),
+reaches it by static import at every commit that has it as a replay module.
+Product code reaches the stories through the browser, so it keeps this section's
+policy: a changed function a story's closure reaches selects that story, and any
+other production change receives the fixed smoke coverage. The per-story runner
+(`main`'s loop and `openApp`) runs for every story, so a product function it
+reaches selects every story; its walk stops at the registry and the story
+tables. An app entry that is absent or cannot be parsed stops the plan. Python's
+AST supplies case recipe and materializer dependencies without executing
+recipes. Shared runner, registry, transport, generator or acceptance-driver
+changes select the full ledger, and so does a change to an executable file the
+replay names by a literal path without importing it: a string or template
+literal, a `require()` with or without its extension, or a `new URL(…,
+import.meta.url)`. An import the selection cannot follow (one that resolves to
+no tracked file, a dynamic `import()`, a side-effect, default, namespace or
+re-export form, or a dependency with no node in its module) stops the plan with
+an error naming the file, and so does a literal path it cannot resolve. A
+`require()` of a variable, such as the environment-named Playwright package, is
+not seen. Selection errors fail; they never return a silently empty subset.
 
 `smoke.json` records the comparison commits, changed files, affected symbols,
-case/destination coverage and selected IDs. `selection.json` distinguishes
-`smoke` and `full` receipts. A PR smoke receipt cannot be cited as full coverage.
-The other explicit browser suites and inherited ledgers retain their existing
-commands on every event.
+case/destination coverage, the replay modules the graph read at either commit
+(`replay_modules`), those it treated as product code (`product_modules`), the
+executables the replay names by path (`path_loads`) and selected IDs.
+`selection.json` distinguishes `smoke` and `full` receipts. A PR smoke receipt
+cannot be cited as full coverage. The other explicit browser suites and
+inherited ledgers retain their existing commands on every event.
 
 Main pushes and the scheduled event run every full v2 partition. ci.yml owns
 the nightly cron and both matrix inventories. Nightly runs do not publish an
@@ -478,8 +588,8 @@ import json, pathlib, sys
 url = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 pathlib.Path(sys.argv[1]).write_text(json.dumps({url: {'path': str(pathlib.Path('frontend-v2/fonts/inter.css').resolve()), 'type': 'text/css'}}))
 PY
-TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1280x720 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1280x720" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1440x900 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1440x900" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1280x720 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1280x720" node frontend/desk-behavior.replay.mjs
+TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1440x900 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1440x900" node frontend/desk-behavior.replay.mjs
 ```
 
 These use different clinical source populations from the generated app cases.

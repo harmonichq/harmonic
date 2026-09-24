@@ -14,6 +14,7 @@ from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
+import posixpath
 import re
 import shutil
 import signal
@@ -33,7 +34,7 @@ TOKEN = "synthetic-replay-token"
 SMOKE_STORIES = (
     "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
     "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "S113", "R8", "R18",
-    "S125", "S126",
+    "S125", "S126", "S177",
 )
 DRIFTS = [
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
@@ -368,21 +369,709 @@ console.log(JSON.stringify(snapshots.map(graph)));
     return json.loads(output)
 
 
+def replay_imports(run, sources):
+    """Each module's relative import targets, the relative forms `replay_graph` cannot map,
+    whether it uses a dynamic import(), the literal paths it names and a registry's rows,
+    read with the same pinned parser."""
+    payload = run.out / "replay-import-sources.json"
+    payload.write_text(json.dumps(sources))
+    script = r"""
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+const require = createRequire(process.cwd() + '/package.json');
+const { parse } = require('@babel/parser');
+const files = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+const SKIP = ['loc', 'start', 'end', 'extra', 'leadingComments', 'trailingComments', 'innerComments'];
+const dynamic = node => node && typeof node === 'object' && (node.type === 'Import'
+  || Object.entries(node).some(([key, value]) => !SKIP.includes(key)
+    && (Array.isArray(value) ? value.some(dynamic) : dynamic(value))));
+// eval and the Function constructor run code the selection cannot read, so
+// any reference to either name (other than as a property key) is reported.
+const evaluates = node => {
+  if (!node || typeof node !== 'object') return false;
+  if (Array.isArray(node)) return node.some(evaluates);
+  if (node.type === 'Identifier') return ['eval', 'Function'].includes(node.name);
+  return Object.entries(node).some(([key, value]) => !SKIP.includes(key)
+    && !(key === 'key' && !node.computed) && evaluates(value));
+};
+// The graph follows named imports only. Any other relative form would leave a
+// dependency it cannot map, so it is reported to stop the plan.
+const unfollowable = node => {
+  if (node.type === 'ExportAllDeclaration') return 'export * from';
+  if (node.type === 'ExportNamedDeclaration') return 'export … from';
+  if (!node.specifiers.length) return 'side-effect import';
+  if (node.specifiers.some(spec => spec.type === 'ImportDefaultSpecifier')) return 'default import';
+  if (node.specifiers.some(spec => spec.type === 'ImportNamespaceSpecifier')) return 'namespace import';
+  if (node.specifiers.some(spec => spec.type === 'ImportSpecifier'
+    && (spec.imported.name ?? spec.imported.value) === 'default')) return '{ default as … } import';
+  return null;
+};
+const literal = node => node?.type === 'StringLiteral' ? node.value
+  : node?.type === 'TemplateLiteral' && !node.expressions.length ? node.quasis[0].value.cooked : null;
+const metaUrl = node => node?.type === 'MemberExpression' && node.object?.type === 'MetaProperty'
+  && node.object.meta.name === 'import' && node.property?.name === 'url';
+// A template with expressions reads as a path when its fixed text is
+// module-relative or ends in an executable's extension; it cannot be resolved.
+const pathlike = node => node.type === 'TemplateLiteral' && node.expressions.length > 0
+  && (/^\.\.?\//.test(node.quasis[0].value.cooked) || /\.(py|js|mjs|cjs)$/.test(node.quasis.at(-1).value.cooked));
+const result = {};
+for (const [file, source] of Object.entries(files)) {
+  const targets = new Set(), forms = [], paths = [], computed = [], consumed = new Set();
+  const text = node => source.slice(node.start, node.end);
+  let program;
+  try { program = parse(source, { sourceType: 'module' }).program; }
+  catch (error) { result[file] = { error: error.message }; continue; }
+  for (const node of program.body) {
+    if (node.source) consumed.add(node.source);
+    const value = node.source?.value;
+    if (typeof value === 'string' && value.startsWith('.')) {
+      targets.add(posix.normalize(posix.join(posix.dirname(file), value)));
+      const form = unfollowable(node);
+      if (form) forms.push(`${form} not followed: '${value}'`);
+    }
+  }
+  // require() and new URL(…, import.meta.url) resolve their own argument; every
+  // other string names a path only as itself. A require of a variable (the
+  // environment-named Playwright package) is a computed load it cannot see.
+  const scan = node => {
+    if (!node || typeof node !== 'object' || consumed.has(node)) return;
+    if (Array.isArray(node)) { node.forEach(scan); return; }
+    let argument = null, kind = null;
+    if (node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'require') {
+      [argument, kind] = [node.arguments[0], 'require'];
+      if (argument && ['Identifier', 'MemberExpression'].includes(argument.type)) argument = null;
+    } else if (node.type === 'NewExpression' && node.callee?.name === 'URL' && metaUrl(node.arguments[1])) {
+      [argument, kind] = [node.arguments[0], 'url'];
+    }
+    if (argument) {
+      consumed.add(argument);
+      const value = literal(argument);
+      if (value === null) computed.push(`${kind} ${text(argument)}`); else paths.push([kind, value]);
+    }
+    const value = literal(node);
+    if (value !== null) paths.push(['literal', value]);
+    else if (pathlike(node)) computed.push(`template ${text(node)}`);
+    for (const [key, child] of Object.entries(node)) if (!SKIP.includes(key)) scan(child);
+  };
+  scan(program.body);
+  // A registry's [id, function] rows.
+  let registry;
+  for (const statement of program.body) {
+    const node = statement.declaration ?? statement;
+    if (node.type === 'VariableDeclaration') for (const decl of node.declarations)
+      if (decl.id.type === 'Identifier' && decl.id.name === 'REGISTRY') registry = decl.init?.type !== 'ArrayExpression' ? null
+        : decl.init.elements.map(row => [literal(row?.elements?.[0]), row?.elements?.[1]?.type === 'Identifier' ? row.elements[1].name : null]);
+  }
+  // Every import declaration, relative or not, in order: its source, its
+  // bindings and any attributes, so an edit to one is a change.
+  const imports = program.body.filter(node => node.type === 'ImportDeclaration').map(node => [node.source.value,
+    node.specifiers.map(spec => [spec.type, spec.imported?.name ?? spec.imported?.value ?? null, spec.local.name]),
+    (node.attributes ?? node.assertions ?? []).map(attr => [attr.key.name ?? attr.key.value, attr.value.value]), node.phase ?? null]);
+  result[file] = { targets: [...targets].sort(), dynamic: dynamic(program), evaluates: evaluates(program), imports, forms, paths, computed, registry };
+}
+console.log(JSON.stringify(result));
+"""
+    _, output = run.command("replay-imports", ["node", "--input-type=module", "-e", script, str(payload)])
+    return json.loads(output)
+
+
+def replay_purity(run, sources, product):
+    """Which graph nodes are proven read-only toward shared state, read with the pinned parser.
+
+    Shared state is a module's own state (a top-level binding that is not an
+    import, a function or a const primitive), any non-function binding imported
+    from another replay-side module, any free global name the rule does not know
+    as a built-in, and every local alias of these. A function Playwright sends
+    to the story's page has the page's names instead. A node is
+    unsafe unless each reference it makes to shared state sits in a recognized
+    read position; any other position, a `this`, an accessor, or a write rooted
+    outside the node's locals, is unsafe. The same test on a function's own
+    parameters says which parameters it may mutate; a reference passed to a
+    graph function is reported as a call, for the caller to judge.
+    """
+    payload = run.out / "replay-purity-sources.json"
+    payload.write_text(json.dumps({"files": sources, "product": sorted(product)}))
+    script = r"""
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+const require = createRequire(process.cwd() + '/package.json');
+const { parse } = require('@babel/parser');
+const { files, product } = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+const SKIP = new Set(['loc', 'start', 'end', 'extra', 'leadingComments', 'trailingComments', 'innerComments']);
+// Read-only methods and built-ins, split by result. A primitive result ends
+// the chain; any other result is shared state wherever it goes next.
+// `test` is left out: on a global or sticky pattern it moves `lastIndex`.
+const PRIMITIVE_READS = new Set(['has', 'includes', 'indexOf', 'lastIndexOf', 'findIndex', 'some', 'every', 'join',
+  'toString', 'forEach', 'startsWith', 'endsWith']);
+const READS = new Set([...PRIMITIVE_READS, 'getStore', 'get', 'at', 'slice', 'keys', 'values', 'entries', 'map',
+  'filter', 'find', 'reduce', 'concat', 'flat', 'flatMap']);
+const ITERATES = new Set(['map', 'filter', 'find', 'findIndex', 'some', 'every', 'reduce', 'flatMap', 'forEach']);
+const PRIMITIVE_BUILTINS = new Set(['JSON.stringify', 'Array.isArray', 'String', 'Number', 'Boolean',
+  'encodeURIComponent', 'decodeURIComponent', 'encodeURI', 'decodeURI']);
+// Built-ins and Node imports are shared state too, but calling one of their
+// functions (or constructing one) is a read. Any other free name (process,
+// globalThis …) is shared state; the primitive globals are not state.
+const KNOWN_GLOBALS = new Set(['Object', 'Array', 'JSON', 'Math', 'Number', 'String', 'Boolean', 'Promise', 'Map',
+  'Set', 'URL', 'Date', 'RegExp', 'Error', 'setTimeout', 'setInterval', 'clearTimeout', 'structuredClone', 'console',
+  'encodeURIComponent', 'decodeURIComponent', 'encodeURI', 'decodeURI', 'URLSearchParams']);
+const PRIMITIVE_GLOBALS = new Set(['undefined', 'NaN', 'Infinity']);
+// Output calls on process, recognized like console: they change no state a
+// story reads. A process.env.<name> read is a string or undefined.
+const OUTPUT = new Set(['process.stdout.write', 'process.stderr.write']);
+const DELAYS = new Set(['setTimeout', 'setInterval']);
+// Playwright serializes a function passed to these into the story's own page
+// (a fresh browser context per story), so its free names are the page's.
+const IN_PAGE = new Set(['evaluate', 'evaluateHandle', 'evaluateAll', '$eval', '$$eval', 'waitForFunction', 'addInitScript']);
+const BUILTINS = new Set([...PRIMITIVE_BUILTINS, 'Object.keys', 'Object.values', 'Object.entries', 'Array.from',
+  'structuredClone', 'URLSearchParams']);
+const member = new Set(['MemberExpression', 'OptionalMemberExpression']);
+const calls = new Set(['CallExpression', 'OptionalCallExpression', 'NewExpression']);
+const functions = new Set(['ArrowFunctionExpression', 'FunctionExpression', 'FunctionDeclaration', 'ObjectMethod', 'ClassMethod']);
+const bound = pattern => !pattern ? [] : pattern.type === 'Identifier' ? [pattern.name]
+  : pattern.type === 'ObjectPattern' ? pattern.properties.flatMap(prop => bound(prop.value ?? prop.argument))
+  : pattern.type === 'ArrayPattern' ? pattern.elements.flatMap(bound)
+  : pattern.type === 'RestElement' ? bound(pattern.argument)
+  : pattern.type === 'AssignmentPattern' ? bound(pattern.left) : [];
+const primitive = node => !node || ['StringLiteral', 'NumericLiteral', 'BooleanLiteral', 'NullLiteral', 'BigIntLiteral'].includes(node.type)
+  || (node.type === 'TemplateLiteral' && node.expressions.every(primitive))
+  || (node.type === 'UnaryExpression' && primitive(node.argument))
+  || (node.type === 'BinaryExpression' && primitive(node.left) && primitive(node.right));
+const dotted = node => node?.type === 'Identifier' ? node.name
+  : member.has(node?.type) && !node.computed && node.property.type === 'Identifier' && dotted(node.object)
+    ? `${dotted(node.object)}.${node.property.name}` : null;
+
+// Each module's top-level facts, and the nodes the graph makes of it.
+const facts = {};
+for (const [file, source] of Object.entries(files)) {
+  const fact = { imports: new Map(), functions: new Set(), state: new Set(), top: new Set(), nodes: [], names: new Map(), browser: new Set() };
+  const program = parse(source, { sourceType: 'module' }).program;
+  // A module function every reference to which hands it to the page (and
+  // that no other module can import) runs in the page too.
+  const handed = new Map(), exported = new Set();
+  const look = (node, parent, key) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(child => look(child, parent, key)); return; }
+    if (node.type === 'ExportNamedDeclaration') {
+      (node.declaration ? (node.declaration.declarations ?? [node.declaration]).map(decl => decl.id?.name) : node.specifiers.map(spec => spec.local.name))
+        .forEach(name => exported.add(name));
+    }
+    if (node.type === 'Identifier' && !(member.has(parent?.type) && key === 'property' && !parent.computed)
+        && !(['ObjectProperty', 'ObjectMethod'].includes(parent?.type) && key === 'key' && !parent.computed)
+        && !(['FunctionDeclaration', 'VariableDeclarator'].includes(parent?.type) && key === 'id')) {
+      const page = calls.has(parent?.type) && key === 'arguments' && member.has(parent.callee.type) && !parent.callee.computed
+        && IN_PAGE.has(parent.callee.property.name) && parent.arguments[parent.callee.property.name.startsWith('$') ? 1 : 0] === node;
+      handed.set(node.name, (handed.get(node.name) ?? true) && page);
+    }
+    for (const [name, child] of Object.entries(node)) if (!SKIP.has(name) && typeof child === 'object') look(child, node, name);
+  };
+  look(program, null, null);
+  for (const statement of program.body) {
+    const node = statement.declaration ?? statement;
+    if (node.type === 'ImportDeclaration') {
+      const value = node.source.value;
+      const target = value.startsWith('.') ? posix.normalize(posix.join(posix.dirname(file), value)) : null;
+      node.specifiers.forEach(spec => { fact.top.add(spec.local.name); fact.imports.set(spec.local.name, [target, spec.imported?.name ?? spec.imported?.value]); });
+    } else if (['FunctionDeclaration', 'ClassDeclaration'].includes(node.type) && node.id) {
+      fact.top.add(node.id.name); fact.functions.add(node.id.name);
+      fact.nodes.push([node.id.name, node, false]);
+      if (handed.get(node.id.name) && !exported.has(node.id.name)) fact.browser.add(node.id.name);
+    } else if (node.type === 'VariableDeclaration') for (const decl of node.declarations) {
+      const fn = functions.has(decl.init?.type);
+      for (const name of bound(decl.id)) {
+        fact.top.add(name);
+        if (!(decl.id.type === 'Identifier' && (fn || (node.kind === 'const' && primitive(decl.init))))) fact.state.add(name);
+      }
+      if (decl.id.type !== 'Identifier') continue;
+      if (fn) fact.functions.add(decl.id.name);
+      if (fn && handed.get(decl.id.name) && !exported.has(decl.id.name)) fact.browser.add(decl.id.name);
+      fact.nodes.push([decl.id.name, decl.init, false]);
+      if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
+        const key = prop.key?.name ?? prop.key?.value;
+        if (key === undefined) continue;
+        if (prop.type === 'ObjectMethod' || functions.has(prop.value?.type)) fact.functions.add(`${decl.id.name}.${key}`);
+        else if (prop.value?.type === 'Identifier') fact.names.set(`${decl.id.name}.${key}`, prop.value.name);
+        fact.nodes.push([`${decl.id.name}.${key}`, prop, prop.type === 'ObjectMethod' && prop.kind !== 'method']);
+      }
+    }
+  }
+  facts[file] = fact;
+}
+// A graph function a call names, through this module or an import. A table
+// entry that names a top-level function (`openBasalLane,`) resolves to it.
+const keyOf = (file, path) => {
+  if (path === null) return null;
+  const fact = facts[file], [root, ...tail] = path.split('.');
+  if (fact.imports.has(root)) {
+    const [target, name] = fact.imports.get(root);
+    return target && facts[target] ? keyOf(target, [name, ...tail].join('.')) : null;
+  }
+  const named = fact.names.get(path);
+  if (named !== undefined) return fact.functions.has(named) ? `${file}::${named}` : keyOf(file, named);
+  return fact.functions.has(path) ? `${file}::${path}` : null;
+};
+
+// Graph functions that may hand a parameter back: a return (anywhere inside)
+// that mentions a parameter or a local bound from one. Shared state passed
+// to such a parameter makes the call's result shared too.
+const mentions = (node, names) => {
+  if (!node || typeof node !== 'object') return false;
+  if (Array.isArray(node)) return node.some(child => mentions(child, names));
+  if (node.type === 'Identifier' && names.has(node.name)) return true;
+  return Object.entries(node).some(([key, child]) => !SKIP.has(key) && mentions(child, names));
+};
+const returning = new Set();
+for (const [file, fact] of Object.entries(facts)) for (const [name, body] of fact.nodes) {
+  const fn = functions.has(body?.type) ? body : functions.has(body?.value?.type) ? body.value : null;
+  if (!fn) continue;
+  const names = new Set(fn.params.flatMap(bound)), declarators = [], returns = [];
+  const scan = node => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(scan); return; }
+    if (node.type === 'VariableDeclarator' && node.init) declarators.push(node);
+    if (node.type === 'ReturnStatement') returns.push(node.argument);
+    if (node.type === 'ArrowFunctionExpression' && node.body.type !== 'BlockStatement') returns.push(node.body);
+    for (const [key, child] of Object.entries(node)) if (!SKIP.has(key)) scan(child);
+  };
+  scan(fn.type === 'ArrowFunctionExpression' && fn.body.type !== 'BlockStatement' ? [fn.body] : fn.body);
+  if (fn.type === 'ArrowFunctionExpression' && fn.body.type !== 'BlockStatement') returns.push(fn.body);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const decl of declarators) if (mentions(decl.init, names))
+      for (const alias of bound(decl.id)) if (!names.has(alias)) { names.add(alias); grew = true; }
+  }
+  if (returns.some(value => mentions(value, names))) returning.add(`${file}::${name}`);
+}
+
+const analyse = (file, body, sharedNames, browser, kinds) => {
+  const parents = new Map();
+  const visit = (node, parent, key) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(child => visit(child, parent, key)); return; }
+    if (typeof node.type !== 'string') return;
+    parents.set(node, [parent, key]);
+    for (const [name, child] of Object.entries(node)) if (!SKIP.has(name)) visit(child, node, name);
+  };
+  visit(body, null, null);
+  const all = [...parents.keys()];
+  const own = functions.has(body?.type) ? body : functions.has(body?.value?.type) ? body.value : null;
+  const locals = new Set(), bindings = new Set();
+  const collect = pattern => {
+    if (!pattern) return;
+    if (pattern.type === 'Identifier') { bindings.add(pattern); locals.add(pattern.name); }
+    else if (pattern.type === 'ObjectPattern') pattern.properties.forEach(prop => collect(prop.type === 'RestElement' ? prop.argument : prop.value));
+    else if (pattern.type === 'ArrayPattern') pattern.elements.forEach(collect);
+    else if (pattern.type === 'RestElement') collect(pattern.argument);
+    else if (pattern.type === 'AssignmentPattern') collect(pattern.left);
+  };
+  for (const node of all) {
+    if (node.type === 'VariableDeclarator') collect(node.id);
+    if (functions.has(node.type)) node.params.forEach(collect);
+    if (node.type === 'CatchClause') collect(node.param);
+    if (['FunctionDeclaration', 'FunctionExpression', 'ClassDeclaration', 'ClassExpression'].includes(node.type) && node.id && node !== body) {
+      bindings.add(node.id); locals.add(node.id.name);
+    }
+  }
+  // Function-level scopes: a reference is free when no enclosing function in
+  // the node, nor the node itself, declares its name and the module has no
+  // top-level binding of it.
+  const enclosing = node => { let at = parents.get(node)?.[0]; while (at && !functions.has(at.type)) at = parents.get(at)?.[0]; return at ?? body; };
+  const declared = new Map();
+  const declare = (scope, name) => { if (!declared.has(scope)) declared.set(scope, new Set()); declared.get(scope).add(name); };
+  for (const node of all) {
+    if (node.type === 'VariableDeclarator' || node.type === 'CatchClause') bound(node.id ?? node.param).forEach(name => declare(enclosing(node), name));
+    if (functions.has(node.type)) node.params.flatMap(bound).forEach(name => declare(node, name));
+    if (['FunctionDeclaration', 'ClassDeclaration'].includes(node.type) && node.id && node !== body) declare(enclosing(node), node.id.name);
+    if (['FunctionExpression', 'ClassExpression'].includes(node.type) && node.id) declare(node, node.id.name);
+  }
+  const inPage = new Set(browser ? [body] : []);
+  for (const node of all) if (calls.has(node.type) && member.has(node.callee.type) && !node.callee.computed && IN_PAGE.has(node.callee.property.name)) {
+    const callback = node.arguments[node.callee.property.name.startsWith('$') ? 1 : 0];
+    if (functions.has(callback?.type)) inPage.add(callback);
+  }
+  const browserSide = node => { for (let at = node; at; at = parents.get(at)?.[0]) if (inPage.has(at)) return true; return false; };
+  const local = id => { for (let at = id; at; at = parents.get(at)?.[0]) if ((functions.has(at.type) || at === body) && declared.get(at)?.has(id.name)) return true; return false; };
+  const free = id => !facts[file].top.has(id.name) && !local(id) && !PRIMITIVE_GLOBALS.has(id.name) && !browserSide(id);
+  // A built-in or a Node import: calling it, or one of its functions, is a read.
+  const builtinRoot = id => (KNOWN_GLOBALS.has(id.name) && free(id)) || (kinds.bare.has(id.name) && !local(id));
+  // A class or function binding: its members are shared state.
+  const functionBinding = id => kinds.functions.has(id.name) && !local(id) && !browserSide(id);
+  // A non-computed process.env.<name> read on the global process.
+  const envRead = node => {
+    for (let at = node; member.has(at?.type); at = at.object)
+      if (!at.computed && dotted(at.object) === 'process.env' && at.object.object.type === 'Identifier' && free(at.object.object)) return true;
+    return false;
+  };
+  const params = new Map();
+  (own?.params ?? []).forEach((param, index) => bound(param).forEach(name => params.set(name, index)));
+  const topLevel = facts[file].top;
+  const builtin = path => path !== null && BUILTINS.has(path) && !locals.has(path.split('.')[0]) && !topLevel.has(path.split('.')[0]);
+  const aliases = new Set();
+  const isShared = name => sharedNames.has(name) || aliases.has(name);
+  const sharedRef = id => isShared(id.name) || free(id);
+  const carried = expr => {
+    const found = { shared: false, params: new Set() };
+    const go = node => {
+      if (!node || envRead(node)) return;
+      if (node.type === 'Identifier' || member.has(node.type)) {
+        let root = node;
+        while (member.has(root.type)) root = root.object;
+        if (root.type === 'Identifier') {
+          if (sharedRef(root)) found.shared = true;
+          if (params.has(root.name)) found.params.add(params.get(root.name));
+        } else go(root);
+      } else if (['CallExpression', 'OptionalCallExpression'].includes(node.type)) {
+        const callee = node.callee, path = dotted(callee), target = keyOf(file, path);
+        const method = member.has(callee.type) && !callee.computed ? callee.property.name : null;
+        let root = callee;
+        while (member.has(root.type)) root = root.object;
+        // A built-in's function returns what its arguments carry, never itself.
+        const onBuiltin = root.type === 'Identifier' && builtinRoot(root);
+        if (READS.has(method) && !PRIMITIVE_READS.has(method) && !target && !onBuiltin) go(callee.object);
+        if ((target && returning.has(target)) || (builtin(path) && !PRIMITIVE_BUILTINS.has(path)))
+          node.arguments.forEach(arg => go(arg.type === 'SpreadElement' ? arg.argument : arg));
+      } else if (node.type === 'ArrayExpression') node.elements.forEach(element => go(element?.type === 'SpreadElement' ? element.argument : element));
+      else if (node.type === 'ObjectExpression') node.properties.forEach(prop => go(prop.type === 'SpreadElement' ? prop.argument : prop.value));
+      else if (node.type === 'ConditionalExpression') { go(node.consequent); go(node.alternate); }
+      else if (node.type === 'LogicalExpression') { go(node.left); go(node.right); }
+      else if (node.type === 'SequenceExpression') go(node.expressions.at(-1));
+      else if (['AssignmentExpression'].includes(node.type)) go(node.right);
+      else if (node.type === 'AwaitExpression') go(node.argument);
+    };
+    go(expr);
+    return found;
+  };
+  // What a call receives: its non-function arguments and, for a method, its
+  // receiver unless that is a built-in namespace being called.
+  const received = node => {
+    const flows = node.arguments.filter(arg => !functions.has(arg.type)).map(arg => carried(arg.type === 'SpreadElement' ? arg.argument : arg));
+    if (member.has(node.callee.type)) {
+      let root = node.callee.object;
+      while (member.has(root.type) && !root.computed) root = root.object;
+      if (!(root.type === 'Identifier' && builtinRoot(root))) flows.push(carried(node.callee.object));
+    }
+    return { shared: flows.some(flow => flow.shared), params: new Set(flows.flatMap(flow => [...flow.params])) };
+  };
+  // Aliases: a local bound to shared state or a parameter, a loop variable
+  // over one, a callback's parameters when its call receives one, and a
+  // parameter default.
+  for (let grew = true; grew;) {
+    grew = false;
+    const take = (names, flow) => {
+      for (const name of names) {
+        if (flow.shared && !aliases.has(name)) { aliases.add(name); grew = true; }
+        for (const index of flow.params) if (!params.has(name)) { params.set(name, index); grew = true; }
+      }
+    };
+    for (const node of all) {
+      if (node.type === 'VariableDeclarator' && node.init) take(bound(node.id), carried(node.init));
+      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' && locals.has(node.left.name)) take([node.left.name], carried(node.right));
+      if (['ForOfStatement', 'ForInStatement'].includes(node.type))
+        take(node.left.type === 'VariableDeclaration' ? node.left.declarations.flatMap(decl => bound(decl.id)) : bound(node.left), carried(node.right));
+      if (node.type === 'AssignmentPattern') {
+        const [parent, key] = parents.get(node);
+        if (functions.has(parent?.type) && key === 'params') take(bound(node.left), carried(node.right));
+      }
+      if (calls.has(node.type)) {
+        const flow = received(node);
+        if (flow.shared || flow.params.size) for (const arg of node.arguments) if (functions.has(arg.type)) take(arg.params.flatMap(bound), flow);
+      }
+    }
+  }
+  let unsafe = false;
+  const mutates = new Set(), sharedCalls = [], forwards = [];
+  // Writes: rebinding a local is fine; any other target is shared state, a
+  // parameter or a binding outside the node.
+  for (const node of all) {
+    if (node.type === 'ThisExpression') unsafe = true;
+    const target = node.type === 'AssignmentExpression' ? node.left
+      : node.type === 'UpdateExpression' || (node.type === 'UnaryExpression' && node.operator === 'delete') ? node.argument
+      : ['ForOfStatement', 'ForInStatement'].includes(node.type) && node.left.type !== 'VariableDeclaration' ? node.left : null;
+    if (!target) continue;
+    let root = target;
+    while (member.has(root.type)) root = root.object;
+    const names = member.has(target.type) ? (root.type === 'Identifier' ? [root.name] : []) : bound(target);
+    if (member.has(target.type) && root.type !== 'Identifier') unsafe = true;
+    const pageWrite = browserSide(target);
+    for (const name of names) {
+      if (params.has(name)) mutates.add(params.get(name));
+      const outside = !locals.has(name) && !(pageWrite && !topLevel.has(name));
+      if ((member.has(target.type) ? isShared(name) : sharedNames.has(name)) || outside) unsafe = true;
+    }
+  }
+  // Every reference to shared state or a parameter must sit in a read position.
+  const judge = (id, ofBinding = false) => {
+    const shared = sharedRef(id) || ofBinding, param = params.has(id.name) ? params.get(id.name) : null;
+    const bad = () => { if (shared) unsafe = true; if (param !== null) mutates.add(param); };
+    const hand = (key, index) => { if (shared) sharedCalls.push([key, index]); if (param !== null) forwards.push([param, key, index]); };
+    let expr = id;
+    for (;;) {
+      const [parent, key] = parents.get(expr) ?? [null, null];
+      if (!parent) return;
+      if (member.has(parent.type) && key === 'object') {
+        if (parent.computed) { bad(); return; }
+        if (shared && envRead(parent)) return;
+        expr = parent; continue;
+      }
+      if (calls.has(parent.type) && key === 'callee') {
+        if (keyOf(file, dotted(expr))) return;
+        if (OUTPUT.has(dotted(expr)) && free(id)) return;
+        if (builtinRoot(id)) return;
+        const method = member.has(expr.type) && !expr.computed ? expr.property.name : null;
+        if (parent.type !== 'NewExpression' && READS.has(method)) {
+          const callback = parent.arguments[0];
+          if (ITERATES.has(method) && callback && !functions.has(callback.type)) {
+            const target = keyOf(file, dotted(callback));
+            if (target) hand(target, '*'); else if (!builtin(dotted(callback))) bad();
+          }
+          if (PRIMITIVE_READS.has(method)) return;
+          expr = parent; continue;
+        }
+        bad(); return;
+      }
+      if (calls.has(parent.type) && key === 'arguments') {
+        const path = dotted(parent.callee), target = keyOf(file, path);
+        if (DELAYS.has(path) && !topLevel.has(path) && !locals.has(path) && parent.arguments.indexOf(expr) === 1) return;
+        // A built-in function as an iterating read's callback is only called.
+        if (builtinRoot(id) && (expr === id || member.has(expr.type)) && parent.arguments.indexOf(expr) === 0
+            && member.has(parent.callee.type) && !parent.callee.computed && ITERATES.has(parent.callee.property.name)) return;
+        if (target) {
+          hand(target, parent.arguments.indexOf(expr));
+          if (!returning.has(target)) return;
+        } else if (!builtin(path)) { bad(); return; }
+        else if (PRIMITIVE_BUILTINS.has(path)) return;
+        expr = parent; continue;
+      }
+      if (parent.type === 'SpreadElement') {
+        const [outer, outerKey] = parents.get(parent) ?? [null, null];
+        if (['ArrayExpression', 'ObjectExpression'].includes(outer?.type)) { expr = outer; continue; }
+        if (calls.has(outer?.type) && outerKey === 'arguments') {
+          const path = dotted(outer.callee), target = keyOf(file, path);
+          if (target) {
+            hand(target, '*');
+            if (!returning.has(target)) return;
+          } else if (!builtin(path)) { bad(); return; }
+          else if (PRIMITIVE_BUILTINS.has(path)) return;
+          expr = outer; continue;
+        }
+        bad(); return;
+      }
+      if (parent.type === 'ArrayExpression') { expr = parent; continue; }
+      if (parent.type === 'ObjectProperty' && key === 'value' && parents.get(parent)?.[0]?.type === 'ObjectExpression') {
+        expr = parents.get(parent)[0]; continue;
+      }
+      if (['ClassDeclaration', 'ClassExpression'].includes(parent.type) && key === 'superClass') return;
+      if (parent.type === 'ConditionalExpression') { if (key === 'test') return; expr = parent; continue; }
+      if (['LogicalExpression', 'AwaitExpression'].includes(parent.type)) { expr = parent; continue; }
+      if (parent.type === 'SequenceExpression') { if (expr !== parent.expressions.at(-1)) return; expr = parent; continue; }
+      if (['BinaryExpression', 'TemplateLiteral', 'ExpressionStatement'].includes(parent.type)) return;
+      if (parent.type === 'UnaryExpression') { if (parent.operator === 'delete') bad(); return; }
+      if (['IfStatement', 'WhileStatement', 'DoWhileStatement', 'ForStatement'].includes(parent.type) && key === 'test') return;
+      if ((parent.type === 'SwitchStatement' && key === 'discriminant') || (parent.type === 'SwitchCase' && key === 'test')) return;
+      if (member.has(parent.type) && key === 'property') return;
+      if (['ObjectProperty', 'ClassProperty'].includes(parent.type) && key === 'key') return;
+      if (parent.type === 'VariableDeclarator' && key === 'init') { if (parent.id.type !== 'Identifier') bad(); return; }
+      if (parent.type === 'AssignmentExpression' && key === 'right') {
+        if (!(parent.left.type === 'Identifier' && locals.has(parent.left.name))) bad();
+        return;
+      }
+      if (['ForOfStatement', 'ForInStatement'].includes(parent.type) && key === 'right') {
+        const left = parent.left.type === 'VariableDeclaration' ? parent.left.declarations[0].id : parent.left;
+        if (left.type !== 'Identifier') bad();
+        return;
+      }
+      if (parent.type === 'AssignmentPattern' && key === 'right') {
+        const [outer, outerKey] = parents.get(parent) ?? [null, null];
+        if (!(functions.has(outer?.type) && outerKey === 'params' && parent.left.type === 'Identifier')) bad();
+        return;
+      }
+      if (parent.type === 'ReturnStatement' || (parent.type === 'ArrowFunctionExpression' && key === 'body')) {
+        let fn = parent;
+        while (fn && !functions.has(fn.type)) fn = parents.get(fn)?.[0];
+        const [call, callKey] = parents.get(fn) ?? [null, null];
+        const into = calls.has(call?.type) && callKey === 'arguments' && member.has(call.callee.type) && !call.callee.computed
+          && ITERATES.has(call.callee.property.name) && !PRIMITIVE_READS.has(call.callee.property.name)
+          && carried(call.callee.object).shared;
+        if (shared && !into) unsafe = true;
+        return;
+      }
+      bad(); return;
+    }
+  };
+  for (const node of all) {
+    if (node.type !== 'Identifier' || bindings.has(node)) continue;
+    const [parent, key] = parents.get(node) ?? [null, null];
+    if (member.has(parent?.type) && key === 'property' && !parent.computed) continue;
+    if (['ObjectProperty', 'ObjectMethod', 'ClassMethod', 'ClassProperty'].includes(parent?.type) && key === 'key' && !parent.computed) continue;
+    if (['LabeledStatement', 'BreakStatement', 'ContinueStatement'].includes(parent?.type)) continue;
+    if (parent?.type === 'AssignmentExpression' && key === 'left') continue;
+    if (parent?.type === 'UpdateExpression') continue;
+    if (['ForOfStatement', 'ForInStatement'].includes(parent?.type) && key === 'left') continue;
+    if (parent?.type === 'MetaProperty') continue;
+    if (sharedRef(node) || params.has(node.name)) judge(node);
+    else if (member.has(parent?.type) && key === 'object' && functionBinding(node)) judge(node, true);
+  }
+  // A named graph function handed to a call that receives shared state or a
+  // parameter receives it in every parameter.
+  for (const node of all) if (calls.has(node.type)) {
+    const flow = received(node);
+    if (!flow.shared && !flow.params.size) continue;
+    for (const arg of node.arguments) {
+      const target = functions.has(arg.type) ? null : keyOf(file, dotted(arg));
+      if (!target) continue;
+      if (flow.shared) sharedCalls.push([target, '*']);
+      for (const index of flow.params) forwards.push([index, target, '*']);
+    }
+  }
+  return { unsafe, mutates: [...mutates].sort(), calls: sharedCalls, forwards };
+};
+
+const result = {};
+for (const [file, fact] of Object.entries(facts)) {
+  const shared = new Set(fact.state), bare = new Set(), functionNames = new Set();
+  for (const name of fact.functions) if (!name.includes('.')) functionNames.add(name);
+  for (const [local, [target, name]] of fact.imports) {
+    if (!target) { shared.add(local); bare.add(local); }
+    else if (facts[target] && !product.includes(target)) (facts[target].functions.has(name) ? functionNames : shared).add(local);
+  }
+  for (const [name, body, accessor] of fact.nodes) {
+    const verdict = analyse(file, body, shared, fact.browser.has(name), { bare, functions: functionNames });
+    result[`${file}::${name}`] = { ...verdict, unsafe: verdict.unsafe || accessor };
+  }
+  for (const [name] of fact.nodes)
+    if (name.includes('.') && result[`${file}::${name}`].unsafe) result[`${file}::${name.split('.')[0]}`].unsafe = true;
+}
+console.log(JSON.stringify(result));
+"""
+    _, output = run.command("replay-purity", ["node", "--input-type=module", "-e", script, str(payload)])
+    return json.loads(output)
+
+
 def smoke_selection(run, base, ids):
-    """Select the fixed smoke slice plus affected replay/recipe dependency closures."""
+    """Select the fixed smoke slice plus affected replay/recipe dependency closures.
+
+    The replay graph holds the replay entries and every module they reach by a
+    relative named import. A change to replay code selects every story, naming
+    the key, unless every changed key is a story-table entry whose closure is
+    proven read-only toward shared state (see replay_purity); those select the
+    stories whose closure reaches them. A product module (one the app's entry
+    reaches) selects the stories that call a changed function and otherwise
+    leaves the fixed slice. An import it
+    cannot map (an untracked target, a dynamic import(), a side-effect,
+    default, namespace or re-export form, or a dependency with no node) stops
+    the plan. An executable file the replay names by a literal path but does
+    not import selects every story when it changes, and a literal path it
+    cannot resolve stops the plan.
+    """
     def git(*args):
         return subprocess.check_output(["git", *args], cwd=REPO, text=True)
 
+    def replay_modules(ref):
+        tracked = set(git("ls-tree", "-r", "--name-only", ref).splitlines())
+        files = {path: git("show", f"{ref}:{path}") for path in sorted(tracked) if path.startswith("frontend/")
+                 and (path.endswith(".replay.mjs") or path == "frontend/replay-cases.mjs")}
+        while True:
+            found = replay_imports(run, files)
+            broken = sorted(f"{path}: {entry['error']}" for path, entry in found.items() if "error" in entry)
+            require(not broken, f"replay modules cannot be parsed at {ref}: {broken}")
+            dynamic = sorted(path for path, entry in found.items() if entry["dynamic"])
+            require(not dynamic, f"replay modules use a dynamic import() the selection cannot follow: {dynamic}")
+            evaluated = sorted(path for path, entry in found.items() if entry["evaluates"])
+            require(not evaluated, f"replay modules run code through eval or the Function constructor: {evaluated}")
+            forms = sorted(f"{path}: {form}" for path, entry in found.items() for form in entry["forms"])
+            require(not forms, f"replay modules use an import form the selection cannot follow: {forms}")
+            wanted = {target for entry in found.values() for target in entry["targets"]} - files.keys()
+            unresolved = sorted(wanted - tracked)
+            require(not unresolved, f"replay imports resolve to no tracked file at {ref}: {unresolved}")
+            if not wanted:
+                break
+            files.update({path: git("show", f"{ref}:{path}") for path in sorted(wanted)})
+        # Executables named by path, never imported. A require probes Node's
+        # extensions; a URL resolves against its module. Data files are left
+        # out: the replay only checks its exploration fixtures exist, and the
+        # showcase follows its generator and recipes.
+        executable = (".py", ".js", ".mjs", ".cjs")
+        loads, unresolved = set(), []
+        for file, entry in found.items():
+            unresolved += [f"{file}: {form}" for form in entry["computed"]]
+            for kind, value in entry["paths"]:
+                relative = value.startswith(("./", "../"))
+                if kind == "require" and not relative and not value.startswith("/"):
+                    continue
+                if kind == "literal" and not (value.endswith(executable) and (
+                        relative or re.fullmatch(r"(?:[\w@+-][\w@.+-]*/)*[\w@+-][\w@.+-]*", value))):
+                    continue
+                path = posixpath.normpath(posixpath.join(posixpath.dirname(file), value)) \
+                    if relative or kind == "url" else value
+                probes = [path, *(path + suffix for suffix in [".js", ".json", ".node", "/index.js", "/index.json",
+                                                               "/index.node"] if kind == "require")]
+                hit = next((probe for probe in probes if probe in tracked), None)
+                if hit is None:
+                    unresolved.append(f"{file}: {kind} '{value}'")
+                elif hit.endswith(executable) and hit not in files:
+                    loads.add(hit)
+        require(not unresolved, f"replay modules name a path the selection cannot resolve at {ref}: {sorted(unresolved)}")
+        # Product code: the modules the app's entry reaches by static import.
+        # frontend/index.html loads ./main.js, and vite.config.mjs roots the
+        # build at frontend/. Stories reach product code through the browser;
+        # only the functions a story calls are replay code there. An import
+        # that resolves to nothing shrinks this set, which only widens the
+        # selection.
+        app_entry = "frontend/main.js"
+        require(app_entry in tracked, f"the app entry {app_entry} is not tracked at {ref}, so product code cannot be told apart")
+        shipped, pending = set(), {app_entry}
+        while pending:
+            app = replay_imports(run, {path: git("show", f"{ref}:{path}") for path in sorted(pending)})
+            broken = sorted(f"{path}: {entry['error']}" for path, entry in app.items() if "error" in entry)
+            require(not broken, f"the app's modules cannot be parsed at {ref}: {broken}")
+            shipped |= pending
+            pending = {target for entry in app.values() for target in entry["targets"]
+                       if target.endswith((".js", ".mjs")) and target in tracked} - shipped
+        return files, loads, shipped & files.keys(), found
+
     base = git("merge-base", base, "HEAD").strip()
     changed_files = set(git("diff", "--name-only", base, "HEAD").splitlines())
-    sources = []
-    recipes = []
+    sources, loaded, shipped, scans, recipes = [], set(), [], [], []
     for ref in [base, "HEAD"]:
-        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend").splitlines()
-        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend/replay-cases.mjs"]
-        sources.append({path: git("show", f"{ref}:{path}") for path in paths})
+        files, loads, product, found = replay_modules(ref)
+        sources.append(files)
+        loaded |= loads
+        shipped.append(product)
+        scans.append(found)
         recipes.append(recipe_graph(git("show", f"{ref}:scripts/qa_e2e_cases.py")))
     before, after = replay_graph(run, sources)
+    for graph, files in [(before, sources[0]), (after, sources[1])]:
+        dangling = sorted({f"{dep.split('::', 1)[0]} ({dep})" for node in graph.values() for dep in node["deps"]
+                           if dep.split("::", 1)[0] in files and dep not in graph})
+        require(not dangling, f"replay dependencies name no node in their module: {dangling}")
+    # Changes to the runner itself, registry, transport or generator can affect
+    # every story. They must not disappear behind a function-only comparison,
+    # and neither may an executable the replay loads by path.
+    global_files = {"scripts/gen_qa_e2e_db.py", "frontend/replay-cases.mjs",
+                    "frontend/capture.mjs", "frontend/browser-runner.js",
+                    "mockups/sweep/harmonic-v2-desktop/acceptance.py", "package-lock.json"}
+    global_symbols = {"frontend/desk-behavior.replay.mjs::" + name
+                      for name in ["REGISTRY", "main", "openApp", "requireEnvironment", "requireAssets"]}
+    # Every node depends on its module's top-level statements (`@module`), so
+    # those statements depend on each top-level node their text names: a
+    # function that top-level code wraps or calls is reached by the module's
+    # callers. Two names are left out. A global symbol's own change already
+    # selects every story. A story table is the roots, and each story already
+    # depends on its own entry.
+    tables = {*(f"frontend/c{chunk}.replay.mjs::C{chunk}_STORIES" for chunk in [2, 3, 4]),
+              "frontend/c4.replay.mjs::C4_RETIREMENTS"}
+    for graph in [before, after]:
+        for key in [key for key in graph if key.endswith("::@module")]:
+            file = key.split("::", 1)[0]
+            deps = set()
+            for name in re.findall(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*", graph[key]["text"]):
+                parts = name.split(".")
+                dep = next((f"{file}::{'.'.join(parts[:n])}" for n in range(len(parts), 0, -1)
+                            if f"{file}::{'.'.join(parts[:n])}" in graph), None)
+                if dep and dep not in global_symbols | tables:
+                    deps.add(dep)
+            graph[key]["deps"] = sorted(deps)
     changed = {key for key in before.keys() | after.keys()
                if before.get(key) != after.get(key)}
     changed_recipes = {key for key in recipes[0].keys() | recipes[1].keys()
@@ -392,37 +1081,122 @@ def smoke_selection(run, base, ids):
         "import {storyCase} from './frontend/replay-cases.mjs';"
         "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
     defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
-    require(len(SMOKE_STORIES) == 24 and len(set(SMOKE_STORIES)) == 24
+    require(len(SMOKE_STORIES) == 25 and len(set(SMOKE_STORIES)) == 25
             and set(SMOKE_STORIES) <= set(ids), "smoke inventory differs from the frozen registry")
     case_names = {key.removeprefix("case:") for graph in recipes for key in graph if key.startswith("case:")}
     selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}
-    # Changes to the runner itself, registry, transport or generator can affect
-    # every story. They must not disappear behind a function-only comparison.
-    global_files = {"scripts/gen_qa_e2e_db.py", "frontend/replay-cases.mjs",
-                    "frontend/capture.mjs", "frontend/browser-runner.js",
-                    "mockups/sweep/harmonic-v2-desktop/acceptance.py", "package-lock.json"}
-    global_symbols = {"frontend/desk-behavior.replay.mjs::" + name
-                      for name in ["REGISTRY", "main", "openApp", "requireEnvironment", "requireAssets"]}
-    global_change = bool(changed_files & global_files or changed & global_symbols)
+    # The per-story runner (main's loop and openApp) runs for every story, so
+    # what it reaches, a product function included, joins every story's
+    # closure. Its walk stops at the registry and at the story tables it looks
+    # stories up in: those hold the stories themselves, each its own root, so
+    # a table entry stays precise.
+    stops = {"frontend/desk-behavior.replay.mjs::REGISTRY", *tables}
+    runner = [closure({key: node for key, node in graph.items() if key not in stops},
+                      [f"frontend/desk-behavior.replay.mjs::{name}" for name in ["main", "openApp"]])
+              for graph in [before, after]]
+    affected = {}
     for identity in ids:
         touched, used_cases, visited = set(), {defaults[identity]}, set()
-        for graph in [before, after]:
+        for graph, shared in zip([before, after], runner):
             roots = [f"frontend/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
             root = next((key for key in roots if key in graph),
                         f"frontend/desk-behavior.replay.mjs::{identity}")
             dependencies = closure(graph, [root])
-            touched.update(dependencies & changed)
+            touched.update((dependencies | shared) & changed)
             visited.update(value for key in dependencies for value in graph[key].get("destinations", []))
             used_cases.update(value for key in dependencies for value in graph[key].get("strings", []) if value in case_names)
         coverage[identity] = sorted(used_cases)
         destinations[identity] = sorted(visited)
         for graph in recipes:
             touched.update(closure(graph, ["case:" + name for name in used_cases]) & changed_recipes)
-        if global_change or touched:
+        affected[identity] = touched
+
+    # Replay code is judged by one default: a replay-side change plans the
+    # complete ledger, naming each key, unless every changed key is a story
+    # entry of a story table whose closure is proven read-only toward shared
+    # state: no replay-side node in it is unsafe (see replay_purity), and none
+    # carries shared state into a parameter its callee may mutate. Anything
+    # the proof does not recognize errs to the complete ledger. Those entries
+    # select exactly the stories whose closure reaches them. A table whose
+    # entries alone changed (its text with every entry and separator removed
+    # is unchanged) is judged by its entries. A module is product code only if
+    # the app reaches it at every commit that has it as a replay module;
+    # product code keeps the #406 policy: a function a story's closure reaches
+    # selects that story, and any other change leaves the fixed slice. A
+    # registry row whose id is not its function's name plans the complete
+    # ledger too, since the roots are found by id.
+    def shell(graph, key):
+        text = graph[key]["text"]
+        for child, node in graph.items():
+            if child.startswith(key + "."):
+                suffix = ",".join(node["tags"])
+                text = text.replace(node["text"][:len(node["text"]) - len(suffix)], "", 1)
+        text = re.sub(r",+", ",", re.sub(r"\s+", "", text))
+        return text.replace("{,", "{").replace(",}", "}")
+
+    product = {module for module in sources[0].keys() | sources[1].keys()
+               if all(module in shipped[index] for index in (0, 1) if module in sources[index])}
+    # Purity (see replay_purity): each node's own verdict at either commit; its
+    # parameter mutations, spread through the graph calls that pass its
+    # parameters on; then each graph call that carries shared state into a
+    # parameter its callee may mutate. A callee never read is taken to mutate.
+    own, mutates, calls, forwards = set(), {}, [], []
+    for files, shipped_here in zip(sources, shipped):
+        for key, node in replay_purity(run, files, shipped_here).items():
+            if node["unsafe"]:
+                own.add(key)
+            mutates.setdefault(key, set()).update(node["mutates"])
+            calls += [(key, callee, index) for callee, index in node["calls"]]
+            forwards += [(key, param, callee, index) for param, callee, index in node["forwards"]]
+
+    def mutated(callee, index):
+        return callee not in mutates or bool(mutates[callee] if index == "*" else index in mutates[callee])
+
+    grew = True
+    while grew:
+        grew = False
+        for key, param, callee, index in forwards:
+            if param not in mutates[key] and mutated(callee, index):
+                mutates[key].add(param)
+                grew = True
+    impure = {key for key in own | {key for key, callee, index in calls if mutated(callee, index)}
+              if key.split("::", 1)[0] not in product}
+
+    def tainted(key):
+        return sorted({node for graph in [before, after] if key in graph for node in closure(graph, [key]) & impure})
+
+    def precise(key):
+        if key in tables:
+            return key in before and key in after and shell(before, key) == shell(after, key)
+        table = next((table for table in tables if key.startswith(table + ".")), None)
+        return (table is not None and re.fullmatch(r"[SR]\d+[a-z]?", key[len(table) + 1:]) is not None
+                and not tainted(key))
+
+    unsafe = sorted(key for key in changed if key.split("::", 1)[0] not in product and not precise(key))
+    # An import line binds no graph key when its source is a Node module or a
+    # package, so a replay-side module's import declarations are compared
+    # whole, and any difference plans the complete ledger.
+    imported = [{path: entry["imports"] for path, entry in found.items()} for found in scans]
+    relinked = sorted(path for path in imported[0].keys() | imported[1].keys()
+                      if path not in product and imported[0].get(path) != imported[1].get(path))
+    rows = [found["frontend/desk-behavior.replay.mjs"].get("registry", []) for found in scans]
+    misfiled = sorted({f"registry row {identity} does not run {identity}" for table in rows if table
+                       for identity, function in table if identity is None or identity != function})
+    if any(table is None for table in rows):
+        misfiled.append("the registry is not an array of [id, function] rows")
+    infrastructure = bool(changed_files & (global_files | loaded) or changed & global_symbols)
+    global_change = infrastructure or bool(unsafe) or bool(relinked) or bool(misfiled)
+    for identity in ids:
+        if global_change or affected[identity]:
             selected.add(identity)
-            reasons[identity] = sorted(touched) if not global_change else ["shared replay infrastructure"]
+            reasons[identity] = sorted(affected[identity]) if not global_change else [
+                *(["shared replay infrastructure"] if infrastructure else []),
+                *(f"replay-side change: {key}" + (f" (reaches impure {', '.join(tainted(key))})" if tainted(key) else "")
+                  for key in unsafe), *(f"replay-side import change: {path}" for path in relinked), *misfiled]
     (run.out / "smoke.json").write_text(json.dumps({"base": base, "head": git("rev-parse", "HEAD").strip(),
         "changed_files": sorted(changed_files), "reasons": reasons, "case_coverage": coverage, "destination_coverage": destinations,
+        "replay_modules": sorted(sources[0].keys() | sources[1].keys()), "product_modules": sorted(product),
+        "path_loads": sorted(loaded),
         "fixed": SMOKE_STORIES, "selected": [identity for identity in ids if identity in selected]}, indent=2) + "\n")
     return [identity for identity in ids if identity in selected]
 
@@ -491,7 +1265,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 171, "active": 152, "retired": 19}
+    require(counts == {"issued": 193, "active": 174, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")
@@ -544,7 +1318,7 @@ class Clock(datetime):
     @classmethod
     def now(cls, tz=None):
         return clock if tz is None else clock.astimezone(tz)
-with patch.object(watched_change, 'datetime', Clock):
+with patch.object(watched_change, 'datetime', Clock), patch.object(watched_change, 'wall_clock_now', lambda after=None: clock):
     generate(Path(out), case)
     reference = Path(out).with_suffix('.reference.sqlite')
     generate(reference, case)

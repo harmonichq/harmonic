@@ -18,11 +18,17 @@ export const STORY_CASES = Object.freeze({
   S113: 'basal-verdict-gallery',
   S121: 'pattern-near-tie', S122: 'pattern-near-tie',
   S139: 'c3-trial', S140: 'c3-focus',
-  S142: 'c3-trial', S143: 'edit-chain',
+  S169: 'c3-trial', S170: 'showcase',
+  S142: 'c3-trial', S143: 'edit-chain', S157: 'c4-ic', S180: 'c4-isf', S162: 'c3-trial', S163: 'c3-trial',
   S151: 'basal-verdict-gallery', S152: 'basal-verdict-gallery', S153: 'basal-verdict-gallery',
+  S183: 'basal-verdict-gallery', S184: 'basal-verdict-gallery', S185: 'basal-verdict-gallery',
   S145: 'basal-lower', S146: 'basal-lower', S147: 'pattern-near-tie',
   S124: 'behavioral-carb-undercount', S125: 'behavioral-missed-meal', S126: 'behavioral-correction-stacking',
   S148: 'showcase', S149: 'showcase', S150: 'pattern-near-tie',
+  S166: 'basal-lower', S167: 'basal-lower', S168: 'c3-focus',
+  S173: 'c3-focus', S174: 'c3-preempted', S175: 'c4-history', S176: 'c3-preempted',
+  S182: 'pattern-near-tie',
+  S177: 'isf-strengthen', S178: 'isf-strengthen', S179: 'isf-strengthen',
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

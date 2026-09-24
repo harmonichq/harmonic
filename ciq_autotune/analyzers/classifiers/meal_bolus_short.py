@@ -191,7 +191,7 @@ def classify_meal_bolus_short(
         return MealBolusShortVerdict(
             matched=False,
             detail=(
-                f"glucose was ~flat ({slope:.1f} mg/dL/min) — nothing ran away from "
+                f"glucose was ~flat ({slope:.1f} mg/dL/min), so nothing ran away from "
                 "the meal dose"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -204,7 +204,7 @@ def classify_meal_bolus_short(
         return MealBolusShortVerdict(
             matched=False,
             detail=(
-                f"glucose was rising {slope:.1f} mg/dL/min, but {gate.detail} — "
+                f"glucose was rising {slope:.1f} mg/dL/min, but {gate.detail}; "
                 "the rise is a post-low/post-suspend recovery, not a meal dose that "
                 "fell short"
             ),
@@ -223,7 +223,7 @@ def classify_meal_bolus_short(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min with no counted meal bolus "
-                f"in the prior {digestion_lookback_min} min — there was no meal dose "
+                f"in the prior {digestion_lookback_min} min, so there was no meal dose "
                 "to fall short"
             ),
             # NO_TRIGGER, not UNDER_THRESHOLD: the behavior needs a meal dose to be
@@ -246,7 +246,7 @@ def classify_meal_bolus_short(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min after a meal bolus "
-                f"{meal_min_ago} min earlier, but no correction followed it — "
+                f"{meal_min_ago} min earlier, but no correction followed it, so "
                 "nothing corroborates a dose that fell short"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -263,7 +263,7 @@ def classify_meal_bolus_short(
             matched=False,
             detail=(
                 f"glucose kept rising {slope:.1f} mg/dL/min after a meal bolus "
-                f"{meal_min_ago} min earlier, but {rebound_owner.detail} — the rise "
+                f"{meal_min_ago} min earlier, but {rebound_owner.detail}; the rise "
                 "belongs to that low, not a meal dose that fell short"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -279,7 +279,7 @@ def classify_meal_bolus_short(
         detail=(
             f"glucose kept rising {slope:.1f} mg/dL/min despite a meal bolus "
             f"{meal_min_ago} min earlier, and a correction was needed "
-            f"{correction_min} min after that dose — the meal dose did not cover "
+            f"{correction_min} min after that dose; the meal dose did not cover "
             "what followed"
         ),
         evidence_tier=EvidenceTier.INFERRED,

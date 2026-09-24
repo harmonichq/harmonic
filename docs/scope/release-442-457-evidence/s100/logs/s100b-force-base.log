@@ -1,0 +1,189 @@
+# imports ok tree=<worktrees>/base-b03431d2 story=S100 case=showcase mode=case-file body=registry opener=function
+(node:59005) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/frame.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# showcase copy <scratch>/rel2/s100/run-base/run-1790266147755-59005/harmonic-qa-e2e.sqlite
+# serving <worktrees>/base-b03431d2 on 8765 (pid group 59018) · viewport 1280x720 · logs <scratch>/rel2/s100/run-base
+(node:59026) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.6 ms after release
+# story-time S100 milliseconds=37052.076
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:59713) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 27.3 ms after release
+# story-time S100 milliseconds=31266.480
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:60289) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.5 ms after release
+# story-time S100 milliseconds=31316.239
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:60926) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 25.7 ms after release
+# story-time S100 milliseconds=31262.437
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:61518) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.1 ms after release
+# story-time S100 milliseconds=31447.123
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:62097) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.5 ms after release
+# story-time S100 milliseconds=31231.672
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:62713) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.2 ms after release
+# story-time S100 milliseconds=31268.038
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:63303) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.6 ms after release
+# story-time S100 milliseconds=31245.447
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:63881) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 26.7 ms after release
+# story-time S100 milliseconds=31263.830
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+(node:64471) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=case-file viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 1 held response(s) after the third ArrowRight: /api/diagnose/finding-case-file
+# fullscreen chart rebuilt 31.9 ms after release
+# story-time S100 milliseconds=31118.829
+FAIL S100 — Timed out after 30000 ms: S100 / Event S8 cursor readout and accessible label; saw [ false ]; the keyboard cursor did not reveal its on-screen readout
+# mode=case-file tree=<worktrees>/base-b03431d2 pass 0 fail 10 void 0 of 10
+(node:65051) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1373.717
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65067) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1321.578
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65078) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1272.784
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65136) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1512.436
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65152) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1338.666
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65163) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1332.615
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65273) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1345.397
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65288) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1408.451
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65304) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1439.934
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+(node:65315) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<worktrees>/base-b03431d2/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <worktrees>/base-b03431d2/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# force-s100 tree=<worktrees>/base-b03431d2 mode=focus viewport=1280x720 base=http://127.0.0.1:8765 case=showcase
+# releasing 0 held response(s) after the third ArrowRight: 
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+# story-time S100 milliseconds=1385.958
+VOID S100 — no focus response was in flight at the third ArrowRight; story said PASS
+# mode=focus tree=<worktrees>/base-b03431d2 pass 0 fail 0 void 10 of 10

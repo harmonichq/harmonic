@@ -523,7 +523,7 @@ export const S4 = async (page) => {
       `the identity mark is not the locked one: ${chrome.identity}`);
     ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
       `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
-    ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',
+    ok(chrome.advisory === 'Advisory only. Review with your clinician before changing pump settings.',
       `the advisory line drifted: ${JSON.stringify(chrome.advisory)}`);
     for (const label of ['Guide', 'Settings', 'Glossary']) {
       ok(chrome.utilities.some((t) => t.includes(label)), `the footer lost ${label}: ${JSON.stringify(chrome.utilities)}`);
@@ -1401,7 +1401,7 @@ export const S45 = async (page) => {
     ok(seen(await countOf(page, '.gf-stage-trial')) === 1, 'the Trial stage did not render');
     ok(seen(await countOf(page, '[data-trial-chart]')) === 1, 'the Trial evidence figure did not mount');
     ok(seen(await page.evaluate(() => document.querySelectorAll('[data-trial-chart] canvas').length)) > 0,
-      'the shipped Verify hero drew no canvas on the Trial stage');
+      'the Trial hero drew no canvas on the Trial stage');
     ok(((seen(await page.locator('.gf-stage-trial .gf-title').first().textContent())) || '').trim().length > 0,
       'the Trial nameplate has no title');
   }, "S45");
@@ -3145,10 +3145,20 @@ export const S139 = appOnly('HV2-12',
 // STORY:harmonic-v2-desktop:S140
 export const S140 = appOnly('HV2-12',
   "#429 a watched Focus's dock names Changes, and its link opens that Focus in Changes", C4_STORIES.S140);
+// STORY:harmonic-v2-desktop:S169
+export const S169 = appOnly('HV2-24',
+  "#447 a watched Trial's dock and Changes print one day count, the served one", C4_STORIES.S169);
+// STORY:harmonic-v2-desktop:S170
+export const S170 = appOnly('HV2-12',
+  "#447 the Guide's Reading the Diagnose surface article names no Verify", C4_STORIES.S170);
 // STORY:harmonic-v2-desktop:S142
 export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);
 // STORY:harmonic-v2-desktop:S143
 export const S143 = appOnly('HV2-28', '#430 an unavailable record figure names its reason in the result line\'s words', C4_STORIES.S143);
+// STORY:harmonic-v2-desktop:S180
+export const S180 = appOnly('HV2-28', '#452 a reopened record starts its later conclusion empty with a request id of its own', C4_STORIES.S180);
+// STORY:harmonic-v2-desktop:S157
+export const S157 = appOnly('HV2-28', '#442 an older superseded change record reads its saved ending, never Still open', C4_STORIES.S157);
 // STORY:harmonic-v2-desktop:S151
 export const S151 = appOnly('HV2-17', '#433 the basal lane stays within reach on short and narrow desktop windows', C4_STORIES.S151);
 // STORY:harmonic-v2-desktop:S152
@@ -3159,6 +3169,17 @@ export const S153 = appOnly('HV2-17', '#433 every basal key verdict agrees with 
 export const S154 = appOnly('#434 reader words',
   '#434 a basal slot names why its excluded nights were left out, in the panel and the tile description',
   C4_STORIES.S154);
+// STORY:harmonic-v2-desktop:S183
+export const S183 = appOnly('HV2-11',
+  '#455 the glucose overview\'s window caption stays whole inside the chart, and no chart text overprints another',
+  C4_STORIES.S183);
+// STORY:harmonic-v2-desktop:S184
+export const S184 = appOnly('HV2-11',
+  '#455 the Spotlight\'s verdict line keeps every fact whole inside the chart at the narrowest split', C4_STORIES.S184);
+// STORY:harmonic-v2-desktop:S185
+export const S185 = appOnly('HV2-11',
+  '#455 the canvas header keeps its title, provenance and All charts control on one line at the narrowest split',
+  C4_STORIES.S185);
 // STORY:harmonic-v2-desktop:S136
 export const S136 = appOnly('HV2-14',
   '#428 after a Day return, a key, a window choice and Backspace each rename the address to the case on screen', C4_STORIES.S136);
@@ -3168,6 +3189,18 @@ export const S137 = appOnly('HV2-34',
 // STORY:harmonic-v2-desktop:S138
 export const S138 = appOnly('HV2-14',
   '#428 a case address reopens its preset window and Occurrence, and its Day hop returns to Open in Day by id', C4_STORIES.S138);
+// STORY:harmonic-v2-desktop:S162
+export const S162 = appOnly('HV2-14',
+  '#445 an active Trial\'s supporting date opens Day by its date and returns to that date\'s control', C4_STORIES.S162);
+// STORY:harmonic-v2-desktop:S163
+export const S163 = appOnly('HV2-14',
+  '#445 a change record\'s supporting date opens Day by its date and returns to that record on that date\'s control', C4_STORIES.S163);
+// STORY:harmonic-v2-desktop:S164
+export const S164 = appOnly('HV2-14',
+  '#445 a Log carbs entry opens Day by its id, and its return over a drilled case lands on its Open Day, re-read or retained', C4_STORIES.S164);
+// STORY:harmonic-v2-desktop:S165
+export const S165 = appOnly('HV2-34',
+  '#445 a Carb questions Day return over a drilled case holds one status read and lands on the prompt\'s Open Day', C4_STORIES.S165);
 // STORY:harmonic-v2-desktop:S145
 export const S145 = appOnly('HV2-20', '#431 the server confirms an in-place Plan and Changes names that read', C4_STORIES.S145);
 // STORY:harmonic-v2-desktop:S146
@@ -3192,6 +3225,39 @@ export const S149 = appOnly('ADR 432',
 // STORY:harmonic-v2-desktop:S150
 export const S150 = appOnly('ADR 432',
   '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
+// STORY:harmonic-v2-desktop:S166
+export const S166 = appOnly('HV2-15',
+  '#446 Open Plan holds for one visit, before and after a Trial begins', C4_STORIES.S166);
+// STORY:harmonic-v2-desktop:S167
+export const S167 = appOnly('HV2-15',
+  '#446 a watched Trial reaches its saved draft, and the server refuses to record it', C4_STORIES.S167);
+// STORY:harmonic-v2-desktop:S168
+export const S168 = appOnly('HV2-15',
+  '#446 a watched Focus names its return and reaches its draft', C4_STORIES.S168);
+// STORY:harmonic-v2-desktop:S173
+export const S173 = appOnly('HV2-26',
+  '#449 the active Focus names its behavior by its served name and its opportunity verdicts in words', C4_STORIES.S173);
+// STORY:harmonic-v2-desktop:S174
+export const S174 = appOnly('HV2-28',
+  '#450 a saved Focus ending and its record lines name every served reason in words', C4_STORIES.S174);
+// STORY:harmonic-v2-desktop:S175
+export const S175 = appOnly('HV2-28',
+  '#450 an unmeasured behavior cell names its reason in words and keeps its measured count', C4_STORIES.S175);
+// STORY:harmonic-v2-desktop:S176
+export const S176 = appOnly('HV2-28',
+  '#449 a Focus record\'s What changed names the watched behavior by its served name', C4_STORIES.S176);
+// STORY:harmonic-v2-desktop:S182
+export const S182 = appOnly('ADR 454',
+  '#454 a claimed Pattern Occurrence prints its sentence once, on its cause line', C4_STORIES.S182);
+// STORY:harmonic-v2-desktop:S177
+export const S177 = appOnly('ADR 451',
+  '#451 Changes reads the correction factor insulin first and says why its concern leads in words', C4_STORIES.S177);
+// STORY:harmonic-v2-desktop:S178
+export const S178 = appOnly('ADR 451',
+  '#451 Diagnose names the correction factor, and the staged dock title fits with its values below', C4_STORIES.S178);
+// STORY:harmonic-v2-desktop:S179
+export const S179 = appOnly('ADR 451',
+  '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3244,13 +3310,21 @@ export const REGISTRY = [
   ['S127', S127, J()],
   ['S133', S133, M()],
   ['S139', S139, J()], ['S140', S140, J()],
-  ['S142', S142, J()], ['S143', S143, J()],
+  ['S169', S169, J()], ['S170', S170, J()],
+  ['S142', S142, J()], ['S143', S143, J()], ['S157', S157, J()],
+  ['S180', S180, J()],
   ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S154', S154, J()],
+  ['S183', S183, J()], ['S184', S184, J()], ['S185', S185, J()],
   ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
+  ['S162', S162, J()], ['S163', S163, J()], ['S164', S164, J()], ['S165', S165, J()],
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
+  ['S166', S166, J()], ['S167', S167, J()], ['S168', S168, J()],
+  ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
+  ['S182', S182, J()],
+  ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

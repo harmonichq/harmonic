@@ -2436,8 +2436,14 @@ export const C4_STORIES = {
     identityAddress445('S164', day);
 
     await press(page, '[data-utility-close]');
-    const moved = await heldStatusReturn(page, 'S164', '[data-day="return"]');
-    assert.ok(moved.includes('/api/analyze'), 'S164 the return after logging must re-read Diagnose: the store moved');
+    // The moved store's re-read makes its own status read first, so its
+    // guidance read lands a round trip after the return's status answer —
+    // after the window heldStatusReturn records. Watch for it from the press.
+    const reread = page.waitForRequest(request => new URL(request.url()).pathname === '/api/analyze', { timeout: 30000 })
+      .then(() => true, () => false);
+    await press(page, '[data-day="return"]');
+    assert.ok(await reread, 'S164 the return after logging must re-read Diagnose: the store moved');
+    await waitForDesk(page);
     await waitForHeld428(page, held);
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('.gf-utility[data-utility="carbs"]').count()), 1,
@@ -2473,10 +2479,13 @@ export const C4_STORIES = {
   // #445: Carb questions over a drilled case with a window pressed (S137's
   // path) is a retained return: one status read, the case and window kept.
   async S165(page) {
-    await heldCaseThroughDay428(page, 'S165');
+    // After its Day return the address still carries that entry's own keys
+    // until the case changes (ADR 428); a plain return names the case alone,
+    // as S137 reads it.
+    const { subject, first } = await heldCaseThroughDay428(page, 'S165');
     const trailBefore = await text445(page, '#crumb-trail .here');
     const windowBefore = await text445(page, '#seg-window [aria-pressed="true"]');
-    const caseAddress = await address428(page);
+    const caseAddress = { subject, occurrence: first };
     assert.ok((await read(page, '/api/prompts')).length > 0, 'S165 premise: the showcase must serve a carb question');
     await press(page, '[data-utility="questions"]');
     const open = page.locator('.gf-utility [data-action="day"][data-date]').filter({ visible: true }).first();

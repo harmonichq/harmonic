@@ -4261,13 +4261,20 @@ S164 · Log carbs over a drilled Finding case with an Occurrence held: an entry
   data:     showcase; finding:over_treated_low in the Afternoon preset with its
             first roster Occurrence held (S138's drill), and an entry the story
             logs at 12:07 on the latest recorded day, into its own fresh copy
-  evidence: C4_STORIES.S164; reads the served entry and the Day address, then
-            heldStatusReturn across each Return to Log carbs, the held
-            Occurrence, the crumb, the address and document.activeElement
+  evidence: C4_STORIES.S164; reads the served entry and the Day address. On
+            the first return it watches from the press for the re-read's GET
+            /api/analyze, which the app issues after its own second status
+            read, a round trip after the return's status answer; on the second,
+            heldStatusReturn. Then the held Occurrence, the crumb, the address
+            and document.activeElement. The story's control flow is pinned on a
+            fake page in frontend/c4.replay.test.js
   status:   pending the coordinator's runs. Expected: base b03431d2 with this
             harness laid over it fails at its feature assertion, "S164 the Day
             address must name the entry by its id"; the branch passes at
-            1280x720 and 1440x900
+            1280x720 and 1440x900. A first branch run failed at the story's own
+            re-read check: heldStatusReturn stops recording at the status
+            answer, before the re-read's guidance read. The server log showed
+            that read, and the story now watches from the press
 ```
 
 ```
@@ -4287,9 +4294,16 @@ S165 · Carb questions over a drilled Finding case with a window pressed: a
             prompt's Open Day
   evidence: C4_STORIES.S165; heldStatusReturn holds /api/status across Return
             to Carb questions and records every request, then compares the
-            crumb, the pressed window, the address and document.activeElement
+            crumb, the pressed window and document.activeElement, and the
+            address with the retained case as S137 names it (subject and
+            Occurrence). The story's control flow is pinned on a fake page in
+            frontend/c4.replay.test.js
   status:   pending the coordinator's runs. Expected: base b03431d2 with this
             harness laid over it fails at its feature assertion, "S165 the Carb
             questions return must issue no request besides the held status
-            check"; the branch passes at 1280x720 and 1440x900
+            check"; the branch passes at 1280x720 and 1440x900. A first branch
+            run failed at the address: the story compared against the address
+            read right after the Diagnose Day return, which still carried that
+            entry's date, moment, title and from (ADR 428), not the case the
+            plain return names
 ```

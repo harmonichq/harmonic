@@ -213,6 +213,153 @@ test('S162–S165 are unique app-only C4 Day-return stories on their manufacture
   }
 });
 
+// A fake page for the #445 carb-utility stories, S164 and S165. It keeps the
+// page's address and answers the served reads the stories make. As in the
+// app, a click that moves the desk rewrites the address at once: an Open Day
+// writes a Day address, and each Return from Day leaves the address its
+// scripted `returns` entry names. The return then plays its requests in the
+// shape the coordinator's replay of the real app showed: its GET /api/status
+// first, then — only once that read has been answered — whatever the answer set
+// off (a moved store's re-read: its own status read, then its guidance read).
+function qa445Page({ returns, focused = true } = {}) {
+  const held = 'o-1';
+  const latest = '2024-06-28';
+  const entry = { id: 77, t: `${latest} 12:07:00` };
+  const actions = [];
+  const routes = new Map();
+  const listeners = new Set();
+  const waiters = new Set();
+  let address = {};
+  let windowLabel = '24 h';
+  let logged = false;
+  let played = 0;
+  const request = pathname => ({ url: () => `http://synthetic.invalid${pathname}` });
+  const tick = () => new Promise(resolve => setImmediate(resolve));
+  const fire = pathname => {
+    actions.push(`request:${pathname}`);
+    for (const listener of [...listeners]) listener(request(pathname));
+    for (const waiter of [...waiters]) waiter.offer(pathname);
+  };
+  // No request a waiter wants arrived: time it out, as Playwright would.
+  const expire = () => { for (const waiter of [...waiters]) waiter.expire(); };
+  // A click does not wait on the network, so the return plays on after it.
+  function playReturn() {
+    const { address: left, after = [] } = returns[played++];
+    const answered = async () => {
+      await tick();
+      for (const pathname of after) { fire(pathname); await tick(); }
+      await tick(); expire();
+    };
+    address = left;
+    fire('/api/status');
+    const route = [...routes.values()][0];
+    (route ? route({ request: () => request('/api/status'), continue: answered }) : answered()).catch(() => {});
+  }
+  const caseFile = { finding: { id: 'finding:over_treated_low' },
+    projection: { alignment: 'event', cohorts: [{ occurrence_ids: [held, 'o-2'] }] } };
+  const responses = [
+    { url: () => `http://synthetic.invalid/api/diagnose/finding-case-file?finding_id=${encodeURIComponent(caseFile.finding.id)}`,
+      ok: () => true, json: async () => caseFile },
+    { url: () => 'http://synthetic.invalid/api/status', ok: () => true },
+  ];
+  const served = { '/api/status': { latest_data_day: latest }, '/api/prompts': [{ detector: 'low' }] };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => { actions.push(`wait:${selector}`); },
+    count: async () => 1,
+    getAttribute: async name => (name === 'data-occurrence-id' ? held
+      : name === 'data-subject' ? `question:low|${latest} 12:10:00` : null),
+    evaluate: async () => (selector.includes('seg-window') ? windowLabel : selector.includes('crumb-trail') ? 'Over-treated low' : ''),
+    click: async () => {
+      actions.push(`click:${selector}`);
+      if (selector === 'Afternoon' || selector === '24 h') windowLabel = selector;
+      else if (selector.includes('case-occurrence')) {
+        address = { subject: caseFile.finding.id, occurrence: held, ...(windowLabel === 'Afternoon' ? { window: '720-1080' } : {}) };
+      } else if (selector.includes('occ-foot')) {
+        address = { date: latest, moment: `${latest} 12:10:00`, subject: caseFile.finding.id, title: 'Over-treated low',
+          occurrence: held, from: 'diagnose' };
+      } else if (selector.includes('gf-chips')) logged = true;
+      else if (selector.includes('data-utility-remove') || selector.includes('data-subject="carb:')) {
+        address = { date: latest, subject: `carb:${entry.id}`, title: 'Log carbs · 12:07', from: 'diagnose.carbs' };
+      } else if (selector.includes('[data-action="day"]')) {
+        address = { date: latest, subject: `question:low|${latest} 12:10:00`, title: 'Carb questions · 12:10',
+          from: 'diagnose.questions' };
+      } else if (selector === '[data-day="return"]') playReturn();
+    },
+  });
+  return {
+    _actions: actions,
+    url: () => 'http://synthetic.invalid/diagnose',
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    fill: async (selector, value) => { actions.push(`fill:${selector}=${value}`); },
+    reload: async () => { actions.push('reload'); },
+    evaluate: async (fn, arg) => {
+      const source = fn.toString();
+      if (source.includes('activeElement')) return focused;
+      if (source.includes('URLSearchParams')) return { ...address };
+      if (source.includes('case-occurrence')) return held;
+      return null;
+    },
+    waitForFunction: async () => {},
+    request: { get: async url => {
+      const { pathname } = new URL(url);
+      const body = pathname === '/api/carbs' ? { carb_entries: logged ? [entry] : [] } : served[pathname];
+      return { status: () => 200, text: async () => '', json: async () => body };
+    } },
+    route: async (pattern, handler) => { routes.set(pattern, handler); },
+    unroute: async pattern => { routes.delete(pattern); },
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    waitForResponse: predicate => {
+      const match = responses.find(response => predicate(response));
+      return match ? Promise.resolve(match) : new Promise(() => {});
+    },
+    waitForRequest: predicate => new Promise((resolve, reject) => {
+      const waiter = {
+        offer: pathname => { if (predicate(request(pathname))) { waiters.delete(waiter); resolve(request(pathname)); } },
+        expire: () => { waiters.delete(waiter); reject(new Error('synthetic waitForRequest timeout')); },
+      };
+      waiters.add(waiter);
+    }),
+  };
+}
+const CASE445 = { subject: 'finding:over_treated_low', occurrence: 'o-1' };
+const AFTERNOON445 = { ...CASE445, window: '720-1080' };
+// The address the Diagnose Day return leaves: that entry's own keys (ADR 428).
+const DAY_RETURN445 = { date: '2024-06-28', moment: '2024-06-28 12:10:00', ...CASE445, title: 'Over-treated low', from: 'diagnose' };
+
+test('S164 finds the moved return\'s re-read a round trip after its status read, then the retained return', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [
+    { address: AFTERNOON445, after: ['/api/status', '/api/analyze'] },
+    { address: AFTERNOON445 },
+  ] });
+  await C4_STORIES.S164(page);
+  const status = page._actions.indexOf('request:/api/status');
+  assert.ok(status >= 0 && page._actions.indexOf('request:/api/analyze') > status + 1,
+    'premise: the guidance read comes after the return\'s status read and the re-read\'s own');
+});
+
+test('S164 fails at its re-read when the return after logging reads nothing but status', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: AFTERNOON445 }, { address: AFTERNOON445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S164(page)),
+    /S164 the return after logging must re-read Diagnose: the store moved/);
+});
+
+test('S165 reads the retained case from an address that still carried the Day entry\'s keys before the return', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S165(qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: CASE445 }] }));
+});
+
+test('S165 fails at its address when the return leaves a title or a from in it', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: DAY_RETURN445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S165(page)),
+    /S165 the address must name the retained case, with no title, from or focus/);
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {

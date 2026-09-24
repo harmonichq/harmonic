@@ -1,0 +1,114 @@
+## ADDED Requirements
+
+### Requirement: Every retained change record ends by one rule
+
+At every reconcile, after recording the changes it newly detects, the system
+SHALL evaluate every retained Trial record whose saved ending carries no kind.
+It SHALL evaluate them oldest detected change first, then by record id,
+including the admission frontier record. For each record the system SHALL
+record the first of these that applies:
+
+- `reverted`, effective at the detector's reversal of the record's change;
+- `superseded`, effective at the earliest change the reconcile detects that is
+  strictly later than the record's change and earlier than the end of its watch
+  window, which is the change plus 28 days;
+- `expired_unreviewed`, effective at the end of the watch window, once the
+  reconcile's data instant has reached it.
+
+A record meeting none of these SHALL stay open. The rule SHALL NOT replace a
+saved ending, reopen an ended record, promote a record to the watch, move the
+admission frontier, change a Focus preemption, or change a recorded Plan's
+receipt or verdict. It SHALL NOT add an ending kind or an open state. An ending's
+recorded time SHALL be the reconcile's time.
+
+#### Scenario: Changes older than the watch window all end on one reconcile
+
+- **GIVEN** a synthetic store with four detected correction-factor changes, each
+  more than 28 days after the one before, and no retained record yet
+- **WHEN** it is reconciled once through the public reconcile path
+- **THEN** each of the four records ends `expired_unreviewed`, effective 28 days
+  after its own change
+- **AND** no retained record is left without an ending
+
+#### Scenario: A later change inside the window supersedes an older record
+
+- **GIVEN** two detected carb-ratio changes nine days apart, both first recorded
+  by one reconcile after both windows have passed
+- **WHEN** the reconcile runs
+- **THEN** the older record ends `superseded`, effective at the later change's
+  detected time
+- **AND** the later record ends `expired_unreviewed` at the end of its own window
+
+#### Scenario: A later change of another setting supersedes too
+
+- **GIVEN** a detected correction-factor change and a detected carb-ratio change
+  ten days later, both first recorded by one reconcile
+- **WHEN** the reconcile runs
+- **THEN** the correction-factor record ends `superseded`, effective at the
+  carb-ratio change's detected time, as the live watch does
+
+#### Scenario: A reversal comes before supersession
+
+- **GIVEN** an open retained record whose change the detector reports reverted,
+  and a later detected change inside its window after the reversal
+- **WHEN** a reconcile runs
+- **THEN** the record ends `reverted`, effective at the reversal
+
+#### Scenario: A record inside its window stays open
+
+- **GIVEN** a retained record whose watch window has not passed at the
+  reconcile's data instant, with no later detected change and no reversal
+- **WHEN** a reconcile runs
+- **THEN** the record keeps an ending with no kind
+
+#### Scenario: A second reconcile changes no saved ending
+
+- **GIVEN** a store whose records were ended by one reconcile
+- **WHEN** a second reconcile runs over the same and newer inputs
+- **THEN** every saved ending, its effective time, recorded time and assessment
+  are unchanged
+
+#### Scenario: A Plan receipt is unchanged by the ending rule
+
+- **GIVEN** a recorded Plan reconciled to an older retained record, with later
+  detected changes that end that record
+- **WHEN** the reconcile runs
+- **THEN** the Plan's receipt and both records' reconciliation fields are the
+  ones the reconcile recorded before this change
+
+### Requirement: An ending's saved assessment reads evidence only up to its ending instant
+
+Every Trial ending a reconcile records (`reverted`, `superseded`,
+`expired_unreviewed`) SHALL save its assessment with its data cutoff equal to the
+ending's effective instant. When the record's retained comparison context is
+available and its source pump read was captured after that instant, the saved
+assessment SHALL be unavailable with reason `context_after_ending`. No
+comparison SHALL be computed for it. A context whose source pump read was
+captured at or before the instant SHALL be used as it is. The comparison
+engine, its evidence periods, readiness criteria and the record's retained
+context SHALL NOT change.
+
+#### Scenario: An expiry recorded after the fact reads data to its own instant
+
+- **GIVEN** a retained record whose watch window ended three days before the
+  reconcile's data instant, with a retained context from a pump read before the
+  window ended
+- **WHEN** the reconcile records its `expired_unreviewed` ending
+- **THEN** the saved assessment's data cutoff is the end of the watch window, not
+  the reconcile's data instant
+
+#### Scenario: A context read after the ending leaves the assessment unavailable
+
+- **GIVEN** an older detected change first recorded by a reconcile whose latest
+  pump read is later than the change's ending instant
+- **WHEN** the reconcile records its ending
+- **THEN** the saved assessment is unavailable with reason `context_after_ending`
+- **AND** its data cutoff is the ending instant
+
+#### Scenario: A context read before the ending is used
+
+- **GIVEN** an older record whose retained context comes from a pump read captured
+  before the later change that supersedes it
+- **WHEN** the reconcile records its `superseded` ending
+- **THEN** the saved assessment is computed with that context and its After
+  period reads data to the superseding change's instant

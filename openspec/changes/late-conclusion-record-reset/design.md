@@ -74,7 +74,10 @@ so the next arrival re-reads the roster.
    resends the same request id: the server's idempotency contract depends on
    it. A Day round trip from the record returns through the record's own
    address, so it is the same identity and keeps them too.
-5. **What does not move.** The successful-save clear stays where it is. It is a
+5. **The unused `selectedRecord` export goes.** Nothing in the tree imports
+   it; it and its line in the module's published-interface header are
+   deleted.
+6. **What does not move.** The successful-save clear stays where it is. It is a
    different rule (a saved conclusion empties its own form) and it applies to
    the same record. ADR 430's `failed` clear stays where the record read lands,
    because `failed` does not carry. The Day door, the retry re-read in the save,
@@ -97,10 +100,13 @@ so the next arrival re-reads the roster.
 
 ### Ledger
 
-The fix leaves every existing story's reads unchanged. The stories that open or
-leave a record are replayed unchanged as regression: S52's finished-change
-handoff, S105's and S110's roster press and reload, S112's loading frames, and
-S142's and S143's roster press.
+The fix leaves every existing story's reads unchanged. The twelve stories that
+reach `openRecord` or leave a record are replayed unchanged as regression:
+- the finished-change handoff: S52, R17 (which runs S52), S92 and S94 (through
+  the c3 `ending()` helper);
+- the retry landings after a refused save: S53 (finish) and S57 (resolve);
+- a roster press: S54b, S105 and S110 (each with reload or return), S112's
+  loading frames, and S142's and S143's record reads.
 
 **S180 is added** (coordinator ruling Q1 on this triage, under the Q3
 delegation). It proves the rule in the built app on c4-isf, the case store

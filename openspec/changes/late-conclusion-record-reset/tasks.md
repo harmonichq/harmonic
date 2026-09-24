@@ -5,6 +5,13 @@ amendment below: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out
 yourself from here"); coordinator ruling R452, with its triage rulings Q1 (add
 S180) and Q2 (reopening the same record from the roster starts empty).
 
+Comments in shipping files (`frontend/history.js`, `frontend/c4.replay.mjs`,
+`frontend/c4.replay.test.js`, `frontend/follow-up-lifecycle.test.js`,
+`frontend/desk-behavior.replay.mjs`, `frontend/replay-cases.mjs`) cite ADRs by
+number only. They name no `docs/scope/`, `mockups/` or `openspec/changes/` path:
+the public-links check fails on a comment that points at a file the public tree
+excludes.
+
 ## 1. One place clears everything held for the open record (desk)
 
 - [ ] 1.1 In `frontend/history.js`, make one function the only writer of
@@ -31,6 +38,9 @@ S180) and Q2 (reopening the same record from the roster starts empty).
   - the `#late-conclusion-conclusion` input binding;
   - the Day door (`[data-day-date]`);
   - the assessment and reassessment-retry bindings.
+
+  Delete the `selectedRecord` export and its line in the module's
+  published-interface header comment: nothing in the tree imports it.
 
   No other file changes behavior.
 - [ ] 1.2 Rewrite the page-memory comment above `memory`, and the doc comments on
@@ -136,8 +146,8 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
       `frontend/follow-up-lifecycle.test.js`, because no committed case store
       serves two expired Trials.
     - `status`: the coordinator's run, pending.
-  - the regression stories replayed unchanged: S52, S105, S110, S112, S142 and
-    S143. S181 is unused.
+  - the regression stories replayed unchanged: S52, S53, S54b, S57, S92, S94,
+    R17, S105, S110, S112, S142 and S143. S181 is unused.
   - a handler inventory table in the #430 amendment's form. Its rows are the
     Later conclusion text input, Record later conclusion and its Retry, and the
     later-conclusion clear on opening or leaving a record. Each row reads
@@ -170,8 +180,9 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
     "S180 reopening the record from the roster must start its later conclusion
     empty".
   - `ONLY=S180` on the branch: executed 1 · failed 0 · deferred 0 · selected 1.
-  - `ONLY=S52,S105,S110,S112,S142,S143` on the branch: executed 6 · failed 0 ·
-    deferred 0 · selected 6, the same as on base.
+  - `ONLY=S52,S53,S54b,S57,S92,S94,R17,S105,S110,S112,S142,S143` on the
+    branch: executed 12 · failed 0 · deferred 0 · selected 12, the same as on
+    base.
   - The desk browser suite's `--test-name-pattern='an expired Trial
     distinguishes its Later conclusion input'` (2 tests) passes unchanged.
   - The complete ledger runs once at integration.

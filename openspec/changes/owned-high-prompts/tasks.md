@@ -39,6 +39,15 @@
   meal carries an ISF and a Dose-stamped carb ratio so its judgment reaches the gate.
   The `design.md` evidence block gives shapes for both. Each fails on the base,
   where the configured verdict still matches.
+- [ ] 1.5 Pin the two reader-facing definitions of upstream cause through their
+  public readers. Nothing pins either string today. In `tests/test_guide_catalog.py`,
+  assert that the `upstream_cause` entry of `build_catalog()["silence_reasons"]`
+  serves exactly the new body in ADR 448 Decision 3. In `frontend/day.test.js`,
+  beside the existing test that reads the Glossary's Quiet entry through
+  `glossaryGroups`, assert that its definition contains exactly the new
+  "explained (…)" clause in Decision 3. Assert each string as a literal copied from
+  the ADR, never derived from the module under test. Each fails on the base, which
+  serves the gate-only wording.
 
 ## 2. Implementation
 
@@ -77,16 +86,26 @@
   property access such as `DC.REASON_DEF`, which is how the v1 shell read them
   before #416. Triage found no other reader.
 
+- [ ] 2.5 Reword the two reader-facing definitions to the sentences in ADR 448
+  Decision 3. The first is the `SilenceReason.UPSTREAM_CAUSE` body in
+  `ciq_autotune/analyzers/scenario/guide.py`, served by `/api/catalog` and
+  rendered by the Guide's silence article. The second is the "explained" clause of
+  the Quiet entry in `frontend/glossary.js`. Change no label, tier, order or other
+  entry. Leave the pipeline article's "Silence is a verdict, not a gap" paragraph
+  as it is (Decision 3 says why).
+
 ## 3. Record, generated artifacts and gates
 
 - [ ] 3.1 In the **Carb-log prompt** entry of `CONTEXT.md`, say that "did you eat
   here?" is asked at a missed-meal rise onset that no over-treated low's rebound
   owns. An owned rise is explained by its low, which asks its own question when it
   is sub-70.
-- [ ] 3.2 Regenerate `mockups/harmonic-v2.exploration/focus.json` and
-  `journey.json` with `uv run python mockups/harmonic-v2.exploration/generate.py`.
-  Only the analyzer `code_version` stamp and the context ids derived from it may
-  move. Leave every drift check current: the eleven in `DRIFTS` in
+- [ ] 3.2 Regenerate `mockups/harmonic-v2.exploration/focus.json`, `journey.json`,
+  `utilities.json` and `glossary.js` with
+  `uv run python mockups/harmonic-v2.exploration/generate.py`. In `focus.json`
+  and `journey.json`, only the analyzer `code_version` stamp and the context ids
+  derived from it may move. In `utilities.json` and `glossary.js`, only the two
+  sentences task 2.5 rewords may move. Leave every drift check current: the eleven in `DRIFTS` in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py`, each run as
   `uv run python <path> --check` except `scripts/check_demo_fixtures.py`, which
   takes no flag, and `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check`.

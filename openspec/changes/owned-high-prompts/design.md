@@ -9,8 +9,10 @@ Scenario evaluation already records (`Attribution.owned_highs`), never a second
 judgment. Late bolus and carb undercount pass `scenario_config` to the context
 gate. The two classifier comments are corrected. The unread reference tables and
 the test that reads only them are deleted. Ownership is not narrowed for either
-boundary case. This record settles how the ruling is carried out and why
-ownership stays as ADR 422 drew it.
+boundary case. After plan-review round 1, the coordinator widened the ruling
+under the same delegation: the Guide's and the Glossary's reader-facing
+definitions of upstream cause are corrected too. This record settles how the
+ruling is carried out and why ownership stays as ADR 422 drew it.
 
 ### Context
 
@@ -101,12 +103,43 @@ gate setting would otherwise be silently ignored by these two. No output changes
 today. Every retained configuration in committed output is the default (90
 minutes, 70 mg/dL), and production builds the default everywhere else.
 
-### Decision 3 — the comments and the unread tables
+### Decision 3 — the definitions of upstream cause, and the unread tables
 
-The correction-on-active-insulin and correction-stacking comments say
-*upstream-cause* is reserved for the context gate. Since ADR 422 it also names an
-over-treated low's rebound owning the rise. Both comments name both sources, in
-missed meal's wording. Both still say why their own branch is `no_trigger`.
+Since ADR 422, *upstream-cause* names two sources: the context gate's recent low
+or defensive suspend, and an over-treated low's rebound owning the rise
+(`CONTEXT.md`, and the `SilenceReason` docstring in
+`ciq_autotune/analyzers/classifiers/evidence.py`). Four copies still name only the
+gate. Each now names both, in those terms:
+
+* **The Guide's silence article.** The `upstream_cause` body in
+  `ciq_autotune/analyzers/scenario/guide.py` is served by `/api/catalog` and
+  rendered verbatim by the desk's Guide. It becomes: "An observable recent low
+  and/or a defensive suspend explains the move, or the rise is the rebound of an
+  over-treated low, which owns it. A recovery, not the behavior itself."
+* **The Glossary's Quiet entry.** Its "explained" count in `frontend/glossary.js`
+  becomes: "explained (a recent low or a defensive suspend already explains the
+  move, or the rise is the rebound of an over-treated low)".
+* **Two classifier comments.** The correction-on-active-insulin and
+  correction-stacking comments say UPSTREAM_CAUSE is reserved for the context
+  gate. Both name both sources, in missed meal's wording, and both still say why
+  their own branch is `no_trigger`.
+
+The Guide and Glossary copies are reader-facing, and no test pins either string
+today. So a failing-first test pins each new sentence through its public reader:
+the catalog (`build_catalog`) and the glossary module (`glossaryGroups`). That
+makes this a shipped-surface revision of two served sentences. It is sanctioned
+under `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from
+here"); coordinator ruling R448`. No layout, control or behavior moves. No
+behavior-ledger story reads either sentence: S122 opens the Glossary's Episode
+Log group without reading the Quiet wording. Neither `DESIGN.md` nor any
+specification restates them, so the design record needs no amendment. The design
+exploration regenerates its extracted copies of both (`utilities.json`,
+`glossary.js`).
+
+The Guide's pipeline article keeps its "Silence is a verdict, not a gap"
+paragraph unchanged. It gives examples of silence ("Sometimes … an observable low
+or suspend upstream already explains the move, or a prior bolus owns the rise"),
+not a definition of upstream cause, and each example stays true.
 
 The Day chart module's `DETECTOR_REFERENCE`, `REASON_REFERENCE`, `DETECTOR_DEF` and
 `REASON_DEF` have had no reader since the v1 retirement (#416). Their only
@@ -136,9 +169,14 @@ or ending it at a second rise. That changes which lows are over-treated, and how
 far each is scored, far beyond these two cases. The prompt's answer is
 exclusion-only (AGENTS.md: the manual Carb log is threaded through the analysis
 purely as an exclusion signal). So the cost of leaving ownership as drawn is one
-unasked question in the first case. In the second case the carbs are on the pump
-feed, and missed meal already counts that bolus as a meal, so a High inside its
-digestion lookback is not a missed meal whether or not the low owns it. No QA
+unasked question in the first case. The second case costs one too, over a narrow
+window. Missed meal counts the 10–19 g bolus as a meal only within its 150-minute
+digestion lookback. Take a bolus within 30 minutes after the nadir and a rise
+that crosses 250 mg/dL more than 150 minutes after the bolus but within 180
+minutes of the nadir. That rise is outside the lookback yet inside the rebound. It
+is owned, so it loses its "Did you eat here?". A High inside the lookback is not
+a missed meal whether or not the low owns it. The bolus's carbs are on the pump
+feed either way. Ownership is still not narrowed (R448). No QA
 coverage era is added and no budget is re-measured for this decision, because
 nothing an analyzer produces changes.
 
@@ -147,9 +185,10 @@ nothing an analyzer produces changes.
 The low prompt; the answered-match, anchor tolerance, coverage, expiry, grace and
 display-cap rules; the `/api/prompts` payload shape; the context gate's defaults;
 segmentation; the rebound horizon, bar and meal stop; every staging predicate, cap
-and support floor. No rendered surface changes: the desk renders the served
-prompts as before. `build_candidates` gains one keyword, `low_answers`, whose
-empty default reproduces a store with no low answers.
+and support floor. The desk renders the served prompts as before. Apart from
+Decision 3's two sentences, no rendered surface changes. `build_candidates` gains
+one keyword, `low_answers`, whose empty default reproduces a store with no low
+answers.
 
 ### Evidence
 
@@ -231,9 +270,13 @@ committed. It removed exactly the four owned-High prompts above. It kept the
 missed-meal prompt for an unbolused rise with no low before it. With a `no` answer
 at the nadir it restored the High's prompt; with `not-sure` or `carbs` it did not.
 On it, the 46 existing queue and `/api/prompts` tests passed. No QA case recipe's
-served queue moved (71 recipes, showcase included). The #422 ownership case's
-owned High sits outside its 7-day queue window. The design exploration's `pending`
-rows were unchanged; only its analyzer `code_version` stamp and the context ids
-derived from it moved. The QA harness (`execute_case`) does not read the queue, so
+served queue moved (71 recipes, showcase included). No recipe exercises the
+removal. The #422 ownership case has two owned Highs. The rising one (05-23) sits
+before its 7-day queue window. The flat-approach one (05-24 16:00) is inside the
+window but raises no prompt on the base either, because the missed-meal
+classifier returns `no_trigger` for it. Only the new tests exercise the prompt
+removal. The design exploration's `pending` rows were unchanged; only its analyzer
+`code_version` stamp and the context ids derived from it moved. Decision 3's
+rewording will also move the exploration's extracted Guide and Glossary copies. The QA harness (`execute_case`) does not read the queue, so
 no QA case expectation can move. The late-bolus and carb-undercount change moves
 no committed output, because every retained configuration is the default.

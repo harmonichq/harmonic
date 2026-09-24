@@ -26,8 +26,10 @@ changed gate low line or lookback never reaches their verdicts. #422 fixed this
 for missed meal and meal bolus fell short only. Every production configuration is
 the default today, so no current output differs.
 
-Two classifier comments still define the *upstream-cause* silence reason as the
-context gate alone. The desk carries four reference tables that nothing reads.
+Four copies still define the *upstream-cause* silence reason as the context gate
+alone: two classifier comments, the Guide's silence article and the Glossary's
+Quiet entry. The last two are what a reader sees. The desk also carries four
+reference tables that nothing reads.
 
 ## What changes
 
@@ -39,8 +41,11 @@ context gate alone. The desk carries four reference tables that nothing reads.
   judged exactly as today.
 - Late bolus and carb undercount judge the context gate under the scenario
   configuration they are given.
-- The correction-on-active-insulin and correction-stacking comments name both
-  upstream-cause sources: the context gate and an over-treated low's rebound.
+- The correction-on-active-insulin and correction-stacking comments, the Guide's
+  silence article and the Glossary's Quiet entry name both upstream-cause
+  sources: the context gate and an over-treated low's rebound. Tests pin the two
+  reader-facing sentences. After plan-review round 1 the coordinator widened the
+  ruling to cover them, under the same delegation.
 - The unread detector and silence-reason reference tables in the Day chart module
   are deleted, with the one test that reads only them.
 - Ownership is not narrowed for either boundary case the #422 review raised. ADR
@@ -52,7 +57,8 @@ context gate alone. The desk carries four reference tables that nothing reads.
   stop, every staging predicate, cap and support floor.
 - The low prompt, the answered-match, coverage, expiry and display-cap rules of
   the queue.
-- Every rendered surface. The desk renders the served prompts unchanged.
+- Every rendered surface except those two served sentences. The desk renders the
+  served prompts unchanged.
 
 ## Impact
 
@@ -61,6 +67,8 @@ context gate alone. The desk carries four reference tables that nothing reads.
 `ciq_autotune/analyzers/classifiers/carb_undercount.py`,
 `ciq_autotune/analyzers/classifiers/correction_on_iob.py` and
 `ciq_autotune/analyzers/classifiers/correction_stacking.py` (comments),
-`frontend/day-chart.js` and its test, their tests, `CONTEXT.md`, the
-behavioral-layer spec (two ADDED requirements), and the design exploration's
-generated `code_version` stamps.
+`ciq_autotune/analyzers/scenario/guide.py` (one served sentence),
+`frontend/glossary.js` (one sentence), `frontend/day-chart.js` and its test, their
+tests, `CONTEXT.md`, the behavioral-layer spec (three ADDED requirements), and the
+design exploration's generated `code_version` stamps and its extracted Guide and
+Glossary copies.

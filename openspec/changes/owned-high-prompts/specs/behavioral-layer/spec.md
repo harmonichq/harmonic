@@ -59,3 +59,24 @@ bolus and carb undercount.
 - **THEN** the context gate explains the rise and the classifier does not match,
   with silence reason `upstream_cause`
 - **AND** under the default configuration the same meal still matches
+
+### Requirement: Every reader-facing definition of upstream cause names both of its sources
+
+The Guide's silence article, served from the catalog, and the Glossary's Quiet
+entry SHALL define upstream cause (the Quiet stretch's "explained" count) by both
+of its sources: an observable recent low or defensive suspend that explains the
+move, and the rebound of an over-treated low that owns the rise. Neither SHALL
+describe it as the context gate alone. No label, evidence tier, order or other
+entry of either SHALL change.
+
+#### Scenario: The catalog serves both sources
+
+- **WHEN** the catalog is read
+- **THEN** its `upstream_cause` silence reason's body names a recent low or
+  defensive suspend and an over-treated low's rebound
+
+#### Scenario: The Glossary's Quiet entry names both sources
+
+- **WHEN** the Glossary's Episode Log group is read
+- **THEN** the Quiet entry's "explained" count names a recent low or defensive
+  suspend and an over-treated low's rebound

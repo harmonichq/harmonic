@@ -402,14 +402,19 @@ The task 3.3 OID is then re-recorded here and task 4.5 is re-run.
 
 ## 5. Verify in a browser and on a port (coordinator; serial, after `npm ci && npm run build`)
 
-- [ ] 5.1 Red proof: on the task 1.4 commit,
+- [x] 5.1 Red proof: on the task 1.4 commit,
       `node --test --test-name-pattern 'press waits for a Day return control' frontend/desk.browser.test.mjs`
       reports tests 1, fail 1 with the line `✖ press waits for a Day return control that renders late, and names an absent or hidden control`, failing at the late
       Return press with `no control matched [data-day="return"]`. On the final
       commit it reports tests 1, pass 1 with the line `✔ press waits for a Day return control that renders late, and names an absent or hidden control`. A pattern
       that matches nothing also reports tests 1, pass 1 (the file itself), so
       the named line is the evidence, not the count.
-- [ ] 5.2 Repetition, on the final commit: ten consecutive runs of
+      Result (coordinator's run): on `ce03aacd` the named test fails with
+      `no control matched [data-day="return"]`; on the section 2 helpers it
+      passes with its `✔` line. Those helpers' content is identical from
+      `411dcb3e` through `a902a70a`; the coordinator's diff shows only the
+      acceptance driver and its documents changed between them.
+- [x] 5.2 Repetition, on the final commit: ten consecutive runs of
       `--test-name-pattern 'a key pressed on Day leaves the parked Diagnose'`
       each report tests 1, pass 1 with the line `✔ a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read`. Ten consecutive runs
       of
@@ -422,8 +427,14 @@ The task 3.3 OID is then re-recorded here and task 4.5 is re-run.
       `press waits for a Day return control that renders late, and names an absent or hidden control`;
       `a utility takes the reading pane's seat, marks its launcher, and gives focus back on Close`;
       `repeated entry and exit leaves no duplicate chart, pane or utility behind`.
-- [ ] 5.3 The whole desk suite, once, on the final commit: tests 44, pass 44.
-- [ ] 5.4 The stories the new selection adds for the `railRowLocator` edit, at
+      Result (coordinator's runs, on the identical section 2 helpers): the
+      single named test passed 10 of 10 repeats, and the seven-test group
+      passed 7 of 7 with each named `✔` line on all ten runs (the `3a338d51`
+      run).
+- [x] 5.3 The whole desk suite, once, on the final commit: tests 44, pass 44.
+      Result (coordinator's run, on the identical section 2 helpers): 44 of
+      44 pass.
+- [x] 5.4 The stories the new selection adds for the `railRowLocator` edit, at
       1280x720, on the final commit, with a fresh `CASE_STORE_DIR` and port
       8765 free:
       `TARGET=app VIEWPORT=1280x720 BASE_URL=http://127.0.0.1:8765 ONLY=<task 4.5's recorded list> node frontend/desk-behavior.replay.mjs`
@@ -435,5 +446,8 @@ The task 3.3 OID is then re-recorded here and task 4.5 is re-run.
       4.5's 35-id list, so the replay reports
       `# executed 35 · failed 0 · deferred 0 · selected 35`, with a `PASS` line
       for each of the 35 ids.
-- [ ] 5.5 The complete `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`,
+      Result (coordinator's run, at 1280x720): 35 of 35 pass,
+      `# executed 35 · failed 0 · deferred 0 · selected 35`.
+- [x] 5.5 The complete `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`,
       which binds a port in `ServerLifecycleTest`, passes on the final commit.
+      Result (coordinator's run): OK on `a902a70a`.

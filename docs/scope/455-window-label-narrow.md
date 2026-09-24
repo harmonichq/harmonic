@@ -2,10 +2,10 @@
 
 Triage ledger for GitHub issue #455. The change record is
 `openspec/changes/window-label-narrow/`. `/scope` (delegated) found the
-caption and the Spotlight line settled by coordinator ruling R455 and the
-coordinator's scoping, and one genuine decision outside them: the canvas
-header's title. This ledger records the defaults assumed, the questions sent to
-the release coordinator, and the mandatory plan-review rounds.
+caption settled by coordinator ruling R455 and three genuine decisions outside
+it, which the coordinator ruled on 2026-09-23. It also found one more, Q4,
+drafted to its default. This ledger records the rulings, the defaults assumed,
+and the mandatory plan-review rounds.
 
 ## Decisions
 
@@ -28,23 +28,46 @@ the release coordinator, and the mandatory plan-review rounds.
 - **A wrapped caption wears the knock-out pad, and the target caption takes
   its floor placement.** Why: a second line crosses the 180 rule and fills the
   target caption's row; both placements already ship. → ADR.
-- **The Spotlight's verdict line breaks between facts, and the figure gives
-  up the line.** Why: no type size fits the longest verdict at 832, and
-  stepping the verdict below the tally inverts their rank. The cost at
-  832×560, about 14 of about 25 px of plot, is sent to the coordinator as Q2.
-  → ADR.
-- **Stories S183 and S184 run on `basal-verdict-gallery`; the smoke slice is
-  unchanged.** Why: S113 already carries that case in `SMOKE_STORIES`.
+- **Q1, ruled (b)** (coordinator, 2026-09-23). Recorded as ruled: "The
+  2026-08-19 owner ruling (header truncates, never wraps) is settled and not
+  re-litigated, so no second header line. At the narrowest split only, the All
+  charts control shows its icon only (keeping its accessible name and
+  tooltip), and the freed space lets 'Glucose by time of day' draw, truncating
+  with an ellipsis if it must. Acceptance: at 832x720 and 832x560 the title
+  renders a non-empty visible string inside the header; at 1280x720 and
+  1440x900 the header is unchanged." Triage bounds "the narrowest split" at
+  832–1023 px, below the 1024 px tablet width of the 2026-08-19 ruling, and
+  S185 pins 1024×768 as unchanged. → ADR (design.md, third ADR 455).
+- **Q2, ruled "accept"** (coordinator, 2026-09-23). The Spotlight's verdict
+  line breaks between facts, and the figure gives up the line, about 11 px of
+  plot left at 832×560. → ADR (second ADR 455).
+- **Q3, ruled "keep"** (coordinator, 2026-09-23). The spread tail that a
+  window that is not thin sheds when it does not fit keeps shedding. → ADR
+  (first ADR 455).
+- **The two collisions are fixed here; R455 is amended** (coordinator,
+  2026-09-23). Recorded as ruled: "both are fixed in this change (no
+  follow-ups) … R455 is amended: desktop sizes may change for exactly these
+  two collision fixes and nothing else. Each gets a failing-first check (node
+  where the geometry is computable, otherwise a replay check)." Both are
+  computable in node. The y-axis yield is also caught in the browser by
+  S183's overlap check at every size. → ADR (fourth ADR 455).
+- **Stories S183–S185 run on `basal-verdict-gallery`; the smoke slice is
+  unchanged.** Why: S113 already carries that case in `SMOKE_STORIES`. S186
+  is not used, because the rule's geometry is node-computable. → inline.
+- **The base leg precedes implementation** (task 1.5). Why: several things are
+  theory from the renders, and S183–S185 on base settle them before code
+  moves:
+  - the Spotlight mechanism;
+  - every preset's thinness;
+  - the header's widths;
+  - 1024×768's header.
+
   → inline.
-- **The base leg precedes implementation** (tasks 1.4). Why: the Spotlight
-  mechanism (under the Keep control, or past the canvas) and every preset's
-  thinness are theory from renders; S183 and S184 on base settle both before
-  code moves. → inline.
-- **The spread tail that a window that is not thin sheds when it does not fit
-  keeps shedding.** Why: that is shipped behavior at every width. The spread
-  also prints in the header readout and the inspector, and it is not the
-  safety notice. Sent to the coordinator as Q3 to confirm R455's "nothing
-  shortened" does not reach it. → inline.
+- **Q4 is drafted to its default: charts re-lay out on a size change.** Why:
+  every width-dependent choice is made at build time and a resize only
+  rescales, so narrowing the window to 832 keeps the wide layout's cut text
+  until the next click, which is the state R455 forbids. → ADR (fifth ADR 455),
+  pending the coordinator's ruling.
 
 ### Risk contract
 
@@ -54,34 +77,24 @@ Disposition: admitted.
 
 ## Open questions
 
-Sent to the release coordinator. Each has a recommended default, and the
-draft is written to that default.
+- ~~Q1: the header's title.~~ Ruled (b), 2026-09-23.
+- ~~Q2: the figure's height at 832×560.~~ Ruled "accept", 2026-09-23.
+- ~~Q3: the spread tail.~~ Ruled "keep", 2026-09-23.
+- ~~The two collision findings.~~ Ruled into this change, 2026-09-23.
+- **Q4: re-layout on resize** (sent to the coordinator). A window resize only
+  rescales the overview and the evidence tiles. The caption's fit, the target
+  caption, the y-label rule and the Spotlight's rank and verdict line are
+  chosen at build time. So a reader who narrows the window from 1280 to 832
+  keeps the 1280 layout, and its text is cut, until their next click. The
+  options:
+  - (a) Relayout on a size change for the overview and the descriptor tiles
+    (drafted). Cost: `diagnose-workstation.js` joins the diff, and a resize
+    re-renders once per frame.
+  - (b) Accept it as a stale layout until the next paint. Cost: R455's 832
+    acceptance fails in a state one resize reaches. S183 and S184 would then
+    press a preset after each resize, a re-pin.
 
-- **Q1: the canvas header's title at 832 px.** "Glucose by time of day"
-  paints nothing there, because the provenance chip and the All charts control
-  fill the one-line header. The 2026-08-19 owner ruling says that header
-  truncates, never wraps, and never hides its provenance. The options:
-  - (a) At the narrowest split only, the header takes a second line when the
-    title, the provenance and the control cannot share one. Everything reads
-    whole. It amends the 2026-08-19 ruling at that width, and the Spotlight
-    loses one header line of height.
-  - (b) The All charts control shows its icon only at the narrowest split. The
-    title then truncates to what the room left allows. It stays one line, and
-    the title stays partly cut.
-  - (c) Record it as accepted (Unsupported), as ADR 433 did for the hover
-    readout.
-
-  Recommended: (a). It is the only option that meets R455's own standard.
-  Deciding it needs the coordinator's measurement of the header's parts, below.
-  Not in the draft until ruled.
-- **Q2: the Spotlight's figure height at 832×560.** Default: break between
-  facts and accept about 11 px of plot at that short window. Alternative: the
-  9 px step-down hybrid in design.md.
-- **Q3: the spread tail.** Default: unchanged.
-- **Findings, not in this change:** the y-axis minimum label half-hidden under
-  the "70" target numeral, and the Spotlight's programmed-rate tick crossed by
-  its rule, both at every size. R455 rules out change at 1280×720 and
-  1440×900, so the coordinator decides where they go.
+  Recommended: (a).
 
 ## Spawned tasks
 
@@ -89,4 +102,7 @@ None. This release files no follow-up issue.
 
 ## Review rounds
 
-None yet. The coordinator dispatches the mandatory `/plan-review`.
+- **Round 0 (coordinator rulings, before `/plan-review`).** The draft pinned
+  at a55b8f8e left Q1–Q3 and the two findings open. The coordinator ruled all
+  five, and this revision absorbs them. There are no reviewer blockers yet.
+  The mandatory `/plan-review` is the coordinator's to dispatch.

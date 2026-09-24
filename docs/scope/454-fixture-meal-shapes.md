@@ -107,5 +107,11 @@ None.
 - Round 0 (triage draft, lock 1 at 99bb43cd): returned to the coordinator.
 - Round 1 (coordinator rulings Q1–Q5, 2026-09-23): change amended and re-pinned (a4b4106f).
 - Round 2 (coordinator rulings Q2 limit and Q6, 2026-09-23): change amended and re-pinned (7b615133).
-- Round 3 (coordinator rulings Q6a and Q7, 2026-09-23): change amended and re-pinned;
-  awaiting the coordinator's `/plan-review`.
+- Round 3 (coordinator rulings Q6a and Q7, 2026-09-23): change amended and re-pinned (4341bfe4).
+- Plan-review r1 (2026-09-23): BLOCKED, 4 blocking + 1 note, all `authoring`
+  (present since the draft): the memberless backend test the mutation's deletion
+  breaks; the gate transcribed from a stale seven-line copy, and the dose/ratio
+  baseline the regenerated fixtures move; per-sub-order verification lines; the
+  basal row misnamed "04:00" (it is basal:420-450, 07:00); note: the ledger header's
+  inventory line and ACCEPTANCE.md are coordinator-owned. All fixed in one commit
+  and re-pinned; awaiting the coordinator's next `/plan-review` round.

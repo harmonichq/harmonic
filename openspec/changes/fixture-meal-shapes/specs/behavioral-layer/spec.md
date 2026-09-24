@@ -141,9 +141,9 @@ SHALL serve those same frozen inputs.
   the browser population
 - **THEN** each answer equals the server's frozen projection of the same inputs
   byte for byte, row order included
-- **AND** in the whole day Basal 04:00, Over-treated low, Late bolus and Correction
+- **AND** in the whole day Basal 07:00 (basal:420-450), Over-treated low, Late bolus and Correction
   on active insulin carry their server prices (39, 28, 18 and 20), and the queue
-  leads with Basal 04:00, then Over-treated low, then the Patterns
+  leads with Basal 07:00 (basal:420-450), then Over-treated low, then the Patterns
 
 ## MODIFIED Requirements
 

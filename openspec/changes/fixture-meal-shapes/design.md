@@ -259,7 +259,7 @@ row would carry an unmatched own verdict the producer never serves.
 
 | Window | Row order before → after | Other moves |
 |---|---|---|
-| whole day | Highs after meals [Late bolus], Lows after correcting highs [Correction on active insulin, Correction stacking], Over-treated low, Missed meal, Basal 04:00, Lows after meals, Overnight lows → **Basal 04:00, Over-treated low**, Highs after meals […], Lows after correcting highs […], Missed meal, Lows after meals, Overnight lows | Basal 04:00 priority none → 39, tier noted → next in line; Over-treated low none → 28, Late bolus none → 18, Correction on active insulin none → 20, each noted → worth a look, headline "Not ranked in this window yet…" → "Ranks among this window's findings…"; Lows after meals k 1 → 0, rate 0.05 → 0, Wilson 0.0151–0.1532 → 0–0.0759 |
+| whole day | Highs after meals [Late bolus], Lows after correcting highs [Correction on active insulin, Correction stacking], Over-treated low, Missed meal, Basal 07:00 (basal:420-450), Lows after meals, Overnight lows → **Basal 07:00 (basal:420-450), Over-treated low**, Highs after meals […], Lows after correcting highs […], Missed meal, Lows after meals, Overnight lows | Basal 07:00 (basal:420-450) priority none → 39, tier noted → next in line; Over-treated low none → 28, Late bolus none → 18, Correction on active insulin none → 20, each noted → worth a look, headline "Not ranked in this window yet…" → "Ranks among this window's findings…"; Lows after meals k 1 → 0, rate 0.05 → 0, Wilson 0.0151–0.1532 → 0–0.0759 |
 | 00:00–06:00 | Highs after meals, Lows after correcting highs, Over-treated low, … → **Over-treated low**, Highs after meals, Lows after correcting highs, … | Over-treated low priced 28, worth a look, "Ranks among…" (7 of 8 lows) |
 | 02:15–04:45 | same reorder | Over-treated low priced 28, "Ranks among…" (4 of 5 lows) |
 | 12:00–18:00 | Highs after meals […], Lows after correcting highs […], Over-treated low, Missed meal → **Over-treated low**, Highs after meals […], Lows after correcting highs […], Missed meal | Over-treated low 28, Late bolus 18, Correction on active insulin 20, each worth a look, "Ranks among…" |
@@ -267,20 +267,41 @@ row would carry an unmatched own verdict the producer never serves.
 Every window's `analysis_generation` becomes the frozen generation. Counts, chip
 counts, folds and Pattern rows do not move.
 
-**Tests whose expectation encoded the old prices or order** (all fast gate): the
-Afternoon test (server order: Over-treated low, Highs after meals, Lows after
-correcting highs, Missed meal; "4 in this window"); the join test's headline
-("Ranks among this window's findings. Showed up in 1 of 10 lows in this window.");
-`#413 · an unpriced claimed member folds under the tail Pattern`, re-pointed to
-Correction stacking, the server's unpriced member. The `#395` mini-host test
-projects its own inputs directly, and its answer is unchanged.
+**Tests whose expectation encoded the old prices, order or roster.**
+- Fast gate: the Afternoon test (server order: Over-treated low, Highs after
+  meals, Lows after correcting highs, Missed meal; "4 in this window").
+- Fast gate: the join test's headline ("Ranks among this window's findings.
+  Showed up in 1 of 10 lows in this window.").
+- Fast gate: `#413 · an unpriced claimed member folds under the tail Pattern`,
+  re-pointed to Correction stacking, the server's unpriced member.
+- Backend: `tests/test_findings_projection.py`
+  `test_memberless_patterns_keep_their_count_without_a_chart`, which read the
+  committed browser roster's Lows after meals k > 0. It now builds its own memberless
+  roster with k > 0 over a clone of the payload exposures through
+  `build_outcome_patterns`, carrying the deleted mutation in the one test that needs
+  it, in the shape the producer serves.
+
+The `#395` mini-host test projects its own inputs directly, and its answer is
+unchanged.
+
+**The public-tree dose/ratio baseline (measured in scratch).** Of the files this
+change touches, only `frontend/__fixtures__/findings-projection.json` carries
+acknowledged entries (86 of the baseline). The generator writes it with sorted keys,
+so every new top-level key that sorts before `inputs` shifts those entries' line
+numbers. After sub-orders 1 and 2 the set is unchanged (86 entries, none added or
+removed). Sub-order 3's `habit_rate_families` alone shifts 49 of them, and the
+sub-order 4 and 5 keys shift all 86. So sub-orders 3, 4 and 5 each re-record the
+baseline. Each of those workers reviews every added entry (all synthetic), lists
+them in its result, and runs
+`uv run python scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`.
+The coordinator reviews those lists at integration under Q3.
 
 **Desk browser tests and replay stories, read for position or order.** None
 encodes the old order:
 - `.qrow[data-id^="pattern:"]` `.first()` (the Focus-read, grouped-comparison, c2
   and thin-basal tests) is Highs after meals before and after.
 - `.qfold` `.first()` (c2) is Highs after meals' fold before and after. It now
-  arrives closed, because Basal 04:00 is rank one, and the test already clicks a
+  arrives closed, because Basal 07:00 (basal:420-450) is rank one, and the test already clicks a
   closed fold open.
 - `.qrow[data-id]` `.first()` and `.qitem.member` `.first()` only wait.
 - `openRailRow` opens every closed fold.
@@ -376,6 +397,8 @@ One ordered pass reaches the fixed point (the chain reads in a cycle:
 | `frontend/__fixtures__/findings-projection.json` | `pattern_clock_case`; `browser_outcome_patterns` (Lows after meals k 1 → 0); adds `habit_rate_families`, `pattern_family_cases`, `browser_outcome_patterns_by_window`, `browser_pattern_cases_by_window`, `browser_inputs`, `browser_windows` (sub-order 4's interim `browser_window_queues` is replaced by `browser_windows` in sub-order 5) | `uv run python scripts/gen_findings_projection_fixtures.py --check` |
 | `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families`; adds `pattern_cases_by_window` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
 | `mockups/harmonic-v2.exploration/focus.json`, `journey.json`, `workstation.json` | claimant sentences → null | `uv run python mockups/harmonic-v2.exploration/generate.py --check` |
+
+| `scripts/public_scan_config.txt` (dose/ratio baseline block) | re-recorded by sub-orders 3, 4 and 5 | the public-tree line: `python3 scripts/build_public_tree.py "$t"`, `check_public_links.py`, `scan_public_tree.py` |
 
 Unmoved and still checked: the workstation's other four generator files, the three
 externally generated workstation captures, and every other `--check` generator.

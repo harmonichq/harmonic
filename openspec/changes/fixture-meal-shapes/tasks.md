@@ -184,9 +184,16 @@
   `frontend/diagnose-findings-queue.test.js`, re-point `#413 · an unpriced claimed
   member folds under the tail Pattern` to Correction stacking, the server's unpriced
   member (folded under Lows after correcting highs, two fold sentences), now that
-  Late bolus carries its server price.
+  Late bolus carries its server price. In `tests/test_findings_projection.py`,
+  `test_memberless_patterns_keep_their_count_without_a_chart` builds its own
+  memberless roster with k > 0 instead of reading the committed browser roster: over
+  a clone of the payload exposures it re-marks one unclaimed meal as claimed by Meal
+  over-delivery, the shape the producer serves (that verdict matched, its sentence as
+  the row's text), then runs `build_outcome_patterns` with the frozen browser inputs.
+  This moves the deleted `memberless_low` mutation into the one test that needs it.
 - [ ] 5.4 Confirm, by reading against `design.md`'s locator list, that no desk
   browser test or replay story clicks a changed queue position or asserts the old
   order, and amend any that does.
 - [ ] 5.5 Run the lock's whole worker gate on this final commit, including every
-  drift check and the backend pytest once, and state the pytest wall time.
+  drift check, the public-tree line and the backend pytest once, and state the
+  pytest wall time.

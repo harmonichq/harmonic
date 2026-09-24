@@ -11,8 +11,11 @@ evaluation reads, including their endpoint rule. It SHALL NOT judge a low, a
 rebound or ownership itself. A High that no low owns SHALL be judged exactly as
 before. Every sub-70 low SHALL keep its own "did you treat this low?" prompt. A
 low refuted by a `no` answer owns nothing, so its rebound High SHALL be judged on
-its own. No detector, staging predicate, cap, support floor, segmentation rule,
-rebound horizon, bar or meal stop, or context-gate default SHALL change.
+its own. When an eating-sequence candidate wins an Episode and the shared
+evaluation rebuilds that Episode's attribution, the rebuilt attribution SHALL keep
+the Episode's owned Highs, as it keeps the Episode's anchor verdicts. No detector,
+staging predicate, cap, support floor, segmentation rule, rebound horizon, bar or
+meal stop, or context-gate default SHALL change.
 
 #### Scenario: A slow rebound after a sub-70 low raises only the low's prompt
 
@@ -35,6 +38,14 @@ rebound horizon, bar or meal stop, or context-gate default SHALL change.
   recorded by the queue's endpoint
 - **WHEN** the prompt queue derives its candidates
 - **THEN** it raises a "did you eat here?" prompt at the High's onset
+
+#### Scenario: A sequence-won Episode keeps its ownership record
+
+- **GIVEN** a synthetic week in which a High-carb sequence finding is supported and
+  its candidate wins the Episode of a High that an over-treated near-low owns
+- **WHEN** the shared evaluation runs and the prompt queue derives its candidates
+- **THEN** that Episode's attribution still records the High as owned
+- **AND** the queue raises no "did you eat here?" prompt for it
 
 #### Scenario: A rise beyond the rebound is still asked about
 

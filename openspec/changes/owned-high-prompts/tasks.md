@@ -48,6 +48,17 @@
   "explained (…)" clause in Decision 3. Assert each string as a literal copied from
   the ADR, never derived from the module under test. Each fails on the base, which
   serves the gate-only wording.
+- [ ] 1.6 In `tests/test_pending_prompts.py`, add a sequence-won test through
+  `build_candidates` on a synthetic week shaped like ADR 448 Decision 1a's
+  evidence. It has 42 carb sequences in 7 days, ten of them 90 g or more. After
+  nine of those ten, glucose sits high through most of the 4-hour post-sequence
+  window, so a High-carb sequence finding is supported. On one day a 99 g breakfast is followed by a 72 mg/dL near-low at
+  12:00 and a rebound crossing 250 mg/dL at 12:55. The design.md evidence script
+  builds exactly this week. Assert that the queue raises no missed-meal prompt.
+  Through `evaluate` on the same week, assert that the High's Episode is won by
+  High-carb sequence and still lists the High in `owned_highs`. Record that the
+  test fails on the base, where the queue asks at 12:55. Record that it fails
+  again with task 2.1 alone, before task 2.6 lands.
 
 ## 2. Implementation
 
@@ -94,6 +105,12 @@
   entry. Leave the pipeline article's "Silence is a verdict, not a gap" paragraph
   as it is (Decision 3 says why).
 
+- [ ] 2.6 In `ciq_autotune/analyzers/scenario/evaluation.py`, make the
+  sequence-winner rebuild in `evaluate` (lines 290-297 at the base) keep the
+  Episode's `owned_highs`, in the same `replace` call that keeps
+  `anchor_verdicts`. Change nothing else in the walk. ADR 448 Decision 1a says
+  why no current output moves; tasks 3.2 and 3.3 confirm it.
+
 ## 3. Record, generated artifacts and gates
 
 - [ ] 3.1 In the **Carb-log prompt** entry of `CONTEXT.md`, say that "did you eat
@@ -112,3 +129,10 @@
 - [ ] 3.3 Run the AGENTS.md pull-request gate in full, once, on the commit handed to
   the coordinator. Record each command's exit code, wall time and output tail in
   `design.md` under a `### Gate` heading.
+- [ ] 3.4 (Coordinator-owned; the implementing worker does not run it or tick it.)
+  Capture renders of the Guide's silence article at its Upstream cause row and of
+  the Glossary's Episode Log group, on the base (`b03431d2`) and on the branch, at
+  1280x720 and 1440x900, in the one theme the desk ships. #304 retired the Light
+  theme: the desk is Dark with its bone reading sheet. Use the QA no-fetch serve
+  AGENTS.md permits. The evidence lives in a private design-evidence record, not
+  part of the public tree.

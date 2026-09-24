@@ -11,8 +11,10 @@ gate. The two classifier comments are corrected. The unread reference tables and
 the test that reads only them are deleted. Ownership is not narrowed for either
 boundary case. After plan-review round 1, the coordinator widened the ruling
 under the same delegation: the Guide's and the Glossary's reader-facing
-definitions of upstream cause are corrected too. This record settles how the
-ruling is carried out and why ownership stays as ADR 422 drew it.
+definitions of upstream cause are corrected too. After panel 2 it widened it
+again: the walk's sequence-winner rebuild keeps an Episode's ownership record
+(Decision 1a). This record settles how the ruling is carried out and why
+ownership stays as ADR 422 drew it.
 
 ### Context
 
@@ -70,7 +72,11 @@ them as they are:
   correction-on-active-insulin low splits into two moments (#155), but the
   unsplit low and the split's High-moment own the same span, from the nadir to
   the guarded terminal. `owned_highs` is the same either way.
-* **Carb entries.** Only the eating-sequence evaluation reads them.
+* **Carb entries.** Within the walk they feed only the eating-sequence
+  evaluation. Its winning candidate rebuilds an Episode's attribution, and before
+  this change that rebuild dropped `owned_highs` (Decision 1a). With the record
+  kept, neither carb entries nor sequences decide which Highs are recorded as
+  owned.
 * **False-low readings.** The Scenario drops a flagged false low's excursion
   readings. The queue does not: dropping them would also remove the flagged
   low's own answered prompt from the queue, which this ticket does not change.
@@ -79,10 +85,16 @@ them as they are:
   the queue's walk its low owns it once the rebound fires. This change can only
   remove such a question, never add one.
 
-The queue's window is its own 7 days; the Scenario's is 30. Ownership reaches at
-most 180 minutes past a nadir, so the two agree except for a High within that
-reach of the queue window's start, whose low the queue cannot see. That High is
-judged as today.
+With Decision 1a in place, the queue's walk and the Scenario's record the same
+owned Highs, with two exceptions. The first is a High within 180 minutes of the
+queue window's start: the queue's window is 7 days and the Scenario's 30, and
+ownership reaches at most 180 minutes past a nadir, so that High's low can sit
+before the queue's window. The second is a High inside a flagged false low's
+excursion, which has no readings in the Scenario. The first is judged as today;
+the second raises no question. Before Decision 1a the two walks could also
+disagree wherever their eating-sequence populations differ, because a
+sequence-won Episode lost its record, and the Scenario served such an Episode
+with no record either.
 
 A sub-70 low keeps its own "Did you treat this low?". So a slow rebound now
 raises one question, at the low that owns it. A near-low's owned rebound raises
@@ -92,6 +104,32 @@ manual quick-log still records a treatment.
 The added walk costs little. On the throwaway prototype, the whole queue build
 took 51 ms against the base's 48 ms on the committed showcase. Across the QA case
 stores the difference ran from 15 ms faster to 12 ms slower, median 0.
+
+### Decision 1a — a sequence-won Episode keeps its ownership record
+
+When an Episode carries an eating-sequence candidate, the walk rebuilds its
+attribution from the winning candidate (`evaluate` in
+`ciq_autotune/analyzers/scenario/evaluation.py`, the rebuild at lines 290-297 at
+the base). The rebuild keeps the Episode's `anchor_verdicts` but not its
+`owned_highs`, so an owned High in a sequence-won Episode lost its record. The
+queue reads that record, so without this fix it would still ask "Did you eat
+here?" in such an Episode. The evidence below reproduces this on a synthetic
+week: 42 carb sequences in 7 days, ten of them 90 g or more, and one 99 g
+breakfast followed by a 72 mg/dL near-low at 12:00 and a rebound crossing
+250 mg/dL at 12:55. High-carb sequence wins both the low's Episode and the
+High's Episode. The base asks at 12:55. Decision 1 alone still asks there, and
+Decision 1 with this fix asks nothing.
+
+The rebuild now keeps the Episode's `owned_highs`, the same way it keeps
+`anchor_verdicts`. Nothing else in the walk changes. No current output moves:
+
+* The exposures producer's uncaused tally reads `owned_highs` only on Episodes
+  whose lever is None. A rebuilt attribution always carries its winner's lever.
+* `_owned_ends`, which extends the owning Episode's scored span, reads the
+  attributions from before the rebuild.
+* No other code reads `owned_highs`.
+
+The widened prototype confirms it (see Evidence).
 
 ### Decision 2 — late bolus and carb undercount read the configured gate
 
@@ -184,8 +222,9 @@ nothing an analyzer produces changes.
 
 The low prompt; the answered-match, anchor tolerance, coverage, expiry, grace and
 display-cap rules; the `/api/prompts` payload shape; the context gate's defaults;
-segmentation; the rebound horizon, bar and meal stop; every staging predicate, cap
-and support floor. The desk renders the served prompts as before. Apart from
+segmentation; the shared evaluation walk apart from Decision 1a's rebuild; the
+rebound horizon, bar and meal stop; every staging predicate, cap and support
+floor. The desk renders the served prompts as before. Apart from
 Decision 3's two sentences, no rendered surface changes. `build_candidates` gains
 one keyword, `low_answers`, whose empty default reproduces a store with no low
 answers.
@@ -265,6 +304,87 @@ late bolus, gate_low_mgdl=75: default matched=True, configured matched=True
 carb undercount, gate_low_mgdl=75: default matched=True, configured matched=True
 ```
 
+Decision 1a's sequence-won week, run the same way (`uv run python <file>`),
+three times: on the base; with Decision 1 alone; and with Decision 1 plus 1a:
+
+```python
+"""Reviewer-shaped week: ~42 carb sequences in 7 days, ten 90 g, a 90 g breakfast
+followed by a 72 mg/dL near-low at 12:00 and a rebound crossing 250 at 12:55."""
+from datetime import datetime, timedelta
+from ciq_autotune.events import BolusEvent, CgmReading
+from ciq_autotune.pending_prompts import build_candidates
+from ciq_autotune.analyzers.scenario import evaluate
+
+DAY0 = datetime(2026, 6, 1)
+# Six sequences a day, 3.5-4 h apart; every slot but 17:40 keeps a clear 4 h post-window.
+SLOTS = [(1, 15), (5, 20), (9, 30), (13, 35), (17, 40), (21, 10)]
+SPECIAL_DAY = 5                      # the near-low breakfast day
+# Ten high-carb sequences: every 09:30 breakfast plus three 21:10 dinners; distinct grams.
+BIG = {(d, 2): 91.0 + d for d in range(7)} | {(1, 5): 90.0, (3, 5): 90.5, (4, 5): 90.8}
+BIG[(SPECIAL_DAY, 2)] = 99.0
+
+
+def week():
+    bolus, bg = [], {}
+    t = DAY0
+    while t < DAY0 + timedelta(days=7, hours=6):
+        bg[t] = 110.0
+        t += timedelta(minutes=5)
+    seq = 0
+    for d in range(7):
+        for s, (h, m) in enumerate(SLOTS):
+            at = DAY0 + timedelta(days=d, hours=h, minutes=m)
+            carbs = BIG.get((d, s), 20.0 + (seq % 40))
+            seq += 1
+            bolus.append(BolusEvent(t=at, insulin=carbs / 10.0, carbs=carbs, completion="Completed",
+                                    carb_ratio=10.0, seq_num=seq))
+            if (d, s) in BIG and (d, s) != (SPECIAL_DAY, 2):
+                for k in range(6, 42):              # 30 min .. 3.5 h after: a 230 plateau
+                    bg[at + timedelta(minutes=5 * k)] = 230.0
+    b = DAY0 + timedelta(days=SPECIAL_DAY, hours=11)
+    for k in range(0, 13):                           # 11:00 -> 12:00: 110 -> 72
+        bg[b + timedelta(minutes=5 * k)] = 110.0 - (110.0 - 72.0) * k / 12
+    for k in range(0, 13):                           # 12:00 -> 13:00: 72 -> 270 (253.5 at 12:55)
+        bg[b + timedelta(hours=1, minutes=5 * k)] = 72.0 + (270.0 - 72.0) * k / 12
+    for k in range(0, 13):                           # 13:00 -> 14:00: 270 -> 180
+        bg[b + timedelta(hours=2, minutes=5 * k)] = 270.0 - 90.0 * k / 12
+    for k in range(1, 5):                            # 14:00 -> 14:20: 180 -> 110
+        bg[b + timedelta(hours=3, minutes=5 * k)] = 180.0 - 70.0 * k / 4
+    cgm = [CgmReading(t=t, bg=bg[t], type="EGV") for t in sorted(bg)]
+    return bolus, cgm
+
+
+if __name__ == "__main__":
+    bolus, cgm = week()
+    crossing = next(r.t for r in cgm if r.t.day == DAY0.day + SPECIAL_DAY and r.bg > 250)
+    print("sequences", len(bolus), "90 g", sum(1 for x in bolus if x.carbs == 90.0), "first >250 reading", crossing)
+    ev = evaluate(bolus, cgm, [])
+    print("High-carb rows", len(ev.sequences.populations.get("high_carb_sequence", ())),
+          "candidates", sum(r.candidate for r in ev.sequences.populations.get("high_carb_sequence", ())))
+    for ep in ev.episodes:
+        if ep.start.day == DAY0.day + SPECIAL_DAY and 9 <= ep.start.hour <= 14:
+            print("episode", ep.id, f"{ep.start:%H:%M}-{ep.end:%H:%M}", "lever",
+                  ep.attribution.lever, "cands", [c.lever.value for c in ep.candidates],
+                  "owned_highs", [f"{h.reach_start:%H:%M}" for h, _ in ep.attribution.owned_highs],
+                  "fired", len(ep.attribution.fired_rebounds))
+    print("queue", [(c.detector, f"{c.anchor_t:%m-%d %H:%M}") for c in build_candidates(bolus, cgm)])
+```
+
+The High's Episode line and the queue line of each run (the `#` headers are
+added):
+
+```text
+# base
+episode ep-034 12:55-13:35 lever Lever.HIGH_CARB_SEQUENCE cands ['high_carb_sequence'] owned_highs [] fired 0
+queue [('missed-meal', '06-06 12:55')]
+# Decision 1 alone
+episode ep-034 12:55-13:35 lever Lever.HIGH_CARB_SEQUENCE cands ['high_carb_sequence'] owned_highs [] fired 0
+queue [('missed-meal', '06-06 12:55')]
+# Decisions 1 and 1a
+episode ep-034 12:55-13:35 lever Lever.HIGH_CARB_SEQUENCE cands ['high_carb_sequence'] owned_highs ['12:55'] fired 0
+queue []
+```
+
 A throwaway prototype of Decision 1 was discarded before this record was
 committed. It removed exactly the four owned-High prompts above. It kept the
 missed-meal prompt for an unbolused rise with no low before it. With a `no` answer
@@ -280,3 +400,11 @@ removal. The design exploration's `pending` rows were unchanged; only its analyz
 rewording will also move the exploration's extracted Guide and Glossary copies. The QA harness (`execute_case`) does not read the queue, so
 no QA case expectation can move. The late-bolus and carb-undercount change moves
 no committed output, because every retained configuration is the default.
+
+The widened prototype (Decisions 1 and 1a) was measured the same way and
+discarded. No QA case recipe's served queue moved (71 of 71). The focused
+scenario-engine, exposures, queue, catalog and findings-projection tests passed
+(290), as did the `/api/prompts` and `/api/catalog` API tests (13) and the QA case
+suite (84 passed in 94 s). Every drift check but the design exploration reported
+current. The exploration's regeneration moved only its `code_version` stamps and
+the ids derived from them (8 lines).

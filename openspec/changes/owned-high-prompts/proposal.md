@@ -39,6 +39,11 @@ reference tables that nothing reads.
   over its own window and with the same low-prompt answers the Scenario reads.
   It makes no second judgment. The low keeps its own prompt. A High no low owns is
   judged exactly as today.
+- When an eating-sequence candidate wins an Episode, the shared evaluation
+  rebuilds its attribution. Today that rebuild drops the Episode's ownership
+  record, so the queue would still ask there. The rebuild keeps the record, the
+  way it already keeps the Episode's verdicts; no current output moves. The
+  coordinator widened the ruling to cover this after plan-review panel 2.
 - Late bolus and carb undercount judge the context gate under the scenario
   configuration they are given.
 - The correction-on-active-insulin and correction-stacking comments, the Guide's
@@ -68,6 +73,7 @@ reference tables that nothing reads.
 `ciq_autotune/analyzers/classifiers/correction_on_iob.py` and
 `ciq_autotune/analyzers/classifiers/correction_stacking.py` (comments),
 `ciq_autotune/analyzers/scenario/guide.py` (one served sentence),
+`ciq_autotune/analyzers/scenario/evaluation.py` (the sequence-winner rebuild),
 `frontend/glossary.js` (one sentence), `frontend/day-chart.js` and its test, their
 tests, `CONTEXT.md`, the behavioral-layer spec (three ADDED requirements), and the
 design exploration's generated `code_version` stamps and its extracted Guide and

@@ -891,3 +891,91 @@ test('assertRankedMinis fails when no candidate mini is mounted', async () => {
     assertRankedMinis(qa413MiniPage({}), [minied]),
     /at least one ranked mini must be mounted/));
 });
+
+test('S154 is a unique app-only C4 story, served from the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S154');
+  assert.equal(entries.length, 1, 'S154 is registered once');
+  assert.equal(entries[0][1].deferred.term, '#434 reader words');
+  assert.equal(storyCase('S154'), 'showcase');
+});
+
+// #434: a fake page for S154. `served` answers the story's one read (the 12:30
+// night evidence); `lines` are the panel's `.empty` lines once the slot is open;
+// `label` is the focal basal tile host's aria-label. Controls pressed and reads
+// made are recorded in order, so a premise failure can be told from a feature one.
+function qa434Page({ served, lines, label }) {
+  const actions = [];
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => {},
+    click: async () => { actions.push(`click:${selector}`); },
+    allInnerTexts: async () => (selector === '#level .empty' ? lines : []),
+    getAttribute: async name => (name === 'aria-label'
+      && selector === '#tile-focal .evidence-tile[data-chart-id="basal:750"] .tile-chart' ? label : null),
+  });
+  return {
+    actions,
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async url => {
+      const { pathname, search } = new URL(url);
+      actions.push(`read:${pathname}${search}`);
+      return { status: () => 200, text: async () => '', json: async () => served };
+    } },
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    waitForFunction: async () => {},
+  };
+}
+const served434 = { excluded_night_count: 3, excluded_night_reasons: {
+  before_current_setting: 0, below_range_or_suspended: 0, above_range: 0,
+  insulin_acting: 1, carb_log: 0, other: 2 } };
+const line434 = '3 excluded nights: 1 insulin on board, 2 other reasons';
+const label434 = '27 steady nights at 12:30; 3 nights excluded: 1 insulin on board, 2 other reasons';
+const slot434 = `click:${/^12:30 basal slot,/}`;
+
+test('S154 passes when the panel line and the tile description name the served reasons', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: served434, lines: [line434], label: label434 });
+  await C4_STORIES.S154(page);
+  assert.deepEqual(page.actions, ['click:nav.v2-nav [data-destination="diagnose"]', 'click:24 h',
+    'read:/api/diagnose/basal-night-evidence?slot=25', slot434]);
+});
+
+test('S154 fails at its premise, before opening the slot, when the showcase serves another total', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: { ...served434, excluded_night_count: 2 }, lines: [line434], label: label434 });
+  await assert.rejects(C4_STORIES.S154(page), /S154 premise: the showcase must serve three excluded nights at 12:30/);
+  assert.equal(page.actions.includes(slot434), false, 'the slot is never opened on a failed premise');
+});
+
+test('S154 fails at its pinned panel line on the base, before reading the served breakdown', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  // The base serves the total and no breakdown, and its panel prints the total alone.
+  const page = qa434Page({ served: { excluded_night_count: 3 }, lines: ['3 excluded nights'],
+    label: '27 steady nights at 12:30; 3 nights excluded' });
+  await assert.rejects(withReplayAssertionTimeout(10, () => C4_STORIES.S154(page)), error => {
+    assert.match(error.message, /S154 the panel line names the served reasons/);
+    assert.equal(error.cause?.code, 'ERR_ASSERTION');
+    assert.match(error.cause.message, /S154 the panel's excluded-night line must name each served reason/);
+    return true;
+  });
+  assert.equal(page.actions.at(-1), slot434, 'the feature assertion is reached with the slot open');
+});
+
+test('S154 fails when the panel prints counts the showcase did not serve', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: { ...served434, excluded_night_reasons: {
+    ...served434.excluded_night_reasons, insulin_acting: 2, other: 1 } }, lines: [line434], label: label434 });
+  await assert.rejects(C4_STORIES.S154(page), /S154 the pinned counts must be the served breakdown/);
+});
+
+test('S154 fails when the tile description does not name the served reasons', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: served434, lines: [line434],
+    label: '27 steady nights at 12:30; 3 nights excluded' });
+  await assert.rejects(withReplayAssertionTimeout(10, () => C4_STORIES.S154(page)), error => {
+    assert.match(error.message, /S154 the tile description names the served reasons/);
+    assert.match(error.cause?.message ?? '', /S154 the tile's accessible description must name each served reason/);
+    return true;
+  });
+});

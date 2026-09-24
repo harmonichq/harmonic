@@ -344,9 +344,17 @@ const basalCell = {
   },
 };
 
+/* A served excluded-night breakdown: all six keys, as the analyzer stamps them
+   on every basal slot (#434). */
+const excludedReasons = (counts = {}) => ({
+  before_current_setting: 0, below_range_or_suspended: 0, above_range: 0,
+  insulin_acting: 0, carb_log: 0, other: 0, ...counts,
+});
+
 const nightPayload = {
   roster_glucose_mean: 119.5,
   excluded_night_count: 2,
+  excluded_night_reasons: excludedReasons({ before_current_setting: 1, carb_log: 1 }),
   nights: [
     { date: '2026-01-01', sign: 1, delivered_rate: 0.8, programmed_rate: 0.6,
       glucose_entry: 111, glucose_exit: 121, glucose_mean: 116,
@@ -377,7 +385,9 @@ test('basal slot detail groups served nights, selects one, and preserves roster 
     assert.match(host.html.join('\n'), /Ran below.*1 night/);
     assert.match(host.html.join('\n'), /Ran as set.*1 night/);
     assert.match(host.html.join('\n'), /No programmed rate.*1 night/);
-    assert.match(host.html.join('\n'), /2 excluded nights/);
+    assert.ok(host.html.includes(
+      '<div class="empty">2 excluded nights: 1 before the current rate, 1 logged carbs</div>'),
+    'the one excluded-night line names the served total and each served reason');
     const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
     assert.equal(rows.length, 4);
     assert.equal(rows[0].getAttribute('aria-pressed'), 'true');
@@ -385,6 +395,30 @@ test('basal slot detail groups served nights, selects one, and preserves roster 
     assert.deepEqual(selected, ['2026-01-02']);
     assert.match(host.children.map((child) => child.innerHTML).join('\n'), /Jan 1/);
     assert.match(host.children.map((child) => child.innerHTML).join('\n'), /111/);
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+/* #434: the panel's one excluded-night line names every nonzero served reason,
+   in rank order, and still prints only when the served total is nonzero. */
+test('basal slot panel names each served excluded-night reason on its one line', () => {
+  const originalDocument = globalThis.document;
+  const excludedLines = (count, reasons) => {
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: { ...nightPayload, excluded_night_count: count,
+        excluded_night_reasons: excludedReasons(reasons) },
+    });
+    return host.html.filter((html) => /excluded night/.test(html));
+  };
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    assert.deepEqual(excludedLines(5, { before_current_setting: 3, below_range_or_suspended: 1, insulin_acting: 1 }),
+      ['<div class="empty">5 excluded nights: 3 before the current rate, 1 low or suspended, 1 insulin on board</div>']);
+    assert.deepEqual(excludedLines(1, { below_range_or_suspended: 1 }),
+      ['<div class="empty">1 excluded night: 1 low or suspended</div>'], 'one night, in the singular');
+    assert.deepEqual(excludedLines(0, {}), [], 'no excluded nights, no line');
   } finally {
     globalThis.document = originalDocument;
   }

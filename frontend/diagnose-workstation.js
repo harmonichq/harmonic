@@ -36,7 +36,7 @@ import {
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
-import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
+import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
 import {
   createCanvasLayout, descriptorsFromFindings, fieldRange,
   optionForDescriptor, pinChart, placeSeats,
@@ -954,8 +954,12 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),
   });
+  /* #434: the one excluded-night line names why, reason by reason, from the
+     served breakdown through the evidence charts' one reason table. */
   if (evidence.excluded_night_count) {
-    host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
+    const excluded = evidence.excluded_night_count;
+    const reasons = excludedNightReasons(evidence).map(({ count, words }) => `${count} ${words}`).join(', ');
+    host.insertAdjacentHTML('beforeend', `<div class="empty">${excluded} excluded night${excluded === 1 ? '' : 's'}${reasons ? `: ${reasons}` : ''}</div>`);
   }
   const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
   renderSlotNightSelection(host, selected, span,

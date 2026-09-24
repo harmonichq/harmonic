@@ -893,8 +893,11 @@ class Store:
         """Append one ``profile_settings`` row per profile for this fetch.
 
         ``captured_at`` is a wall-clock string (normalized like every other time).
-        Idempotent on (captured_at, idp), so re-running a fetch in the same second
-        merges rather than duplicates; distinct fetches append a new generation.
+        Idempotent on (captured_at, idp): a repeated ``captured_at`` merges rather
+        than duplicates, and a new one appends a generation. The fetch's capture is
+        floored after the latest stored capture, Plan or Focus pin (ADR 443), so a
+        fetch re-run in the same second is stamped one second later and appends a
+        read rather than merging.
         """
         cap = normalize_time(captured_at)
         cols = ["captured_at", "idp", "active_idp", "name", "dia_min",

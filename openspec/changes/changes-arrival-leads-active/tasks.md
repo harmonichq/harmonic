@@ -195,3 +195,16 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   `/api/verify/trials` for the plain arrival after Open Plan. It must also
   print, for the nothing-watched arrival, a concern frame that offers Open Plan
   and is not the Plan.
+
+## 7. Coordinator-authorized widening — 2026-09-23
+
+Authorized by the release coordinator under the Q3 delegation (Connor Griffin,
+2026-09-23), for two findings from this ticket's start. Both are text-only and
+change no behavior.
+
+- [x] 7.1 `frontend/tab-routing.js` `caseAddress`: the comment names Diagnose's
+  return by what it now reads, "Return to Trial" or "Return to Focus".
+- [x] 7.2 `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`: every stale
+  `frontend/harmonic-v2-desktop-behavior.replay.mjs` becomes
+  `frontend/desk-behavior.replay.mjs`, the runner's current path. Nothing else in
+  that file changes; its count sentence and timing table are owned elsewhere.

@@ -168,8 +168,8 @@ repair. To isolate those assertions,
 with port 8765 free:
 
 ```sh
-TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1280x720 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1440x900 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1280x720 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1440x900 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1440" node frontend/desk-behavior.replay.mjs
 ```
 
 ## Amendment render commands: R18, units, missing outcomes and named eyes
@@ -180,10 +180,10 @@ also executes its three c4 setting variants; S49 also executes c4-missing.
 Their `S91-c4-*` and `S49-c4-missing` captures name the exact source case.
 
 ```sh
-TARGET=app VIEWPORT=1280x720 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1280" CAPTURE_DIR="$evidence/amendment-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1440x900 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1440" CAPTURE_DIR="$evidence/amendment-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1280x720 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1280" CAPTURE_DIR="$evidence/eyes-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=app VIEWPORT=1440x900 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1440" CAPTURE_DIR="$evidence/eyes-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app VIEWPORT=1280x720 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1280" CAPTURE_DIR="$evidence/amendment-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1440" CAPTURE_DIR="$evidence/amendment-1440" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1280x720 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1280" CAPTURE_DIR="$evidence/eyes-1280" node frontend/desk-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1440" CAPTURE_DIR="$evidence/eyes-1440" node frontend/desk-behavior.replay.mjs
 ```
 
 For HV2-06 the coordinator names their judgment of dense Diagnose, paired Trial
@@ -478,8 +478,8 @@ import json, pathlib, sys
 url = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 pathlib.Path(sys.argv[1]).write_text(json.dumps({url: {'path': str(pathlib.Path('frontend-v2/fonts/inter.css').resolve()), 'type': 'text/css'}}))
 PY
-TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1280x720 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1280x720" node frontend/harmonic-v2-desktop-behavior.replay.mjs
-TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1440x900 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1440x900" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1280x720 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1280x720" node frontend/desk-behavior.replay.mjs
+TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.json" VIEWPORT=1440x900 ONLY=S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77 CAPTURE_DIR="$evidence/mock-1440x900" node frontend/desk-behavior.replay.mjs
 ```
 
 These use different clinical source populations from the generated app cases.

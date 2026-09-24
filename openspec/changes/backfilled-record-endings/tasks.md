@@ -6,7 +6,7 @@ coordinator ruling R442.
 
 ## 1. One ending rule for every open record (backend)
 
-- [ ] 1.1 In `ciq_autotune/watched_change.py` `reconcile_follow_up`, replace
+- [x] 1.1 In `ciq_autotune/watched_change.py` `reconcile_follow_up`, replace
   the frontier-only ending branch (the `old` record) and the newest-only expiry
   branch with one pass over every retained Trial record whose ending has no
   `kind`. Order the pass by `(changed_at, id)`, oldest first. Run it after the
@@ -43,7 +43,7 @@ coordinator ruling R442.
   `rule()` in this change's `premises.py` is the spike of this decision,
   including the Edit exclusion. The implementation must reproduce its
   "ADR 442:" lines on the same stores.
-- [ ] 1.2 In `ciq_autotune/follow_up_comparison.py`, make exactly these two
+- [x] 1.2 In `ciq_autotune/follow_up_comparison.py`, make exactly these two
   touches and no other:
   1. Export the envelope `compare_follow_up` starts from and returns when it
      cannot compare, as one public function taking a comparison context, a
@@ -63,7 +63,7 @@ coordinator ruling R442.
      next run the comparison reads at the cut, such as a pump read captured at
      the change. A successor known only from dose-stamped boluses is not settled
      at the cut and keeps `data_tail` (`premises.py`'s label lines).
-- [ ] 1.3 In `capture_ending`, before computing the comparison, check the
+- [x] 1.3 In `capture_ending`, before computing the comparison, check the
   record's retained `comparison_context`. When its `state` is `available` and its
   `source_snapshot` is missing or was captured later than `data_cutoff`, save the
   ending with an unavailable assessment and compute no comparison. Build it by
@@ -73,7 +73,7 @@ coordinator ruling R442.
   any comparison, so it carries `version`, `input_revision` and `data_cutoff`.
   It must pass Store's assessment validator and render as any other unavailable
   saved assessment.
-- [ ] 1.4 Backend tests through the public reconcile path, in
+- [x] 1.4 Backend tests through the public reconcile path, in
   `tests/test_watched_change.py`, on synthetic in-memory stores built the way
   `OneActiveInvariantTest.reconcile` builds them:
   - dose-stamped boluses through `upsert_bolus`;
@@ -157,7 +157,7 @@ coordinator ruling R442.
 
 ## 2. The edit-chain case keeps four open records (QA recipe)
 
-- [ ] 2.1 In `scripts/qa_e2e_cases.py` `_materialize_edit_chain`, move the four
+- [x] 2.1 In `scripts/qa_e2e_cases.py` `_materialize_edit_chain`, move the four
   hand-saved records 14 days later: 05-15 (the week-earlier one), then 05-22,
   05-23 and 05-24. Keep their parameter, slot, values and spacing. Reword the
   docstring to say every record sits inside its watch window at the case's data
@@ -168,10 +168,10 @@ coordinator ruling R442.
 
 ## 3. The superseded note (frontend)
 
-- [ ] 3.1 In `frontend/history.js`, set `ENDING_NOTE.superseded` to exactly
+- [x] 3.1 In `frontend/history.js`, set `ENDING_NOTE.superseded` to exactly
   "A later setting change was detected inside the watch window. This record
   keeps the period it actually observed."
-- [ ] 3.2 Node test in `frontend/history.test.js`: `endingSection` for a
+- [x] 3.2 Node test in `frontend/history.test.js`: `endingSection` for a
   `superseded` ending prints task 3.1's note and no "same setting". Show it
   failing on base first.
 
@@ -195,7 +195,7 @@ Replay rule: no replay module statically imports a new export. The coordinator
 lays this branch's harness over base b03431d2, and a missing named import fails
 the whole replay at module link.
 
-- [ ] 4.1 Add S157 on `c4-ic`, app-opener-only, lock HV2-28. The story:
+- [x] 4.1 Add S157 on `c4-ic`, app-opener-only, lock HV2-28. The story:
   1. reads `/api/verify/trials`;
   2. as a premise, finds two or more Trial rows and an active Trial;
   3. picks the Trial row that is not the admission's active id;
@@ -227,7 +227,7 @@ the whole replay at module link.
 
   `c4-ic` already lies inside S91's smoke closure, so `SMOKE_STORIES` and its
   digest do not move.
-- [ ] 4.2 Amend S91's c4 part in `frontend/c4.replay.mjs`. `readiness()` compares
+- [x] 4.2 Amend S91's c4 part in `frontend/c4.replay.mjs`. `readiness()` compares
   the page's `[data-readiness]` lines with the comparison the page shows: the
   served saved-ending assessment when the selected record's
   `original.ending.kind` is set, else the retained reassessment. S91's own
@@ -238,7 +238,7 @@ the whole replay at module link.
   - a fake page for an ended record whose saved and retained readiness differ;
     it passes;
   - one whose page lines match the retained read instead; it fails.
-- [ ] 4.3 In the #442 section, record that every other story reading these cases
+- [x] 4.3 In the #442 section, record that every other story reading these cases
   keeps its subject:
   - S110, S111, S112 and S143 on `edit-chain`, whose four records stay open
     after task 2.1;
@@ -246,7 +246,7 @@ the whole replay at module link.
     on `c4-history`, none of which gains or changes an ending (this change's
     premises);
   - the desk browser suite's hand-built expired record.
-- [ ] 4.4 Move the pinned inventory literals to 172 issued · 153 active · 19
+- [x] 4.4 Move the pinned inventory literals to 172 issued · 153 active · 19
   retired on this branch:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`;
   - `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`: the replay-plan
@@ -261,7 +261,7 @@ the whole replay at module link.
 
 ## 5. Generated artifacts and verification
 
-- [ ] 5.1 Regenerate what the Python and frontend edits move:
+- [x] 5.1 Regenerate what the Python and frontend edits move:
   - run `uv run python mockups/harmonic-v2.exploration/generate.py`;
   - run every drift check AGENTS.md and `.github/workflows/ci.yml` list,
     including `uv run python scripts/gen_qa_e2e_db.py --check` and

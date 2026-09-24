@@ -201,6 +201,13 @@ test('S142 and S143 are unique app-only C4 record stories with their manufacture
   }
 });
 
+test('S157 is a unique app-only C4 record story on the c4-ic case', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S157');
+  assert.equal(entries.length, 1, 'S157 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-28');
+  assert.equal(storyCase('S157'), 'c4-ic');
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
@@ -523,6 +530,138 @@ test('S143 fails when the figure prints the served code instead of its words', a
     figureState: 'unavailable', periods: 0, figureReason: 'missing_comparison_context',
     result: 'Unavailable · missing_comparison_context',
   }))), /S143 the figure must name the reason in words, never its code/);
+});
+
+// #442: c4-ic's roster as ADR 442 serves it — the watched 06-10 carb-ratio
+// change still open, the older 06-01 one ended superseded at 06-10 09:00 — and
+// that older record as the desk renders it, read back by selector.
+const OLDER442 = 'carb_ratio-all-20240601000000';
+function qa442RecordPage({ servedKind = 'superseded', cell = 'Superseded by a later change\nJun 10, 2024 · 09:00',
+  openCells = 0, kindLine = 'Superseded by a later change',
+  note = 'A later setting change was detected inside the watch window. This record keeps the period it actually observed.',
+  finished = 'Jun 10, 2024 · 09:00', readTo = 'Jun 10, 2024 · 09:00' } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const roster = {
+    trials: [{ id: 'carb_ratio-all-20240610090000', ending: { state: 'unavailable', reason: 'not_recorded' } },
+      { id: OLDER442, ending: servedKind ? { kind: servedKind, effective_at: '2024-06-10 09:00:00' }
+        : { state: 'unavailable', reason: 'not_recorded' } }],
+    admission: { active_kind: 'trial', active_id: 'carb_ratio-all-20240610090000' },
+  };
+  const ending = '[data-record-part="ending"]';
+  const counts = {
+    [`${ending} [data-ending-kind="superseded"]`]: kindLine === null ? 0 : 1,
+    'table.gf-table tr [data-record-open="true"]': openCells,
+  };
+  const text = {
+    'table.gf-table tr td.v': cell,
+    [`${ending} [data-ending-kind="superseded"]`]: kindLine ?? '',
+    [ending]: `Saved ending immutable\nHow it ended\n${kindLine}\nFinished\n${finished}\n${note}`,
+    [`${ending} dt xpath=following-sibling::dd[1]`]: finished,
+    '[data-part="periods"]': `Evidence periods\nBefore\n…\nTrial\n…\nPump-local time, half-open. Observations are limited to these periods; data was read to ${readTo}.`,
+  };
+  const node = selector => ({
+    first() { return this; },
+    locator: nested => node(`${selector} ${nested}`),
+    waitFor: async () => {},
+    count: async () => counts[selector] ?? 0,
+    innerText: async () => text[selector] ?? '',
+    click: async () => { assert.equal(selector, `table.gf-table [data-record="trial:${OLDER442}"]`); },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; },
+    locator: selector => node(selector),
+    request: { get: async () => ({ status: () => 200, text: async () => '', json: async () => roster }) },
+  };
+}
+
+test('S157 reads the older superseded record’s ending in the roster and on the record', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S157(qa442RecordPage());
+});
+
+test('S157 fails at its first feature assertion when the older record is served still open, as on base', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S157(qa442RecordPage({ servedKind: null })),
+    /S157 the older Trial row must carry its served superseded ending/);
+});
+
+test('S157 fails when the roster row still reads Still open or carries a still-open cell', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    cell: 'Still open\nNot watched', openCells: 1 }))), /S157 the roster row must read its ending/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    cell: 'Superseded by a later change\nStill open' }))), /S157 an ended record's roster row must not read Still open/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    openCells: 1 }))), /S157 an ended record must carry no still-open cell/);
+});
+
+test('S157 fails when the opened record shows no superseded ending, or prints its kind as a code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    kindLine: null }))), /S157 the opened record must show its saved superseded ending/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    kindLine: 'superseded' }))), /S157 the ending kind line must read its words, never an underscore-token code/);
+});
+
+test('S157 fails when the saved-ending note still claims the same setting', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    note: 'A later change to the same setting took over. This record keeps the period it actually observed.',
+  }))), /S157 the saved-ending note must not claim the same setting/);
+});
+
+test('S157 fails when the periods note reads data past the saved ending', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S157(qa442RecordPage({
+    readTo: 'Jul 1, 2024 · 23:55' }))), /S157 the periods note must read data to the saved ending's Finished time/);
+});
+
+// #442: S91's c4 readiness helper over an ended record whose saved ending read
+// its evidence to the ending while the retained read runs to the data tail, as
+// c4-isf serves them. `lines` is the readiness the page prints.
+function qa442ReadinessPage(lines) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const arm = (observed, met, reason = null) => ({ unit: 'qualifying fasting Rest windows', required: 30,
+    observed, criterion_met: met, reason, elapsed_days: 31 });
+  const retained = { readiness: { before: arm(31, true), after: arm(30, true) }, assessment: { state: 'unclear' } };
+  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') } };
+  const detail = { original: { ending: { kind: 'expired_unreviewed', assessment: saved } },
+    reassessment: { comparison: retained } };
+  const roster = { trials: [{ id: 'isf-all-20240601000000', parameter: 'isf' }],
+    admission: { active_kind: null, active_id: null } };
+  const printed = lines === 'saved' ? saved : retained;
+  const node = selector => ({
+    filter() { return this; },
+    first() { return this; },
+    waitFor: async () => {},
+    click: async () => {},
+    getAttribute: async () => String(printed.readiness[/"(\w+)"/.exec(selector)[1]].criterion_met),
+    innerText: async () => {
+      const side = printed.readiness[/"(\w+)"/.exec(selector)[1]];
+      return `${side.observed} of 30 qualifying fasting Rest windows\n${side.criterion_met ? 'Criterion met.' : `Not met — ${side.reason}.`}`;
+    },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; },
+    locator: selector => node(selector),
+    request: { get: async target => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(target).searchParams.has('selected') ? { selected: detail } : roster) }) },
+  };
+}
+
+test('S91 readiness compares an ended record’s lines with its saved ending, and returns the retained read', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  const comparison = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
+  assert.equal(comparison.readiness.after.observed, 30);
+  assert.equal(comparison.readiness.after.criterion_met, true);
+});
+
+test('S91 readiness fails when an ended record’s lines print the retained read instead', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('retained'),
+    'qualifying fasting Rest windows', 30)), /the after readiness line must print the criterion of the comparison the page shows/);
 });
 
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route

@@ -1535,16 +1535,27 @@ def follow_up_admission(store, *, now):
 
 
 def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutoff, conclusion=None):
-    """Save the comparison and release this identity in the caller's transaction."""
-    from .follow_up_comparison import compare_follow_up
+    """Save the comparison and release this identity in the caller's transaction.
+
+    The data cutoff bounds every evidence read but the retained context, which
+    was read once when the record was first recorded. A context whose pump read
+    is later than the cutoff, or that names none, saves the assessment
+    unavailable instead (ADR 442).
+    """
+    from .follow_up_comparison import compare_follow_up, comparison_envelope
     if "kind" in record["ending"]:
         return record
     ending = {"version": "386:1", "state": "available", "kind": kind,
               "effective_at": effective_at.strftime(_DT_FMT),
               "recorded_at": recorded_at.strftime(_DT_FMT), "conclusion": conclusion}
     proposed = {**record, "ending": ending}
-    compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
-                                 input_revision=store.input_data_revision())
+    context = record["comparison_context"]
+    source = (context.get("source_snapshot") or {}).get("captured_at")
+    if context.get("state") == "available" and (source is None or datetime.fromisoformat(source) > data_cutoff):
+        compared = comparison_envelope(context, "retained", "context_after_ending")
+    else:
+        compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
+                                     input_revision=store.input_data_revision())
     comparison = compared["comparison"]
     ending["assessment"] = {**{key: value for key, value in comparison.items() if key != "views"},
                             "version": "386:1", **comparison["availability"],
@@ -1581,6 +1592,36 @@ def _reversal_at(store, record):
     return None
 
 
+def _end_open_records(store, trials, *, now, recorded_at):
+    """End every retained Trial record by one rule, oldest first (ADR 442).
+
+    ``reverted`` at the detector's reversal; else ``superseded`` at the first of
+    this reconcile's detected changes after the record, outside its own Edit and
+    inside its watch window; else ``expired_unreviewed`` once that window has
+    passed. Each saved assessment reads evidence only up to its ending instant.
+    Every detected change has a retained record by now, so each has an Edit.
+    """
+    records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+    edit_of, _ = _group_edits(records)
+    starts = sorted((datetime.fromisoformat(t.view.changed_at), edit_of[_review_id(t.view, t.block)])
+                    for t in trials)
+    for retained in records:
+        record = store.follow_up_record("trial", retained["id"])
+        if "kind" in record["ending"]:
+            continue
+        changed = datetime.fromisoformat(record["changed_at"])
+        expiry = changed + _WATCH_HORIZON
+        reversal = _reversal_at(store, record)
+        successor = next((start for start, edit in starts
+                          if changed < start < expiry and edit != edit_of[record["id"]]), None)
+        if reversal is not None:
+            capture_ending(store, record, kind="reverted", effective_at=reversal, recorded_at=recorded_at, data_cutoff=reversal)
+        elif successor is not None:
+            capture_ending(store, record, kind="superseded", effective_at=successor, recorded_at=recorded_at, data_cutoff=successor)
+        elif now >= expiry:
+            capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=expiry)
+
+
 def reconcile_follow_up(store, *, now, recorded_at):
     """Reconcile observed inputs atomically; the caller owns commit and cache."""
     from .follow_up_comparison import capture_comparison_context
@@ -1608,25 +1649,12 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
         _reconcile_plan(store, record, recorded_at)
     _confirm_from_read(store, recorded_at)
+    _end_open_records(store, trials, now=now, recorded_at=recorded_at)
     newest = trials[0] if trials else None
     later = newest is not None and (not frontier or frontier["detected_at"] is None or newest.view.changed_at > frontier["detected_at"])
-    old = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
-    if old and "kind" not in old["ending"]:
-        reversal = _reversal_at(store, old)
-        expiry = datetime.fromisoformat(old["changed_at"]) + _WATCH_HORIZON
-        if reversal is not None:
-            capture_ending(store, old, kind="reverted", effective_at=reversal, recorded_at=recorded_at, data_cutoff=now)
-        elif later and datetime.fromisoformat(newest.view.changed_at) < expiry:
-            capture_ending(store, old, kind="superseded", effective_at=datetime.fromisoformat(newest.view.changed_at), recorded_at=recorded_at, data_cutoff=now)
-        elif now >= expiry:
-            capture_ending(store, old, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     if later:
         identity = _review_id(newest.view, newest.block)
         frontier = store.advance_follow_up_frontier(identity, newest.view.changed_at, reconciled_input_revision=store.input_data_revision())
-        record = store.follow_up_record("trial", identity)
-        expiry = datetime.fromisoformat(record["changed_at"]) + _WATCH_HORIZON
-        if expiry <= now and "kind" not in record["ending"]:
-            capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     focus = store.active_focus()
     if focus:
         focus = _focus_identity(store, focus)

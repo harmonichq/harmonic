@@ -8,9 +8,11 @@ rule, the Focus view derivation, and the one-active invariant in both directions
 """
 
 import unittest
+from dataclasses import asdict
 from datetime import datetime, timedelta
 
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.guidance import plan_deliverable
 from ciq_autotune.settings import (
     ProfileSegment,
     ProfileSettings,
@@ -700,6 +702,251 @@ class BoundedRetainedReadTest(unittest.TestCase):
         # so maturity and the gap count read exactly as an unbounded scan would.
         self.assertEqual(row["maturing"]["days_elapsed"], 1)
         self.assertEqual(row["maturing"]["gap_count"], 14)
+
+
+def _at(n, hour=8):
+    """``_day(n)`` at ``hour`` o'clock, as a stored record time."""
+    return (_day(n) + timedelta(hours=hour)).strftime(wc._DT_FMT)
+
+
+def _dose_rows(spans):
+    """``upsert_bolus`` rows: one dose-stamped bolus a day at 08:00 across each
+    (first day, last day inclusive, stamped settings) span."""
+    rows = []
+    for lo, hi, stamped in spans:
+        for n in range(lo, hi + 1):
+            rows.append({"seq_num": len(rows) + 1, "request_time": _at(n), "completion_time": _at(n),
+                         "description": "Bolus", "completion": "Completed", "insulin": 5.0,
+                         "carbs": 40, **stamped})
+    return rows
+
+
+def _stamps(pairs):
+    """(isf, carb ratio, first day, last day) spans as dose-stamped settings."""
+    return [(lo, hi, {"isf": isf, "carb_ratio": ic}) for isf, ic, lo, hi in pairs]
+
+
+# Four correction-factor changes (05-11, 06-20, 07-30, 09-08), each more than one
+# 28-day watch window after the one before: the issue's failing-first history.
+_FOUR_OLD_CHANGES = _stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 49), (35, 7.0, 50, 89),
+                             (50, 7.0, 90, 129), (40, 7.0, 130, 169)])
+
+
+class EveryRecordEndsTest(unittest.TestCase):
+    """ADR 442: at each reconcile every retained Trial record without an ending
+    ends by one rule, oldest first: reverted, else superseded by the first later
+    detected change outside its own Edit and inside its watch window, else
+    expired once that window has passed. Its saved assessment reads evidence
+    only up to its ending instant. Every store is synthetic and every ending is
+    recorded by the public reconcile path."""
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def reconcile(self, now):
+        with self.store.follow_up_transaction():
+            wc.reconcile_follow_up(self.store, now=now, recorded_at=now)
+
+    def pump_read(self, when, active_idp, profiles):
+        self.store.upsert_settings_snapshot(when.strftime(wc._DT_FMT),
+                                            PumpSettings(active_idp=active_idp, profiles=tuple(profiles)))
+
+    def records(self):
+        """Every retained Trial record by its change time, oldest first."""
+        return {record["changed_at"]: record for record in sorted(
+            self.store.follow_up_records("trial"), key=lambda record: (record["changed_at"], record["id"]))}
+
+    def assertEnded(self, record, kind, effective_at):
+        self.assertEqual((record["ending"].get("kind"), record["ending"].get("effective_at")),
+                         (kind, effective_at))
+
+    def pump_read_pair(self):
+        """Two correction-factor profile switches nine days apart (05-11 and 05-20
+        06:00), each captured by a pump read at the switch, one read before both,
+        doses stamped to match."""
+        profiles = [_profile(idp, [_seg(0, 0.6, isf, 7.0, 110)]) for idp, isf in ((1, 40), (2, 36), (3, 32))]
+        for day, active in ((0, 1), (10, 2), (19, 3)):
+            self.pump_read(_day(day) + timedelta(hours=6), active, profiles)
+        self.store.upsert_bolus(_dose_rows(_stamps([(40, 7.0, 1, 9), (36, 7.0, 10, 18), (32, 7.0, 19, 60)])))
+        return profiles
+
+    def basal_edit(self, moved_on):
+        """Programmed basal rows for the 01:00, 03:00 and 05:00 slots; each slot's
+        rate steps up on the day ``moved_on`` names (never if absent)."""
+        rows = []
+        for n in range(1, 61):
+            for hour in (1, 3, 5):
+                rate = 0.7 if n >= moved_on.get(hour, 61) else 0.6
+                rows.append({"seq_num": len(rows) + 1, "time": _at(n, hour),
+                             "delivery_type": "Profile", "duration_mins": 30,
+                             "basal_rate": rate, "profile_basal_rate": rate})
+        self.store.upsert_basal(rows)
+
+    def test_a_changes_older_than_the_window_all_end_on_one_reconcile(self):
+        self.store.upsert_bolus(_dose_rows(_FOUR_OLD_CHANGES))
+        self.reconcile(_day(170))
+        records = self.records()
+        self.assertEqual(list(records), [_at(10), _at(50), _at(90), _at(130)])
+        for changed_at, expiry in zip(records, (_at(38), _at(78), _at(118), _at(158))):
+            self.assertEnded(records[changed_at], "expired_unreviewed", expiry)
+
+    def test_b_pump_read_supersession_says_its_period_ends_at_that_change(self):
+        self.pump_read_pair()
+        self.reconcile(_day(60))
+        older, later = self.records()[_at(10, 6)], self.records()[_at(19, 6)]
+        self.assertEnded(older, "superseded", _at(19, 6))
+        after = older["ending"]["assessment"]["periods"]["after"]
+        self.assertEqual((after["end"], after["boundary_reasons"]["end"]),
+                         (_at(19, 6), "next_relevant_setting_change"))
+        self.assertEnded(later, "expired_unreviewed", _at(47, 6))
+        self.assertEqual(later["ending"]["assessment"]["periods"]["after"]["boundary_reasons"]["end"],
+                         "data_tail")
+
+    def test_c_a_later_change_of_another_setting_supersedes(self):
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 19), (45, 9.0, 20, 30)])))
+        self.reconcile(_day(30))
+        isf, carb_ratio = self.records()[_at(10)], self.records()[_at(20)]
+        self.assertEqual((isf["parameter"], carb_ratio["parameter"]), ("isf", "carb_ratio"))
+        self.assertEnded(isf, "superseded", _at(20))
+
+    def test_d_a_reversal_comes_before_supersession(self):
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 12)])))
+        self.reconcile(_day(12))
+        self.assertNotIn("kind", self.records()[_at(10)]["ending"])
+        # The pump goes back to 30 on 05-15, then the carb ratio changes on 05-21.
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 13),
+                                                    (30, 7.0, 14, 19), (30, 9.0, 20, 25)])))
+        self.reconcile(_day(25))
+        self.assertEnded(self.records()[_at(10)], "reverted", _at(14))
+
+    def test_e_a_record_inside_its_window_stays_open_and_watched(self):
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 20)])))
+        self.reconcile(_day(20))
+        record = self.records()[_at(10)]
+        self.assertNotIn("kind", record["ending"])
+        admission = wc.follow_up_admission(self.store, now=_day(20))
+        self.assertEqual((admission["active_kind"], admission["active_id"]), ("trial", record["id"]))
+
+    def test_f_a_second_reconcile_changes_no_saved_ending(self):
+        profiles = self.pump_read_pair()
+        self.reconcile(_day(60))
+        first = {record["id"]: record["ending"] for record in self.store.follow_up_records("trial")}
+        self.assertEqual(sorted(ending["kind"] for ending in first.values()),
+                         ["expired_unreviewed", "superseded"])
+        # Newer inputs: a third switch on 06-05 and doses through 07-10.
+        self.pump_read(_day(35) + timedelta(hours=6), 4,
+                       profiles + [_profile(4, [_seg(0, 0.6, 28, 7.0, 110)])])
+        self.store.upsert_bolus(_dose_rows(_stamps([(40, 7.0, 1, 9), (36, 7.0, 10, 18),
+                                                    (32, 7.0, 19, 34), (28, 7.0, 35, 70)])))
+        self.reconcile(_day(70))
+        second = {record["id"]: record["ending"] for record in self.store.follow_up_records("trial")}
+        self.assertEqual(len(second), 3)
+        self.assertEqual({identity: second[identity] for identity in first}, first)
+
+    def test_g_an_expiry_recorded_after_the_fact_reads_data_to_its_own_instant(self):
+        self.pump_read(_day(0) + timedelta(hours=6), 1, [_profile(1, [_seg(0, 0.6, 30, 7.0, 110)])])
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 41)])))
+        self.reconcile(_day(41) + timedelta(hours=8))  # three days after the window ended
+        ending = self.records()[_at(10)]["ending"]
+        self.assertEqual((ending["kind"], ending["effective_at"], ending["recorded_at"]),
+                         ("expired_unreviewed", _at(38), _at(41)))
+        self.assertEqual(ending["assessment"]["data_cutoff"], _at(38))
+
+    def test_h_a_context_read_after_the_ending_leaves_the_assessment_unavailable(self):
+        self.store.upsert_bolus(_dose_rows(_FOUR_OLD_CHANGES))
+        self.pump_read(_day(169), 1, [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)])])
+        self.reconcile(_day(170))
+        records = self.records()
+        self.assertEqual(len(records), 4)
+        for record in records.values():
+            assessment = record["ending"]["assessment"]
+            self.assertEqual((assessment["state"], assessment["reason"]), ("unavailable", "context_after_ending"))
+            self.assertEqual(assessment["data_cutoff"], record["ending"]["effective_at"])
+            self.assertEqual(assessment["comparison_context"], record["comparison_context"])
+            self.assertEqual((assessment["periods"], assessment["outcomes"]), ({}, []))
+
+    def test_i_a_context_read_before_the_superseding_change_is_used(self):
+        self.pump_read(_day(0) + timedelta(hours=6), 1, [_profile(1, [_seg(0, 0.6, 30, 7.0, 110)])])
+        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 19), (45, 9.0, 20, 60)])))
+        self.reconcile(_day(60))
+        record = self.records()[_at(10)]
+        self.assertEnded(record, "superseded", _at(20))
+        assessment = record["ending"]["assessment"]
+        self.assertNotEqual(assessment["reason"], "context_after_ending")
+        self.assertEqual(assessment["comparison_context"], record["comparison_context"])
+        self.assertEqual(assessment["data_cutoff"], _at(20))
+        self.assertEqual(assessment["periods"]["after"]["data_cutoff"], _at(20))
+
+    def test_j_a_plan_receipt_is_unchanged_by_the_ending(self):
+        profiles = self.pump_read_pair()
+        items = [{"type": "isf", "start_min": 0, "value": 36}]
+        self.store.save_plan_draft(items, _at(5, 0))
+        plan = self.store.apply_plan(_at(5, 0))
+        deliverable = {"version": "386:1", "state": "available", "source_profile": asdict(profiles[0]),
+                       "rows": plan_deliverable([asdict(s) for s in profiles[0].segments], items)}
+        with self.store.follow_up_transaction():
+            saved = self.store.save_follow_up_record({"kind": "plan", "id": plan["applied_at"], "version": "386:1",
+                                                      **plan, "deliverable": deliverable})
+        self.reconcile(_day(60))
+        record = self.records()[_at(10, 6)]
+        self.assertEnded(record, "superseded", _at(19, 6))
+        receipt = {"version": "386:1", "state": "available", "applied_at": _at(5, 0),
+                   "trial_id": "isf-all-20260511060000", "established_at": _at(60, 0),
+                   "observed_snapshot": {"captured_at": _at(10, 6), "active_idp": 2},
+                   "matched_deliverable": saved["deliverable"], "block": None}
+        self.assertEqual(record["reconciliation"], receipt)
+        self.assertEqual(self.store.follow_up_record("plan", _at(5, 0))["reconciliation"], receipt)
+
+    def test_k_a_multi_slot_edit_ends_at_the_first_change_after_it(self):
+        self.basal_edit({1: 10, 3: 10, 5: 20})
+        self.reconcile(_day(60))
+        records = self.records()
+        self.assertEqual(list(records), [_at(10, 1), _at(10, 3), _at(20, 5)])
+        self.assertEnded(records[_at(10, 1)], "superseded", _at(20, 5))
+        self.assertEnded(records[_at(10, 3)], "superseded", _at(20, 5))
+
+    def test_k_a_multi_slot_edit_without_a_later_change_expires(self):
+        self.basal_edit({1: 10, 3: 10})
+        self.reconcile(_day(60))
+        records = self.records()
+        self.assertEqual(list(records), [_at(10, 1), _at(10, 3)])
+        self.assertEnded(records[_at(10, 1)], "expired_unreviewed", _at(38, 1))
+        self.assertEnded(records[_at(10, 3)], "expired_unreviewed", _at(38, 3))
+
+    def test_l_a_dose_detected_supersession_reads_data_through_that_change(self):
+        self.pump_read(_day(0), 1, [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)])])
+        self.store.upsert_bolus(_dose_rows(_stamps([(40, 7.0, 1, 9), (40, 8.0, 10, 18), (40, 9.0, 19, 60)])))
+        self.reconcile(_day(60))
+        older = self.records()[_at(10)]
+        self.assertEnded(older, "superseded", _at(19))
+        after = older["ending"]["assessment"]["periods"]["after"]
+        self.assertEqual((after["end"], after["boundary_reasons"]["end"]), (_at(19), "data_tail"))
+
+    def test_m_a_change_that_settles_later_leaves_the_ending_as_recorded(self):
+        profile = lambda idp, isf, ic, target: _profile(idp, [_seg(0, 0.6, isf, ic, target)])
+        self.pump_read(_day(0) + timedelta(hours=6), 1, [profile(1, 40, 7.0, 110)])
+        self.pump_read(_day(10) + timedelta(hours=20), 2, [profile(1, 40, 7.0, 110), profile(2, 36, 7.0, 110)])
+        self.pump_read(_day(12) + timedelta(hours=6), 3, [profile(1, 40, 7.0, 110), profile(2, 36, 8.0, 110),
+                                                         profile(3, 36, 8.0, 120)])
+        spans = [(0, 10, {"isf": 40, "carb_ratio": 7.0, "target_bg": 110}),
+                 (11, 11, {"isf": 36, "carb_ratio": 8.0, "target_bg": 110}),
+                 (12, 12, {"isf": 36, "carb_ratio": 8.0, "target_bg": 120})]
+        self.store.upsert_bolus(_dose_rows(spans[:2]))
+        self.reconcile(_day(12) + timedelta(hours=7))
+        records = self.records()
+        self.assertEqual(list(records), [_at(10, 20), _at(12, 6)])
+        self.assertEnded(records[_at(10, 20)], "superseded", _at(12, 6))
+        first = records[_at(10, 20)]["ending"]
+        self.store.upsert_bolus(_dose_rows(spans))
+        self.reconcile(_day(12) + timedelta(hours=19))
+        records = self.records()
+        self.assertEqual(records[_at(11)]["parameter"], "carb_ratio")
+        edits = wc.review_trials(self.store, now=_day(12) + timedelta(hours=19))["edits"]
+        self.assertEqual([edit["count"] for edit in edits], [3])
+        self.assertEqual(records[_at(10, 20)]["ending"], first)
 
 
 if __name__ == "__main__":

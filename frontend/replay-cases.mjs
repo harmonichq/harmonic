@@ -18,7 +18,7 @@ export const STORY_CASES = Object.freeze({
   S113: 'basal-verdict-gallery',
   S121: 'pattern-near-tie', S122: 'pattern-near-tie',
   S139: 'c3-trial', S140: 'c3-focus',
-  S142: 'c3-trial', S143: 'edit-chain',
+  S142: 'c3-trial', S143: 'edit-chain', S157: 'c4-ic',
   S151: 'basal-verdict-gallery', S152: 'basal-verdict-gallery', S153: 'basal-verdict-gallery',
   S145: 'basal-lower', S146: 'basal-lower', S147: 'pattern-near-tie',
   S124: 'behavioral-carb-undercount', S125: 'behavioral-missed-meal', S126: 'behavioral-correction-stacking',

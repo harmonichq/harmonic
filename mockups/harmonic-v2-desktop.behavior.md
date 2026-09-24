@@ -4118,3 +4118,100 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #442 amendment — 2026-09-23, issue #442
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R442. It covers S157, the S91 amendment below
+and the superseded-note wording, and nothing outside #442's checklist. The
+decision is ADR 442 in `openspec/changes/backfilled-record-endings/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c4-ic, c4-isf
+and c4-profile here, each through `CASE_STORE_DIR`. No real data is read. The
+worker ran no server and no browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **Every change record ends by one rule.** Each reconcile ends every retained
+  change record that has no ending, oldest first: reverted, else superseded by
+  the first later detected change outside its own Edit and inside its 28-day
+  watch window, else expired unreviewed once that window has passed. An older
+  detected change therefore reads its ending in the Changes roster and on its
+  record instead of "Still open · Not watched". A saved ending is never
+  rewritten.
+- **A saved ending reads evidence only up to its ending instant**, the live
+  watch's included. A saved assessment whose retained context came from a later
+  pump read is served unavailable (`context_after_ending`; its words belong to
+  #450).
+- **The superseded note names no setting.** It reads "A later setting change
+  was detected inside the watch window. This record keeps the period it
+  actually observed." instead of claiming the later change was to the same
+  setting, which a later change of any setting already contradicted.
+
+S157 is a new app-opener-only story under HV2-28. S91 is amended in prose
+below; no story is retired.
+
+```
+S157 · An older detected change that a later detected change superseded inside
+       its watch window reads its saved ending, never Still open: its Changes
+       roster row reads "Superseded by a later change" with its effective time
+       and carries no still-open cell; opening it shows the saved ending of kind
+       superseded in words with no underscore-token code on that line, a
+       saved-ending note that does not claim the same setting, and a periods
+       note whose data read-through time is the ending's Finished time.
+  element:  table.gf-table [data-record], td.v, [data-record-open="true"],
+            [data-record-part="ending"] [data-ending-kind], [data-part="periods"]
+  source:   ciq_autotune/watched_change.py reconcile_follow_up /
+            _end_open_records / capture_ending; frontend/history.js
+            recordRowHtml / endingSection; frontend/follow-up.js periodsSection
+  lock:     HV2-28; ADR 442 (openspec/changes/backfilled-record-endings/design.md)
+  data:     c4-ic; its one reconcile records carb-ratio changes on 06-01 and
+            06-10. The 06-10 record is the watched, open Trial; the 06-01
+            record ends superseded at 06-10 09:00, its saved assessment read to
+            that instant
+  evidence: C4_STORIES.S157; reads the served roster, picks the Trial row that
+            is not the admission's active id and requires its served
+            superseded kind, then reads its roster row, opens it by its roster
+            press and reads the kind line, the ending part and the periods
+            note. It asserts no reason line's words; the complete ledger covers
+            the Ending assessment line with #450's words
+  status:   owed to the coordinator. Base b03431d2 with this harness laid over
+            it is expected to fail at its first feature assertion at both sizes
+            ("S157 the older Trial row must carry its served superseded
+            ending"); the branch is expected to pass at 1280x720 and 1440x900
+```
+
+Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and test that reads these cases keeps its subject:
+
+- **S110, S111, S112 and S143** on edit-chain. Its four hand-saved records move
+  14 days later (05-15, 05-22, 05-23, 05-24) with their spacing kept, so every
+  watch window ends after the case's 06-01 23:59 data tail and the ending rule
+  leaves all four open: one titled three-member Edit, one flat row, four
+  still-open cells reading "Not watched", and an unavailable retained
+  comparison.
+- **S96 and S105** on c3-history and c3-trial, **S49** on c4-missing and **R18**
+  on c4-history. None of these records gains or changes an ending (this
+  change's premises): c3-history's finished record keeps its saved ending, and
+  every other record is its case's open frontier.
+- **The desk browser suite's hand-built expired record** is a served fixture
+  that no reconcile touches; its saved ending and Later conclusion assertions
+  are unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Reconcile ending rule for every open change record | ciq_autotune/watched_change.py | S157, S91 |
+| Superseded saved-ending note | frontend/history.js | S157 |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`AGENTS.md`'s registry count sentence, `mockups/INDEX.md`'s row and the release
+freeze block are the coordinator's, written once on the integration branch.
+`acceptance.py`'s pinned inventory moves to 172 issued · 153 active · 19 retired
+on this branch.

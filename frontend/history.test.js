@@ -285,6 +285,13 @@ test('a lever-unavailable ending is a different ending from a manual one', () =>
   assert.doesNotMatch(html, /You ended this Focus/);
 });
 
+test('a superseded ending names a later setting change inside the window, never the same setting', () => {
+  const html = endingSection({ ...PREEMPTED_ENDING, kind: 'superseded' }, { kind: 'trial' });
+  assert.match(html, /data-ending-kind="superseded"/);
+  assert.match(html, /A later setting change was detected inside the watch window\. This record keeps the period it actually observed\./);
+  assert.doesNotMatch(html, /same setting/);
+});
+
 test('a served ending kind with no wording of its own is printed verbatim', () => {
   const html = endingSection({ ...PREEMPTED_ENDING, kind: 'some_new_kind' }, { kind: 'trial' });
   assert.match(html, /data-ending-kind="some_new_kind"/);

@@ -19,7 +19,13 @@
 export class ApiTransportError extends Error {
   constructor(status, detail, fallback) {
     const structured = detail && typeof detail === 'object' ? detail : null;
-    super(structured?.message || detail || fallback);
+    // A failure always carries words a line can print: the served message, a
+    // served string, the status text, else the status itself. A validation
+    // list or an HTTP/2 answer with no status text never prints as empty or
+    // as "[object Object]".
+    super((typeof structured?.message === 'string' && structured.message)
+      || (typeof detail === 'string' && detail) || fallback
+      || `the store could not answer (${status})`);
     this.name = 'ApiTransportError';
     this.status = status;
     this.code = structured?.code || null;

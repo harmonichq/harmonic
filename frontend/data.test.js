@@ -350,6 +350,25 @@ test('structured non-2xx detail preserves status and code on a typed error', asy
   );
 });
 
+test('a failure with no served words still carries a printable message', async () => {
+  // HTTP/2 sends no status text, a proxy error page is not JSON, and a
+  // validation error serves a list: none may print as empty or "[object Object]".
+  const answers = [
+    { ok: false, status: 502, statusText: '', json: async () => { throw new Error('not json'); } },
+    { ok: false, status: 422, statusText: '', json: async () => ({ detail: [{ loc: ['body'], msg: 'bad' }] }) },
+  ];
+  for (const answer of answers) {
+    await assert.rejects(
+      () => makeDeps({ fetch: async () => answer }).fetchStatus(),
+      (error) => {
+        assert.ok(error instanceof ApiTransportError);
+        assert.equal(error.message, `the store could not answer (${answer.status})`);
+        return true;
+      },
+    );
+  }
+});
+
 test('non-2xx without detail falls back to statusText', async () => {
   // Simulate a non-JSON error body.
   const calls = [];

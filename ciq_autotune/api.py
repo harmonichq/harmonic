@@ -114,8 +114,10 @@ def _analysis_payload(result) -> dict:
 
 
 def _latest_instant(store) -> Optional[datetime]:
-    """The most recent data instant in ``store`` — the ``now`` trial detection uses
-    (mirrors ``summarize_trend``'s default so the pin guard sees the same anchor)."""
+    """The most recent data instant in ``store``, settings snapshots included: the
+    ``now`` this API's follow-up reads and writes use. It counts snapshots as the
+    ingestion reconcile does; the Outcomes trend's anchor does not
+    (``outcomes_trend.trend_watched_change``, #447), so the two can differ."""
     times = ([e.t for e in store.basal_events()]
              + [r.t for r in store.cgm_readings()]
              + [b.t for b in store.bolus_events()]

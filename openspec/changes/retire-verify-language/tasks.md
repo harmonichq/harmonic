@@ -88,6 +88,27 @@ outcomes-trend route and the legacy Trial detector.
   `npx --yes @fission-ai/openspec@1 validate --all --strict`; and the three
   `scripts/check_*.py` guards.
 
+Coordinator-authorized with sub-order 1 (`Q3 delegation, Connor Griffin,
+2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`, and the
+coordinator's rulings on sub-order 1's findings), each implemented and verified:
+
+- `_candidate` is deleted with `detect_trial`, its only caller.
+- design.md decision 2 confines the anchor divergence to a store reconciled at
+  the data anchor, and the F3 wording matches "Changes states a Plan's phase from
+  its served verdict".
+- The surfaces delta's "Changes' Plan asks…" decides no Plan phase from a pump
+  comparison of its own (#453's finding).
+- F-a: `api._latest_instant`'s docstring says it counts settings snapshots and is
+  not the trend's anchor.
+- F-b: the http-api delta says `input_data_age` is carried only while a prior
+  answer is served during a rebuild, with a scenario matching
+  `test_a_labelled_predecessor_keeps_its_input_data_age`.
+- F-c: six unused imports go from files this change touches: `Union`
+  (`watched_change.py`), `ArcTrend` and `PreMealTrend` (`test_outcomes_trend.py`),
+  `DERIVED_ARTIFACT_STORE_SCHEMA_VERSION`, `_digest` and `source_fingerprint`
+  (`test_api.py`).
+- `scripts/profile_cold_shapes.py` drops its emptied warm-only stage and flag.
+
 ## 2. Shipped surfaces (sub-order 2)
 
 - [ ] 2.1 Write the failing tests first in `frontend/watched-change-dock.test.js`.

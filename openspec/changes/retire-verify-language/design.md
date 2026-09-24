@@ -316,10 +316,11 @@ The coordinator's rulings Q1–Q4 on #447 are made under the same delegation.
 
 - The desk reads one field of `/api/outcomes/trend`: Diagnose takes
   `watched_change` for the watch dock (`frontend/diagnose.js:175–183`), and its
-  age check reads the `input_data_age` every fixed read carries. Nothing in the
-  desk reads `schema_version`, `window_days`, `profile_isf`, `profile_ic`,
-  `windows`, `behaviors`, `metrics`, `arc`, `pre_meal` or `overnight_lows`. Those
-  series fed Verify's trend tiles and digest (coordinator finding F2).
+  age check reads the `input_data_age` a fixed read carries while it serves the
+  prior revision's answer during a rebuild. Nothing in the desk reads
+  `schema_version`, `window_days`, `profile_isf`, `profile_ic`, `windows`,
+  `behaviors`, `metrics`, `arc`, `pre_meal` or `overnight_lows`. Those series fed
+  Verify's trend tiles and digest (coordinator finding F2).
 - Every series producer has another production caller. The CLI's
   `outcomes-trend` command prints `summarize_trend` through `markdown_trend`, or
   as JSON (`ciq_autotune/cli.py:181–185`). `follow_up_comparison.py` and

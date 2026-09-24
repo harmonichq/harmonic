@@ -33,12 +33,9 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.result import SCHEMA_VERSION
 from ciq_autotune.derived_artifacts import (
-    DERIVED_ARTIFACT_STORE_SCHEMA_VERSION,
     _canonical,
-    _digest,
     load_latest_prior,
     sidecar_path,
-    source_fingerprint,
 )
 from ciq_autotune.settings import parse_pump_settings
 from ciq_autotune.store import Store

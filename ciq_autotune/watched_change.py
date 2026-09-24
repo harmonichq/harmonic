@@ -26,7 +26,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from .epochs import _DOSE_ATTR, _MIN_EPOCH_DAYS, _settled_days
 from .analyzers.scenario.anchors import _is_meal

@@ -55,8 +55,9 @@ status line names its commits and the message it failed with:
   S136–S140, S142, S143, S145 and S147–S152.
 - S121 fails at its feature assertion at both sizes on e229bef3, the release
   trunk after #426, because its premise is #426's served title.
-- S154 fails at its feature assertion at 1280x720. Its 1440x900 base run timed
-  out loading under machine load and is owed to the integration run.
+- S154 fails at its feature assertion at both sizes. Its first 1440x900 base
+  run timed out loading under machine load; the low-load re-run at integration
+  fails at the same panel-line assertion.
 - S146 fails at its accepted premise: base serves no server-confirmed Plan. Its
   fail-first half is a node test in `frontend/plan-actions.test.js`.
 - S133 and S153 pass on base by design. S133 records shipped behavior, and its
@@ -3498,8 +3499,9 @@ S154 · Opening a basal slot with excluded nights in Diagnose names why they
   status:   base a4d374a7 with the 4895f80b harness fails at its feature
             assertion at 1280x720 ("S154 the panel's excluded-night line must
             name each served reason", saw ["3 excluded nights"]); the base run
-            at 1440x900 timed out loading the page under machine load before
-            the story began, and the coordinator re-runs it at integration;
+            at 1440x900 first timed out loading the page under machine load,
+            and its low-load re-run at integration fails at the same panel-line
+            assertion;
             branch 4895f80b passes at 1280x720 and 1440x900; the desk browser
             suite passed 40 of 40 and the full acceptance.test.py passed;
             coordinator-run 2026-09-23. Raw logs and the before-and-after
@@ -4104,7 +4106,7 @@ S150 · A Highs after meals Pattern case file carries the same facts: every row
 
 Amended S25 · 2026-09-23 · #432 / Q2 sanction: A selected Occurrence's evidence facts are its served facts — each served habit, and the served cause when the case file claims it — and never a count of glucose readings or event markers; the fixed sentence about what the canvas shows is retired. The replay reads the served detail and requires no count-only line. As frozen, S25 fails on this branch's build at its count-line assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S25 at its count-line assertion; as amended, S25 passes on branch 03ff4579 at both sizes (1280x720 on a low-load re-run after a load timeout; 1440x900 first time).
 
-Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S107 at the old "Completed carb bolus" readability check at 1440x900, while the 1280x720 run hit a load timeout; as amended, S107 passes on branch 03ff4579 at both sizes on low-load re-runs after load timeouts.
+Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S107 at the old "Completed carb bolus" readability check at both sizes (the 1280x720 run was re-run at low load after a load timeout); as amended, S107 passes on branch 03ff4579 at both sizes on low-load re-runs after load timeouts.
 
 The coordinator also ran the whole desk browser suite on 03ff4579 (40 of 40) and
 the full `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` (OK), 2026-09-23. The

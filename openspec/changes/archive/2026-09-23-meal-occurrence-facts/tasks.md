@@ -120,7 +120,7 @@
   `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory --out <scratch
   dir>`, which must print 150/131/19. `ACCEPTANCE.md` and `mockups/INDEX.md` counts
   are the release coordinator's.
-- [ ] 3.5 Coordinator-run, serially, with `CASE_STORE_DIR` set to a fresh directory
+- [x] 3.5 Coordinator-run, serially, with `CASE_STORE_DIR` set to a fresh directory
   and nothing else on port 8765, at 1280x720 and 1440x900: S148–S150 fail on the
   base for their feature reason and pass on the branch; the frozen S25 and S107
   fail on the branch build at the count-line and "Completed carb bolus" assertions

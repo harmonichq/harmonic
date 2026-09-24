@@ -26,6 +26,7 @@ from ciq_autotune.analyzers.classifiers import (
     upstream_cause,
 )
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
+from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
 
@@ -340,6 +341,39 @@ class PriorCarbBolusOwnsRiseTest(unittest.TestCase):
         self.assertFalse(v.matched)
         self.assertIn("15 g", v.detail)
         self.assertIn("15 min", v.detail)
+
+
+def rise_after(low_reading, flat_from_min):
+    """``low_reading``, flat 110 from 09:``flat_from_min`` to 09:55, then a from-flat
+    2 mg/dL/min climb into a 10:40 bolus that keeps rising after it."""
+    return sorted([low_reading,
+                   *cgm_ramp(14, 9, flat_from_min, 110, 0.0, 55 - flat_from_min),
+                   *cgm_ramp(14, 10, 0, 110, 2.0, 40),
+                   *cgm_ramp(14, 10, 45, 195, 1.5, 60)], key=lambda r: r.t)
+
+
+class ConfiguredGateTest(unittest.TestCase):
+    """The context gate is judged under the classifier's ``scenario_config`` (ADR 448)."""
+
+    CASES = {
+        # A 60 reading 100 min before the bolus: outside the default 90-min lookback.
+        "gate_lookback_min=120": (
+            rise_after(CgmReading(t=datetime(2026, 6, 14, 9, 0), bg=60.0, type="EGV"), 5),
+            ScenarioConfig(gate_lookback_min=120.0)),
+        # A 74 reading 60 min before the bolus: above the default 70 low line.
+        "gate_low_mgdl=75": (
+            rise_after(CgmReading(t=datetime(2026, 6, 14, 9, 40), bg=74.0, type="EGV"), 45),
+            ScenarioConfig(gate_low_mgdl=75.0)),
+    }
+
+    def test_a_configured_gate_explains_the_rise(self):
+        m = meal(14, 10, 40, carbs=30.0, dose=3.0)
+        for label, (cgm, config) in self.CASES.items():
+            with self.subTest(label):
+                self.assertTrue(classify_late_bolus(m, cgm).matched)
+                v = classify_late_bolus(m, cgm, scenario_config=config)
+                self.assertFalse(v.matched)
+                self.assertEqual(v.silence_reason, SilenceReason.UPSTREAM_CAUSE)
 
 
 if __name__ == "__main__":

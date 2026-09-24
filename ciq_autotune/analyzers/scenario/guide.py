@@ -174,8 +174,9 @@ _SILENCE_META = {
     SilenceReason.UPSTREAM_CAUSE: (
         "Upstream cause",
         EvidenceTier.INFERRED,
-        "An observable recent low and/or a defensive suspend explains the move. A "
-        "recovery, not the behavior itself.",
+        "An observable recent low and/or a defensive suspend explains the move, or the "
+        "rise is the rebound of an over-treated low, which owns it. A recovery, not the "
+        "behavior itself.",
     ),
     SilenceReason.PRIOR_HIGH_BASELINE: (
         "Prior high baseline",

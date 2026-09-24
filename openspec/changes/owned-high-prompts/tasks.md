@@ -2,7 +2,7 @@
 
 ## 1. Failing-first tests (through the public interface)
 
-- [ ] 1.1 In `tests/test_pending_prompts.py`, add owned-High tests through
+- [x] 1.1 In `tests/test_pending_prompts.py`, add owned-High tests through
   `build_candidates`, built from synthetic days with no hand-set Lever, verdict or
   flag. (a) A sub-70 low (55 mg/dL) rebounds, with no bolus, into a High whose
   250 mg/dL crossing comes more than 90 minutes after the nadir. Vary the crossing
@@ -13,7 +13,7 @@
   `design.md` gives shapes that reproduce all four on the base. Run each on the base
   first and record that it fails for the right reason: a missed-meal prompt at the
   High onset.
-- [ ] 1.2 Add the controls on the same shapes. (a) An unbolused rise with no low
+- [x] 1.2 Add the controls on the same shapes. (a) An unbolused rise with no low
   before it still raises its missed-meal prompt. (b) A High whose run begins after
   a sub-70 low's rebound has settled in range for at least 30 minutes still raises
   its missed-meal prompt. (c) The 1.1(a) shape with `low_answers` holding a `no`
@@ -21,7 +21,7 @@
   shape with a `not-sure` answer, and again with a `carbs` answer, raises none.
   (a) and (b) keep the base's output. (c) is new behavior through the new
   keyword.
-- [ ] 1.3 Add a store-facing test through `build_pending_prompts`, on an in-memory
+- [x] 1.3 Add a store-facing test through `build_pending_prompts`, on an in-memory
   store holding the 1.1(a) shape. The queue serves the low prompt and no missed-meal
   prompt. Record a low-prompt `no` at the nadir with `answered_at` at or before the
   store's latest reading, and the missed-meal prompt appears at the High onset. A
@@ -29,7 +29,7 @@
   does not know that answer yet either (#467). The store's default stamp is wall
   clock, which is after any synthetic reading. The first assertion fails on the
   base.
-- [ ] 1.4 Add a gate-configuration test through each classifier's public call, in
+- [x] 1.4 Add a gate-configuration test through each classifier's public call, in
   `tests/test_classifier_late_bolus.py` and `tests/test_classifier_carb_undercount.py`.
   (a) A from-flat pre-bolus rise with a 60 mg/dL reading 100 minutes before the
   meal bolus matches under the default configuration. Under
@@ -39,7 +39,7 @@
   meal carries an ISF and a Dose-stamped carb ratio so its judgment reaches the gate.
   The `design.md` evidence block gives shapes for both. Each fails on the base,
   where the configured verdict still matches.
-- [ ] 1.5 Pin the two reader-facing definitions of upstream cause through their
+- [x] 1.5 Pin the two reader-facing definitions of upstream cause through their
   public readers. Nothing pins either string today. In `tests/test_guide_catalog.py`,
   assert that the `upstream_cause` entry of `build_catalog()["silence_reasons"]`
   serves exactly the new body in ADR 448 Decision 3. In `frontend/day.test.js`,
@@ -48,7 +48,7 @@
   "explained (…)" clause in Decision 3. Assert each string as a literal copied from
   the ADR, never derived from the module under test. Each fails on the base, which
   serves the gate-only wording.
-- [ ] 1.6 In `tests/test_pending_prompts.py`, add a sequence-won test through
+- [x] 1.6 In `tests/test_pending_prompts.py`, add a sequence-won test through
   `build_candidates` on a synthetic week shaped like ADR 448 Decision 1a's
   evidence. It has 42 carb sequences in 7 days, ten of them 90 g or more. After
   nine of those ten, glucose sits high through most of the 4-hour post-sequence
@@ -62,7 +62,7 @@
 
 ## 2. Implementation
 
-- [ ] 2.1 In `ciq_autotune/pending_prompts.py`, give `build_candidates` a keyword
+- [x] 2.1 In `ciq_autotune/pending_prompts.py`, give `build_candidates` a keyword
   `low_answers` (default empty). Run the shared evaluation walk (`evaluate`) once
   over its events, under the same scenario configuration and those answers, with
   the walk's default classifier context. Collect every High anchor that any
@@ -75,11 +75,11 @@
   docstring's candidate-derivation bullet, `build_candidates`' docstring, and the
   carb-log prompt review queue comment above `/api/prompts` in
   `ciq_autotune/api.py`, so each says an owned rise raises no question.
-- [ ] 2.2 In `ciq_autotune/analyzers/classifiers/late_bolus.py` and
+- [x] 2.2 In `ciq_autotune/analyzers/classifiers/late_bolus.py` and
   `ciq_autotune/analyzers/classifiers/carb_undercount.py`, pass `scenario_config`
   to `upstream_cause`. Say in each function docstring's context-gate step that the
   gate is judged under `scenario_config`, as missed meal's does.
-- [ ] 2.3 In `ciq_autotune/analyzers/classifiers/correction_on_iob.py` (the
+- [x] 2.3 In `ciq_autotune/analyzers/classifiers/correction_on_iob.py` (the
   NO_TRIGGER-versus-UPSTREAM_CAUSE comment, lines 232-235 at the base) and
   `ciq_autotune/analyzers/classifiers/correction_stacking.py` (lines 239-241 at the
   base), say that UPSTREAM_CAUSE names an observable cause the move recovers
@@ -87,7 +87,7 @@
   low's rebound (ADR 422). Keep each comment's reason why its own branch is
   `NO_TRIGGER`. Match the wording of the comment in
   `ciq_autotune/analyzers/classifiers/missed_meal.py`.
-- [ ] 2.4 In `frontend/day-chart.js`, delete the detector and silence-reason
+- [x] 2.4 In `frontend/day-chart.js`, delete the detector and silence-reason
   reference section: its header comment, `DETECTOR_REFERENCE`, `REASON_REFERENCE`,
   `DETECTOR_DEF` and `REASON_DEF`. Remove the vocabulary header's pointer to the
   deleted `model-view-log.js`. In `frontend/day-chart.test.js`, delete the test
@@ -97,7 +97,7 @@
   property access such as `DC.REASON_DEF`, which is how the v1 shell read them
   before #416. Triage found no other reader.
 
-- [ ] 2.5 Reword the two reader-facing definitions to the sentences in ADR 448
+- [x] 2.5 Reword the two reader-facing definitions to the sentences in ADR 448
   Decision 3. The first is the `SilenceReason.UPSTREAM_CAUSE` body in
   `ciq_autotune/analyzers/scenario/guide.py`, served by `/api/catalog` and
   rendered by the Guide's silence article. The second is the "explained" clause of
@@ -105,7 +105,7 @@
   entry. Leave the pipeline article's "Silence is a verdict, not a gap" paragraph
   as it is (Decision 3 says why).
 
-- [ ] 2.6 In `ciq_autotune/analyzers/scenario/evaluation.py`, make the
+- [x] 2.6 In `ciq_autotune/analyzers/scenario/evaluation.py`, make the
   sequence-winner rebuild in `evaluate` (lines 290-297 at the base) keep the
   Episode's `owned_highs`, in the same `replace` call that keeps
   `anchor_verdicts`. Change nothing else in the walk. ADR 448 Decision 1a says
@@ -113,7 +113,7 @@
 
 ## 3. Record, generated artifacts and gates
 
-- [ ] 3.1 In the **Carb-log prompt** entry of `CONTEXT.md`, say that "did you eat
+- [x] 3.1 In the **Carb-log prompt** entry of `CONTEXT.md`, say that "did you eat
   here?" is asked at a missed-meal rise onset that no over-treated low's rebound
   owns. An owned rise is explained by its low, which asks its own question when it
   is sub-70.

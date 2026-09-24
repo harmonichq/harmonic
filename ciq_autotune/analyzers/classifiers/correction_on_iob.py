@@ -231,8 +231,9 @@ def classify_correction_on_iob(
             evidence_tier=EvidenceTier.INFERRED,
             # NO_TRIGGER, not UPSTREAM_CAUSE: a rising BG makes the correction a
             # rational spike-chase, so the over-stack-onto-settled-insulin behavior
-            # didn't happen. UPSTREAM_CAUSE is reserved for the context gate's recent
-            # low/suspend (ADR 0009), which a rise is not.
+            # didn't happen. UPSTREAM_CAUSE names an observable cause the move
+            # recovers from — the context gate's recent low/suspend (ADR 0009) or an
+            # over-treated low's rebound (ADR 422) — which a spike-chase is not.
             silence_reason=SilenceReason.NO_TRIGGER,
             correction_t=driver.t,
             iob_at_correction=iob_at_correction,

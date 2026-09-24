@@ -3,12 +3,54 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  caseFileSelectionCohort, eventComparisonChartOption, GLUCOSE_ENVELOPE,
+  caseFileSelectionCohort, eventComparisonChartOption, GLUCOSE_ENVELOPE, renderEventSurface,
 } from './diagnose-event-comparison.js';
 
 const caseFiles = () => JSON.parse(readFileSync(
   new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
 ));
+
+/* A DOM THE SIZE OF ONE MOUNT. `renderEventSurface` owns the chart's cursor and
+   the readout it hangs in a caller's header line; these fakes carry only what
+   that mount touches. Writing a surface's markup mints a fresh chart element,
+   as the browser does, so a second mount is a different element, and a removed
+   listener's signal is honoured the way `addEventListener` honours it. */
+class FakeNode {
+  constructor(id = null) {
+    Object.assign(this, { id, className: '', innerHTML: '', dataset: {}, children: [],
+      attributes: new Map(), listeners: [] });
+    this.classList = { add: (name) => { this.className = `${this.className} ${name}`.trim(); } };
+  }
+  setAttribute(name, value) { this.attributes.set(name, value); }
+  getAttribute(name) { return this.attributes.get(name) ?? null; }
+  addEventListener(type, listener, { signal } = {}) { this.listeners.push({ type, listener, signal }); }
+  dispatch(type, event = {}) {
+    for (const entry of this.listeners) {
+      if (entry.type === type && !entry.signal?.aborted) entry.listener({ preventDefault() {}, ...event });
+    }
+  }
+  append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
+  remove() { this.parent.children = this.parent.children.filter((node) => node !== this); }
+  querySelector(selector) { return this.children.find((node) => `#${node.id}` === selector) ?? null; }
+  insertAdjacentHTML(_position, html) { this.innerHTML += html; }
+  focus() { globalThis.document.activeElement = this; }
+}
+
+function withEventSurfaceDom(run) {
+  const prior = { document: globalThis.document, window: globalThis.window };
+  let chart = null;
+  let key = null;
+  const surface = {
+    set innerHTML(_markup) { chart = new FakeNode('ec-chart'); key = new FakeNode('ec-chart-key'); },
+    querySelector: (selector) => ({ '#ec-chart': chart, '#ec-chart-key': key })[selector] ?? null,
+  };
+  try {
+    globalThis.document = { documentElement: {}, activeElement: null,
+      createElement: () => new FakeNode() };
+    globalThis.window = { echarts: { init: () => ({ setOption() {}, convertFromPixel: () => null }) } };
+    return run({ surface, headline: new FakeNode('canvas-fullhead') });
+  } finally { Object.assign(globalThis, prior); }
+}
 
 test('case-file comparison selection uses its served cohort identity', () => {
   const matched = Object.values(caseFiles().cases['finding:missed_meal'].selected_event)
@@ -129,6 +171,70 @@ test('fractional-hour cursor labels use whole minutes without decimal-hour speec
     assert.equal(label(60), '+1 h');
     assert.equal(label(0), source.projection.anchor.label);
   } finally { Object.assign(globalThis, prior); }
+});
+
+/* S100 (nightly 36011270820): the fullscreen chart is destroyed and remounted by
+   every repaint, and a repaint the reader did not ask for — the drill's own case
+   file, a tile's evidence, the desk's Focus read — can land after the reader has
+   keyed the cursor along. The workstation reads the reader's place off the mount
+   it is about to dispose and hands it to the one it builds; this pins both
+   halves of that handover through the adapter's own interface. */
+test('S100 · a remount carries the keyboard cursor, its readout and focus to the new chart', () => {
+  withEventSurfaceDom(({ surface, headline }) => {
+    const caseFile = caseFiles().cases['finding:over_treated_low'].event;
+    const readout = () => headline.querySelector('#ec-readout');
+    const first = renderEventSurface(surface, caseFile, { headline });
+    const firstChart = surface.querySelector('#ec-chart');
+    firstChart.focus();
+    for (let step = 0; step < 6; step += 1) firstChart.dispatch('keydown', { key: 'ArrowRight' });
+    const served = caseFile.projection.cohorts.map((cohort) => cohort.points.find((row) => row.minute === 30))
+      .filter((point) => point.support !== 'withheld');
+    assert.ok(served.length > 0, 'premise: the served case file has an observation at +30 min');
+    const shown = readout().innerHTML;
+    assert.match(shown, /<span class="rd-time">\+30 min<\/span>/);
+    for (const point of served) assert.ok(shown.includes(`${Math.round(point.median)} · n${point.n}`));
+    const label = firstChart.getAttribute('aria-label');
+
+    // The workstation's repaint: read the place, dispose the mount, build anew.
+    const reading = first.reading?.();
+    first.cleanup();
+    first.restoreHeader();
+    globalThis.document.activeElement = null; // the chart left the document with its tile
+    renderEventSurface(surface, caseFile, { headline, reading });
+    const secondChart = surface.querySelector('#ec-chart');
+    assert.notEqual(secondChart, firstChart, 'premise: the repaint built a new chart element');
+    assert.equal(headline.children.length, 1, 'the lent line holds exactly one readout');
+    assert.equal(readout().innerHTML, shown,
+      'the remounted chart dropped the keyboard cursor and emptied its on-screen readout');
+    assert.equal(secondChart.getAttribute('aria-label'), label, 'the accessible cursor label was lost');
+    assert.equal(globalThis.document.activeElement, secondChart,
+      'keyboard focus was not handed to the remounted chart');
+    secondChart.dispatch('keydown', { key: 'ArrowRight' });
+    assert.match(readout().innerHTML, /<span class="rd-time">\+35 min<\/span>/,
+      'the next key continues from the carried cursor');
+  });
+});
+
+test('S100 · a remount invents no cursor and takes no focus the reader had not given the chart', () => {
+  withEventSurfaceDom(({ surface, headline }) => {
+    const caseFile = caseFiles().cases['finding:over_treated_low'].event;
+    const elsewhere = new FakeNode('elsewhere');
+    const first = renderEventSurface(surface, caseFile, { headline });
+    const firstChart = surface.querySelector('#ec-chart');
+    firstChart.focus();
+    firstChart.dispatch('keydown', { key: 'ArrowRight' });
+    elsewhere.focus();
+    firstChart.dispatch('blur');
+    const reading = first.reading?.();
+    first.cleanup();
+    first.restoreHeader();
+    renderEventSurface(surface, caseFile, { headline, reading });
+    assert.equal(headline.querySelector('#ec-readout').innerHTML, '',
+      'a cursor the reader had put away came back on the remounted chart');
+    assert.equal(surface.querySelector('#ec-chart').getAttribute('aria-label'), null,
+      'the resting chart kept a cursor label');
+    assert.equal(globalThis.document.activeElement, elsewhere, 'the remount pulled focus onto the chart');
+  });
 });
 
 test('selected singleton observations paint while dense selected traces omit markers', () => {

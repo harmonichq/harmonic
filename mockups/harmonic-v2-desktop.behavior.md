@@ -4178,13 +4178,16 @@ S157 · An older detected change that a later detected change superseded inside
             press and reads the kind line, the ending part and the periods
             note. It asserts no reason line's words; the complete ledger covers
             the Ending assessment line with #450's words
-  status:   owed to the coordinator. Base b03431d2 with this harness laid over
-            it is expected to fail at its first feature assertion at both sizes
-            ("S157 the older Trial row must carry its served superseded
-            ending"); the branch is expected to pass at 1280x720 and 1440x900
+  status:   base b03431d2 (with the branch harness) fails at its first feature
+            assertion at both sizes ("S157 the older Trial row must carry its
+            served superseded ending"); branch 782cd552 (application code
+            identical to the reviewed head 0b8e22a4) passes at 1280x720 and
+            1440x900. The first branch run failed on a story defect, a `has`
+            row locator that repeated the table prefix; it was fixed in
+            e57c91bd. Coordinator-run 2026-09-24
 ```
 
-Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's.
+Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's. Recorded 2026-09-24 (coordinator-run, both sizes): on branch 782cd552, S91 passes as amended, with S157 and the stories above (`ONLY=S157,S49,S91,S96,S105,S110,S111,S112,S143,R18`, `# executed 10 · failed 0` at 1280x720 and 1440x900). The frozen helper's failure on c4-isf is shown in process: the saved Trial arm counts 27 and is not met, while the retained read counts 30 and is met. No replay run of the frozen helper was made.
 The preceding wording and results are the attributed pre-amendment record.
 
 Every other desk replay and test that reads these cases keeps its subject:

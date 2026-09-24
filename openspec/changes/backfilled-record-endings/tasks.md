@@ -300,6 +300,23 @@ the whole replay at module link.
   3. Then the desk and follow-up browser suites once, the full
      `acceptance.test.py` once (its `ServerLifecycleTest` binds a port), and the
      complete ledger once on the pushed commit.
+
+  Evidence, coordinator-run 2026-09-24. Left unticked until the complete ledger
+  runs at integration.
+  - Item 1 met. Base b03431d2, with this branch's harness laid over it, fails
+    S157 at its first feature assertion at 1280x720 and 1440x900: "S157 the
+    older Trial row must carry its served superseded ending". Branch 782cd552,
+    whose application code is identical to the reviewed head 0b8e22a4, passes
+    it at both sizes.
+  - Item 2 met, at both sizes. On branch 782cd552,
+    `ONLY=S157,S49,S91,S96,S105,S110,S111,S112,S143,R18` printed
+    `# executed 10 · failed 0` at 1280x720 and at 1440x900.
+  - Item 3 in part. On f4610aed the desk browser suite passed 43 of 43, the
+    follow-up suite passed both journeys, and the full `acceptance.test.py`
+    passed (OK). The complete ledger run on the pushed commit is owed at
+    integration.
 - [ ] 5.4 The coordinator owns the synthetic before and after renders of the
   `c4-ic` records roster and its 06-01 record, at both sizes, and ticks this
   task with them.
+
+  Owed at integration: the renders are gathered on the integration branch.

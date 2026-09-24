@@ -35,7 +35,8 @@ require = acceptance.require
 
 
 def replay_imports(run, sources):
-    """Relative module specifiers each file imports or re-exports, read with the pinned parser."""
+    """Each file's relative import targets, the relative forms the graph cannot map, and any
+    dynamic import(), read with the pinned parser."""
     payload = run.out / "replay-import-sources.json"
     payload.write_text(json.dumps(sources))
     script = r"""
@@ -48,16 +49,30 @@ const files = JSON.parse(readFileSync(process.argv[1], 'utf8'));
 const dynamic = node => node && typeof node === 'object' && (node.type === 'Import'
   || Object.entries(node).some(([key, value]) => !['loc', 'start', 'end'].includes(key)
     && (Array.isArray(value) ? value.some(dynamic) : dynamic(value))));
+// The graph follows named and namespace imports only. Any other relative form
+// would leave a dependency it cannot map, so it is reported to stop the plan.
+const unfollowable = node => {
+  if (node.type === 'ExportAllDeclaration') return 'export * from';
+  if (node.type === 'ExportNamedDeclaration') return 'export … from';
+  if (!node.specifiers.length) return 'side-effect import';
+  if (node.specifiers.some(spec => spec.type === 'ImportDefaultSpecifier')) return 'default import';
+  if (node.specifiers.some(spec => spec.type === 'ImportSpecifier'
+    && (spec.imported.name ?? spec.imported.value) === 'default')) return '{ default as … } import';
+  return null;
+};
 const result = {};
 for (const [file, source] of Object.entries(files)) {
-  const targets = new Set();
+  const targets = new Set(), forms = [];
   const program = parse(source, { sourceType: 'module' }).program;
   for (const node of program.body) {
     const value = node.source?.value;
-    if (typeof value === 'string' && value.startsWith('.'))
+    if (typeof value === 'string' && value.startsWith('.')) {
       targets.add(posix.normalize(posix.join(posix.dirname(file), value)));
+      const form = unfollowable(node);
+      if (form) forms.push(`${form} '${value}'`);
+    }
   }
-  result[file] = { targets: [...targets].sort(), dynamic: dynamic(program) };
+  result[file] = { targets: [...targets].sort(), dynamic: dynamic(program), forms };
 }
 console.log(JSON.stringify(result));
 """
@@ -75,6 +90,8 @@ def replay_sources(run, git, ref):
         found = replay_imports(run, files)
         dynamic = sorted(path for path, entry in found.items() if entry["dynamic"])
         require(not dynamic, f"replay modules use a dynamic import() the selection cannot follow: {dynamic}")
+        forms = sorted(f"{path}: {form}" for path, entry in found.items() for form in entry["forms"])
+        require(not forms, f"replay modules use an import form the selection cannot follow: {forms}")
         wanted = {target for entry in found.values() for target in entry["targets"]} - files.keys()
         unresolved = sorted(wanted - tracked)
         require(not unresolved, f"replay imports resolve to no tracked file at {ref}: {unresolved}")
@@ -85,6 +102,12 @@ def replay_sources(run, git, ref):
 
 CODE = (".py", ".js", ".mjs", ".cjs")
 QUOTED = re.compile(r"'([^'\\\n]+)'|\"([^\"\\\n]+)\"")
+
+
+def dangling(graph, modules):
+    """Change 1, last guard: a dependency naming a replay module where the graph has no node."""
+    return sorted({f"{dep.split('::', 1)[0]} ({dep})" for node in graph.values() for dep in node["deps"]
+                   if dep.split("::", 1)[0] in modules and dep not in graph})
 
 
 def path_loads(graph, tracked, modules):
@@ -123,6 +146,9 @@ def spike_selection(run, base, ids):
         tracked.append(listed)
         recipes.append(acceptance.recipe_graph(git("show", f"{ref}:scripts/qa_e2e_cases.py")))
     before, after = acceptance.replay_graph(run, sources)
+    for graph, files in [(before, sources[0]), (after, sources[1])]:
+        missing = dangling(graph, files.keys())                                 # change 1
+        require(not missing, f"replay dependencies name no node in their module: {missing}")
     changed = {key for key in before.keys() | after.keys() if before.get(key) != after.get(key)}
     changed_recipes = {key for key in recipes[0].keys() | recipes[1].keys()
                        if recipes[0].get(key) != recipes[1].get(key)}
@@ -230,6 +256,21 @@ class SelectionSpike(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             run_selection(spike_selection, dynamic, dynamic)
 
+    def test_an_import_form_the_graph_cannot_follow_stops_the_plan(self):
+        for line in ["import './diagnose-replay.mjs';", "import helper from './diagnose-replay.mjs';",
+                     "import { default as helper } from './diagnose-replay.mjs';",
+                     "export { locate } from './diagnose-replay.mjs';", "export * from './diagnose-replay.mjs';"]:
+            with self.subTest(line=line):
+                tree = {**TREE, REPLAY: line + "\n" + TREE[REPLAY]}
+                with self.assertRaises(RuntimeError):
+                    run_selection(spike_selection, tree, tree)
+
+    def test_a_dependency_without_a_node_stops_the_plan(self):
+        tree = {**TREE, HELPER: "async function locate(page) { return page.read('before'); }\nexport { locate as found };\n",
+                REPLAY: TREE[REPLAY].replace("{ locate }", "{ found as locate }")}
+        with self.assertRaises(RuntimeError):
+            run_selection(spike_selection, tree, tree)
+
     def test_an_import_that_resolves_to_nothing_stops_the_plan(self):
         broken = {**TREE, REPLAY: TREE[REPLAY].replace("./diagnose-replay.mjs", "./missing.mjs")}
         with self.assertRaises(RuntimeError):
@@ -267,6 +308,9 @@ class SelectionSpike(unittest.TestCase):
                 shipped = set(acceptance.smoke_selection(run, "base", ids))
                 result = spike_selection(run, "base", ids)
         added = [identity for identity in result["selected"] if identity not in acceptance.SMOKE_STORIES]
+        callers = [identity for identity in result["selected"]
+                   if "frontend/diagnose-replay.mjs::railRowLocator" in result["reasons"].get(identity, [])]
+        print(f"\nevery story whose reasons name railRowLocator ({len(callers)}): {','.join(callers)}")
         self.assertEqual(shipped, set(acceptance.SMOKE_STORIES))
         for story in ["S22", "S23", "S24", "S124"]:
             self.assertIn(story, added)

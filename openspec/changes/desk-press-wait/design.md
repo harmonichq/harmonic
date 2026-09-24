@@ -53,8 +53,9 @@
    `boundedWait` in `frontend/c2.replay.mjs`. It waits, within `timeout`, for the
    first visible match (`locator(selector).filter({ visible: true }).first()`,
    the form the c2, c3 and c4 replays already press through), clicks that
-   match, and keeps its 180 ms settle. When the wait times out, it counts the
-   matches once to name the failure:
+   match, and keeps its 180 ms settle. When the wait times out, it names the
+   failure from one fresh `page.locator(selector).count()`, never from the
+   visibility-filtered locator it waited on:
    `no control matched <selector> after <timeout> ms`, or
    `<selector> matched <N> element(s), all hidden after <timeout> ms`. Any other
    error propagates unchanged. It keeps using only `assert` and the page it is
@@ -198,15 +199,25 @@ control.
 
 ### Decision
 
-1. **The graph follows the replay's static imports.** At each compared ref,
-   the selection starts from the entries it reads today, then adds every file
-   they reach, transitively, through a relative static `import` or
-   re-exporting `export … from`. It reads those declarations with the Babel
-   parser the lockfile pins. Every such module joins the function-level graph,
-   so an edit maps to the stories whose dependency closure reaches it. The
-   plan stops with an error naming the file when a relative import resolves to
-   no tracked file at that ref, or when a module in the closure uses a dynamic
-   `import()`.
+1. **The graph follows the replay's static imports, and stops on any form it
+   cannot map.** At each compared ref, the selection starts from the entries
+   it reads today. It then adds every file they reach, transitively, through a
+   relative named import (`import { … } from`) or namespace import
+   (`import * as … from`), the two forms `replay_graph` maps to nodes. It reads
+   those declarations with the Babel parser the lockfile pins. Every such
+   module joins the function-level graph, so an edit maps to the stories whose
+   dependency closure reaches it. The plan stops with an error naming the
+   file in these cases:
+   - a relative import resolves to no tracked file at that ref;
+   - a module in the closure has a relative side-effect import, a default
+     import, a `{ default as … }` import, an `export … from` or an
+     `export * from`;
+   - a module in the closure uses a dynamic `import()`;
+   - a dependency key in either graph names a closure module but has no node
+     there.
+   Bare package imports (`node:*`, packages) are outside the closure;
+   `package-lock.json` is a global file. The spike shows that the tree at
+   b03431d2 has none of these forms and no such dangling key.
 2. **Executables named by path select the complete ledger.** A tracked `.py`,
    `.js`, `.mjs` or `.cjs` file that a module in the closure names by a string
    literal, but does not import, is a load the graph cannot map to stories.

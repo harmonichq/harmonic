@@ -3,6 +3,10 @@
 Decisions and the helper audit are the two ADR 457 records in `design.md`. Test
 numbers are run-order positions on b03431d2 (43 tests).
 
+Commit order: section 1 (task 1.4), then section 3 (task 3.3), then section 2.
+Task 4.5 compares against the task 3.3 commit, so the selection change must land
+before the helper edit it measures.
+
 ## 1. Prove first (one commit, before any helper or selection change)
 
 - [ ] 1.1 In `frontend/desk.browser.test.mjs`, directly after test 25, add the
@@ -45,8 +49,12 @@ numbers are run-order positions on b03431d2 (43 tests).
       already-global `frontend/browser-runner.js`.
       (c) An edit to a data fixture a replay entry names by path selects only
       the fixed slice.
-      (d) A relative import of an untracked file, and a dynamic `import()` in
-      an imported module, each stop the selection with `RuntimeError`.
+      (d) Each of these stops the selection with a `RuntimeError` naming the
+      file: a relative import of an untracked file; a dynamic `import()` in an
+      imported module; a relative side-effect import; a default import; a
+      `{ default as … }` import; an `export … from`; an `export * from`; and
+      an imported name that the target module declares only through a local
+      `export { … as … }` list, which leaves a dependency key with no node.
       Run `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py SmokeSelectionTest`
       against the unchanged `acceptance.py`, and confirm that (a), (b) and (d)
       fail because the selection neither follows the import nor sees the
@@ -54,15 +62,17 @@ numbers are run-order positions on b03431d2 (43 tests).
 - [ ] 1.4 Commit 1.1–1.3 alone, with the subject
       `Red proof #457: tests before any helper or selection change`, and
       record its full OID beside this task when ticking it. This commit is the
-      base proof for tasks 5.1 and 5.2.
+      base proof for task 5.1.
 
 ## 2. Bounded helpers
 
 - [ ] 2.1 Rewrite the desk suite's `press` as the first ADR 457 record's
       decision 1 states: `press(page, selector, timeout = 30000)`, a bounded
       wait for the first visible match, the click, the 180 ms settle, and the
-      two failure messages that name the selector and the bound. Update its doc
-      comment to match.
+      two failure messages that name the selector and the bound. On timeout the
+      message's count comes from one fresh `page.locator(selector).count()`,
+      never from the visibility-filtered locator. Update its doc comment to
+      match.
 - [ ] 2.2 In `frontend/diagnose-replay.mjs`, make `railRowLocator` wait for the
       settled, painted rail first (decision 2), failing with a message that
       names the id when the rail never settles. Update its comment to match.
@@ -98,6 +108,10 @@ numbers are run-order positions on b03431d2 (43 tests).
       story imports now select that story. The paragraph that begins
       "`smoke.json` records" names the two new records. No other text in
       ACCEPTANCE.md changes; its count sentence is the coordinator's.
+- [ ] 3.3 Commit 3.1 and 3.2 alone, after task 1.4 and before any section 2
+      change, with the subject
+      `Selection #457: the PR ledger follows every module the replay loads`,
+      and record its full OID beside this task when ticking it.
 
 ## 4. Verify without a port (worker)
 
@@ -118,22 +132,44 @@ numbers are run-order positions on b03431d2 (43 tests).
       scan (`build_public_tree.py`, then `check_public_links.py` and
       `scan_public_tree.py` over a fresh directory) pass.
 
+- [ ] 4.5 On the final commit, run
+      `REPLAY_SHARDS='{"smoke":["1/1"],"full":["1/4","2/4","3/4","4/4"]}' uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan --base <task 3.3 OID> --out <fresh directory outside the checkout>`.
+      Its `plan.json` must report mode `smoke`. Its `selected` ids that are not
+      in `SMOKE_STORIES` must be exactly the 32 the pinned spike prints for a
+      `railRowLocator` edit:
+      S12, S21, S22, S23, S24, S25, S26, S27, S29, S61, S62, S82, S133, S136,
+      S137, S124, R1, R2, R3, R4, R5, R6, R7, R9, R10, R11, R12, R13, R14, R15,
+      R16, R17. Record that comma-separated list beside this task when ticking
+      it; task 5.4 replays it.
+
 ## 5. Verify in a browser and on a port (coordinator; serial, after `npm ci && npm run build`)
 
 - [ ] 5.1 Red proof: on the task 1.4 commit,
       `node --test --test-name-pattern 'press waits for a Day return control' frontend/desk.browser.test.mjs`
-      reports tests 1, fail 1, failing at the late Return press with
-      `no control matched [data-day="return"]`. On the final commit it reports
-      tests 1, pass 1.
+      reports tests 1, fail 1 with the line `✖ press waits for a Day return control that renders late, and names an absent or hidden control`, failing at the late
+      Return press with `no control matched [data-day="return"]`. On the final
+      commit it reports tests 1, pass 1 with the line `✔ press waits for a Day return control that renders late, and names an absent or hidden control`. A pattern
+      that matches nothing also reports tests 1, pass 1 (the file itself), so
+      the named line is the evidence, not the count.
 - [ ] 5.2 Repetition, on the final commit: ten consecutive runs of
       `--test-name-pattern 'a key pressed on Day leaves the parked Diagnose'`
-      each report tests 1, pass 1. Ten consecutive runs of
+      each report tests 1, pass 1 with the line `✔ a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read`. Ten consecutive runs
+      of
       `--test-name-pattern 'Day owns its chronology|canonical Day address reloads|after a Day return, acting inside Diagnose|a key pressed on Day leaves|press waits for a Day return control|a utility takes the reading pane|repeated entry and exit leaves'`
-      each report tests 7, pass 7.
+      each report tests 7, pass 7 with one `✔` line for each of:
+      `Day owns its chronology, its week ribbon, its month and the Episode Log`;
+      `a canonical Day address reloads through the built shell and returns through its canonical Diagnose door`;
+      `after a Day return, acting inside Diagnose re-addresses it in place, and its Findings address reloads with no case open`;
+      `a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read`;
+      `press waits for a Day return control that renders late, and names an absent or hidden control`;
+      `a utility takes the reading pane's seat, marks its launcher, and gives focus back on Close`;
+      `repeated entry and exit leaves no duplicate chart, pane or utility behind`.
 - [ ] 5.3 The whole desk suite, once, on the final commit: tests 44, pass 44.
-- [ ] 5.4 The replay stories that resolve rail rows, at 1280x720, on the final
-      commit, with a fresh `CASE_STORE_DIR` and port 8765 free:
-      `TARGET=app VIEWPORT=1280x720 BASE_URL=http://127.0.0.1:8765 ONLY=R8,S22,S23,S24,S124,S125 node frontend/desk-behavior.replay.mjs`
-      reports `# executed 6 · failed 0 · deferred 0 · selected 6`.
+- [ ] 5.4 The stories the new selection adds for the `railRowLocator` edit, at
+      1280x720, on the final commit, with a fresh `CASE_STORE_DIR` and port
+      8765 free:
+      `TARGET=app VIEWPORT=1280x720 BASE_URL=http://127.0.0.1:8765 ONLY=<task 4.5's recorded list> node frontend/desk-behavior.replay.mjs`
+      reports `# executed 32 · failed 0 · deferred 0 · selected 32`, with a
+      `PASS` line for each of the 32 ids.
 - [ ] 5.5 The complete `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`,
       which binds a port in `ServerLifecycleTest`, passes on the final commit.

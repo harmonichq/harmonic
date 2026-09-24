@@ -272,7 +272,7 @@ counts, folds and Pattern rows do not move.
   meals, Lows after correcting highs, Missed meal; "4 in this window").
 - Fast gate: the join test's headline ("Ranks among this window's findings.
   Showed up in 1 of 10 lows in this window.").
-- Fast gate: `#413 · an unpriced claimed member folds under the tail Pattern`,
+- Fast gate: `#413 · an unpriced claimed member folds under the Pattern`,
   re-pointed to Correction stacking, the server's unpriced member.
 - Backend: `tests/test_findings_projection.py`
   `test_memberless_patterns_keep_their_count_without_a_chart`, which read the

@@ -753,7 +753,7 @@ test('#413 · a Pattern with no served count sentence renders like any other row
   assert.ok(button.children.some((node) => node.className === 'tag pattern'));
 });
 
-test('#413 · an unpriced claimed member folds under the tail Pattern, printing every served sentence', () => {
+test('#413 · an unpriced claimed member folds under the Pattern, printing every served sentence', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
   const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));

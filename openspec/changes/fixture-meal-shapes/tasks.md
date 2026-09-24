@@ -194,7 +194,7 @@ its window or coordinate. No in-span date was added, so no pin was needed.
 - [x] 5.2 Implement behavioral-layer **The browser-gate test desk projects the
   server's own inputs**: `populateFindingsProjectionInput` builds the server input
   from the frozen analysis, scenarios, analysis generation, rosters and per-window
-  map, taking only exposures (and any event charts) from the caller. The `#395 ·
+  map, taking only exposures from the caller. The `#395 ·
   the browser input publishes only its renderable mini hosts in served order` test
   (`frontend/diagnose-findings-queue.test.js`) projects `fixture.inputs` directly: it
   reads the projection fixture's own inputs, which never needed the browser adapter,
@@ -212,7 +212,7 @@ its window or coordinate. No in-span date was added, so no pin was needed.
   window"), and `browser preparation mirrors the wrapped row` to the served headline
   "Ranks among this window's findings. Showed up in 1 of 10 lows in this window." In
   `frontend/diagnose-findings-queue.test.js`, re-point `#413 · an unpriced claimed
-  member folds under the tail Pattern` to Correction stacking, the server's unpriced
+  member folds under the Pattern` to Correction stacking, the server's unpriced
   member (folded under Lows after correcting highs, two fold sentences), now that
   Late bolus carries its server price. In `tests/test_findings_projection.py`,
   `test_memberless_patterns_keep_their_count_without_a_chart` builds its own
@@ -227,13 +227,14 @@ its window or coordinate. No in-span date was added, so no pin was needed.
 - [ ] 5.5 Run the lock's whole worker gate on this final commit, including every
   drift check, the public-tree line and the backend pytest once, and state the
   pytest wall time.
+  coordinator: the whole backend pytest runs once on the integration commit before the push.
 
 Evidence (sub-order 5, commit 59ec95f5): the ordered whole-answer parity test failed
 on the sub-order 4 adapter at "0-360 row order". The mirror, pricing from the payload,
 put Over-treated low after the Patterns; the server leads with it. With the frozen
 inputs the mirror equals the server's projection byte for byte in the whole day and
-all three narrowed windows. Task 5.5's whole backend pytest belongs to the
-coordinator's close-out legs, so 5.5 stays open until they run.
+all three narrowed windows. Task 5.5 stays open: the whole backend pytest runs once,
+on the integration commit, before the push.
 
 Coordinator-authorized fence widening (release coordinator, 2026-09-24, Q3 delegation):
 `frontend/diagnose-workstation.test.js` joins the fence, for a sub-order 5 finding.

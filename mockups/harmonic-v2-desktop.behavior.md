@@ -4118,3 +4118,125 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #446 amendment — 2026-09-23, issue #446
+
+Changes remembered that the reader pressed Open Plan, and nothing cleared it, so
+the topbar's Changes, Diagnose's return and the landing after a Focus pin opened
+a Plan in the watched change's seat. S166–S168 pin the rule that replaces it
+(ADR 446 in `openspec/changes/changes-arrival-leads-active/design.md`): the
+served active change leads every plain arrival to Changes, Open Plan holds for
+the visit it was pressed in, a Plan draft stays reachable from the watched
+Trial's and Focus's own view, and Diagnose's return names the watched change.
+No existing story is amended or retired. All three are app-opener-only, each on
+a fresh case store (`CASE_STORE_DIR`); browser execution belongs to the release
+coordinator at 1280x720 and 1440x900. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+Sanction: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R446`.
+It covers S166–S168 and nothing outside #446's rulings.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over a named
+`scripts/qa_e2e_cases.py` case store. Pump reads advance only through
+`frontend/replay-pump.py`.
+
+```
+S166 · Open Plan holds for one visit, before and after a Trial begins. In one
+       page, never reloaded after it opens at the Plan's address: Stage in the
+       Plan's own frame keeps the address and shows the Plan with Save draft
+       focused; the topbar's Changes then shows the staged concern with
+       "Staged", Undo and Open Plan; after Open Plan, a visit to Day and a
+       return by the topbar, Changes again shows that concern, not the Plan;
+       Open Plan reopens the Plan with the staged change and the reader records
+       the decision. A synthetic `match` pump read starts a Trial and a Plan
+       draft is saved while it runs. After a visit to Diagnose, the topbar's
+       Changes lands on the Trial, not the Plan, and the Trial's nameplate
+       offers Open Plan; inspecting the Trial's nights, "Return to Trial" lands
+       on the Trial.
+  element:  [data-set="stage"], [data-set="save-draft"], [data-set="unstage"],
+            [data-set="open-plan"], [data-set="record"], .gf-plan,
+            .gf-stage-trial .gf-end [data-action="open-plan"],
+            [data-follow-up-inspect], [data-action="watch"]
+  source:   frontend/changes.js mount (the arrival rule); frontend/plan-view.js
+            bind (the Plan's own Stage); frontend/follow-up.js openPlanControl;
+            frontend/diagnose.js showFocusAction
+  lock:     HV2-15
+  data:     basal-lower; premises: /api/guidance serves the selected concern's
+            basal action and /api/verify/trials admits no watched change; after
+            the `match` capture it admits an active Trial, and the draft saved
+            while it runs is served beside `active_change`
+  evidence: C4_STORIES.S166; reads the address with parseRoute after the Plan's
+            own Stage, the Plan count and the focused control; counts .gf-plan
+            and the staged concern's controls after each plain arrival; reads the
+            kicker's served phase after Open Plan; waits for Diagnose's guidance
+            read before the watched topbar arrival; reads the Trial's nameplate
+            controls and Diagnose's return label as text
+  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
+            Base b03431d2 with this harness laid over it is expected to fail at
+            its first feature assertion ("S166 Stage in the Plan's own frame
+            must keep the Plan's address"); the branch is expected to pass
+```
+
+```
+S167 · A watched Trial reaches its saved draft. With no Plan draft, the Trial's
+       nameplate offers no Open Plan. With a draft saved while the Trial runs, it
+       offers Open Plan beside "View change record", and the Revert to Plan
+       section still offers its own control. The nameplate's Open Plan lands at
+       /changes?subject=plan showing the saved draft unchanged; Record decision
+       there fails visibly and adds no Plan history record; the next topbar
+       Changes lands on the Trial.
+  element:  .gf-stage-trial .gf-end button, [data-part="plan-route"]
+            [data-action="plan-route"], .gf-plan, .gf-stage .gf-kicker b,
+            [data-set="record"], [data-set="retry-save"]
+  source:   frontend/follow-up.js openPlanControl / bind; frontend/plan-view.js
+            recordDecision / saveFailure; frontend/changes.js mount
+  lock:     HV2-15
+  data:     basal-lower; the served basal action is saved and recorded as a Plan
+            through PUT /api/plan and POST /api/plan/apply, then a synthetic
+            `match` pump read starts the Trial; premises: /api/verify/trials
+            admits the active Trial, and guidance serves no draft until the story
+            saves one, then serves it beside `active_change`
+  evidence: C4_STORIES.S167; reloads at /?to=changes after the capture and
+            after its own draft write; reads the nameplate's controls in order;
+            parses the address after Open Plan and compares /api/plan before
+            and after it; counts the failed-record Retry and the served Plan
+            history before and after Record decision
+  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
+            Base b03431d2 with this harness laid over it is expected to fail at
+            "S167 the Trial's nameplate must offer Open Plan beside View change
+            record"; the branch is expected to pass
+```
+
+```
+S168 · A watched Focus names its return and reaches its draft. With a Plan draft
+       saved while the Focus runs, Changes shows the Focus's own view. Diagnose,
+       opened from the Focus's Inspect evidence, offers "Return to Focus" and no
+       "Return to Trial"; pressing it lands on the Focus. The Focus's nameplate
+       Open Plan lands at /changes?subject=plan, showing the draft.
+  element:  [data-action="watch"], .gf-stage-focus,
+            .gf-stage-focus .gf-end [data-action="open-plan"], .gf-plan
+  source:   frontend/diagnose.js showFocusAction; frontend/follow-up.js
+            openPlanControl / bind; frontend/changes.js mount
+  lock:     HV2-15
+  data:     c3-focus; premises: /api/verify/trials admits an active Focus, and a
+            draft saved from the served pump profile is served beside
+            `active_change`
+  evidence: C4_STORIES.S168; reads Diagnose's return label before the Focus's
+            nameplate, so a base run records the crumb before it fails. Its base
+            failure at the label, not at a premise, is pinned at node level by
+            frontend/c4.replay.test.js against a page shaped like the base
+  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
+            Base b03431d2 with this harness laid over it is expected to fail at
+            "S168 Diagnose opened from the watched Focus must offer "Return to
+            Focus" and no "Return to Trial""; the branch is expected to pass
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| The arrival rule: Open Plan cleared on each arrival | frontend/changes.js mount | S166, S167, S168 |
+| Stage in the Plan's own frame stays on the Plan | frontend/plan-view.js bind | S166 |
+| The watched change's nameplate Open Plan | frontend/follow-up.js openPlanControl, bind | S166, S167, S168 |
+| Diagnose's return names the watched change | frontend/diagnose.js showFocusAction | S166, S168 |

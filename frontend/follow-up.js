@@ -48,7 +48,8 @@ import {
 import {
   date, desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, shortDate, stamp,
 } from './frame.js';
-import { stagePrior } from './plan-view.js';
+import { planDraft } from './guidance.js';
+import { planUnderway, stagePrior } from './plan-view.js';
 import { hold, narrow, navigate, render, view } from './routes.js';
 
 const SETTING_NAME = {
@@ -684,6 +685,13 @@ export function planRouteSection(detail, { canOpen }) {
     ${canOpen ? '<div class="gf-actions"><button class="gf-btn" data-action="plan-route">Open Plan</button></div>' : ''}</section>`;
 }
 
+/** A Plan draft beside the watched change stays one press away: a saved draft
+    the guidance read serves, or a change this page staged or recorded. It opens
+    the draft as it stands; recording it stays the server's to refuse while the
+    change is watched, and nothing here decides that (ADR 446). */
+const openPlanControl = () => ((planDraft()?.items || []).length || planUnderway()
+  ? '<button class="gf-btn" data-action="open-plan">Open Plan</button>' : '');
+
 /** The active setting Trial: its evidence on the stage, its readiness, its
     maturity and its conclusion in the reading pane. */
 function trialFrame(state) {
@@ -696,7 +704,7 @@ function trialFrame(state) {
     kicker: `Trial · <b>${e((detail.readiness || {}).label || 'Active')}</b>`,
     title: e(changeTitle(detail)),
     sub: `Detected ${e(stamp(detail.changed_at))}`,
-    end: '<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>',
+    end: `<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>${openPlanControl()}`,
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${comparisonPairs(comparison).paired.length ? 'Before → Trial' : 'Before only'}</span><span class="meta">median glucose by clock</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(comparison, 'trial', figureColors())}
@@ -728,7 +736,7 @@ function focusFrame(state) {
     kicker: 'Focus · <b>Active</b>',
     title: e(changeTitle(detail)),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
-    end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
+    end: `<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>${openPlanControl()}`,
   })}
     <div class="instruments"><div class="instrument"><span class="cap">Before → After</span><span class="meta">the exact periods either side of the pin</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(comparison, 'focus', figureColors())}
@@ -753,6 +761,8 @@ function focusFrame(state) {
 function bind(host) {
   const history = host.querySelector('[data-action="history"]');
   if (history) history.onclick = () => navigate('changes', { subject: 'history' });
+  const draft = host.querySelector('[data-action="open-plan"]');
+  if (draft) draft.onclick = () => navigate('changes', { subject: 'plan' });
   const text = host.querySelector('#conclusion');
   if (text) {
     text.oninput = (event) => {

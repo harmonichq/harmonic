@@ -736,6 +736,28 @@ test('the watch dock\'s route tokens become Changes arrivals: `changes` names th
   }
 });
 
+test('Diagnose opened from the watched change names that change in its return (ADR 446)', async () => {
+  for (const [kind, label] of [['focus', 'Return to Focus'], ['trial', 'Return to Trial']]) {
+    const appended = [];
+    const header = { append: (...nodes) => appended.push(...nodes) };
+    const document = { createElement: () => ({ dataset: {}, remove() {} }),
+      body: { append(node) { node.isConnected = true; node.parked = true; } } };
+    const root = { dataset: {}, ownerDocument: document, isConnected: false, style: {}, remove() { root.isConnected = false; },
+      querySelectorAll: () => [], addEventListener() {}, querySelector: selector => (selector === 'header.crumb' ? header : null) };
+    const seat = host(); seat.ownerDocument.createElement = () => root;
+    const served = source();
+    served.api.fetchOutcomesTrend = async () => ({ watched_change: { kind } });
+    const destination = createDiagnoseDestination({ api: served.api,
+      createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {}, context: { from: 'changes' } });
+    const back = appended.filter(node => node.dataset.action === 'watch');
+    assert.equal(back.length, 1, `premise: an entry from Changes with a served watched ${kind} offers its return`);
+    assert.equal(back[0].textContent, label, `a watched ${kind}'s return reads "${label}"`);
+    destination.leave();
+  }
+});
+
 /* ---------------------------------------------------------------- ADR 428 */
 
 // A browser whose history writes move its address, and whose capture-phase

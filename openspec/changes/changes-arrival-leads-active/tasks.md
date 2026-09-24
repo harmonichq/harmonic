@@ -7,7 +7,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
 
 ## 1. The arrival rule
 
-- [ ] 1.1 Fail first in `frontend/changes-watch-arrival.test.js`, through
+- [x] 1.1 Fail first in `frontend/changes-watch-arrival.test.js`, through
   Changes' public `mount`, the way the file already drives it. Keep its two
   existing tests. Add tests for four claims:
   (a) After Stage and Open Plan, with `active_change` then served, an arrival
@@ -23,14 +23,14 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   Rewrite the file's header comment, which says nothing clears the state; it
   must describe the arrival rule instead. Observe (a) and (b) fail on the base
   for that reason: the base reads the Plan's three paths and renders the Plan.
-- [ ] 1.2 In the same file, add one desk-level test. Seat the desk through
+- [x] 1.2 In the same file, add one desk-level test. Seat the desk through
   `routes.js` `startDesk` and `changes.js` `installChanges` with a stub browser
   and seat, the way the Escape test in `frontend/changes.test.js` does. Press
   Stage and Open Plan, serve `active_change`, then call `navigate('changes')`.
   That is the call the topbar, Diagnose's return and the Focus-pin landing all
   make. Assert that the arrival reads `/api/verify/trials` and not the Plan.
   Observe it fail on the base.
-- [ ] 1.3 Implement surfaces **The served active change leads every plain
+- [x] 1.3 Implement surfaces **The served active change leads every plain
   arrival to Changes** and the one-visit rule of **Open Plan holds for the visit
   in which it was pressed** in `frontend/changes.js` `mount`. Hold the last seen
   `deps.navigation`. On a new value, clear the Plan-open state before any branch
@@ -41,7 +41,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
 
 ## 2. Plan's own Stage
 
-- [ ] 2.1 Fail first, through Changes' public `mount`, in
+- [x] 2.1 Fail first, through Changes' public `mount`, in
   `frontend/changes-watch-arrival.test.js`. Stub `window.history` as
   `frontend/diagnose.test.js` does. Serve an eligible concern with nothing
   staged, and arrive with `{ subject: 'plan' }`: the Plan's own frame offers
@@ -49,14 +49,14 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   next mount with the same `navigation` value renders the Plan with the staged
   change and Save draft (`data-set="save-draft"`). Observe it fail on the base,
   which writes a `/changes` entry.
-- [ ] 2.2 Implement the Stage clause of **Open Plan holds for the visit in which
+- [x] 2.2 Implement the Stage clause of **Open Plan holds for the visit in which
   it was pressed** in `frontend/plan-view.js` `bind`. The idle frame's Stage keeps
   its Save draft focus target and re-renders in place (`render()`) instead of
   `navigate('changes')`. No other Plan control changes.
 
 ## 3. The watched change's Open Plan
 
-- [ ] 3.1 Fail first in `frontend/changes-watch-arrival.test.js`, through
+- [x] 3.1 Fail first in `frontend/changes-watch-arrival.test.js`, through
   Changes' public `mount`. Extend the fetch stub so `/api/verify/trials` serves
   an active Trial record. Extend the host so it answers the new control's
   selector. Serve `active_change` with a guidance `draft` that has items: the
@@ -64,7 +64,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   Plan arrival `/changes?subject=plan`. Serve `active_change` with no `draft` and
   nothing staged or pending: no control renders. Observe the first half fail on
   the base.
-- [ ] 3.2 Implement surfaces **A Plan draft stays reachable while a change is
+- [x] 3.2 Implement surfaces **A Plan draft stays reachable while a change is
   watched** in `frontend/follow-up.js`. The Trial's and the Focus's nameplate
   `end` renders `<button class="gf-btn" data-action="open-plan">Open Plan</button>`
   after "View change record", only while guidance serves a `draft` with items or
@@ -75,19 +75,19 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
 
 ## 4. Diagnose's return names the watched change
 
-- [ ] 4.1 Fail first in `frontend/diagnose.test.js`, through the harness it
+- [x] 4.1 Fail first in `frontend/diagnose.test.js`, through the harness it
   already uses to render the Changes return. With a served watched Focus and an
   entry from `changes`, the crumb's `[data-action="watch"]` reads "Return to
   Focus". With a served watched Trial, it reads "Return to Trial". Observe the
   Focus half fail on the base.
-- [ ] 4.2 Implement surfaces **Diagnose's return names the watched change** in
+- [x] 4.2 Implement surfaces **Diagnose's return names the watched change** in
   `frontend/diagnose.js` `showFocusAction`. The label reads the served watched
   change's kind: "Return to Focus" for `focus`, "Return to Trial" otherwise. The
   handler and its plain `navigate('changes')` do not change.
 
 ## 5. Behavior ledger and replay
 
-- [ ] 5.1 Append a section headed `## #446 amendment — 2026-09-23, issue #446` to
+- [x] 5.1 Append a section headed `## #446 amendment — 2026-09-23, issue #446` to
   `mockups/harmonic-v2-desktop.behavior.md`, after the last amendment section.
   It quotes this change's sanction line from design.md, cites ADR 446 in
   `openspec/changes/changes-arrival-leads-active/design.md`, and says that no
@@ -134,7 +134,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   Leave the frozen header, its inventory line and
   `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` alone: the release
   coordinator owns them.
-- [ ] 5.2 Add the three bodies as `C4_STORIES.S166`, `C4_STORIES.S167` and
+- [x] 5.2 Add the three bodies as `C4_STORIES.S166`, `C4_STORIES.S167` and
   `C4_STORIES.S168` in `frontend/c4.replay.mjs`. Every body first reads its
   premises from the production routes and requires them, the way S145 to S147 do:
   - S166: `/api/guidance` serves an eligible basal action and nothing is
@@ -166,7 +166,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   must reject at a feature assertion, not at a premise. S166 and S167 advance the
   pump between steps, so their base failure is proved by the coordinator's base
   replay in 5.4.
-- [ ] 5.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`,
+- [x] 5.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`,
   move the pinned literal to `{"issued": 174, "active": 155, "retired": 19}`. In
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, move the counted
   assertions to 174: the full replay-plan count, the stated active and retired
@@ -183,7 +183,7 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
 
 ## 6. Verification
 
-- [ ] 6.1 Install with `uv sync --frozen --extra api --extra sync`, then
+- [x] 6.1 Install with `uv sync --frozen --extra api --extra sync`, then
   `npm ci && npm run build`. Then run the fast gate
   (`node --test 'frontend/**/*.test.js'`),
   `npx --yes @fission-ai/openspec@1 validate --all --strict`,

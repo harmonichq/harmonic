@@ -35,6 +35,7 @@ configureFollowUp({ openRecord });
 // half-typed reason live here rather than on the desk's shared view.
 const aside = { open: false, reason: '', subject: null };
 let planOpen = false;
+let planArrival = null;
 let focusArrival = null;
 
 function inspectSelected() {
@@ -283,14 +284,16 @@ function bind(host) {
  * unavailable, and an active change is neither (HV2-31, S18, S19).
  */
 export function mount(host, deps = {}) {
+  // Every arrival forgets the last visit's Open Plan, here and nowhere else; a
+  // re-render within the visit keeps it. So a plain arrival — the topbar,
+  // Diagnose's return, the Focus-pin landing, a history step, the dock — leads
+  // with the served disposition: while a change is watched that is the watched
+  // Trial or Focus, never a Plan opened on an earlier visit (ADR 446, HV2-15).
+  if (planArrival !== deps.navigation) { planArrival = deps.navigation; planOpen = false; }
   if (deps.context?.occurrence?.startsWith('record:') || deps.context?.subject === 'history') {
     mountHistory(host, deps); return;
   }
-  // The watch dock's arrival names the watched record: while the server serves
-  // an active change, a Plan this page opened earlier does not take its seat
-  // (ADR 429). Every other arrival keeps the open-Plan precedence.
-  const watchArrival = deps.context?.subject === 'watch' && disposition() === 'active_change';
-  if ((planOpen && planUnderway() && !watchArrival) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
+  if ((planOpen && planUnderway()) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
   if (guidanceError()) { host.innerHTML = failedFrame(); bind(host); return; }
   if (!guidanceSettled()) {
     loadGuidance();

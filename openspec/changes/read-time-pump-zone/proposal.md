@@ -1,51 +1,55 @@
-# #443 The fetch's read time is on the pump's wall clock
+# #443 The server stamps on the pump's wall clock
 
 ## Status
 
-**Triage source for #443.** An ordinary ticket change: backend only. No
-rendered surface's source changes, and the desk's frozen behavior ledger and
+**Triage source for #443.** An ordinary ticket change, widened by the release
+coordinator's rulings (Q3 delegation, 2026-09-23). It is backend work plus one
+unreachable-branch removal in the desk. The desk's frozen behavior ledger and
 replay are untouched.
 
 ## Why
 
 Day's header and Episode Log print when the store last took data ("read …").
-That time is the fetch status's `last_success_at`, which the hourly fetch
-stamps with the server process's own clock. The shipped container sets no
-process zone, so it runs in UTC, while `TIMEZONE_NAME` names the pump's zone,
-the wall clock every record is stored in. In the documented container deploy,
-the read time is therefore UTC wall time printed as local time. Since #427 made
-Day's "viewed" stamp the reader's local clock, a read and a view in the same
-minute no longer fold into one stamp there. West of UTC, the read can also look
-later than the view.
+The hourly fetch stamps that time with the server process's clock. The shipped
+container sets no process zone, so it runs in UTC, while `TIMEZONE_NAME` names
+the pump's zone, the wall clock every record is stored in. In the documented
+container deploy, the read time is therefore UTC wall time printed as local
+time. Since #427 made Day's "viewed" stamp the reader's local clock, a read and
+a view in the same minute no longer fold into one stamp.
 
-The same attempt takes its window's last day from the process calendar. East of
-UTC, a UTC container asks for data only up to yesterday on the pump's calendar
-until UTC midnight.
+The same fault runs through every stamp the server writes. It dates pump reads
+("Captured", "On pump since", and the time a detected change starts), recorded
+Plans, Focus pins, change-record endings, draft and set-aside times, and the
+analysis date, all on the process clock. Those stamps are compared with record
+times and with one another, so in a container they sit hours off the records
+they are judged against. The fetch window's last day also comes from the process
+calendar. East of UTC, a UTC container therefore requests nothing from the
+pump's current day until UTC midnight.
+
+Moving these stamps is also a one-time backward step for a container west of
+UTC. Reproduced on base, such a step writes three durable wrong states:
+
+- a Trial recorded in the wrong direction;
+- a just-recorded Plan served as superseded, with none pending;
+- a Focus ending dated before its own pin.
 
 ## What changes
 
-- Each scheduled fetch attempt takes the current time once, on the pump's wall
-  clock. It converts the current instant through the same normalization every
-  stored record takes, so the result does not depend on the zone the server
-  process runs in.
-- The attempt stamps `last_attempt_at`, and on success `last_success_at`, with
-  that time. `/api/status` serves both, and the Day desk reads the second
-  unchanged.
-- The fetch window ends on that time's calendar date, the pump's day, and starts
-  the usual 120 days earlier.
-- When `TIMEZONE_NAME` is unset, the attempt still records the pull's refusal
-  without raising, stamped with the process clock. A local `harmonic serve`
-  needs no zone to start. The pull refuses before any network call, so
-  `last_success_at` cannot advance there.
-- Stamps already stored are not rewritten. The next attempt replaces
-  `last_attempt_at`, and the next success replaces `last_success_at`.
+- One clock function, `wall_clock_now`, returns now on `TIMEZONE_NAME`'s wall
+  clock through the same conversion every record takes. Every stamp the server
+  writes calls it. With the variable unset it reads the process clock, as today.
+- Pump reads, Plans, Focus pins and change-record times are never stamped before
+  a stamp already written in those histories. A clock that stepped back
+  therefore writes after the older stamps, not before them.
+- The fetch window, scheduled or `harmonic fetch --days`, ends on the pump's
+  current day.
+- Day reads the fetch's success time alone. The removed fallback cannot fire.
+- Stored stamps are not rewritten.
 
 ## Not in this change
 
-No entrypoint, image or compose change: the container keeps its UTC process
-zone. The server's other stamps keep the process clock: a pump read's capture
-time, the time a Plan is recorded or a Focus pinned, a change record's ending
-and confirmation times, and guidance and carb-log fallbacks. They are compared
-with one another, so they move together or not at all (see design.md, "What
-stays on the process clock"). No analyzer, classifier, staging predicate, cap,
-floor, served field name or frontend source changes.
+- No entrypoint, image or compose change.
+- No change to an analyzer, classifier, staging predicate, cap, floor or served
+  field name.
+- No data-time anchor (the latest record instant) changes.
+- No rendered layout, copy or ledger story changes.

@@ -1,147 +1,240 @@
 # #443 design record
 
-## ADR 443 — The scheduled fetch stamps its attempt on the pump's wall clock
-
-### Decision
-
-`run_fetch_once` (`ciq_autotune/fetch_loop.py`) takes the current time once per
-attempt, on the pump's wall clock. It hands the current UTC instant to
-`store.normalize_time`, the conversion every tz-aware record takes on its way
-into the store. That function converts to `TIMEZONE_NAME` and returns
-`YYYY-MM-DD HH:MM:SS` wall-clock text, whatever zone the server process runs in.
-The attempt derives both of its times from that one reading:
-
-- the stamp recorded by `Store.record_fetch_result`: `last_attempt_at` on every
-  attempt, and `last_success_at` on success;
-- the window end, which is the reading's calendar date, the pump's day. The
-  window start stays `days` (120) before it.
-
-When `TIMEZONE_NAME` is unset, `normalize_time` raises `TimezoneNotConfigured`.
-In that case, and only then, the attempt reads the process clock, exactly as it
-does today. The fallback is kept because the state is reachable: a local
-`harmonic serve` starts the fetch loop without requiring the variable (only the
-container entrypoint requires it). The fetch loop must never die on one attempt,
-and `/api/status` must always show the last attempt. With the variable unset, the
-pull refuses before any network call (`sync.pull_from_tconnect`, pinned by
-`tests/test_sync_partial.py`). So the only stamp the fallback can write is a
-refused attempt's `last_attempt_at`. `last_success_at` cannot advance on it.
-
-Stored stamps are not rewritten. `fetch_status` is a single row: the next
-attempt replaces `last_attempt_at`, and the next success replaces
-`last_success_at`.
+## ADR 443 — The server stamps on the pump's wall clock, never behind a stamp it already wrote
 
 ### Authority
 
-Coordinator ruling R443 under Connor Griffin's Q3 delegation, 2026-09-23
-("figure it out yourself from here"): fetch-loop bookkeeping stamps are written
-in `TIMEZONE_NAME`'s wall clock through the same normalization every record uses;
-no entrypoint or container change; existing rows keep their stamps.
+Coordinator rulings for #443, under Connor Griffin's Q3 delegation, 2026-09-23
+("figure it out yourself from here"):
 
-### Context
+- **R443.** Fetch-loop bookkeeping stamps are written on `TIMEZONE_NAME`'s wall
+  clock through the same normalization every record uses. No entrypoint or
+  container change. Existing rows keep their stamps.
+- **Scope, widened.** Every stamp the server writes that is printed beside, or
+  compared with, a record time or another server stamp comes from one clock
+  function on `TIMEZONE_NAME`'s wall clock. It is an explicit function called at
+  each site, never a process-wide zone change. The unset-zone fallback to the
+  process clock is kept.
+- **Transition.** The hazard is settled by evidence. Where a one-time backward
+  step can write a durable wrong state, the smallest change that makes it
+  unreachable ships here with a failing-first test.
+- **Window.** The fetch window's end is fixed here.
+- **Day read.** The unreachable `|| status.last_written` fallback in
+  `frontend/day.js` is removed.
+- **Stakes.** Full review depth. No follow-up issue.
 
-- `run_fetch_once` sets `attempted_at` with `datetime.now()` and `end` with
-  `date.today()`. Both read the process zone. The Dockerfile, `docker-compose.yml`
-  and `docker-entrypoint.sh` set no `TZ`, so the shipped container's process zone
-  is UTC. `TIMEZONE_NAME` sets only the record wall clock.
-- `/api/status` serves `fetch_status` unchanged (`api.py` `status_endpoint`).
-  The Day desk reads `last_success_at` as its read time (`frontend/day.js`
-  `readAt`), prints it in the header kicker and the Episode Log meta, and folds
-  it with the viewed stamp when both strings share a minute. Since #427 the
-  viewed stamp is the reader's local clock. #427 records a browser in a zone
-  other than `TIMEZONE_NAME` as unsupported. Once the read is on the pump's wall
-  clock, the fold works with no frontend change.
-- Nothing on the server compares `last_attempt_at` or `last_success_at` with
-  another time. `record_fetch_result` writes them. The one reader is the
-  browser.
-- The window end is an inclusive date (`sync._date_windows`). East of UTC, a UTC
-  process's `date.today()` trails the pump's date after local midnight, so the
-  attempt requests nothing from the pump's current day until UTC midnight. West
-  of UTC it runs a day ahead, which requests an empty future day.
+### Decision 1 — One clock: `store.wall_clock_now()`
 
-### Reproduction
+`ciq_autotune/store.py` gains `wall_clock_now(after=None)`, beside
+`normalize_time`. It takes the current UTC instant and converts it to
+`TIMEZONE_NAME` with the same expression `normalize_time` applies to a tz-aware
+record (`astimezone(ZoneInfo(TIMEZONE_NAME)).replace(tzinfo=None)`). It returns a
+naive `datetime` to the microsecond, so the Plan draft's sub-second token keeps
+its precision. Every site below calls it by the name its module imports. No site
+reads `datetime.now()` or `date.today()` for a stamp any more.
 
-`docs/scope/443-read-time-pump-zone.repro.py` pins the process zone to
-Pacific/Kiritimati (UTC+14) and `TIMEZONE_NAME` to Pacific/Pago_Pago (UTC−11). The
-wall clocks are 25 h apart, and neither zone observes daylight saving. With the
-pull mocked, on b03431d2:
+| Site (base line) | Stamp | Where it is printed or compared |
+|---|---|---|
+| `fetch_loop.py:41,43` | `last_attempt_at`, `last_success_at`; window end | Day read and Episode Log; `/api/status` |
+| `cli.py:216` | `harmonic fetch --days` window end | the pull's date window |
+| `sync.py:271` | pump-read `captured_at` | `/api/pump-settings` `fetched_at` ("read …", "Captured …"); "On pump since"; change and epoch dating; Plan confirmation |
+| `api.py:1513` | follow-up `recorded_at`: Plan `applied_at`, withdrawal `withdrawn_at`, Focus `pinned_at`, ending `recorded_at`/`effective_at`, decision-context `captured_at` | "Decision recorded", "Pinned", "Recorded"; Plan order and confirmation; Focus windows |
+| `watched_change.py:1712` | reconcile `recorded_at`: ending times, Trial `first_observed_at`, Plan receipt `established_at` | History "Recorded"; ending windows |
+| `watched_change.py:793` | reassessment `computed_at` | History "Computed" |
+| `api.py:862`, `store.py:1842` | guidance set-aside `decided_at` | set-aside history |
+| `api.py:1577` | Plan draft `updated_at` | "Draft saved"; the apply request's draft token |
+| `store.py:1104,1190` | carb-log `created_at` fallback | a manual carb's time, compared with glucose |
+| `store.py:1172,1191` | prompt `answered_at` fallback | the answered-prompt grace; rescue and outcome cut-offs |
+| `pending_prompts.py:348` | the grace's `wall_now` | compared with `answered_at` |
+| `analyze.py:514` | analysis `generated_at` | Diagnose "basal N d to <date>" |
+| `credentials.py:70`, `pattern_sweep.py:1320` | credentials `updated_at`; sweep `generated_at` | neither is printed or compared. Both move so one clock writes every stamp. |
 
-- `last_success_at=2026-09-24 20:05:57`, equal to the process clock, while the
-  pump's wall clock read `2026-09-23 19:05:57`: 25 h off;
-- window end `2026-09-24`, with the pump's day `2026-09-23`;
-- with `TIMEZONE_NAME` unset, the real pull's refusal is recorded without
-  raising. This passes on base, and the fallback preserves it.
+**Not stamps, and not changed:** the data-time anchors of the form
+`<latest record instant> or datetime.now()`. They stand for "the latest record",
+and they read the clock only when the store holds no record to anchor on:
+`analyze.py:208`, `outcomes.py:386`, `outcomes_trend.py:852`,
+`analyzers/scenario/engine.py:549`, `analyzers/eating_sequences.py:525`,
+`explore_exposures.py:86`, `event_comparison.py:506`, `pending_prompts.py:421`,
+`watched_change.py:1710`, and `api.py:410,691,752,1421,1512`.
 
-A triage spike of the decision passed all three, and the existing
-`tests/test_fetch_loop.py` and fetch-status store tests stayed green. It was
-reverted before this change was committed.
+### Decision 2 — An unset zone reads the process clock
 
-### What stays on the process clock
+With `TIMEZONE_NAME` unset, `wall_clock_now` returns `datetime.now()`, which is
+exactly what every site reads today. That state is reachable:
 
-The server stamps other times with its process clock. All of them stay as they
-are:
+- a local `harmonic serve` does not require the variable, so its fetch loop,
+  startup reconcile and API writes can run without it;
+- the no-fetch serve that CI's browser gates and the replay start sets no
+  `TIMEZONE_NAME`;
+- the CLI reaches the same paths.
 
-- a pump read's capture time (`sync._capture_settings_snapshot`), served as
-  `/api/pump-settings` `fetched_at`;
-- change-record reconciliation times (`watched_change.reconcile_ingested_follow_up`);
-- a recorded Plan's `applied_at` and a pinned Focus's `pinned_at` (the follow-up
-  mutation path in `api.py`);
-- guidance set-aside `decided_at`, and the carb-log and prompt-answer fallbacks
-  in `store.py`.
+Each of those paths already runs on the process clock, so each tolerates the
+fallback. The one path where the fallback cannot fire is the pump-read capture:
+`sync.pull_from_tconnect` refuses before any network call when the variable is
+unset (pinned by `tests/test_sync_partial.py`), so it never reaches the capture.
+A refused fetch is still recorded, stamped with the process clock.
 
-They are left alone because they are compared with one another. Plan
-confirmation compares a capture time with a Plan's `applied_at`
-(`_confirm_from_read`, `with_plan_verdicts`, `_reconcile_plan`). Moving only the
-fetch-written half would put the two sides of that comparison in different
-zones in a container. West of UTC, a recorded Plan would confirm hours late.
-East of UTC, a read taken before the decision could count as one after it.
-Whether they all move together is a separate decision, returned to the release
-coordinator with this change. This change touches none of them.
+### Decision 3 — A stamp in an ordered history is never earlier than one already written
 
-**Accepted with this decision:** in a container, Day's read time and the pump
-settings utility's "read …" or Changes' "Captured …" can name different times
-for the same fetch, by the zone offset. The utility and Changes print a pump
-read's capture time, which keeps the process clock.
+At the three sites that write into a history the server orders by time, the
+stamp is `wall_clock_now(after=store.latest_server_stamp())`:
 
-### Why no replay story and no browser test
+- the pump-read capture (`sync.py`);
+- the follow-up mutation path (`api.py`: Plan, withdrawal, Focus pin, ending);
+- the ingestion reconcile (`watched_change.py`).
 
-No rendered source changes. Every replay serve runs `--no-fetch`, and no case
-store or generator writes a `fetch_status` row, so a replayed Day desk never
-has a read time and always shows "viewed". A story could not observe this
-change. The backend tests pin both zones themselves, since CI's runner zone is
-UTC and `tests/conftest.py` defaults `TIMEZONE_NAME` to UTC. Under those
-defaults the old and new stamps are identical.
+`Store.latest_server_stamp()` is the latest of `profile_settings.captured_at`,
+`plan_history.applied_at` and `focus.pinned_at`. When the pump's clock reads no
+later than that stamp (compared to the second), `wall_clock_now` returns one
+second after it.
+
+This is the smallest change that makes each durable path below unreachable. It
+works because it keeps the one property every reader relies on: stored order is
+the order the server wrote in. Other designs were weighed and rejected:
+
+- **Reordering reads by insertion.** Every consumer that sorts or compares
+  capture times (`settings.changelog`, `epochs`, `ic_history`,
+  `follow_up_comparison`, `trial_evidence`, `replay`, `watched_change`) would
+  change, and comparisons across tables (a capture against a Plan) would still
+  break.
+- **Rewriting old rows.** R443 forbids it.
+
+The floor is not bounded. A host clock that runs ahead and is later corrected
+steps back by any amount. Capping the floor would re-open the inverted-record
+hazard for exactly that case, and a stamp that runs ahead for a while is the
+lesser harm.
+
+The fetch status is not floored. It orders nothing, and Day's read should be the
+true time at once.
+
+### Decision 4 — The fetch window ends on the pump's day
+
+`run_fetch_once` takes one `wall_clock_now()` reading per attempt. Its attempt
+stamp and its window end (that reading's date) both come from it, and the start
+stays `days` earlier. `harmonic fetch --days N` ends its window on the same date.
+East of UTC, a UTC process's date trails the pump's after local midnight, so the
+window used to stop at the pump's yesterday until UTC midnight.
+
+### Decision 5 — Day reads `last_success_at` alone
+
+`frontend/day.js` reads `readAt: status.last_success_at || null`. The removed
+`|| status.last_written` branch cannot run: `Store.record_fetch_result` writes
+`last_success_at` and `last_written_json` in one statement, under the same `ok`
+condition. `tests/test_store.py`'s fetch-status tests pin that both advance on
+success and both hold on failure. The branch would print a count object as a
+time if it ever ran.
+
+### Decision 6 — Tests freeze the clock by its bound name
+
+Six places froze time by patching a module's `datetime`, and they now patch that
+module's `wall_clock_now` instead:
+
+- `tests/test_api.py`: two places (`api`, `analyze`);
+- `tests/test_durable_follow_up.py`: four places (`api`);
+- the case-cache check in `mockups/sweep/harmonic-v2-desktop/acceptance.py`
+  (`watched_change`).
+
+A patched name stands in for the whole function, floor included, so those tests
+keep their fixed times. The case-cache check keeps its `datetime` patch as well,
+for the data-time anchor at `watched_change.py:1710`.
+
+### Transition evidence: a one-time backward step
+
+A container west of UTC upgrades once: its stored stamps are UTC wall time, and
+its new stamps are the pump's, |offset| hours earlier. East of UTC the step is
+forward, and a server already running in the pump's zone takes no step.
+`docs/scope/443-read-time-pump-zone.repro.py` reproduces each durable path on
+b03431d2, stepping the stamping clock 7 h back between two writes. A triage spike
+of Decisions 1–3 made the same cases pass through `TIMEZONE_NAME` (UTC, then
+America/Phoenix). With the floor removed they failed again.
+
+| Reader that orders or compares server stamps | Without the floor | With the floor |
+|---|---|---|
+| Pump-read order (`settings_snapshots` by `captured_at`) → switch changelog → reconcile's Trial records and `_reversal_at` endings | **Durable.** Reproduced: a switch from correction factor 30 to 40 read after the step was saved as a Trial 40 → 30, dated at the older read. Theory: interleaved reads close real switches as walk-backs. | Reads stay in write order; one Trial 30 → 40 at the newer read |
+| Latest pump read (`snapshots[-1]`): `/api/pump-settings`, the Plan apply path's `source_profile` and deliverable | **Durable.** Theory, same order fault: a Plan recorded in the seam builds its deliverable from the older read | The newest read is last |
+| Plan order (`plan_history` by `applied_at DESC`) → `pending_plan`, `with_plan_verdicts`, admission | **Durable and permanent.** Reproduced: the Plan recorded after the step is served `superseded` and no Plan is pending, so it never confirms and admission accepts another decision | The new Plan is newest and pending |
+| Focus ending against its pin (`capture_ending` saves `effective_at` as given) | **Durable.** Reproduced: a Focus pinned before the step and resolved after it saved an ending effective 7 h before its pin | Ending ≥ pin + 1 s |
+| Focus history order (`focus` by `pinned_at DESC`) | Display order inverted | Write order |
+| Plan confirmation (`_confirm_from_read`: a read after `applied_at`) | Delay: reads after the step look earlier than a Plan recorded before it | No delay: floored reads follow the Plan |
+| `_reconcile_plan` (`applied_at` ≤ a change's time) | Delay | Delay: a Plan recorded in the seam runs up to |offset| ahead, so a change keyed within that margin gets its receipt from `_confirm_from_read` on a later read |
+| `with_plan_verdicts` `on_pump` (latest read against `applied_at`) | Read-time only | Read-time only |
+| Answered-prompt grace (`answered_at` against `wall_now`) | A pre-step answer's grace lasts up to |offset| longer; read-time only | Same |
+| Captures against record times (`follow_up_comparison`, `trial_evidence`, `epochs`, `ic_history`, `replay`) | Base already stamps every container capture |offset| ahead of the records | Only captures written in the seam run ahead, and by at most |offset| |
+| Guidance-preference migration (`min(decided_at)`) | Runs once at startup, before any post-step stamp | Unaffected |
+| Fetch status (one row) | Orders nothing | Not floored; correct at once |
+
+### Consequences
+
+- In the documented container, every stamp the desk prints and every server
+  stamp compared with a record is on the pump's clock. Day's read folds with a
+  view in the same minute again. The pump-settings utility's "read …", Changes'
+  "Captured …" and "On pump since …", the History and Plan times, and Diagnose's
+  window date all name the pump's time.
+- The seam: for up to |offset| hours after a west-of-UTC container upgrades,
+  pump reads, Plans, Focus pins and change-record times are stamped just after the
+  latest pre-upgrade stamp, ahead of the pump's clock. They converge once the
+  clock passes it. A change observed in the seam is dated up to |offset| late.
+  That is the error base makes on every container capture today, now bounded to
+  the seam. Day's read time is right at once.
+- A daylight-saving fall-back hour in `TIMEZONE_NAME` repeats the wall clock. The
+  floor keeps an ordered stamp written in the repeat after the one before it.
+- Stored stamps are not rewritten, so rows from before the upgrade keep their
+  zone.
+- The replay stories that take a synthetic pump read (S42, S105, S145, S146) date
+  that read a minute past the Plan. Their reconcile times now follow it by a
+  second instead of preceding it. What the stories assert does not change.
+
+### Why no new replay story and no browser test
+
+No rendered source changes behavior. The `day.js` edit removes a branch no
+reachable state enters. The browser gates and the replay serve run without
+`TIMEZONE_NAME`, on the process clock, where every stamp is what it was, so a
+story cannot observe the zone. The backend tests pin both zones themselves: CI's
+runner zone is UTC, and `tests/conftest.py` defaults `TIMEZONE_NAME` to UTC.
+Under those defaults the old and new stamps agree.
 
 ### Document inventory
 
 The repository was searched for the stamps' names, "read stamp", "served read",
 "process zone" and `TIMEZONE_NAME`'s described role. The only prose that states
-the read stamp's zone is #427's archived design, which is frozen and stays as
-written. README, `docker-compose.yml`, `.env.example`, AGENTS.md and CONTEXT.md
-describe `TIMEZONE_NAME` as the wall clock records are bucketed by, and that
-stays true. No live document needs amending.
+a stamp's zone is #427's archived design, which is frozen and stays as written.
+README, `docker-compose.yml`, `.env.example`, AGENTS.md and CONTEXT.md describe
+`TIMEZONE_NAME` as the wall clock records are bucketed by, and that stays true.
+No live document needs amending.
 
 ### Risk contract
 
-- **Must prevent:** a fetch attempt that raises out of the loop, or that goes
-  unrecorded in `/api/status`, whatever the zone configuration; a
-  `last_success_at` written on any clock other than `TIMEZONE_NAME`'s when that
-  variable is set; a window that stops before the pump's current day; any change
-  to a pump read's capture time, a Plan's or Focus's recorded time, a change
-  record's times, or any analyzer, classifier, staging predicate, cap or floor;
-  real data in a test, fixture or log.
-- **Must recover:** none. The next attempt replaces the stamp.
-- **Accepted failure:** a stamp stored before this change keeps its old zone
-  until the next attempt (`last_attempt_at`) or success (`last_success_at`). In
-  a container, Day's read time and a pump read's capture time can differ by the
-  zone offset (above).
+- **Must prevent:**
+  - a durable record written out of order across a clock step: a Trial with its
+    direction inverted, a Plan that sorts behind an older one, an ending before
+    its own start;
+  - any server stamp named in Decision 1 written on a clock other than
+    `TIMEZONE_NAME`'s when that variable is set;
+  - a fetch attempt that raises out of the loop or goes unrecorded;
+  - a window that stops before the pump's current day;
+  - any change to an analyzer, classifier, staging predicate, cap or floor;
+  - real data in a test, fixture or log.
+- **Must recover:** none. The next write replaces a single-row stamp, and the
+  seam converges on its own.
+- **Accepted failure:**
+  - rows stored before the upgrade keep their zone;
+  - for up to |offset| hours after a west-of-UTC container upgrades, ordered
+    stamps run ahead of the pump's clock (Consequences), which delays a verdict
+    but writes nothing out of order;
+  - a stamp stored ahead of the clock by any amount holds later ordered stamps
+    just after it until the clock passes it.
 - **Unsupported:** a browser in a zone other than `TIMEZONE_NAME` (as #427
-  records); a `TIMEZONE_NAME` changed between attempts.
-- **Evidence owed:** tests through `run_fetch_once` with the process zone and
-  `TIMEZONE_NAME` pinned apart, for the success stamp, the failed-attempt stamp,
-  and the window end, each seen failing on the unfixed code; a test that an
-  attempt with `TIMEZONE_NAME` unset records the pull's refusal without raising,
-  with a broken variant showing it is not vacuous.
+  records); a `TIMEZONE_NAME` changed between writes for any reason other than
+  this upgrade.
+- **Evidence owed:**
+  - tests through public paths, with the process zone and `TIMEZONE_NAME` pinned
+    apart, for each stamp family in the spec deltas, each seen failing on the
+    unfixed code;
+  - the three transition tests (pump read, Plan, Focus) through the capture,
+    reconcile and API paths, each seen failing with the floor removed;
+  - the unset-zone tests (fetch loop and API) with a broken variant;
+  - the fetch-window tests in both zone orders, and for the CLI.
 
-Why: the stamp is display bookkeeping with one browser reader, and the window end
-only widens what is requested. Disposition: copied unchanged into this design.md,
-the admitted artifact the lock pins.
+Why: the widened stamps feed durable change records and Plan admission on
+advisory dosing guidance. Disposition: copied unchanged into this design.md, the
+admitted artifact the lock pins.

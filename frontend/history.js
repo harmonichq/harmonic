@@ -331,7 +331,7 @@ export function originalSection(original) {
 export function endingSection(ending, { kind }) {
   if (!ending || !ending.kind) {
     return `<section class="gf-section" data-record-part="ending"><h3>Ending</h3>
-      <p class="gf-meta" data-unavailable="ending">Not recorded — this ${kind === 'focus' ? 'Focus' : 'change'} is still open.</p></section>`;
+      <p class="gf-meta" data-unavailable="ending">Not recorded: this ${kind === 'focus' ? 'Focus' : 'change'} is still open.</p></section>`;
   }
   const assessment = ending.assessment || {};
   const inference = assessment.assessment || {};
@@ -402,7 +402,7 @@ export function reassessmentSection(detail, mode, { kind } = {}) {
     <dl>
       <dt>Computed</dt><dd>${e(stamp(reassessment.computed_at))}</dd>
       <dt>Context</dt><dd data-reassessment-context="${e(reassessment.mode)}">${reassessment.mode === 'current'
-        ? 'Current policy — this is not a like-for-like comparison with the saved ending.'
+        ? 'Current policy: this is not a like-for-like comparison with the saved ending.'
         : `Stored context ${e(context.id ? String(context.id).slice(0, 12) : 'unavailable')}`}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
         ? e(stateWords((comparison.assessment || {}).state || 'unclear'))
@@ -422,7 +422,7 @@ function rosterFrame(roster) {
   })}<div class="gf-scroll">${recordRoster(roster)}</div></section>`;
   const reading = `<aside class="pane gf-reading" aria-label="Records">${readingHeader('Records')}<div class="gf-pane-body">
     <section class="gf-section"><h3>What a record keeps</h3>
-      <p>The original decision or the first time Harmonic saw the change, the observed change itself, the ending you saved, and any later reassessment — kept apart, because they answer different questions.</p>
+      <p>The original decision or the first time Harmonic saw the change, the observed change itself, the ending you saved, and any later reassessment. They are kept apart because they answer different questions.</p>
       <p class="gf-meta">Opening a record shows its own evidence. Nothing here is sent to your pump.</p></section>
   </div></aside>`;
   return desk(stage, reading);

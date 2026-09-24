@@ -24,7 +24,7 @@ test('the topbar and footer carry their verbatim strings', () => {
   assert.match(markup, /<div class="cockpit-identity">.*Harmonic <small>advisory<\/small>/);
   // U+FF0B, the fullwidth plus, not an ASCII '+'.
   assert.match(markup, /<span class="plus">＋<\/span>Log carbs/);
-  assert.equal(ADVISORY, 'Advisory only — review with your clinician before changing pump settings.');
+  assert.equal(ADVISORY, 'Advisory only. Review with your clinician before changing pump settings.');
   assert.ok(markup.includes(`<span class="cockpit-advisory advisory">${ADVISORY}</span>`));
   assert.match(markup, /<nav class="cockpit-utilities" aria-label="Utilities">/);
 });

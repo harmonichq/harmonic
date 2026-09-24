@@ -892,7 +892,7 @@ function renderParamLevel(host, spec) {
       <div class="numrow"><span class="k">Current</span><b>${value(spec.current)}</b>
         <span class="qual">${unitThen(', ')}programmed now</span></div>
       <div class="numrow"><span class="k">Estimate</span><b>${value(e.value)}</b>
-        <span class="qual">${unitThen(' — ')}the interval below brackets THIS number</span></div>
+        <span class="qual">${unitThen(', ')}the interval below brackets THIS number</span></div>
       <div class="numrow"><span class="k">Recommended</span><b>${value(spec.recommended)}</b>
         <span class="qual">${spec.recommendedQual}</span></div>
     </div>
@@ -900,11 +900,11 @@ function renderParamLevel(host, spec) {
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
       already run (${value(e.lo)}–${value(e.hi)} includes ${value(spec.current)}), so <b>it includes no
-      change at all</b> — a ${spec.moveWord} is consistent with this data, not established
+      change at all</b>. A ${spec.moveWord} is consistent with this data, not established
       by it.</div>` : ''}
     ${between ? '' : `<div class="hedge">The recommended ${value(spec.recommended)} does not sit
       between the ${value(spec.current)} you run now and the ${value(e.value)} the data estimates, so
-      <b>something outside the estimate set it</b> — ${spec.sentence}</div>`}
+      <b>something outside the estimate set it</b>: ${spec.sentence}</div>`}
     <div class="slot-stats">${spec.support}</div>
     <div class="slot-say">${spec.sentence}</div>`;
   const foot = document.createElement('div');
@@ -985,7 +985,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   renderParamLevel(host, {
     head: span,
     scopeSay: run && run.memberCount > 1
-      ? `One of ${run.memberCount} half hours in Basal ${run.label} — staging here stages `
+      ? `One of ${run.memberCount} half hours in Basal ${run.label}. Staging here stages `
         + 'the whole span. Current, Estimate and Recommended below are this half hour\'s own.'
       : '',
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
@@ -1005,7 +1005,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     canStage,
     isStaged: staged.has(cell.i),
     footNote: thin
-      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data — ${supportFloor == null
+      ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data: ${supportFloor == null
         ? 'the support floor is unavailable'
         : `below the ${supportFloor}-night support floor`}${e.wide ? ' and the interval is wide' : ''}; no direction asserted, `
         + 'nothing to stage.'
@@ -1081,7 +1081,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
      reserved scope line, and nothing drawn — rather than shading a region that
      is not the block. */
   const wrapSay = cell.wraps
-    ? `These hours run through midnight — ${cell.span} — so the canvas cannot bracket them `
+    ? `These hours (${cell.span}) run through midnight, so the canvas cannot bracket them `
       + 'as one span. The block is stated here rather than shaded.'
     : '';
   renderParamLevel(host, {
@@ -1118,7 +1118,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
       ? 'The move is held for the reason above, so there is nothing to stage; the number and '
         + 'its interval are shown as measured.'
       : `${b.n_runs} meal run${b.n_runs === 1 ? '' : 's'}`
-        + `${e.wide ? ' and a wide interval' : ''} — no direction asserted, nothing to stage; `
+        + `${e.wide ? ' and a wide interval' : ''}: no direction asserted, nothing to stage; `
         + 'the number and its interval are shown as measured.',
     onStage: () => onStage(cell),
   });
@@ -1325,7 +1325,7 @@ function boot(root, data, callbacks, signal) {
      assumed. */
   const lifted = new Set(synth ? (synth.lifted || []) : []);
   const demoNote = synth
-    ? 'Demonstration, not your data — the hold on this block was lifted so the change path '
+    ? 'Demonstration, not your data. The hold on this block was lifted so the change path '
       + `can be seen.${lifted.has('recommended')
         ? ' Its measured numbers are the real ones; the recommendation is not.' : ''}`
     : '';

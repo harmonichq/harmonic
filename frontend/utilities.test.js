@@ -59,6 +59,15 @@ test('#423 · the Glossary keys each group section by its title, and calls no de
   assert.doesNotMatch(source, /v1 definitions/);
 });
 
+// ADR 451: the Glossary's definitions are sentences a reader reads, so none joins
+// its clauses with an em dash (DESIGN.md, Voice and user-copy register, rule 1).
+// A term's unit label is a short label, not a sentence, and is not read here.
+test('ADR 451 · no Glossary definition joins its clauses with an em dash', () => {
+  const defs = glossaryGroups.flatMap((group) => group.terms.map((term) => [term.term, term.def]));
+  assert.ok(defs.length > 0);
+  for (const [term, def] of defs) assert.ok(!def.includes('—'), `${term}: ${def}`);
+});
+
 // #423: a narrow desk (the 700px query matches) whose reading pane is a sheet.
 // The seat records the sheet state each render writes; a launcher can take
 // focus only while the sheet it lives in is open, which is what a hidden sheet

@@ -301,7 +301,7 @@ test('an open change record reads its retained comparison with no control presse
     assert.match(seat.innerHTML, /data-figure-state="paired"/);
     assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
     assert.match(seat.innerHTML, /data-reassessment-context="retained"/);
-    assert.match(seat.innerHTML, /data-unavailable="ending">Not recorded — this change is still open\./);
+    assert.match(seat.innerHTML, /data-unavailable="ending">Not recorded: this change is still open\./);
   } finally { served = comparison; }
 });
 

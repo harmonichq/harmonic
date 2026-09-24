@@ -79,14 +79,14 @@
 
 ## 2. Served names on guidance and the Plan history read
 
-- [ ] 2.1 Serve a setting concern's `title` from `_SETTING_TITLES` in guidance's
+- [x] 2.1 Serve a setting concern's `title` from `_SETTING_TITLES` in guidance's
   setting adapter, instead of the tuning lever's title. Leave unchanged:
   - `priority_inputs`;
   - `units`;
   - `_state`;
   - `_describe`;
   - `tuning_priority.py`.
-- [ ] 2.2 Add `subject_title(subject)` to guidance. It resolves names by whole
+- [x] 2.2 Add `subject_title(subject)` to guidance. It resolves names by whole
   subject:
   - setting → `_SETTING_TITLES`;
   - habit → `levers.title` (through `_MEMBER_TITLES`);
@@ -97,11 +97,11 @@
 
   Absent rows in `build_guidance` serve `title: subject_title(subject)`. No
   name enters `_state`.
-- [ ] 2.3 `/api/plan/history` serves `subject_titles` beside `subjects` in every
+- [x] 2.3 `/api/plan/history` serves `subject_titles` beside `subjects` in every
   record's `decision_context`: a parallel list computed at read time through
   `subject_title`, never stored. Serve it in the endpoint (`api.py`), not in
   `with_plan_verdicts`, because guidance imports `watched_change`.
-- [ ] 2.4 Tests through the public reads. The name tests are for changed
+- [x] 2.4 Tests through the public reads. The name tests are for changed
   behavior and fail first on the base; the invariance assertions are regression
   tests.
   - `tests/test_guidance.py`, on the manufactured QA cases:

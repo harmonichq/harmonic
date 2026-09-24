@@ -1,5 +1,6 @@
 """Guidance through committed producer payloads and ADR 383 comparison edges."""
 import importlib.util
+import json
 import pathlib
 import tempfile
 import unittest
@@ -37,7 +38,7 @@ def _instruction(start, end, value):
             "direction": "raise", "units": "U/h", "recommended": value}
 
 
-def _qa(name):
+def _qa(name, preferences=()):
     case = next(case for case in QA_CASES if case.name == name)
     with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
         with Store.open(database.name) as store:
@@ -48,7 +49,7 @@ def _qa(name):
         analysis=execution.analysis, exposures=execution.exposures,
         scenarios=execution.scenarios,
     )
-    return projection.guidance(), execution
+    return projection.guidance(preferences=preferences), execution
 
 
 def _treatment_fields(value):
@@ -356,6 +357,70 @@ class GuidanceTest(unittest.TestCase):
                     unnamed["action"] = {key: value for key, value in row["action"].items()
                                          if key != "title"}
                 self.assertEqual(baseline_for(row), baseline_for(unnamed))
+
+    def test_setting_concerns_are_titled_by_their_user_labels(self):
+        # ADR 451: a setting concern is served under its setting's user label, never
+        # the tuning lever's engine title, which stays in its Priority inputs.
+        expected = {
+            "isf-strengthen": ("setting:isf", "Correction factor", "mg/dL/U"),
+            "isf-held": ("setting:isf", "Correction factor", "mg/dL/U"),
+            "ic-lower": ("setting:carb_ratio", "Carb ratio", "g/U"),
+            "ic-held": ("setting:carb_ratio", "Carb ratio", "g/U"),
+            "basal-lower": ("setting:basal_rate", "Basal", "U/h"),
+        }
+        for case_name, (subject, title, units) in expected.items():
+            with self.subTest(case=case_name):
+                result, execution = _qa(case_name)
+                row = next(row for row in result["candidates"]
+                           if row["subject"] == subject)
+                self.assertEqual(row["title"], title)
+                self.assertNotIn(row["title"], ("ISF", "Carb ratio (I:C)", "Basal profile"))
+                self.assertEqual(row["units"], units)
+                lever = next(lever for lever in execution.analysis["tuning_levers"]
+                             if lever["parameter"] == row["parameter"])
+                self.assertEqual(row["priority_inputs"]["title"], lever["title"])
+                self.assertNotIn(title, json.dumps(baseline_for(row)))
+                for candidate in result["candidates"]:
+                    unnamed = {key: value for key, value in candidate.items()
+                               if key != "title"}
+                    self.assertEqual(baseline_for(candidate), baseline_for(unnamed),
+                                     candidate["subject"])
+
+    def test_set_aside_subjects_the_read_no_longer_carries_keep_their_names(self):
+        # ADR 451: an absent row is named from the backend's own name sources and
+        # stays set aside; a subject outside today's closed set has no name; a
+        # set-aside Pattern is never absent, because the roster serves every Pattern.
+        current, _execution = _qa("basal-lower")
+        pattern = next(row for row in current["candidates"]
+                       if row["subject"] == "pattern:lows_after_correcting_highs")
+
+        def aside(subject, state):
+            return {"subject": subject, "decided_at": "2026-01-01 00:00:00",
+                    "reason": "later", "comparison_version": COMPARISON_VERSION,
+                    "state": state}
+
+        names = {
+            "setting:isf": "Correction factor",
+            "habit:correction_stacking": "Correction stacking",
+            "investigation:uncaused_highs": "Highs without a detected cause",
+            "habit:retired_lever": None,
+        }
+        carried = {row["subject"] for row in current["candidates"]}
+        self.assertFalse(carried & set(names))
+        result, _execution = _qa("basal-lower", preferences=[
+            *(aside(subject, {}) for subject in names),
+            aside(pattern["subject"], baseline_for(pattern)["state"]),
+        ])
+        rows = {row["subject"]: row for row in result["candidates"]}
+        for subject, name in names.items():
+            with self.subTest(subject=subject):
+                self.assertIs(rows[subject]["absent"], True)
+                self.assertEqual(rows[subject]["title"], name)
+                self.assertIs(rows[subject]["preference"]["set_aside"], True)
+        served = rows[pattern["subject"]]
+        self.assertNotIn("absent", served)
+        self.assertEqual(served["title"], "Lows after correcting highs")
+        self.assertIs(served["preference"]["set_aside"], True)
 
     def test_setting_source_before_habit_source_is_safe(self):
         result, _execution = _qa("basal-raise")

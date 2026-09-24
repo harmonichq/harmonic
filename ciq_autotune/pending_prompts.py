@@ -7,7 +7,9 @@ behind one seam everything fragile about that:
 * **candidate derivation** — the questions worth asking, reusing existing
   detection (no new detectors, per the epic): the ``missed-meal`` classifier's
   matched rises ("rise with no bolus — did you eat?") and every sub-70 low run
-  ("did you treat this low?"). See :func:`build_candidates`.
+  ("did you treat this low?"). A rise an over-treated low's rebound owns in the
+  shared evaluation raises no question: its low explains it (ADR 448). See
+  :func:`build_candidates`.
 * **answered-match** — a candidate is *pending* iff no ``prompt_responses`` row
   answers it. Identity is ``(detector, anchor_t)`` with a small time tolerance:
   the anchors are recomputed live every call (never stored), and a recomputation
@@ -38,6 +40,7 @@ from typing import Dict, List, Optional, Sequence, Union
 
 from .events import BasalEvent, BolusEvent, CarbEntry, CgmReading, format_t, parse_t
 from .analyzers.classifiers import classify_missed_meal
+from .analyzers.scenario import LowPromptAnswer, evaluate, low_prompt_answers
 from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario_config import ScenarioConfig
 
@@ -188,6 +191,8 @@ def build_candidates(
     bolus_events: Sequence[BolusEvent],
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
+    *,
+    low_answers: Sequence[LowPromptAnswer] = (),
 ) -> List[Prompt]:
     """Every carb-log question the data raises, before answered/expiry/cap filtering.
 
@@ -198,11 +203,18 @@ def build_candidates(
       "a low you had"). Day or night; an over-treated-low attribution is still just a
       low here, so the same nadir yields exactly one prompt.
     * **missed meals** — each HIGH-run onset the ``missed-meal`` classifier matches
-      (a meal-shaped rise with no bolus behind it).
+      (a meal-shaped rise with no bolus behind it), unless the shared evaluation
+      records that High as owned by an over-treated low's rebound. An owned rise is
+      explained by its low, which asks its own question when it is sub-70 (ADR 448).
+
+    Ownership is read, never judged here: one :func:`~.analyzers.scenario.evaluate`
+    walk over the same events, under ``low_answers`` — the low-prompt answers the
+    Scenario reads, so a ``no`` that refutes a low also frees its rebound High to be
+    asked about. Empty ``low_answers`` reproduces a store with no low answers.
 
     No ISF / I:C needed: the missed-meal classifier judges CGM shape + bolus
-    presence only (carb-undercount, the one classifier that needs settings, plays no
-    part in the queue).
+    presence only, and ISF does not move which Highs a rebound owns (carb-undercount,
+    the one classifier that needs settings, plays no part in the queue).
     """
     candidates: List[Prompt] = []
     scenario_config = ScenarioConfig()
@@ -210,10 +222,14 @@ def build_candidates(
         bolus_events, cgm_readings, basal_events,
         scenario_config=scenario_config, low_mgdl=scenario_config.gate_low_mgdl,
     )
+    owned = {high for episode in evaluate(bolus_events, cgm_readings, basal_events,
+                                          scenario_config=scenario_config,
+                                          low_answers=low_answers).episodes
+             for high, _owner in episode.attribution.owned_highs}
     for a in anchors:
         if a.kind is AnchorKind.LOW:
             candidates.append(_low_prompt(a, cgm_readings))
-        elif a.kind is AnchorKind.HIGH:
+        elif a.kind is AnchorKind.HIGH and a not in owned:
             onset = a.reach_start
             if classify_missed_meal(
                 onset, cgm_readings, bolus_events, basal_events,
@@ -407,6 +423,11 @@ def build_pending_prompts(
     whereas ``answered_at`` is real wall-clock — the two must be compared on the same
     clock.
 
+    Low-prompt answers come from the Scenario's own ``low_prompt_answers`` (its #467
+    endpoint rule included), so the queue reads the same rebound ownership the
+    Scenario records: a ``no`` recorded after the latest event restores its rebound
+    High's question only once the data reaches past it (ADR 448).
+
     Manual carb entries in the window are read as a second suppression signal (ADR 0011,
     #166): a manual carb near a pending candidate covers it silently. Read from ``start``
     with no upper bound so a treatment logged just *after* the latest pump event still
@@ -425,7 +446,8 @@ def build_pending_prompts(
     w_cgm = [r for r in cgm if start <= r.t <= now]
     w_basal = [e for e in basal if start <= e.t <= now]
 
-    candidates = build_candidates(w_bolus, w_cgm, w_basal)
+    candidates = build_candidates(w_bolus, w_cgm, w_basal,
+                                  low_answers=low_prompt_answers(store, start, now))
     return pending_prompts(
         candidates, store.prompt_responses(), now,
         carb_entries=store.carb_entries(start),

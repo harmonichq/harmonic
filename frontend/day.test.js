@@ -425,6 +425,16 @@ test('#423 · the Glossary explains the Episode Log bands', () => {
   for (const count of ['clean', 'explained', 'no data']) assert.match(quiet, new RegExp(count), `Quiet does not name its ${count} count`);
 });
 
+test('#448 · the Glossary\'s Quiet "explained" count names both upstream-cause sources', () => {
+  // ADR 448: a recent low or suspend, and an over-treated low's rebound.
+  const group = glossaryGroups.find((g) => g.title === 'Episode Log');
+  const quiet = group.terms.find((t) => t.term === 'Quiet').def;
+  assert.ok(
+    quiet.includes('explained (a recent low or a defensive suspend already explains the move, or the rise is the rebound of an over-treated low)'),
+    `Quiet's explained clause names only the context gate: ${quiet}`,
+  );
+});
+
 test('a utility entry is named for the utility and returns over the destination it was opened on', () => {
   // S76 and the lock's verbatim `Return to Carb questions`.
   const entry = {

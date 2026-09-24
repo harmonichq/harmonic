@@ -106,10 +106,11 @@ def classify_late_bolus(
        the bolus. Too sparse to fit → **not late** (can't judge; ``NOT_IN_DATA``).
     2. Slope at/under ``rising_slope`` → BG was ~flat, the bolus led the rise →
        **not late** (``OBSERVED`` — the flat pre-bolus curve is a hard fact).
-    3. Slope rising, but the **context gate** finds an observable upstream cause (a
-       recent low and/or a defensive suspend) → the rise is a recovery, not a meal
-       climb → **not late** (``INFERRED`` — the gate's trigger is observed, but
-       attributing the rise to it rather than to a meal is a shape inference).
+    3. Slope rising, but the **context gate**, judged under ``scenario_config``,
+       finds an observable upstream cause (a recent low and/or a defensive suspend) →
+       the rise is a recovery, not a meal climb → **not late** (``INFERRED`` — the
+       gate's trigger is observed, but attributing the rise to it rather than to a
+       meal is a shape inference).
     4. Slope rising, gate finds nothing, but a **completed carb bolus** landed
        within :data:`PRIOR_CARB_BOLUS_LOOKBACK_MIN` minutes before this one → the
        rise is owned by that earlier dose's fast-carb excursion, still in flight,
@@ -159,7 +160,7 @@ def classify_late_bolus(
             gate=None,
         )
 
-    gate = upstream_cause(meal.t, cgm_readings, basal_events)
+    gate = upstream_cause(meal.t, cgm_readings, basal_events, scenario_config=scenario_config)
     if gate.explained:
         return LateBolusVerdict(
             matched=False,

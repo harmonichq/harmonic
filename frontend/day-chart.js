@@ -14,7 +14,7 @@ export function fmtU(v) {
 }
 export function fmtG(v) { return v == null ? null : String(Math.round(v)); }
 
-/* ================= vocab (lifted verbatim from model-view-log.js) ================= */
+/* ================= vocab ================= */
 export const KIND_GLYPH = { meal: '◍', high: '△', low: '▽', correction: '↓', suspend: '❚❚' };
 export const KIND_LABEL = { meal: 'Meal bolus', high: 'High', low: 'Low', correction: 'Correction', suspend: 'Suspend' };
 
@@ -309,45 +309,3 @@ export function focusUpdate(chart, { day, rows, colors, focusT, preempted, selec
   }
   return { series, graphic };
 }
-
-/* ================= detector + silence-reason reference (tier-2 meaning) =================
-   Criteria strings mirror the live constants in ciq_autotune/analyzers/classifiers/*.py.
-   Kept in sync with frontend/model-view-log.js. */
-export const DETECTOR_REFERENCE = [
-  { id: 'carb_undercount', kind: 'meal',
-    def: 'A meal ran away high — the excursion implies materially more carbs than were logged.',
-    criteria: 'Peak ≥ 200 mg/dL within 180 min AND implied carbs ≥ 1.5× logged AND gap ≥ 30 g.' },
-  { id: 'late_bolus', kind: 'meal',
-    def: 'The dose chased a rise already underway instead of leading it.',
-    criteria: 'BG rising ≥ 1.0 mg/dL/min over the 20 min before the bolus. Suppressed if a carb bolus in the prior 60 min owns the rise, or start BG ≥ 250 mg/dL.' },
-  { id: 'meal_over_delivery', kind: 'meal',
-    def: 'The meal dose crashed/suspended into a near-low afterward.',
-    criteria: 'Control-IQ suspend ≥ 10 min after the meal AND BG reaches ≤ 75 mg/dL within 45 min of it.' },
-  { id: 'over_treated_low', kind: 'low',
-    def: 'A low was rescued past range into a rebound high (likely fast carbs).',
-    criteria: 'Guarded post-nadir rebound peak ≥ 160 mg/dL (sub-70 nadir) or ≥ 180 mg/dL (near-low), before recovery/re-dip. Bar raised by residual-IOB credit.' },
-  { id: 'correction_on_iob', kind: 'low',
-    def: 'A lone user correction dropped onto live insulin drove a low that leaks today.',
-    criteria: 'User correction ≥ 1.0 U landed with ≥ 0.5 U IOB still on board and BG not high/rising, then a sub-70 low followed.' },
-  { id: 'correction_stacking', kind: 'correction',
-    def: 'Two corrections stacked (not chasing a runaway) drove a later low.',
-    criteria: 'Second correction within 60 min onto ≥ 0.5 U IOB, BG < 180 mg/dL and not rising, then a low ≤ 70 mg/dL within 240 min.' },
-  { id: 'missed_meal', kind: 'high',
-    def: 'A meal-shaped rise with no bolus behind it (an unannounced/forgotten meal).',
-    criteria: 'Rise ≥ 1.0 mg/dL/min with no bolus in the 150-min digestion lookback before onset.' },
-];
-
-export const REASON_REFERENCE = [
-  { id: 'no_trigger', tier: 'observed', def: 'The behavior plainly did not happen — a genuinely clean opportunity.' },
-  { id: 'under_threshold', tier: 'observed', def: 'It happened but fell short of the firing bar — the near-miss where a mis-tuned threshold hides.' },
-  { id: 'upstream_cause', tier: 'inferred', def: 'An observable recent low (≤ 70 mg/dL within 90 min) and/or defensive suspend explains the move — a recovery, not the behavior.' },
-  { id: 'prior_high_baseline', tier: 'observed', def: 'The rise was from an already-high start, not from flat.' },
-  { id: 'owned_by_prior_bolus', tier: 'inferred', def: 'A completed carb bolus in the prior 60 min already owns the rise this dose landed on.' },
-  { id: 'owned_by_announced_meal', tier: 'inferred', def: 'A substantial announced meal at the low owns the rebound, so fast-carb treatment cannot be isolated.' },
-  { id: 'horizon_expired', tier: 'observed', def: "The outcome never arrived inside the classifier's window." },
-  { id: 'insufficient_data', tier: 'not_in_data', def: 'The window was too sparse — or settings were missing — to judge.' },
-];
-
-// String-valued lookups (def [— criteria]) so the log body can print the meaning inline.
-export const DETECTOR_DEF = Object.fromEntries(DETECTOR_REFERENCE.map((d) => [d.id, `${d.def} — ${d.criteria}`]));
-export const REASON_DEF = Object.fromEntries(REASON_REFERENCE.map((r) => [r.id, r.def]));

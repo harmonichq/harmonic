@@ -359,8 +359,10 @@ own recommended component, not the user's change to it).
 
 **Carb-log prompt**:
 A carb-log question the data still owes an answer for (#128) — "did you treat this
-low?" at a sub-70 nadir, or "did you eat here?" at a missed-meal rise onset —
-derived live over the last 7 days, never stored. The review queue is an **inbox of
+low?" at a sub-70 nadir, or "did you eat here?" at a missed-meal rise onset that no
+over-treated low's rebound owns — derived live over the last 7 days, never stored.
+An owned rise is explained by its low, which asks its own question when it is
+sub-70 (#448). The review queue is an **inbox of
 open questions** — the model prompting for information it is missing — not a ledger
 that fact-checks every low or rise. A prompt exists only while its answer is
 missing; once the information is present, it drops.

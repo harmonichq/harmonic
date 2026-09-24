@@ -1314,10 +1314,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     # --- carb-log prompt review queue (#128) -------------------------------
     # Prompts are derived LIVE over the last 7 days (no stored prompt rows): the
-    # `missed-meal` classifier's matched rises + every sub-70 low, minus anything
-    # already answered in prompt_responses. Answering 'carbs' creates the carb
-    # entry AND the response row in ONE transaction (never one without the other),
-    # so the delete-resurrects invariant holds. No bulk-answer path exists.
+    # `missed-meal` classifier's matched rises that no over-treated low's rebound
+    # owns (an owned rise is explained by its low, ADR 448) + every sub-70 low,
+    # minus anything already answered in prompt_responses. Answering 'carbs'
+    # creates the carb entry AND the response row in ONE transaction (never one
+    # without the other), so the delete-resurrects invariant holds. No bulk-answer
+    # path exists.
 
     _PROMPT_DETECTORS = ("missed-meal", "low")
     # ``false-low`` (#381) is a low-prompt-only answer: it records that the sub-70

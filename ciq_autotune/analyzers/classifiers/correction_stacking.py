@@ -237,8 +237,10 @@ def classify_correction_stacking(
             ),
             evidence_tier=EvidenceTier.INFERRED,
             # NO_TRIGGER, not UPSTREAM_CAUSE: chasing a runaway high is rational
-            # dosing, so the over-stack behavior didn't happen. UPSTREAM_CAUSE is
-            # the context gate's recent low/suspend (ADR 0009); a high is not that.
+            # dosing, so the over-stack behavior didn't happen. UPSTREAM_CAUSE names
+            # an observable cause the move recovers from — the context gate's recent
+            # low/suspend (ADR 0009) or an over-treated low's rebound (ADR 422) —
+            # which chasing a runaway high is not.
             silence_reason=SilenceReason.NO_TRIGGER,
             stack_t=stack.t,
             previous_seq_num=prev.seq_num,

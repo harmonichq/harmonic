@@ -60,6 +60,17 @@ class BuildCatalogTest(unittest.TestCase):
             self.assertIn(s["tier"], tiers)
             self.assertTrue(s["body"])
 
+    def test_upstream_cause_names_both_of_its_sources(self):
+        # ADR 448: the context gate's recent low or suspend, and an
+        # over-treated low's rebound that owns the rise (ADR 422).
+        upstream = next(s for s in self.cat["silence_reasons"]
+                        if s["value"] == SilenceReason.UPSTREAM_CAUSE.value)
+        self.assertEqual(
+            upstream["body"],
+            "An observable recent low and/or a defensive suspend explains the move, or "
+            "the rise is the rebound of an over-treated low, which owns it. A recovery, "
+            "not the behavior itself.")
+
     def test_tiers_and_exposures_enumerate_their_enums(self):
         self.assertEqual([t["value"] for t in self.cat["tiers"]],
                          [t.value for t in EvidenceTier])

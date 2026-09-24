@@ -294,7 +294,10 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
             if winner.lever is Lever.HIGH_CARB_SEQUENCE:
                 winner = next((c for c in candidates if c.lever is Lever.REPEAT_EATING
                                and c.impact == winner.impact), winner)
-            attr = replace(winner.attribution, anchor_verdicts=attr.anchor_verdicts, steps=winner.attribution.steps + [
+            # The winner's attribution replaces the Episode's; the Episode keeps its
+            # anchor verdicts and owned Highs (ADR 448).
+            attr = replace(winner.attribution, anchor_verdicts=attr.anchor_verdicts,
+                           owned_highs=attr.owned_highs, steps=winner.attribution.steps + [
                 c.attribution.steps[0] for c in candidates if c is not winner])
         elif attr.lever is not None:
             winner = next(c for c in candidates if c.lever is attr.lever)

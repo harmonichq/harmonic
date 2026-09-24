@@ -1409,16 +1409,27 @@ test('S121 fails on a claimed marker hued unlike the fired one', async () => {
     feature121("its resting ring is #e2be4c, not the fired ring's #86ad78"));
 });
 
-test('S121 names every changed feature at once on a base-shaped desk', async () => {
+test('S121 fails as a feature, never a premise, when the model read serves no lever_title', async () => {
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].lever_title;
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    feature121('the model read serves no lever_title on the claiming episode'));
+});
+
+test('S121 names every changed feature at once on the pre-release base (a4d374a7)', async () => {
+  // That base serves neither the verdict title nor the episode's lever_title,
+  // and names the Lever from its own table.
   const model = structuredClone(MODEL423);
   delete model.episodes[0].anchors[2].verdicts[1].title;
+  delete model.episodes[0].lever_title;
   const base = variant423((log) => {
-    Object.assign(log.claimed, { word: 'outranked', ink: INK.warn, text: '▽ Low · 54 mg/dL · Carb undercount' });
+    Object.assign(log.claimed, { word: 'outranked', ink: INK.warn, text: '▽ Low · 54 mg/dL · carbs undercounted' });
     log.captions = ['Findings · 2', 'Quiet · 2'];
     Object.assign(log.markers.claimed, { size: 8, border: '#e2be4c' });
   });
   await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(base), model), (error) => {
-    for (const part of ['"outranked"', 'serves no title', 'the warning ink', '"Findings · 2"', 'is 8', 'resting ring is #e2be4c']) {
+    for (const part of ['"outranked"', 'serves no title', 'serves no lever_title', 'the warning ink', '"Findings · 2"', 'is 8',
+      'resting ring is #e2be4c']) {
       feature121(part)(error);
     }
     return true;

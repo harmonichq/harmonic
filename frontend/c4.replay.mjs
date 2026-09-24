@@ -1069,7 +1069,6 @@ export async function assertClaimedEpisodeLog(page, model) {
     && anchor.verdicts.some((verdict) => verdict.matched && verdict.classifier === 'correction_on_iob'));
   assert.ok(claimed, 'S121 premise: the day must serve a claimed low whose own verdict matched correction_on_iob');
   assert.equal(claimed.episode.lever, 'carb_undercount', 'S121 premise: a carb undercount episode must claim the low');
-  assert.ok(claimed.episode.lever_title, "S121 premise: the claiming episode must serve its lever_title (#426)");
   const fired = anchors.find((anchor) => anchor.episode === claimed.episode && anchor.state === 'fired');
   assert.ok(fired, "S121 premise: the claimed low's episode must serve the anchor that drove it");
   const levers = new Set(anchors.filter((anchor) => (anchor.state === 'fired' || anchor.state === 'outranked') && anchor.episode.lever)
@@ -1097,7 +1096,10 @@ export async function assertClaimedEpisodeLog(page, model) {
   if (row.state !== 'outranked') failures.push(`its tier carries data-state="${row.state}", not the served "outranked"`);
   if (!title) failures.push("the model read serves no title on the low's matched correction_on_iob verdict");
   else if (!row.text.includes(` · ${title} · `)) failures.push(`the row "${row.text}" does not name what the low matched ("${title}") before its Finding`);
-  if (!row.text.endsWith(` · ${leverTitle}`)) failures.push(`the row "${row.text}" does not end with the claiming Finding's served name ("${leverTitle}")`);
+  // The episode's served name (#426) is part of the row's relationship, so a
+  // desk that serves none (the pre-release base) fails here, never at a premise.
+  if (!leverTitle) failures.push('the model read serves no lever_title on the claiming episode');
+  else if (!row.text.endsWith(` · ${leverTitle}`)) failures.push(`the row "${row.text}" does not end with the claiming Finding's served name ("${leverTitle}")`);
   if (/\w_\w/.test(row.text)) failures.push(`the row "${row.text}" prints an underscore token`);
   if (row.ink !== rest.firedInk) {
     failures.push(`its tier word paints ${row.ink}, not the fired tier's ${rest.firedInk}${row.ink === rest.warnInk ? ' (it is the warning ink)' : ''}`);

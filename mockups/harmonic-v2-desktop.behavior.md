@@ -3439,14 +3439,15 @@ S121 · On a Day whose Episode Log holds a claimed low, the low's row reads
   evidence: C4_STORIES.S121 → assertClaimedEpisodeLog. It reads the day's
             served /api/model-view first; the premises (a claimed low matched
             to correction_on_iob in a carb undercount episode with its fired
-            anchor and lever_title, one Finding and one claimed anchor on the
-            day) fail as "S121 premise: …". Before any row is pressed it reads
+            anchor, one Finding and one claimed anchor on the day) fail as
+            "S121 premise: …". Before any row is pressed it reads
             the claimed and fired rows and each unfocused marker's
             itemStyle.borderColor, itemStyle.color and symbolSize back from
             the day-anchor-markers series option, then collects every feature
             check into one assertion: the word, the kept data-state, the
-            served matched title before the served lever_title at the row's
-            end, no underscore token, the tier's computed colour equal to the
+            served matched title and the served lever_title (a missing one is
+            a feature failure, not a premise) with the title before the
+            lever_title at the row's end, no underscore token, the tier's computed colour equal to the
             fired tier's, the caption "Findings · 1 · 1 claimed", the claimed
             marker's size and ring equal to the fired marker's and its fill
             the surface. Pressing the claimed row must then ring its marker
@@ -3456,11 +3457,12 @@ S121 · On a Day whose Episode Log holds a claimed low, the low's row reads
             row not ending with the lever_title, a caption counting rows, and
             a claimed marker smaller than or hued unlike the fired one, and it
             fails as a premise on a missing claimed low or row.
-  status:   authored on the branch; coordinator-run pending. Expected: base
-            (the ticket's base with the branch harness laid over) fails at
-            its feature assertion, naming the word "outranked", the missing
-            served title, the warning ink, "Findings · 2", the claimed
-            marker's size 8 and its warning ring; the branch passes at
+  status:   authored on the branch; coordinator-run pending. Expected: the
+            pre-release base a4d374a7 with the branch harness laid over fails
+            at its feature assertion, not a premise (that base serves neither
+            the verdict title nor the episode's lever_title, words the low
+            "outranked" in the warning ink, captions its rows and rests the
+            claimed marker smaller, in the warning ring); the branch passes at
             1280x720 and 1440x900.
 
 S122 · On the same Day, the Findings caption's Glossary control, operated from
@@ -3484,10 +3486,10 @@ S122 · On the same Day, the Findings caption's Glossary control, operated from
             drives it on fake pages: it fails on a missing or misnamed control,
             a group out of view and focus not returned, and as a premise on a
             missing caption.
-  status:   authored on the branch; coordinator-run pending. Expected: base
-            (with the branch harness) fails at "S122 the Findings caption must
-            carry a Glossary button named for its band"; the branch passes at
-            1280x720 and 1440x900.
+  status:   authored on the branch; coordinator-run pending. Expected: the
+            pre-release base a4d374a7 with the branch harness fails at "S122
+            the Findings caption must carry a Glossary button named for its
+            band"; the branch passes at 1280x720 and 1440x900.
 ```
 
 ### #423 handler inventory

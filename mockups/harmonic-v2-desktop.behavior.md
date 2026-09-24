@@ -2978,10 +2978,12 @@ S145 · A pump read that holds a recorded Plan on the unchanged active profile
             than throwing; then the status must name the served `confirmed_at`,
             and after the second capture the served `confirmed_at` and the
             status are unchanged while the pump read has moved
-  status:   owed — base a4d374a7 with this harness laid over it is expected to
-            fail at that first check (the base serves no verdict and leaves the
-            in-place Plan unconfirmed, while its Changes decides "On pump as of"
-            the latest read); coordinator runs base and branch at both sizes
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            The branch passes on 8a194779 and on 24dff6ca at both sizes. On
+            base a4d374a7, with this harness laid over it, it fails at its
+            served-verdict and Changes agreement assertion: the base serves no
+            verdict and leaves the in-place Plan unconfirmed. Coordinator-run
+            2026-09-23
 ```
 
 ```
@@ -3000,11 +3002,15 @@ S146 · A draft saved after a confirmed Plan that differs from the pump reads
             reads confirmed; then the kicker reads Draft saved, no keying-error
             copy shows, both writes are offered, and the line reads "Previous
             Plan: recorded <time>, confirmed on the pump <confirmed_at>."
-  status:   owed — its premise, a server-confirmed Plan, is unreachable on base
-            a4d374a7, and that premise failure is accepted as its base result;
-            the fail-first half is frontend/plan-actions.test.js "a differing
-            draft after a confirmed Plan reads Draft saved and can be recorded";
-            coordinator runs the branch at both sizes
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: accepted
+            premise failure.
+            The branch passes on 24dff6ca at both sizes, after f7a90914 moved
+            the kicker read from innerText to the <b>'s own text. On base
+            a4d374a7, with this harness laid over it, it fails at its accepted
+            premise (no server-confirmed Plan). Its fail-first half is
+            frontend/plan-actions.test.js "a differing draft after a confirmed
+            Plan reads Draft saved and can be recorded". Coordinator-run
+            2026-09-23
 ```
 
 Sub-order 3 of the same change moves the pending-Plan note under the same
@@ -3056,8 +3062,10 @@ S147 · With a Plan pending, a Pattern case's header carries no pending-Plan
             press on a drilled case re-scopes it rather than listing the rail);
             only then reads the watch panel in each window and presses Open
             Changes
-  status:   owed — base a4d374a7 with this harness laid over it is expected to
-            fail at the header check (the base names the pending Plan there as
-            "View Plan" with its reason); coordinator runs base and branch at
-            both sizes
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            The branch passes on 24dff6ca at both sizes. On base a4d374a7, with
+            this harness laid over it, it fails at the header check, "S147 no
+            case-file header may carry a pending-Plan note
+            (pattern:highs_after_meals in 24 h and Evening)", with note: 2 in
+            24 h. Coordinator-run 2026-09-23
 ```

@@ -92,17 +92,6 @@ its denominator remain a separate account.
   their counts, and "3 highs outside the comparison"
 - **AND** no caption count is labelled "not comparable"
 
-### Requirement: Plan surface asks "what will I program into my pump?"
-
-The system SHALL satisfy the following:
-
-The Plan surface holds a unified ≤16-segment pump-ready schedule built from the user's currently-active profile plus any accepted Diagnose recommendations and hand-edits. It shows the active profile as a reference, lists the accepted changes with provenance, and renders the editable deliverable. Plan reconciliation compares the deliverable to the latest detected pump profile to confirm it matches or flag keying errors. Users cannot stage changes directly on Plan; they stage from Diagnose and edit the deliverable here.
-
-#### Scenario: Plan surface asks "what will I program into my pump?"
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
 ### Requirement: Day surface asks "what happened on this day?"
 
 The system SHALL satisfy the following:
@@ -110,17 +99,6 @@ The system SHALL satisfy the following:
 The Day surface is a one-day forensics view: a severity-encoded calendar navigator (ADR 0031) at the top, a sticky glucose chart on the left showing the day's CGM and insulin events, and a chronological Episode Log on the right where behavioral evidence (meals, corrections, lows, rescue carbs) folds in as tier-2 inline detail. Both components are self-contained; the app supplies the selected date. The Day surface is read-only and discovery-focused; it does not stage changes or execute commands.
 
 #### Scenario: Day surface asks "what happened on this day?"
-
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
-
-### Requirement: Verify surface asks "are my changes working?"
-
-The system SHALL satisfy the following:
-
-Verify tracks active Trials (detected setting changes) and pinned Focuses (behavioral changes the user is watching). For each, it shows before/after metrics anchored to the change date, rendering the specific metric most relevant to that change (e.g., overnight lows for a basal raise, post-meal nadirs for an I:C adjustment). Verify also shows outcome trends — glycemic metrics and clean rates — across an observation window. All data on Verify is read-only and retrospective; no staging or configuration happens here.
-
-#### Scenario: Verify surface asks "are my changes working?"
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
@@ -1256,8 +1234,9 @@ shows for a Changes record or the active change, and the utility's existing
 label for a utility moment. The title SHALL ride the address with the other
 entry fields, so a reload or Back keeps it. Day's "Opened from" SHALL print the
 title and SHALL NOT print the routing subject. An entry whose address carries no
-title SHALL name the destination it returns to instead. The subject, occurrence,
-window, lever, focus and return SHALL be unchanged.
+title SHALL name the destination it returns to instead. The title SHALL NOT
+change the entry's routing subject, occurrence, window, lever or return; a
+utility moment's routing subject is the identity of the item it came from.
 
 #### Scenario: A Diagnose occurrence names its finding
 
@@ -1265,7 +1244,8 @@ window, lever, focus and return SHALL be unchanged.
 - **WHEN** the reader opens Day from one of its occurrences
 - **THEN** "Opened from" shows that served finding title
 - **AND** no `pattern:`, `finding:` or `basal:` text appears in the Day desk
-- **AND** the return restores the same occurrence and focus target as before
+- **AND** the return holds the same occurrence and puts focus on the same control
+  as before
 
 #### Scenario: A basal slot names its setting and time
 
@@ -1283,7 +1263,7 @@ window, lever, focus and return SHALL be unchanged.
 
 - **GIVEN** a contextual Day address that carries a subject but no title
 - **WHEN** Day renders it
-- **THEN** "Opened from" names the destination the entry returns to
+- **THEN** "Opened from" names the destination it returns to
 - **AND** the subject is not printed
 
 ### Requirement: Episode Log rows name the attributed Lever by its served name
@@ -1309,17 +1289,27 @@ its own. Which Lever an episode carries SHALL be unchanged.
 ### Requirement: Change records word their served facts
 
 A Focus record's "What changed" SHALL name the intended behavior by the record's
-served title. A record whose original context is unavailable SHALL state its
-served reason in words through the desk's word table for that reason, the way
-the watch disposition is worded; a served reason with no entry SHALL be printed
-verbatim rather than swallowed.
+served `lever_title`; the record's served title stays its nameplate. When the
+served `lever_title` is null it SHALL say the behavior this Focus watched is no
+longer an offered lever. A record whose original context is unavailable SHALL
+state its served reason in words through the desk's word table for that reason,
+the way the watch disposition is worded; a served reason with no entry SHALL be
+printed verbatim rather than swallowed.
 
 #### Scenario: A Focus record names its behavior
 
-- **GIVEN** a Focus record whose served detail carries a title
+- **GIVEN** a Focus record whose served detail carries a Pattern title and a
+  `lever_title`
 - **WHEN** its "What changed" section renders
-- **THEN** the section names the intended behavior by that title
+- **THEN** the section names the intended behavior by that `lever_title`
 - **AND** it contains no underscore token
+
+#### Scenario: A record whose behavior is no longer a lever says so
+
+- **GIVEN** a Focus record whose served `lever_title` is null
+- **WHEN** its "What changed" section renders
+- **THEN** it says the behavior this Focus watched is no longer an offered lever
+- **AND** neither the lever key nor "Focus" is named as the behavior
 
 #### Scenario: A missing original context is stated in words
 
@@ -1519,7 +1509,8 @@ SHALL open the watched Trial's or Focus's own view in Changes. A Plan the reader
 opened earlier in the same page session SHALL NOT take that seat, even when a
 staged or saved Plan draft exists. When the server no longer serves an active
 change, the arrival SHALL render what any other arrival to Changes renders.
-Every other arrival to Changes SHALL keep its existing precedence.
+Every other arrival to Changes SHALL follow the requirement "The served active
+change leads every plain arrival to Changes".
 
 #### Scenario: The link lands on the watched Trial
 
@@ -1870,13 +1861,16 @@ dose for a meal, dose for a correction, or the anchor glucose as today, at the
 anchor label. Its facts list SHALL print the served outcome as a Peak or Nadir
 reading with its minutes after the bolus, the served cause's title and its text
 when not empty, each served habit's title with its verdict's existing band label
-and the classifier's sentence, and each source correction as today. It SHALL NOT
-print a line that only counts glucose readings or event markers, and SHALL NOT
-print the fixed sentence about what the canvas shows. The browser SHALL derive no
-outcome, reason or verdict of its own. The case-file validator SHALL require the
-dose and carbs keys on every anchor it checks, the outcome on every roster row and
-the reason on every selected detail, and a case file whose new fields are missing
-or malformed SHALL be refused as an inconsistent projection.
+and the classifier's sentence when one is served, and each source correction as
+today. Each served sentence SHALL print once: a claimant's sentence that is the
+cause's text prints on the cause line only, because the server serves it there
+alone. It SHALL NOT print a line that only counts glucose readings or event
+markers, and SHALL NOT print the fixed sentence about what the canvas shows. The
+browser SHALL derive no outcome, reason or verdict of its own. The case-file
+validator SHALL require the dose and carbs keys on every anchor it checks, the
+outcome on every roster row and the reason on every selected detail, and a case
+file whose new fields are missing or malformed SHALL be refused as an inconsistent
+projection.
 
 #### Scenario: A selected meal shows its meal
 
@@ -1892,7 +1886,16 @@ or malformed SHALL be refused as an inconsistent projection.
 - **GIVEN** the `pattern-near-tie` case store served through the safe start
 - **WHEN** the reader selects an Occurrence in the Highs after meals case file
 - **THEN** its rows read their served carbs, dose and peak, and the block lists
-  each served habit with its band label and sentence
+  each served habit with its band label and, when served, its sentence
+
+#### Scenario: A claimed Occurrence prints its sentence once
+
+- **GIVEN** the `pattern-near-tie` case store served through the safe start
+- **WHEN** the reader selects a claimed Occurrence in the Highs after meals case
+  file
+- **THEN** the claimant's sentence prints on the cause line
+- **AND** no habit line repeats it, and the claimant's habit line reads its title
+  and band label only
 
 ### Requirement: The basal lane stays reachable on short desktop windows
 
@@ -2206,3 +2209,1219 @@ unchanged.
 - **THEN** skeleton rail rows and stage instruments are visible, none holds text
   content, and the status element is still announced
 - **AND** under reduced motion no skeleton element animates
+
+### Requirement: Changes reads an older detected change's ending
+
+A retained Trial record that a reconcile has ended SHALL read its served ending
+in the Changes roster: the ending's words and its effective time, never "Still
+open". This holds for a record first recorded after its ending. Opening the
+record SHALL show that saved ending. Its periods note SHALL name the data
+read-through time that the saved assessment carries.
+
+#### Scenario: A superseded older change reads its ending, not Still open
+
+- **GIVEN** the synthetic `c4-ic` case, whose one reconcile recorded carb-ratio
+  changes on 06-01 and 06-10, with the 06-01 record past its watch window
+- **WHEN** the reader opens the Changes records roster
+- **THEN** the 06-01 record's row reads "Superseded by a later change" with its
+  effective time, and carries no still-open cell
+- **AND** the ending's kind line carries its words and no underscore-token code
+- **AND** opening it shows a saved ending of kind `superseded` whose periods note
+  reads data through the same instant the ending names
+
+### Requirement: A superseded ending's note names no setting
+
+The saved-ending note for a `superseded` ending SHALL read "A later setting change
+was detected inside the watch window. This record keeps the period it actually
+observed." It SHALL NOT say that the later change was to the same setting, because
+a later change of any setting ends a watch.
+
+#### Scenario: The superseded note does not claim the same setting
+
+- **GIVEN** a record whose saved ending is `superseded`
+- **WHEN** its saved-ending part renders
+- **THEN** the note reads "A later setting change was detected inside the watch
+  window. This record keeps the period it actually observed."
+- **AND** it does not contain "same setting"
+
+### Requirement: Changes and carb-utility Day links name their return target by identity
+
+A contextual Day entry that Changes or a carb utility writes SHALL name its
+return target by an identity its origin owns, and SHALL carry no CSS selector: a
+supporting date of the active change or of a change record by that date, a Log
+carbs entry by its served id, and a Carb questions prompt by its detector and
+anchor time. A utility's identity SHALL ride the entry's routing subject, beside
+its unchanged printed title. The desk's address SHALL carry no return-focus key,
+and an address that carries one SHALL be read without it.
+
+On return, the origin SHALL resolve the identity to its own control. Changes
+SHALL put focus on that date's supporting-date control once the change's content
+has rendered, once per arrival, on the desktop; the narrow desk SHALL keep
+focusing its sheet toggle. The reopened utility SHALL put focus on that item's own
+Open Day control. When the identity matches nothing the origin shows, focus SHALL
+land on the origin's heading. An identity read from the address SHALL NOT become
+selector text unless it is a well-formed date or the identity of an item the
+utility serves.
+
+#### Scenario: A supporting date returns to its own control
+
+- **GIVEN** Changes shows the active change's evidence with its contributing dates
+- **WHEN** the reader opens one date in Day and then presses Return to Changes
+- **THEN** the Day address names that date and carries no CSS selector and no
+  return-focus key
+- **AND** once the change's evidence has rendered again, focus is on that date's
+  control
+
+#### Scenario: A change record's date returns to that record
+
+- **GIVEN** a change record is open in Changes with its contributing dates
+- **WHEN** the reader opens one date in Day and returns
+- **THEN** the Day address names that date and that record and carries no CSS
+  selector
+- **AND** the same record is open and focus is on that date's control
+
+#### Scenario: A utility's Day link names its item
+
+- **WHEN** the reader opens a Log carbs entry, or a Carb questions prompt, in Day
+- **THEN** the Day address names the entry by its id, or the prompt by its
+  detector and anchor time, and carries no CSS selector
+- **AND** Day's "Opened from" still prints the utility's own label for that moment
+
+#### Scenario: A utility return lands on the control the reader pressed
+
+- **GIVEN** the reader opened Day from a utility item
+- **WHEN** the reader returns
+- **THEN** the utility is open again and focus is on that item's own Open Day
+  control
+- **AND** when that item is no longer served, focus is on the utility's heading
+
+#### Scenario: An older or crafted address cannot hand the page a selector
+
+- **GIVEN** a Day address that carries a return-focus key, or a date or subject
+  that is not an identity the origin serves
+- **WHEN** the reader returns from Day
+- **THEN** no part of that value is used as a selector
+- **AND** focus lands on the origin's own control for a matching identity, or on
+  its heading
+
+### Requirement: A carb utility's Day return keeps the desk it returns to
+
+A carb utility's Day return SHALL hand the destination the utility was opened
+over no context, and SHALL reopen the utility over it. A return into a retained
+Diagnose SHALL be a retained return while the store has not moved since Diagnose
+last read it: exactly one status read and no guidance or evidence read, with the
+drilled case, the chosen window and the reading pane's scroll as the reader left
+them. When the store has moved since then, as logging a carb or answering a
+question moves it, Diagnose SHALL re-read and restore the case it held. On
+either path the Diagnose address SHALL then name the held case and SHALL carry
+no utility title, no return origin and no selector. Focus SHALL land on the
+pressed item's Open Day control, and a Diagnose rebuild under a seated utility
+SHALL NOT take focus from it. A utility opened over Day SHALL return into Day as
+a direct entry.
+
+#### Scenario: Carb questions over a drilled case
+
+- **GIVEN** the reader drilled a Finding's case in Diagnose and opened Carb
+  questions over it
+- **WHEN** the reader opens a prompt in Day, closes the utility and presses
+  Return to Carb questions
+- **THEN** exactly one status read is issued and nothing else
+- **AND** the drilled case and the pressed window are unchanged, Carb questions
+  is open over them, and the address names that case with no utility title,
+  return origin or selector
+
+#### Scenario: A carb logged before the round trip moves the store
+
+- **GIVEN** the reader drilled a Finding's case in Diagnose, opened Log carbs over
+  it and logged an entry
+- **WHEN** the reader opens that entry in Day, closes the utility and presses
+  Return to Log carbs
+- **THEN** Diagnose re-reads and opens the same case with the same Occurrence
+  held
+- **AND** Log carbs is open over it, and focus is on that entry's Open Day
+  control
+
+#### Scenario: A carb logged before a reload keeps the drill on the round trip
+
+- **GIVEN** the reader logged an entry in Log carbs, then reloaded the case
+  address so Diagnose has read the store since
+- **WHEN** the reader opens Log carbs, opens that entry in Day, closes the
+  utility and presses Return to Log carbs
+- **THEN** exactly one status read is issued and nothing else
+- **AND** the drilled case is unchanged, Log carbs is open over it, and focus is
+  on that entry's Open Day control
+
+#### Scenario: A utility over Day returns into Day
+
+- **GIVEN** the reader opened Log carbs over Day and opened one of its entries in
+  Day
+- **WHEN** the reader returns
+- **THEN** Day shows the day it was on, offers no "Opened from" return, and Log
+  carbs is open over it
+
+### Requirement: The Log carbs header names the reader's local date and time
+
+The Log carbs utility's header SHALL name the reader's local wall-clock date and
+time, both taken from one local wall-clock reading.
+
+#### Scenario: A local evening keeps its own date
+
+- **GIVEN** the reader's local time is 22:45 on Jun 29 while the UTC date is
+  already Jun 30
+- **WHEN** the Log carbs utility opens
+- **THEN** its header reads `at Jun 29 · 22:45`
+- **AND** it names neither the UTC date nor the UTC time
+
+### Requirement: The served active change leads every plain arrival to Changes
+
+A plain arrival to Changes is any arrival that asks neither for the Plan
+(`/changes?subject=plan`) nor for the change record. That includes the topbar's
+Changes, Diagnose's return to the watched change, the landing after a Focus pin,
+a history step back to Changes and the watch dock's arrival. While the server
+serves an active change, every plain arrival SHALL open the watched Trial's or
+Focus's own view. A Plan the reader opened on an earlier visit SHALL NOT take
+that seat, whether or not a staged, saved or pending Plan exists. An explicit
+Plan arrival SHALL still open the Plan, and a change-record arrival SHALL still
+open that record. The desk SHALL read which change is active from the served
+disposition alone.
+
+#### Scenario: The topbar's Changes after an earlier Open Plan lands on the watched Trial
+
+- **GIVEN** the synthetic `basal-lower` store, where the reader staged the served
+  basal concern, pressed Open Plan and recorded the decision
+- **AND** a later synthetic pump read switches the profile, so the server serves
+  an active Trial, and a Plan draft is saved while it runs
+- **WHEN** the reader goes to Diagnose and then presses the topbar's Changes
+- **THEN** Changes shows the Trial's own view, not the Plan
+
+#### Scenario: Diagnose's return after an earlier Open Plan lands on the watched Trial
+
+- **GIVEN** the same page, with the Trial's own view in Changes
+- **WHEN** the reader inspects its nights in Diagnose and presses "Return to Trial"
+- **THEN** Changes shows the Trial's own view, not the Plan
+
+#### Scenario: The landing after a Focus pin lands on the Focus
+
+- **GIVEN** earlier in the page session the reader staged a concern and pressed
+  Open Plan, and the Plan still holds that staged change
+- **AND** the server then serves an active Focus
+- **WHEN** the desk arrives at Changes the way the Focus-pin landing does, with
+  no context
+- **THEN** Changes reads the watched record's follow-up and not the Plan
+
+#### Scenario: An explicit Plan arrival still opens the Plan
+
+- **GIVEN** the server serves an active change and the reader pressed Open Plan
+  earlier
+- **WHEN** Changes receives an arrival at `/changes?subject=plan`
+- **THEN** Changes opens the Plan
+
+### Requirement: Open Plan holds for the visit in which it was pressed
+
+Pressing Open Plan in Changes SHALL open the Plan for the rest of that visit. A
+re-render within the visit SHALL keep the Plan open. The next arrival to Changes
+SHALL NOT reopen the Plan from that press. The desk SHALL clear the remembered
+Plan-open state in one place, on each arrival. With nothing watched, a plain
+arrival SHALL render what the served disposition leads with. For a staged
+concern, that is its own frame, with "Staged", Undo and Open Plan. The served
+`draft` and `pending_plan` dispositions SHALL still open the Plan. Stage pressed
+in the Plan's own frame SHALL keep the reader on the Plan, with Save draft
+focused.
+
+#### Scenario: A plain return shows the staged concern, not the Plan
+
+- **GIVEN** the synthetic `basal-lower` store, where the server serves no active
+  change, and the reader staged the served concern and pressed Open Plan
+- **WHEN** the reader leaves Changes and returns by the topbar
+- **THEN** Changes shows the concern's own frame with "Staged", Undo and Open
+  Plan, not the Plan
+- **AND** pressing Open Plan opens the Plan again with the staged change
+
+#### Scenario: A re-render within the visit keeps the Plan
+
+- **GIVEN** the reader pressed Open Plan in Changes
+- **WHEN** Changes renders again without a new arrival
+- **THEN** the Plan is still what Changes shows
+
+#### Scenario: Stage in the Plan's own frame keeps the Plan
+
+- **GIVEN** the synthetic `basal-lower` store, where nothing is staged and the
+  reader opened `/changes?subject=plan`
+- **WHEN** the reader presses Stage change in the Plan's own frame
+- **THEN** the desk stays on the Plan at the same address, showing the staged
+  change, with Save draft focused
+
+### Requirement: A Plan draft stays reachable while a change is watched
+
+While the server serves an active change, the watched Trial's and Focus's own
+view in Changes SHALL offer "Open Plan" whenever a Plan draft exists. A draft
+exists when the guidance read serves a saved draft with items, or when the page
+holds a staged or pending Plan. Open Plan SHALL open the Plan with an explicit
+Plan arrival (`/changes?subject=plan`), and the Plan it opens holds for that
+visit only. It SHALL change no draft. With no draft, the view SHALL NOT offer it.
+A watched Trial's Revert to Plan SHALL keep its own control and action, which
+stages the Trial's prior values. The Plan SHALL render as it does without a
+watch. The desk SHALL add no gate of its own on recording that draft. The
+server's refusal SHALL show as a failed record, with nothing recorded.
+
+#### Scenario: A saved draft beside a watched Trial is reachable, and recording it is refused
+
+- **GIVEN** the synthetic `basal-lower` store with an active Trial begun by a
+  synthetic pump read, and a Plan draft saved while it runs
+- **WHEN** Changes shows the Trial's own view
+- **THEN** its nameplate offers Open Plan beside "View change record", and its
+  Revert to Plan section still offers its own control
+- **WHEN** the reader presses the nameplate's Open Plan
+- **THEN** the desk is at `/changes?subject=plan` showing the saved draft
+  unchanged, with Record decision offered
+- **AND** pressing Record decision shows the record failed, and the served Plan
+  history gains no record
+- **AND** the next plain arrival to Changes shows the Trial's own view
+
+#### Scenario: A saved draft beside a watched Focus is reachable
+
+- **GIVEN** the synthetic `c3-focus` store with an active Focus, and a Plan draft
+  saved while it runs
+- **WHEN** the reader presses Open Plan on the Focus's own view
+- **THEN** the desk is at `/changes?subject=plan` showing the saved draft
+
+#### Scenario: No draft, no Open Plan
+
+- **GIVEN** the synthetic `basal-lower` store with an active Trial begun by a
+  synthetic pump read, and neither the guidance read nor the page holds a Plan
+  draft
+- **WHEN** Changes shows the Trial's own view
+- **THEN** its nameplate offers no Open Plan
+
+### Requirement: Diagnose's return names the watched change
+
+When Diagnose is opened from the watched change's own view in Changes, its
+return control SHALL name the kind of the served watched change. It reads
+"Return to Trial" for a Trial and "Return to Focus" for a Focus. It SHALL land
+on that change's own view.
+
+#### Scenario: A watched Focus's return names the Focus
+
+- **GIVEN** the synthetic `c3-focus` store with an active Focus
+- **WHEN** the reader inspects the Focus's evidence in Diagnose
+- **THEN** Diagnose offers "Return to Focus" and no "Return to Trial"
+- **AND** pressing it shows the Focus's own view in Changes
+
+#### Scenario: A watched Trial's return still names the Trial
+
+- **GIVEN** a synthetic store whose server serves an active Trial
+- **WHEN** the reader inspects the Trial's nights in Diagnose
+- **THEN** Diagnose offers "Return to Trial", which lands on the Trial's own view
+
+### Requirement: Changes follows a watched Trial or Focus through
+
+Changes SHALL answer "are my changes working?" for the active Trial and Focus
+(ADR 397). For a Trial it SHALL show the Before and Trial periods the server bounds
+from the served change date. Beside them it SHALL show the served comparison
+outcomes led by the rows served for the Trial's served target metric, marked as
+its target, with overall time in range alongside, the served evidence readiness,
+and the served watch maturity. For a Focus it SHALL show adherence beside
+outcome, with the served mapped outcome first and the other rows marked as
+context. Changes SHALL read every one of these from the
+server and SHALL recompute no readiness, maturity, comparison or verdict. No text
+Changes renders for a Trial or Focus SHALL name Verify.
+
+#### Scenario: A watched Trial reads its own comparison in Changes
+
+- **GIVEN** a synthetic store whose server serves an active Trial
+- **WHEN** Changes opens on the watch at 1280×720 and at 1440×900
+- **THEN** the Trial's view shows the served Before and Trial periods, the served
+  comparison outcomes led by its served target metric's rows, marked as its
+  target, the served evidence readiness and the served watch maturity
+- **AND** no text in the view names Verify
+
+#### Scenario: A watched Focus reads adherence beside outcome in Changes
+
+- **GIVEN** a synthetic store whose server serves an active Focus
+- **WHEN** Changes opens on the watch at 1280×720 and at 1440×900
+- **THEN** the Focus's view shows its adherence table beside its outcome table
+- **AND** no text in the view names Verify
+
+### Requirement: The watch dock and Changes print one Trial day count
+
+For a Trial, the watch dock and Changes' Watch maturity SHALL print one day
+count: the served `days_elapsed` that the served readiness rule compares with the
+served `days_required`. Neither surface SHALL clamp, round or re-derive that
+count. Each SHALL pick its form from the served verdict: the dock reads the
+served `is_maturing`, and Changes reads the served `state`. While the Trial
+matures, both SHALL print "‹n› of ‹R› days". Once it is ready, both SHALL print
+"‹N› days" with "‹R› required". Neither SHALL print "‹N› of ‹R›" with ‹N› greater
+than ‹R›. The dock SHALL read "Maturing — ‹n› of ‹R› days since ‹MM-DD›" and
+"Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required", where ‹MM-DD› is the
+served change date. A clamp MAY shape Changes' progress bar, never a printed
+number.
+
+#### Scenario: A completed Trial whose period spans fifteen dates prints fifteen on both surfaces
+
+- **GIVEN** a synthetic store whose server serves an active Trial with
+  `days_elapsed` 15, `days_required` 14 and a complete state
+- **WHEN** Diagnose is seated, and then its dock's link opens Changes, at
+  1280×720 and at 1440×900
+- **THEN** the dock's detail reads "Ready to judge — 15 days since ‹MM-DD› ·
+  14 required" for the served change date
+- **AND** Changes' Watch maturity figure reads "15 days" with "14 required"
+- **AND** Changes' Trial progress bar holds the value 14 of a maximum of 14
+
+#### Scenario: A maturing Trial prints the same partial count on both surfaces
+
+- **GIVEN** a served maturing Trial with `days_elapsed` 6 and `days_required` 14
+- **WHEN** the dock's view and Changes' Watch maturity are rendered from it
+- **THEN** the dock reads "Maturing — 6 of 14 days since ‹MM-DD›" and Changes
+  reads "6 of 14 days"
+
+### Requirement: No authored Guide article names Verify
+
+Every authored Guide article served at `/api/kb/<slug>` SHALL name only
+destinations the desk has, and none SHALL name Verify. The "Reading the Diagnose
+surface" article SHALL say that Cause levers flow to a Focus followed in Changes.
+The Guide's locked preface for the authored articles stays as it is.
+
+#### Scenario: The served articles name no Verify
+
+- **WHEN** each authored article (`start-here`, `reading-diagnose`, `reading-day`,
+  `the-plan-tab`) is read from `/api/kb/<slug>`
+- **THEN** no article's markdown contains "Verify"
+- **AND** the `reading-diagnose` markdown says Cause levers flow to a Focus,
+  followed in Changes
+
+#### Scenario: The Guide renders the Diagnose article without Verify
+
+- **GIVEN** the desk's Guide utility on a synthetic store
+- **WHEN** the reader opens "Reading the Diagnose surface" at 1280×720 and at
+  1440×900
+- **THEN** the rendered article names no Verify and carries the Cause-lever line
+  naming a Focus followed in Changes
+
+### Requirement: Changes' Plan asks "what will I program into my pump?"
+
+The desk has no separate Plan destination. The Plan is a seat in Changes
+(ADR 397). Changes' Plan SHALL render the complete pump-entry schedule built from
+the detected active profile plus the changes staged into it, with the capacity
+copy "‹n› of ‹capacity› segments used" and "Nothing here is sent to your pump.".
+It SHALL keep the detected pump settings distinct from the proposed schedule.
+Saving a draft and recording a decision SHALL be durable writes. A recorded
+Plan's phase SHALL come from its served verdict, as "Changes states a Plan's
+phase from its served verdict" requires. Changes' Plan SHALL decide no Plan
+phase from a pump comparison of its own.
+
+#### Scenario: A staged change reads as the complete schedule in Changes' Plan
+
+- **GIVEN** a synthetic store and a change staged from Diagnose
+- **WHEN** Changes opens on the Plan at 1280×720 and at 1440×900
+- **THEN** it renders the complete pump-entry schedule with "‹n› of ‹capacity›
+  segments used" and "Nothing here is sent to your pump."
+- **AND** Pump settings opens from Changes, distinct from the proposed schedule
+
+### Requirement: The Focus read names the watched behavior
+
+The selected Focus read SHALL serve `lever_title` beside `lever`: the Lever's
+title from the one lever name source, the override's title for the override, or
+null for a stored lever outside that set. The name SHALL be derived when the
+record is read and SHALL NOT be stored. The Focus's `title`, its `lever` and the
+Focus roster rows SHALL be unchanged.
+
+#### Scenario: Every behavior a Focus can watch is served with its name
+
+- **GIVEN** a synthetic Focus pinned on each lever a Focus may pin alone, and a
+  Pattern Focus on Highs after meals watching High-carb sequence and another
+  watching Repeat eating
+- **WHEN** the selected Focus read serves each of them
+- **THEN** each `lever_title` equals its Lever's title, and the override's is
+  "Doses above pump calculation"
+- **AND** no `lever_title` contains an underscore
+
+#### Scenario: A Pattern Focus keeps its Pattern's title
+
+- **GIVEN** a Pattern Focus on Highs after meals watching High-carb sequence
+- **WHEN** the selected Focus read serves it
+- **THEN** its `title` is "Highs after meals" and its `lever_title` is
+  "High-carb sequence"
+
+#### Scenario: A lever outside the set is served without a name
+
+- **GIVEN** a stored Focus whose lever is no longer a Lever or the override
+- **WHEN** the selected Focus read serves it
+- **THEN** its `lever_title` is null and the read still answers
+
+### Requirement: A Focus names its watched behavior by its served name
+
+The Observed behavior row of the active Focus and of a Focus record, and the
+"What this Focus watches" fallback used when the retained context carries no
+explanation, SHALL print the Focus read's served `lever_title`. The desk SHALL
+keep no lever name table. When the served name is null, the row SHALL read
+"Watched behavior", the fallback paragraph SHALL be omitted, and the lever key
+SHALL NOT print.
+
+#### Scenario: A sequence habit reads as its name
+
+- **GIVEN** an active Focus whose served lever is `high_carb_sequence` and whose
+  served `lever_title` is "High-carb sequence"
+- **WHEN** the Focus renders
+- **THEN** its Observed behavior row names "High-carb sequence"
+- **AND** the row contains no underscore token
+
+#### Scenario: The behavior row agrees with the Focus's own name
+
+- **GIVEN** a Focus pinned on Correction stacking alone, whose served title and
+  served `lever_title` are both "Correction stacking"
+- **WHEN** its Observed behavior table renders
+- **THEN** the row names "Correction stacking"
+- **AND** "Stacked corrections" does not appear
+
+#### Scenario: An unnamed behavior prints no key
+
+- **GIVEN** a Focus record whose served `lever_title` is null and whose saved
+  comparison carries Observed behavior rows
+- **WHEN** the record renders
+- **THEN** the row reads "Watched behavior" and the lever key does not appear
+
+### Requirement: Every served reason on a watched-change line prints in words
+
+On the active Trial and Focus and on the change records, these lines SHALL print
+a served reason through the desk's one reason vocabulary: the saved ending's
+assessment, the Observed behavior cells, the Attributed harm cells, every
+readiness arm's "Not met" line, a setting arm's unavailable-evidence line, the
+Pattern opportunity line, the unreconciled admission line and the original
+context line. The vocabulary SHALL carry words with no underscore for every code
+the backend can serve on those lines: the comparison availability codes,
+`not_recorded`, `legacy_not_recorded`, `no_readable_outcome`, `collecting`,
+`zero_opportunities`, `insufficient_measurement`,
+`candidate_high_without_closed_attribution`,
+`attribution_exceeds_owned_population`, `unassociated_recurrence_anchor`,
+`missing_override_provenance`, `unreadable_harm_interval`,
+`unmatchable_captured_membership`, `reconciliation_required` and
+`context_after_ending`, the saved-ending reason of a backfilled ending whose
+retained context postdates it. A code the vocabulary does not know SHALL print
+as served. Served codes SHALL be unchanged
+in payloads and in data attributes.
+
+#### Scenario: A saved Focus ending names its reason
+
+- **GIVEN** a Focus record whose saved ending assessment is unavailable with
+  reason `unavailable_adherence`
+- **WHEN** the record renders
+- **THEN** the ending assessment reads "Unavailable" followed by that reason's
+  words
+- **AND** `unavailable_adherence` does not appear in the reading pane
+
+#### Scenario: A backfilled ending's late context reads as words
+
+- **GIVEN** a record whose saved ending assessment is unavailable with reason
+  `context_after_ending`
+- **WHEN** the record renders
+- **THEN** the ending assessment names the reason in words and the code does not
+  appear
+
+#### Scenario: Behavior and harm cells name their reasons
+
+- **GIVEN** a Focus comparison whose Before behavior arm is unavailable with
+  reason `insufficient_measurement`, 3 of 4 opportunities measured, and whose
+  harm arm is unavailable with reason `zero_opportunities`
+- **WHEN** its Observed behavior table renders
+- **THEN** the behavior cell names the reason in words and keeps "3 of 4
+  measured"
+- **AND** the harm cell names its reason in words
+- **AND** neither code appears in the table
+
+#### Scenario: Readiness lines name their reasons
+
+- **GIVEN** readiness arms served with reasons `collecting`,
+  `zero_opportunities` and, on an unavailable setting arm,
+  `unmatchable_captured_membership`
+- **WHEN** each arm renders
+- **THEN** each "Not met" line, the Pattern opportunity line and the
+  unavailable-evidence line name the reason in words
+- **AND** no line reads "Not met — <code>." with the served code
+
+#### Scenario: An older record's missing context reads as words
+
+- **GIVEN** a record whose original context is unavailable with reason
+  `legacy_not_recorded`
+- **WHEN** the record renders
+- **THEN** the unavailable line names the reason in words and the code does not
+  appear
+
+#### Scenario: An unknown reason prints as served
+
+- **GIVEN** a readiness arm served with a reason the vocabulary does not know
+- **WHEN** it renders
+- **THEN** its "Not met" line prints that reason as served
+
+### Requirement: Served states, verdicts, modes and denominators on watched-change lines print as words
+
+On the same lines, the saved ending's recorded state and the reassessment
+result's state SHALL print as the desk's state words, the reassessment heading
+SHALL name its mode by its segment's label, the Pattern opportunity verdict SHALL
+print as a word, and the behavior denominator `correction_clusters` SHALL print
+as "correction clusters". A value with no word SHALL print as served. The served
+values SHALL be unchanged in data attributes.
+
+#### Scenario: A current-policy reassessment reads as words
+
+- **GIVEN** a record whose current-policy reassessment is available with
+  assessment state `context`
+- **WHEN** the reassessment renders
+- **THEN** its heading names "Current policy" and its result reads "Context
+  only"
+
+#### Scenario: A saved ending's recorded state reads as a word
+
+- **GIVEN** a saved ending whose assessment is available with state `concerning`
+- **WHEN** the ending renders
+- **THEN** it reads "Recorded · Concerning"
+
+#### Scenario: A Pattern opportunity verdict reads as a word
+
+- **GIVEN** Pattern readiness arms served with verdicts `ready` and `withheld`
+- **WHEN** they render
+- **THEN** their opportunity lines read "Ready" and "Withheld", and their
+  `data-opportunity-verdict` attributes keep the served values
+
+#### Scenario: A correction-stacking Focus names its denominator in words
+
+- **GIVEN** a Focus comparison whose behavior denominator is
+  `correction_clusters`
+- **WHEN** its Observed behavior table and readiness arms render
+- **THEN** they read "correction clusters" and `correction_clusters` does not
+  appear
+
+### Requirement: The Focus entry words why a Focus is not offered
+
+When the Focus entry page cannot offer a Focus, it SHALL state the served
+admission reason through the desk's existing Focus admission words, which SHALL
+include a pending Plan. It SHALL NOT print the reason's code. A reason those
+words do not know SHALL read as their existing general sentence, "Harmonic is
+not offering a Focus from this read."; this is the one watched-change line where
+an unknown code does not print as served.
+
+#### Scenario: A pending Plan withholds the Focus in words
+
+- **GIVEN** the Focus entry for a Pattern while the served Focus admission is
+  unavailable with reason `pending_plan`
+- **WHEN** the entry renders
+- **THEN** it says a recorded Plan is still pending
+- **AND** `pending_plan` does not appear
+
+#### Scenario: An unknown admission reason reads as the general sentence
+
+- **GIVEN** the Focus entry while the served Focus admission reason is a code
+  the admission words do not know
+- **WHEN** the entry renders
+- **THEN** it reads "Harmonic is not offering a Focus from this read."
+
+#### Scenario: Unreconciled data withholds the Focus in words
+
+- **GIVEN** the Focus entry while the served Focus admission reason is
+  `reconciliation_required`
+- **WHEN** the entry renders
+- **THEN** it says the latest data has not been reconciled, and the code does
+  not appear
+
+### Requirement: A refused change write reads as a sentence on the desk
+
+The Trial finish, Focus resolve and later-conclusion failure lines, the Plan
+record and withdraw failure lines, and the Focus pin failure line SHALL print the
+server's refusal message. They SHALL NOT print the refusal code, a status code
+beside it, or "[object Object]". A line that ends the message with its own full
+stop SHALL NOT print two.
+
+#### Scenario: A stale Trial finish names why in a sentence
+
+- **GIVEN** a Trial finish the server refuses with 409 code
+  `stale_input_revision` and its message
+- **WHEN** the failure renders
+- **THEN** the line prints the served message
+- **AND** neither `stale_input_revision` nor "(409)" appears
+
+#### Scenario: A refused later conclusion names why in a sentence
+
+- **GIVEN** a later conclusion the server refuses with 409 code
+  `stale_input_revision` and its message
+- **WHEN** the failure renders
+- **THEN** the line prints the served message
+- **AND** neither `stale_input_revision` nor "(409)" appears
+
+#### Scenario: A refused Focus pin prints one full stop
+
+- **GIVEN** a Focus pin the server refuses with a durable 409 whose message ends
+  in a full stop
+- **WHEN** the failure renders
+- **THEN** the line prints the message followed by exactly one full stop before
+  "No successful pin was confirmed."
+
+#### Scenario: A refused Plan write reads as a sentence
+
+- **GIVEN** a Plan record the server refuses with a durable 409 and its message
+- **WHEN** the failure renders
+- **THEN** the line prints the served message and not "[object Object]"
+
+### Requirement: The carb-ratio analyzer's sentences pass the user-copy register
+
+Every sentence the carb-ratio analyzer serves SHALL pass every rule of
+DESIGN.md's user-copy register. It SHALL name the setting "carb ratio", never
+"I:C", and SHALL use no prose em dash. It SHALL say "identifiable meals", never
+"clean-start". This covers:
+
+- its recommendation annotations;
+- its hold annotations and the start-high cross-reference;
+- the block owner prefix;
+- its block annotations;
+- its history annotation;
+- the summaries and occurrence details of its three Findings.
+
+Meaning and every served number SHALL be unchanged. A test SHALL build every
+served carb-ratio sentence branch and check it against the register's full rule
+set, as the basal and correction-strength tests do. That rule set SHALL include
+a rule against user-facing "I:C".
+
+#### Scenario: A held carb-ratio block's annotation reads in register
+
+- **GIVEN** a synthetic carb-ratio block held because too few identifiable meals can test a direction
+- **WHEN** the carb-ratio analyzer annotates it
+- **THEN** the annotation names the carb ratio and the identifiable meals
+- **AND** it contains no "I:C", no "clean" and no prose em dash
+
+#### Scenario: Every carb-ratio sentence branch passes every register rule
+
+- **WHEN** the annotation-register test builds every served carb-ratio sentence branch
+- **THEN** every sentence passes every rule the basal and correction-strength sentences are held to
+
+### Requirement: Diagnose's setting findings are titled by their user labels
+
+The findings projection SHALL title a correction-factor row "Correction factor"
+and a carb-ratio block "Carb ratio <span>". Each carries the same direction
+suffix as today (" · <direction>" or " · leaning <direction>"). A basal row
+keeps "Basal <span>". The JS mirror, the regenerated fixtures and the QA
+finding-title literals SHALL carry the same titles.
+
+The projection's ordering is unchanged except for its final title tiebreak,
+which now orders rows tied on every earlier key by their new titles.
+
+#### Scenario: A correction-factor finding reads as Correction factor
+
+- **GIVEN** the manufactured case isf-strengthen
+- **WHEN** the findings projection publishes its correction-factor row
+- **THEN** the row is titled "Correction factor · strengthen"
+- **AND** no setting row's title contains "ISF" or "I:C"
+
+### Requirement: A setting concern is served under its setting's user label
+
+The guidance read SHALL serve every setting concern's `title` from guidance's
+closed setting-label table: Basal, Carb ratio or Correction factor. It SHALL
+NOT serve the tuning lever's title ("Basal profile", "Carb ratio (I:C)", "ISF")
+as a concern's title.
+
+The following SHALL be unchanged:
+
+- the tuning lever's title;
+- the concern's `priority_inputs`;
+- its served `units`;
+- its set-aside comparison state.
+
+#### Scenario: Every served setting concern carries its label
+
+- **GIVEN** the manufactured QA cases isf-strengthen, isf-held, ic-lower, ic-held and basal-lower
+- **WHEN** the guidance read serves each case
+- **THEN** its correction-factor concern is titled "Correction factor", its carb-ratio concern "Carb ratio" and its basal concern "Basal"
+- **AND** no setting concern is titled "ISF", "Carb ratio (I:C)" or "Basal profile"
+- **AND** each concern's served `units` are "mg/dL/U", "g/U" and "U/h" as before
+
+#### Scenario: Naming a concern does not move its set-aside baseline
+
+- **WHEN** a setting concern's baseline is taken
+- **THEN** it equals the baseline of the same concern with its `title` removed
+
+### Requirement: Every set-aside subject guidance lists carries its served name
+
+The guidance read SHALL serve a `title` on every set-aside subject it lists.
+For a set-aside subject the read no longer carries, the name SHALL come from the
+backend's own name source for that subject, looked up by the whole subject and
+never parsed from it:
+
+| Subject | Name source |
+|---|---|
+| setting | the setting-label table |
+| habit | its Lever's title |
+| the uncaused-highs investigation | its title |
+
+Every Pattern is always served present with its roster title, so a set-aside
+Pattern keeps that title.
+
+A subject outside the closed subject set SHALL be served with no title. No name
+SHALL enter the set-aside comparison state.
+
+#### Scenario: Set-aside subjects the read no longer carries are named
+
+- **GIVEN** set-aside preferences for a setting, a habit and the uncaused-highs investigation that the read serves no candidate for
+- **WHEN** the guidance read serves them as absent rows
+- **THEN** the setting row is titled by its setting label, the habit row by its Lever's title and the investigation row by its title
+- **AND** each row remains set aside
+
+#### Scenario: A set-aside Pattern is served present with its roster title
+
+- **GIVEN** a set-aside Pattern preference
+- **WHEN** the guidance read serves it
+- **THEN** the Pattern is served present, not absent, with its roster title and remains set aside
+
+### Requirement: A recorded Plan's subjects are served with their names
+
+The Plan history read SHALL serve `subject_titles` beside `subjects` in each
+record's `decision_context`. It is a list parallel to `subjects`, holding each
+subject's name from the same subject-name lookup, computed at read time and
+never stored.
+
+#### Scenario: A recorded correction-factor Plan names its subject
+
+- **GIVEN** a Plan recorded from a correction-factor concern
+- **WHEN** the Plan history read serves it
+- **THEN** its `decision_context` serves `subjects` ["setting:isf"] and `subject_titles` ["Correction factor"]
+- **AND** its recorded explanation is "Correction factor"
+
+### Requirement: A setting value in Changes prints in its user form
+
+Every Changes line that prints a setting value SHALL print it through the
+desk's one setting-value formatter, in its CONTEXT.md user form:
+
+| Setting | User form |
+|---|---|
+| Correction factor | "1 U : <value> mg/dL" |
+| Carb ratio | "<value> g/U" |
+| Basal | "<value> U/h" |
+
+The Action figure of a concern whose action carries setting instructions SHALL
+print `<direction> to <value in its user form>`. This covers a setting concern
+and a Pattern carrying its chosen setting member's instructions. The form SHALL
+come from the instruction's own parameter, never from the concern's served
+`units`.
+
+The Plan's "What was known" SHALL:
+
+- name each recorded subject by its served name, and print nothing for a
+  subject without one;
+- never print an identifier;
+- print each recorded setting in its user form, using the parameter of the
+  recorded instruction it was captured from;
+- print the recorded explanation as recorded.
+
+No Changes line SHALL print "mg/dL/U". Served `units` SHALL be unchanged.
+
+#### Scenario: A Pattern carrying a correction-factor instruction reads insulin first
+
+- **GIVEN** a served Pattern concern whose action carries a correction-factor instruction to strengthen to 32 and whose `units` are null
+- **WHEN** Changes renders it as the selected concern
+- **THEN** its Action figure reads "strengthen to 1 U : 32 mg/dL"
+
+#### Scenario: A Pattern carrying a carb-ratio instruction prints its unit
+
+- **GIVEN** a served Pattern concern whose action carries a carb-ratio instruction to lower to 9 and whose `units` are null
+- **WHEN** Changes renders it
+- **THEN** its Action figure reads "lower to 9 g/U"
+
+#### Scenario: A correction-factor concern reads in the wearer's words
+
+- **GIVEN** a served correction-factor setting concern titled "Correction factor" with its instructions
+- **WHEN** Changes renders its frame
+- **THEN** the frame names it "Correction factor"
+- **AND** the frame contains neither "ISF" nor "mg/dL/U"
+
+#### Scenario: What was known names the subject and prints the value insulin first
+
+- **GIVEN** a recorded decision context with subject "setting:isf" served as "Correction factor", and a setting captured as 32 "mg/dL/U" from a correction-factor instruction
+- **WHEN** the Plan shows what was known
+- **THEN** it names "Correction factor" and the change reads "1 U : 32 mg/dL"
+- **AND** it contains no "setting:" text
+- **AND** the recorded explanation prints as recorded
+
+### Requirement: Changes lists every set-aside concern by a name
+
+Changes' set-aside rows SHALL print each row's served name. A row served with no
+name SHALL print the fixed phrase "A concern no longer in this read" and never
+its identifier.
+
+#### Scenario: An unnamed set-aside row prints the fixed phrase
+
+- **GIVEN** a served set-aside row with no title for a subject outside the closed subject set
+- **WHEN** Changes lists its set-aside concerns
+- **THEN** the row reads "A concern no longer in this read"
+- **AND** the list contains no subject identifier
+
+### Requirement: Changes says why its concern leads in words
+
+Changes SHALL print the served guidance disposition in words, never the code,
+on its nameplate and its Action heading. The words SHALL say what the reader
+can actually do. A change already staged in the Plan draft reads Staged, the
+same staged state the pane shows. Otherwise, under `eligible_action` the words
+depend on the served action's shape and, for an identified action, on the
+served Focus offer and the served readiness verdict:
+
+| Code, action | Words |
+|---|---|
+| any, with the change staged in the Plan draft | Staged |
+| `eligible_action`, the action carries setting instructions | Ready to stage |
+| `eligible_action`, an identified action with a served Focus offer | Ready to start a Focus |
+| `eligible_action`, an identified action on a Pattern whose served readiness verdict is `withheld` | Focus withheld |
+| `eligible_action`, any other identified action | Action identified |
+| `guided_investigation` | Evidence to inspect |
+
+Any other code SHALL print no words there. A set-aside concern on screen is not
+the concern the read leads with, so its nameplate SHALL print no status words.
+
+#### Scenario: A setting-led concern reads Ready to stage
+
+- **GIVEN** a served `eligible_action` read whose selected concern carries setting instructions
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Ready to stage" and contains no disposition code
+
+#### Scenario: A concern with a served Focus offer reads Ready to start a Focus
+
+- **GIVEN** a served `eligible_action` read whose selected concern's identified action has a served Focus offer
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Ready to start a Focus" and offers Start Focus
+
+#### Scenario: A withheld Pattern reads Focus withheld
+
+- **GIVEN** a served `eligible_action` read whose selected Pattern carries an identified action, a served readiness verdict of `withheld`, and no Focus offer
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Focus withheld" beside the served withheld reason, and neither "Ready to start a Focus" nor "Ready to stage"
+
+#### Scenario: A legacy habit lead reads Action identified
+
+- **GIVEN** a served `eligible_action` read whose selected concern is a habit with an identified action and no Focus offer
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Action identified" and neither "Ready to start a Focus" nor "Ready to stage"
+
+#### Scenario: An investigation reads Evidence to inspect
+
+- **GIVEN** a served `guided_investigation` read
+- **WHEN** Changes renders its selected concern
+- **THEN** the frame reads "Evidence to inspect" and contains no disposition code
+
+#### Scenario: A staged change reads Staged
+
+- **GIVEN** a served `eligible_action` read whose selected concern carries setting instructions
+- **WHEN** the wearer stages it
+- **THEN** the nameplate and the Action heading read "Staged" beside the pane's Staged state, and not "Ready to stage"
+- **AND** after Undo they read "Ready to stage" again
+
+#### Scenario: A set-aside concern on screen carries no status words
+
+- **GIVEN** the wearer set a concern aside and a re-read selects another concern
+- **WHEN** Changes keeps the set-aside concern on screen
+- **THEN** its nameplate reads "Set aside" and no status words for the concern that leads next
+
+### Requirement: Diagnose names the correction factor and carb ratio in the wearer's words
+
+These Diagnose values SHALL print as "1 U : <value> mg/dL", each keeping the
+rounding its line prints today:
+
+- the findings queue's numbers for an asserting correction-factor row;
+- the correction-factor panel's current, estimate, recommended and interval
+  values.
+
+The correction-factor panel's heading, breadcrumb and scope sentence SHALL say
+"Correction factor", and the peak-hour link SHALL name a "carb ratio" block. No
+Diagnose line SHALL print "mg/dL/U", or "ISF" or "I:C" as a setting's name.
+Carb-ratio and basal values on Diagnose keep their unit after the value.
+
+#### Scenario: An asserting correction-factor queue row reads insulin first
+
+- **GIVEN** an asserting correction-factor findings row whose backend verdict asserts a move from 30 to 32
+- **WHEN** Diagnose's findings queue builds its numbers
+- **THEN** they read "now 1 U : 30.0 mg/dL → " and "1 U : 32.0 mg/dL"
+
+#### Scenario: The correction-factor panel carries no engine vocabulary
+
+- **WHEN** the correction-factor panel renders a served correction-factor row
+- **THEN** its heading says "Correction factor" and its values read "1 U : <value> mg/dL"
+- **AND** the rendered text contains neither "ISF" nor "mg/dL/U"
+
+### Requirement: The watch dock's title names the change and its values wrap below
+
+The watch dock's one-line title, for a watched Trial and for Diagnose's staged
+change, SHALL carry:
+
+- the setting's user name (Basal, Correction factor, Carb ratio, Target; a
+  whole profile keeps its own word), never "ISF" or "I:C";
+- its slot or span where it has one;
+- the direction the server serves for it, where it serves one. The dock derives
+  no direction.
+
+The from→to values SHALL move out of the title into the dock's wrapping detail
+line, in their user form (a correction factor as "1 U : <value> mg/dL"). The
+title SHALL NOT truncate at 1280x720 or 1440x900, and the values SHALL be fully
+visible.
+
+#### Scenario: A correction-factor Trial is titled by name, its values below
+
+- **GIVEN** a watched Trial of the correction factor from 30 to 32
+- **WHEN** the dock reports it
+- **THEN** its title reads "Correction factor"
+- **AND** its detail line carries "1 U : 30.0 mg/dL → 1 U : 32.0 mg/dL"
+- **AND** neither contains "ISF" or "mg/dL/U"
+
+#### Scenario: A carb-ratio Trial is named Carb ratio
+
+- **GIVEN** a watched Trial of the carb ratio from 5 to 4.8
+- **WHEN** the dock reports it
+- **THEN** its title reads "Carb ratio" and its detail line carries "5.0 → 4.8 g/U"
+- **AND** neither contains "I:C"
+
+#### Scenario: A staged correction factor fits the dock and shows its values
+
+- **GIVEN** the manufactured case isf-strengthen on Diagnose at 1280x720 and at 1440x900
+- **WHEN** the reader stages the correction factor
+- **THEN** the dock's title reads "Correction factor · <served direction>" and does not truncate
+- **AND** its detail line shows "1 U : <current> mg/dL → 1 U : <recommended> mg/dL" in full
+
+### Requirement: Desk copy joins no clauses with an em dash
+
+User copy that reaches the desk SHALL join no clauses with an em dash, and SHALL
+set off no parenthetical with one (DESIGN.md, Voice and user-copy register,
+rule 1). This covers:
+
+- every served sentence a desk module prints: an Occurrence's cause text, each
+  judged classifier's detail, and each lever's Guide meaning and recommendation;
+- the desk's own strings, including accessible labels and the Glossary's
+  definitions;
+- the Guide's articles.
+
+A dash after a short label, followed by a value or a verbless fragment, is a
+label separator and MAY remain. Examples are "Ready to judge — …", "Not met — …",
+"INSUFFICIENT SAMPLE — …", "<weekday> — no data" and "Label — value" tooltips.
+The "—" empty-value glyph MAY remain. Meaning, every served number and every
+engine code SHALL be unchanged.
+
+#### Scenario: A served Occurrence sentence reads without a prose em dash
+
+- **GIVEN** a synthetic over-treated low whose rebound the context gate explains
+- **WHEN** the exposure producer serves its Occurrences
+- **THEN** every Occurrence sentence and every classifier detail it serves contains no em dash
+
+#### Scenario: The Guide and the Glossary read without a prose em dash
+
+- **WHEN** the Guide's catalog, its four articles and the Glossary's definitions are read
+- **THEN** none contains an em dash
+
+#### Scenario: The persistent advisory line is two short sentences
+
+- **WHEN** any destination renders the persistent chrome
+- **THEN** its advisory line reads "Advisory only. Review with your clinician before changing pump settings."
+
+### Requirement: A later conclusion stays with the change record it was typed on
+
+The Later conclusion form's typed text, a failed save's message and the save's
+request identity SHALL belong to the one change record that is open. Whenever
+the open record changes, the desk SHALL drop all three before the next record
+renders. That covers a roster press, Back to records, finishing a change that
+opens its saved record, and an address that names a different record. The drop
+SHALL happen in one place that every one of those doors goes through. The next
+record SHALL start with an empty form and no failure, and its first save SHALL
+send a request identity of its own as a first save, not as a retry.
+
+Leaving a record for the roster ends its hold, so reopening the same record from
+the roster SHALL also start with an empty form, as opening it by its address
+does. A re-render of the same open record SHALL keep the typed text, the failure
+and the request identity, so that Retry resends the same request identity. That
+includes a return from Day to that record.
+
+The conclude endpoint, the request-identity rules, what makes a Trial eligible
+for a later conclusion, and every saved ending SHALL be unchanged.
+
+#### Scenario: A different record opened from the roster starts empty
+
+- **GIVEN** a synthetic store serving two expired Trial records, A and B, each
+  offering a Later conclusion
+- **WHEN** the reader types on A, records it and the save fails, presses Back
+  to records, and opens B from the roster
+- **THEN** B's Later conclusion form is empty and shows no failure
+- **AND** recording on B sends B's conclusion with a request identity different
+  from the one A's failed save sent, with no re-read of B before it
+
+#### Scenario: Reopening the same record from the roster starts empty
+
+- **GIVEN** an expired Trial record whose Later conclusion the reader typed and
+  whose save failed
+- **WHEN** the reader presses Back to records and opens the same record from the
+  roster
+- **THEN** its Later conclusion form is empty and shows no failure
+- **AND** its next save sends a request identity different from the failed one
+
+#### Scenario: A failed save keeps its words and request identity on its record
+
+- **GIVEN** an expired Trial record whose later-conclusion save failed
+- **WHEN** the same record re-renders and the reader presses Retry
+- **THEN** the typed words and the failure are still shown before the retry
+- **AND** the retry sends the same request identity as the failed save
+
+### Requirement: The Plan lifecycle replay certifies the decision it recorded
+
+The desk ledger's Plan lifecycle story, S89, SHALL read the decision it records
+as the first record the Plan history read serves, which is the newest. The same
+check SHALL prove that record is the decision the story just recorded: the served
+history SHALL hold exactly one more record than it held when the story read it
+before recording, and the first record's `applied_at` SHALL name none of the
+records in that earlier read. The story's check that a failed Withdraw leaves the
+decision unchanged SHALL read that same first record. An older record already in
+the Plan history SHALL NOT satisfy any of the story's decision or withdrawal
+checks.
+
+#### Scenario: An older Plan in history does not stand in for the new decision
+
+- **GIVEN** a Plan history, served newest first, that already lists an older
+  recorded Plan that was never withdrawn
+- **WHEN** S89 records a decision, withdraws it after one failed Withdraw, and
+  reloads
+- **THEN** it certifies the first served record as the new decision
+- **AND** its withdrawal checks pass against that record, and the story passes
+
+#### Scenario: An older withdrawn Plan cannot satisfy the withdrawal check
+
+- **GIVEN** a Plan history that already lists an older withdrawn Plan
+- **AND** a server that does not persist the new decision's withdrawal
+- **WHEN** S89 checks the withdrawal after reload
+- **THEN** the story fails at that check, because the decision it certified
+  carries no recorded withdrawal
+
+#### Scenario: A new decision served after older records fails the story
+
+- **GIVEN** a Plan history that lists the new decision after the records it
+  held before recording
+- **WHEN** S89 checks its durable decision
+- **THEN** the story fails at that check, because the first served record was
+  already served before recording
+
+#### Scenario: A recording that adds more than one record fails the story
+
+- **GIVEN** a Plan history with no earlier Plan
+- **AND** a server that adds two records when the story records one decision
+- **WHEN** S89 checks its durable decision
+- **THEN** the story fails at that check, because the history grew by more than
+  one record
+
+### Requirement: The glucose overview's window caption stays whole inside the chart
+
+The glucose overview's window caption SHALL lie wholly inside the chart at
+every size the chart is shown at, whether it was drawn at that size or the
+window was resized to it. Where the caption fits on one line inside its window,
+or on one line beside the window in the margin on the roomier side, it SHALL
+stand on that one line, placed as before. Where it fits on one line in neither
+place, it SHALL wrap inside whichever of those two regions is wider: the
+window's name on its own line and, when the window is thin, the
+insufficient-sample notice on the next, each line breaking only between whole
+words. Every word the caption prints SHALL be whole, never split and never cut
+off. The window's name and, on a thin window, the whole insufficient-sample
+notice SHALL always print. No text the chart draws SHALL overprint other text
+the chart draws. At 1280×720 and 1440×900, every Window preset's caption SHALL
+stand on one line. No verdict, floor or thinness decision moves: the notice
+prints exactly when the chart already judges the window thin.
+
+#### Scenario: The narrowest split keeps every preset's caption whole
+
+- **GIVEN** a synthetic store whose 24 h window is thin
+- **WHEN** Diagnose renders at 832×720 and at 832×560, and the reader presses
+  each Window preset in turn
+- **THEN** each preset's caption lies wholly inside the chart
+- **AND** every word of it is whole, and the window's name and, on a thin
+  window, the whole insufficient-sample notice print
+- **AND** no text the chart draws overprints other text it draws
+
+#### Scenario: Narrowing the window re-lays out the caption
+
+- **GIVEN** the same store, with the Evening preset pressed at a supported
+  desktop size
+- **WHEN** the reader narrows the window to 832×720 and presses nothing
+- **THEN** the Evening caption lies wholly inside the chart, with every word
+  whole
+
+#### Scenario: The supported desktop sizes keep the one-line caption
+
+- **GIVEN** the same synthetic store
+- **WHEN** Diagnose renders at 1280×720 and at 1440×900, and the reader
+  presses each Window preset in turn
+- **THEN** each preset's caption stands on one line, wholly inside the chart,
+  with every word printed
+- **AND** no text the chart draws overprints other text it draws
+
+### Requirement: The Spotlight's middle-rank verdict line keeps every fact inside the chart
+
+When the Spotlight's basal chart takes its middle rank, the two compressed
+lines it draws in a seat narrower than its full layout, its verdict line (the
+verdict word, the estimate, the estimate's range and the programmed rate)
+SHALL lie wholly inside the chart and clear of the Keep control. This holds
+whether the chart was drawn at that size or the window was resized to it.
+Where those facts do not fit on one line, the line SHALL break between facts,
+never inside one, and the tally line and the figure SHALL move down so that no
+line overprints another. Where they fit on one line, the verdict line, the
+tally line and the figure SHALL stand where they stood before. Every fact SHALL
+print; none is shortened or dropped for room.
+
+#### Scenario: The narrowest split keeps the programmed rate
+
+- **GIVEN** a synthetic store whose next-in-line finding opens a basal slot
+  with a programmed rate
+- **WHEN** the window is narrowed to 832×720, and then to 832×560, with
+  Diagnose at rest
+- **THEN** the Spotlight's verdict line prints the verdict word, the estimate,
+  its range and the programmed rate, each whole
+- **AND** every line of it lies inside the chart and clear of the Keep control
+- **AND** the tally line stands below the verdict line's last line
+
+#### Scenario: A seat wide enough keeps one verdict line
+
+- **GIVEN** the same synthetic store
+- **WHEN** the window is set to 1200×736 with Diagnose at rest
+- **THEN** the Spotlight's verdict line stands on one line
+
+### Requirement: The glucose overview's header keeps its title at the narrowest split
+
+The glucose overview's header SHALL stay one line at every width the two-pane
+split forms at, truncating and never wrapping, and its provenance SHALL always
+print whole. Between 832 and 1023 px wide, the All charts control SHALL show
+its icon only, keeping the accessible name and tooltip "All charts", so that
+the title "Glucose by time of day" draws, truncated with an ellipsis if it
+must, and never collapses to nothing. From 1024 px wide the control SHALL show
+its word, and at 1280×720 and 1440×900 the header SHALL be unchanged.
+
+#### Scenario: The narrowest split draws the title
+
+- **GIVEN** a synthetic store
+- **WHEN** Diagnose renders at rest at 832×720 and at 832×560
+- **THEN** the title draws at least its first letter and an ellipsis, inside
+  the header
+- **AND** the All charts control shows its icon, is named "All charts" and has
+  the tooltip "All charts"
+- **AND** the provenance prints whole, and the header stays one line
+
+#### Scenario: Wider windows keep the header as it was
+
+- **GIVEN** the same store
+- **WHEN** Diagnose renders at rest at 1024×768, 1280×720 and 1440×900
+- **THEN** the All charts control shows its word, and the title and the
+  provenance print whole on one line
+
+### Requirement: Chart furniture never strikes an axis label
+
+No line, rule or numeral pad a Diagnose chart draws SHALL cross or cover one of
+its axis labels. Where a glucose overview y-axis label would sit under a target
+numeral, the label SHALL NOT print, and the numeral, which names the target
+line there, SHALL print. The Spotlight's programmed-rate rule SHALL end at its
+axis tick, above the tick labels. These hold at every size.
+
+#### Scenario: The target numerals and the y-axis labels do not overprint
+
+- **GIVEN** a synthetic store whose glucose axis starts 10 mg/dL below the
+  target's lower bound
+- **WHEN** Diagnose renders at 1280×720, 1440×900 and 832×720
+- **THEN** no y-axis label overlaps a target numeral
+- **AND** every target numeral prints
+
+#### Scenario: The programmed rule stops above the tick labels
+
+- **GIVEN** a basal slot whose programmed rate falls on an axis tick
+- **WHEN** the Spotlight draws it, at either rank
+- **THEN** the programmed rule ends at the axis tick, above that tick's label

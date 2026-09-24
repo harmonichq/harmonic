@@ -711,13 +711,31 @@ test('the reason table reads the served breakdown in rank order and prints no ze
     { key: 'above_range', count: 4, words: 'high' },
     { key: 'insulin_acting', count: 3, words: 'insulin on board' },
     { key: 'carb_log', count: 2, words: 'logged carbs' },
-    { key: 'other', count: 1, words: 'other reasons' },
+    { key: 'other', count: 1, words: 'other reason' },
   ]);
   assert.deepEqual(excludedNightReasons({
     excluded_night_reasons: excludedReasons({ insulin_acting: 1, other: 2 }) }),
   [{ key: 'insulin_acting', count: 1, words: 'insulin on board' },
     { key: 'other', count: 2, words: 'other reasons' }]);
   assert.deepEqual(excludedNightReasons({ excluded_night_reasons: excludedReasons() }), []);
+});
+
+test('one night left out for another reason reads in the singular, two in the plural', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  for (const [count, words] of [[1, 'other reason'], [2, 'other reasons']]) {
+    const data = { ...reasonScenario(), excluded_night_count: count,
+      excluded_night_reasons: excludedReasons({ other: count }) };
+    assert.deepEqual(excludedNightReasons(data), [{ key: 'other', count, words }]);
+    const option = entry.option('editorial', { data });
+    const texts = option.series.find(({ id }) => id === 'rail')
+      .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 482 }).children
+      .map(({ style }) => style.text);
+    assert.deepEqual(texts.slice(texts.indexOf('excluded') - 1),
+      [String(count), 'excluded', String(count), words], `the rail at ${count}`);
+    assert.ok(option.aria.description.endsWith(
+      `; ${count} night${count === 1 ? '' : 's'} excluded: ${count} ${words}`),
+    `the description at ${count}: ${option.aria.description}`);
+  }
 });
 
 test('the full rail names each served reason beneath the excluded total', () => {
@@ -802,7 +820,7 @@ test('a crowded rail stays legible at the measured full-size tile height', () =>
   assert.deepEqual(drawn.map(({ style }) => style.text), [
     '3', 'more than programmed', '2', 'less', '1', 'exactly as set', '1', 'no programmed rate',
     '21', 'excluded', '6', 'before the current rate', '5', 'low or suspended', '4', 'high',
-    '3', 'insulin on board', '2', 'logged carbs', '1', 'other reasons',
+    '3', 'insulin on board', '2', 'logged carbs', '1', 'other reason',
   ], 'every rail row prints');
   /* The rail's own head blocks are rail text too: the table must clear them. */
   const heads = option.graphic.filter(({ style }) => style?.width === 206 && style.font)

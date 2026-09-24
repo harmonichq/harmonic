@@ -264,19 +264,24 @@ const editorialWrap = (text, width, size) => {
    that rank: the tile's rail, tally and description and the slot panel's line
    all read it, and none of them sums, derives or reclassifies a count — the
    total is the served `excluded_night_count`, and each count is its served
-   bucket. A reason with no nights is not printed. */
+   bucket. A reason with no nights is not printed. The words follow the count,
+   so a reason whose words hold a counted noun carries its plural as a third
+   entry: one night reads "1 other reason". The others name a cause, not a
+   thing counted, and read the same at any count ("1 logged carbs" is one night
+   under the Carb log, not one carb). */
 const EXCLUDED_NIGHT_REASONS = Object.freeze([
   ['before_current_setting', 'before the current rate'],
   ['below_range_or_suspended', 'low or suspended'],
   ['above_range', 'high'],
   ['insulin_acting', 'insulin on board'],
   ['carb_log', 'logged carbs'],
-  ['other', 'other reasons'],
+  ['other', 'other reason', 'other reasons'],
 ]);
 export function excludedNightReasons(evidence) {
   const served = evidence?.excluded_night_reasons || {};
   return EXCLUDED_NIGHT_REASONS.filter(([key]) => served[key] > 0)
-    .map(([key, words]) => ({ key, count: served[key], words }));
+    .map(([key, one, many = one]) => ({ key, count: served[key],
+      words: served[key] === 1 ? one : many }));
 }
 
 function basalEditorialOption(data, mini, colors, surface) {

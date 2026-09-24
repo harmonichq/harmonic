@@ -121,7 +121,12 @@ order, with these words:
 | `above_range` | high |
 | `insulin_acting` | insulin on board |
 | `carb_log` | logged carbs |
-| `other` | other reasons |
+| `other` | other reasons; "other reason" when its count is 1 |
+
+The words follow the count ("3 other reasons"), so the one that holds a counted
+noun agrees with it: one night reads "1 other reason". The others name a cause
+rather than a thing counted and read the same at any count; "1 logged carbs" is
+one night under the Carb log, not one carb.
 
 The words reuse the desk's existing terms: basal's user noun is "rate", the
 glossary names IOB "insulin on board" (`CONTEXT.md` avoids "active insulin"), and
@@ -169,6 +174,8 @@ question "Can your reply here count as sign-off for the UI copy and tone changes
 call for, and write the wording in CONTEXT.md terms." #434's checklist calls for
 these words, so that answer is the dated sanction for this revision and its
 behavior-ledger addition.
+The singular "1 other reason", settled in #434's fix round on 2026-09-23, is one
+of those words and rests on the same answer.
 
 ### Consequences
 

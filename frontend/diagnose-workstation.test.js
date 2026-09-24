@@ -467,6 +467,10 @@ test('basal slot panel names each served excluded-night reason on its one line',
       ['<div class="empty">5 excluded nights: 3 before the current rate, 1 low or suspended, 1 insulin on board</div>']);
     assert.deepEqual(excludedLines(1, { below_range_or_suspended: 1 }),
       ['<div class="empty">1 excluded night: 1 low or suspended</div>'], 'one night, in the singular');
+    assert.deepEqual(excludedLines(1, { other: 1 }),
+      ['<div class="empty">1 excluded night: 1 other reason</div>'], 'one other night, in the singular');
+    assert.deepEqual(excludedLines(2, { other: 2 }),
+      ['<div class="empty">2 excluded nights: 2 other reasons</div>'], 'two other nights, in the plural');
     assert.deepEqual(excludedLines(0, {}), [], 'no excluded nights, no line');
   } finally {
     globalThis.document = originalDocument;

@@ -8,7 +8,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 1. Served names and refusal sentences (backend)
 
-- [ ] 1.1 Serve `lever_title` on the selected Focus detail
+- [x] 1.1 Serve `lever_title` on the selected Focus detail
   (`ciq_autotune/watched_change.py`, `review_trials`' Focus branch):
   `_focus_meta(record["lever"])[0]`, or null when the stored lever is neither a
   Lever nor the override. Roster rows are unchanged. Test in
@@ -21,7 +21,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   lever outside the set serves null and the read still answers; no served name
   contains an underscore; no roster row carries `lever_title`. Fails first on
   the base (the key is absent).
-- [ ] 1.2 Serve a sentence beside the code on the durable lifecycle 409
+- [x] 1.2 Serve a sentence beside the code on the durable lifecycle 409
   (`ciq_autotune/api.py`, the handler that builds
   `{"code": getattr(error, "reason", "lifecycle_conflict"), **current}`):
   `message` from a closed module-level table in `api.py` holding ADR 450's
@@ -46,7 +46,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 2. The desk names the watched behavior
 
-- [ ] 2.1 The Observed behavior row prints the served name
+- [x] 2.1 The Observed behavior row prints the served name
   (`frontend/follow-up.js`): `adherenceTable` and `comparisonTables` take the
   name from their caller; the active Focus frame passes its detail's
   `lever_title`, and `frontend/history.js`'s record frame passes the record's.
@@ -56,7 +56,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   `correction_stacking` arm given "Correction stacking" names it and "Stacked
   corrections" is absent; an arm given no name reads "Watched behavior" and the
   key is absent. Fails first on the base.
-- [ ] 2.2 "What this Focus watches" prints the served name when the retained
+- [x] 2.2 "What this Focus watches" prints the served name when the retained
   context carries no explanation, keeping today's skip when the explanation
   equals the title; a null name omits the paragraph. Test through `mount` in
   `frontend/follow-up-lifecycle.test.js`: an active Focus whose served detail
@@ -64,7 +64,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   retained comparison with Observed behavior rows prints "Repeat eating" in the
   intent section and the behavior row and no `repeat_eating` in visible text.
   Fails first on the base.
-- [ ] 2.3 A Focus record's "What changed" (`frontend/history.js`,
+- [x] 2.3 A Focus record's "What changed" (`frontend/history.js`,
   `changeSection`) names the intended behavior by the served `lever_title`; a
   null name reads "The behavior this Focus watched is no longer an offered
   lever." Tests in `frontend/history.test.js`: the existing Focus variant is
@@ -74,7 +74,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 3. Served codes print in words
 
-- [ ] 3.1 `COMPARISON_REASON` (`frontend/follow-up.js`) gains the thirteen
+- [x] 3.1 `COMPARISON_REASON` (`frontend/follow-up.js`) gains the thirteen
   codes and words in ADR 450's vocabulary table, including #442's
   `context_after_ending`, which no producer on this branch serves yet.
   `REASON_CODES` in `frontend/follow-up.test.js` gains them, and the existing
@@ -82,7 +82,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   unknown code printed as served. A `frontend/history.test.js` case renders a
   saved ending unavailable with `context_after_ending` and expects its words and
   no underscore token. Fails first on the base for the new codes.
-- [ ] 3.2 Route the enumerated lines through `comparisonReasonWords`: the saved
+- [x] 3.2 Route the enumerated lines through `comparisonReasonWords`: the saved
   ending assessment (`endingSection`); the Observed behavior and Attributed harm
   cells (`adherenceTable`); every arm's "Not met" line, the setting arm's
   unavailable-evidence line and the Pattern opportunity line's reason
@@ -102,7 +102,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   `insufficient_measurement · 0 of 1 measured`) are reworded; the harm test's
   `partial_tail`, which no producer serves, keeps printing as served. Each new
   expectation fails first on the base.
-- [ ] 3.3 States, verdicts, modes and the denominator print as words:
+- [x] 3.3 States, verdicts, modes and the denominator print as words:
   `frontend/follow-up.js` publishes its state words for `frontend/history.js`,
   which prints the saved ending's "Recorded · <state>" and the reassessment
   result through them; the reassessment heading names its mode by its segment
@@ -115,7 +115,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   `frontend/follow-up.test.js` (both verdicts with `data-opportunity-verdict`
   unchanged; the denominator in the table and a readiness arm). Fails first on
   the base.
-- [ ] 3.4 The Focus entry's withheld copy (`frontend/focus-entry.js`, `mount`)
+- [x] 3.4 The Focus entry's withheld copy (`frontend/focus-entry.js`, `mount`)
   prints `admissionReason(reason).said` for a served `focus_pin.reason`; an
   absent reason keeps today's sentence. `frontend/guidance.js`'s `REASON_SAID`
   gains `pending_plan` with ADR 450's sentence. A reason `admissionReason` does
@@ -132,7 +132,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   dynamic import after the stub is installed, which is the only way to do this
   inside the expected diff (the existing tests pass their own `api` and are
   unaffected). Fails first on the base.
-- [ ] 3.5 The Trial finish, Focus resolve and later-conclusion failure lines
+- [x] 3.5 The Trial finish, Focus resolve and later-conclusion failure lines
   (`frontend/follow-up.js`, `frontend/history.js`) print the served refusal
   message (`error.message`) and never `<code> (<status>)`; the two modules share
   one failure-message helper rather than two copies. The Plan and Focus-pin
@@ -162,14 +162,14 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 4. Behavior ledger and replay
 
-- [ ] 4.1 The c3 and c4 `readiness()` helpers (`frontend/c3.replay.mjs`,
+- [x] 4.1 The c3 and c4 `readiness()` helpers (`frontend/c3.replay.mjs`,
   `frontend/c4.replay.mjs`) stop asserting that the raw served `arm.reason`
   appears: each arm's `[data-criterion]` line must be non-empty and must not
   read `Not met — <served reason>.`, and a Pattern arm's
   `[data-opportunity-verdict]` text must not be the bare served verdict. No
   replay module imports a follow-up renderer. This amends S46, S91, S92 and S93
   in replay only.
-- [ ] 4.2 Add S173–S176 to `C4_STORIES` as `design.md` specifies, map them in
+- [x] 4.2 Add S173–S176 to `C4_STORIES` as `design.md` specifies, map them in
   `frontend/replay-cases.mjs` (S173 c3-focus, S174 c3-preempted, S175
   c4-history, S176 c3-preempted) and register them in
   `frontend/desk-behavior.replay.mjs`. Each reads the served name or code from
@@ -177,7 +177,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   fake-page tests, in the existing style, that show each new story failing at
   its feature assertion when the page prints the served code, the lever key or
   the Pattern title in place of the behavior.
-- [ ] 4.3 Add the dated `## #449 amendment — 2026-09-23` section to
+- [x] 4.3 Add the dated `## #449 amendment — 2026-09-23` section to
   `mockups/harmonic-v2-desktop.behavior.md`: the sanction line, safe start and
   base; the S173–S176 entries (element, source, lock, data, evidence, status
   owed to the coordinator's runs); `Amended S46 · 2026-09-23 · #449 / Q3

@@ -4118,3 +4118,187 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #449 amendment — 2026-09-23, issue #449 (with #450)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator rulings R449 and R450. It covers the shipped-desk
+changes and the ledger additions and amendments below, and nothing else. The
+decisions are ADR 449 and ADR 450 in
+`openspec/changes/focus-served-words/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c3-focus,
+c3-preempted and c4-history for the new stories, and c3-trial, c4-ic, c4-isf and
+c4-profile for the amended ones — each through `CASE_STORE_DIR`. No real data is
+read. The worker ran no server and no browser; every replay below is the
+coordinator's.
+
+Changed shipped behavior:
+
+- **The watched behavior has one served name.** The selected Focus read serves
+  `lever_title`, the watched Lever's title (or the override's), or null for a
+  stored lever that is no longer offered. The Observed behavior row of the
+  active Focus and of a Focus record, the "What this Focus watches" fallback and
+  a Focus record's "What changed" print it. A Focus on High-carb sequence or
+  Repeat eating no longer prints its key, and Correction stacking, Missed /
+  unannounced meal and Doses above pump calculation read as their nameplates do.
+  A null name reads "Watched behavior" in the row, omits the fallback paragraph
+  and reads "The behavior this Focus watched is no longer an offered lever." in
+  "What changed". The desk keeps no lever name table.
+- **Every served reason reads as words.** The saved ending's assessment, the
+  behavior and harm cells, every readiness arm's "Not met" line, a setting arm's
+  unavailable-evidence line, the Pattern opportunity line and the unreconciled
+  admission line print through the desk's one reason vocabulary; an unknown
+  code still prints as served. Codes stay in payloads and data attributes.
+- **States, verdicts, modes and a denominator read as words.** "Recorded ·
+  Concerning", a reassessment result "Context only" under a "Current policy"
+  heading, a Pattern verdict "Ready" or "Withheld", and "correction clusters".
+- **The Focus entry says why a Focus is not offered**, a pending Plan included,
+  through the Diagnose Focus context's own admission words.
+- **A refused change write reads as a sentence.** The durable 409 serves a
+  `message` beside its `code`; the Trial finish, Focus resolve, later-conclusion,
+  Plan and Focus pin failure lines print it, never `<code> (409)` or
+  "[object Object]", and the pin line prints one full stop.
+
+S173–S176 are new app-opener-only stories. Four stories are amended in replay
+only, below; no story is retired. Every new story reads the served name or code
+from the API and checks the rendered page, and no replay module imports a
+follow-up renderer, so this harness laid over the base fails at its feature
+assertions rather than at module link.
+
+```
+S173 · The active Focus names the behavior it watches by its served name — in
+       its Observed behavior row and, with no retained explanation, in "What
+       this Focus watches" — never by its lever key or its Pattern's title, and
+       each Pattern opportunity line prints its verdict as a word, never the
+       served value.
+  element:  .gf-stage-focus [data-table="adherence"] tr.gf-target td,
+            [data-part="intent"], [data-opportunity-verdict]
+  source:   frontend/follow-up.js focusFrame / adherenceTable / readinessArm;
+            ciq_autotune/watched_change.py review_trials (lever_title)
+  lock:     HV2-26; ADR 449, ADR 450
+  data:     c3-focus; an active Pattern Focus on Late bolus titled Highs after
+            meals, no retained explanation, both Pattern arms served ready
+  evidence: C4_STORIES.S173; reads the admitted Focus's served lever_title and
+            the retained comparison's verdicts, then the behavior row, the
+            intent section and every opportunity line
+  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base
+            b03431d2 with this harness laid over it fails at its feature
+            assertion ("S173 the Observed behavior row must name the served
+            behavior"; the base serves no lever_title); the branch passes
+```
+
+```
+S174 · A Focus ended by hand whose saved ending is served unavailable names that
+       reason in words after "Unavailable · ", never its served code; no harm
+       cell, "Not met" line or opportunity line of the record prints a served
+       code, and no opportunity line prints the bare served verdict.
+  element:  [data-ending-assessment], [data-harm], [data-criterion],
+            [data-opportunity-verdict]
+  source:   frontend/history.js endingSection; frontend/follow-up.js
+            adherenceTable / readinessArm / comparisonReasonWords
+  lock:     HV2-28; ADR 450 (R450: closes the saved-Focus-ending gap S49 leaves)
+  data:     c3-preempted; its manual Focus ending saved unavailable_adherence,
+            both behavior and harm arms and both readiness arms
+            zero_opportunities, both Pattern arms withheld
+  evidence: C4_STORIES.S174; reads the saved assessment's reason and every code
+            its adherence and readiness serve, opens the record by address and
+            reads the ending line and every harm, criterion and opportunity line
+  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
+            this harness fails at its feature assertion ("S174 the saved ending
+            must name its reason in words, never its served code"; the base
+            prints Unavailable · unavailable_adherence); the branch passes
+```
+
+```
+S175 · A preempted Focus record whose saved behavior arm could not be measured
+       names that reason in words in its Observed behavior cell and keeps its
+       "x of y measured" count; its still-collecting readiness arm's "Not met"
+       line is words, never "Not met — collecting.".
+  element:  [data-adherence="<side>"], [data-readiness="<side>"] [data-criterion]
+  source:   frontend/follow-up.js adherenceTable / readinessArm
+  lock:     HV2-28; ADR 450
+  data:     c4-history; its preempted Focus's saved Before arm serves
+            insufficient_measurement at 0 of 4 measured, and its Before
+            readiness arm serves withheld/collecting
+  evidence: C4_STORIES.S175; reads the saved adherence and readiness arms, opens
+            the record by address and reads the unmeasured cell and the
+            collecting arm's criterion line
+  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
+            this harness fails at its feature assertion ("S175 the Observed
+            behavior cell must name its reason in words, never its served
+            code"); the branch passes
+```
+
+```
+S176 · Each Focus record's "What changed" names the behavior it watched by its
+       served name — never its lever key, and never its Pattern's title, which
+       stays the record's nameplate — and a record whose lever is no longer
+       offered says so, naming neither its key nor "Focus" as the behavior.
+  element:  .gf-stage .gf-title, [data-record-part="change"]
+  source:   frontend/history.js changeSection / recordTitle;
+            ciq_autotune/watched_change.py review_trials (lever_title)
+  lock:     HV2-28; ADR 449 (Q1: "What changed" names the served behavior)
+  data:     c3-preempted; two Pattern Focus records on Late bolus titled Highs
+            after meals, and one overnight_drift record titled Focus whose
+            served lever_title is null
+  evidence: C4_STORIES.S176; for each record, Pattern records first, reads the
+            served title and lever_title, opens the record by address and reads
+            the nameplate and "What changed"
+  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
+            this harness fails at its feature assertion ("S176 What changed
+            must name the served behavior"; the base names the Pattern title);
+            the branch passes
+```
+
+Amended S46 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. The c3 `readiness()` helper it runs no longer requires the served `arm.reason` to appear in the arm, because that reason now prints in words: each arm's `[data-criterion]` line must be non-empty and must not read `Not met — <served reason>.`, and a Pattern arm's `[data-opportunity-verdict]` text must not be the bare served verdict (its data attribute still equals it). The replay reads the served arms from the API and imports nothing new. Owed, coordinator-run at both sizes: base b03431d2 with this harness fails at "a served reason prints in words, never its code" (it prints `Not met — collecting.`); the branch passes.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S91 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. Its c3 part runs the amended c3 `readiness()` helper above, and its c4 cases (c4-ic, c4-isf, c4-profile) run the c4 `readiness()` helper, amended the same way for setting arms. The injected prose reason "Synthetic served hold" is not a code the vocabulary knows, so it still prints as served and its assertion is unchanged. Owed, coordinator-run at both sizes: the branch passes; base with this harness fails at the amended criterion assertion wherever a served arm carries a code.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S92 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper; its ending assertion (`/unclear|no clear answer/i`) still holds, since a recorded state now prints as its word ("Unclear"). Owed, coordinator-run at both sizes: base with this harness fails at the amended criterion assertion; the branch passes.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S93 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper on c3-focus's two Pattern arms, both served ready, so each opportunity line must read the word ("Ready"), not the served value. Owed, coordinator-run at both sizes: base with this harness fails at "a Pattern arm names its opportunity verdict in words, never its served value" (it prints `ready`); the branch passes.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and browser test that reads these lines was re-read for
+intent, and each keeps its subject:
+
+- **S57, S58, S59 and S95** open the c3-focus and c3-preempted Focus frames and
+  records and read their tables, conclusion and ending kinds, none of which
+  changes text.
+- **S143 and S49** already read a comparison reason in words (ADR 430); their
+  codes are unchanged in the vocabulary.
+- **The follow-up browser leg** replays every `C3_STORIES` entry, so it runs the
+  amended helper through S46, S91, S92 and S93; no story joins C3.
+- **The desk browser suite's expired-Trial test** opens an ended record whose
+  bare saved assessment is unavailable `not_recorded`; its ending line now
+  reads "Unavailable · not recorded" instead of the code, and none of its
+  assertions reads that line.
+
+The new stories run on c3-focus, c3-preempted and c4-history, which the fixed PR
+smoke slice already covers (S57, S58, R18), so `SMOKE_STORIES` and its digest are
+unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Observed behavior row and "What this Focus watches" name | frontend/follow-up.js focusFrame, adherenceTable | S173 |
+| Pattern opportunity verdict and every readiness reason, in words | frontend/follow-up.js readinessArm | S173, S174, S175, S46, S91, S92, S93 |
+| Saved ending assessment reason and recorded state | frontend/history.js endingSection | S174 |
+| Behavior and harm cell reasons | frontend/follow-up.js adherenceTable | S174, S175 |
+| A Focus record's "What changed" | frontend/history.js changeSection | S176 |
+| Unreconciled admission line | frontend/follow-up.js mount | none — node test only |
+| Focus entry withheld copy and pin failure line | frontend/focus-entry.js mount | none — node test only |
+| Trial finish, Focus resolve and later-conclusion failure lines | frontend/follow-up.js, history.js failureMessage | none — node test only |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 175 issued · 156 active · 19 retired on this branch.

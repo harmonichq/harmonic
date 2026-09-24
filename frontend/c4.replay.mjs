@@ -106,7 +106,10 @@ async function readiness(page, unit, required) {
       assert.equal(seen(await node.getAttribute('data-criterion-met')), String(arm.criterion_met));
       const copy = seen(await node.innerText());
       assert.ok(copy.includes(unit)); assert.ok(copy.includes(String(arm.observed)));
-      if (arm.reason) assert.ok(copy.includes(arm.reason));
+      // #449 amendment (ADR 450): a served reason prints in words, never its code.
+      const criterion = seen(await node.locator('[data-criterion]').innerText()).trim();
+      assert.ok(criterion, 'each arm states its criterion');
+      if (arm.reason) assert.notEqual(criterion, `Not met — ${arm.reason}.`, 'a served reason prints in words, never its code');
     }
   }, "readiness");
   return comparison;
@@ -1415,6 +1418,35 @@ export async function assertBandGlossary(page) {
   }, 'S122 Close returns focus to the caption control');
 }
 
+// #449/#450 (ADR 449, ADR 450). Every served name and code is read from the
+// API and compared with the rendered page; nothing here imports a renderer, so
+// this harness laid over the base fails at its feature assertions, not at link.
+const focusDetail449 = async (page, id, assessment) => (await read(page, '/api/verify/trials',
+  { kind: 'focus', selected: id, ...(assessment ? { assessment } : {}) })).selected;
+async function openFocusRecord449(page, id) {
+  await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:focus:${id}`)}`, page.url()).href);
+  await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
+}
+// Every served code a saved Focus ending can print on its record lines.
+function endingCodes449(assessment) {
+  const codes = new Set(assessment.reason ? [assessment.reason] : []);
+  for (const side of ['before', 'after']) {
+    const arm = (assessment.adherence || {})[side] || {};
+    for (const reason of [arm.availability?.reason, arm.harm_availability?.reason,
+      ((assessment.readiness || {})[side] || {}).reason]) if (reason) codes.add(reason);
+  }
+  return codes;
+}
+// No line on the page prints a served code, nor a bare served verdict.
+function assertWordsOnly449(id, texts, codes, verdicts = []) {
+  for (const text of texts) {
+    for (const code of codes) assert.ok(!text.includes(code), `${id} a served code must print in words: ${text}`);
+    for (const verdict of verdicts) {
+      assert.notEqual(text.split(' · ')[0].trim(), verdict, `${id} the opportunity verdict must print as a word, never its served value`);
+    }
+  }
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -2471,6 +2503,116 @@ export const C4_STORIES = {
       }, "S49");
       await capture(fresh, ctx, 'S49-c4-missing', 'c4-missing');
     });
+  },
+  // ADR 449/450: the active Focus names its behavior by its served name, and its
+  // opportunity verdicts in words.
+  async S173(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'focus', 'S173 premise: the case must serve an active Focus');
+    const id = roster.admission.active_id;
+    const detail = await focusDetail449(page, id);
+    const comparison = (await focusDetail449(page, id, 'retained')).reassessment.comparison;
+    assert.ok(comparison.adherence, 'S173 premise: the retained comparison must serve Observed behavior rows');
+    const verdicts = Object.values(comparison.readiness || {}).map(arm => arm.verdict).filter(Boolean);
+    assert.ok(verdicts.length, 'S173 premise: the retained comparison must serve a Pattern opportunity verdict');
+    await page.goto(new URL('/?to=changes', page.url()).href);
+    await page.locator('.gf-stage-focus [data-table="adherence"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const name = detail.lever_title;
+      const row = seen(await page.locator('[data-table="adherence"] tr.gf-target td').first().innerText()).trim();
+      assert.ok(name && row.startsWith(name), `S173 the Observed behavior row must name the served behavior: ${row}`);
+      assert.ok(!row.includes(detail.lever), 'S173 the Observed behavior row must not print the lever key');
+      if (!detail.original?.context?.explanation) {
+        const intent = seen(await page.locator('[data-part="intent"]').innerText());
+        assert.ok(intent.includes(name), `S173 What this Focus watches must name the served behavior: ${intent}`);
+      }
+      const lines = seen(await page.locator('[data-opportunity-verdict]').allInnerTexts());
+      assert.equal(lines.length, verdicts.length, 'S173 premise: every served Pattern arm shows its opportunity line');
+      assertWordsOnly449('S173', lines, [], verdicts);
+    }, 'S173 the active Focus names its behavior and verdicts in words');
+  },
+  // ADR 450, R450: a saved Focus ending names its served reason in words, and so
+  // does every line of the record that the saved comparison serves.
+  async S174(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const row = roster.focuses.find(focus => focus.ending?.kind === 'manual');
+    assert.ok(row, 'S174 premise: the case must retain a Focus ended by hand');
+    const assessment = (await focusDetail449(page, row.id)).original.ending.assessment || {};
+    assert.equal(assessment.state, 'unavailable', 'S174 premise: the saved ending assessment must be served unavailable');
+    assert.ok(assessment.reason, 'S174 premise: the saved ending must serve its reason');
+    const codes = endingCodes449(assessment);
+    await openFocusRecord449(page, row.id);
+    await waitForReplayAssertion(async seen => {
+      const line = seen(await page.locator('[data-ending-assessment]').innerText()).trim();
+      const words = line.startsWith('Unavailable · ') ? line.slice('Unavailable · '.length).trim() : '';
+      assert.ok(words && !words.includes(assessment.reason),
+        `S174 the saved ending must name its reason in words, never its served code: ${line}`);
+      assert.ok(seen(await page.locator('[data-harm]').count()) > 0, 'S174 premise: the record shows its harm cells');
+      assert.ok(seen(await page.locator('[data-criterion]').count()) > 0, 'S174 premise: the record shows its readiness lines');
+      const verdicts = Object.values(assessment.readiness || {}).map(arm => arm.verdict).filter(Boolean);
+      for (const selector of ['[data-harm]', '[data-criterion]', '[data-opportunity-verdict]']) {
+        assertWordsOnly449('S174', seen(await page.locator(selector).allInnerTexts()), codes, verdicts);
+      }
+    }, 'S174 a saved Focus ending names its reason in words');
+  },
+  // ADR 450: an unmeasured behavior cell names its reason in words and keeps
+  // its measured count; a still-collecting arm says so in words.
+  async S175(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const row = roster.focuses.find(focus => focus.ending?.kind);
+    assert.ok(row, 'S175 premise: the case must retain an ended Focus');
+    const assessment = (await focusDetail449(page, row.id)).original.ending.assessment || {};
+    const unmeasured = ['before', 'after'].map(side => [side, (assessment.adherence || {})[side] || {}])
+      .filter(([, arm]) => arm.opportunities && arm.rate == null && arm.availability?.reason);
+    assert.ok(unmeasured.length, 'S175 premise: the saved ending must serve an unmeasured behavior arm');
+    const collecting = ['before', 'after'].filter(side => {
+      const arm = (assessment.readiness || {})[side] || {};
+      return arm.reason === 'collecting' && !arm.criterion_met;
+    });
+    assert.ok(collecting.length, 'S175 premise: the saved ending must serve a still-collecting readiness arm');
+    await openFocusRecord449(page, row.id);
+    await waitForReplayAssertion(async seen => {
+      for (const [side, arm] of unmeasured) {
+        const cell = seen(await page.locator(`[data-adherence="${side}"]`).innerText());
+        assert.ok(!cell.includes(arm.availability.reason),
+          `S175 the Observed behavior cell must name its reason in words, never its served code: ${cell}`);
+        assert.ok(cell.includes(`${arm.measured_opportunities} of ${arm.opportunities} measured`),
+          `S175 the Observed behavior cell must keep its measured count: ${cell}`);
+      }
+      for (const side of collecting) {
+        const line = seen(await page.locator(`[data-readiness="${side}"] [data-criterion]`).innerText()).trim();
+        assert.ok(line.startsWith('Not met — ') && line !== 'Not met — collecting.',
+          `S175 a still-collecting arm must say so in words: ${line}`);
+      }
+    }, 'S175 an unmeasured behavior names its reason in words');
+  },
+  // ADR 449, Q1: a Focus record's "What changed" names the watched behavior by
+  // its served name while the nameplate keeps the Focus's own title.
+  async S176(page) {
+    const roster = await read(page, '/api/verify/trials');
+    const patterned = roster.focuses.filter(focus => focus.pattern_key);
+    const plain = roster.focuses.filter(focus => !focus.pattern_key);
+    assert.ok(patterned.length && plain.length,
+      'S176 premise: the case must retain a Pattern Focus record and a record with no Pattern');
+    for (const row of [...patterned, ...plain]) {
+      const detail = await focusDetail449(page, row.id);
+      await openFocusRecord449(page, row.id);
+      await waitForReplayAssertion(async seen => {
+        assert.equal(seen(await page.locator('.gf-stage .gf-title').first().innerText()).trim(), detail.title,
+          'S176 the nameplate must keep the served title');
+        const change = seen(await page.locator('[data-record-part="change"]').innerText());
+        assert.ok(!change.includes(detail.lever), `S176 What changed must not print the lever key: ${change}`);
+        if (row.pattern_key || detail.lever_title) {
+          assert.ok(detail.lever_title && change.includes(`The intended behavior: ${detail.lever_title}.`),
+            `S176 What changed must name the served behavior: ${change}`);
+          if (detail.title !== detail.lever_title) assert.ok(!change.includes(detail.title),
+            `S176 What changed must not name the behavior by the nameplate title: ${change}`);
+        } else {
+          assert.ok(change.includes('no longer an offered lever') && !/intended behavior: Focus\b/.test(change),
+            `S176 a record whose behavior has no served name must say it is no longer an offered lever: ${change}`);
+        }
+      }, `S176 Focus record ${row.id} names its behavior`);
+    }
   },
 };
 

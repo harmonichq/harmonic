@@ -3192,6 +3192,18 @@ export const S149 = appOnly('ADR 432',
 // STORY:harmonic-v2-desktop:S150
 export const S150 = appOnly('ADR 432',
   '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
+// STORY:harmonic-v2-desktop:S173
+export const S173 = appOnly('HV2-26',
+  '#449 the active Focus names its behavior by its served name and its opportunity verdicts in words', C4_STORIES.S173);
+// STORY:harmonic-v2-desktop:S174
+export const S174 = appOnly('HV2-28',
+  '#450 a saved Focus ending and its record lines name every served reason in words', C4_STORIES.S174);
+// STORY:harmonic-v2-desktop:S175
+export const S175 = appOnly('HV2-28',
+  '#450 an unmeasured behavior cell names its reason in words and keeps its measured count', C4_STORIES.S175);
+// STORY:harmonic-v2-desktop:S176
+export const S176 = appOnly('HV2-28',
+  '#449 a Focus record\'s What changed names the watched behavior by its served name', C4_STORIES.S176);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3251,6 +3263,7 @@ export const REGISTRY = [
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
+  ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

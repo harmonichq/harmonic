@@ -1900,3 +1900,194 @@ test('S122 fails when Close does not return focus to the caption control', async
   await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ returns: false })),
     /S122 closing the Glossary must return focus to the Findings caption control; focus is on body/));
 });
+
+/* ----------------------------------------- #449/#450: served names and words */
+
+test('S173–S176 are unique app-only #449 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase, term] of [['S173', 'c3-focus', 'HV2-26'], ['S174', 'c3-preempted', 'HV2-28'],
+    ['S175', 'c4-history', 'HV2-28'], ['S176', 'c3-preempted', 'HV2-28']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// A page whose served reads answer from `api` and whose rendered text is
+// whatever `texts` says for the address on screen, one string per element.
+function qa449Page({ api, texts }) {
+  let url = 'http://synthetic.invalid/';
+  const all = selector => [].concat(texts(url)[selector] ?? []);
+  const node = selector => ({
+    first: () => node(selector), waitFor: async () => {},
+    count: async () => all(selector).length,
+    innerText: async () => all(selector)[0] ?? '',
+    allInnerTexts: async () => all(selector),
+  });
+  return {
+    url: () => url, goto: async target => { url = target; }, locator: node,
+    request: { get: async href => {
+      const body = api(new URL(href).searchParams);
+      return { status: () => 200, text: async () => JSON.stringify(body), json: async () => body };
+    } },
+  };
+}
+const words449 = {
+  unavailable_adherence: 'the watched behavior could not be measured in both periods',
+  zero_opportunities: 'no opportunities in this period',
+  insufficient_measurement: 'too little glucose data to judge every opportunity',
+};
+
+// c3-focus's active Pattern Focus on Late bolus, as the branch serves it.
+function activeFocus449({ served = { lever_title: 'Late bolus' }, row = 'Late bolus\nthe intended behavior · meals',
+  intent = 'What this Focus watches\nLate bolus', verdicts = ['Ready', 'Ready'] } = {}) {
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', lever: 'late_bolus', title: 'Highs after meals', ...served,
+        original: { context: { state: 'unavailable', reason: 'not_recorded' } },
+        reassessment: params.get('assessment') ? { comparison: { adherence: { before: {}, after: {} },
+          readiness: { before: { verdict: 'ready' }, after: { verdict: 'ready' } } } } : null } }
+      : { admission: { state: 'available', active_kind: 'focus', active_id: 1 }, trials: [], focuses: [{ id: 1 }] }),
+    texts: () => ({ '[data-table="adherence"] tr.gf-target td': [row, '12 of 12'], '[data-part="intent"]': intent,
+      '[data-opportunity-verdict]': verdicts }),
+  });
+}
+
+test('S173 passes when the active Focus names its served behavior and its verdicts in words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S173(activeFocus449());
+});
+
+test('S173 fails at its feature assertion on the base server shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S173(activeFocus449({ served: {} }))),
+    /S173 the Observed behavior row must name the served behavior/);
+});
+
+test('S173 fails when the row prints the lever key or the Pattern title, or a verdict prints as served', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [page, message] of [
+    [activeFocus449({ row: 'late_bolus\nthe intended behavior · meals' }), /S173 the Observed behavior row must name the served behavior/],
+    [activeFocus449({ row: 'Highs after meals\nthe intended behavior · meals' }), /S173 the Observed behavior row must name the served behavior/],
+    [activeFocus449({ intent: 'What this Focus watches\nlate_bolus' }), /S173 What this Focus watches must name the served behavior/],
+    [activeFocus449({ verdicts: ['ready', 'Ready'] }), /S173 the opportunity verdict must print as a word/],
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S173(page)), message);
+});
+
+// c3-preempted's Focus ended by hand: its saved ending is unavailable, its
+// behavior, harm and readiness arms all serve zero opportunities.
+function manualEnding449({ ending = `Unavailable · ${words449.unavailable_adherence}`,
+  harm = `unavailable\n${words449.zero_opportunities}`, criterion = `Not met — ${words449.zero_opportunities}.`,
+  verdict = `Withheld · ${words449.zero_opportunities}` } = {}) {
+  const arm = { opportunities: 0, availability: { state: 'unavailable', reason: 'zero_opportunities' },
+    harm_availability: { state: 'unavailable', reason: 'zero_opportunities' } };
+  const ready = { verdict: 'withheld', reason: 'zero_opportunities', criterion_met: false };
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', original: { ending: { kind: 'manual', assessment: {
+        state: 'unavailable', reason: 'unavailable_adherence', adherence: { before: arm, after: arm },
+        readiness: { before: ready, after: ready } } } } } }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 1, ending: { kind: 'manual' } }] }),
+    texts: () => ({ '[data-ending-assessment]': ending, '[data-harm]': [harm, harm],
+      '[data-criterion]': [criterion, criterion], '[data-opportunity-verdict]': [verdict, verdict] }),
+  });
+}
+
+test('S174 passes when a saved Focus ending and its record lines print every served reason in words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S174(manualEnding449());
+});
+
+test('S174 fails at its feature assertion when the saved ending prints its served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(manualEnding449({
+    ending: 'Unavailable · unavailable_adherence' }))), /S174 the saved ending must name its reason in words, never its served code/);
+});
+
+test('S174 fails when a harm cell, a Not met line or an opportunity line prints a served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const page of [
+    manualEnding449({ harm: 'unavailable\nzero_opportunities' }),
+    manualEnding449({ criterion: 'Not met — zero_opportunities.' }),
+    manualEnding449({ verdict: 'withheld · zero_opportunities' }),
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(page)), /S174 a served code must print in words/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S174(manualEnding449({
+    verdict: `withheld · ${words449.zero_opportunities}` }))), /S174 the opportunity verdict must print as a word/);
+});
+
+// c4-history's preempted Focus: an unmeasured Before arm and a collecting one.
+function unmeasured449({ cell = `unavailable\n${words449.insufficient_measurement} · 0 of 4 measured`,
+  criterion = 'Not met — still collecting.' } = {}) {
+  return qa449Page({
+    api: params => (params.get('selected')
+      ? { selected: { id: 1, kind: 'focus', original: { ending: { kind: 'trial_preempted', assessment: {
+        state: 'unavailable', reason: 'unavailable_adherence',
+        adherence: { before: { opportunities: 4, measured_opportunities: 0, rate: null,
+          availability: { state: 'unavailable', reason: 'insufficient_measurement' } },
+        after: { opportunities: 0, rate: null, availability: { state: 'unavailable', reason: 'zero_opportunities' } } },
+        readiness: { before: { verdict: 'withheld', reason: 'collecting', criterion_met: false },
+          after: { verdict: 'withheld', reason: 'zero_opportunities', criterion_met: false } } } } } } }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 1, ending: { kind: 'trial_preempted' } }] }),
+    texts: () => ({ '[data-adherence="before"]': cell, '[data-readiness="before"] [data-criterion]': criterion }),
+  });
+}
+
+test('S175 passes when an unmeasured behavior cell names its reason in words and keeps its count', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S175(unmeasured449());
+});
+
+test('S175 fails at its feature assertion when the behavior cell prints its served code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    cell: 'unavailable\ninsufficient_measurement · 0 of 4 measured' }))),
+  /S175 the Observed behavior cell must name its reason in words, never its served code/);
+});
+
+test('S175 fails when the measured count is dropped or the collecting arm prints its code', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    cell: `unavailable\n${words449.insufficient_measurement}` }))), /S175 the Observed behavior cell must keep its measured count/);
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S175(unmeasured449({
+    criterion: 'Not met — collecting.' }))), /S175 a still-collecting arm must say so in words/);
+});
+
+// c3-preempted's records: a Pattern Focus on Late bolus, and a Focus whose
+// lever is no longer offered.
+function records449({ served = true, pattern = 'The intended behavior: Late bolus. No pump setting changed.',
+  outside = 'The behavior this Focus watched is no longer an offered lever. No pump setting changed.' } = {}) {
+  const detail = {
+    1: { id: 1, kind: 'focus', lever: 'late_bolus', title: 'Highs after meals', ...(served ? { lever_title: 'Late bolus' } : {}) },
+    2: { id: 2, kind: 'focus', lever: 'overnight_drift', title: 'Focus', ...(served ? { lever_title: null } : {}) },
+  };
+  return qa449Page({
+    api: params => (params.get('selected') ? { selected: detail[params.get('selected')] }
+      : { admission: { state: 'available' }, trials: [], focuses: [{ id: 2 }, { id: 1, pattern_key: 'highs_after_meals' }] }),
+    texts: url => {
+      const id = /record%3Afocus%3A(\d+)/.exec(url)?.[1];
+      return { '.gf-stage .gf-title': detail[id]?.title, '[data-record-part="change"]': `What changed\n${id === '1' ? pattern : outside}` };
+    },
+  });
+}
+
+test('S176 passes when each Focus record names its served behavior and the nameplate keeps its title', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S176(records449());
+});
+
+test('S176 fails at its feature assertion on the base server shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S176(records449({ served: false,
+    pattern: 'The intended behavior: Highs after meals. No pump setting changed.',
+    outside: 'The intended behavior: Focus. No pump setting changed.' }))), /S176 What changed must name the served behavior/);
+});
+
+test('S176 fails when What changed names the Pattern title, the lever key or "Focus" as the behavior', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [page, message] of [
+    [records449({ pattern: 'The intended behavior: Highs after meals. No pump setting changed.' }), /S176 What changed must name the served behavior/],
+    [records449({ pattern: 'The intended behavior: Late bolus. Highs after meals. No pump setting changed.' }), /S176 What changed must not name the behavior by the nameplate title/],
+    [records449({ outside: 'The intended behavior: Focus. No pump setting changed.' }), /S176 a record whose behavior has no served name must say it is no longer an offered lever/],
+    [records449({ outside: 'The intended behavior: overnight_drift. No pump setting changed.' }), /S176 What changed must not print the lever key/],
+  ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S176(page)), message);
+});

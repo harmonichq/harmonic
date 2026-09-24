@@ -8,6 +8,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { buildDeliverable, reconcileDeliverable } from './plan.js';
+
 // The one transport, installed before anything imports frontend/data.js, which
 // binds its default fetch when it is first evaluated. Each read answers its path.
 const served = {};
@@ -98,6 +100,17 @@ test('the four settings are named as the wearer names them', () => {
   assert.equal(SETTING_NAME.isf, 'Correction factor');
   assert.equal(SETTING_NAME.carb_ratio, 'Carb ratio');
   assert.equal(SETTING_NAME.target_bg, 'Target');
+});
+
+test('every setting a mismatch diff can list is named in the wearer\'s words (#451)', () => {
+  // The diff prints SETTING_NAME[cell.param] with no fallback, so every parameter
+  // the mismatch reader can emit must have a name: here all four are mis-keyed.
+  const activeProfile = { segments: [{ start_min: 0, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 }] };
+  const rows = buildDeliverable({ activeProfile, acceptedItems: [{ type: 'isf', start_min: 0, value: 55, recommended: 55 }] });
+  const detected = [{ start_min: 0, basal_rate: 0.9, isf: 60, carb_ratio: 12, target_bg: 120 }];
+  const cells = reconcileDeliverable(rows, detected).groups.flatMap((group) => group.cells);
+  assert.deepEqual(cells.map((cell) => cell.param).sort(), ['basal_rate', 'carb_ratio', 'isf', 'target_bg']);
+  for (const cell of cells) assert.ok(SETTING_NAME[cell.param], `${cell.param} has a name`);
 });
 
 test('What was known names the recorded concern and its value in the wearer\'s words (#451)', async () => {

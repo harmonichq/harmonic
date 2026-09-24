@@ -727,14 +727,6 @@ function paramMatches(param, planned, actual) {
   return p === a;
 }
 
-/** Human-readable label per deliverable parameter (for the mismatch diff). */
-export const PARAM_LABEL = {
-  basal_rate: 'Basal (U/h)',
-  isf: 'Correction factor (1 U : mg/dL)',
-  carb_ratio: 'Carb ratio (g/U)',
-  target_bg: 'Target (mg/dL)',
-};
-
 /**
  * Reconcile the planned deliverable against the detected (active) pump profile.
  *
@@ -793,7 +785,6 @@ export function reconcileDeliverable(deliverableRows, detectedSegments, fetchedA
       if (!paramMatches(param, p, a)) {
         cells.push({
           param,
-          label: PARAM_LABEL[param],
           planned: roundToPrecision(p, PARAM_PRECISION[param]),
           actual: roundToPrecision(a, PARAM_PRECISION[param]),
         });

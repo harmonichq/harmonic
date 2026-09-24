@@ -376,13 +376,11 @@ const chartColors = (root) => {
 
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`)
   .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const daysBetween = (a, b) =>
-  Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000) + 1;
 const u = (v) => (v == null ? '--' : v.toFixed(2));
 
 /* ------------------------------ chrome -------------------------------- */
 
-function renderInstruments(winKey, capture, onPreset) {
+function renderInstruments(winKey, onPreset) {
   const seg = el('seg-window');
   seg.innerHTML = '';
   for (const [key, spec] of Object.entries(WINDOWS)) {
@@ -394,15 +392,6 @@ function renderInstruments(winKey, capture, onPreset) {
     b.addEventListener('click', () => onPreset(key));
     seg.append(b);
   }
-  /* PORT DEVIATION (#654): the mock owns its whole top bar and writes the scope
-     readout itself. In the app that readout belongs to the shell, is bound to
-     `cockpitScope`, and is shared by every tab — the ported surface must not
-     reach up and overwrite it. Guarded rather than deleted, so the same code
-     still fills them in wherever the ids do exist. */
-  const range = el('scope-range');
-  if (range) range.textContent = `${fmtDate(capture.window.start)} – ${fmtDate(capture.window.end)}`;
-  const days = el('scope-days');
-  if (days) days.textContent = `${daysBetween(capture.window.start, capture.window.end)} d`;
 }
 
 /** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
@@ -1257,7 +1246,7 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
    surface can be re-mounted (the mock never re-mounts; it reloads the page).
    `signal` aborts the document/window listeners the ported code registers. */
 function boot(root, data, callbacks, signal) {
-  const { day, exposureCapture, audit, params, icMissing } = data;
+  const { day, audit, params, icMissing } = data;
   const { envelope: envelopeIn } = data;
   /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
      `findings` opens on the preparation's GLOBAL projection; a pressed preset
@@ -1342,7 +1331,7 @@ function boot(root, data, callbacks, signal) {
   /* ---- mock 2014-2716 — VERBATIM except the edits marked `PORT:` below ---- */
   const colors = chartColors(root);
 
-  renderInstruments(CFG.win, exposureCapture, (key) => {
+  renderInstruments(CFG.win, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
     invalidateSlotReturn();
     presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
@@ -3103,8 +3092,8 @@ function boot(root, data, callbacks, signal) {
      basal's alone. */
   const stagedTotal = () => staged.size + icStaged.size + (isfStaged ? 1 : 0);
 
-  /* PORT DEVIATION (#654), same reason as the scope guards above: the
-     Plan step and its badge are the shell's `<nav class="cockpit-flow">`
+  /* PORT DEVIATION (#654): the Plan step and its badge are the shell's
+     `<nav class="cockpit-flow">`
      (`frontend/index.html`), Vue-bound to the real Plan draft via
      `step.count` — not this surface's chrome to paint. The mock's
      `#step-plan`/`#plan-badge` ids don't exist in the app (this null

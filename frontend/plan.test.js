@@ -477,22 +477,6 @@ test('reconcile flags a mis-key that survives rounding, only for the bad cell', 
   assert.equal(res.groups[0].cells[0].actual, 60);
 });
 
-test('a mismatch cell names its setting by its user label and unit form (#451)', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  // Every parameter mis-keyed at midnight, so every label is carried once.
-  const detected = [
-    { start_min: 0, basal_rate: 0.9, isf: 60, carb_ratio: 12, target_bg: 120 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ];
-  const labels = Object.fromEntries(reconcileDeliverable(rows, detected).groups[0].cells
-    .map((cell) => [cell.param, cell.label]));
-  assert.deepEqual(labels, {
-    basal_rate: 'Basal (U/h)', isf: 'Correction factor (1 U : mg/dL)',
-    carb_ratio: 'Carb ratio (g/U)', target_bg: 'Target (mg/dL)',
-  });
-  assert.doesNotMatch(Object.values(labels).join(' '), /ISF|I:C|mg\/dL\/U/);
-});
-
 test('a correction factor reads insulin first on both sides', () => {
   assert.equal(settingValue('isf', 40), '1 U : 40 mg/dL');
   assert.equal(settingValue('basal_rate', 0.6), '0.6 U/h');

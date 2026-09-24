@@ -194,16 +194,19 @@
 - [x] 3.8 Delete the `#status-src` and `#status-clock` writes in
   `frontend/diagnose-workstation.js`. No shipped markup declares either id, and
   a whole-tree `git grep` finds only these writes.
-- [x] 3.9 Coordinator-authorized after sub-order 1's chunk review (Q3
-  delegation, Connor Griffin, 2026-09-23; coordinator ruling R451): the Plan's
-  pump-mismatch diff labels its parameters from `PARAM_LABEL` in
-  `frontend/plan.js`, which reads "ISF (mg/dL/U)" and "I:C (g/U)". It takes the
-  user labels and `CONTEXT.md`'s unit forms: the correction factor names
-  "Correction factor" with its insulin-first form, and the carb ratio names
-  "Carb ratio" with "g/U". Touch only `PARAM_LABEL` and its readers: #453,
-  already on the release trunk, reduced `reconcileDeliverable` in the same
-  file. A node test through the mismatch rows' public reader fails first on the
-  base. The coordinator ruled that this authorization needs no newer lock.
+- [x] 3.9 Coordinator-authorized after sub-orders 1 and 3's chunk reviews (Q3
+  delegation, Connor Griffin, 2026-09-23; coordinator ruling R451; no newer lock
+  is needed). Delete dead desk code that carries engine words or unrendered ids:
+  - `PARAM_LABEL` in `frontend/plan.js` ("ISF (mg/dL/U)", "I:C (g/U)") and the
+    mismatch diff's `|| cell.label` fallback in `frontend/plan-view.js`. The
+    diff names every cell by `SETTING_NAME[cell.param]`, which names all four
+    Plan parameters; a node test through `reconcileDeliverable` pins that every
+    cell it emits has a name. Touch only these lines: #453, already on the
+    release trunk, swept `plan.js`'s other exports.
+  - The `#scope-range` and `#scope-days` writes in
+    `frontend/diagnose-workstation.js`, with the helper and parameter only they
+    read. No shell or template declares either id (grep of the built shell and
+    every template).
 
 ## 4. The watch dock's title names the change; its values wrap below
 

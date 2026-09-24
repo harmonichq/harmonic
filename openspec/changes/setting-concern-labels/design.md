@@ -313,6 +313,21 @@ line.
 The only references to either id on b03431d2 are these two guarded writes.
 Their guards therefore never pass, and the lines never render.
 
+**Widened by the coordinator after sub-order 3** (Q3 delegation, Connor Griffin,
+2026-09-23; coordinator ruling R451). Two more pieces of dead desk code carrying
+engine words or unrendered ids are deleted, for the same kind of reason:
+
+- **The `#scope-range` and `#scope-days` writes**, with the date helper and the
+  parameter only they read. No shell or template declares either id: the built
+  shell's bundle holds only these two lookups, and `frontend/index.html`,
+  `frontend/shell.js` and the built `index.html` never mention them.
+- **The Plan mismatch label table (`PARAM_LABEL`) and its `|| cell.label`
+  fallback.** The mismatch diff names each cell by `SETTING_NAME[cell.param]`.
+  Cells are built over the four Plan parameters only, and `SETTING_NAME` names
+  all four, so the fallback never ran and the table's "ISF (mg/dL/U)" and
+  "I:C (g/U)" never rendered. A node test through the mismatch reader pins that
+  every cell it emits has a name. This replaces relabelling the table.
+
 ## Revise preparation
 
 - **Lifecycle:** `revise`, routed by UI Craft on 2026-09-23 (`shipped`,

@@ -3129,6 +3129,15 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S148
+export const S148 = appOnly('ADR 432',
+  '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);
+// STORY:harmonic-v2-desktop:S149
+export const S149 = appOnly('ADR 432',
+  '#432 a selected matched meal reads as its facts and served reason', C4_STORIES.S149);
+// STORY:harmonic-v2-desktop:S150
+export const S150 = appOnly('ADR 432',
+  '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3186,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

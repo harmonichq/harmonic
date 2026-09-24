@@ -2937,3 +2937,99 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #432 amendment — 2026-09-23, issue #432
+
+S148–S150 are the fail-first obligations of ADR 432
+(`openspec/changes/meal-occurrence-facts/design.md`): a case-file Occurrence row
+names what the Occurrence is from its served anchor facts, and a selected
+Occurrence reads as those facts and its served reason. They are app-opener-only,
+like S101–S117. Browser execution belongs to the release coordinator at 1280x720
+and 1440x900, each story on a fresh case store (`CASE_STORE_DIR`). S25 and S107 are
+amended to read the same served facts. No story is retired. No `★ FROZEN` block
+and no header inventory line is edited here; the release coordinator writes the
+one release freeze block and reconciles the count line.
+
+Sanction: Connor Griffin, 2026-09-23, answering the release's Q2 ("Can your reply
+here count as sign-off for the UI copy and tone changes? … I record your answer as
+the approval for every change these 13 checklists call for, and write the wording
+in CONTEXT.md terms"): "Q1 A, Q2 A, defaults all fine, go." It covers S148–S150 and
+the S25 and S107 amendments below, and nothing outside #432's checklist.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the showcase
+or a named `scripts/qa_e2e_cases.py` case store.
+
+```
+S148 · Every row of the Meal bolus short response comparison names its own
+       meal: its served carbs, its dose and, when served, its peak, with the word
+       peak or nadir, and without the constant anchor label its cohort heading
+       already names; no meal row leads with a dash.
+  element:  #level .case-occurrence .only
+  source:   frontend/diagnose-workstation.js occurrenceDescription,
+            renderEventComparisonRoster, renderCaseRoster
+  lock:     none (revise; ADR 432 in openspec/changes/meal-occurrence-facts/design.md)
+  data:     showcase; All charts, then finding:meal_bolus_short's event case
+            (32 meals, each serving its dose, carbs and Arc peak)
+  evidence: C4_STORIES.S148 → assertServedRowDescriptions432; expands the
+            roster once, then reads every rendered row against its own served
+            Occurrence: the served anchor must carry dose and carbs, the row may
+            not lead with a dash, and its text must equal the served
+            description. A rendered row that is not a served Occurrence, or no
+            rendered row at all, is a premise failure. The verdict-band roster
+            renders only for a clock-aligned case file, which no chartable
+            finding's drill reaches; it prints through the same description
+            function, pinned by frontend/diagnose-workstation.test.js
+  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
+            its feature assertion ("S148 every meal row must serve its carbs and
+            dose"), at both sizes; passes on the branch. Coordinator-run
+```
+
+```
+S149 · Selecting the matched meal of the Meal bolus short case shows that meal:
+       the figure line reads its served carbs and dose at the anchor label; the
+       facts list prints a Peak line whose value and minutes equal the served
+       Arc peak, the served cause (its title, then its text), and each served
+       habit with its verdict's band label and, when served, the classifier's
+       sentence; no line only counts readings or markers and no sentence
+       describes the canvas.
+  element:  #level .occ-detail .occ-nums; #level .case-facts .vd.outcome,
+            .vd.cause, .vd.habit
+  source:   frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection
+  lock:     none (revise; ADR 432)
+  data:     showcase; the matched cohort's first member of finding:meal_bolus_short
+            (it serves an Arc peak and a Meal bolus fell short cause with text)
+  evidence: C4_STORIES.S149 → assertSelectedFacts432; reads the served detail
+            for the selected Occurrence and the rendered block, and compares the
+            figure, the outcome, cause and habit lines, and the absence of
+            count-only lines and the canvas sentence
+  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
+            its feature assertion ("S149 the selected meal must serve its carbs
+            and dose"), at both sizes; passes on the branch. Coordinator-run
+```
+
+```
+S150 · A Highs after meals Pattern case file carries the same facts: every row
+       reads its served carbs, dose and peak, and a selected Occurrence lists
+       each served habit with its band label and sentence.
+  element:  #level .case-occurrence .only; #level .case-facts .vd.habit
+  source:   frontend/diagnose-workstation.js occurrenceDescription, occurrenceFacts
+  lock:     none (revise; ADR 432)
+  data:     pattern-near-tie; All charts, then pattern:highs_after_meals
+            (three meals, each serving its dose, carbs and Arc peak)
+  evidence: C4_STORIES.S150; assertServedRowDescriptions432 over every rendered
+            row, then assertSelectedFacts432 over the first row's selection
+  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
+            its feature assertion ("S150 every meal row must serve its carbs and
+            dose"), at both sizes; passes on the branch. Coordinator-run
+```
+
+Amended S25 · 2026-09-23 · #432 / Q2 sanction: A selected Occurrence's evidence facts are its served facts — each served habit, and the served cause when the case file claims it — and never a count of glucose readings or event markers; the fixed sentence about what the canvas shows is retired. The replay reads the served detail and requires no count-only line. As frozen, S25 fails on this branch's build at its count-line assertion.
+
+Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
+| Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |

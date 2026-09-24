@@ -82,12 +82,12 @@
 
 ## 3. Surface and contract
 
-- [ ] 3.1 Implement surfaces **Case-file Occurrence rows name what the Occurrence
+- [x] 3.1 Implement surfaces **Case-file Occurrence rows name what the Occurrence
   is** in `frontend/diagnose-workstation.js` through one exported pure description
   function used by both rosters. Node test with a served meal Occurrence taken from
   the regenerated workstation capture, a correction cluster and a low: each form,
   and no description beginning with a dash for a meal or correction cluster.
-- [ ] 3.2 Implement surfaces **A selected Occurrence reads as its facts and served
+- [x] 3.2 Implement surfaces **A selected Occurrence reads as its facts and served
   reason** in the same module through one exported pure facts function. Retire the
   canvas sentence and the two count lines, and replace the source pin in
   `frontend/diagnose-workstation.test.js` with node tests of the facts function
@@ -97,12 +97,12 @@
   regenerated findings-projection fixture's Highs after meals selection), and a
   correction cluster (the workstation capture's `cases["finding:correction_stacking"]`
   selection).
-- [ ] 3.3 In `frontend/finding-case-file-validation.js`, require `insulin` and
+- [x] 3.3 In `frontend/finding-case-file-validation.js`, require `insulin` and
   `carbs` (number or null) on every anchor it checks, `outcome` (null or a
   well-formed reading) on every roster row, and `reason` (well-formed cause and
   habit entries) on every selected detail, refusing a missing or malformed value;
   test in `frontend/finding-case-file-validation.test.js`.
-- [ ] 3.4 Add S148, S149 and S150 with replay functions (`frontend/c4.replay.mjs`),
+- [x] 3.4 Add S148, S149 and S150 with replay functions (`frontend/c4.replay.mjs`),
   registry entries (`frontend/desk-behavior.replay.mjs`), case mappings
   (`frontend/replay-cases.mjs`), handler-inventory rows and node regression tests
   in `frontend/c4.replay.test.js` that tell a feature assertion from a setup error.

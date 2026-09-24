@@ -37,6 +37,8 @@ await loadGuidance({ force: true }); mount(host);
 const frame = text(host.innerHTML);
 console.log('Setting concern frame:', ['ISF', 'mg/dL/U'].filter((needle) => frame.includes(needle)).join(', '),
   '| figure', JSON.stringify(figure()));
+// The nameplate and Action heading print the served disposition code itself.
+console.log('Disposition code printed:', ['eligible_action', 'guided_investigation'].filter((code) => frame.includes(code)).join(', '));
 
 // 3. A set-aside setting preference the read no longer carries: served with title null.
 const selected = { subject: 'pattern:synthetic', kind: 'pattern', title: 'Synthetic Pattern', units: null,

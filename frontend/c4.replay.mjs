@@ -1,7 +1,7 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { hhmm, xAtMinute } from './diagnose-workstation-chart.js';
+import { GRID, hhmm, xAtMinute } from './diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -44,11 +44,14 @@ async function retained(page) {
 // `openBasalLane`/`heldRequest414` both open something specific; this story
 // pair needs the plain rail listing itself.
 async function openDiagnoseRail(page) {
+  await openDiagnose(page);
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled(page);
+}
+async function openDiagnose(page) {
   await press(page, 'nav.v2-nav [data-destination="diagnose"]');
   await page.waitForFunction(() =>
     document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'diagnose');
-  await settled(page);
-  await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settled(page);
 }
 // #429: the watch dock at the foot of the Diagnose inspector names Changes, and
@@ -1415,6 +1418,380 @@ export async function assertBandGlossary(page) {
   }, 'S122 Close returns focus to the caption control');
 }
 
+/* ---- #455: Diagnose chart text at the narrowest split (S183–S185) ---------
+   Each story checks every size and state before it judges, then fails once,
+   listing every failure by size, state and check with the measured amount in
+   px. Each restores the run's size even when checks failed, and none sets a
+   scroll offset. The judgments are pure and exported, so fake geometry drives
+   them in node. */
+
+// #455: runs in the page (handed to `locator.evaluate`), so it closes over
+// nothing. Every non-empty text span the chart on `host` paints, and every
+// background box a text element draws (a rich token's knock-out pad), in the
+// host's own pixels with each element's transform applied, grouped by the text
+// element that owns them, in paint order. Given `keepSelector`, it also reads
+// that control's box in the host's coordinates.
+function readPaintedText(host, keepSelector = null) {
+  const chart = globalThis.echarts.getInstanceByDom(host);
+  if (!chart) return null;
+  const owners = new Map();
+  const spans = [];
+  const pads = [];
+  for (const item of chart.getZr().storage.getDisplayList()) {
+    const owner = item.parent;
+    if (owner?.type !== 'text' || (item.type !== 'tspan' && item.type !== 'rect')) continue;
+    if (item.invisible || item.style?.opacity === 0) continue;
+    const text = item.type === 'tspan' ? String(item.style.text ?? '') : null;
+    if (text !== null && !text.trim()) continue;
+    if (!owners.has(owner)) owners.set(owner, owners.size);
+    const rect = item.getBoundingRect().clone();
+    if (item.transform) rect.applyTransform(item.transform);
+    const box = { group: owners.get(owner), x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    if (text === null) pads.push(box);
+    else spans.push({ ...box, text });
+  }
+  const keepNode = keepSelector && document.querySelector(keepSelector);
+  const hostBox = host.getBoundingClientRect();
+  const keepBox = keepNode?.getBoundingClientRect();
+  return {
+    width: host.clientWidth, height: host.clientHeight, spans, pads,
+    keep: keepBox ? { x: keepBox.x - hostBox.x, y: keepBox.y - hostBox.y,
+      width: keepBox.width, height: keepBox.height } : null,
+  };
+}
+
+// #455: a resize with no press has settled when the chart on `selector` has
+// been resized to its host's content box, that box has held still for a frame,
+// the chart is idle, and two more animation frames have passed.
+async function settledResize(page, selector) {
+  await page.waitForFunction(async selector => {
+    await document.fonts.ready;
+    const host = document.querySelector(selector);
+    const chart = host && globalThis.echarts.getInstanceByDom(host);
+    if (!chart) return false;
+    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    const box = () => {
+      const style = getComputedStyle(host);
+      return [host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+        host.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)];
+    };
+    const [width, height] = box();
+    await frame();
+    const [nextWidth, nextHeight] = box();
+    if (nextWidth !== width || nextHeight !== height
+      || Math.abs(chart.getWidth() - width) > 1 || Math.abs(chart.getHeight() - height) > 1
+      || !chart.getZr().animation.isFinished()) return false;
+    await frame(); await frame();
+    return true;
+  }, selector, { timeout: 10000 });
+}
+
+// #455: Diagnose at rest, with its overview and every tile drawn.
+async function diagnoseAtRest(page) {
+  await openDiagnose(page);
+  await waitForCharts(page);
+}
+
+const spanRight = box => box.x + box.width;
+const spanBottom = box => box.y + box.height;
+// How far a box runs outside `[0, width] × [0, height]`: 0 inside, with 1px of
+// slack for subpixel layout.
+const outsideBy = (box, width, height) => {
+  const over = Math.max(-box.x, spanRight(box) - width, -box.y, spanBottom(box) - height);
+  return over > 1 ? over : 0;
+};
+// The two boxes' shared extent on each axis; they overlap when both exceed 1px.
+const overlapOf = (a, b) => ({
+  x: Math.min(spanRight(a), spanRight(b)) - Math.max(a.x, b.x),
+  y: Math.min(spanBottom(a), spanBottom(b)) - Math.max(a.y, b.y),
+});
+const overlaps = (a, b) => { const shared = overlapOf(a, b); return shared.x > 1 && shared.y > 1; };
+// A caption's or a verdict's words: its spans' text in paint order, split on
+// whitespace, the `·` separator ignored. A word split across two spans reads
+// as two words, so it can never match the whole word it was cut from.
+const wordsOf = texts => texts.join(' ').split(/\s+/).filter(word => word && word !== '·');
+// The painted text elements, each with its spans and pad boxes, in paint order.
+const textGroups = reading => {
+  const groups = new Map();
+  const group = id => groups.get(id) ?? groups.set(id, { spans: [], pads: [] }).get(id);
+  for (const span of reading.spans) group(span.group).spans.push(span);
+  for (const pad of reading.pads) group(pad.group).pads.push(pad);
+  return [...groups.values()].filter(({ spans }) => spans.length);
+};
+// Spans on one line share a top within 1px.
+const linesOf = spans => spans.reduce((lines, span) => {
+  const line = lines.find(([first]) => Math.abs(first.y - span.y) <= 1);
+  if (line) line.push(span); else lines.push([span]);
+  return lines;
+}, []);
+const sizeName = size => `${size.width}×${size.height}`;
+const failOnce = (story, what, failures) => {
+  if (failures.length) {
+    assert.fail(`${story} ${what}; ${failures.length} failure${failures.length === 1 ? '' : 's'}:\n  - `
+      + failures.join('\n  - '));
+  }
+};
+
+// #455: the Window presets, in S183's order, each with its caption's head as
+// the overview prints it, written here as literals.
+export const OVERVIEW_PRESETS = Object.freeze([
+  Object.freeze({ label: 'Overnight', head: 'OVERNIGHT 00:00–06:00', range: [0, 360] }),
+  Object.freeze({ label: 'Morning', head: 'MORNING 06:00–12:00', range: [360, 720] }),
+  Object.freeze({ label: 'Afternoon', head: 'AFTERNOON 12:00–18:00', range: [720, 1080] }),
+  Object.freeze({ label: 'Evening', head: 'EVENING 18:00–24:00', range: [1080, 1440] }),
+  Object.freeze({ label: '24 h', head: '24 H 00:00–24:00', range: [0, 1440] }),
+]);
+// #455: the narrowest split, at the tall and the short window.
+export const NARROW_SPLIT_SIZES = Object.freeze([
+  Object.freeze({ width: 832, height: 720 }),
+  Object.freeze({ width: 832, height: 560 }),
+]);
+const NOTICE_WORDS = ['INSUFFICIENT', 'SAMPLE', '—', 'thinnest', 'bin', 'holds'];
+const SPREAD_WORDS = ['25–75', 'spread', null, 'mg/dL'];
+const WHOLE_COUNT = /^\d+$/;
+
+// #455: every way the glucose overview's text fails one check, one line each,
+// named by size, state and check with the measured amount. `check` carries the
+// size, the state's name, the preset's head and range, whether this is the
+// run's own size (`runSize`, where the caption must stand on one line) and
+// whether this check carries the thin-path premise (`premiseThin`), and the
+// `readPaintedText` reading of #chart.
+export function overviewTextFailures({ size, state, head, range, runSize = false, premiseThin = false, reading }) {
+  const at = `${sizeName(size)} ${state}`;
+  if (!reading) return [`${at}: #chart draws no chart`];
+  const failures = [];
+  const headWords = wordsOf([head]);
+  const captions = textGroups(reading).filter(({ spans }) => {
+    const words = wordsOf(spans.map(span => span.text));
+    return headWords.every((word, index) => words[index] === word);
+  });
+  if (captions.length !== 1) {
+    failures.push(`${at}: ${captions.length} painted captions begin with "${head}"; exactly one must`);
+  } else {
+    const [caption] = captions;
+    const words = wordsOf(caption.spans.map(span => span.text));
+    const thin = caption.spans.some(span => span.text.includes('INSUFFICIENT'));
+    const tail = words.slice(headWords.length);
+    const tailWhole = thin
+      ? tail.length === NOTICE_WORDS.length + 1 && NOTICE_WORDS.every((word, index) => tail[index] === word)
+        && WHOLE_COUNT.test(tail.at(-1))
+      : !tail.length || (tail.length === SPREAD_WORDS.length
+        && SPREAD_WORDS.every((word, index) => (word === null ? WHOLE_COUNT.test(tail[index]) : tail[index] === word)));
+    if (!tailWhole) {
+      failures.push(`${at}: the caption reads ${JSON.stringify(words)}; it must read the words of "${head}"`
+        + (thin ? ', then of "INSUFFICIENT SAMPLE — thinnest bin holds <n>" with a whole count' : '')
+        + ', every word whole');
+    }
+    if (premiseThin && !thin) {
+      failures.push(`${at}: premise: the 24 h caption must carry the insufficient-sample notice, so the store `
+        + 'exercises the thin path');
+    }
+    for (const span of caption.spans) {
+      const over = outsideBy(span, reading.width, reading.height);
+      if (over) {
+        failures.push(`${at}: caption span "${span.text}" lies ${px(over)} outside #chart's `
+          + `${reading.width}×${reading.height} box`);
+      }
+    }
+    const lines = linesOf(caption.spans);
+    if (runSize && lines.length > 1) {
+      failures.push(`${at}: the caption stands on ${lines.length} lines at the run's own size; it must stand on one`);
+    }
+    const gates = range.map(minute => ({ minute, x: xAtMinute({ clientWidth: reading.width }, minute) }));
+    const boxes = [...caption.spans.map(span => ({ name: `caption span "${span.text}"`, ...span })),
+      ...caption.pads.map((pad, index) => ({ name: `caption pad box ${index + 1}`, ...pad }))];
+    for (const box of boxes) {
+      const left = GRID.left - box.x;
+      if (left > 1) {
+        failures.push(`${at}: ${box.name} reaches ${px(left)} left of the plot's left edge, into the y-axis `
+          + 'label column');
+      }
+      const right = spanRight(box) - reading.width;
+      if (right > 1) failures.push(`${at}: ${box.name} reaches ${px(right)} past #chart's right edge`);
+      for (const gate of gates) {
+        const straddle = Math.min(gate.x - box.x, spanRight(box) - gate.x);
+        if (straddle > 1) {
+          failures.push(`${at}: ${box.name} straddles the window's ${hhmm(gate.minute)} gate by ${px(straddle)}`);
+        }
+      }
+    }
+  }
+  const spans = reading.spans;
+  for (const [index, a] of spans.entries()) {
+    for (const b of spans.slice(index + 1)) {
+      if (!overlaps(a, b)) continue;
+      const shared = overlapOf(a, b);
+      failures.push(`${at}: painted text "${a.text}" and "${b.text}" overlap by ${px(shared.x)} × ${px(shared.y)}`);
+    }
+  }
+  return failures;
+}
+
+// #455: S183's judgment over every check it took, failing once.
+export function assertOverviewText(checks) {
+  failOnce('S183', 'the glucose overview\'s text must stay whole, inside the chart and unstruck at every size',
+    checks.flatMap(overviewTextFailures));
+}
+
+// #455: the Spotlight's middle-rank verdict line on the replay store's 00:00
+// slot, as literals copied from its 1200×560 render, fact by fact.
+export const SPOTLIGHT_FACTS = Object.freeze(['SUPPORTED', '0.70 U/h', '(0.70–0.70)', 'programmed now 0.60']);
+const SPOTLIGHT_TALLY = '30 steady nights';
+// #455: S184's sizes, pressing nothing between them.
+export const SPOTLIGHT_SIZES = Object.freeze([
+  Object.freeze({ width: 1200, height: 736 }), ...NARROW_SPLIT_SIZES,
+]);
+
+// #455: every way the Spotlight's verdict line fails one check, one line each.
+// `oneLine` marks the size at which the verdict must stand on one line.
+export function spotlightVerdictFailures({ size, oneLine = false, reading }) {
+  const at = sizeName(size);
+  if (!reading) return [`${at}: the Spotlight draws no chart`];
+  const groups = textGroups(reading);
+  const verdicts = groups.filter(({ spans }) => spans[0].text.startsWith(SPOTLIGHT_FACTS[0]));
+  if (verdicts.length !== 1) {
+    return [`${at}: ${verdicts.length} painted lines begin with "${SPOTLIGHT_FACTS[0]}"; exactly one verdict must`];
+  }
+  const [{ spans }] = verdicts;
+  const failures = [];
+  for (const span of spans) {
+    const over = outsideBy(span, reading.width, reading.height);
+    if (over) {
+      failures.push(`${at}: verdict span "${span.text}" lies ${px(over)} outside the Spotlight chart's `
+        + `${reading.width}×${reading.height} box`);
+    }
+    if (reading.keep && overlaps(span, reading.keep)) {
+      failures.push(`${at}: verdict span "${span.text}" runs ${px(overlapOf(span, reading.keep).x)} under the `
+        + 'Keep control');
+    }
+  }
+  const words = wordsOf(spans.map(span => span.text));
+  const expected = wordsOf(SPOTLIGHT_FACTS);
+  const lines = linesOf(spans);
+  if (JSON.stringify(words) !== JSON.stringify(expected)) {
+    failures.push(`${at}: the verdict line reads ${JSON.stringify(words)}; it must read ${JSON.stringify(expected)}`);
+  } else {
+    // a break may fall only where one fact ends and the next begins
+    const ends = SPOTLIGHT_FACTS.map((_, index) => wordsOf(SPOTLIGHT_FACTS.slice(0, index + 1)).length);
+    let count = 0;
+    for (const line of lines.slice(0, -1)) {
+      count += wordsOf(line.map(span => span.text)).length;
+      if (!ends.includes(count)) {
+        failures.push(`${at}: a line break falls inside a fact, after "${expected[count - 1]}"`);
+      }
+    }
+  }
+  if (oneLine && lines.length > 1) {
+    failures.push(`${at}: the verdict line stands on ${lines.length} lines; at this size it must stand on one`);
+  }
+  const tallies = groups.filter(group => group.spans[0].text.startsWith(SPOTLIGHT_TALLY));
+  if (tallies.length !== 1) {
+    failures.push(`${at}: ${tallies.length} painted lines begin with "${SPOTLIGHT_TALLY}"; exactly one tally must`);
+  } else {
+    const verdictBottom = Math.max(...spans.map(spanBottom));
+    const tallyTop = Math.min(...tallies[0].spans.map(span => span.y));
+    if (verdictBottom - tallyTop > 1) {
+      failures.push(`${at}: the tally line starts ${px(verdictBottom - tallyTop)} above the verdict's last line ends`);
+    }
+  }
+  return failures;
+}
+
+// #455: S184's judgment over every size it read, failing once.
+export function assertSpotlightVerdict(checks) {
+  failOnce('S184', 'the Spotlight\'s verdict line must keep every fact whole inside the chart',
+    checks.flatMap(spotlightVerdictFailures));
+}
+
+// #455: S185's sizes before the run's own: the narrowest split, and the 1024px
+// tablet width of the 2026-08-19 owner ruling.
+export const CANVAS_HEAD_SIZES = Object.freeze([
+  ...NARROW_SPLIT_SIZES, Object.freeze({ width: 1024, height: 768 }),
+]);
+
+// #455: runs in the page. The canvas header, its title, provenance and All
+// charts control with the control's word, each with its box, clientWidth and
+// scrollWidth, once the header's box has held still for two frames.
+async function readCanvasHead() {
+  await document.fonts.ready;
+  const head = document.querySelector('#canvas-head');
+  const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  for (let last = null, still = 0, count = 0; head && still < 2 && count < 60; count += 1) {
+    await frame();
+    const now = JSON.stringify(head.getBoundingClientRect());
+    still = now === last ? still + 1 : 0;
+    last = now;
+  }
+  const part = node => {
+    if (!node) return null;
+    const { left, right, top, bottom, width } = node.getBoundingClientRect();
+    return { left, right, top, bottom, width, clientWidth: node.clientWidth, scrollWidth: node.scrollWidth,
+      shown: node.getClientRects().length > 0 && width > 0 };
+  };
+  const title = head?.querySelector('.head-rest h2');
+  const control = document.querySelector('#explorer-trigger');
+  return {
+    head: part(head), title: part(title), provenance: part(document.querySelector('#canvas-pool')),
+    control: part(control), word: part(document.querySelector('#explorer-trigger > span')),
+    titleFont: title ? parseFloat(getComputedStyle(title).fontSize) : null,
+    controlName: control?.getAttribute('aria-label') ?? null,
+    controlTitle: control?.getAttribute('title') ?? null,
+  };
+}
+
+// #455: every way the canvas header fails at one size, one line each, each
+// printing every part's box width, clientWidth and scrollWidth. `narrow` marks
+// the narrowest split, where the title need only show a letter and an ellipsis;
+// elsewhere the control shows its word and the title prints whole.
+export function canvasHeadFailures({ size, narrow, reading }) {
+  const at = sizeName(size);
+  const parts = ['title', 'provenance', 'control'];
+  const measured = [...parts, 'word'].map(name => {
+    const part = reading[name];
+    return part ? `${name} ${px(part.width)} box, clientWidth ${part.clientWidth}, scrollWidth ${part.scrollWidth}`
+      : `${name} absent`;
+  }).join('; ');
+  const failures = [];
+  const fail = message => failures.push(`${at}: ${message} (${measured})`);
+  const shown = parts.filter(name => reading[name]);
+  for (const name of parts.filter(name => !reading[name])) fail(`the header has no ${name}`);
+  for (const name of shown) {
+    const box = reading[name];
+    const over = reading.head && Math.max(reading.head.left - box.left, box.right - reading.head.right,
+      reading.head.top - box.top, box.bottom - reading.head.bottom);
+    if (!reading.head || over > 1) fail(`the ${name} lies ${px(over || 0)} outside the header's box`);
+  }
+  const centres = shown.map(name => (reading[name].top + reading[name].bottom) / 2);
+  const spread = centres.length ? Math.max(...centres) - Math.min(...centres) : 0;
+  if (spread > 2) fail(`the title, provenance and control do not share one line; their centres differ by ${px(spread)}`);
+  const { provenance, title, word } = reading;
+  if (provenance && provenance.scrollWidth > provenance.clientWidth) {
+    fail(`the provenance is cut: it needs ${provenance.scrollWidth}px and shows ${provenance.clientWidth}px`);
+  }
+  if (reading.controlName !== 'All charts' || reading.controlTitle !== 'All charts') {
+    fail(`the All charts control is named "${reading.controlName}" with the tooltip "${reading.controlTitle}"; `
+      + 'both must be "All charts"');
+  }
+  if (narrow) {
+    if (title && title.width < 2 * reading.titleFont) {
+      fail(`the title's box is ${px(title.width)} wide, under twice its ${reading.titleFont}px type, so it cannot `
+        + 'show a letter and an ellipsis');
+    }
+  } else {
+    if (!word?.shown) fail('the All charts control\'s word does not render');
+    if (title && title.scrollWidth > title.clientWidth) {
+      fail(`the title is cut: it needs ${title.scrollWidth}px and shows ${title.clientWidth}px`);
+    }
+  }
+  return failures;
+}
+
+// #455: S185's judgment over every size it read, failing once.
+export function assertCanvasHead(checks) {
+  failOnce('S185', 'the canvas header must keep its title, provenance and All charts control on one line',
+    checks.flatMap(canvasHeadFailures));
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -2225,6 +2602,86 @@ export const C4_STORIES = {
       assert.ok(label?.includes('; 3 nights excluded: 1 insulin on board, 2 other reasons'),
         `S154 the tile's accessible description must name each served reason: ${label}`);
     }, 'S154 the tile description names the served reasons');
+  },
+  // #455: the glucose overview's text stays whole, inside the chart and
+  // unstruck: every Window preset at the run's own size and at the narrowest
+  // split, tall and short, and the Evening caption after the window is
+  // narrowed with nothing pressed. Each press differs from the one before it,
+  // so every check reads a fresh render. `assertOverviewText` judges.
+  async S183(page) {
+    await openDiagnoseRail(page);
+    const run = page.viewportSize();
+    const checks = [];
+    const look = async (size, state, preset, extra = {}) => checks.push({ size, state, head: preset.head,
+      range: preset.range, reading: await page.locator('#chart').evaluate(readPaintedText), ...extra });
+    const choose = async preset => {
+      await page.getByRole('button', { name: preset.label, exact: true }).click();
+      await laidOutBrace404(page, { label: preset.label, range: preset.range });
+    };
+    const evening = OVERVIEW_PRESETS.find(preset => preset.label === 'Evening');
+    try {
+      for (const preset of OVERVIEW_PRESETS) {
+        await choose(preset);
+        await look(run, preset.label, preset, { runSize: true });
+      }
+      await choose(evening);
+      await page.setViewportSize(NARROW_SPLIT_SIZES[0]);
+      await settledResize(page, '#chart');
+      await look(NARROW_SPLIT_SIZES[0], 'Evening, narrowed with nothing pressed', evening);
+      for (const size of NARROW_SPLIT_SIZES) {
+        await page.setViewportSize(size);
+        await settledResize(page, '#chart');
+        for (const preset of OVERVIEW_PRESETS) {
+          await choose(preset);
+          await look(size, preset.label, preset,
+            { premiseThin: size === NARROW_SPLIT_SIZES[0] && preset.label === '24 h' });
+        }
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settled(page);
+    assertOverviewText(checks);
+  },
+  // #455: with Diagnose at rest, the Spotlight's verdict line keeps every fact
+  // whole inside its chart and clear of the Keep control at 1200×736 and at the
+  // narrowest split, reached by resizing with nothing pressed.
+  // `assertSpotlightVerdict` judges.
+  async S184(page) {
+    await diagnoseAtRest(page);
+    const run = page.viewportSize();
+    const checks = [];
+    try {
+      for (const size of SPOTLIGHT_SIZES) {
+        await page.setViewportSize(size);
+        await settledResize(page, '#tile-focal .tile-chart');
+        checks.push({ size, oneLine: size === SPOTLIGHT_SIZES[0],
+          reading: await page.locator('#tile-focal .tile-chart').evaluate(readPaintedText, '#tile-focal .tile-pin') });
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    assertSpotlightVerdict(checks);
+  },
+  // #455: with Diagnose at rest, the canvas header keeps its title, whole
+  // provenance and named All charts control on one line at the narrowest split,
+  // at 1024×768 and at the run's own size. The header's rule is CSS alone, so
+  // each reading follows the resize once the header has held still for two
+  // animation frames. `assertCanvasHead` judges.
+  async S185(page) {
+    await diagnoseAtRest(page);
+    const run = page.viewportSize();
+    const checks = [];
+    try {
+      for (const size of [...CANVAS_HEAD_SIZES, run]) {
+        await page.setViewportSize(size);
+        checks.push({ size, narrow: size.width < 1024, reading: await page.evaluate(readCanvasHead) });
+      }
+    } finally {
+      await page.setViewportSize(run);
+    }
+    assertCanvasHead(checks);
   },
   // #428 (ADR 428): after a Day return, every change to the case on screen —
   // here a key, a window choice and Backspace, none of them a Diagnose click —

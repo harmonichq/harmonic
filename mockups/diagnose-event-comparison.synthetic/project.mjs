@@ -312,11 +312,12 @@ function patternOccurrence(row, habits, attributedMember) {
   };
 }
 
-function patternCohort(key, name, rows, window) {
+function patternCohort(key, name, bandVerdict, rows, window) {
   const usable = rows.filter((row) => row.trace.cgm.some((point) => finiteNumber(point.bg)));
   const tier = support(usable.length, usable.length);
   const cohort = {
-    key, name, routed_count: rows.length, usable_count: usable.length, support: tier,
+    key, name, band_verdict: bandVerdict,
+    routed_count: rows.length, usable_count: usable.length, support: tier,
     occurrence_ids: rows.map((row) => row.id),
     points: pointRows(rows, window, usable.length),
   };
@@ -406,18 +407,20 @@ export function projectPatternCaseFile(capture, {
     const near = occurrences.filter((row) => row.verdict === 'near_miss');
     const comparison = occurrences.filter((row) => !['fired', 'near_miss'].includes(row.verdict));
     const cohorts = [
-      patternCohort('matched', 'Matched', matched, config.window),
-      patternCohort('nearly_matched', 'Nearly matched', near, config.window),
-      patternCohort('comparison', `Other ${family.replace('_', ' ')}`, comparison,
+      patternCohort('matched', 'Matched', 'fired', matched, config.window),
+      patternCohort('nearly_matched', 'Nearly matched', 'near_miss', near, config.window),
+      patternCohort('comparison', `Other ${family.replace('_', ' ')}`, null, comparison,
         config.window),
     ];
+    const cohortIds = new Set(cohorts.flatMap((cohort) => cohort.occurrence_ids));
     projection = {
       alignment: 'event', anchor: { kind: config.anchor, label: config.label },
       window_min: config.window, clock: null, cohorts,
       comparison: { name: cohorts[2].name,
         state: cohorts[2].support === 'withheld' ? 'unavailable' : 'available' },
       counts: { matched: matched.length, nearly_matched: near.length,
-        comparison: comparison.length, not_comparable: comparison.length },
+        comparison: comparison.length,
+        outside_comparison: occurrences.filter((row) => !cohortIds.has(row.id)).length },
     };
   }
   const cleanOccurrences = occurrences.map(({ trace, ...row }) => row);

@@ -122,6 +122,15 @@ function sentenceParts(row) {
   }));
 }
 
+/* #424 — for the fold, a cause's count sentences are its served `fold_sentences`:
+   its share of the Pattern's count first (scope `pattern`), then its counts outside
+   that count. The desk computes no share and decides no scope. */
+function foldParts(row) {
+  return (row.fold_sentences || []).map((s) => ({
+    count: `${s.count} of ${s.denominator}`, noun: s.noun, scope: s.scope,
+  }));
+}
+
 /**
  * A parameter row's own support denominator, in its own noun and naming its own run
  * (term 16). `nights of steady data` belongs to basal alone — I:C names meal runs, ISF names
@@ -194,7 +203,7 @@ export function presentedRows(projection) {
  * the rail") — PROVIDED its named parent is actually served in this
  * projection. It never enters the returned list as a sibling; instead it is
  * folded onto its parent Pattern's `members` array, in served order, carrying
- * every one of its own served count sentences. A member outside its parent's
+ * every one of its served fold sentences (#424). A member outside its parent's
  * fold has nothing to be reachable through, so there is no independent
  * hidden/collapsed state to track for it — it shows exactly when its parent
  * does.
@@ -304,7 +313,7 @@ export function queueRows(projection, selected = null) {
     (parent.members ??= []).push({
       id: row.id,
       title: row.title,
-      sentences: sentenceParts(row),
+      sentences: foldParts(row),
       raw: row,
     });
   }
@@ -373,11 +382,12 @@ function paintDetail(node, detail) {
   return den;
 }
 
-/** A folded cause's own line: name, every served count sentence's
-    count/denominator/noun, then the drill, on one line — never its outcome
-    word, which the parent Pattern's own line already carries (#413, "A Pattern
-    owns its causes in the rail"). The parent's spine is the causes list's own
-    rule, so a line carries no gutter mark of its own. */
+/** A folded cause's own line: name, its share of the Pattern's count, then the
+    drill — never its outcome word, which the parent Pattern's own line already
+    carries (#413, "A Pattern owns its causes in the rail"). Its counts outside
+    the Pattern's count sit beneath, set apart behind "outside the count" (#424),
+    so the name and share keep the rail's one row. The parent's spine is the
+    causes list's own rule, so a line carries no gutter mark of its own. */
 function paintMember(list, member, onDrill) {
   const item = document.createElement('div');
   item.className = 'qitem member';
@@ -389,12 +399,19 @@ function paintMember(list, member, onDrill) {
   item.append(node);
   add(node, 'lab', member.title);
   add(node, 'go', '›').setAttribute('aria-hidden', 'true');
-  const den = add(node, 'den');
-  member.sentences.forEach((sentence, i) => {
-    if (i) add(den, 'sep', '·');
-    add(den, 'v', sentence.count);
-    den.append(` ${sentence.noun}`);
+  const counts = (host, sentences) => sentences.forEach((sentence, i) => {
+    if (i) add(host, 'sep', '·');
+    add(host, 'v', sentence.count);
+    host.append(` ${sentence.noun}`);
   });
+  counts(add(node, 'den'), member.sentences.filter((sentence) => sentence.scope !== 'outside'));
+  const outside = member.sentences.filter((sentence) => sentence.scope === 'outside');
+  if (outside.length) {
+    const out = add(node, 'out');
+    add(out, 'lead', 'outside the count');
+    add(out, 'sep', '·');
+    counts(out, outside);
+  }
   node.addEventListener('click', () => onDrill(member.raw));
   list.append(item);
 }

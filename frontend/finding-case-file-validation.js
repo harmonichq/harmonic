@@ -122,6 +122,19 @@ export function validFindingCaseFile(caseFile) {
     const hasSharedAxis = cohorts.every((cohort) => (
       JSON.stringify(cohort.points.map((point) => point.minute)) === expectedMinutes
     ));
+    // ADR 424: a cohort names the verdict-band state it holds exactly, or none.
+    const holdsItsBand = (cohort) => cohort.band_verdict === null
+      || (FINDING_VERDICTS.includes(cohort.band_verdict)
+        && cohort.occurrence_ids.every((id) => roster.get(id)?.verdict === cohort.band_verdict)
+        && cohort.routed_count === caseFile.verdict_counts[cohort.band_verdict]);
+    // ADR 424: nothing is counted twice. A same-population comparison partitions
+    // the roster (checked below), so this total leaves nothing outside it; a
+    // cross-population one counts the roster Occurrences in no cohort beside
+    // matched and nearly matched.
+    const reconciled = crossPopulation
+      ? counts?.matched + counts?.nearly_matched + counts?.outside_comparison
+      : counts?.matched + counts?.nearly_matched + counts?.comparison
+        + counts?.outside_comparison;
     if (cohorts.length !== 3 || matched?.key !== 'matched' || near?.key !== 'nearly_matched'
       || comparison?.key !== 'comparison' || matched?.name !== 'Matched'
       || near?.name !== 'Nearly matched' || typeof comparison?.name !== 'string'
@@ -132,11 +145,12 @@ export function validFindingCaseFile(caseFile) {
       || !validCohort(comparison, (id) => recurrenceIdentity.test(id)
         || (crossPopulation && caseFile.population === 'highs' && ANNOUNCED_MEAL_ID.test(id)))
       || !validCount(counts?.matched) || !validCount(counts.nearly_matched)
-      || !validCount(counts.comparison) || !validCount(counts.not_comparable)
+      || !validCount(counts.comparison) || !validCount(counts.outside_comparison)
+      || Object.hasOwn(counts, 'not_comparable')
       || counts.matched !== matched.routed_count || counts.nearly_matched !== near.routed_count
       || counts.comparison !== comparison.routed_count
-      || counts.matched + counts.nearly_matched + counts.not_comparable
-        !== caseFile.summary.denominator
+      || reconciled !== caseFile.summary.denominator
+      || !cohorts.every(holdsItsBand)
       || (projection.comparison.state === 'unavailable') !== (comparison.support === 'withheld')
       || !hasSharedAxis) return false;
     const memberIds = new Set([...matched.occurrence_ids, ...near.occurrence_ids]);

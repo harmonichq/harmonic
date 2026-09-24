@@ -1031,6 +1031,118 @@ export async function assertRecurringLowsVariant(page) {
   await assertRecurringLowsLower(page);
 }
 
+// #424 · 2026-09-23. The case-file counts revision's fail-first obligations
+// (S124–S126, and S115's amended fold lines). Each story reads the served payload
+// first: the base serves no `outside_comparison`, `band_verdict` or
+// `fold_sentences`, so that presence check is where the base fails, before any
+// rendered word is read. Every asserted number comes from the served payload.
+export function assertServedComparison424(id, file) {
+  const { cohorts = [], counts = {} } = file?.projection || {};
+  assert.ok(Object.hasOwn(counts, 'outside_comparison') && !Object.hasOwn(counts, 'not_comparable')
+    && cohorts.length > 0 && cohorts.every(cohort => Object.hasOwn(cohort, 'band_verdict')),
+  `${id} the case file must serve its count outside the comparison and each cohort's band state`);
+}
+
+/* The Response comparison caption, read against its served case file: every
+   cohort under its served name and count, in served order, matching its section
+   heading; the band's own words once after a cohort that holds a band state; the
+   Occurrences outside the comparison only when their served count is non-zero;
+   and no visible count but the band's no-data one labelled "not comparable". */
+export function assertComparisonCaption424(id, file, view) {
+  const { cohorts, counts } = file.projection;
+  const terms = view.caption ? view.caption.split(' · ') : [];
+  cohorts.forEach((cohort, index) => {
+    const lead = cohort.band_verdict ? view.bandLeads[cohort.band_verdict] : null;
+    const expected = `${counts[cohort.key]} ${cohort.name}${lead ? ` (${lead.toLowerCase()})` : ''}`;
+    assert.equal(terms[index], expected, `${id} caption term ${index + 1} must read "${expected}"`);
+    assert.deepEqual(view.headings[index], { name: cohort.name, count: counts[cohort.key] },
+      `${id} the caption's ${cohort.name} must match its section heading`);
+  });
+  const outside = counts.outside_comparison;
+  const rest = terms.slice(cohorts.length);
+  if (outside) {
+    const noun = outside === 1 ? file.summary.noun.replace(/s$/, '') : file.summary.noun;
+    assert.deepEqual(rest, [`${outside} ${noun} outside the comparison`],
+      `${id} the caption must name the ${outside} ${noun} outside the comparison`);
+  } else {
+    assert.deepEqual(rest, [], `${id} nothing outside the comparison may print when none is served`);
+  }
+  const noData = file.verdict_counts.no_data;
+  assert.deepEqual(view.notComparable, noData ? [`${noData} not comparable`] : [],
+    `${id} only the band's no-data count may read "not comparable"`);
+  if (noData) {
+    assert.ok(view.foot.includes(`${noData} not comparable`),
+      `${id} the band's no-data count keeps "not comparable": ${view.foot}`);
+  }
+}
+
+export function assertServedFold424(id, members) {
+  assert.ok(members.length > 0 && members.every(member => Array.isArray(member.fold_sentences)
+    && member.fold_sentences.length > 0), `${id} every folded cause must serve its fold sentences`);
+}
+
+/* A folded cause's line, read against its served fold sentences: its share of
+   the Pattern's count beside its name, every outside sentence set apart behind
+   "outside the count", and never an outcome word. */
+export function assertFoldLine424(id, member, line) {
+  const counted = (text, sentence) => text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`);
+  const share = member.fold_sentences.filter(sentence => sentence.scope === 'pattern');
+  const outside = member.fold_sentences.filter(sentence => sentence.scope === 'outside');
+  for (const sentence of share) {
+    assert.ok(counted(line.den, sentence),
+      `${id} ${member.id} must print its share of the Pattern beside its name: "${line.den}"`);
+  }
+  for (const sentence of outside) {
+    assert.ok(line.out.startsWith('outside the count') && counted(line.out, sentence) && !counted(line.den, sentence),
+      `${id} ${member.id} must set its other counts apart behind "outside the count": "${line.den}" / "${line.out}"`);
+  }
+  if (!outside.length) {
+    assert.equal(line.out, '', `${id} ${member.id} serves nothing outside the count, so prints no such row`);
+  }
+  for (const sentence of member.fold_sentences) {
+    assert.ok(!`${line.den} ${line.out}`.includes(sentence.outcome),
+      `${id} ${member.id} must not print an outcome word: "${line.den} ${line.out}"`);
+  }
+}
+
+const comparisonView424 = page => page.evaluate(() => {
+  const level = document.querySelector('#level');
+  const text = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
+  const cap = [...level.querySelectorAll('.lvl-cap')].find(node => text(node).startsWith('Response comparison'));
+  return {
+    caption: text(cap?.querySelector('.meta')),
+    headings: [...level.querySelectorAll('.ev-group')].map(group => ({
+      name: text(group.querySelector('b')),
+      count: Number((text(group.querySelector('.n')).match(/\d+/) || [Number.NaN])[0]),
+    })),
+    bandLeads: Object.fromEntries([...level.querySelectorAll('.vband .key[data-verdict]')]
+      .map(key => [key.dataset.verdict, text(key.querySelector('.lead'))])),
+    notComparable: level.innerText.match(/\d+ not comparable/g) || [],
+    foot: text(level.querySelector('.vband-foot')),
+    denominator: Number(text(level.querySelector('.statline b:nth-of-type(2)'))),
+  };
+});
+
+async function openPatternFold(page, parentId) {
+  await page.evaluate((id) => {
+    const item = document.querySelector(`#level .qrow[data-id="${CSS.escape(id)}"]`).parentElement;
+    const toggle = item.querySelector(':scope > .qfold');
+    if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+  }, parentId);
+}
+
+async function foldLines424(page, parentId, members) {
+  const lines = {};
+  for (const member of members) {
+    const line = page.locator(`#level .qitem:has(> .qrow[data-id="${parentId}"]) .qcauses .qmember[data-id="${member.id}"]`);
+    await line.waitFor({ timeout: 30000 });
+    const text = async selector => (await line.locator(selector).count()
+      ? (await line.locator(selector).innerText()).replace(/\s+/g, ' ').trim() : '');
+    lines[member.id] = { den: await text('.den'), out: await text('.out') };
+  }
+  return lines;
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -1582,6 +1694,8 @@ export const C4_STORIES = {
   // closed on arrival unless the Pattern is the first ranked row; every
   // served count sentence prints in served order, count and denominator
   // emphasised, and the first served tier's rows carry the urgency stripe.
+  // Amended by #424: a member line prints its served fold sentences — its
+  // share beside its name, the rest behind "outside the count".
   async S115(page) {
     await openDiagnoseRail(page);
     const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
@@ -1590,6 +1704,9 @@ export const C4_STORIES = {
     assert.ok(parent, 'S115 premise: the showcase must serve a Pattern owning at least one claimed cause');
     const members = rows.filter(row => row.claimed_by === parent.id);
     assert.ok(members.length > 0, 'S115 premise: the owning Pattern must have at least one claimed member');
+    // #424 (Q2 sanction, 2026-09-23): a folded member line reads its served fold
+    // sentences, so the fold's served shape is checked before any line is read.
+    assertServedFold424('S115', members);
     const firstRankedTier = rows.find(row => row.priority != null)?.tier;
     assert.ok(firstRankedTier, 'S115 premise: the showcase must rank at least one row');
 
@@ -1606,29 +1723,21 @@ export const C4_STORIES = {
         "S115 the toggle must name the served cause count");
     }, 'S115 causes fold under their Pattern, never as sibling rows');
 
-    await page.evaluate((parentId) => {
-      const item = document.querySelector(`#level .qrow[data-id="${CSS.escape(parentId)}"]`).parentElement;
-      const toggle = item.querySelector(':scope > .qfold');
-      if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
-    }, parent.id);
+    await openPatternFold(page, parent.id);
 
     await waitForReplayAssertion(async seen => {
+      // The cause is announced inside its Pattern's item, never as a sibling.
+      const lines = seen(await foldLines424(page, parent.id, members));
       for (const member of members) {
-        // The cause is announced inside its Pattern's item, never as a sibling.
-        const line = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) .qcauses .qmember[data-id="${member.id}"]`);
-        await line.waitFor({ timeout: 30000 });
-        const [name, counts] = [seen(await line.locator('.lab').boundingBox()), seen(await line.locator('.den').boundingBox())];
-        assert.ok(Math.abs(name.y - counts.y) < name.height,
-          `S115 ${member.id} must read as one line, name and counts side by side`);
-        const text = seen(await line.locator('.den').innerText());
-        for (const sentence of member.count_sentences) {
-          assert.ok(text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`),
-            `S115 ${member.id} must print its served ${sentence.noun} sentence: ${text}`);
-          assert.ok(!text.includes(sentence.outcome),
-            `S115 a folded member line must not repeat the Pattern's own outcome word: ${text}`);
+        if (member.fold_sentences.some(sentence => sentence.scope === 'pattern')) {
+          const line = page.locator(`#level .qitem:has(> .qrow[data-id="${parent.id}"]) .qcauses .qmember[data-id="${member.id}"]`);
+          const [name, share] = [seen(await line.locator('.lab').boundingBox()), seen(await line.locator('.den').boundingBox())];
+          assert.ok(Math.abs(name.y - share.y) < name.height,
+            `S115 ${member.id} must read as one line, name and share side by side`);
         }
+        assertFoldLine424('S115', member, lines[member.id]);
       }
-    }, 'S115 every served count sentence prints, in served order, never merged');
+    }, 'S115 every served fold sentence prints, in served order, never merged');
 
     if (parent.count_sentences?.length) {
       await waitForReplayAssertion(async seen => {
@@ -1928,6 +2037,68 @@ export const C4_STORIES = {
       assert.equal(seen(await page.locator('.occ-foot button:last-child').evaluate(node => node === document.activeElement)), true,
         'S138 the return must focus that Occurrence\'s Open in Day control');
     }, 'S138 the return focus');
+  },
+  // #424: a same-population comparison's caption names each served cohort as its
+  // section heading does, links the band's words once, adds up to the header
+  // denominator and prints nothing outside the comparison.
+  async S124(page) {
+    const file = await C2_STORIES.openComparisonCase(page, 'pattern:highs_after_meals');
+    assertServedComparison424('S124', file);
+    const { cohorts } = file.projection;
+    assert.ok(file.cross_population === false
+      && ['fired', 'near_miss'].every(state => cohorts.some(cohort => cohort.band_verdict === state)),
+    'S124 premise: the carb-undercount Pattern must compare its own meals, holding Meets criteria and Borderline cohorts');
+    await waitForReplayAssertion(async seen => {
+      const view = seen(await comparisonView424(page));
+      assertComparisonCaption424('S124', file, view);
+      const total = view.caption.split(' · ').reduce((sum, term) => sum + Number.parseInt(term, 10), 0);
+      assert.equal(total, view.denominator, "S124 the caption's counts must add up to the header denominator");
+    }, 'S124 the same-population caption reconciles with its cohorts and the band');
+  },
+  // #424: a cross-population comparison's caption names its served Highs outside
+  // the comparison in those words, links no band to its attributed Matched cohort,
+  // and leaves "not comparable" to the band's no-data count alone.
+  async S125(page) {
+    const file = await C2_STORIES.openComparisonCase(page, 'finding:missed_meal');
+    assertServedComparison424('S125', file);
+    assert.ok(file.cross_population === true && file.projection.counts.outside_comparison > 0
+      && file.verdict_counts.no_data > 0,
+    'S125 premise: the missed-meal case must compare against announced meals, leave Highs outside it and hold a no-data High');
+    await waitForReplayAssertion(async seen => {
+      assertComparisonCaption424('S125', file, seen(await comparisonView424(page)));
+    }, 'S125 the cross-population caption names its Highs outside the comparison');
+  },
+  // #424: the open fold prints Correction stacking's share of Lows after
+  // correcting highs first and its correction-cluster count behind "outside the
+  // count"; the cause lines' shares add up to the Pattern's served count.
+  async S126(page) {
+    await openDiagnoseRail(page);
+    const rows = (await read(page, '/api/diagnose/finding-case-file-preparation')).rendered_rows;
+    const parent = rows.find(row => row.id === 'pattern:lows_after_correcting_highs');
+    const members = rows.filter(row => parent && row.claimed_by === parent.id);
+    assert.ok(members.some(member => member.id === 'finding:correction_stacking'),
+      'S126 premise: the correction-stacking case must fold Correction stacking under Lows after correcting highs');
+    assertServedFold424('S126', members);
+    const [own] = parent.count_sentences || [];
+    assert.ok(own, 'S126 premise: Lows after correcting highs must serve its own count');
+    const stacking = members.find(member => member.id === 'finding:correction_stacking');
+    assert.ok(stacking.fold_sentences[0].scope === 'pattern' && stacking.fold_sentences.some(sentence =>
+      sentence.scope === 'outside' && sentence.noun === 'correction clusters'),
+    'S126 Correction stacking must serve its share of the Pattern first and its correction-cluster count outside it');
+    await openPatternFold(page, parent.id);
+    await waitForReplayAssertion(async seen => {
+      const lines = seen(await foldLines424(page, parent.id, members));
+      for (const member of members) assertFoldLine424('S126', member, lines[member.id]);
+      const shares = members
+        .map(member => /^(\d+) of (\d+) (.+)$/.exec(lines[member.id].den.split('·')[0].trim()))
+        .filter(Boolean);
+      for (const [, , denominator, noun] of shares) {
+        assert.equal(`${denominator} ${noun}`, `${own.denominator} ${own.noun}`,
+          "S126 every share must count on the Pattern's own population");
+      }
+      assert.equal(shares.reduce((sum, [, count]) => sum + Number(count), 0), own.count,
+        "S126 the cause lines' shares must add up to the Pattern's served count");
+    }, 'S126 a folded cause shows its share of the Pattern first');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

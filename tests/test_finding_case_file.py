@@ -171,8 +171,14 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     expected_cohorts = ["matched", "nearly_matched", "comparison"]
     assert [cohort["key"] for cohort in case["projection"]["cohorts"]] == expected_cohorts
     assert case["projection"]["comparison"]["name"] == policy.comparison_name
-    assert sum(case["projection"]["counts"][key]
-               for key in ("matched", "nearly_matched", "not_comparable")) == 1
+    counts = case["projection"]["counts"]
+    assert set(counts) == {"matched", "nearly_matched", "comparison", "outside_comparison"}
+    in_comparison = counts["matched"] + counts["nearly_matched"] + (
+        0 if policy.cross_population else counts["comparison"])
+    assert in_comparison + counts["outside_comparison"] == 1
+    assert [cohort["band_verdict"] for cohort in case["projection"]["cohorts"]] == [
+        None if policy.cross_population else "fired", "near_miss", None,
+    ]
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
@@ -604,6 +610,161 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
     assert prepared.case("finding:late_bolus", "event", None) is not None
 
 
+_MEAL_STATES = {
+    "claimed": {"matched": True, "silence_reason": None},
+    "near_miss": {"matched": False, "silence_reason": "under_threshold"},
+    "no_data": {"matched": False, "silence_reason": "insufficient_data"},
+    "calm": {"matched": False, "silence_reason": "no_trigger"},
+}
+
+
+def _pattern_meal_case(states):
+    """A Highs after meals event case file over one synthetic meal per state."""
+    first = _opportunity(Lever.CARB_UNDERCOUNT)
+    stamps = [(first.anchor_t + timedelta(hours=3 * index)).strftime("%Y-%m-%d %H:%M:%S")
+              for index in range(len(states))]
+    claimed = sum(state == "claimed" for state in states)
+    findings = _pattern_findings(
+        "highs_after_meals", (Lever.CARB_UNDERCOUNT,), k=claimed, n=len(states),
+        rate_levers=(Lever.CARB_UNDERCOUNT,),
+    )
+    prepared = _prepared(
+        Lever.CARB_UNDERCOUNT, findings=findings,
+        exposures={"exposures": {"meals": {"n": len(states), "occurrences": [
+            {"ep_id": f"ep-{index}", "t": stamp, "date": stamp[:10], "kind": "meal",
+             "bg": 120, "attributed": state == "claimed",
+             "attributed_levers": ["carb_undercount"] if state == "claimed" else [],
+             "cause_lever": "carb_undercount" if state == "claimed" else None,
+             "verdicts": [{"classifier": "carb_undercount", **_MEAL_STATES[state]}]}
+            for index, (state, stamp) in enumerate(zip(states, stamps))
+        ]}}},
+    )
+    return prepared.case("pattern:highs_after_meals", "event", None)
+
+
+def test_pattern_comparison_leaves_nothing_outside_its_own_population():
+    case = _pattern_meal_case(("claimed", "calm", "no_data"))
+    counts = case["projection"]["counts"]
+
+    assert case["summary"]["denominator"] == 3
+    assert counts["matched"] + counts["nearly_matched"] + counts["comparison"] == 3
+    # The comparison is drawn from the case file's own meals, so its three cohorts
+    # partition them and nothing is outside it; the no-data meal is a comparison
+    # member, not a leftover.
+    assert counts.get("outside_comparison", counts.get("not_comparable")) == 0
+    assert "not_comparable" not in counts
+    no_data = next(row["id"] for row in case["occurrences"] if row["verdict"] == "no_data")
+    assert no_data in case["projection"]["cohorts"][2]["occurrence_ids"]
+
+
+def test_same_population_cohorts_name_the_band_state_they_hold():
+    case = _pattern_meal_case(("claimed", "claimed", "claimed", "near_miss", "no_data", "calm"))
+    counts = case["projection"]["counts"]
+
+    assert [(cohort["key"], cohort["name"], cohort["band_verdict"], cohort["routed_count"])
+            for cohort in case["projection"]["cohorts"]] == [
+        ("matched", "Matched", "fired", 3),
+        ("nearly_matched", "Nearly matched", "near_miss", 1),
+        ("comparison", "Other meal opportunities", None, 2),
+    ]
+    assert (case["verdict_counts"]["fired"], case["verdict_counts"]["near_miss"]) == (3, 1)
+    assert counts == {"matched": 3, "nearly_matched": 1, "comparison": 2,
+                      "outside_comparison": 0}
+
+
+def _meal_row(stamp, cause, claimants, matched):
+    """One synthetic meal Occurrence judged by both meal rate levers."""
+    return {
+        "ep_id": f"ep-{stamp[11:13]}", "t": stamp, "date": stamp[:10], "kind": "meal",
+        "bg": 120, "attributed": cause is not None, "attributed_levers": list(claimants),
+        "cause_lever": cause,
+        "cause_title": cause,
+        "verdicts": [{"classifier": lever, "matched": lever in matched,
+                      "silence_reason": None if lever in matched else "no_trigger"}
+                     for lever in ("carb_undercount", "late_bolus")],
+    }
+
+
+def test_a_meal_two_rate_levers_claim_is_credited_once_to_the_first():
+    """ADR 424: the Pattern's count, its case file's per-meal member and each folded
+    cause's share come from one credit rule over one population, so a meal two rate
+    levers claim is counted once, for the first in rate-lever order."""
+    stamps = [(datetime(2026, 8, 1, 8) + timedelta(hours=4 * index))
+              .strftime("%Y-%m-%d %H:%M:%S") for index in range(3)]
+    exposures = {"window": {}, "exposures": {"meals": {"n": 3, "occurrences": [
+        # Late bolus drove this meal and lists itself first, but Carb undercount comes
+        # first in the Pattern's rate levers, so the meal is credited to it.
+        _meal_row(stamps[0], "late_bolus", ("late_bolus", "carb_undercount"),
+                  {"late_bolus", "carb_undercount"}),
+        _meal_row(stamps[1], "late_bolus", ("late_bolus",), {"late_bolus"}),
+        _meal_row(stamps[2], "carb_undercount", ("carb_undercount",), {"carb_undercount"}),
+    ]}}}
+    scenarios = {"patterns": [
+        {"lever": lever, "priority": price,
+         "confidence": {"k": 2, "n": 3, "lo": .2, "hi": .9},
+         "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
+        for lever, price in (("carb_undercount", 40), ("late_bolus", 30))
+    ], "low_confidence": []}
+    findings = findings_projection.prepare_findings_projection(
+        analysis={"window_days": 30}, exposures=exposures, scenarios=scenarios,
+    ).project(WindowQuery.whole_day())
+    rows = {row["id"]: row for row in findings["rows"]}
+    pattern = rows["pattern:highs_after_meals"]["pattern"]
+
+    case = _prepared(Lever.CARB_UNDERCOUNT, findings=findings, exposures=exposures).case(
+        "pattern:highs_after_meals", "event", None,
+    )
+
+    assert (pattern["k"], pattern["n"]) == (3, 3)
+    assert case["summary"]["claimed"] == pattern["k"]
+    assert [row["member"] for row in case["occurrences"]] == [
+        "habit:carb_undercount", "habit:late_bolus", "habit:carb_undercount",
+    ]
+    shares = {lever: (rows[f"finding:{lever}"].get("fold_sentences") or [{}])[0]
+              for lever in ("carb_undercount", "late_bolus")}
+    assert {lever: (share.get("scope"), share.get("count"), share.get("denominator"))
+            for lever, share in shares.items()} == {
+        "carb_undercount": ("pattern", 2, 3), "late_bolus": ("pattern", 1, 3),
+    }
+    assert sum(share["count"] for share in shares.values()) == pattern["k"]
+    # Each cause keeps its own count; only the Pattern's share is credited once.
+    assert [rows[f"finding:{lever}"]["appearances"][0]["n"]
+            for lever in ("carb_undercount", "late_bolus")] == [1, 2]
+
+
+def test_outranked_meals_stay_outside_the_patterns_claimed_count():
+    """ADR 424: a meal a member habit matched without a rate lever's claim, or whose
+    episode another lever drove, reads outranked and is not attributed to the
+    Pattern, so the header's not-attributed count is right as served."""
+    stamps = [(datetime(2026, 8, 1, 12, 30) + timedelta(hours=3 * index))
+              .strftime("%Y-%m-%d %H:%M:%S") for index in range(3)]
+    occurrences = [
+        # Carb undercount claims this meal.
+        _meal_row(stamps[0], "carb_undercount", ("carb_undercount",), {"carb_undercount"}),
+        # Late bolus matched, but this meal did not drive its episode.
+        _meal_row(stamps[1], None, (), {"late_bolus"}),
+        # Meal over-delivery drove this meal's episode.
+        _meal_row(stamps[2], "meal_over_delivery", ("meal_over_delivery",), set()),
+    ]
+    findings = _pattern_findings(
+        "highs_after_meals", (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS), k=1, n=3,
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS, Lever.MEAL_BOLUS_SHORT),
+    )
+    case = _prepared(
+        Lever.CARB_UNDERCOUNT, findings=findings,
+        exposures={"exposures": {"meals": {"n": 3, "occurrences": occurrences}}},
+    ).case("pattern:highs_after_meals", "event", None)
+    summary, counts = case["summary"], case["verdict_counts"]
+
+    assert [(row["verdict"], row["member"]) for row in case["occurrences"]] == [
+        ("fired", "habit:carb_undercount"), ("outranked", "clean"), ("outranked", "clean"),
+    ]
+    assert summary["claimed"] == counts["fired"] == 1
+    assert summary["denominator"] - summary["claimed"] == (
+        counts["outranked"] + counts["near_miss"] + counts["no_data"] + counts["clean"]
+    ) == 2
+
+
 def test_circular_pattern_projection_and_case_share_explicit_population():
     def meal(ep_id, stamp, outcome_minute, lever=None):
         return {
@@ -789,9 +950,10 @@ def test_missed_meal_comparison_uses_attribution_winners_and_completed_meals():
     assert near["routed_count"] == 0
     assert baseline["routed_count"] == 1
     assert baseline["occurrence_ids"][0].startswith("m_")
+    # The second High fired without the attribution win, so it is in no cohort.
     assert case["projection"]["counts"] == {
         "matched": 1, "nearly_matched": 0, "comparison": 1,
-        "not_comparable": 1,
+        "outside_comparison": 1,
     }
     assert missed["points"][0]["minute"] == -60
     assert missed["points"][-1]["minute"] == 300
@@ -840,7 +1002,47 @@ def test_missed_meal_comparison_explicitly_serves_an_empty_attributed_cohort():
     case = prepared.case("finding:missed_meal", "event", None)
 
     assert case["projection"]["cohorts"][0]["routed_count"] == 0
-    assert case["projection"]["counts"]["not_comparable"] == 1
+    assert case["projection"]["counts"]["outside_comparison"] == 1
+
+
+def _six_missed_meal_highs():
+    """Six synthetic Highs: two attributed to Missed / unannounced meal, one near
+    miss and three others, beside one announced completed carb-bolus meal."""
+    first = _opportunity(Lever.MISSED_MEAL)
+    highs = [_opportunity(Lever.MISSED_MEAL, anchor=first.anchor_t + timedelta(hours=8 * index))
+             for index in range(6)]
+    members = tuple(Member(high, high.anchor_t, verdict) for high, verdict in zip(
+        highs, ("fired", "fired", "near_miss", "outranked", "no_data", "clean")))
+    prepared = _prepared(Lever.MISSED_MEAL, members,
+                         frozenset(member.id for member in members[:2]),
+                         findings=_findings(Lever.MISSED_MEAL, episodes=2))
+    announced = BolusEvent(t=first.anchor_t - timedelta(hours=2), insulin=4, carbs=40,
+                           completion="Completed", seq_num=99)
+    prepared.bolus = (announced,)
+    prepared.cgm = tuple(sorted(
+        (CgmReading(anchor + timedelta(minutes=minute), 100 + minute / 10, "EGV")
+         for anchor in [high.reach_start for high in highs] + [announced.t]
+         for minute in (-60, 0, 300)),
+        key=lambda row: row.t,
+    ))
+    return prepared
+
+
+def test_missed_meal_counts_its_highs_outside_the_announced_comparison():
+    case = _six_missed_meal_highs().case("finding:missed_meal", "event", None)
+    counts = case["projection"]["counts"]
+
+    assert case["summary"] == {"claimed": 2, "denominator": 6, "noun": "highs"}
+    assert counts == {"matched": 2, "nearly_matched": 1, "comparison": 1,
+                      "outside_comparison": 3}
+    assert counts["outside_comparison"] == (
+        case["summary"]["denominator"] - counts["matched"] - counts["nearly_matched"])
+    # Its attributed Matched cohort is a subset of the Meets criteria Highs, so it
+    # names no band state; Nearly matched is exactly the Borderline Highs.
+    assert [(cohort["key"], cohort["band_verdict"])
+            for cohort in case["projection"]["cohorts"]] == [
+        ("matched", None), ("nearly_matched", "near_miss"), ("comparison", None),
+    ]
 
 
 def test_pattern_member_associations_are_evidence_only():

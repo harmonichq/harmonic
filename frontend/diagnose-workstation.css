@@ -1822,14 +1822,20 @@
 .dw button.qmember { cursor: pointer; }
 .dw button.qmember:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qmember:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-/* one line per cause: name, the served counts, then the drill */
+/* one line per cause: name, its share of the Pattern's count, then the drill */
 .dw .qmember .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-data); font-weight: 500; color: var(--mk-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dw .qmember .den { grid-column: 2; grid-row: 1; font-size: var(--ck-micro); color: var(--mk-muted);
   white-space: nowrap; }
 .dw .qmember .go { grid-column: 3; grid-row: 1; color: var(--mk-muted); font-size: 12px; }
-.dw .qmember .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
-.dw .qmember .den .sep { margin: 0 6px; opacity: .6; }
+.dw .qmember .den .v,
+.dw .qmember .out .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
+.dw .qmember .den .sep,
+.dw .qmember .out .sep { margin: 0 6px; opacity: .6; }
+/* #424 — a cause's counts outside its Pattern's count sit on their own row
+   beneath its share, behind the words "outside the count", so the name and the
+   share keep the line's first row on the narrow rail. */
+.dw .qmember .out { grid-column: 1 / 3; grid-row: 2; font-size: var(--ck-micro); color: var(--mk-muted); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* #413 — "the rail shows served urgency": the first served tier's rows carry

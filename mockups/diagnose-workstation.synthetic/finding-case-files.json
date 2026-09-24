@@ -371,6 +371,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -976,6 +977,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -1576,6 +1578,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -2182,7 +2185,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -8685,6 +8688,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -9290,6 +9294,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -9890,6 +9895,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -10496,7 +10502,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -11011,6 +11017,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -11616,6 +11623,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -12216,6 +12224,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -12822,7 +12831,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -13332,6 +13341,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -13937,6 +13947,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -14537,6 +14548,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -15143,7 +15155,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -15668,6 +15680,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -16273,6 +16286,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -16873,6 +16887,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -17479,7 +17494,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -17984,6 +17999,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -18589,6 +18605,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -19189,6 +19206,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -19795,7 +19813,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -20305,6 +20323,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -20910,6 +20929,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -21510,6 +21530,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -22116,7 +22137,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -22606,6 +22627,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -23211,6 +23233,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -23811,6 +23834,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -24417,7 +24441,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -24927,6 +24951,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -25532,6 +25557,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -26132,6 +26158,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -26738,7 +26765,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -27537,6 +27564,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -28142,6 +28170,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -28742,6 +28771,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -29348,7 +29378,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -29858,6 +29888,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -30463,6 +30494,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -31063,6 +31095,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -31669,7 +31702,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -32703,6 +32736,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -33308,6 +33342,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -33908,6 +33943,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -34514,7 +34550,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -34917,6 +34953,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -35234,6 +35271,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -35546,6 +35584,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
        "occurrence_ids": [
@@ -35864,7 +35903,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -40646,6 +40685,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -40963,6 +41003,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -41275,6 +41316,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -41593,7 +41635,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -41958,6 +42000,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -42275,6 +42318,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -42587,6 +42631,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -42905,7 +42950,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -43270,6 +43315,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -43587,6 +43633,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -43899,6 +43946,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -44217,7 +44265,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -44582,6 +44630,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -44899,6 +44948,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -45211,6 +45261,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -45529,7 +45580,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -45894,6 +45945,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -46211,6 +46263,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -46523,6 +46576,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -46841,7 +46895,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -47339,6 +47393,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -47656,6 +47711,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -47968,6 +48024,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -48286,7 +48343,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -48651,6 +48708,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -48968,6 +49026,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -49280,6 +49339,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -49598,7 +49658,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -49963,6 +50023,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -50280,6 +50341,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -50592,6 +50654,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -50910,7 +50973,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -51275,6 +51338,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -51592,6 +51656,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -51904,6 +51969,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -52222,7 +52288,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -52756,6 +52822,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -53073,6 +53140,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -53385,6 +53453,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -53703,7 +53772,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -54303,6 +54372,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -54620,6 +54690,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -54932,6 +55003,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
        "occurrence_ids": [
@@ -55250,7 +55322,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -55653,6 +55725,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -56162,6 +56235,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -56666,6 +56740,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other back-to-back correction pairs",
        "occurrence_ids": [
@@ -57176,7 +57251,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -120,
@@ -63259,6 +63334,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -63768,6 +63844,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -64272,6 +64349,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -64782,7 +64860,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -65273,6 +65351,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -65782,6 +65861,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -66286,6 +66366,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -66796,7 +66877,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -67272,6 +67353,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -67781,6 +67863,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -68285,6 +68368,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -68795,7 +68879,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -69271,6 +69355,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -69780,6 +69865,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -70284,6 +70370,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -70794,7 +70881,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -71270,6 +71357,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -71779,6 +71867,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -72283,6 +72372,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -72793,7 +72883,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -73518,6 +73608,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -74027,6 +74118,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -74531,6 +74623,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -75041,7 +75134,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -75517,6 +75610,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -76026,6 +76120,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -76530,6 +76625,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -77040,7 +77136,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -77516,6 +77612,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -78025,6 +78122,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -78529,6 +78627,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -79039,7 +79138,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -79764,6 +79863,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -80273,6 +80373,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -80777,6 +80878,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -81287,7 +81389,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -81763,6 +81865,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -82272,6 +82375,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -82776,6 +82880,7 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
         "occurrence_ids": [
@@ -83286,7 +83391,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -120,
@@ -83977,6 +84082,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -84486,6 +84592,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -84990,6 +85097,7 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other back-to-back correction pairs",
        "occurrence_ids": [
@@ -85500,7 +85608,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -120,
@@ -85903,6 +86011,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -86508,6 +86617,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -87108,6 +87218,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -87714,7 +87825,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -94217,6 +94328,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -94822,6 +94934,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -95422,6 +95535,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -96028,7 +96142,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -96543,6 +96657,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -97148,6 +97263,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -97748,6 +97864,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -98354,7 +98471,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -98864,6 +98981,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -99469,6 +99587,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -100069,6 +100188,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -100675,7 +100795,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -101200,6 +101320,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -101805,6 +101926,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -102405,6 +102527,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -103011,7 +103134,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -103516,6 +103639,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -104121,6 +104245,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -104721,6 +104846,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -105327,7 +105453,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -105837,6 +105963,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -106442,6 +106569,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -107042,6 +107170,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -107648,7 +107777,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -108138,6 +108267,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -108743,6 +108873,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -109343,6 +109474,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -109949,7 +110081,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -110459,6 +110591,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -111064,6 +111197,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -111664,6 +111798,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -112270,7 +112405,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -113069,6 +113204,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -113674,6 +113810,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -114274,6 +114411,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -114880,7 +115018,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -115390,6 +115528,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -115995,6 +116134,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -116595,6 +116735,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -117201,7 +117342,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -118235,6 +118376,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -118840,6 +118982,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -119440,6 +119583,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -120046,7 +120190,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -120449,6 +120593,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -121054,6 +121199,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -121654,6 +121800,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other completed carb-bolus meals",
        "occurrence_ids": [
@@ -122260,7 +122407,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -128763,6 +128910,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -129368,6 +129516,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -129968,6 +130117,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -130574,7 +130724,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -131373,6 +131523,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -131978,6 +132129,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -132578,6 +132730,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -133184,7 +133337,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -133983,6 +134136,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -134588,6 +134742,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -135188,6 +135343,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -135794,7 +135950,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -136304,6 +136460,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -136909,6 +137066,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -137509,6 +137667,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -138115,7 +138274,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -138640,6 +138799,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -139245,6 +139405,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -139845,6 +140006,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -140451,7 +140613,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -140956,6 +141118,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -141561,6 +141724,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -142161,6 +142325,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -142767,7 +142932,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -143257,6 +143422,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -143862,6 +144028,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -144462,6 +144629,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -145068,7 +145236,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -145578,6 +145746,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -146183,6 +146352,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -146783,6 +146953,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -147389,7 +147560,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -147904,6 +148075,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -148509,6 +148681,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -149109,6 +149282,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -149715,7 +149889,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -150225,6 +150399,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -150830,6 +151005,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -151430,6 +151606,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
         "occurrence_ids": [
@@ -152036,7 +152213,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -152781,6 +152958,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -153386,6 +153564,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -153986,6 +154165,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other completed carb-bolus meals",
        "occurrence_ids": [
@@ -154592,7 +154772,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -154995,6 +155175,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -155600,6 +155781,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -156200,6 +156382,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -156806,7 +156989,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -163309,6 +163492,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -163914,6 +164098,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -164514,6 +164699,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -165120,7 +165306,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -165635,6 +165821,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -166240,6 +166427,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -166840,6 +167028,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -167446,7 +167635,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -167956,6 +168145,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -168561,6 +168751,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -169161,6 +169352,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -169767,7 +169959,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -170292,6 +170484,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -170897,6 +171090,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -171497,6 +171691,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -172103,7 +172298,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -172608,6 +172803,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -173213,6 +173409,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -173813,6 +174010,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -174419,7 +174617,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -174929,6 +175127,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -175534,6 +175733,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -176134,6 +176334,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -176740,7 +176941,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -177230,6 +177431,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -177835,6 +178037,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -178435,6 +178638,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -179041,7 +179245,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -179551,6 +179755,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -180156,6 +180361,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -180756,6 +180962,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -181362,7 +181569,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -182161,6 +182368,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -182766,6 +182974,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -183366,6 +183575,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -183972,7 +184182,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -184482,6 +184692,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -185087,6 +185298,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -185687,6 +185899,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
         "occurrence_ids": [
@@ -186293,7 +186506,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -187327,6 +187540,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -187932,6 +188146,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -188532,6 +188747,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
        "occurrence_ids": [
@@ -189138,7 +189354,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -189586,6 +189802,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": null,
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [],
@@ -190184,6 +190401,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -190784,6 +191002,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
        "occurrence_ids": [
@@ -191397,7 +191616,7 @@
       "comparison": 10,
       "matched": 0,
       "nearly_matched": 1,
-      "not_comparable": 9
+      "outside_comparison": 9
      },
      "window_min": [
       -60,
@@ -191589,6 +191808,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": null,
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -192189,6 +192409,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -192789,6 +193010,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
        "occurrence_ids": [
@@ -193402,7 +193624,7 @@
       "comparison": 10,
       "matched": 1,
       "nearly_matched": 1,
-      "not_comparable": 8
+      "outside_comparison": 8
      },
      "window_min": [
       -60,
@@ -200001,6 +200223,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -200601,6 +200824,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -201201,6 +201425,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -201814,7 +202039,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -202334,6 +202559,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -202934,6 +203160,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -203534,6 +203761,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -204147,7 +204375,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -204662,6 +204890,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -205262,6 +205491,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -205862,6 +206092,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -206475,7 +206706,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -207010,6 +207241,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -207610,6 +207842,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -208210,6 +208443,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -208823,7 +209057,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -209617,6 +209851,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -210217,6 +210452,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -210817,6 +211053,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -211430,7 +211667,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -211955,6 +212192,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -212555,6 +212793,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -213155,6 +213394,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -213768,7 +214008,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -214288,6 +214528,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -214888,6 +215129,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -215488,6 +215730,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -216101,7 +216344,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -216621,6 +216864,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -217221,6 +217465,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -217821,6 +218066,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -218434,7 +218680,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -218934,6 +219180,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -219534,6 +219781,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -220134,6 +220382,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -220747,7 +220996,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -221267,6 +221516,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -221867,6 +222117,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -222467,6 +222718,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -223080,7 +223332,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -223874,6 +224126,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -224474,6 +224727,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -225074,6 +225328,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -225687,7 +225942,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -226221,6 +226476,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": null,
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -226821,6 +227077,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -227421,6 +227678,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
         "occurrence_ids": [
@@ -228034,7 +228292,7 @@
        "comparison": 10,
        "matched": 1,
        "nearly_matched": 1,
-       "not_comparable": 8
+       "outside_comparison": 8
       },
       "window_min": [
        -60,
@@ -228828,6 +229086,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": null,
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -229428,6 +229687,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -230028,6 +230288,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
        "occurrence_ids": [
@@ -230641,7 +230902,7 @@
       "comparison": 10,
       "matched": 1,
       "nearly_matched": 1,
-      "not_comparable": 8
+      "outside_comparison": 8
      },
      "window_min": [
       -60,
@@ -231044,6 +231305,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -231361,6 +231623,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -231673,6 +231936,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
        "occurrence_ids": [
@@ -231991,7 +232255,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,
@@ -236773,6 +237037,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -237090,6 +237355,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -237402,6 +237668,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -237720,7 +237987,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -238085,6 +238352,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -238402,6 +238670,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -238714,6 +238983,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -239032,7 +239302,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -239397,6 +239667,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -239714,6 +239985,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -240026,6 +240298,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -240344,7 +240617,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -240709,6 +240982,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -241026,6 +241300,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -241338,6 +241613,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -241656,7 +241932,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -242021,6 +242297,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -242338,6 +242615,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -242650,6 +242928,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -242968,7 +243247,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -243466,6 +243745,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -243783,6 +244063,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -244095,6 +244376,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -244413,7 +244695,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -244778,6 +245060,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -245095,6 +245378,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -245407,6 +245691,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -245725,7 +246010,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -246090,6 +246375,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -246407,6 +246693,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -246719,6 +247006,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -247037,7 +247325,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -247402,6 +247690,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -247719,6 +248008,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -248031,6 +248321,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -248349,7 +248640,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -248883,6 +249174,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
         "occurrence_ids": [
@@ -249200,6 +249492,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
         "occurrence_ids": [
@@ -249512,6 +249805,7 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
         "occurrence_ids": [
@@ -249830,7 +250124,7 @@
        "comparison": 3,
        "matched": 6,
        "nearly_matched": 1,
-       "not_comparable": 3
+       "outside_comparison": 0
       },
       "window_min": [
        -60,
@@ -250430,6 +250724,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
        "occurrence_ids": [
@@ -250747,6 +251042,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
        "occurrence_ids": [
@@ -251059,6 +251355,7 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
        "occurrence_ids": [
@@ -251377,7 +251674,7 @@
       "comparison": 3,
       "matched": 6,
       "nearly_matched": 1,
-      "not_comparable": 3
+      "outside_comparison": 0
      },
      "window_min": [
       -60,

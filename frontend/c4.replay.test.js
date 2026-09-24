@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
+import { readFileSync } from 'node:fs';
 import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant,
+  assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -1370,4 +1372,187 @@ test('S154 fails when the tile description does not name the served reasons', as
     assert.match(error.cause?.message ?? '', /S154 the tile's accessible description must name each served reason/);
     return true;
   });
+});
+
+const C4_STORIES_424 = async () => (await import('./c4.replay.mjs')).C4_STORIES;
+
+// #424 · the case-file counts revision's three stories, and the helpers they
+// read the desk through. The served inputs are generator-owned fixtures; the
+// base-shaped copies strip exactly the three fields the base does not serve.
+const fixtureJson = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+const missedMealCase = () => fixtureJson('./__fixtures__/missed-meal-comparison.json').payload;
+const samePopulationCase = () => fixtureJson(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json').cases['finding:carb_undercount'].event;
+const BAND_LEADS_424 = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet' };
+function baseShaped424(file) {
+  const copy = structuredClone(file);
+  const { outside_comparison: _outside, ...counts } = copy.projection.counts;
+  copy.projection.counts = { ...counts, not_comparable: copy.projection.counts.comparison };
+  for (const cohort of copy.projection.cohorts) delete cohort.band_verdict;
+  return copy;
+}
+const captionView424 = (file, caption, extra = {}) => ({
+  caption,
+  headings: file.projection.cohorts.map(cohort => ({ name: cohort.name, count: cohort.routed_count })),
+  bandLeads: BAND_LEADS_424,
+  notComparable: file.verdict_counts.no_data ? [`${file.verdict_counts.no_data} not comparable`] : [],
+  foot: file.verdict_counts.no_data ? `${file.verdict_counts.no_data} not comparable` : '',
+  denominator: file.summary.denominator,
+  ...extra,
+});
+// A fake desk for the caption stories: the rail row, the served case file and
+// the rendered comparison view, so a story's control flow runs without Chromium.
+function comparisonStoryPage(file, view) {
+  const node = () => ({
+    first() { return this; }, filter() { return this; },
+    count: async () => 1, waitFor: async () => {}, click: async () => {}, getAttribute: async () => null,
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    locator: node,
+    getByRole: node,
+    waitForFunction: async () => true,
+    waitForResponse: async predicate => {
+      const response = {
+        url: () => `http://synthetic.invalid/api/diagnose/finding-case-file?finding_id=${encodeURIComponent(file.finding.id)}`,
+        ok: () => true, json: async () => file,
+      };
+      assert.ok(predicate(response), 'the fake case file must answer the story\'s own request');
+      return response;
+    },
+    evaluate: async () => view,
+  };
+}
+
+test('S124–S126 are unique app-only #424 stories on their manufactured case stores', () => {
+  for (const [id, expectedCase, term] of [
+    ['S124', 'behavioral-carb-undercount', 'HV2-18'],
+    ['S125', 'behavioral-missed-meal', 'HV2-18'],
+    ['S126', 'behavioral-correction-stacking', '#413 design lock'],
+  ]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+test('#424 the served-shape check passes on the branch shape and fails on the base shape', () => {
+  assert.doesNotThrow(() => assertServedComparison424('S125', missedMealCase()));
+  assert.throws(() => assertServedComparison424('S125', baseShaped424(missedMealCase())),
+    /S125 the case file must serve its count outside the comparison and each cohort's band state/);
+});
+
+test('#424 a same-population caption passes as the branch renders it and fails as the base did', () => {
+  const file = samePopulationCase();
+  assert.doesNotThrow(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities')));
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 matched · 1 nearly matched · 3 comparison · 3 not comparable',
+    { notComparable: ['1 not comparable', '3 not comparable'] })), /S124 caption term 1 must read/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities (does not meet)')),
+  /S124 caption term 3 must read/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    { headings: [{ name: 'Matched', count: 6 }, { name: 'Nearly matched', count: 1 }, { name: 'Comparison', count: 3 }] })),
+  /S124 the caption's Other meal opportunities must match its section heading/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    { notComparable: ['1 not comparable', '3 not comparable'] })),
+  /S124 only the band's no-data count may read "not comparable"/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities · 0 meals outside the comparison')),
+  /S124 nothing outside the comparison may print when none is served/);
+});
+
+test('#424 a cross-population caption names its Highs outside the comparison and no band on Matched', () => {
+  const file = missedMealCase();
+  assert.doesNotThrow(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison')));
+  assert.throws(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals')),
+  /S125 the caption must name the 1 high outside the comparison/);
+  assert.throws(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched (meets criteria) · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison')),
+  /S125 caption term 1 must read "2 Matched"/);
+});
+
+test('S124 fails at its served-shape feature check on the base case file, never at a setup step', async () => {
+  const file = baseShaped424(samePopulationCase());
+  file.finding = { ...file.finding, id: 'pattern:highs_after_meals' };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES_424().then(stories => stories.S124(comparisonStoryPage(file, captionView424(file, '')))),
+    /S124 the case file must serve its count outside the comparison and each cohort's band state/));
+});
+
+test('S124 names a premise failure when the served case is not a same-population comparison', async () => {
+  const file = missedMealCase();
+  file.finding = { ...file.finding, id: 'pattern:highs_after_meals' };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES_424().then(stories => stories.S124(comparisonStoryPage(file, captionView424(file, '')))),
+    /S124 premise:/));
+});
+
+test('S124 and S125 reach their caption assertions on a served branch case file', async () => {
+  const same = samePopulationCase();
+  same.finding = { ...same.finding, id: 'pattern:highs_after_meals' };
+  same.verdict_counts = { ...same.verdict_counts };
+  const stories = await C4_STORIES_424();
+  await withReplayAssertionTimeout(10, () => stories.S124(comparisonStoryPage(same, captionView424(same,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities'))));
+  const missed = missedMealCase();
+  missed.verdict_counts = { ...missed.verdict_counts, no_data: 1 };
+  await withReplayAssertionTimeout(10, () => stories.S125(comparisonStoryPage(missed, captionView424(missed,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison'))));
+  await withReplayAssertionTimeout(10, () => assert.rejects(stories.S125(comparisonStoryPage(missed,
+    captionView424(missed, '2 matched · 0 nearly matched · 1 comparison · 1 not comparable',
+      { notComparable: ['1 not comparable', '1 not comparable'] }))), /S125 caption term 1 must read/));
+});
+
+test('#424 a folded cause line passes on its share and set-apart counts, and fails on the base line', () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows;
+  const carb = rows.find(row => row.id === 'finding:carb_undercount');
+  assert.doesNotThrow(() => assertFoldLine424('S126', carb,
+    { den: '1 of 3 meals', out: 'outside the count·2 of 4 highs' }));
+  assert.throws(() => assertFoldLine424('S126', carb, { den: '2 of 4 highs·1 of 3 meals', out: '' }),
+    /S126 finding:carb_undercount must set its other counts apart behind "outside the count"/);
+  assert.throws(() => assertFoldLine424('S126', carb,
+    { den: '1 of 3 meals ran high', out: 'outside the count·2 of 4 highs' }), /must not print an outcome word/);
+  assert.throws(() => assertFoldLine424('S126', carb,
+    { den: '', out: 'outside the count·2 of 4 highs' }), /must print its share of the Pattern beside its name/);
+  // Under a Pattern that serves no count, every sentence is outside and the line leads with the words.
+  const stacking = rows.find(row => row.id === 'finding:correction_stacking');
+  assert.doesNotThrow(() => assertFoldLine424('S115', stacking,
+    { den: '', out: 'outside the count·1 of 1 correction clusters' }));
+});
+
+test('#424 a folded cause without served fold sentences fails the served-shape check', () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows;
+  const members = rows.filter(row => row.claimed_by === 'pattern:lows_after_correcting_highs');
+  assert.doesNotThrow(() => assertServedFold424('S126', members));
+  assert.throws(() => assertServedFold424('S126', members.map(({ fold_sentences: _fold, ...row }) => row)),
+    /S126 every folded cause must serve its fold sentences/);
+  assert.throws(() => assertServedFold424('S126', []), /S126 every folded cause must serve its fold sentences/);
+});
+
+test('S126 fails at its served-shape feature check before opening the fold on the base projection', async () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows
+    .map(({ fold_sentences: _fold, ...row }) => row);
+  const clicked = [];
+  const node = selector => ({
+    first() { return this; }, filter() { return this; },
+    waitFor: async () => {}, click: async () => { clicked.push(selector); },
+  });
+  const page = {
+    url: () => 'http://synthetic.invalid/',
+    locator: node, getByRole: (_role, { name }) => node(name),
+    waitForFunction: async () => true,
+    request: { get: async () => ({ status: () => 200, text: async () => '',
+      json: async () => ({ rendered_rows: rows }) }) },
+    evaluate: async () => { throw new Error('S126 must not open the fold before its served-shape check'); },
+  };
+  const stories = await C4_STORIES_424();
+  await assert.rejects(stories.S126(page), /S126 every folded cause must serve its fold sentences/);
+  assert.ok(!clicked.some(selector => selector.includes('qfold')), 'no fold is opened on the base shape');
 });

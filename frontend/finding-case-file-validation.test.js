@@ -211,6 +211,86 @@ test('rejects routed-count and denominator equations that do not reconcile', () 
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
+test('accepts the served count outside the comparison on both comparison kinds', () => {
+  const same = eventCase();
+  assert.equal(same.cross_population, false);
+  assert.equal(same.projection.counts.outside_comparison, 0);
+  assert.equal(validFindingCaseFile(same), true);
+  const cross = missedMealCase();
+  const { counts } = cross.projection;
+  assert.equal(cross.cross_population, true);
+  assert.ok(counts.outside_comparison > 0);
+  assert.equal(counts.matched + counts.nearly_matched + counts.outside_comparison,
+    cross.summary.denominator);
+  assert.equal(validFindingCaseFile(cross), true);
+});
+
+test('rejects a case file that still serves the retired leftover key', () => {
+  const caseFile = eventCase();
+  caseFile.projection.counts.not_comparable = caseFile.projection.counts.outside_comparison;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a case file that serves no count outside the comparison', () => {
+  const caseFile = eventCase();
+  delete caseFile.projection.counts.outside_comparison;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects an outside count that repeats the comparison cohort', () => {
+  const caseFile = eventCase();
+  const { counts } = caseFile.projection;
+  assert.ok(counts.comparison > 0);
+  counts.outside_comparison = counts.comparison;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a cross-population outside count that does not reconcile', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.counts.outside_comparison += 1;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('accepts cohorts naming exactly the band state they hold', () => {
+  assert.deepEqual(eventCase().projection.cohorts.map((cohort) => cohort.band_verdict),
+    ['fired', 'near_miss', null]);
+  assert.deepEqual(missedMealCase().projection.cohorts.map((cohort) => cohort.band_verdict),
+    [null, 'near_miss', null]);
+});
+
+test('rejects a cohort band state its members do not hold', () => {
+  const caseFile = eventCase();
+  const near = caseFile.projection.cohorts[1];
+  // The count alone would agree: only the members' own verdicts refuse it.
+  assert.equal(caseFile.verdict_counts.clean, near.routed_count);
+  near.band_verdict = 'clean';
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a cohort band state whose count is not the band count', () => {
+  const caseFile = eventCase();
+  const other = Object.keys(caseFile.verdict_counts)
+    .find((key) => key !== 'fired' && caseFile.verdict_counts[key] > 0);
+  caseFile.verdict_counts.fired += 1;
+  caseFile.verdict_counts[other] -= 1;
+  assert.equal(validFindingCaseFile(caseFile), false);
+  // Missed meal's Matched cohort is the attributed subset of Meets criteria, so
+  // naming the whole band on it is rejected.
+  const missed = missedMealCase();
+  assert.ok(missed.projection.counts.matched < missed.verdict_counts.fired);
+  missed.projection.cohorts[0].band_verdict = 'fired';
+  assert.equal(validFindingCaseFile(missed), false);
+});
+
+test('rejects a cohort with no served band state or an unknown one', () => {
+  const missing = eventCase();
+  delete missing.projection.cohorts[1].band_verdict;
+  assert.equal(validFindingCaseFile(missing), false);
+  const unknown = eventCase();
+  unknown.projection.cohorts[0].band_verdict = 'meets_criteria';
+  assert.equal(validFindingCaseFile(unknown), false);
+});
+
 test('accepts the three-cohort fixed-axis missed-meal comparison', () => {
   const caseFile = missedMealCase();
   assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),
@@ -269,7 +349,7 @@ test('rejects a declared zero missed cohort that retains drawable aggregate poin
   missed.routed_count = 0;
   missed.usable_count = 0;
   caseFile.projection.counts.matched = 0;
-  caseFile.projection.counts.not_comparable = caseFile.summary.denominator;
+  caseFile.projection.counts.outside_comparison = caseFile.summary.denominator;
   assert.equal(caseFile.projection.cohorts[0].usable_count, 0);
   assert.equal(validFindingCaseFile(caseFile), false);
 });
@@ -295,7 +375,7 @@ test('rejects a missed-meal comparison with a widened or roster-mismatched axis'
   mismatched.projection.cohorts[0].occurrence_ids.pop();
   mismatched.projection.cohorts[0].routed_count -= 1;
   mismatched.projection.counts.matched -= 1;
-  mismatched.projection.counts.not_comparable += 1;
+  mismatched.projection.counts.outside_comparison += 1;
   assert.equal(validFindingCaseFile(mismatched), false);
 });
 

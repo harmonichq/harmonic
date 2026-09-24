@@ -386,7 +386,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(case["projection"]["window_min"], [-60, 300])
         self.assertEqual(case["projection"]["counts"], {
             "matched": 0, "nearly_matched": 0, "comparison": 1,
-            "not_comparable": 3,
+            "outside_comparison": 3,
         })
         self.assertEqual(missed["occurrence_ids"], [])
         self.assertEqual(missed["routed_count"], missed["usable_count"])
@@ -401,6 +401,30 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(announced["routed_count"], 1)
         self.assertEqual(len(announced["occurrence_ids"]), 1)
         self.assertRegex(announced["occurrence_ids"][0], r"^m_[0-9a-f]{32}$")
+
+    def test_missed_meal_publishes_the_highs_outside_its_comparison(self):
+        from tests.test_finding_case_file import _six_missed_meal_highs
+
+        prepared = _six_missed_meal_highs()
+        retained, reason = self.app.state.result_cache.get_or_build_preparation(
+            ("six-missed-meal-highs",), lambda version: prepared,
+        )
+        self.assertIs(retained, prepared)
+        self.assertIsNone(reason)
+
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id,
+            "finding_id": "finding:missed_meal",
+            "alignment": "event",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        case = response.json()
+        self.assertEqual(case["summary"]["denominator"], 6)
+        self.assertEqual(case["projection"]["counts"], {
+            "matched": 2, "nearly_matched": 1, "comparison": 1,
+            "outside_comparison": 3,
+        })
+        self.assertNotIn("not_comparable", case["projection"]["counts"])
 
     def test_registered_preparation_is_immediately_addressable_and_bump_invalidates(self):
         prepared = self.client.get("/api/diagnose/finding-case-file-preparation").json()
@@ -745,10 +769,13 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 "comparison", "clock",
             })
             self.assertEqual(set(projection["anchor"]), {"kind", "label"})
+            self.assertEqual(set(projection["counts"]), {
+                "matched", "nearly_matched", "comparison", "outside_comparison",
+            })
             for cohort in projection["cohorts"]:
                 self.assertEqual(set(cohort), {
                     "key", "routed_count", "usable_count", "support",
-                    "occurrence_ids", "points", "name", "anchor",
+                    "occurrence_ids", "points", "name", "anchor", "band_verdict",
                 })
                 for point in cohort["points"]:
                     self.assertEqual(set(point), {
@@ -989,7 +1016,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(announced["anchor"]["kind"], "completed_carb_bolus")
         self.assertEqual(high_case["projection"]["counts"], {
             "matched": 4, "nearly_matched": 0, "comparison": 4,
-            "not_comparable": 0,
+            "outside_comparison": 0,
         })
 
     def test_published_announced_meal_selects_by_event_and_clears_on_clock(self):

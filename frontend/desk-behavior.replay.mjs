@@ -3169,6 +3169,15 @@ export const S145 = appOnly('HV2-20', '#431 the server confirms an in-place Plan
 export const S146 = appOnly('HV2-20', '#431 a draft after a confirmed Plan reads Draft saved and can be recorded', C4_STORIES.S146);
 // STORY:harmonic-v2-desktop:S147
 export const S147 = appOnly('HV2-20', '#431 the watch panel carries a pending Plan and no case-file header names it', C4_STORIES.S147);
+// STORY:harmonic-v2-desktop:S124
+export const S124 = appOnly('HV2-18',
+  '#424 a same-population caption names each cohort as its heading does and adds up', C4_STORIES.S124);
+// STORY:harmonic-v2-desktop:S125
+export const S125 = appOnly('HV2-18',
+  '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
+// STORY:harmonic-v2-desktop:S126
+export const S126 = appOnly('#413 design lock',
+  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3225,6 +3234,7 @@ export const REGISTRY = [
   ['S154', S154, J()],
   ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
+  ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

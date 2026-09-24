@@ -313,6 +313,15 @@ A thin mark with a dot is Limited, so the key says the line is thin.
 A crossed mark is Withheld, so the key says there are too few events to average or nothing to draw.
 _Avoid_: confidence, reliability, evidence tier, sample quality.
 
+**Outside the comparison**:
+The Occurrences of a Finding case file that sit in none of its three event
+cohorts — Matched, Nearly matched and the served comparison cohort. A comparison
+drawn from the case file's own population partitions it and leaves none; only
+Missed / unannounced meal, compared against announced meals, can leave Highs
+outside it. The Response comparison caption names that served count after the
+population noun, and only when it is non-zero (ADR 424).
+_Avoid_: not comparable (the verdict band's word for no data), leftover, remainder.
+
 **Occurrence**:
 One concrete instance behind a Finding's evidence — a specific timestamp a user can
 jump to, plus a one-line detail. "Jump to" is a **contract, not aspiration** (ADR
@@ -797,3 +806,14 @@ the low block itself does not show it and the window over the rebound does. Each
 lever declares the anchor kind its consequence lands on; anchoring happens at
 projection time and never moves a stored timestamp.
 _Avoid_: trigger time, occurrence time, event time.
+
+**Share** (of a Pattern):
+A folded cause's served part of its Pattern's own count. Each Occurrence the
+Pattern claims is credited once, to the first of its rate levers that claims it,
+so the shares of a Pattern's causes add up to its count. The fold prints a cause's
+share first; the cause's counts on any other population are **outside the count**
+and sit apart behind those words. A cause that is not a rate lever (a Sequence
+habit), and every cause under a Pattern that serves no count, has no share. A
+Pattern with no rate levers, counted from harm-band nights (overnight lows with no
+insulin on board), folds no cause (ADR 424).
+_Avoid_: contribution, portion, breakdown, subtotal.

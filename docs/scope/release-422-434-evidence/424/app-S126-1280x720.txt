@@ -1,0 +1,63 @@
+SYNTHETIC — app, S126, 1280x720, behavioral-correction-stacking
+Endpoint after the story passed. Intermediate states require their own live inspection.
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+LOWS AFTER CORRECTING HIGHS
+Lows after correcting highs in 2 of 2 lows
+Full
+Keep
+Findings
+6 findings · 30 days
+Filter
+1
+Worth a look
+Lows after correcting highs
+◇PATTERN
+›
+2 of 2 lows followed a correction
+1 cause
+Correction stacking
+›
+2 of 2 lows
+outside the count·2 of 8 correction clusters
+
+Not recurring often enough to rank yet.
+
+Missed / unannounced meal
+1 of 1 highs had no bolus nearby
+›
+Highs after meals
+›
+Highs after treating lows
+›
+Lows after meals
+›
+Overnight lows with no insulin on board
+›
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

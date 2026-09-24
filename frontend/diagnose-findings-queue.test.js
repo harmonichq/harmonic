@@ -332,10 +332,11 @@ test('#413 · a Pattern folds its causes: closed on arrival unless it is rank on
   assert.equal(toggle.attributes['aria-controls'], causes.id);
   assert.deepEqual(causes.children.map((item) => [item.className, item.attributes.role]),
     [['qitem member', 'listitem']]);
-  // One line per cause: its name, its served counts, its drill — and no gutter
-  // mark of its own, because the causes list draws the parent's spine.
+  // One line per cause: its name, its share of the Pattern's count, its drill,
+  // and its counts outside that count set apart beneath (#424) — no gutter mark
+  // of its own, because the causes list draws the parent's spine.
   const line = causes.children[0].children[0];
-  assert.deepEqual(line.children.map((child) => child.className), ['lab', 'go', 'den']);
+  assert.deepEqual(line.children.map((child) => child.className), ['lab', 'go', 'den', 'out']);
 });
 
 test('#413 · an unpriced row prints its served count sentence under its title', () => {
@@ -359,12 +360,60 @@ test('term 36 · a row is flavored by the server register, glyph and word togeth
     row.raw.kind === 'pattern' ? 'pattern' : row.raw.kind === 'setting' ? 'setting' : 'habit');
 });
 
-test('term 35 · a claimed cause keeps EVERY served family appearance, never a merged total', () => {
+test('term 35 · a claimed cause keeps EVERY served fold sentence, never a merged total', () => {
   const parent = queueRows(W.global).find((r) => r.id === 'pattern:highs_after_meals');
   const carbUndercount = parent.members.find((m) => m.title === 'Carb undercount');
-  assert.deepEqual(carbUndercount.sentences, [
-    { count: '2 of 4', noun: 'highs', outcome: 'followed an undercounted meal' },
-    { count: '1 of 3', noun: 'meals', outcome: 'ran high' },
+  assert.equal(carbUndercount.raw.fold_sentences.length, 2);
+  assert.deepEqual(carbUndercount.sentences, carbUndercount.raw.fold_sentences.map((s) => ({
+    count: `${s.count} of ${s.denominator}`, noun: s.noun, scope: s.scope,
+  })));
+});
+
+/* #424 — a folded cause's line reads its served fold sentences, never its own
+   count sentences: its share of the Pattern's count first, then every count
+   outside that count, set apart behind those words. The desk computes no share
+   and decides no scope; the words are the painter's only addition. */
+const lineText = (node) => (typeof node === 'string' ? node
+  : node.className === 'sep' ? ' · '
+    : `${node.textContent || ''}${(node.children || []).map(lineText).join('')}`);
+
+const openFold = (parentId) => {
+  const parent = W.global.rows.find((row) => row.id === parentId);
+  const members = W.global.rows.filter((row) => row.claimed_by === parentId);
+  const { host } = paint({ rows: [{ ...parent, priority: 90 }, ...members] });
+  return descendants(host).filter((node) => node.className === 'qmember');
+};
+
+test('#424 · a folded cause leads with its share of the Pattern and sets the rest apart', () => {
+  const parent = queueRows(W.global).find((row) => row.id === 'pattern:highs_after_meals');
+  const carb = parent.members.find((member) => member.id === 'finding:carb_undercount');
+  assert.deepEqual(carb.sentences, [
+    { count: '1 of 3', noun: 'meals', scope: 'pattern' },
+    { count: '2 of 4', noun: 'highs', scope: 'outside' },
+  ]);
+
+  const [line] = openFold('pattern:highs_after_meals');
+  const part = (cls) => line.children.find((child) => child.className === cls);
+  assert.equal(lineText(part('den')), '1 of 3 meals');
+  assert.equal(lineText(part('out')), 'outside the count · 2 of 4 highs');
+  assert.doesNotMatch(lineText(line), /ran high|undercounted/, 'the line prints no outcome word');
+});
+
+test('#424 · under a Pattern that serves no count, every cause line leads with "outside the count"', () => {
+  const parent = queueRows(W.global).find((row) => row.id === 'pattern:lows_after_correcting_highs');
+  assert.equal(parent.raw.count_sentences, null, 'premise: this Pattern serves no count');
+  assert.deepEqual(parent.members.map((member) => member.id),
+    ['finding:correction_on_iob', 'finding:correction_stacking']);
+  for (const member of parent.members) {
+    assert.deepEqual(member.sentences.map((sentence) => sentence.scope), ['outside'], member.id);
+  }
+
+  const lines = openFold('pattern:lows_after_correcting_highs');
+  assert.deepEqual(lines.map((line) => lineText(line.children.find((child) => child.className === 'den'))),
+    ['', '']);
+  assert.deepEqual(lines.map((line) => lineText(line.children.find((child) => child.className === 'out'))), [
+    'outside the count · 1 of 5 lows',
+    'outside the count · 1 of 1 correction clusters',
   ]);
 });
 
@@ -718,9 +767,10 @@ test('#413 · an unpriced claimed member folds under the tail Pattern, printing 
   const late = rows.flatMap((row) => row.members || []).find((member) => member.id === 'finding:late_bolus');
   assert.ok(late, 'Late bolus folds under its parent');
   assert.equal(late.raw.priority, null);
-  assert.deepEqual(late.sentences, late.raw.count_sentences.map((s) => ({
-    count: `${s.count} of ${s.denominator}`, noun: s.noun, outcome: s.outcome,
-  })), 'every served sentence is kept, never merged to the one matching the parent');
+  assert.ok(late.raw.fold_sentences.length, 'premise: the folded cause serves fold sentences');
+  assert.deepEqual(late.sentences, late.raw.fold_sentences.map((s) => ({
+    count: `${s.count} of ${s.denominator}`, noun: s.noun, scope: s.scope,
+  })), 'every served fold sentence is kept, never merged');
 });
 
 
@@ -729,16 +779,16 @@ test('#413 · a claimed cause keeps every served appearance, not only the one ma
   const parent = { ...base, id: 'pattern:lows_after_correcting_highs',
     pattern: { ...base.pattern, key: 'lows_after_correcting_highs' } };
   const member = { id: 'finding:correction_stacking', kind: 'habit', register: 'finding',
-    claimed_by: parent.id, count_sentences: [
+    claimed_by: parent.id, fold_sentences: [
+      { count: 6, denominator: 20, noun: 'lows', outcome: 'followed stacked corrections',
+        sentence: '6 of 20 lows followed stacked corrections', scope: 'pattern' },
       { count: 2, denominator: 12, noun: 'correction clusters', outcome: 'went low',
-        sentence: '2 of 12 correction clusters went low' },
-      { count: 6, denominator: 20, noun: 'low excursions', outcome: 'followed a correction',
-        sentence: '6 of 20 low excursions followed a correction' },
+        sentence: '2 of 12 correction clusters went low', scope: 'outside' },
     ] };
   const [{ members }] = queueRows({ rows: [parent, member] });
   assert.deepEqual(members[0].sentences, [
-    { count: '2 of 12', noun: 'correction clusters', outcome: 'went low' },
-    { count: '6 of 20', noun: 'low excursions', outcome: 'followed a correction' },
+    { count: '6 of 20', noun: 'lows', scope: 'pattern' },
+    { count: '2 of 12', noun: 'correction clusters', scope: 'outside' },
   ]);
 });
 

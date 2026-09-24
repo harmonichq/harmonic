@@ -1,0 +1,255 @@
+{
+  "synthetic": true,
+  "target": "app",
+  "id": "S126",
+  "viewport": "1440x900",
+  "caseName": "behavioral-correction-stacking",
+  "checkpoint": "after-passing-story",
+  "sha256": "691b310091d2e0f851b901339d7000ad3783b8ea53a868c24c5cdf5057010bd7",
+  "url": "http://127.0.0.1:8765/diagnose",
+  "title": "Harmonic",
+  "root": {
+    "width": 1440,
+    "height": 900,
+    "viewportWidth": 1440,
+    "viewportHeight": 900
+  },
+  "interLoaded": true,
+  "currentDestination": "diagnose",
+  "stylesheets": [
+    "http://127.0.0.1:8765/assets/index-BmocfkvW.css"
+  ],
+  "elements": [
+    {
+      "selector": ".cockpit-shell",
+      "text": "Harmonic advisoryDiagnoseChangesDay＋Log carbs\n  \n    \n      Window\n      OvernightMorningAfternoonEvening24 h\n    \n    \n  \n\n  \n    \n      \n        \n          \n ",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": {
+        "width": 1440,
+        "height": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "42px 832px 26px",
+        "gridTemplateColumns": "1440px",
+        "backgroundColor": "rgb(15, 13, 11)",
+        "color": "rgb(242, 237, 226)",
+        "borderLeftColor": "rgb(242, 237, 226)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": ".cockpit-topbar",
+      "text": "Harmonic advisoryDiagnoseChangesDay＋Log carbs",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 42
+      },
+      "scroll": {
+        "width": 1440,
+        "height": 42,
+        "clientWidth": 1440,
+        "clientHeight": 42
+      },
+      "style": {
+        "display": "flex",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgb(20, 18, 15)",
+        "color": "rgb(245, 241, 233)",
+        "borderLeftColor": "rgb(245, 241, 233)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": ".cockpit-footer",
+      "text": "Advisory only — review with your clinician before changing pump settings.Carb questions 0GuideSettingsGlossary",
+      "rect": {
+        "x": 0,
+        "y": 874,
+        "width": 1440,
+        "height": 26
+      },
+      "scroll": {
+        "width": 1440,
+        "height": 26,
+        "clientWidth": 1440,
+        "clientHeight": 26
+      },
+      "style": {
+        "display": "flex",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgb(20, 18, 15)",
+        "color": "rgb(245, 241, 233)",
+        "borderLeftColor": "rgb(245, 241, 233)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, sans-serif",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "tabular-nums",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": "#level",
+      "text": "1Worth a lookLows after correcting highs◇Pattern›2 of 2 lows followed a correction1 causeCorrection stacking›2 of 2 lowsoutside the count·2 of 8 correction clus",
+      "rect": {
+        "x": 1015.2337646484375,
+        "y": 129,
+        "width": 429,
+        "height": 647
+      },
+      "scroll": {
+        "width": 429,
+        "height": 647,
+        "clientWidth": 429,
+        "clientHeight": 647
+      },
+      "style": {
+        "display": "block",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "auto",
+        "overflowY": "auto"
+      }
+    },
+    {
+      "selector": "#tile-focal",
+      "text": "Lows after correcting highsLows after correcting highs in 2 of 2 lowsFullKeep",
+      "rect": {
+        "x": 10,
+        "y": 94,
+        "width": 990,
+        "height": 532
+      },
+      "scroll": {
+        "width": 990,
+        "height": 532,
+        "clientWidth": 990,
+        "clientHeight": 532
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "532px",
+        "gridTemplateColumns": "990px",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    },
+    {
+      "selector": ".pane",
+      "text": "\n      \n        \n          \n            Glucose by time of day\n            \n          \n          \n            --:--\n            median--\n            25–75--\n   ",
+      "rect": {
+        "x": 0,
+        "y": 84,
+        "width": 1010,
+        "height": 790
+      },
+      "scroll": {
+        "width": 1010,
+        "height": 790,
+        "clientWidth": 1010,
+        "clientHeight": 790
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "550px 30px 210px",
+        "gridTemplateColumns": "1010px",
+        "backgroundColor": "rgb(30, 26, 23)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "clip",
+        "overflowY": "visible"
+      }
+    },
+    {
+      "selector": ".pane",
+      "text": "\n      \n      \n        Findings\n        \n        6 findings · 30 days\n        \n          Filter\n          SiftHighs 3Lows 3Meals 2Corrections 1\n        \n      \n",
+      "rect": {
+        "x": 1010,
+        "y": 84,
+        "width": 430,
+        "height": 790
+      },
+      "scroll": {
+        "width": 429,
+        "height": 790,
+        "clientWidth": 429,
+        "clientHeight": 790
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "45px 647px 98px",
+        "gridTemplateColumns": "429px",
+        "backgroundColor": "rgb(30, 26, 23)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(69, 61, 53)",
+        "borderLeftWidth": "1px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    }
+  ]
+}

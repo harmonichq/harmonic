@@ -249,7 +249,7 @@ fail-first evidence is its broken-variant run, not a base run.
   Run the whole backend suite (`uv run python -m pytest`) once, on the final
   commit, and record its wall time. A leg that cannot run is reported as not run,
   with its reason. It is never counted as a pass.
-- [ ] 3.2 Port-bound, run by whoever can bind a port (in this release, the
+- [x] 3.2 Port-bound, run by whoever can bind a port (in this release, the
   coordinator), never by a sandboxed worker:
   - the full `acceptance.test.py`;
   - `acceptance.py case-cache --check`, since its clock patch moves;

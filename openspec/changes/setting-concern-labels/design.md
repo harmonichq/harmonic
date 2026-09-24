@@ -1,9 +1,9 @@
 # #451 design
 
-Sanction for every decision below: Q3 delegation, Connor Griffin, 2026-09-23
-("figure it out yourself from here"). It covers coordinator ruling R451 as
-corrected, the coordinator's widening of #451 on 2026-09-23, and its rulings on
-plan review round 1 (2026-09-24).
+Sanction for every decision below:
+Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It covers R451 as corrected, the coordinator's widening of #451 on 2026-09-23,
+and its rulings on plan review round 1 (2026-09-24) and on the chunk reviews.
 
 ## ADR 451 — A setting concern is served under its setting's user label
 
@@ -279,9 +279,10 @@ other served codes never reach this frame: Changes routes `active_change`,
 select no concern, so the only frame they can seat is a set-aside concern, which
 prints no status words because it is not the concern the read leads with. The
 Staged row reads the staged state Changes and the pane already share, passed in
-like the Focus offer. These rows were settled after sub-order 3's chunk review
-(Q3 delegation, Connor Griffin, 2026-09-23; coordinator ruling R451). The
-unselected frame's honesty line, which quotes an unknown code, stays. The words
+like the Focus offer. These rows were settled after sub-order 3's chunk review,
+under the sanction
+Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+The unselected frame's honesty line, which quotes an unknown code, stays. The words
 read served fields (the action's shape, the served offer, the served readiness
 verdict) and one state the desk itself owns, the Plan draft's staged state
 (`phase()`). They decide no eligibility and re-derive no gate.
@@ -323,8 +324,9 @@ line.
 The only references to either id on b03431d2 are these two guarded writes.
 Their guards therefore never pass, and the lines never render.
 
-**Widened by the coordinator after sub-order 3** (Q3 delegation, Connor Griffin,
-2026-09-23; coordinator ruling R451). Two more pieces of dead desk code carrying
+**Widened by the coordinator after sub-order 3**, under the sanction
+Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+Two more pieces of dead desk code carrying
 engine words or unrendered ids are deleted, for the same kind of reason:
 
 - **The `#scope-range` and `#scope-days` writes**, with the date helper and the

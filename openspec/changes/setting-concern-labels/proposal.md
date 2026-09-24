@@ -8,11 +8,11 @@ part of the #442–#457 desk follow-up release. The inherited desk revise contra
 change adds three stories (S177–S179) in its own dated amendment section and
 amends or retires none.
 
-Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R451 as corrected, the coordinator's widening
-of #451 on 2026-09-23, and its plan review round 1 rulings (2026-09-24). Under
-the correction, the correction factor takes CONTEXT.md's insulin-first form and
-the carb ratio keeps "<value> g/U".
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It covers R451 as corrected, the coordinator's widening of #451 on 2026-09-23,
+and its plan review round 1 rulings (2026-09-24). Under the correction, the
+correction factor takes CONTEXT.md's insulin-first form and the carb ratio keeps
+"<value> g/U".
 
 ## Why
 

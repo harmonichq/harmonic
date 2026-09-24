@@ -2,7 +2,6 @@
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { hhmm, xAtMinute } from './diagnose-workstation-chart.js';
-import { scopeNote } from './diagnose-findings-queue.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -1419,20 +1418,25 @@ export async function assertBandGlossary(page) {
 // #451: the correction factor in the wearer's words, on the manufactured
 // isf-strengthen store. Every expected number comes from the story's own served
 // reads. The rounding below restates each line's own: the queue trims two
-// decimals to one, the panel and the dock print two. The status words are the
-// desk's table (frontend/guidance.js).
+// decimals to one, the panel and the dock print two. The queue's served-scope
+// note is restated the same way, because the base overlay runs this harness over
+// an app with no shared source for it; this replay's node test pins the
+// restatement to the queue's own printing. The status words are the desk's table
+// (frontend/guidance.js).
 const queueNum451 = value => {
   const text = Number(value).toFixed(2).replace(/0$/, '');
   return text.endsWith('.') ? `${text}0` : text;
 };
 const panelNum451 = value => Number(value).toFixed(2);
 const correctionFactor451 = value => `1 U : ${value} mg/dL`;
+/** The note a served whole-day row that is not a Pattern carries after its line. */
+const scopeNote451 = row => (row.window_scope === 'whole_day' && row.kind !== 'pattern' ? ' · Whole day' : '');
 /** The served correction-factor row's queue numbers line, as the queue prints it:
     both values insulin first at the queue's rounding, then the row's served scope
-    note from the queue's own source. */
+    note. */
 export const queueNumbers451 = row =>
   `now ${correctionFactor451(queueNum451(row.current))} → ${correctionFactor451(queueNum451(row.recommended))}`
-  + scopeNote(row);
+  + scopeNote451(row);
 const STATUS_WORDS_451 = ['Ready to stage', 'Staged', 'Ready to start a Focus', 'Focus withheld',
   'Action identified', 'Evidence to inspect'];
 const ENGINE_WORDS_451 = /mg\/dL\/U|\bISF\b|eligible_action|guided_investigation|active_change|pending_plan/;

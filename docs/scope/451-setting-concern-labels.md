@@ -3,8 +3,8 @@
 Scope ledger. Opened 2026-09-23 by delegated triage (release brief for
 #442–#457). Route: nothing for a specialist. Wording and breadth are settled by
 coordinator ruling R451 as corrected, the coordinator's widening of #451, and
-its plan review round 1 rulings. All come under Connor Griffin's Q3 delegation
-of 2026-09-23 ("figure it out yourself from here").
+its plan review round 1 rulings. Sanction:
+Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
 
 ## Decisions
 

@@ -194,9 +194,10 @@
 - [x] 3.8 Delete the `#status-src` and `#status-clock` writes in
   `frontend/diagnose-workstation.js`. No shipped markup declares either id, and
   a whole-tree `git grep` finds only these writes.
-- [x] 3.9 Coordinator-authorized after sub-orders 1 and 3's chunk reviews (Q3
-  delegation, Connor Griffin, 2026-09-23; coordinator ruling R451; no newer lock
-  is needed). Delete dead desk code that carries engine words or unrendered ids:
+- [x] 3.9 Coordinator-authorized after sub-orders 1 and 3's chunk reviews, under
+  the sanction
+  Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+  No newer lock is needed. Delete dead desk code that carries engine words or unrendered ids:
   - `PARAM_LABEL` in `frontend/plan.js` ("ISF (mg/dL/U)", "I:C (g/U)") and the
     mismatch diff's `|| cell.label` fallback in `frontend/plan-view.js`. The
     diff names every cell by `SETTING_NAME[cell.param]`, which names all four
@@ -221,6 +222,11 @@
     in); the status-word rows no concern frame can print are dropped; the
     breadcrumb leaf and the peak-hour block link gain node tests; CONTEXT.md's
     **Concern** says a setting never leads.
+  - After the whole-diff review: the Glossary's Epoch definition
+    (`frontend/glossary.js`, a widened file) says "correction factor and carb
+    ratio measurements" instead of "ISF/I:C measurements", and the exploration's
+    glossary copy is regenerated. S178's replay restates the queue's scope note
+    instead of importing it, so the base overlay loads.
 
 ## 4. The watch dock's title names the change; its values wrap below
 
@@ -253,9 +259,8 @@
 
 - [x] 5.1 Add `## #451 amendment — 2026-09-23` at the end of
   `mockups/harmonic-v2-desktop.behavior.md`. It carries:
-  - the sanction line: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it
-    out yourself from here"); coordinator ruling R451 as corrected, the
-    coordinator's widening of #451, and its plan-review rulings;
+  - the sanction line:
+    Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451;
   - new story blocks S177, S178 and S179 (element, source, lock, data, evidence,
     status);
   - the handler inventory rows for the lines they read.

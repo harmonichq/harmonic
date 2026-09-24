@@ -4134,10 +4134,9 @@ store. Browser execution belongs to the release coordinator at 1280x720 and
 inventory line is edited here; the release coordinator writes the one release
 freeze block and reconciles the count line.
 
-Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R451 as corrected, the coordinator's widening of
-#451, and its plan-review and chunk-review rulings. It covers S177–S179 and
-nothing outside #451.
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It covers S177–S179, under R451 as corrected, the coordinator's widening of #451
+and its plan-review and chunk-review rulings, and nothing outside #451.
 
 Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
 store `scripts/gen_qa_e2e_db.py --case isf-strengthen` emits.
@@ -4170,17 +4169,19 @@ S177 · On a plain arrival at Changes, the Action figure reads the served
 
 ```
 S178 · On Diagnose, the correction-factor queue row is titled "Correction factor
-       · <served direction>" and its numbers read "now 1 U : <current> mg/dL →
-       1 U : <recommended> mg/dL"; its panel's heading says "Correction factor"
-       and its values read "1 U : <value> mg/dL"; staging the value seats the
-       dock's staged title "Correction factor · <served direction>" with no
+       · <served direction>" and its numbers line reads "now 1 U : <current> mg/dL
+       → 1 U : <recommended> mg/dL" followed by the row's served scope suffix
+       (" · Whole day" for a whole-day row); its panel's heading says
+       "Correction factor" and its values read "1 U : <value> mg/dL"; staging
+       the value seats the dock's staged title "Correction factor · <served
+       direction>" with no
        truncation, and its detail line leads with "1 U : <current> mg/dL → 1 U :
        <recommended> mg/dL", fully visible; the Diagnose desk prints neither
        mg/dL/U nor ISF.
   element:  #level .qrow[data-id="isf"] .lab, .den.nums; #level .slot-head .time;
             #level .numrow b; .inspector > .watch .what, .how; .dw
   source:   ciq_autotune/findings_projection.py (title);
-            frontend/diagnose-findings-queue.js assertDetail;
+            frontend/diagnose-findings-queue.js assertDetail, scopeNote;
             frontend/diagnose-workstation.js renderIsfLevel, renderParamLevel,
             stagedDescriptor; frontend/watched-change-dock.js watchDockView
   lock:     none (revise; ADR 451)
@@ -4188,10 +4189,13 @@ S178 · On Diagnose, the correction-factor queue row is titled "Correction facto
             "strengthen" and stages
   evidence: C4_STORIES.S178; reads the served row from
             /api/diagnose/finding-case-file-preparation, compares the row's
-            title and numbers at the queue's rounding and the panel's heading
-            and values at the panel's, stages through the panel, and measures
-            the dock: the title's scrollWidth <= clientWidth, and the detail
-            line's box within the dock and the dock within the viewport
+            title, and its numbers line at the queue's rounding followed by the
+            served scope suffix from the row's window_scope (" · Whole day"
+            here, as the served row is whole-day), with no mg/dL/U; compares the
+            panel's heading and values at the panel's rounding, stages through
+            the panel, and measures the dock: the title's scrollWidth <=
+            clientWidth, and the detail line's box within the dock and the dock
+            within the viewport
   status:   expected: base b03431d2 fails at its feature assertion (the row is
             titled "ISF · strengthen"), not at setup; the branch passes at both
             sizes. Coordinator-run evidence pending

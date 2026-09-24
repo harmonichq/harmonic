@@ -103,7 +103,9 @@ triage questions settle the rest:
    stands, because:
    - it was recorded against a separately detected change and was correct when
      written, and endings are first-wins;
-   - ADR 414's Edit is a display grouping, not a lifecycle fact;
+   - the recording reconcile's Edit decides whether a later change supersedes
+     a sibling; a later regrouping is display-only and never reopens a saved
+     ending;
    - holding every supersession back for the settle window would add machinery
      and delay every live ending.
 
@@ -303,9 +305,10 @@ write pay the steady-state figure.
 
 ### Risk contract
 
-Copied from the scope ledger (`docs/scope/backfilled-record-endings.md`). Its
-accepted failure on reconcile cost is amended here on the coordinator's ruling
-after code review (Reconcile cost above); the ledger keeps its triage wording.
+Copied from the scope ledger (`docs/scope/backfilled-record-endings.md`). Two
+accepted-failure items are amended here on the coordinator's rulings after code
+review: the reconcile cost (Reconcile cost above), and the Edit's role in the
+late-settling bridge (Decision 1). The ledger keeps its triage wording.
 
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
@@ -332,9 +335,10 @@ after code review (Reconcile cost above); the ledger keeps its triage wording.
   A dose-stamped change that settles after an ending was saved can chain the
   record and its superseder into one Edit (the late-settling bridge). The
   ending stands: it was recorded against a separately detected change and was
-  correct when written, ADR 414's Edit is a display grouping, and holding every
-  supersession back for the settle window would add machinery and delay every
-  live ending.
+  correct when written, the recording reconcile's Edit decides whether a later
+  change supersedes a sibling while a later regrouping is display-only and never
+  reopens a saved ending, and holding every supersession back for the settle
+  window would add machinery and delay every live ending.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
 - **Evidence owed:** reconcile-path backend tests. They cover the issue's

@@ -977,12 +977,17 @@ class EveryRecordEndsTest(unittest.TestCase):
             self.store.upsert_bolus(_dose_rows(_stamps([(40, 7.0, 1, 9), (40, 8.0, 10, 18), (40, 9.0, 19, 60)])))
             self.reconcile(_day(60))
 
+        # Each store, and the ending kinds its reconcile saves, oldest record first.
         scenarios = {
-            "pump-read pair": lambda: (self.pump_read_pair(), self.reconcile(_day(60))),
-            "multi-slot Edit": lambda: (self.basal_edit({1: 10, 3: 10, 5: 20}), self.reconcile(_day(60))),
-            "dose pair": dose_pair, "reversal": reversal, "later pump read": later_read,
+            "pump-read pair": (lambda: (self.pump_read_pair(), self.reconcile(_day(60))),
+                               ["superseded", "expired_unreviewed"]),
+            "multi-slot Edit": (lambda: (self.basal_edit({1: 10, 3: 10, 5: 20}), self.reconcile(_day(60))),
+                                ["superseded", "superseded", "expired_unreviewed"]),
+            "dose pair": (dose_pair, ["superseded", "expired_unreviewed"]),
+            "reversal": (reversal, ["reverted", None]),
+            "later pump read": (later_read, ["expired_unreviewed"] * 4),
         }
-        for name, build in scenarios.items():
+        for name, (build, kinds) in scenarios.items():
             saved, slot_reads = {}, {}
             for mode in ("shared", "per record"):
                 self.store.close()
@@ -999,7 +1004,8 @@ class EveryRecordEndsTest(unittest.TestCase):
                 slot_reads[mode] = len(reads)
             with self.subTest(store=name):
                 self.assertEqual(saved["shared"], saved["per record"])
-                self.assertIn('"kind": "', saved["shared"])
+                trials = sorted(json.loads(saved["shared"])["trial"], key=lambda r: (r["changed_at"], r["id"]))
+                self.assertEqual([record["ending"].get("kind") for record in trials], kinds)
             if name == "multi-slot Edit":
                 # Three open basal-slot records: one read of the basal history, not three.
                 self.assertEqual(slot_reads["per record"] - slot_reads["shared"], 2)

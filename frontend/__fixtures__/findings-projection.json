@@ -78067,7 +78067,7 @@
      277,
      [
       "carb_undercount",
-      "missing carbs, dose, correction factor or carb ratio — can't judge carb count",
+      "missing carbs, dose, correction factor or carb ratio, so the carb count can't be judged",
       "not_in_data",
       false,
       [

@@ -185,7 +185,7 @@ class NotInDataTest(unittest.TestCase):
                 self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
                 self.assertIn("correction factor", verdict.detail)
                 self.assertIn("carb ratio", verdict.detail)
-                self.assertNotRegex(verdict.detail, r"\bISF\b|I:C")
+                self.assertNotRegex(verdict.detail, r"\bISF\b|I:C|—")
 
     def test_no_cgm_cannot_be_judged(self):
         m = meal(15, 12, 5, carbs=30.0, dose=6.0)

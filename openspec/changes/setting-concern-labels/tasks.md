@@ -314,3 +314,16 @@
   Hand the coordinator the port-bound commands: `ONLY=S177,S178,S179` on the
   desk replay at both sizes, expected to fail on base b03431d2 and pass on the
   branch.
+
+## 6. Coordinator-run legs
+
+- [x] 6.1 On 995126ad, the desk replay `ONLY=S177,S178,S179` passes 3 of 3 at
+  1280x720 and at 1440x900, S178's dock geometry included; the same harness
+  laid over base b03431d2 fails all three at their feature assertions at both
+  sizes, never at setup. Coordinator-run 2026-09-24.
+- [x] 6.2 On 995126ad, `frontend/desk.browser.test.mjs` passes 43 of 43.
+  Coordinator-run 2026-09-24.
+- [ ] 6.3 The renders design.md owes (before and after, 1280x720 and 1440x900,
+  on isf-strengthen): coordinator-owned, integration render phase.
+- [ ] 6.4 The complete desk ledger once per size (174 selected, zero failed,
+  zero deferred): coordinator-owned, integration.

@@ -73,7 +73,9 @@ function num(value) {
 }
 
 /** The note a whole-day row that is not a Pattern carries after its detail line:
-    the served `window_scope`, in words. One source for the queue and its replay. */
+    the served `window_scope`, in words. The queue's renderer reads it here; the
+    desk replay restates it (the replay may not import app modules), and the
+    replay's node test holds the two identical. */
 export function scopeNote(row) {
   return row.window_scope === 'whole_day' && row.kind !== 'pattern' ? ' · Whole day' : '';
 }

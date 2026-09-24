@@ -4161,10 +4161,10 @@ S177 · On a plain arrival at Changes, the Action figure reads the served
             slots, stages and undoes through [data-set="stage"] and
             [data-set="unstage"], then sets the concern aside through the form
             and reads the held seat against the re-read's served set-aside row
-  status:   expected: base b03431d2 fails at its feature assertion (the figure
-            reads "strengthen to 32 " with no unit, and the nameplate prints
-            eligible_action), not at setup; the branch passes at both sizes.
-            Coordinator-run evidence pending
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the figure reads "strengthen to 32 " with no
+            unit), not at setup; branch 995126ad passes at both sizes.
+            Coordinator-run 2026-09-24
 ```
 
 ```
@@ -4179,7 +4179,7 @@ S178 · On Diagnose, the correction-factor queue row is titled "Correction facto
        <recommended> mg/dL", fully visible; the Diagnose desk prints neither
        mg/dL/U nor ISF.
   element:  #level .qrow[data-id="isf"] .lab, .den.nums; #level .slot-head .time;
-            #level .numrow b; .inspector > .watch .what, .how; .dw
+            #level .numrow b; .inspector > .watch .what, .how; .dw[data-state]
   source:   ciq_autotune/findings_projection.py (title);
             frontend/diagnose-findings-queue.js assertDetail, scopeNote;
             frontend/diagnose-workstation.js renderIsfLevel, renderParamLevel,
@@ -4196,9 +4196,10 @@ S178 · On Diagnose, the correction-factor queue row is titled "Correction facto
             the panel, and measures the dock: the title's scrollWidth <=
             clientWidth, and the detail line's box within the dock and the dock
             within the viewport
-  status:   expected: base b03431d2 fails at its feature assertion (the row is
-            titled "ISF · strengthen"), not at setup; the branch passes at both
-            sizes. Coordinator-run evidence pending
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the row is titled "ISF · strengthen"), not
+            at setup; branch 995126ad passes at both sizes, its dock geometry
+            included. Coordinator-run 2026-09-24
 ```
 
 ```
@@ -4216,10 +4217,10 @@ S179 · After staging the correction factor and recording the Plan, Changes' "Wh
   evidence: C4_STORIES.S179; stages and records through the Plan, reads the
             newest record's decision_context from /api/plan/history, and
             compares the section's concern name, change value and explanation
-  status:   expected: base b03431d2 fails at its feature assertion (the section
-            prints "setting:isf", and the record's explanation is "ISF"), not at
-            setup; the branch passes at both sizes. Coordinator-run evidence
-            pending
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the section prints "setting:isf"), not at
+            setup; branch 995126ad passes at both sizes. Coordinator-run
+            2026-09-24
 ```
 
 Additional handler inventory for this amendment:

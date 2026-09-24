@@ -163,7 +163,7 @@ def classify_carb_undercount(
             or logged is None or logged <= 0 or dose is None or dose <= 0):
         return CarbUndercountVerdict(
             matched=False,
-            detail="missing carbs, dose, correction factor or carb ratio — can't judge carb count",
+            detail="missing carbs, dose, correction factor or carb ratio, so the carb count can't be judged",
             evidence_tier=EvidenceTier.NOT_IN_DATA,
             silence_reason=SilenceReason.INSUFFICIENT_DATA,
             logged_carbs=logged,

@@ -1,6 +1,77 @@
 # Behavior ledger — harmonic-v2-desktop
 
 ```text
+★ FROZEN 2026-09-23 · base a4d374a72c8048d9d93ee4925805b91cf5674835
+  · generator a4d374a72c8048d9d93ee4925805b91cf5674835 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e
+  · predecessor shipped single-shell desk (#413 re-freeze) · retired 19
+  · inventory 171 issued · 152 active · 19 retired
+      (equal to acceptance.py inventory()'s pinned literal)
+  · lifecycle revise · contract this ledger + frontend/desk-behavior.replay.mjs
+```
+
+This #422–#434 release re-freeze adds 24 stories and amends 10. Each is
+recorded in its ticket's dated "#<issue> amendment — 2026-09-23" section below.
+The sanction is Connor Griffin's (operator, repo owner), 2026-09-23: "Q1 A, Q2
+A, defaults all fine, go". Q2 A approves every shipped-surface revision and
+ledger amendment the release's checklists call for. No inherited story is
+weakened and none is retired.
+
+Added:
+- S121–S122 (#423), the claimed low in Day's Episode Log and the Findings
+  caption's Glossary control;
+- S124–S126 (#424), a case file's cohort names and counts, and a Pattern fold's
+  shares;
+- S127 (#425), Day's served recorded-day count;
+- S133 (#427), direct Day entry reopening the day last looked at;
+- S136–S138 (#428), the Diagnose address after a Day return;
+- S139–S140 (#429), the watch dock's "Open Changes ›";
+- S142–S143 (#430), an open record's retained comparison and its unavailable
+  figure;
+- S145–S147 (#431), the server-confirmed Plan and the pending note in the watch
+  panel;
+- S148–S150 (#432), a meal Occurrence's own facts and served reason;
+- S151–S153 (#433), the basal lane within reach on short windows;
+- S154 (#434), the named excluded-night reasons.
+
+Amended: S61 and S62 (#426), S49 and S112 (#430), S113 (#433), S42 and S105
+(#431), S115 (#424), S25 and S107 (#432). #422 and #441 change no story. #441
+fixes S24's intermittent 1280x720 failure in the app, and S24 is unchanged. The
+fixed PR smoke slice is 24 stories, digest
+03fb703acc99ed8092c1e3186fc5e0609141184715d4662ce7269409fd9af1bc.
+
+Safe start is unchanged from the #404 freeze below: AGENTS.md's QA
+copy-then-serve command, with the showcase or a named `scripts/qa_e2e_cases.py`
+case store.
+
+Base preservation is main push CI run 35826580306 on a4d374a7: the complete
+ledger, 147 issued, at both sizes. The nightly on the same commit (run
+35872827406) failed S24 once at 1280x720; that is the flake #441 fixes.
+
+The new stories were proved with each ticket's harness laid over a4d374a7, at
+1280x720 and 1440x900. The coordinator ran every leg, 2026-09-23. Each story's
+status line names its commits and the message it failed with:
+- 19 fail there at their feature assertions at both sizes: S122, S124–S127,
+  S136–S140, S142, S143, S145 and S147–S152.
+- S121 fails at its feature assertion at both sizes on e229bef3, the release
+  trunk after #426, because its premise is #426's served title.
+- S154 fails at its feature assertion at 1280x720. Its 1440x900 base run timed
+  out loading under machine load and is owed to the integration run.
+- S146 fails at its accepted premise: base serves no server-confirmed Plan. Its
+  fail-first half is a node test in `frontend/plan-actions.test.js`.
+- S133 and S153 pass on base by design. S133 records shipped behavior, and its
+  held-day node test carries non-vacuity. S153 needs no application change.
+- All 24 pass on their ticket branches at both sizes.
+
+Raw logs, captures and renders land in
+`docs/scope/release-422-434-evidence/<issue>/`. The complete ledger, 171
+issued, runs at both sizes once on the integration commit before the push.
+Every story must pass on the commit that is pushed. No failure is waived by
+this freeze.
+
+The earlier freezes below remain historical provenance.
+
+```text
 ★ FROZEN 2026-09-22 · base eec4652a8f1109aa62d126ce3a0b4f24973194b0
   · generator eec4652a8f1109aa62d126ce3a0b4f24973194b0 · window n/a
   · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e

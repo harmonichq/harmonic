@@ -700,6 +700,20 @@ variable; it must not encourage batching unrelated basal / ISF / I:C / target
 changes. One variable at a time is the rule from Diagnose through Verify.
 _Avoid_: change basket, backlog, batch.
 
+A recorded Plan is **pending** until it is **confirmed** — by its matched Trial,
+or by a later pump read that holds its schedule — **withdrawn** by the user, or
+**superseded** by a newer recorded Plan. Only the newest recorded Plan can be
+pending, and while it is pending it withholds a Focus and a new decision. The
+server serves one verdict per recorded Plan (pending; mismatch, a comparable
+pending Plan the latest pump read after its decision does not hold — a Plan
+whose recorded items cannot be compared with a read stays pending; confirmed;
+withdrawn; superseded) with when it was confirmed and whether the latest read still holds
+it (on pump). A confirmed Plan stays confirmed when a later read stops holding
+it. Surfaces read the verdict; none decides it.
+_Avoid_: applied or entered (for confirmed), canceled or deleted (for
+withdrawn), stale, expired or abandoned (for superseded), verified (Verify is a
+tab, not a Plan state).
+
 **Maturing**:
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet
 trustworthy** because post-change data is still accruing ("your 07-06 change is still

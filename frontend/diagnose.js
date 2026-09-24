@@ -11,6 +11,7 @@ import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
+import { pendingPlan } from './guidance.js';
 import { formatStartMin } from './plan.js';
 
 // The held Occurrence's own "Open … in Day" control: the last control in the
@@ -153,8 +154,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   async function read() {
     if (pending) return pending;
     error = null;
-    readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); });
-    loadPlanState().then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
+    // The one in-place repaint waits for the Plan state and for the Focus read,
+    // which carries the guidance read whose served pending Plan the watch panel
+    // paints (#431). Both reads start now, side by side.
+    Promise.all([
+      readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); }),
+      loadPlanState(),
+    ]).then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
     // The one status read this call owns: answered before the payload reads
     // are issued, so the recorded revision is at or before every payload
     // snapshot and a write landing during them always moves the revision the
@@ -338,6 +344,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       stage: (item, desired) => stageEvidence(item, desired, payload?.analyze),
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),
       retry: read,
+      pendingPlan,
       settings: () => openUtility('settings'),
       caseChanged,
       // A parked Diagnose is inert: the workstation's page-level keys act only

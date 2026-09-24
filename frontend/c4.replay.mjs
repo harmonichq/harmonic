@@ -6,6 +6,7 @@ import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
 import { parseRoute } from './tab-routing.js';
+import { stamp } from './frame.js';
 
 const read = async (page, path, params = {}, timeout = 30000) => {
   const url = new URL(path, page.url());
@@ -1137,6 +1138,9 @@ export const C4_STORIES = {
     await ctx.capturePump('mismatch');
     await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
     await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    // #431: the server, not the browser, confirms it; the door is the confirmed frame's.
+    assert.equal((await read(page, '/api/plan/history')).history[0].verdict?.state, 'confirmed',
+      'S105 premise: the server confirms the recorded Plan');
     assert.equal((await read(page, '/api/verify/trials')).admission.active_kind, null,
       'S105 premise: confirmed Plan with no active watch');
     assert.equal(await page.getByRole('button', { name: 'View change record', exact: true }).count(), 1,
@@ -1153,6 +1157,144 @@ export const C4_STORIES = {
   },
   async S106(page) {
     await selectedPattern404(page);
+  },
+  // #431 · 2026-09-23. The server confirms a recorded Plan from the pump read
+  // that holds it (ADR 431); Changes names that read, never the latest fetch.
+  // The first check reads the served verdict and the Changes status together,
+  // so a base history row that serves no verdict fails it rather than throwing.
+  async S145(page, ctx) {
+    assert.ok(ctx.capturePump, 'S145 requires CASE_STORE_DIR for synthetic in-place pump captures');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    await ctx.capturePump('in-place');
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-status').waitFor({ timeout: 30000 });
+    const confirmedAt = await waitForReplayAssertion(async seen => {
+      const newest = seen(await read(page, '/api/plan/history')).history[0];
+      const status = seen(await page.locator('.gf-status').innerText());
+      assert.ok(newest?.verdict?.state === 'confirmed' && /On pump since/.test(status),
+        `S145 the server must confirm the in-place Plan and Changes must say so (verdict ${newest?.verdict?.state}; status "${status}")`);
+      assert.ok(status.includes(`On pump since ${stamp(newest.verdict.confirmed_at)}`),
+        'S145 Changes must name the served confirming read');
+      return newest.verdict.confirmed_at;
+    }, 'S145 the served confirmation and the Changes status agree');
+    await ctx.capturePump('in-place');
+    await page.reload();
+    await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const newest = seen(await read(page, '/api/plan/history')).history[0];
+      const pump = seen(await read(page, '/api/pump-settings'));
+      const status = seen(await page.locator('.gf-status').innerText());
+      assert.notEqual(stamp(pump.fetched_at), stamp(confirmedAt), 'S145 premise: the second capture is a later pump read');
+      assert.equal(newest.verdict.confirmed_at, confirmedAt, 'S145 a later pump read must not move the confirmation');
+      assert.ok(status.includes(`On pump since ${stamp(confirmedAt)}`) && !status.includes(stamp(pump.fetched_at)),
+        `S145 Changes must keep naming the confirming read after a later one ("${status}")`);
+    }, 'S145 a later pump read leaves the confirmed time unchanged');
+  },
+  // #431 · 2026-09-23. A draft saved after a confirmed Plan is the frame's
+  // subject: Draft saved, recordable, with the confirmed Plan on its own line.
+  async S146(page, ctx) {
+    assert.ok(ctx.capturePump, 'S146 requires CASE_STORE_DIR for a synthetic in-place pump capture');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    await ctx.capturePump('in-place');
+    const confirmed = (await read(page, '/api/plan/history')).history[0];
+    assert.equal(confirmed.verdict?.state, 'confirmed', 'S146 premise: the server confirms the in-place Plan');
+    // The next draft restores the source profile's value at each recorded slot:
+    // it differs from the pump, which now holds the Plan, and carries no value
+    // the store did not already hold.
+    const source = confirmed.deliverable.source_profile.segments;
+    const at = minute => [...source].reverse().find(row => row.start_min <= minute).basal_rate;
+    const items = confirmed.items.map(item => ({ type: item.type, start_min: item.start_min, value: at(item.start_min) }));
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href, { data: { items } });
+    assert.equal(saved.status(), 200, 'S146 premise: the next draft saves');
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      // The kicker is set in capitals by CSS, so innerText reads "PLAN · DRAFT
+      // SAVED"; the phase word is the served-state text inside its <b>.
+      const phase = seen(await page.locator('.gf-stage .gf-kicker b').textContent());
+      const desk = seen(await page.locator('.gf-desk').innerText());
+      assert.equal(phase, 'Draft saved', 'S146 a draft after a confirmed Plan reads Draft saved');
+      assert.ok(!/doesn't match your plan|keying error/i.test(desk), 'S146 a next draft is not read as a keying error');
+      assert.equal(seen(await page.locator('[data-set="record"]').filter({ visible: true }).count()), 1,
+        'S146 offers Record decision');
+      assert.equal(seen(await page.locator('[data-set="save-draft"]').filter({ visible: true }).count()), 1,
+        'S146 offers Save draft');
+      assert.ok(desk.includes(`Previous Plan: recorded ${stamp(confirmed.applied_at)}, confirmed on the pump ${stamp(confirmed.verdict.confirmed_at)}.`),
+        'S146 names the confirmed Plan on its own line');
+    }, 'S146 a draft after a confirmed Plan');
+  },
+  // #431 · 2026-09-23. A pending Plan reads the same in every window and case:
+  // the watch panel carries it, and no case-file header names it. Every header
+  // is checked before the panel, because the base panel has no Plan state and a
+  // panel-first story would fail there instead of at the base's header note.
+  async S147(page) {
+    // Record a Plan from the served basal action through the routes, as S105 does.
+    const guidance = await read(page, '/api/guidance');
+    const basal = guidance.candidates.find(row => row.subject === 'setting:basal_rate' && row.action?.length);
+    assert.ok(basal, 'S147 premise: a served basal action admits a Plan');
+    const items = basal.action.flatMap(action => (action.member_start_mins || [action.start_min])
+      .map(start => ({ type: 'basal', start_min: start, value: action.recommended })));
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href, { data: { items } });
+    assert.equal(saved.status(), 200, 'S147 premise: the Plan draft saves');
+    const applied = await page.request.post(new URL('/api/plan/apply', page.url()).href, { data: {} });
+    assert.equal(applied.status(), 200, `S147 premise: the Plan decision records: ${await applied.text()}`);
+    const { applied_at: appliedAt } = await applied.json();
+    assert.equal((await read(page, '/api/focus')).admission.focus_pin.reason, 'pending_plan',
+      'S147 premise: the recorded Plan withholds Focus');
+    // A fresh Diagnose arrival: the header's decisions wait for the Focus read,
+    // which carries the guidance read.
+    const focusRead = Promise.all(['/api/focus', '/api/guidance'].map(path => page.waitForResponse(
+      response => new URL(response.url()).pathname === path && response.ok(), { timeout: 60000 })));
+    await page.goto(new URL('/', page.url()).href);
+    await focusRead;
+    await settled(page);
+    const pattern = 'pattern:highs_after_meals';
+    const windows = ['24 h', 'Evening'];
+    const headers = {};
+    for (const window of windows) {
+      await page.getByRole('button', { name: window, exact: true }).click();
+      await settled(page);
+      await press(page, `#level .qrow[data-id="${pattern}"]`);
+      // The case's occurrences render only after its case read, and that read
+      // settles the header before the workstation receives it.
+      await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+      headers[window] = await page.evaluate(() => ({
+        note: document.querySelectorAll('[data-focus-context], [data-focus-reason]').length,
+        startFocus: document.querySelectorAll('[data-start-focus]').length,
+        planWords: /View Plan|awaiting confirmation/.test(document.querySelector('header.crumb')?.textContent || ''),
+      }));
+      // Back to the rail (as S29 and S103 do): a Window press on a drilled case
+      // re-scopes that case instead of listing the rail, and clears the case
+      // Diagnose had selected, so the next window's Pattern must be drilled anew.
+      await page.getByRole('button', { name: 'Findings', exact: true }).click();
+      await settled(page);
+    }
+    const clean = { note: 0, startFocus: 0, planWords: false };
+    assert.deepEqual(headers, Object.fromEntries(windows.map(window => [window, clean])),
+      `S147 no case-file header may carry a pending-Plan note (${pattern} in ${windows.join(' and ')})`);
+    const expected = { state: 'recorded', kind: 'Plan · awaiting pump', what: `Basal · recorded ${appliedAt.slice(5, 10)}`,
+      how: 'Recorded — waiting for a pump read that matches', go: 'Open Changes ›' };
+    for (const window of windows) {
+      await page.getByRole('button', { name: window, exact: true }).click();
+      await settled(page);
+      await waitForReplayAssertion(async seen => {
+        assert.deepEqual(seen(await page.locator('.inspector > .watch').evaluate(node => ({
+          state: node.dataset.state, kind: node.querySelector('.kind')?.textContent,
+          what: node.querySelector('.what')?.textContent, how: node.querySelector('.how')?.textContent,
+          go: node.querySelector('.go')?.textContent,
+        }))), expected, `S147 the watch panel reads the pending Plan in ${window}`);
+      }, `S147 the watch panel in ${window}`);
+    }
+    await press(page, '.inspector > .watch .go');
+    await page.waitForFunction(() =>
+      document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'changes', null, { timeout: 30000 });
+    const address = new URL(page.url());
+    assert.equal(address.pathname, '/changes', 'S147 Open Changes lands on Changes');
+    assert.equal(address.searchParams.get('subject'), 'plan', 'S147 Open Changes opens the Plan, never the watched-change address');
   },
   async S107(page) {
     await fullDayDiagnose(page);

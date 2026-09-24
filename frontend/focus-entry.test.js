@@ -102,10 +102,23 @@ test('a first Focus read failure still gives a selected Pattern a visible retry,
     label: 'Focus status unavailable', retry: true });
 });
 
-test('pending Plan and active Focus context use compact actions, plain copy, and their existing routes', async () => {
+test('a pending Plan gives the case-file header no context; the watch panel carries it', async () => {
+  // #431: the same pending Plan reads the same in every window and case, so no
+  // case's header names it. Start Focus stays withheld as the served admission says.
+  const g = { ...source, candidates: [{ subject: offered.subject, title: 'Served Pattern' }] };
+  const entry = createFocusEntry({ readGuidance: async () => g, api: {
+    fetchFocuses: async () => ({ ...roster, admission: { focus_pin: { available: false, reason: 'pending_plan' } } }),
+  } });
+  await entry.read();
+  for (const selected of [{ subject: offered.subject }, { subject: offered.subject, finding: { lever: 'served-lever' } }]) {
+    assert.equal(entry.contextForCase(selected), null);
+    assert.equal(entry.forCase(selected), null);
+  }
+});
+
+test('active Trial and Focus context use compact actions, plain copy, and their existing routes', async () => {
   const g = { ...source, candidates: [{ subject: offered.subject, title: 'Served Pattern' }] };
   for (const [reason, label, action, route] of [
-    ['pending_plan', 'Plan awaiting confirmation', 'View Plan', { subject: 'plan' }],
     ['active_focus', 'Focus in progress', 'View Focus', { subject: 'focus' }],
     ['active_trial', 'Trial in progress', 'View Trial', { subject: 'trial' }],
   ]) {

@@ -51,6 +51,9 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
         reason: 'Focus status could not load. Retry the read.', label: 'Focus status unavailable', retry: true };
       if (!roster) return null;
       const admission = roster.admission?.focus_pin?.reason || parent?.readiness?.reason;
+      // A pending Plan reads the same in every window and case: the watch panel
+      // carries it, and no case-file header names it (#431).
+      if (admission === 'pending_plan') return null;
       const copy = admissionReason(admission);
       return { subject, offered, title: parent?.title || offered?.subject || subject,
         reason: copy.said, label: copy.label, action: copy.action,

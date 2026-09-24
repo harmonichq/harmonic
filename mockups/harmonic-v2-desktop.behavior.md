@@ -3552,3 +3552,135 @@ S138 · A Finding case with an Occurrence held in a preset window other than
             address, which stays /diagnose), at 1280x720 and 1440x900; branch
             136b9981 passes at both sizes; coordinator-run 2026-09-23
 ```
+
+## #431 amendment — 2026-09-23
+
+Changes now reads the server's one verdict on each recorded Plan (ADR 431,
+`openspec/changes/plan-state-one-verdict`). The server confirms a pending Plan
+once the latest pump read after its decision holds its schedule. Changes names
+the phase, status, actions and Decision block from that verdict, and makes no
+pump comparison of its own except to draw a served mismatch's rows. S145 and
+S146 are the fail-first obligations for sub-order 2 of that change, and S42 and
+S105 are amended under the same sanction. Every one of them runs on the app
+opener only. Browser execution belongs to the release coordinator at 1280x720
+and 1440x900; the worker order forbids serve and browser runs.
+
+Sanction: Connor Griffin (Q2), 2026-09-23: "Yes. I record your answer as the
+approval for every change these 13 checklists call for, and write the wording in
+CONTEXT.md terms."
+
+Amended S42 · 2026-09-23 · #431 / Q2 sanction: after the matched capture, the story reads "On pump since" — the server's confirming read — in place of "On pump as of" the latest fetch. It reads the Store's observation from the newest history record, which the served history lists first, not from the last one listed.
+The preceding S42 wording and results are the attributed pre-amendment record.
+
+Amended S105 · 2026-09-23 · #431 / Q2 sanction: the premise also asserts that the server confirms the recorded no-op Plan (the newest history row's verdict reads confirmed). Its View change record door now comes from the confirmed frame, not the pending one. Before #431 the base left that Plan unconfirmed, and its door came from the pending branch.
+The preceding S105 wording and results are the attributed pre-amendment record.
+
+```
+S145 · A pump read that holds a recorded Plan on the unchanged active profile
+       confirms it on the server, and Changes reads "✓ On pump since <that
+       read>"; a later read that still holds it leaves the named time unchanged.
+  element:  .gf-status[data-state="confirmed"], [data-set="record"]
+  source:   frontend/plan-view.js planStatus / phase; ciq_autotune/watched_change.py
+            reconcile_follow_up (the pump-read confirmation) and with_plan_verdicts
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict)
+  data:     basal-lower; stage and record the served basal action, then the
+            replay pump producer's `in-place` capture (the recorded Plan's
+            deliverable on the unchanged active profile, no profile switch, so
+            no Trial), then a second `in-place` capture one minute later
+  evidence: C4_STORIES.S145; its first confirmation check reads the newest
+            history row's `verdict?.state` together with the Changes status in
+            one assertion, so a base row serving no verdict fails it rather
+            than throwing; then the status must name the served `confirmed_at`,
+            and after the second capture the served `confirmed_at` and the
+            status are unchanged while the pump read has moved
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            The branch passes on 8a194779 and on 24dff6ca at both sizes. On
+            base a4d374a7, with this harness laid over it, it fails at its
+            served-verdict and Changes agreement assertion: the base serves no
+            verdict and leaves the in-place Plan unconfirmed. Coordinator-run
+            2026-09-23
+```
+
+```
+S146 · A draft saved after a confirmed Plan that differs from the pump reads
+       Draft saved, offers Save draft and Record decision, and names the
+       confirmed Plan on its own line — never a keying error.
+  element:  .gf-stage .gf-kicker, [data-set="save-draft"], [data-set="record"],
+            the Decision section's "Previous Plan:" line
+  source:   frontend/plan-view.js framePlan / phase / decisionSection / planFrame
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict)
+  data:     basal-lower; stage and record the served basal action, `in-place`
+            capture, then save a draft restoring the source profile's value at
+            each recorded slot (a value the store already held, which differs
+            from the pump that now holds the Plan)
+  evidence: C4_STORIES.S146; premise asserts the newest history row's verdict
+            reads confirmed; then the kicker reads Draft saved, no keying-error
+            copy shows, both writes are offered, and the line reads "Previous
+            Plan: recorded <time>, confirmed on the pump <confirmed_at>."
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: accepted
+            premise failure.
+            The branch passes on 24dff6ca at both sizes, after f7a90914 moved
+            the kicker read from innerText to the <b>'s own text. On base
+            a4d374a7, with this harness laid over it, it fails at its accepted
+            premise (no server-confirmed Plan). Its fail-first half is
+            frontend/plan-actions.test.js "a differing draft after a confirmed
+            Plan reads Draft saved and can be recorded". Coordinator-run
+            2026-09-23
+```
+
+Sub-order 3 of the same change moves the pending-Plan note under the same
+sanction. The Diagnose case-file header no longer carries a pending-Plan note
+or a Plan route, for any case. Before #431 the note appeared only on
+Pattern-linked cases, through the Focus admission's `pending_plan` reason.
+The watch panel now carries a recorded Plan awaiting the pump whenever no Trial
+or Focus is watched, in every window and case:
+- its kind reads "Plan · awaiting pump";
+- its title names the setting in the wearer's words and the recorded month and
+  day;
+- its detail says what the served verdict says;
+- its route reads "Open Changes ›" and opens Changes at `subject=plan`, never the
+  watched-change address.
+
+Precedence is Trial, Focus, the pending Plan, the staged draft, idle. The
+staged draft's route also reads "Open Changes ›", to the same address. A
+confirmed Plan holds no panel state. The panel's one-object rule (lock term 47)
+is unchanged; the panel gains one state, which is still the only object it
+reports.
+
+Every reader of the moved note is updated in the same change: the desk
+browser test (its "pending Plan" test at both desktop sizes),
+`frontend/focus-entry.test.js`, and S147.
+
+```
+S147 · With a Plan pending, a Pattern case's header carries no pending-Plan
+       note in either of two windows, and the watch panel reads the same
+       "Plan · awaiting pump" state in both; "Open Changes ›" lands on Changes
+       at subject=plan.
+  element:  header.crumb [data-focus-context], [data-focus-reason],
+            [data-start-focus]; .inspector > .watch (.kind, .what, .how, .go)
+  source:   frontend/focus-entry.js contextForCase; frontend/watched-change-dock.js
+            watchDockView; frontend/diagnose-workstation.js paintWatch;
+            frontend/diagnose.js read (one repaint after the Focus/guidance read)
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict); lock term 47
+  data:     pattern-near-tie; record a Plan from the served basal action through
+            the routes (as S105 does), then a fresh Diagnose arrival;
+            pattern:highs_after_meals is served, loads with occurrences and is
+            its own Pattern parent in both the 24 h and Evening windows. The
+            order named basal-lower, but every basal-lower Pattern case file
+            answers 404 ("Finding has no inspectable member"), so no case there
+            ever reaches a header note and its base proof could not fail at the
+            header.
+  evidence: C4_STORIES.S147; waits for the Focus and guidance reads, then in
+            each window drills the Pattern from the rail, waits for its
+            occurrences (the case read settles the header first), reads the
+            header, and returns to the rail by the Findings crumb (a Window
+            press on a drilled case re-scopes it rather than listing the rail);
+            only then reads the watch panel in each window and presses Open
+            Changes
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            The branch passes on 24dff6ca at both sizes. On base a4d374a7, with
+            this harness laid over it, it fails at the header check, "S147 no
+            case-file header may carry a pending-Plan note
+            (pattern:highs_after_meals in 24 h and Evening)", with note: 2 in
+            24 h. Coordinator-run 2026-09-23
+```

@@ -154,15 +154,12 @@ const REASON_SAID = {
     'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
   active_focus:
     'A Focus is already being watched, so Harmonic is not offering another Focus from this read.',
-  pending_plan:
-    'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.',
 };
 
 const REASON_LABEL = {
   reconciliation_required: 'Waiting for reconciliation',
   active_trial: 'Trial in progress',
   active_focus: 'Focus in progress',
-  pending_plan: 'Plan awaiting confirmation',
 };
 
 // The Findings header is compact. A withheld state keeps its full explanation
@@ -171,13 +168,11 @@ const REASON_LABEL = {
 const REASON_ACTION = {
   active_trial: 'View Trial',
   active_focus: 'View Focus',
-  pending_plan: 'View Plan',
 };
 
 const REASON_ROUTE = {
   active_trial: { subject: 'trial' },
   active_focus: { subject: 'focus' },
-  pending_plan: { subject: 'plan' },
 };
 
 /** Product copy for a served admission reason without exposing its API token. */

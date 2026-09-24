@@ -44,9 +44,13 @@ of 2026-09-23 ("figure it out yourself from here").
   factor reads "1 U : <value> mg/dL" on every desk line. `→ ADR`
 - The carb ratio keeps "<value> g/U". Why: ruling on Q1. `→ ADR`
 - Recorded explanations print as recorded. Why: ruling on Q2. `→ ADR`
-- Changes' status words come from the disposition and, under `eligible_action`,
-  the served action's shape: "Ready to stage" or "Ready to start a Focus". Why:
-  coordinator addition; round 1 item 2. `→ ADR`
+- Changes' status words say what the reader can do:
+  - "Ready to stage" for setting instructions;
+  - "Ready to start a Focus" only with a served Focus offer;
+  - "Focus withheld" for a Pattern whose served readiness is withheld;
+  - "Action identified" for any other identified action.
+
+  Why: coordinator addition; round 1 item 2; round 2 ruling A. `→ ADR`
 - The dock's one-line title carries only the setting name, span and served
   direction, and the dock derives none. The from→to values move to the wrapping
   detail line, and S178 measures that nothing truncates. Why: round 1 item 3;
@@ -166,4 +170,10 @@ None. The release rule is that nothing is filed as a follow-up.
   re-assessed from three to four.
 - Coordinator ruling on the register finding (2026-09-24): widen. The
   carb-ratio sentences pass every register rule, and the guard applies all of
-  them. The work stays in sub-order 1. Re-pinned; round 2 follows.
+  them. The work stays in sub-order 1. Re-pinned at e81de031.
+- Plan review round 2 (2026-09-24): 6 of 8 resolved; BLOCKED on two, both ruled
+  by the coordinator:
+  - A: status words follow the served Focus offer and readiness;
+  - B: `\bI:C\b` joins `BANNED`.
+
+  Both were fixed in one commit and re-pinned; the chunking is unchanged.

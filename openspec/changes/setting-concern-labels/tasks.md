@@ -26,9 +26,10 @@
   - the history annotation;
   - the three Findings' summaries and occurrence details.
 
-  Check each sentence against the full `BANNED` list, as the basal and
-  correction-strength tests do. It guards a changed behavior, so it fails first
-  on the base.
+  Add `(re.compile(r"\bI:C\b"), 'user-facing "I:C"')` to `BANNED` beside its
+  "ISF" rule. Check each sentence against the full `BANNED` list, as the basal
+  and correction-strength tests do. It guards a changed behavior, so it fails
+  first on the base.
 - [ ] 1.3 In `ciq_autotune/findings_projection.py`, title the correction-factor
   row `_title("Correction factor", …)` and a carb-ratio block
   `_title(f"Carb ratio {label}", …)`; basal is unchanged. Make the same two edits
@@ -140,15 +141,21 @@
   - one carrying a carb-ratio instruction reads "lower to 9 g/U";
   - a setting concern served with `title` "Correction factor" shows "Correction
     factor" and neither "ISF" nor "mg/dL/U".
-- [ ] 3.3 `frontend/guidance.js` gains the status words (design.md table), chosen
-  from the served disposition and, under `eligible_action`, the served action's
-  shape. Changes' nameplate and Action heading print them, never the code, and a
-  code outside the table prints no words. Node tests in
-  `frontend/changes.test.js` through the Changes mount, failing first on the
-  base:
+- [ ] 3.3 `frontend/guidance.js` gains the status words (design.md table). They
+  are chosen from the served disposition and, under `eligible_action`, from the
+  served action's shape. For an identified action they also depend on whether
+  Changes passes a served Focus offer (`focusOffer(subject)`), and on the
+  Pattern's served readiness verdict. Changes' nameplate and Action heading
+  print them, never the code, and a code outside the table prints no words.
+  Node tests in `frontend/changes.test.js` through the Changes mount, failing
+  first on the base:
   - a setting-led `eligible_action` read shows "Ready to stage";
-  - a habit-led `eligible_action` read (identified action) shows "Ready to start
-    a Focus" and not "Ready to stage";
+  - an identified action with a served Focus offer shows "Ready to start a
+    Focus";
+  - a withheld Pattern (behavioral-carb-undercount shape: identified action,
+    readiness verdict `withheld`, no offer) shows "Focus withheld";
+  - a legacy habit lead (behavioral-missed-meal shape: habit, identified action,
+    no offer) shows "Action identified";
   - a `guided_investigation` read shows "Evidence to inspect";
   - no disposition code appears in any frame's text.
 - [ ] 3.4 Changes' set-aside rows print each row's served name. A row with no

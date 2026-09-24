@@ -130,8 +130,10 @@ carb-ratio sentence branch through the analyzer's own functions:
 - the three Findings' summaries and occurrence details.
 
 It checks every one against the full `BANNED` list, exactly as the basal and
-correction-strength tests do. It is a guard on changed behavior, so it fails
-first on the base.
+correction-strength tests do. `BANNED` gains `(re.compile(r"\bI:C\b"),
+'user-facing "I:C"')` beside its "ISF" rule, so the guard catches the word this
+ruling is about. It is a guard on changed behavior, so it fails first on the
+base.
 
 ## ADR 451 — Diagnose's setting findings are titled by their user labels
 
@@ -243,15 +245,25 @@ something it never said. The release coordinator ruled this on 2026-09-23.
 
 **Decision.** Guidance's served `disposition` is a code from a closed set. The
 desk's guidance module (`frontend/guidance.js`), which already turns served
-codes into words, gains the status words. It chooses them from the disposition
-and, under `eligible_action`, from the shape of the served action: setting
-instruction rows can be staged, while an identified action pins a Focus.
-Changes' nameplate and its Action heading print the words, never the code:
+codes into words, gains the status words, which say what the reader can actually
+do. It chooses them from:
+
+- the disposition;
+- under `eligible_action`, the served action's shape;
+- for an identified action, whether a served Focus offer exists (the same
+  `focusOffer(subject)` over the served `pinnable_patterns` that draws Changes'
+  Start Focus) and the Pattern's served readiness verdict.
+
+`focus-entry.js` imports `guidance.js`, so the words function takes the offer
+as an argument from Changes rather than importing it. Changes' nameplate and
+its Action heading print the words, never the code:
 
 | Code, action | Words | Drawn from |
 |---|---|---|
 | `eligible_action`, setting instruction rows | Ready to stage | the concern's Stage change |
-| `eligible_action`, an identified action | Ready to start a Focus | Changes' Start Focus and the Focus entry's "ready to start a Focus" |
+| `eligible_action`, an identified action with a served Focus offer | Ready to start a Focus | Changes' Start Focus and the Focus entry's "ready to start a Focus" |
+| `eligible_action`, an identified action on a Pattern whose served readiness verdict is `withheld` | Focus withheld | the served "Focus is withheld: …" reason the pane prints |
+| `eligible_action`, any other identified action (no offer, e.g. a legacy habit lead) | Action identified | the Action figure, which names the identified action |
 | `guided_investigation` | Evidence to inspect | its Inspect route |
 | `active_change` | A change is being watched | DESIGN.md's refusal line |
 | `quiet` | No priority needs action | the quiet frame |
@@ -261,7 +273,8 @@ Changes' nameplate and its Action heading print the words, never the code:
 
 A code outside the set prints no words, and the rest of the frame still
 renders. The unselected frame's honesty line, which quotes an unknown code,
-stays. The words read the served shape only, and decide no eligibility.
+stays. The words read served fields only (the action's shape, the served offer, the
+served readiness verdict). They decide no eligibility and re-derive no gate.
 
 ## ADR 451 — The watch dock's title names the change; its values wrap below
 

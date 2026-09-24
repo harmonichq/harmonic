@@ -16,7 +16,8 @@ DESIGN.md's user-copy register. It SHALL name the setting "carb ratio", never
 
 Meaning and every served number SHALL be unchanged. A test SHALL build every
 served carb-ratio sentence branch and check it against the register's full rule
-set, as the basal and correction-strength tests do.
+set, as the basal and correction-strength tests do. That rule set SHALL include
+a rule against user-facing "I:C".
 
 #### Scenario: A held carb-ratio block's annotation reads in register
 
@@ -192,13 +193,17 @@ its identifier.
 ### Requirement: Changes says why its concern leads in words
 
 Changes SHALL print the served guidance disposition in words, never the code,
-on its nameplate and its Action heading. Under `eligible_action`, the words
-depend on the shape of the served action:
+on its nameplate and its Action heading. The words SHALL say what the reader
+can actually do. Under `eligible_action` they depend on the served action's
+shape and, for an identified action, on the served Focus offer and the served
+readiness verdict:
 
 | Code, action | Words |
 |---|---|
 | `eligible_action`, the action carries setting instructions | Ready to stage |
-| `eligible_action`, the action is an identified action | Ready to start a Focus |
+| `eligible_action`, an identified action with a served Focus offer | Ready to start a Focus |
+| `eligible_action`, an identified action on a Pattern whose served readiness verdict is `withheld` | Focus withheld |
+| `eligible_action`, any other identified action | Action identified |
 | `guided_investigation` | Evidence to inspect |
 | `active_change` | A change is being watched |
 | `quiet` | No priority needs action |
@@ -214,11 +219,23 @@ A code outside that set SHALL print no words there.
 - **WHEN** Changes renders it
 - **THEN** the frame reads "Ready to stage" and contains no disposition code
 
-#### Scenario: A habit-led concern reads Ready to start a Focus
+#### Scenario: A concern with a served Focus offer reads Ready to start a Focus
 
-- **GIVEN** a served `eligible_action` read whose selected concern's action is an identified habit action
+- **GIVEN** a served `eligible_action` read whose selected concern's identified action has a served Focus offer
 - **WHEN** Changes renders it
-- **THEN** the frame reads "Ready to start a Focus" and not "Ready to stage"
+- **THEN** the frame reads "Ready to start a Focus" and offers Start Focus
+
+#### Scenario: A withheld Pattern reads Focus withheld
+
+- **GIVEN** a served `eligible_action` read whose selected Pattern carries an identified action, a served readiness verdict of `withheld`, and no Focus offer
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Focus withheld" beside the served withheld reason, and neither "Ready to start a Focus" nor "Ready to stage"
+
+#### Scenario: A legacy habit lead reads Action identified
+
+- **GIVEN** a served `eligible_action` read whose selected concern is a habit with an identified action and no Focus offer
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Action identified" and neither "Ready to start a Focus" nor "Ready to stage"
 
 #### Scenario: An investigation reads Evidence to inspect
 

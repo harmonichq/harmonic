@@ -1739,18 +1739,22 @@ async function readCanvasHead() {
   };
 }
 
+// #455: every header part's box width, clientWidth and scrollWidth, as S185
+// prints them in each failure and in its measurement line.
+const headWidths = reading => ['title', 'provenance', 'control', 'word'].map(name => {
+  const part = reading[name];
+  return part ? `${name} ${px(part.width)} box, clientWidth ${part.clientWidth}, scrollWidth ${part.scrollWidth}`
+    : `${name} absent`;
+}).join('; ');
+
 // #455: every way the canvas header fails at one size, one line each, each
-// printing every part's box width, clientWidth and scrollWidth. `narrow` marks
-// the narrowest split, where the title need only show a letter and an ellipsis;
-// elsewhere the control shows its word and the title prints whole.
+// printing every part's widths. `narrow` marks the narrowest split, where the
+// title need only show a letter and an ellipsis; elsewhere the control shows
+// its word and the title prints whole.
 export function canvasHeadFailures({ size, narrow, reading }) {
   const at = sizeName(size);
   const parts = ['title', 'provenance', 'control'];
-  const measured = [...parts, 'word'].map(name => {
-    const part = reading[name];
-    return part ? `${name} ${px(part.width)} box, clientWidth ${part.clientWidth}, scrollWidth ${part.scrollWidth}`
-      : `${name} absent`;
-  }).join('; ');
+  const measured = headWidths(reading);
   const failures = [];
   const fail = message => failures.push(`${at}: ${message} (${measured})`);
   const shown = parts.filter(name => reading[name]);
@@ -2681,6 +2685,8 @@ export const C4_STORIES = {
     } finally {
       await page.setViewportSize(run);
     }
+    // the measured widths at every size, passing or not, for the change's record
+    for (const { size, reading } of checks) process.stdout.write(`# S185 ${sizeName(size)} ${headWidths(reading)}\n`);
     assertCanvasHead(checks);
   },
   // #428 (ADR 428): after a Day return, every change to the case on screen —

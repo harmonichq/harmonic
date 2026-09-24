@@ -170,7 +170,8 @@ its new box, the chart is idle, and two animation frames have passed.
   Evidence: `C4_STORIES.S185` → `assertCanvasHead` / `canvasHeadFailures`;
   node tests "S185 …" cover the six listed cases and a control that loses its
   name. Each reading waits until the header's box has held still for two
-  animation frames.
+  animation frames. The story prints every size's widths on a `# S185` line,
+  passing or not, so the base leg can record them in design.md's facts.
 
 - [x] 1.4 Pin S183, S184 and S185 in `frontend/c4.replay.test.js` beside
   S151–S153: each is registered once, with term `HV2-11` and case

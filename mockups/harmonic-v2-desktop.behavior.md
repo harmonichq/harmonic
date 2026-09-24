@@ -4226,8 +4226,9 @@ S185 · With Diagnose at rest, the canvas header keeps its title, its whole
   evidence: C4_STORIES.S185 → assertCanvasHead; sets each size in turn, waits
             until the header's box has held still for two animation frames,
             reads each part's box, clientWidth and scrollWidth and the
-            control's name and tooltip, restores the run's size, then fails
-            once, each failure printing every part's widths
+            control's name and tooltip, restores the run's size, prints every
+            size's widths on a `# S185` line, then fails once, each failure
+            printing every part's widths
   status:   owed — the coordinator's base leg (#455 tasks 1.5) and branch leg
             (tasks 8.2)
 ```

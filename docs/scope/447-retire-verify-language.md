@@ -34,15 +34,46 @@ carries the default this triage assumed.
   ticket's grounding. → ADR.
 - **The Guide article is edited, and its locked preface is not.** Why: the
   preface is a locked verbatim string, and the article is served text. → ADR.
-- **The qa-e2e-database migration requirement stays a record.** Why: its Verify
-  word names a deleted test harness inside a completed #319 migration contract
-  that #416 left stale in other ways too. Rewriting it is QA-database contract
-  work. → reported to the coordinator (finding F4).
-- **Surface lifecycle `revise`** (`ui-craft` route: shipped, runnable, complete
-  declaration, manufactured data). The frozen desk ledger and replay are the
-  contract, and no sweep is re-run. S169 and S170 are added in a dated `#447
-  amendment`. inline.
-- **Shape flat; review depth targeted.** Why: see the lock. inline.
+- **Coordinator rulings on #447 under the Q3 delegation (2026-09-23):**
+  - Q1: the dock's ready line is "Ready to judge — ‹N› days since ‹MM-DD› ·
+    ‹R› required".
+  - Q2: R447's count is the watch-maturity count, and the comparison period's own
+    length is a different fact.
+  - Q3: unarchived OpenSpec changes are dated records and stay untouched.
+  - Q4: delete from the desk glossary every term no desk surface can render.
+    CONTEXT.md keeps a term only where the backend still serves the concept, and
+    says there that the desk does not show it.
+  - F1–F5: every finding is fixed in this change; "not fixed" is not an
+    available outcome.
+
+  → ADR (the five ADR 447 sections).
+- **Q4 applied.** The desk glossary holds none of the three terms, so nothing is
+  deleted from it. CONTEXT.md deletes Digest. It keeps Localized outcome,
+  Confound triage, Tracked candidate and Candidate sweep, which
+  `/api/pattern-sweep` still serves. → ADR.
+- **F2 applied.** The route serves only `watched_change` through one function
+  `summarize_trend` also uses. The CLI's `outcomes-trend` is the series'
+  production caller, so no producer is deleted. The route loses its window
+  parameter and changes its persisted shape marker. → ADR.
+- **F1 applied.** `detect_trial` and `_profile_switch_diff` are deleted with the
+  five test classes (31 tests) that exist only to test them. The enforced fact is
+  that no production module imports or calls either. → ADR.
+- **F3–F5 applied.**
+  - The v1 Plan requirement is REMOVED and replaced by "Changes' Plan asks…".
+  - The QA consumer requirement is MODIFIED to today's tree, keeping its four
+    scenario headers, because the validator refuses a MODIFIED block that drops
+    them.
+  - ACCEPTANCE.md's table drops the nine legs #416 deleted and invents no
+    number.
+
+  → ADR.
+- **Surface lifecycle `revise`.** The `ui-craft` route is shipped, runnable, with
+  a complete declaration and manufactured data. The frozen desk ledger and replay
+  are the contract, and no sweep is re-run. S169 and S170 are added in a dated
+  `#447 amendment`. inline.
+- **Shape chunked: three serial sub-orders (backend contract → shipped surfaces
+  → language and records). Review depth Full for the whole diff (sub-order 1 is
+  Full).** Why: see the lock. inline.
 
 ### Risk contract
 
@@ -50,8 +81,10 @@ carries the default this triage assumed.
   served Trial. Any printed "‹N› of ‹R›" with ‹N› > ‹R›. A frontend rule that
   re-derives readiness, maturity or the count instead of reading the served
   facts. Any change to a served payload, `_maturing`, the readiness rule, a
-  staging predicate, cap or floor. Real glucose, insulin or schedule values in
-  any committed test, fixture, capture or comment. Plus the defaults: secret
+  staging predicate, cap or floor. A served `watched_change` that differs from
+  the base's for the same store, a persisted full-trend payload served under
+  the new route shape, or any change to the CLI trend's output. Real glucose,
+  insulin or schedule values in any committed test, fixture, capture or comment. Plus the defaults: secret
   exposure, irreversible loss of authoritative data, and silent incorrect
   success.
 - **Must recover:** nothing automatic; both printers are stateless renders of
@@ -72,45 +105,13 @@ carries the default this triage assumed.
 
 ## Open questions
 
-Each carries the default this triage assumed. The coordinator decides; none goes
-to the operator.
+None. The coordinator answered Q1–Q4 on the defaults this triage proposed, with
+Q4 turned into a deletion rule, and moved F1–F5 into scope. All of it is
+recorded under Decisions.
 
-1. **The dock's ready-state words.** Default: "Ready to judge — ‹N› days since
-   ‹MM-DD› · ‹R› required", emphasising ‹N›, which uses Changes' own ready-state
-   words. The alternative is "Ready to judge — ‹N› days since ‹MM-DD›", which
-   drops the requirement the lead already implies. It is one string in tasks
-   1.1, 1.2 and 3.2 and S169.
-2. **How far R447's count reaches.** Default: the watch-maturity count behind
-   "Maturing" / "Ready to judge". Changes' evidence-readiness arms print each
-   comparison period's own elapsed days (about 18 on `c3-trial`, bounded by the
-   data tail). That is a separate HV2-24 fact under its own label, and it stays
-   as it is.
-3. **Unarchived OpenSpec changes (35 files with the word).** Default: dated
-   records, left alone. That includes the `harmonic-v2` durable-follow-up delta's
-   "Verify roster", which names the `/api/verify/trials` resource.
-4. **Digest, Localized outcome and Tracked candidate in CONTEXT.md.** Default:
-   keep the definitions, drop the Verify placement, and say that no desk surface
-   renders them since #416, following the #500 precedent. The alternative is to
-   delete the three entries.
+## Findings
 
-## Findings for the coordinator (not fixed here; no issue filed)
-
-- **F1.** `ciq_autotune/watched_change.detect_trial` has no production caller.
-  The graph shows 31 callers, all in `tests/test_watched_change.py`. Its line-507
-  comment is re-pointed by this change regardless.
-- **F2.** `/api/outcomes/trend` serves `metrics`, `behaviors` and
-  `overnight_lows` (including `cleared`), and no desk surface reads them. The
-  desk reads only `watched_change` (`frontend/diagnose.js:183`).
-- **F3.** The surfaces requirement "Plan surface asks 'what will I program into
-  my pump?'" still describes the v1 Plan surface. It is not Verify wording, so it
-  is outside R447 as written.
-- **F4.** The qa-e2e-database requirement "Remaining consumers migrate before
-  revise-E2E retires" describes a CI `server: true` row and a
-  `$RUNNER_TEMP/harmonic-qa.sqlite` copy step that no longer exist. It also names
-  three replays #416 deleted.
-- **F5.** ACCEPTANCE.md's browser-leg timing table still lists legs #416
-  deleted: Cockpit shell, the Diagnose workstation, event-comparison and
-  support-audit legs, and the Verify behaviour ledger.
+All five are fixed in this change (F1–F5 above). No issue is filed.
 
 ## Spawned tasks
 

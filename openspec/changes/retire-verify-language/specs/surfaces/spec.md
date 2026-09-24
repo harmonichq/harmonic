@@ -82,9 +82,34 @@ The Guide's locked preface for the authored articles stays as it is.
 - **THEN** the rendered article names no Verify and carries the Cause-lever line
   naming a Focus followed in Changes
 
+### Requirement: Changes' Plan asks "what will I program into my pump?"
+
+The desk has no separate Plan destination. The Plan is a seat in Changes
+(ADR 397). Changes' Plan SHALL render the complete pump-entry schedule built from
+the detected active profile plus the changes staged into it, with the capacity
+copy "‹n› of ‹capacity› segments used" and "Nothing here is sent to your pump.".
+It SHALL keep the detected pump settings distinct from the proposed schedule.
+Saving a draft and recording a decision SHALL be durable writes. A recorded
+Plan's phase SHALL come from its served verdict, as "Changes states a Plan's
+phase from its served verdict" requires. Changes' Plan SHALL compare no
+deliverable with a pump read of its own.
+
+#### Scenario: A staged change reads as the complete schedule in Changes' Plan
+
+- **GIVEN** a synthetic store and a change staged from Diagnose
+- **WHEN** Changes opens on the Plan at 1280×720 and at 1440×900
+- **THEN** it renders the complete pump-entry schedule with "‹n› of ‹capacity›
+  segments used" and "Nothing here is sent to your pump."
+- **AND** Pump settings opens from Changes, distinct from the proposed schedule
+
 ## REMOVED Requirements
 
 ### Requirement: Verify surface asks "are my changes working?"
 
 **Reason:** #416 retired v1's Verify surface. Changes owns Trial and Focus progress under ADR 397, and the desk renders no outcome trends or behavior-trend tiles, which were the rest of this requirement.
 **Migration:** Use "Changes follows a watched Trial or Focus through" above. "The watch dock and Changes print one Trial day count" carries the maturity count both surfaces print.
+
+### Requirement: Plan surface asks "what will I program into my pump?"
+
+**Reason:** #416 retired v1's Plan page, and the Plan is a seat in Changes (ADR 397). A recorded Plan's reconciliation is the server's verdict (ADR 431), not a browser comparison. The desk offers no hand-edit layer.
+**Migration:** Use "Changes' Plan asks 'what will I program into my pump?'" above and the existing "Changes states a Plan's phase from its served verdict".

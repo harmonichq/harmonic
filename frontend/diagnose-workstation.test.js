@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 import {
   buildIcBlocks, queryState, renderEventComparisonRoster, renderIsfLevel, renderSlotLevel, renderLane,
 } from './diagnose-workstation.js';
 import { buildSlotLane } from './diagnose-workstation-chart.js';
+import { ANCHOR_STATE_WORD } from './day-chart.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
@@ -101,6 +102,23 @@ test('selected detail describes its glucose trace in product language', () => {
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);
   assert.doesNotMatch(source, /Occurrence's server-owned trace/);
+});
+
+test('#423 · Diagnose words an outranked occurrence with the Day desk\'s claimed word', () => {
+  // One definition: the verdict band's footer and the selected occurrence's tag
+  // read VERDICT_RESIDUE_KEY, whose outranked label is built from the word the
+  // Episode Log prints, never a second spelling of it.
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ ANCHOR_STATE_WORD \} from '\.\/day-chart\.js';/);
+  assert.match(source,
+    /const VERDICT_RESIDUE_KEY = \{ outranked: `\$\{ANCHOR_STATE_WORD\.outranked\} by another finding`, no_data: 'not comparable' \};/);
+  assert.equal(`${ANCHOR_STATE_WORD.outranked} by another finding`, 'claimed by another finding');
+  // "Factor" is a synonym CONTEXT.md retires for Lever; no desk source keeps it.
+  const desk = readdirSync(new URL('.', import.meta.url))
+    .filter((name) => /\.m?js$/.test(name) && !/\.test\.m?js$/.test(name));
+  for (const name of desk) {
+    assert.doesNotMatch(readFileSync(new URL(`./${name}`, import.meta.url), 'utf8'), /claimed by another factor/, name);
+  }
 });
 
 test('#404 · grouped comparison names its cohort once while case rosters keep their varying tier', () => {

@@ -34,6 +34,7 @@ import {
   buildDayTrace,
   queuePreviewOption,
 } from './diagnose-workstation-chart.js';
+import { ANCHOR_STATE_WORD } from './day-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
@@ -1128,7 +1129,10 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
  * segment and instead prints on the roster's own footer line.
  */
 const VERDICT_BAND_KEY = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet' };
-const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: 'not comparable' };
+// The outranked label is built from the Day desk's one claimed word (ADR 423): a
+// claimed occurrence belongs to an episode another Finding owns. Here that means
+// this Finding's criterion was not met while another Lever drove the episode.
+const VERDICT_RESIDUE_KEY = { outranked: `${ANCHOR_STATE_WORD.outranked} by another finding`, no_data: 'not comparable' };
 
 /**
  * The verdict band (ADR 31 part 4, ADR 41). Drilling a segment scopes the

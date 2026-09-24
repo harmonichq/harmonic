@@ -360,11 +360,14 @@
 .gf-fig-day { display:grid; grid-template-rows:minmax(0,1fr) auto; border-top:1px solid var(--wk-rule); }
 /* the Episode Log: the shipped ledger's bands, each row a moment at Data rank
    with its state word; the focused row lights the chart's hairline */
-.gf .gf-log-cap { padding:8px var(--ck-pad) 2px; font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
+.gf .gf-log-cap { display:flex; align-items:baseline; gap:8px; padding:8px var(--ck-pad) 2px; font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
+/* the caption's Glossary control, the band's own explanation (ADR 423) */
+.gf .gf-log-cap .gf-log-help { margin-left:auto; font-weight:500; letter-spacing:0; text-transform:none; }
 .gf .gf-log-row { grid-template-columns:auto auto minmax(0,1fr); }
 .gf .gf-log-row .text { grid-column:auto; }
 .gf .gf-log-row .tier[data-state="fired"] { color:var(--mk-primary); }
-.gf .gf-log-row .tier[data-state="outranked"] { color:var(--mk-warn); }
+/* a claimed anchor is part of the Finding that claimed it: its hue; the word tells them apart */
+.gf .gf-log-row .tier[data-state="outranked"] { color:var(--mk-primary); }
 .gf .gf-log-row .tier[data-state="near_miss"] { color:var(--mk-accent); }
 .gf .gf-log-row .tier[data-state="not_in_data"] { color:var(--notindata); }
 
@@ -491,5 +494,5 @@
   .gf-utility-strip button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
   .gf-utility-strip .cockpit-count { margin-left:3px; }
   .gf-utility .gf-btn, .gf-utility .gf-seg button { min-height:36px; }
-  .gf-utility .linkbtn { min-height:36px; display:inline-flex; align-items:center; }
+  .gf-utility .linkbtn, .gf .gf-log-cap .gf-log-help { min-height:36px; display:inline-flex; align-items:center; }
 }

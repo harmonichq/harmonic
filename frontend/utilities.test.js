@@ -47,3 +47,10 @@ test('the Day return is named by the same table the control declares from', () =
     assert.equal(back.destination, 'diagnose', 'the return lands on the destination it was opened over');
   }
 });
+
+test('#423 · the Glossary keys each group section by its title, and calls no definition v1\'s', () => {
+  // An Episode Log band caption opens the Glossary with its group in view, by this key.
+  const source = readFileSync(new URL('./utilities.js', import.meta.url), 'utf8');
+  assert.match(source, /<section class="gf-section" data-glossary-group="\$\{e\(group\.title\)\}">/);
+  assert.doesNotMatch(source, /v1 definitions/);
+});

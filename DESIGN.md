@@ -414,3 +414,23 @@ lock, 2026-09-14). Every value painted below is served. No token in
 - **Evidence.** A private design-evidence record — not part of the public
   tree — holds the evidence and the critique. The desk ledger's S113–S117
   hold the replays.
+
+#423 revises the Day Episode Log's claimed anchors, under the operator's
+standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
+
+- **Claimed.** An anchor whose served state is outranked reads `claimed`.
+  Diagnose's label for an outranked occurrence reads `claimed by another
+  finding`, built from the same exported word. A claimed row names what its
+  anchor matched, by served title, then ends with the episode's served Lever
+  name.
+- **Hue.** A claimed anchor takes its Finding's hue on the tier word, both rings
+  and the focus hairline, and its resting marker the fired marker's size. The
+  warning hue leaves the Episode Log. The word, not the colour, tells a claimed
+  anchor from the one that drove its episode.
+- **Count.** The Findings caption counts distinct Findings, one per served
+  Lever, and names claimed anchors beside it: `Findings · 1 · 1 claimed`.
+- **Glossary.** Each band caption ends in a small `Glossary` link button, in
+  sentence case against the uppercase caption. It opens the Glossary at its
+  Episode Log group, and Close returns focus to it.
+- **Evidence.** The desk ledger's S121 and S122 hold the replays;
+  `docs/scope/release-422-434-evidence/423/` holds the logs and captures.

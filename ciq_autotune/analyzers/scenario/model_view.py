@@ -165,7 +165,12 @@ def _build_episode_view(
             "insulin": insulin,
             "carbs": carbs,
             "state": _anchor_state(_is_driver(a, attr), verdicts),
-            "verdicts": [v.to_dict() for v in verdicts],
+            # Each verdict's Lever named from the same one source as the episode's
+            # `lever_title`, so a claimed row can say what its anchor matched with
+            # no name table in the desk (ADR 423). Every retained classifier is a
+            # Lever value; one that is not fails this read rather than ship unnamed.
+            "verdicts": [{**v.to_dict(), "title": lever_title(Lever(v.classifier))}
+                         for v in verdicts],
         })
 
     first_date = ordered[0].t.date()

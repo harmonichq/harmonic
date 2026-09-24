@@ -196,11 +196,11 @@ test('S100 · a remount carries the keyboard cursor, its readout and focus to th
     const label = firstChart.getAttribute('aria-label');
 
     // The workstation's repaint: read the place, dispose the mount, build anew.
-    const reading = first.reading?.();
+    const place = first.place?.();
     first.cleanup();
     first.restoreHeader();
     globalThis.document.activeElement = null; // the chart left the document with its tile
-    renderEventSurface(surface, caseFile, { headline, reading });
+    renderEventSurface(surface, caseFile, { headline, place });
     const secondChart = surface.querySelector('#ec-chart');
     assert.notEqual(secondChart, firstChart, 'premise: the repaint built a new chart element');
     assert.equal(headline.children.length, 1, 'the lent line holds exactly one readout');
@@ -225,10 +225,10 @@ test('S100 · a remount invents no cursor and takes no focus the reader had not 
     firstChart.dispatch('keydown', { key: 'ArrowRight' });
     elsewhere.focus();
     firstChart.dispatch('blur');
-    const reading = first.reading?.();
+    const place = first.place?.();
     first.cleanup();
     first.restoreHeader();
-    renderEventSurface(surface, caseFile, { headline, reading });
+    renderEventSurface(surface, caseFile, { headline, place });
     assert.equal(headline.querySelector('#ec-readout').innerHTML, '',
       'a cursor the reader had put away came back on the remounted chart');
     assert.equal(surface.querySelector('#ec-chart').getAttribute('aria-label'), null,

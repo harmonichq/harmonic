@@ -310,14 +310,14 @@ function markup(caseFile, bodyOnly) {
    (#72) settled, which came back when fullscreen replaced the By-event mount it
    was settled at) and hangs only its readout in the line the caller lends it.
 
-   `reading` is the reader's place on the chart this mount replaces, as that
-   mount's own `reading()` reported it just before its caller disposed it: the
+   `place` is the reader's place on the chart this mount replaces, as that
+   mount's own `place()` reported it just before its caller disposed it: the
    cursor minute the readout was showing, or null at rest, and whether the chart
    held keyboard focus. A caller that rebuilds the chart on a repaint the reader
    did not ask for hands it over, so the repaint leaves the cursor, its readout
    and the focus where the reader put them (S100). */
 export function renderEventSurface(surface, caseFile,
-  { headerHost = null, headline = null, range = null, reading = null } = {}) {
+  { headerHost = null, headline = null, range = null, place = null } = {}) {
   assertEventCaseFile(caseFile);
   const content = new AbortController();
   const selected = selection(caseFile);
@@ -391,14 +391,14 @@ export function renderEventSurface(surface, caseFile,
   };
   /* The handed-over minute belongs to the window of the case file it was read
      on, so it is held inside this one's the way every cursor move is. */
-  if (reading?.minute != null) inspect(within(reading.minute));
-  if (reading?.focused) chartElement.focus({ preventScroll: true });
+  if (place?.minute != null) inspect(within(place.minute));
+  if (place?.focused) chartElement.focus({ preventScroll: true });
   /* Frame geometry and resize belong to the caller. This adapter returns the
      content host and its cleanup beside the chart so every caller can install
      exactly one observer at the frame it owns. */
   const rendered = { chart, resizeHost: chartElement, cleanup: () => content.abort(),
     restoreHeader, projection: caseFile, selected,
-    reading: () => ({ minute: shown ? minute : null,
+    place: () => ({ minute: shown ? minute : null,
       focused: document.activeElement === chartElement }),
     cohorts: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort])),
     aggregates: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort.points])) };

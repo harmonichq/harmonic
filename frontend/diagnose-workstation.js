@@ -824,7 +824,7 @@ function renderBehavioralFullscreen(host, f) {
   const caseFile = f.caseFile.finding.lever === 'high_carb_sequence'
     ? highCarbResponseCase(f.caseFile) : f.caseFile;
   const mounted = renderEventSurface(host, caseFile, {
-    headline: el('canvas-fullhead'), reading: f.reading,
+    headline: el('canvas-fullhead'), place: f.place,
   });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
@@ -2714,10 +2714,10 @@ function boot(root, data, callbacks, signal) {
        element the rebuild below replaces, with a readout the disposal empties
        and a focus the removal drops. The drill's own case file, a settling tile
        and the desk's Focus read all repaint here after the Full press, so the
-       mount being disposed hands its reading to the one that replaces it — the
+       mount being disposed hands its place to the one that replaces it — the
        same chart only, never across entering or leaving fullscreen. */
-    const heldReading = fullscreen ? tileMounts
-      .find((mount) => mount.fullscreenChartId === fullscreen.chartId)?.reading() : null;
+    const heldPlace = fullscreen ? tileMounts
+      .find((mount) => mount.fullscreenChartId === fullscreen.chartId)?.place() : null;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
     /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a star
@@ -3032,7 +3032,7 @@ function boot(root, data, callbacks, signal) {
             if (fullscreen && (descriptor.kind === 'event-comparison'
               || (descriptor.kind === 'eating-sequence'
                 && caseFile.finding.lever === 'high_carb_sequence'))) {
-              const mounted = renderBehavioralFullscreen(chartHost, { caseFile, reading: heldReading });
+              const mounted = renderBehavioralFullscreen(chartHost, { caseFile, place: heldPlace });
               tileMounts.push({ ...installTileMount(chartHost, mounted),
                 fullscreenChartId: descriptor.chartId });
             } else if (descriptor.kind === 'eating-sequence'

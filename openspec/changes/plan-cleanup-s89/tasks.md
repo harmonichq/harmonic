@@ -90,13 +90,16 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   `t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" && python3 scripts/check_public_links.py "$t" && python3 scripts/scan_public_tree.py "$t"`
   (0 findings);
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`.
-- [ ] 4.2 Port-bound, run by whoever can launch a browser (the release
+- [x] 4.2 Port-bound, run by whoever can launch a browser (the release
   coordinator), never two port-bound legs at once:
   `PLAYWRIGHT_MODULE=<playwright> TARGET=app VIEWPORT=<size> BASE_URL=http://127.0.0.1:8765 CASE_STORE_DIR=<scratch>/s89-<size> ONLY=S89 node frontend/desk-behavior.replay.mjs`
   at 1280x720 and at 1440x900. Each reports
   `executed 1 · failed 0 · deferred 0 · selected 1`, on the base (which passes
   for the wrong reason) and on the branch. No browser suite is touched. The
   complete ledger runs once, on the integration commit.
+  Coordinator run, 2026-09-23: `ONLY=S89` on the branch at ba08c8b1 reported
+  `executed 1 · failed 0` at 1280x720 and at 1440x900; task 6.5's run covers
+  S89 again on the widened branch.
 
 ## 5. Coordinator-authorized widening — 2026-09-23 (code review round 1, F1)
 
@@ -124,7 +127,7 @@ records the decision under ADR 453.
   built before and after, and compare old and new `groups` over synthetic inputs
   in the shipped call shape. This supersedes task 1.2's byte-identical hashes for
   the branch as a whole.
-- [ ] 5.5 Port-bound: covered by task 6.5's run, which selects every story this
+- [x] 5.5 Port-bound: covered by task 6.5's run, which selects every story this
   widening touches.
 
 ## 6. Coordinator-authorized widening — 2026-09-23 (code review round 1, F2–F4)
@@ -151,11 +154,15 @@ records the decision under ADR 453.
 - [x] 6.4 Show the build changes only by removal: diff the unminified desk chunk
   against the section 5 build, and compare old and new outputs of every live
   entry point over synthetic inputs in the shipped call shape.
-- [ ] 6.5 Port-bound, run by the release coordinator, never two port-bound legs
+- [x] 6.5 Port-bound, run by the release coordinator, never two port-bound legs
   at once: task 4.2's command with
   `ONLY=S38,S39,S40,S41,S42,S89,S90,S105,S145,S146` at 1280x720 and at
   1440x900, each reporting `executed 10 · failed 0 · deferred 0 · selected 10`
   on the base and on the branch. Passing it also ticks 4.2 and 5.5.
+  Coordinator run, 2026-09-23: the ten-story selection on the branch at
+  6c84e052 (whose desk bundle differs from the final head only in one JSDoc
+  comment) reported `executed 10 · failed 0 · selected 10` at 1280x720 and at
+  1440x900.
 
 ## 7. Coordinator-authorized widening — 2026-09-23 (code review round 1, F5)
 
@@ -197,3 +204,13 @@ records the decision under ADR 453.
   reports pass 57, fail 0 (plan.test.js 37, replay-cases.test.js 20), not 83.
   Expectation 4 (byte-identical shell) is replaced by a removal-only build diff
   (tasks 5.4, 6.4 and 7.4).
+
+## 9. Record changes after the lock's pin
+
+- [x] 9.1 The lock pinned this change at 22b9aa75. Every later edit to the
+  change's own records (design.md, proposal.md, tasks.md, specs/) and to the
+  plan spec's Purpose — commits ba08c8b1, 2f75c881, 7f76fa70, 6c84e052,
+  758c1509 and the commit that ticks this task — is coordinator-authorized
+  under the Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+  from here"): the plan-review round 2 note and the code review rulings of
+  rounds 1 and 2. The coordinator posts the tracker note at finalize.

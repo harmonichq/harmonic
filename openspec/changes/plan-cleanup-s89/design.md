@@ -296,6 +296,15 @@ F7).
   two changes on one requirement would collide at archive. No other in-flight
   change modifies the three plan requirements.
 
+### Record changes after the lock's pin
+
+The execution lock pinned this change at 22b9aa75. The plan-review round 2
+note and the widenings above changed the change's own records after that pin
+(commits ba08c8b1, 2f75c881, 7f76fa70, 6c84e052 and 758c1509, and the commit
+that records the coordinator's replay runs). Each is coordinator-authorized
+under the Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); the coordinator posts the tracker note at finalize.
+
 ### Consequences
 
 - S89 fails at the check where it certifies its decision when Plan history is

@@ -4,7 +4,7 @@
 
 **Triage source for #453.** An ordinary ticket change, grounded on 2026-09-23
 against `origin/main` b03431d2 with synthetic data only. It changes no rendered
-surface: deleting the uncalled check leaves the built shell byte-identical. It
+surface: the built shell changes only by losing dead code. It
 amends one story's evidence in the desk's frozen behavior ledger
 (`mockups/harmonic-v2-desktop.behavior.md`) under the release's Q3 delegation
 (coordinator ruling R453, "as the issue's checklist").
@@ -68,6 +68,10 @@ reader takes the first record or finds a record by its identity (design.md).
   through histories B, C, D and E.
 - A dated `#453 amendment` in the behavior ledger records S89's strengthened
   evidence. The story text, its lock term and the inventory are unchanged.
+- Widened by the coordinator on 2026-09-23 after code review (design.md):
+  `reconcileDeliverable` keeps only the mismatch rows Changes draws. Its unread
+  `state` and `matchedAt`, its first-Plan branch and `deliverableIsProposal` are
+  deleted, and the guidance Plan contract check compares on the rows.
 
 ## What does not change
 

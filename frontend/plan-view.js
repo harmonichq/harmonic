@@ -359,7 +359,7 @@ function planStatus() {
       : `✓ Confirmed on the pump ${e(stamp(confirmedAt))}. The latest pump read no longer matches this Plan.`}</p>${flash}</div>`;
   }
   if (state === 'mismatch') {
-    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null, detectedAt());
+    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null);
     const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param] || cell.label)}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
     return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values — likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
   }

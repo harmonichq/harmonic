@@ -120,13 +120,58 @@ acknowledgement on path and matched text, never its line (`digest_key`). A
 triage probe of the public-tree scan with the function deleted reported 0
 findings. The config is not edited.
 
+### Coordinator-authorized widening — 2026-09-23: the browser's Plan verdict
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1 (finding F1).
+
+Review found the other half of the retired browser verdict still in
+`plan.js`. `reconcileDeliverable` returned a `state` (pending, confirmed or
+mismatch) and a `matchedAt`, and took a `hasCommittedPlan` flag that held a
+first Plan pending through the module-private `deliverableIsProposal`. Since
+#431 the server serves that verdict, and the surfaces requirement "Changes
+states a Plan's phase from its served verdict" already says the browser's pump
+comparison only draws the planned-versus-pump rows, under a served `mismatch`.
+The one shipped caller, `planStatus` in `plan-view.js`, calls it only under a
+served `mismatch`, passes no fourth argument, and reads only `groups`, so the
+flag's branch never ran in the desk and the other fields were never read.
+
+- `reconcileDeliverable(deliverableRows, detectedSegments)` now returns only
+  `{ groups }`. `state`, `matchedAt`, the `fetchedAt` and `hasCommittedPlan`
+  parameters, the first-Plan branch and `deliverableIsProposal` are deleted.
+  The `#94 RECONCILE` banner says what remains: the server decides the verdict,
+  and this comparison draws a served mismatch's cells.
+- `plan-view.js` stops passing the capture time it no longer takes.
+- `scripts/check_guidance_plan_contract.mjs` compares on an empty `groups`
+  instead of `state === 'confirmed'`. Its inputs are never empty, so the two are
+  the same test, and the gate keeps holding the drawn rows' match rule to the
+  server's `schedule_matches`.
+- `plan.test.js` asserts `groups` only, through the public call. The six tests
+  of the first-Plan branch (#120, #393, #462) are deleted with it.
+- The built bundle changes only by removing that code. The diff of the
+  unminified desk chunk before and after removes `deliverableIsProposal`, the
+  branch and the two fields, drops the two parameters and the call's third
+  argument, and rewrites the function's JSDoc. Old and new functions return
+  equal `groups` over 2000 synthetic inputs in the shipped call shape. This
+  amends task 1.2's byte-identical expectation for the branch as a whole.
+
+Left as history, because nothing runs them: the locked desktop prototype
+`mockups/harmonic-v2-glucose-setting.js`, which still reads the old fields but
+cannot load (its entry module imports `frontend/scenario-chart.js`, which no
+longer exists, and #416 retired the replay's prototype opener for that
+reason); the exploration brief that quotes the old signature; #431's triage
+reproduction `docs/scope/431-plan-state-repro.mjs`, which replayed the browser
+verdict this removes; and `openspec/changes/harmonic-v2/`.
+
 ### Consequences
 
 - S89 fails at the check where it certifies its decision when Plan history is
   served in another order (D) or one recording adds more than one row (E).
   Before #453 it passed D, and failed E only at the later reload check.
-- The desk bundle is unchanged, so no render, browser suite or other replay
-  story is owed.
+- The desk bundle loses the dead verdict code and nothing else. S42 is the
+  story that renders a served mismatch's rows. S105, S145 and S146 drive the
+  same Plan status on its confirmed and draft paths. No browser suite renders
+  it.
 
 ### Risk contract
 
@@ -139,9 +184,10 @@ findings. The config is not edited.
 - **Unsupported:** two Plans recorded with the same `applied_at` second. The
   server keys Plan identity on it, so that is outside this story.
 - **Evidence owed:** the fake-page test in `frontend/replay-cases.test.js`
-  (histories B, C, D and E, each observed failing on the base body first); S89
-  replayed on its case store at both sizes on the built app; the fast gate green
-  after the four tests go.
+  (histories B, C, D and E, each observed failing on the base body first); S89,
+  S42, S105, S145 and S146 replayed on their case stores at both sizes on the
+  built app; the removal-only bundle diff; the fast gate and the guidance Plan
+  contract green after the tests go.
 
 Why: the change is evidence-only plus dead-code removal, so the risk is a proof
 that proves the wrong row.

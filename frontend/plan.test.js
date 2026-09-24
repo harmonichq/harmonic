@@ -391,26 +391,24 @@ test('roundToPrecision rounds per pump precision and passes null through', () =>
   assert.equal(roundToPrecision(null, 3), null);
 });
 
-test('reconcile is pending with nothing to compare', () => {
-  assert.equal(reconcileDeliverable([], activeProfile.segments).state, 'pending');
+test('reconcile draws no rows with nothing to compare', () => {
+  assert.deepEqual(reconcileDeliverable([], activeProfile.segments).groups, []);
   const rows = buildDeliverable({ activeProfile });
-  assert.equal(reconcileDeliverable(rows, []).state, 'pending');
+  assert.deepEqual(reconcileDeliverable(rows, []).groups, []);
+  assert.deepEqual(reconcileDeliverable(rows, null).groups, []);
 });
 
-test('reconcile confirms an exact match and reports the fetch time', () => {
+test('reconcile draws no rows for an exact match', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // The pump now delivers exactly the deliverable.
   const detected = [
     { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00');
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
-test('reconcile confirms when differences vanish under per-param rounding', () => {
+test('reconcile draws no rows when differences vanish under per-param rounding', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // Each param is off by less than its rounding step: basal < 0.0005,
   // ISF/target < 0.5, I:C < 0.05. All round to the planned value.
@@ -418,8 +416,7 @@ test('reconcile confirms when differences vanish under per-param rounding', () =
     { start_min: 0, basal_rate: 0.8004, isf: 55.4, carb_ratio: 10.04, target_bg: 109.6 },
     { start_min: 720, basal_rate: 1.0004, isf: 40.3, carb_ratio: 8.96, target_bg: 110.2 },
   ];
-  const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'confirmed');
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
 test('reconcile flags a mis-key that survives rounding, only for the bad cell', () => {
@@ -429,9 +426,7 @@ test('reconcile flags a mis-key that survives rounding, only for the bad cell', 
     { start_min: 0, basal_rate: 0.8, isf: 60, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00');
-  assert.equal(res.state, 'mismatch');
-  assert.equal(res.matchedAt, null);
+  const res = reconcileDeliverable(rows, detected);
   assert.equal(res.groups.length, 1);
   assert.equal(res.groups[0].start_min, 0);
   assert.equal(res.groups[0].cells.length, 1);
@@ -449,7 +444,6 @@ test('reconcile per-param rounding: a basal difference below 0.001 is not a mis-
     { start_min: 720, basal_rate: 1.002, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
   const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'mismatch');
   assert.equal(res.groups.length, 1);
   assert.equal(res.groups[0].start_min, 720);
   assert.equal(res.groups[0].cells[0].param, 'basal_rate');
@@ -467,7 +461,6 @@ test('reconcile samples the union of boundaries and flags a divergence only the 
     { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
   const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'mismatch');
   assert.deepEqual(res.groups.map((g) => g.start_min), [360]);
   assert.equal(res.groups[0].cells[0].param, 'basal_rate');
   assert.equal(res.groups[0].cells[0].planned, 0.8);
@@ -478,100 +471,20 @@ test('reconcile: a redundant same-value break on either side is benign (no diff)
   const rows = buildDeliverable({ activeProfile });
   // The pump splits the 00:00 segment at 06:00 but keeps the SAME values — a
   // redundant break. Union sampling reads identical values on both sides, so
-  // no cell diverges: confirmed.
+  // no cell diverges.
   const detected = [
     { start_min: 0, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 },
     { start_min: 360, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 10:00');
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 10:00');
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
-// --- #120 baseline gate: no committed plan ⇒ never mismatch ---------------
-
-test('reconcile is pending on fresh DB even when deliverable differs from pump', () => {
-  // Deliverable carries accepted changes (basal lowered, ISF changed). The
-  // pump still has the old values. Without a committed plan this is a
-  // proposal, not a keying error — must return pending.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const pumpSegs = activeProfile.segments; // old values still on pump
-  const res = reconcileDeliverable(rows, pumpSegs, '2026-07-02 08:00', false);
-  assert.equal(res.state, 'pending');
-  assert.equal(res.matchedAt, null);
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms an exact first-plan pump match with empty apply history (#462)', () => {
-  // The user keyed the staged deliverable into a new pump profile and activated
-  // it before ever applying a plan. Exact equality is unambiguous, so the
-  // empty-history safeguard must not hold it pending forever.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const detected = [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms the first exact match against the already-refetched pump (#462)', () => {
-  // The real sequence: the user keys the change in, the next fetch returns the new
-  // profile, so the deliverable is rebuilt on top of it. Every cell now equals the
-  // pump — but the accepted chip is still standing, so this is a plan that landed.
-  const refetched = { segments: [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ] };
-  const rows = buildDeliverable({ activeProfile: refetched, acceptedItems: accepted });
-  const res = reconcileDeliverable(rows, refetched.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-});
-
-test('reconcile stays pending on a first plan with nothing staged (#393)', () => {
-  // No accepted picks and no edits: the deliverable is a byte-copy of the pump.
-  // That is trivially "equal" but there is no plan to confirm — claiming the pump
-  // matches your plan (and offering to re-baseline) would be a lie, and there is
-  // no draft to apply.
-  const rows = buildDeliverable({ activeProfile });
-  const res = reconcileDeliverable(rows, activeProfile.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'pending');
-  assert.equal(res.matchedAt, null);
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms a first exact match even when the change folds into an equal neighbor (#462)', () => {
-  // The UI hands reconcile the COLLAPSED rows. When a keyed-in change lands equal
-  // to its neighbor after refetch, the accepted boundary folds away — but its
-  // provenance rides onto the survivor, so the plan is still detected as a real
-  // proposal and confirms instead of deadlocking pending.
-  const refetched = { segments: [
-    { start_min: 0,   basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-    { start_min: 720, basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-  ] };
-  const rows = buildDeliverable({
-    activeProfile: refetched,
-    acceptedItems: [{ type: 'ic', start_min: 720, value: 5.7, recommended: 5.7 }],
-  });
-  const collapsed = collapseDeliverable(rows);
-  const res = reconcileDeliverable(collapsed, refetched.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile flags a real mis-key after a plan has been committed', () => {
-  // Same deliverable vs pump mismatch as above, but the user has committed at
-  // least one plan — now the delta IS a keying error.
+test('reconcile flags each planned change the pump does not hold', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // ISF stayed at 50 on the pump instead of the planned 55 (accepted).
   const pumpSegs = activeProfile.segments; // isf 50 vs planned 55
-  const res = reconcileDeliverable(rows, pumpSegs, '2026-07-02 09:00', true);
-  assert.equal(res.state, 'mismatch');
+  const res = reconcileDeliverable(rows, pumpSegs);
   assert.ok(res.groups.length > 0);
   const isfGroup = res.groups.find((g) => g.start_min === 0);
   assert.ok(isfGroup, 'midnight ISF mismatch group exists');
@@ -740,16 +653,6 @@ test('isDeliverableEditRevert: compared under pump precision (basal below the 0.
   // a revert even if it is not byte-equal.
   assert.equal(
     isDeliverableEditRevert(activeProfile, [], { '0:basal_rate': 0.9 }, 0, 'basal_rate', 0.8004), true);
-});
-
-test('a reverted hand-edit leaves an empty first Plan pending, with no history item (#462)', () => {
-  // The end state after the handler deletes the reverted override: no accepted
-  // picks, no edits. The deliverable proposes nothing, reconcile stays pending on
-  // an empty apply history, and there is nothing to persist.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: [], edits: {} });
-  assert.deepEqual(effectivePlanItems(rows), []);
-  const res = reconcileDeliverable(rows, activeProfile.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'pending');
 });
 
 // --- ADR 0042 deliverable gate: mixed families cannot be packaged ----------

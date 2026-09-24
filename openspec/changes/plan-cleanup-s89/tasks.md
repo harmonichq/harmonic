@@ -97,3 +97,34 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   `executed 1 · failed 0 · deferred 0 · selected 1`, on the base (which passes
   for the wrong reason) and on the branch. No browser suite is touched. The
   complete ledger runs once, on the integration commit.
+
+## 5. Coordinator-authorized widening — 2026-09-23 (code review round 1, F1)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1. design.md
+records the decision under ADR 453.
+
+- [x] 5.1 Reduce `reconcileDeliverable` in `frontend/plan.js` to what its one
+  shipped caller reads: `(deliverableRows, detectedSegments)` returning
+  `{ groups }`. Delete `state`, `matchedAt`, the `fetchedAt` and
+  `hasCommittedPlan` parameters, the first-Plan branch and the module-private
+  `deliverableIsProposal`, which loses its only caller. Rewrite the
+  `#94 RECONCILE` banner and the function's JSDoc to describe what remains.
+- [x] 5.2 Update every live caller: `frontend/plan-view.js` drops the third
+  argument; `scripts/check_guidance_plan_contract.mjs` compares on an empty
+  `groups`. Grep the whole tree, including `mockups/` and `scripts/`. The
+  remaining readers of the old fields are the unloadable locked prototype, its
+  exploration brief, #431's triage reproduction and `openspec/changes/harmonic-v2/`,
+  all left as history (design.md).
+- [x] 5.3 `frontend/plan.test.js` tests `groups` only through
+  `reconcileDeliverable`, and drops the six first-Plan branch tests.
+  `node --test frontend/plan.test.js` reports 57 pass, 0 fail, so task 4.1's
+  pair now reports pass 77, fail 0 (57 and 20).
+- [x] 5.4 Show the build changes only by removal: diff the unminified desk chunk
+  built before and after, and compare old and new `groups` over synthetic inputs
+  in the shipped call shape. This supersedes task 1.2's byte-identical hashes for
+  the branch as a whole.
+- [ ] 5.5 Port-bound, run by the release coordinator, never two port-bound legs
+  at once: task 4.2's command with `ONLY=S42,S89,S105,S145,S146` at 1280x720 and
+  at 1440x900, each reporting `executed 5 · failed 0 · deferred 0 · selected 5`
+  on the base and on the branch.

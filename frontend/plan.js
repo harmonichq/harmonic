@@ -479,26 +479,6 @@ export function deliverableHasChanges(rows) {
 }
 
 /**
- * Returns true iff the deliverable actually proposes something — any cell whose
- * value came from an accepted pick or a hand-edit rather than straight from the
- * current profile.
- *
- * Distinct from `deliverableHasChanges`, which asks value !== current: once the
- * user keys a staged change into the pump and refetches, `current` moves up to
- * the newly-programmed value and the deliverable reads as "no changes" while the
- * accepted chip is still standing. Provenance survives that, so this is the
- * right question for "is there a plan here at all".
- *
- * Module-private: `reconcileDeliverable` is the only caller. Kept out of the
- * public surface until a second caller is real.
- */
-function deliverableIsProposal(rows) {
-  if (!rows || !rows.length) return false;
-  return rows.some((row) =>
-    PLAN_PARAMS.some(({ param }) => row[param] && row[param].provenance !== 'current'));
-}
-
-/**
  * True iff setting the cell `${start_min}:${param}` to `value` returns it to the
  * value it would show with NO hand-edit there — its accepted pick, or (absent
  * one) the current profile. The edit handler uses this to DELETE the override on
@@ -638,14 +618,13 @@ export function normalizeIcBlockProvenance(items) {
 }
 
 /* =========================================================================
-   #94 RECONCILE — catch pump-keying errors.
+   #94 RECONCILE — draw the cells a mis-keyed pump holds.
 
-   After the user keys the deliverable into their pump, the next fetch's active
-   profile is compared cell-by-cell against the planned deliverable. Either it
-   matches (confirmed) or it diverges (mismatch, with a diff of the exact cells
-   that are off — the mis-keys).
-
-   Detection basis: the latest /api/pump-settings active profile (NOT the changelog).
+   The server decides whether a recorded Plan is pending, confirmed or a
+   mismatch (ADR 431). When it serves a mismatch, Changes draws the divergent
+   cells from this comparison: the planned deliverable against the latest
+   /api/pump-settings active profile (NOT the changelog), cell by cell.
+   scripts/check_guidance_plan_contract.mjs holds it to the server's rule.
 
    Match rule (per parameter, no tolerance band): round BOTH sides to the
    pump-programmable precision, then require exact equality. A difference that
@@ -687,45 +666,28 @@ export const PARAM_LABEL = {
 };
 
 /**
- * Reconcile the planned deliverable against the detected (active) pump profile.
+ * The cells where the detected (active) pump profile differs from the planned
+ * deliverable, as planned→actual, grouped by start time so Changes renders one
+ * block per boundary.
  *
  * Samples the UNION of both sides' segment boundaries; at each union start_min
  * both sides are read via `segmentAt`, and all four params are compared under
  * per-param rounding. A redundant break that carries the same value on both
  * sides produces no diff (benign); only a genuine value divergence flags.
  *
- * State machine: with no divergence the plan is `confirmed`; otherwise
- * `mismatch` carrying the divergent cells (start_min × param) as planned→actual,
- * grouped by time so the UI can render one block per boundary.
- *
  * @param {Array<row>} deliverableRows  from buildDeliverable (uncollapsed OK)
- * @param {Array} detectedSegments      latest /api/pump-settings active-profile
+ * @param {Array} [detectedSegments]    latest /api/pump-settings active-profile
  *                                       segments [{ start_min, basal_rate, isf,
  *                                       carb_ratio, target_bg }]
- * @param {string} [fetchedAt]          snapshot capture time
- * @param {boolean} [hasCommittedPlan]  true once the user has applied at least
- *                                       one plan (plan_history non-empty). When
- *                                       false the first plan is still a proposal
- *                                       and any delta from the pump is expected,
- *                                       not a keying error → a divergence returns
- *                                       `pending` with no diff. An exact match is
- *                                       unambiguous, so it still confirms (#462) —
- *                                       provided the deliverable actually proposes
- *                                       something; with nothing staged it is just a
- *                                       copy of the pump and stays `pending` (#393).
- * @returns {{ state: 'pending'|'confirmed'|'mismatch',
- *             matchedAt: string|null,
- *             groups: Array<{ start_min, label, cells: Array<{ param, label,
- *               planned, actual }> }> }}
- *   `pending` when there is nothing to reconcile (no deliverable or no
- *   detected profile yet), or when no plan has been committed yet.
+ * @returns {{ groups: Array<{ start_min, label, cells: Array<{ param, label,
+ *   planned, actual }> }> }}
+ *   `groups` is empty when the two match, and when either side is empty (no
+ *   deliverable, or no detected profile yet): nothing to compare draws nothing.
  */
-export function reconcileDeliverable(deliverableRows, detectedSegments, fetchedAt = null, hasCommittedPlan = true) {
+export function reconcileDeliverable(deliverableRows, detectedSegments) {
   const planned = collapseDeliverable(deliverableRows || []);
   const actual = detectedSegments || [];
-  if (!planned.length || !actual.length) {
-    return { state: 'pending', matchedAt: null, groups: [] };
-  }
+  if (!planned.length || !actual.length) return { groups: [] };
 
   // Union of both sides' boundaries.
   const starts = new Set();
@@ -754,16 +716,5 @@ export function reconcileDeliverable(deliverableRows, detectedSegments, fetchedA
       groups.push({ start_min, label: formatStartMin(start_min), cells });
     }
   }
-
-  // Before the first apply, a delta from the pump is an uncommitted proposal, not
-  // a keying error — hold it pending with no diff (#120). Exact equality still
-  // confirms (#462), but only when the deliverable proposes something: with
-  // nothing staged the deliverable is a copy of the pump, and confirming that
-  // would claim a plan the user never made (it also has no draft to apply, #393).
-  if (!hasCommittedPlan && (groups.length || !deliverableIsProposal(deliverableRows))) {
-    return { state: 'pending', matchedAt: null, groups: [] };
-  }
-
-  const state = groups.length ? 'mismatch' : 'confirmed';
-  return { state, matchedAt: state === 'confirmed' ? fetchedAt : null, groups };
+  return { groups };
 }

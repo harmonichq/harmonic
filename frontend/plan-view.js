@@ -18,9 +18,9 @@
 //
 // THE SCHEDULE IS frontend/plan.js's, not this module's. buildDeliverable,
 // collapseDeliverable, reconcileDeliverable, effectivePlanItems and
-// segmentCapacity own construction, collapsing, the pump-precision match and the
-// capacity copy for v1 and v2 alike. Nothing here rounds a dose, compares a
-// value or counts a segment.
+// segmentCapacity own construction, collapsing, a served mismatch's
+// pump-precision rows and the capacity copy. Nothing here rounds a dose,
+// compares a value or counts a segment.
 //
 // THE STALE CONFLICT IS REAL, AND IT IS THE POINT. A decision is recorded
 // against the revision this page read. Anything that moves the store in between
@@ -257,8 +257,8 @@ async function commit(kind, run) {
 }
 
 function saveDraft() {
-  // The draft is the effective plan — the value in effect on each proposal cell,
-  // which is what plan.js says confirmation must record.
+  // The draft is the effective plan — the value in effect on each proposal cell.
+  // Recording the decision copies the saved draft into Plan history.
   const items = effectivePlanItems(rows());
   return commit('draft', () => savePlanDraft({ items }));
 }
@@ -359,7 +359,7 @@ function planStatus() {
       : `✓ Confirmed on the pump ${e(stamp(confirmedAt))}. The latest pump read no longer matches this Plan.`}</p>${flash}</div>`;
   }
   if (state === 'mismatch') {
-    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null, detectedAt());
+    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null);
     const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param] || cell.label)}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
     return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values — likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
   }

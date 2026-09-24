@@ -385,6 +385,83 @@ test('draft retry waits for the PUT, not the disappearing error control', async 
   assert.equal(items.length, 1);
 });
 
+test('S89 certifies the newest Plan record as the decision it recorded', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const base = 'http://127.0.0.1:8765';
+  const unrecorded = { version: '386:1', state: 'unavailable', reason: 'not_recorded' };
+  const withdrawn = at => ({ version: '386:1', state: 'available', withdrawn_at: at, reason: null });
+  const plan = (applied_at, value, withdrawal = unrecorded) => ({ applied_at,
+    items: [{ type: 'basal', start_min: 180, value }],
+    deliverable: { rows: [{ start_min: 180, basal_rate: { value } }] }, withdrawal });
+  // Serves Plan history newest first, as the server does, and performs a write
+  // that ctx.failNext failed once when Retry is pressed.
+  const driver = ({ older = [], dropWithdraw = false, oldestFirst = false, twoRows = false }) => {
+    const history = structuredClone(older);
+    let draft = []; let failing = null; let pending = null;
+    const listeners = new Set();
+    const write = (method, path) => {
+      if (failing?.method === method && failing.path === path) { failing = null; pending = { method, path }; return; }
+      pending = null;
+      if (path === '/api/plan') draft = [{ type: 'basal', start_min: 180, value: .54 }];
+      if (path === '/api/plan/apply') {
+        history[oldestFirst ? 'push' : 'unshift'](plan('2024-02-01 09:00:00', .54));
+        if (twoRows) history.unshift(plan('2024-02-01 09:00:01', .54));
+        draft = [];
+      }
+      if (path === '/api/plan/history/withdraw' && !dropWithdraw) {
+        const newest = oldestFirst ? history.length - 1 : 0;
+        history[newest] = { ...history[newest], withdrawal: withdrawn('2024-02-01 09:05:00') };
+      }
+      const response = { ok: () => true, url: () => base + path, request: () => ({ method: () => method }) };
+      for (const listen of [...listeners]) listen(response);
+    };
+    const clicks = {
+      '[data-set="save-draft"]': () => write('PUT', '/api/plan'),
+      '[data-set="record"]': () => write('POST', '/api/plan/apply'),
+      '[data-set="withdraw"]': () => write('POST', '/api/plan/history/withdraw'),
+      '[data-set="retry-save"]': () => pending && write(pending.method, pending.path),
+    };
+    const page = {
+      url: () => `${base}/?to=changes`, reload: async () => {}, waitForFunction: async () => {},
+      request: { get: async url => {
+        const path = new URL(url).pathname;
+        const body = path === '/api/plan' ? { items: structuredClone(draft) }
+          : path === '/api/plan/history' ? { history: structuredClone(history) }
+          : path === '/api/pump-settings' ? { profile: { segments: [{ start_min: 0, basal_rate: .5 }] } }
+          : assert.fail(`unserved ${path}`);
+        return { ok: () => true, status: () => 200, json: async () => body };
+      } },
+      waitForResponse: predicate => new Promise(resolve => {
+        const listen = response => { if (predicate(response)) { listeners.delete(listen); resolve(response); } };
+        listeners.add(listen);
+      }),
+      locator: selector => ({
+        first() { return this; }, filter() { return this; }, waitFor: async () => {}, evaluate: async () => true,
+        innerText: async () => (pending ? 'Saving failed' : 'Recorded. Pending: waiting for a pump read that matches'),
+        click: async () => { clicks[selector]?.(); },
+      }),
+    };
+    return [page, { failNext: (method, path) => { failing = { method, path }; } }];
+  };
+  const older = plan('2024-01-10 08:00:00', .5);
+  await withReplayAssertionTimeout(10, () => C2_STORIES.S89(...driver({ older: [older] })));
+  for (const [scenario, options, check, clause] of [
+    ['an older withdrawn Plan cannot satisfy the dropped withdrawal',
+      { older: [{ ...older, withdrawal: withdrawn('2024-01-10 09:00:00') }], dropWithdraw: true },
+      'Plan reloaded withdrawal', /withdrawal survives reload/],
+    ['a new decision served after older records', { older: [older], oldestFirst: true },
+      'Plan durable decision', /was not served before recording/],
+    ['one recording that adds two records', { twoRows: true },
+      'Plan durable decision', /exactly one Plan record/],
+  ]) {
+    await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S89(...driver(options))), error => {
+      assert.ok(error.message.startsWith(`Timed out after 10 ms: ${check};`), `${scenario}: ${error.message}`);
+      assert.match(error.message, clause, scenario);
+      return true;
+    }, scenario);
+  }
+});
+
 test('S99 reads the full-width unavailable stage without requiring a two-pane wrapper', async () => {
   const { C2_STORIES } = await import('./c2.replay.mjs');
   const guidance = { disposition: 'unavailable', selected: null, reasons: {}, unavailable: 'reconciliation_required' };

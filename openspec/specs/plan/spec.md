@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A Plan is the user's staging area to review and edit one proposed pump-setting change before deciding whether to apply it. The Plan is advisory: Harmonic recommends changes but never enacts them on the pump. Users review a proposed profile, may hand-edit it, and choose to apply it — which records their decision in apply history but does not send anything to the pump. After the user keys the settings into their pump manually, Harmonic reads the next fetch to confirm the pump matches what was planned.
+A Plan is the user's staging area to review one proposed pump-setting change before deciding whether to apply it. The Plan is advisory: Harmonic recommends changes but never enacts them on the pump. Users review a proposed profile and choose to apply it — which records their decision in apply history but does not send anything to the pump. After the user keys the settings into their pump manually, Harmonic reads the next fetch to confirm the pump matches what was planned.
 
 ## Requirements
 

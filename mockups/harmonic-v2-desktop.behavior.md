@@ -4247,3 +4247,15 @@ Additional handler inventory for this amendment:
 | Stage in the Plan's own frame stays on the Plan | frontend/plan-view.js bind | S166 |
 | The watched change's nameplate Open Plan | frontend/follow-up.js openPlanControl, bind | S166, S167, S168 |
 | Diagnose's return names the watched change | frontend/diagnose.js showFocusAction | S166, S168 |
+
+## #453 amendment — 2026-09-23
+
+Replay S89 now certifies the Plan decision it records (ADR 453,
+`openspec/changes/plan-cleanup-s89`). Its story text and lock term are
+unchanged. No story is added or retired, and no ★ FROZEN block or inventory
+line is edited.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R453.
+
+Amended S89 · 2026-09-23 · #453 / Q3 delegation: the story reads the decision it records as the newest Plan history record, which the served history lists first, not the last one listed. The same check proves that record is the decision just recorded: the history holds exactly one more record than before recording, and the newest record's `applied_at` names none of the records served before it. The failed-Withdraw check reads that same newest record. S89's store holds no earlier Plan, so its passes before #453 read the same row but did not show which record they certified.
+The preceding S89 wording and results are the attributed pre-amendment record.

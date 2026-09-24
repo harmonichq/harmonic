@@ -1,7 +1,7 @@
 // #99 — tests for the pure Plan deliverable module (plan.js).
 //   node --test 'frontend/**/*.test.js'
-// Vue-free, DOM-free: covers consolidation, provenance tagging, hand-edit
-// merge, collapse, segment count, and Confirmation-B on-pump detection.
+// Vue-free, DOM-free: covers consolidation, provenance tagging, collapse,
+// segment count, and pump-precision reconciliation.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,22 +9,15 @@ import assert from 'node:assert/strict';
 import {
   formatStartMin,
   segmentAt,
-  acceptedChips,
   assertSinglePlanFamily,
   buildDeliverable,
   collapseDeliverable,
-  deliverableHasChanges,
   deliverableSegmentCount,
   effectivePlanItems,
-  isDeliverableEditRevert,
-  filterPlanItemsToFamily,
   isStageableIsf,
   normalizeIcBlockProvenance,
-  normalizePlanItemsToSingleFamily,
   planFamilyState,
   planItemFamily,
-  planParamFamily,
-  detectOnPump,
   reconcileDeliverable,
   roundToPrecision,
 } from './plan.js';
@@ -43,8 +36,8 @@ const activeProfile = {
 // (45 -> 40). ISF is segment-aligned, so these change the whole segment without
 // a slot-end revert — the deliverable stays a clean 2-segment shape. (Basal
 // picks are single 30-min slots and revert after; that's exercised separately.)
-// The deliverable diverges from current ONLY where the user accepted a change
-// (or hand-edits), never from the raw model recommendation.
+// The deliverable diverges from current ONLY where the user accepted a change,
+// never from the raw model recommendation.
 const accepted = [
   { type: 'isf', start_min: 0,   value: 55, recommended: 55 },
   { type: 'isf', start_min: 720, value: 40, recommended: 40 },
@@ -68,13 +61,10 @@ test('segmentAt returns the last segment whose start_min <= t', () => {
 
 // --- ADR 0042: one tuning family per Plan ---------------------------------
 
-test('plan family helpers identify item and deliverable parameter families', () => {
+test('planItemFamily identifies an item family', () => {
   assert.equal(planItemFamily({ type: 'basal' }), 'basal');
   assert.equal(planItemFamily({ type: 'target' }), 'target');
   assert.equal(planItemFamily({ type: 'behavior' }), null);
-  assert.equal(planParamFamily('basal_rate'), 'basal');
-  assert.equal(planParamFamily('carb_ratio'), 'ic');
-  assert.equal(planParamFamily('target_bg'), 'target');
 });
 
 test('assertSinglePlanFamily allows empty, multi-slot basal, ISF fan-out, IC, and target', () => {
@@ -104,69 +94,6 @@ test('assertSinglePlanFamily rejects mixed families and non-tuning items', () =>
   assert.throws(() => assertSinglePlanFamily([
     { type: 'behavior', key: 'late-meal' },
   ]), /unsupported tuning family behavior/);
-});
-
-test('planFamilyState includes hand-edits when detecting mixed families', () => {
-  const state = planFamilyState(
-    [{ type: 'basal', start_min: 180, value: 0.6 }],
-    { '720:isf': 42 },
-  );
-  assert.equal(state.mixed, true);
-  assert.deepEqual(state.families, ['basal', 'isf']);
-});
-
-test('filterPlanItemsToFamily and normalizePlanItemsToSingleFamily clear off-family picks', () => {
-  const items = [
-    { type: 'basal', start_min: 180, value: 0.6 },
-    { type: 'basal', start_min: 210, value: 0.6 },
-    { type: 'ic', start_min: 720, value: 8 },
-  ];
-  assert.deepEqual(
-    filterPlanItemsToFamily(items, 'basal').map((it) => it.type),
-    ['basal', 'basal'],
-  );
-  const normalized = normalizePlanItemsToSingleFamily(items, 'ic');
-  assert.equal(normalized.family, 'ic');
-  assert.equal(normalized.dropped, 2);
-  assert.deepEqual(normalized.items, [{ type: 'ic', start_min: 720, value: 8 }]);
-});
-
-// --- accepted chips --------------------------------------------------------
-
-test('acceptedChips maps picks to removable provenance chips', () => {
-  const items = [
-    { type: 'basal', start_min: 0, label: '00:00', current: 0.8, value: 0.65, recommended: 0.65 },
-    { type: 'isf', start_min: 720, label: '12:00', current: 45, value: 42, recommended: 40 },
-  ];
-  const chips = acceptedChips(items);
-  assert.equal(chips.length, 2);
-  assert.equal(chips[0].key, 'basal:0');
-  assert.equal(chips[0].edited, false);
-  assert.equal(chips[0].evidenceType, 'basal');
-  // The ISF pick was hand-edited away from its recommendation.
-  assert.equal(chips[1].edited, true);
-  assert.equal(chips[1].evidenceType, 'isf');
-});
-
-test('acceptedChips keys a basal chip on the SLOT so removeChip can delete it', () => {
-  // planItems is keyed `${type}:${item.key}` (planKeyOf); for basal `key` is the
-  // slot (6), not start_min (180). The chip must carry that same key or the ✕
-  // (planItems.delete(chip.key)) silently no-ops.
-  const items = [
-    { type: 'basal', key: 6, start_min: 180, label: '03:00', current: 0.72, value: 0.6, recommended: 0.6 },
-  ];
-  const chips = acceptedChips(items);
-  assert.equal(chips[0].key, 'basal:6');
-  assert.equal(chips[0].start_min, 180); // jumpToReview/edit-cleanup still use start_min
-});
-
-test('acceptedChips accepts a Map and sorts by start_min then type', () => {
-  const m = new Map([
-    ['isf:720', { type: 'isf', start_min: 720, value: 42, recommended: 42 }],
-    ['basal:0', { type: 'basal', start_min: 0, value: 0.65, recommended: 0.65 }],
-  ]);
-  const chips = acceptedChips(m);
-  assert.deepEqual(chips.map((c) => c.key), ['basal:0', 'isf:720']);
 });
 
 // --- deliverable build + provenance ---------------------------------------
@@ -225,18 +152,6 @@ test('buildDeliverable: a target-family pick moves only target_bg', () => {
   assert.equal(rows[1].target_bg.provenance, 'accepted');
   assert.equal(rows[1].isf.provenance, 'current');
   assert.equal(rows[1].carb_ratio.provenance, 'current');
-});
-
-test('buildDeliverable: a hand-edit flips provenance to "edited" and wins', () => {
-  const rows = buildDeliverable({
-    activeProfile,
-    acceptedItems: accepted,
-    edits: { '0:isf': 52 },
-  });
-  assert.equal(rows[0].isf.value, 52);
-  assert.equal(rows[0].isf.provenance, 'edited');
-  // current is still the active-profile "was".
-  assert.equal(rows[0].isf.current, 50);
 });
 
 test('buildDeliverable adds a new segment break for a pick mid-segment', () => {
@@ -330,92 +245,10 @@ test('two adjacent basal slots fold into one block that reverts after both', () 
   assert.equal(collapsed.find((r) => r.start_min === 240).basal_rate.value, 0.72);
 });
 
-test('collapse carries proposal provenance onto a survivor when a keyed-in change folds (#462)', () => {
-  // The user staged noon I:C 5.4 -> 5.7, keyed it into the pump, and refetched.
-  // The pump now carries 5.7 at BOTH 00:00 and noon, so the two deliverable rows
-  // are byte-identical and fold into one. Value === current everywhere, but the
-  // noon cell was an accepted pick — that provenance must ride onto the survivor,
-  // or the plan reads as "nothing here" and can never confirm.
-  const refetched = { segments: [
-    { start_min: 0,   basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-    { start_min: 720, basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-  ] };
-  const rows = buildDeliverable({
-    activeProfile: refetched,
-    acceptedItems: [{ type: 'ic', start_min: 720, value: 5.7, recommended: 5.7 }],
-  });
-  const collapsed = collapseDeliverable(rows);
-  assert.equal(collapsed.length, 1);            // the two rows folded
-  assert.equal(collapsed[0].carb_ratio.value, 5.7);
-  assert.equal(collapsed[0].carb_ratio.provenance, 'accepted');  // survived the fold
-  // The source rows are untouched — the survivor is a clone.
-  assert.equal(rows[0].carb_ratio.provenance, 'current');
-});
-
 test('deliverableSegmentCount counts distinct collapsed segments for the N/16 badge', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // Two distinct segments (midnight and noon) after the accepted changes.
   assert.equal(deliverableSegmentCount(rows), 2);
-});
-
-// --- #393: deliverableHasChanges ----------------------------------------
-
-test('deliverableHasChanges is false when nothing is staged (all provenance "current")', () => {
-  // Regression test: an all-current deliverable must NOT be treated as pending.
-  const rows = buildDeliverable({ activeProfile });
-  assert.equal(deliverableHasChanges(rows), false);
-});
-
-test('deliverableHasChanges is true when an accepted pick changes a value', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  assert.equal(deliverableHasChanges(rows), true);
-});
-
-test('deliverableHasChanges is true for a hand-edit with zero accepted picks', () => {
-  // The edit-only case: no chips, but a genuine pending change exists.
-  const edits = { '0:isf': 60 }; // hand-edit midnight ISF 50 -> 60
-  const rows = buildDeliverable({ activeProfile, edits });
-  assert.equal(deliverableHasChanges(rows), true);
-});
-
-test('deliverableHasChanges is false for empty rows', () => {
-  assert.equal(deliverableHasChanges([]), false);
-  assert.equal(deliverableHasChanges(null), false);
-});
-
-// --- Confirmation B: on-pump detection ------------------------------------
-
-test('detectOnPump is false when the pump snapshot still shows the old profile', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const res = detectOnPump(rows, activeProfile.segments, '2026-07-02 08:00');
-  assert.equal(res.onPump, false);
-  assert.equal(res.matchedAt, null);
-});
-
-test('detectOnPump is true once the snapshot matches the deliverable', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  // Simulate the user programming the deliverable: new snapshot = deliverable.
-  const newSnapshot = [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ];
-  const res = detectOnPump(rows, newSnapshot, '2026-07-02 09:00');
-  assert.equal(res.onPump, true);
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-});
-
-test('detectOnPump tolerates float noise within 1e-6', () => {
-  const rows = buildDeliverable({ activeProfile });
-  const snap = [
-    { start_min: 0, basal_rate: 0.8 + 1e-9, isf: 50, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
-  ];
-  assert.equal(detectOnPump(rows, snap).onPump, true);
-});
-
-test('detectOnPump is false with empty inputs', () => {
-  assert.equal(detectOnPump([], activeProfile.segments).onPump, false);
-  assert.equal(detectOnPump(buildDeliverable({ activeProfile }), []).onPump, false);
 });
 
 // --- #94 reconcile: planned deliverable vs detected pump profile ----------
@@ -427,26 +260,24 @@ test('roundToPrecision rounds per pump precision and passes null through', () =>
   assert.equal(roundToPrecision(null, 3), null);
 });
 
-test('reconcile is pending with nothing to compare', () => {
-  assert.equal(reconcileDeliverable([], activeProfile.segments).state, 'pending');
+test('reconcile draws no rows with nothing to compare', () => {
+  assert.deepEqual(reconcileDeliverable([], activeProfile.segments).groups, []);
   const rows = buildDeliverable({ activeProfile });
-  assert.equal(reconcileDeliverable(rows, []).state, 'pending');
+  assert.deepEqual(reconcileDeliverable(rows, []).groups, []);
+  assert.deepEqual(reconcileDeliverable(rows, null).groups, []);
 });
 
-test('reconcile confirms an exact match and reports the fetch time', () => {
+test('reconcile draws no rows for an exact match', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // The pump now delivers exactly the deliverable.
   const detected = [
     { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00');
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
-test('reconcile confirms when differences vanish under per-param rounding', () => {
+test('reconcile draws no rows when differences vanish under per-param rounding', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // Each param is off by less than its rounding step: basal < 0.0005,
   // ISF/target < 0.5, I:C < 0.05. All round to the planned value.
@@ -454,8 +285,7 @@ test('reconcile confirms when differences vanish under per-param rounding', () =
     { start_min: 0, basal_rate: 0.8004, isf: 55.4, carb_ratio: 10.04, target_bg: 109.6 },
     { start_min: 720, basal_rate: 1.0004, isf: 40.3, carb_ratio: 8.96, target_bg: 110.2 },
   ];
-  const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'confirmed');
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
 test('reconcile flags a mis-key that survives rounding, only for the bad cell', () => {
@@ -465,9 +295,7 @@ test('reconcile flags a mis-key that survives rounding, only for the bad cell', 
     { start_min: 0, basal_rate: 0.8, isf: 60, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00');
-  assert.equal(res.state, 'mismatch');
-  assert.equal(res.matchedAt, null);
+  const res = reconcileDeliverable(rows, detected);
   assert.equal(res.groups.length, 1);
   assert.equal(res.groups[0].start_min, 0);
   assert.equal(res.groups[0].cells.length, 1);
@@ -485,7 +313,6 @@ test('reconcile per-param rounding: a basal difference below 0.001 is not a mis-
     { start_min: 720, basal_rate: 1.002, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
   const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'mismatch');
   assert.equal(res.groups.length, 1);
   assert.equal(res.groups[0].start_min, 720);
   assert.equal(res.groups[0].cells[0].param, 'basal_rate');
@@ -503,7 +330,6 @@ test('reconcile samples the union of boundaries and flags a divergence only the 
     { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
   const res = reconcileDeliverable(rows, detected);
-  assert.equal(res.state, 'mismatch');
   assert.deepEqual(res.groups.map((g) => g.start_min), [360]);
   assert.equal(res.groups[0].cells[0].param, 'basal_rate');
   assert.equal(res.groups[0].cells[0].planned, 0.8);
@@ -514,100 +340,20 @@ test('reconcile: a redundant same-value break on either side is benign (no diff)
   const rows = buildDeliverable({ activeProfile });
   // The pump splits the 00:00 segment at 06:00 but keeps the SAME values — a
   // redundant break. Union sampling reads identical values on both sides, so
-  // no cell diverges: confirmed.
+  // no cell diverges.
   const detected = [
     { start_min: 0, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 },
     { start_min: 360, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 },
     { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
   ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 10:00');
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 10:00');
+  assert.deepEqual(reconcileDeliverable(rows, detected).groups, []);
 });
 
-// --- #120 baseline gate: no committed plan ⇒ never mismatch ---------------
-
-test('reconcile is pending on fresh DB even when deliverable differs from pump', () => {
-  // Deliverable carries accepted changes (basal lowered, ISF changed). The
-  // pump still has the old values. Without a committed plan this is a
-  // proposal, not a keying error — must return pending.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const pumpSegs = activeProfile.segments; // old values still on pump
-  const res = reconcileDeliverable(rows, pumpSegs, '2026-07-02 08:00', false);
-  assert.equal(res.state, 'pending');
-  assert.equal(res.matchedAt, null);
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms an exact first-plan pump match with empty apply history (#462)', () => {
-  // The user keyed the staged deliverable into a new pump profile and activated
-  // it before ever applying a plan. Exact equality is unambiguous, so the
-  // empty-history safeguard must not hold it pending forever.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const detected = [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ];
-  const res = reconcileDeliverable(rows, detected, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms the first exact match against the already-refetched pump (#462)', () => {
-  // The real sequence: the user keys the change in, the next fetch returns the new
-  // profile, so the deliverable is rebuilt on top of it. Every cell now equals the
-  // pump — but the accepted chip is still standing, so this is a plan that landed.
-  const refetched = { segments: [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ] };
-  const rows = buildDeliverable({ activeProfile: refetched, acceptedItems: accepted });
-  const res = reconcileDeliverable(rows, refetched.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-});
-
-test('reconcile stays pending on a first plan with nothing staged (#393)', () => {
-  // No accepted picks and no edits: the deliverable is a byte-copy of the pump.
-  // That is trivially "equal" but there is no plan to confirm — claiming the pump
-  // matches your plan (and offering to re-baseline) would be a lie, and there is
-  // no draft to apply.
-  const rows = buildDeliverable({ activeProfile });
-  const res = reconcileDeliverable(rows, activeProfile.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'pending');
-  assert.equal(res.matchedAt, null);
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile confirms a first exact match even when the change folds into an equal neighbor (#462)', () => {
-  // The UI hands reconcile the COLLAPSED rows. When a keyed-in change lands equal
-  // to its neighbor after refetch, the accepted boundary folds away — but its
-  // provenance rides onto the survivor, so the plan is still detected as a real
-  // proposal and confirms instead of deadlocking pending.
-  const refetched = { segments: [
-    { start_min: 0,   basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-    { start_min: 720, basal_rate: 0.8, isf: 50, carb_ratio: 5.7, target_bg: 110 },
-  ] };
-  const rows = buildDeliverable({
-    activeProfile: refetched,
-    acceptedItems: [{ type: 'ic', start_min: 720, value: 5.7, recommended: 5.7 }],
-  });
-  const collapsed = collapseDeliverable(rows);
-  const res = reconcileDeliverable(collapsed, refetched.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'confirmed');
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-  assert.deepEqual(res.groups, []);
-});
-
-test('reconcile flags a real mis-key after a plan has been committed', () => {
-  // Same deliverable vs pump mismatch as above, but the user has committed at
-  // least one plan — now the delta IS a keying error.
+test('reconcile flags each planned change the pump does not hold', () => {
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // ISF stayed at 50 on the pump instead of the planned 55 (accepted).
   const pumpSegs = activeProfile.segments; // isf 50 vs planned 55
-  const res = reconcileDeliverable(rows, pumpSegs, '2026-07-02 09:00', true);
-  assert.equal(res.state, 'mismatch');
+  const res = reconcileDeliverable(rows, pumpSegs);
   assert.ok(res.groups.length > 0);
   const isfGroup = res.groups.find((g) => g.start_min === 0);
   assert.ok(isfGroup, 'midnight ISF mismatch group exists');
@@ -617,32 +363,7 @@ test('reconcile flags a real mis-key after a plan has been committed', () => {
   assert.equal(isfCell.actual, 50);
 });
 
-// --- effective plan: what confirmation records (#462) ----------------------
-
-test('effectivePlanItems records a hand-edit-only plan (no accepted picks) (#462)', () => {
-  // The user never accepted anything on Diagnose — they hand-edited a cell here.
-  // The stored accepted-item draft is empty, so recording IT would apply nothing.
-  // The effective plan must carry the edited value.
-  const rows = buildDeliverable({ activeProfile, edits: { '0:isf': 60 } });
-  const items = effectivePlanItems(rows);
-  assert.equal(items.length, 1);
-  assert.equal(items[0].type, 'isf');
-  assert.equal(items[0].start_min, 0);
-  assert.equal(items[0].value, 60);
-});
-
-test('effectivePlanItems records an edited accepted pick at its post-edit value (#462)', () => {
-  // Accepted ISF 55 at 00:00, then hand-edited to 58. History must record 58 —
-  // the value keyed into the pump — not the pre-edit accepted 55.
-  const rows = buildDeliverable({
-    activeProfile,
-    acceptedItems: [{ type: 'isf', start_min: 0, value: 55, recommended: 55 }],
-    edits: { '0:isf': 58 },
-  });
-  const at0 = effectivePlanItems(rows).find((i) => i.type === 'isf' && i.start_min === 0);
-  assert.ok(at0, 'the 00:00 ISF item exists');
-  assert.equal(at0.value, 58);
-});
+// --- effective plan: what the draft saves and the decision records (#462) ---
 
 test('effectivePlanItems survives keyed-in-and-refetched (value === current) (#462)', () => {
   // After keying the change in, current catches up to value so the cell reads
@@ -666,10 +387,10 @@ test('effectivePlanItems is empty when nothing is staged', () => {
 //
 // A Diagnose-staged I:C block with members [720, 750] fans out into two
 // accepted picks, each stamped with the identical block claim. The
-// normalization contract: it survives untouched, unedited round-trips, and
-// is stripped from every surviving member the moment the group is no longer
-// complete-and-consistent (a member removed, or independently edited away
-// from the rest) — but retained when the WHOLE group is edited to agree.
+// normalization contract: it survives an untouched round-trip, and is
+// stripped from every surviving member the moment the group is no longer
+// complete-and-consistent (a member removed, or a member carrying a different
+// value from the rest).
 
 const icBlockProvenance = {
   block_start_min: 720, block_end_min: 900, block_member_start_mins: [720, 750],
@@ -689,7 +410,7 @@ test('effectivePlanItems preserves ic_block_provenance on an untouched, complete
 });
 
 test('effectivePlanItems strips ic_block_provenance when one member was removed', () => {
-  // Only the 720 pick survives (750 was removed via a chip removal) — it still
+  // Only the 720 pick is in the served draft (750 is missing) — it still
   // lists both members, so the group is incomplete.
   const rows = buildDeliverable({
     activeProfile,
@@ -700,33 +421,16 @@ test('effectivePlanItems strips ic_block_provenance when one member was removed'
   assert.equal(items[0].ic_block_provenance, undefined);
 });
 
-test('effectivePlanItems strips ic_block_provenance when one member was independently edited', () => {
-  // Both members present, but 720 was hand-edited to a different value than 750.
+test('effectivePlanItems strips ic_block_provenance when the members disagree on value', () => {
+  // Both members present, but the served draft carries 720 at a different value than 750.
   const rows = buildDeliverable({
     activeProfile,
-    acceptedItems: icBlockAccepted,
-    edits: { '720:carb_ratio': 11 },
+    acceptedItems: [{ ...icBlockAccepted[0], value: 11 }, icBlockAccepted[1]],
   });
   const items = effectivePlanItems(rows).filter((i) => i.type === 'ic');
   assert.equal(items.length, 2);
   for (const it of items) {
     assert.equal(it.ic_block_provenance, undefined);
-  }
-});
-
-test('effectivePlanItems retains ic_block_provenance when the whole group is edited to agree', () => {
-  // Both members hand-edited to the SAME new value — still a complete, internally
-  // consistent group, so the block claim survives.
-  const rows = buildDeliverable({
-    activeProfile,
-    acceptedItems: icBlockAccepted,
-    edits: { '720:carb_ratio': 11, '750:carb_ratio': 11 },
-  });
-  const items = effectivePlanItems(rows).filter((i) => i.type === 'ic');
-  assert.equal(items.length, 2);
-  for (const it of items) {
-    assert.deepEqual(it.ic_block_provenance, icBlockProvenance);
-    assert.equal(it.value, 11);
   }
 });
 
@@ -744,48 +448,6 @@ test('normalizeIcBlockProvenance rejects a stray extra claiming an already-compl
   ];
   const out = normalizeIcBlockProvenance(items);
   for (const it of out) assert.equal(it.ic_block_provenance, undefined);
-});
-
-// --- hand-edit revert clears the override (#462) ---------------------------
-
-test('isDeliverableEditRevert: returning a cell to the current profile is a revert', () => {
-  // 50 -> 60 -> 50 on a cell with no accepted pick. The 60 override exists; typing
-  // 50 back must read as a revert so the handler deletes it.
-  assert.equal(
-    isDeliverableEditRevert(activeProfile, [], { '0:isf': 60 }, 0, 'isf', 50), true);
-});
-
-test('isDeliverableEditRevert: a value still away from baseline is NOT a revert', () => {
-  assert.equal(
-    isDeliverableEditRevert(activeProfile, [], {}, 0, 'isf', 60), false);
-});
-
-test('isDeliverableEditRevert: returning to an accepted pick is a revert (pick still stands)', () => {
-  // Accepted ISF 55 at 00:00, hand-edited to 58, then back to 55 — the edit is a
-  // no-op over the accepted pick, so it clears; the pick itself remains staged.
-  const acceptedIsf = [{ type: 'isf', start_min: 0, value: 55, recommended: 55 }];
-  assert.equal(
-    isDeliverableEditRevert(activeProfile, acceptedIsf, { '0:isf': 58 }, 0, 'isf', 55), true);
-  // But dropping past the accepted pick to the current profile is a real edit.
-  assert.equal(
-    isDeliverableEditRevert(activeProfile, acceptedIsf, {}, 0, 'isf', 50), false);
-});
-
-test('isDeliverableEditRevert: compared under pump precision (basal below the 0.001 step)', () => {
-  // active basal at 00:00 is 0.8; a value that rounds to 0.8 at 0.001 precision is
-  // a revert even if it is not byte-equal.
-  assert.equal(
-    isDeliverableEditRevert(activeProfile, [], { '0:basal_rate': 0.9 }, 0, 'basal_rate', 0.8004), true);
-});
-
-test('a reverted hand-edit leaves an empty first Plan pending, with no history item (#462)', () => {
-  // The end state after the handler deletes the reverted override: no accepted
-  // picks, no edits. The deliverable proposes nothing, reconcile stays pending on
-  // an empty apply history, and there is nothing to persist.
-  const rows = buildDeliverable({ activeProfile, acceptedItems: [], edits: {} });
-  assert.deepEqual(effectivePlanItems(rows), []);
-  const res = reconcileDeliverable(rows, activeProfile.segments, '2026-07-02 09:00', false);
-  assert.equal(res.state, 'pending');
 });
 
 // --- ADR 0042 deliverable gate: mixed families cannot be packaged ----------
@@ -812,33 +474,11 @@ test('buildDeliverable rejects accepted basal plus ISF picks', () => {
   );
 });
 
-test('buildDeliverable rejects an off-family hand-edit on an accepted Plan', () => {
-  assert.throws(
-    () => buildDeliverable({
-      activeProfile,
-      acceptedItems: [{ type: 'basal', start_min: 180, value: 0.6 }],
-      edits: { '720:isf': 42 },
-    }),
-    /mixes tuning families/,
-  );
-});
-
-test('buildDeliverable allows multiple hand-edits in one family', () => {
-  const rows = buildDeliverable({
-    activeProfile,
-    edits: { '0:isf': 52, '720:isf': 41 },
-  });
-  assert.equal(rows[0].isf.value, 52);
-  assert.equal(rows[0].isf.provenance, 'edited');
-  assert.equal(rows[1].isf.value, 41);
-  assert.equal(rows[1].isf.provenance, 'edited');
-});
-
 // --- #468: a direction-only ISF finding cannot be staged --------------------
 
 test('only an exact true backend ISF verdict is stageable (#468)', () => {
   // Recurring correction-caused lows own the weaken direction but do not size a new
-  // ISF, so the row carries no recommended value. It must never become a Plan chip.
+  // ISF, so the row carries no recommended value. It must never be staged.
   const directionOnly = {
     parameter: 'isf', label: 'Fasting', current: 36, recommended: null,
     evidence: { direction: 'weaken',

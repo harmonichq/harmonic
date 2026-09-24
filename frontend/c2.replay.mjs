@@ -255,8 +255,13 @@ async function planPersistence(page, ctx) {
   }, 'Plan failed decision history');
   await retryPlanWrite(page, 'POST', '/api/plan/apply');
   await page.locator('[data-set="withdraw"]').waitFor();
+  // Plan history is served newest first. Position alone does not certify the
+  // decision: it is the one record that was not served before recording.
   const saved = await waitForReplayAssertion(async seen => {
-    const saved = (seen(await read(page, '/api/plan/history'))).history.at(-1);
+    const served = (seen(await read(page, '/api/plan/history'))).history;
+    assert.equal(served.length, history.history.length + 1, 'recording adds exactly one Plan record');
+    const saved = served[0];
+    check(!history.history.some(row => row.applied_at === saved.applied_at), 'the newest Plan record was not served before recording');
     check(saved.applied_at, 'saved decision has its durable time');
     check(saved.deliverable, 'saved decision retains its deliverable');
     return saved;
@@ -272,7 +277,7 @@ async function planPersistence(page, ctx) {
   ctx.failNext('POST', '/api/plan/history/withdraw');
   await press(page, '[data-set="withdraw"]'); await page.locator('[data-set="retry-save"]').waitFor();
   await waitForReplayAssertion(async seen => {
-    assert.deepEqual((seen(await read(page, '/api/plan/history'))).history.at(-1).withdrawal, saved.withdrawal);
+    assert.deepEqual((seen(await read(page, '/api/plan/history'))).history[0].withdrawal, saved.withdrawal);
   }, 'Plan failed withdrawal history');
   await retryPlanWrite(page, 'POST', '/api/plan/history/withdraw');
   await page.locator('[data-set="retry-save"]').waitFor({ state: 'hidden' });

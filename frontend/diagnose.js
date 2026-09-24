@@ -328,6 +328,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       retry: read,
       settings: () => openUtility('settings'),
       caseChanged,
+      // A parked Diagnose is inert: the workstation's page-level keys act only
+      // while this answers true.
+      onScreen,
       day: (occurrence) => {
         const context = evidenceDayContext({ occurrence, current: published });
         // A case callback alone never supplies a subject; a successful reader
@@ -457,36 +460,35 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   }
 
   function mount(host, deps = {}) {
+    const previousEntry = entry;
     entry = deps.context || {};
 
-    // A return: the desk was seated and a navigation moved since. An entry
-    // naming a subject/occurrence/window other than the case on screen always
-    // re-reads; one naming that case only checks whether the store moved, and
-    // the loading frame stands for either. The case on screen is the last one
-    // the workstation published, never the entry Diagnose last held: its
-    // document keys stay live while it is parked, and a late case-file answer
-    // can land then too. A repeated press of Diagnose while on Diagnose is not
-    // a return: the root was never parked by leaving, and re-pressing the
-    // destination restores the shipped Findings index the way it always has
-    // (S3), by re-reading.
+    // A return: the desk was seated and a navigation moved since. A changed
+    // subject/occurrence/window always re-reads; the same entry only checks
+    // whether the store moved, and the loading frame stands for either. The
+    // held entry still names the case on screen because a parked Diagnose is
+    // inert: its workstation takes no key until it is on screen again. A
+    // repeated press of Diagnose while on Diagnose is not a return: the root
+    // was never parked by leaving, and re-pressing the destination restores
+    // the shipped Findings index the way it always has (S3), by re-reading.
     if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
       // ADR 428 point 7: a return whose context names no case (a plain press of
       // Diagnose) is a retained return whatever entry was held. It keeps the
-      // case on screen but not the held `from` — a direct entry invents no
-      // return — and the address names that case.
+      // held case but not its `from` — a direct entry invents no return — and
+      // the address names that case again.
       const plain = !namesCase(entry);
       if (parked && plain) {
-        entry = caseAddress(published);
+        entry = caseAddress(previousEntry);
         replaceAddress(entry);
       }
-      if (!parked || !sameEntry(published, entry)) {
+      if (!parked || !sameEntry(previousEntry, entry)) {
         reread();
         host.innerHTML = loadingFrame('Diagnose');
         return;
       }
-      // ADR 428 point 6: a Day return naming the case still on screen keeps the
-      // drill too, and puts focus back on the Occurrence it opened Day from.
+      // ADR 428 point 6: a Day return to the held case keeps the drill too, and
+      // puts focus back on the Occurrence it opened Day from.
       returnTo = plain ? null : entry.occurrence || null;
       checking = true;
       host.innerHTML = loadingFrame('Diagnose');

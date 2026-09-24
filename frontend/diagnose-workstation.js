@@ -2094,12 +2094,18 @@ function boot(root, data, callbacks, signal) {
     const served = f.caseFile?.window;
     const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
       : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
-    const onScreen = subject ? { subject, occurrence: f.selectedId || null, window } : null;
-    const key = JSON.stringify(onScreen);
+    const current = subject ? { subject, occurrence: f.selectedId || null, window } : null;
+    const key = JSON.stringify(current);
     if (key === publishedCase) return;
     publishedCase = key;
-    callbacks.caseChanged?.(onScreen);
+    callbacks.caseChanged?.(current);
   }
+  /* A PARKED DIAGNOSE IS INERT (ADR 428). The page-level key handlers below
+     listen on the document, which outlives this root while Diagnose is parked
+     off-screen behind another destination. They act only while the host says
+     Diagnose is on screen, so nothing moves the case — or swallows another
+     destination's key — while it is parked. */
+  const onScreen = () => callbacks.onScreen?.() !== false;
   const push = (frame) => {
     if (top().k === 'factors') rememberQueuePosition();
     filterOpen = false;
@@ -3975,7 +3981,7 @@ function boot(root, data, callbacks, signal) {
     el('grip-b').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('b', ev); }, { signal });
     // Esc restores the last preset
     document.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && drawn) { ev.preventDefault(); clearDrawn(); }
+      if (ev.key === 'Escape' && drawn && onScreen()) { ev.preventDefault(); clearDrawn(); }
     }, { signal });   // PORT: abortable
     window.addEventListener('resize', paintBrace, { signal });   // PORT: abortable
   }
@@ -4057,7 +4063,7 @@ function boot(root, data, callbacks, signal) {
      the ends rather than wrapping: an instrument should not silently return you
      to the first reading. */
   document.addEventListener('keydown', (ev) => {
-    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.metaKey || ev.ctrlKey || ev.altKey || !onScreen()) return;
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
@@ -4100,6 +4106,7 @@ function boot(root, data, callbacks, signal) {
   observeResize(el('chart'), () => chart);
   installDrag();
   document.addEventListener('keydown', (ev) => {
+    if (!onScreen()) return;
     if (ev.key === 'Escape' && fullscreen) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -4120,7 +4127,7 @@ function boot(root, data, callbacks, signal) {
     if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
   }, { signal });
   document.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Escape' || !filterOpen) return;
+    if (ev.key !== 'Escape' || !filterOpen || !onScreen()) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });

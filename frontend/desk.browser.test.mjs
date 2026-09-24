@@ -880,6 +880,41 @@ test('after a Day return, acting inside Diagnose re-addresses it in place, and i
   } finally { await close(); }
 });
 
+// ADR 428, review round 2: a parked Diagnose is inert. Its workstation's
+// page-level ↓ must not step the held Occurrence while Day holds the surface,
+// so the Day return is retained on exactly the Occurrence it opened Day from.
+test('a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read', async () => {
+  const subject = 'finding:over_treated_low';
+  const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
+  const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,
+    lever: 'over_treated_low', from: 'diagnose' })}`;
+  const { page, close } = await openDesk({ address });
+  const held = () => page.evaluate(() =>
+    document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+  const settledOnHeld = () => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
+    && document.querySelector('#level .case-occurrence[aria-pressed="true"]'), null, { timeout: 30000 });
+  try {
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    assert.equal(await held(), occurrence, 'premise: the entry restored its Occurrence');
+    await press(page, '.occ-foot button:last-child');
+    await page.locator('.gf-stage-day').waitFor({ timeout: 20000 });
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(300);
+    let guidanceReads = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/analyze') guidanceReads += 1; });
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    await page.waitForTimeout(300);
+    assert.equal(await held(), occurrence, 'the return holds the Occurrence it opened Day from');
+    assert.equal(guidanceReads, 0, 'the return is retained: no guidance re-read');
+    assert.equal(await page.evaluate(() => new URLSearchParams(location.search).get('occurrence')), occurrence,
+      'the address names the Occurrence on screen');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.occ-foot button:last-child')), true,
+      'focus lands on that Occurrence\'s Open in Day control');
+  } finally { await close(); }
+});
+
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {

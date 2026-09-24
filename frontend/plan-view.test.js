@@ -12,9 +12,16 @@ import { buildDeliverable, reconcileDeliverable } from './plan.js';
 
 // The one transport, installed before anything imports frontend/data.js, which
 // binds its default fetch when it is first evaluated. Each read answers its path.
+// A write whose path `refused` names answers with that durable 409 refusal.
 const served = {};
-globalThis.fetch = async (url) => ({ ok: true, status: 200, statusText: 'OK',
-  json: async () => served[new URL(url, 'http://desk.invalid').pathname] ?? {} });
+const refused = {};
+globalThis.fetch = async (url, options = {}) => {
+  const path = new URL(url, 'http://desk.invalid').pathname;
+  if (options.method && options.method !== 'GET' && refused[path]) {
+    return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: refused[path] }) };
+  }
+  return { ok: true, status: 200, statusText: 'OK', json: async () => served[path] ?? {} };
+};
 const {
   PLAN_HEAD, SETTING_NAME, loadPlanState, mount, phase, planUnderway, profileTable, stage, userValue,
 } = await import('./plan-view.js');
@@ -141,3 +148,70 @@ test('What was known names the recorded concern and its value in the wearer\'s w
   assert.doesNotMatch(known, /setting:|mg\/dL\/U/);
 });
 
+// ADR 450: a refused Plan write prints the served sentence, never its code, a
+// status beside it or "[object Object]". Both Plan writes that can be refused
+// are pressed the way a reader presses them.
+const STALE = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.' };
+function pressable(host) {
+  const buttons = new Map();
+  host.querySelectorAll = (selector) => {
+    if (selector !== '[data-set]') return [];
+    return [...host.innerHTML.matchAll(/data-set="([^"]+)"/g)].map(([, set]) => {
+      if (!buttons.has(set)) buttons.set(set, { dataset: { set } });
+      return buttons.get(set);
+    });
+  };
+  host.querySelector = () => null;
+  return (set) => {
+    mount(host);
+    const button = buttons.get(set);
+    assert.ok(button?.onclick, `premise: the Plan offers ${set}`);
+    button.onclick();
+  };
+}
+const settle = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
+function assertSentence(html, line) {
+  const failure = html.match(/<p class="gf-error">([^<]*)<\/p>/)?.[1] || '';
+  assert.equal(failure, `${line}: ${STALE.message}`);
+  assert.doesNotMatch(html, /stale_input_revision|\(409\)|\b409\b|\[object Object\]/);
+}
+
+test('a refused Plan record prints the served sentence, never its code (ADR 450)', async () => {
+  const profile = { segments: [{ start_min: 0, basal_rate: 0.6, isf: 30, carb_ratio: 10, target_bg: 110 }] };
+  served['/api/guidance'] = { disposition: 'draft', selected: basalCandidate, candidates: [basalCandidate], reasons: {} };
+  served['/api/plan'] = { items: [{ type: 'basal', start_min: 180, value: 0.48 }], updated_at: '2024-06-30 08:30:00', input_revision: 5 };
+  served['/api/pump-settings'] = { profile, fetched_at: '2024-06-30 08:00:00' };
+  served['/api/plan/history'] = { history: [] };
+  refused['/api/plan/apply'] = STALE;
+  try {
+    await loadGuidance({ force: true });
+    await loadPlanState();
+    const host = { innerHTML: '' };
+    pressable(host)('record');
+    await settle();
+    mount(host);
+    assertSentence(host.innerHTML, 'Recording the decision failed');
+  } finally { delete refused['/api/plan/apply']; }
+});
+
+test('a refused Plan withdraw prints the served sentence, never its code (ADR 450)', async () => {
+  const profile = { segments: [{ start_min: 0, basal_rate: 0.6, isf: 30, carb_ratio: 10, target_bg: 110 }] };
+  served['/api/guidance'] = { disposition: 'pending_plan', selected: null, candidates: [], reasons: {} };
+  served['/api/plan'] = { items: [], updated_at: null, input_revision: 5 };
+  served['/api/pump-settings'] = { profile, fetched_at: '2024-06-30 08:00:00' };
+  served['/api/plan/history'] = { history: [{
+    applied_at: '2024-06-30 09:00:00', items: [{ type: 'basal', start_min: 180, value: 0.48 }],
+    verdict: { state: 'pending', on_pump: false }, deliverable: { source_profile: profile, rows: [] },
+    decision_context: { state: 'unavailable', subjects: ['setting:basal_rate'] },
+  }] };
+  refused['/api/plan/history/withdraw'] = STALE;
+  try {
+    await loadGuidance({ force: true });
+    await loadPlanState();
+    const host = { innerHTML: '' };
+    pressable(host)('withdraw');
+    await settle();
+    mount(host);
+    assertSentence(host.innerHTML, 'Withdrawing failed');
+  } finally { delete refused['/api/plan/history/withdraw']; }
+});

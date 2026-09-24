@@ -8,6 +8,8 @@ let identity = 'basal_rate-03-00-synthetic';
 let context = {};
 let expired = false;
 let lateConclusion = { state: 'unavailable' };
+// The expired ending's saved assessment; a test may serve one with supporting dates.
+let expiredAssessment = { state: 'unavailable' };
 // A durable 409 as the API serves it (ADR 450): the code beside its sentence.
 let refusal = null;
 const STALE = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.',
@@ -75,7 +77,7 @@ globalThis.fetch = async (path, options = {}) => {
     ...(selected ? { selected: { id: identity, kind, changes: kind === 'trial' ? [{ parameter: 'basal_rate', slot: '03:00', before: 0.6, after: 0.54 }] : [],
       lever: kind === 'focus' ? 'late_bolus' : undefined, original: { context,
         ...(expired ? { ending: { kind: 'expired_unreviewed', effective_at: '2026-09-01 00:00:00',
-          recorded_at: '2026-09-01 00:00:00', conclusion: null, assessment: { state: 'unavailable' } },
+          recorded_at: '2026-09-01 00:00:00', conclusion: null, assessment: expiredAssessment },
         late_conclusion: lateConclusion } : {}) },
       reassessment: assessment ? { mode: assessment, computed_at: '2026-09-23 12:00:00',
         comparison_context: { id: 'synthetic-context-0001' }, comparison: served } : null, ...selectedExtra } } : {}),
@@ -518,6 +520,46 @@ test('reopening the same expired Trial from the roster starts its later conclusi
     assert.doesNotMatch(seat.innerHTML, /Words typed before leaving/, 'the reopened record starts empty');
     assert.match(seat.innerHTML, /type="submit" disabled>Record later conclusion</);
   });
+});
+
+// A Day round trip from the record comes back through the record's own address,
+// so it is the same open record: the typed words, the failed save and its
+// request id stay, and Retry resends that request id (ADR 452).
+test('a Day return to the same expired Trial keeps its later conclusion, its failure and its request id for Retry', async () => {
+  const A = 'expired-day-return-synthetic';
+  expiredAssessment = { ...DATED, state: 'unclear' };
+  try {
+    await onExpiredRoster(async (seat) => {
+      const route = await openHistoryRecord(seat, A);
+      assert.match(seat.innerHTML, /data-form="late-conclusion"/, 'premise: A offers its Later conclusion');
+      fail = true;
+      seat.lateField.oninput({ target: { value: 'Words typed before visiting Day' } });
+      seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
+      mountHistory(seat, { context: route, hold() {} });
+      assert.match(seat.innerHTML, /Recording the later conclusion failed/, 'premise: A’s save failed');
+      const failed = conclusionPosts().at(-1);
+      assert.match(failed.path, new RegExp(`/trials/${A}/conclusion$`));
+
+      const door = seat.days[0];
+      assert.ok(door, 'premise: the record offers a supporting date');
+      door.onclick();
+      assert.equal(globalThis.window.location.pathname, '/day', 'premise: the supporting date opens Day');
+      const back = dayReturn(door.dataset.dayDate, `record:trial:${A}`);
+      for (let step = 0; step < 3; step++) { mountHistory(seat, { context: back, hold() {} }); await flush(); }
+      assert.match(seat.innerHTML, /data-form="late-conclusion"/, 'the Day return reopens A');
+      assert.match(seat.innerHTML, /Words typed before visiting Day/, 'the typed words survive the Day return');
+      assert.match(seat.innerHTML, /Recording the later conclusion failed/, 'the failure survives the Day return');
+
+      fail = false;
+      const from = requests.length;
+      seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
+      const retried = conclusionPosts(from).at(-1);
+      assert.ok(retried, 'Retry sends the save');
+      assert.equal(JSON.parse(retried.options.body).request_id, JSON.parse(failed.options.body).request_id,
+        'Retry resends the failed save’s request id');
+      assert.equal(JSON.parse(retried.options.body).conclusion, 'Words typed before visiting Day');
+    });
+  } finally { expiredAssessment = { state: 'unavailable' }; view.focusAfterRender = null; }
 });
 
 // A save still in flight when its record is left writes nothing on its return:

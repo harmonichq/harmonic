@@ -294,7 +294,9 @@ function occurrence(view, index, source) {
         ? `${labels[factor]} matched the current rule.`
         : `${labels[factor]} did not match the current rule.`,
       evidence_tier: 'observed',
-      silence_reason: routes(view, cohort)[factor].cohort === 'near_rule' ? 'under_threshold' : 'no_trigger',
+      // A matched verdict carries no silence reason, as the attribution step records it.
+      silence_reason: routes(view, cohort)[factor].cohort === 'fired' ? null
+        : routes(view, cohort)[factor].cohort === 'near_rule' ? 'under_threshold' : 'no_trigger',
     })),
     routes: routes(view, cohort),
     trace,

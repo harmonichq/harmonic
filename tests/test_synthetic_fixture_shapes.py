@@ -27,7 +27,8 @@ CAPTURE = ROOT / "mockups/diagnose-event-comparison.synthetic/capture.json"
 # at a low, `_high_lever` at a high, and Correction stacking alone at a correction
 # cluster's stacking dose or last correction. At each of these kinds every judged
 # classifier is a lever that kind can drive, so a claim by any other lever is a claim
-# the producer never serves.
+# the producer never serves, except a rebound High, which Over-treated low claims; the
+# fixture manufactures none.
 JUDGED = {
     "meal": {"carb_undercount", "late_bolus", "meal_over_delivery"},
     "low": {"over_treated_low", "correction_on_iob"},
@@ -72,7 +73,10 @@ class ManufacturedExposureRowsTest(unittest.TestCase):
         for family, row in self.rows:
             for verdict in row["verdicts"]:
                 self.assertIn(verdict["classifier"], levers, (family, row["t"]))
-                if verdict["silence_reason"] is not None:
+                # A matched verdict carries no silence reason (`attribute._mv`).
+                if verdict["matched"]:
+                    self.assertIsNone(verdict["silence_reason"], (family, row["t"]))
+                elif verdict["silence_reason"] is not None:
                     self.assertIn(verdict["silence_reason"], silences, (family, row["t"]))
 
     def test_a_claimed_row_reads_its_own_levers_matched_sentence_as_its_text(self):
@@ -114,7 +118,10 @@ class ComparisonRowsTest(unittest.TestCase):
             self.assertEqual({verdict["classifier"] for verdict in row["verdicts"]}, judged,
                              (family, row["id"]))
             for verdict in row["verdicts"]:
-                if verdict["silence_reason"] is not None:
+                # A matched verdict carries no silence reason (`attribute._mv`).
+                if verdict["matched"]:
+                    self.assertIsNone(verdict["silence_reason"], (family, row["id"]))
+                elif verdict["silence_reason"] is not None:
                     self.assertIn(verdict["silence_reason"], silences, (family, row["id"]))
 
 

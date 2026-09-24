@@ -1,8 +1,9 @@
-/* Verify workstation hero — PORTED VERBATIM from the locked mock.
+/* Trial comparison hero — PORTED VERBATIM from the retired v1 Verify
+ * workstation's locked mock; Changes' Trial stage draws it.
  *
  * Source: the archived mock (#722), which carries contract terms 5-11.
- * Transferred byte-identical below this header. Edit only to re-sync with
- * the mock.
+ * Transferred byte-identical below this header, bar its opening comment,
+ * which #416 and #447 re-pointed. Edit only to re-sync with the mock.
  *
  * The two-median ribbon: the area between the Before and Trial medians, tinted
  * by which ran higher; no quartile bands. #416 retired the v1 binder that fed
@@ -10,7 +11,7 @@
  * pairing a served comparison's two clock envelopes onto the shape below — the
  * same numbers the mock read from its capture, still backend-supplied.
  */
-/* Verify story hero — the two-median ribbon, rendered in ECharts (the app's
+/* Trial comparison hero — the two-median ribbon, rendered in ECharts (the app's
    shipping chart library) so the mock IS the target medium. Ribbon = the area
    between the Before and Trial medians, tinted by which ran higher; no
    quartile bands (locked 2026-08-12, hero-forms board).

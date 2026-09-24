@@ -15,10 +15,7 @@ is what names the dominant scans.
 
 The shape list and its order are the cold arrival the retired v1 page measured,
 kept as the fixed profiling order so runs stay comparable across the ADR 416
-cutover. The two warm-set-only shapes at the end are not part of that arrival;
-they are here because the hourly pre-warm computes them (`api.py`
-`invalidate_and_warm`), so their cost is measurable drift rather than user-facing
-latency.
+cutover.
 
 **Snapshot discipline.** The database is opened with `Store.open_readonly`, whose
 `immutable=1` mode asserts nothing else is writing the file: point this at a copy
@@ -87,23 +84,22 @@ def _findings_case_preparation(store):
     wrap(prepare(store, query=WindowQuery.whole_day(), version=0))
 
 
-def _outcomes_trend(store, *, window: int):
-    """`/api/outcomes/trend`: Diagnose asks for 30, the hourly warm pass warms 14."""
-    from ciq_autotune.outcomes_trend import summarize_trend
+def _outcomes_trend(store):
+    """`/api/outcomes/trend`: the one watched change, with no window (#447)."""
+    from ciq_autotune.outcomes_trend import trend_watched_change
 
-    summarize_trend(store, window_days=window).to_dict()
+    trend_watched_change(store)
 
 
-# Cold-arrival shapes in the order the SPA requests them, then the warm-set-only ones.
+# Cold-arrival shapes in the order the SPA requests them.
 SHAPES = (
-    ("analyze", "cold", lambda store: _analyze(store, pool=False)),
-    ("analyze-pooled", "cold", lambda store: _analyze(store, pool=True)),
-    ("scenarios", "cold", _scenarios),
-    ("explore-time-of-day", "cold", _time_of_day),
-    ("exposures", "cold", _exposures),
-    ("findings-case-preparation", "cold", _findings_case_preparation),
-    ("outcomes-trend-30", "cold", lambda store: _outcomes_trend(store, window=30)),
-    ("outcomes-trend-14", "warm-only", lambda store: _outcomes_trend(store, window=14)),
+    ("analyze", lambda store: _analyze(store, pool=False)),
+    ("analyze-pooled", lambda store: _analyze(store, pool=True)),
+    ("scenarios", _scenarios),
+    ("explore-time-of-day", _time_of_day),
+    ("exposures", _exposures),
+    ("findings-case-preparation", _findings_case_preparation),
+    ("outcomes-trend", _outcomes_trend),
 )
 
 
@@ -135,36 +131,32 @@ def main(argv=None) -> int:
     parser.add_argument("--db", required=True,
                         help="a snapshot COPY (sqlite3 '.backup'), never the live database")
     parser.add_argument("--shape", action="append", default=[],
-                        help="run only this shape (repeatable); default is every cold shape")
+                        help="run only this shape (repeatable); default is every shape")
     parser.add_argument("--profile", action="append", default=[],
                         help="also print this shape's cProfile leaders (repeatable)")
     parser.add_argument("--top", type=int, default=25,
                         help="how many profile lines to print (default 25)")
-    parser.add_argument("--warm-only", action="store_true",
-                        help="include the shapes only the hourly pre-warm computes")
     args = parser.parse_args(argv)
 
-    known = {name for name, _stage, _run in SHAPES}
+    known = {name for name, _run in SHAPES}
     unknown = (set(args.shape) | set(args.profile)) - known
     if unknown:
         parser.error(f"unknown shape(s): {', '.join(sorted(unknown))}; "
                      f"known: {', '.join(sorted(known))}")
 
-    selected = [(name, stage, run) for name, stage, run in SHAPES
-                if (name in args.shape if args.shape
-                    else stage == "cold" or args.warm_only)]
+    selected = [(name, run) for name, run in SHAPES
+                if not args.shape or name in args.shape]
 
     total = 0.0
-    for name, stage, run in selected:
+    for name, run in selected:
         top = args.top if name in args.profile else 0
         try:
             elapsed, profile_text = run_shape(args.db, run, profile_top=top)
         except Exception as error:  # a shape that cannot run is reported, not hidden
             print(f"{name:<28} FAILED  {type(error).__name__}: {error}", flush=True)
             continue
-        if stage == "cold":
-            total += elapsed
-        print(f"{name:<28} {elapsed:8.2f}s  ({stage})", flush=True)
+        total += elapsed
+        print(f"{name:<28} {elapsed:8.2f}s", flush=True)
         if profile_text:
             print(profile_text, flush=True)
     print(f"{'cold arrival, serialized':<28} {total:8.2f}s")

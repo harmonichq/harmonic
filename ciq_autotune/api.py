@@ -145,8 +145,10 @@ def _analysis_payload(result) -> dict:
 
 
 def _latest_instant(store) -> Optional[datetime]:
-    """The most recent data instant in ``store`` — the ``now`` trial detection uses
-    (mirrors ``summarize_trend``'s default so the pin guard sees the same anchor)."""
+    """The most recent data instant in ``store``, settings snapshots included: the
+    ``now`` this API's follow-up reads and writes use. It counts snapshots as the
+    ingestion reconcile does; the Outcomes trend's anchor does not
+    (``outcomes_trend.trend_watched_change``, #447), so the two can differ."""
     times = ([e.t for e in store.basal_events()]
              + [r.t for r in store.cgm_readings()]
              + [b.t for b in store.bolus_events()]
@@ -745,21 +747,20 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return cache.get_or_compute(("outcomes", window), compute)
 
     @app.get("/api/outcomes/trend")
-    def outcomes_trend_endpoint(window: int = 14, _: None = Depends(require_token)) -> dict:
-        """The Outcomes trend (#131): a behavioral + glycemic scorecard across rolling
-        ``window``-day windows (oldest→newest, index-aligned), each behavior and metric
-        emitting a series so the frontend can show movement. Behaviors use the fixed
-        current-profile ISF and each meal's Dose-stamped I:C across all windows. A third
-        versioned result, standalone like ``/api/outcomes`` — not a field on the
-        AnalysisResult."""
-        from .outcomes_trend import summarize_trend
+    def outcomes_trend_endpoint(_: None = Depends(require_token)) -> dict:
+        """The one active watched change (#244) that Diagnose's watch dock reports:
+        ``{"watched_change": …}``, a Trial or Focus view or ``null``, at the Outcomes
+        trend's own anchor (#447). The trend's rolling-window series are the CLI
+        ``outcomes-trend``'s; no desk surface reads them, so this neither computes nor
+        serves them. The watched change does not depend on a window (#18), so the
+        route takes none, and its cache and warm key carry none."""
+        from .outcomes_trend import trend_watched_change
 
-        def compute() -> dict:
-            with Store.open(db_path) as store:
-                return summarize_trend(store, window_days=window).to_dict()
+        def watched(store) -> dict:
+            view = trend_watched_change(store)
+            return {"watched_change": view.to_dict() if view is not None else None}
 
-        key = ("outcomes-trend", window)
-        return fixed_response(fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict()))
+        return fixed_response(fixed(("outcomes-trend",), "outcomes-trend-watched-change-v1", watched))
 
     @app.get("/api/verify/trials")
     def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
@@ -1854,7 +1855,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def warm_roster():
         return (
             ("analyze", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=False)),
-            ("outcomes-trend", lambda: outcomes_trend_endpoint(window=30)),
+            ("outcomes-trend", outcomes_trend_endpoint),
             ("analyze-pooled", lambda: analyze_endpoint(window=30, ignore_changes=False, pool=True)),
             ("scenarios", lambda: scenarios_endpoint(window=30)),
             ("explore-time-of-day", explore_time_of_day_endpoint),

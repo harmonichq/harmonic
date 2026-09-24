@@ -104,6 +104,62 @@ async function watchDock429(page, id, kind) {
       `${id} the Trial's own view must be titled for the admitted Trial's slot ${slot}`);
   }, `${id} Changes shows the admitted Trial`);
 }
+// #447: a watched Trial's dock and Changes' Watch maturity print one day count,
+// the served `days_elapsed`, and Changes' outcomes lead with the Trial's served
+// target metric. The admission and the selected Trial are read first, so a case
+// serving no complete Trial past its requirement, or no row-keyed target, fails
+// at a premise, never at the count.
+async function trialDayCount447(page) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.active_kind, 'trial', 'S169 premise: the case must serve an active Trial');
+  const selected = (await read(page, '/api/verify/trials', { kind: 'trial', selected: roster.admission.active_id })).selected;
+  assert.equal(selected?.state, 'complete', 'S169 premise: the active Trial must be served complete');
+  const { days_elapsed: n, days_required: r } = selected.maturing;
+  assert.ok(n > r, `S169 premise: the served count must run past its requirement (${n} against ${r})`);
+  const target = selected.target_metrics?.length === 1 && selected.target_metrics[0] !== 'arc'
+    ? selected.target_metrics[0] : null;
+  assert.ok(target, `S169 premise: the Trial must serve one row-keyed target metric (${JSON.stringify(selected.target_metrics)})`);
+  const ready = `Ready to judge — ${n} days since ${selected.changed_at.slice(5, 10)} · ${r} required`;
+
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  const dock = page.locator('.inspector > .watch');
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen((await dock.locator('.how').innerText()).trim()), ready,
+      'S169 the dock must print the served day count in Changes\' words');
+  }, 'S169 the dock prints the served count');
+  await dock.locator('.go').click();
+  await page.locator('.gf-stage-trial').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForReplayAssertion(async seen => {
+    const figure = seen(await page.locator('[data-part="maturity"] .gf-figure').innerText()).replace(/\s+/g, ' ').trim();
+    assert.ok(figure.startsWith(`${n} days`), `S169 the Watch maturity figure must print the served count: ${figure}`);
+    assert.ok(figure.includes(`${r} required`), `S169 the Watch maturity figure must print the requirement: ${figure}`);
+    const bar = page.locator('progress[aria-label="Trial progress"]');
+    assert.equal(seen(await bar.getAttribute('value')), String(r), 'S169 only the progress bar clamps, at its requirement');
+    assert.equal(seen(await bar.getAttribute('max')), String(r), 'S169 the progress bar runs to the requirement');
+  }, 'S169 Changes prints the same count');
+  await waitForReplayAssertion(async seen => {
+    const lead = page.locator('.gf-stage-trial [data-table="outcomes"] tbody tr').first();
+    assert.equal(seen(await lead.getAttribute('data-outcome')), target,
+      `S169 Changes' outcomes must lead with the served target metric ${target}`);
+    assert.match(seen(await lead.getAttribute('class')) || '', /\bgf-target\b/,
+      'S169 the served target row must be marked as the Trial\'s target');
+  }, 'S169 Changes leads with the served target');
+}
+// #447: the Guide's "Reading the Diagnose surface" article names no Verify, and
+// its Cause-lever line sends those levers to a Focus that Changes follows.
+async function guideArticle447(page) {
+  const response = await page.request.get(new URL('/api/kb/reading-diagnose', page.url()).href, { timeout: 30000 });
+  assert.equal(response.status(), 200, 'S170 premise: the Guide article must be served');
+  assert.match(await response.text(), /◈ Cause/, 'S170 premise: the served article must carry its ◈ Cause line');
+  await press(page, '[data-utility="guide"]');
+  await press(page, '[data-utility-slug="reading-diagnose"]');
+  await waitForReplayAssertion(async seen => {
+    const article = seen(await page.locator('.gf-article').innerText()).replace(/\s+/g, ' ');
+    assert.doesNotMatch(article, /Verify/, 'S170 the article must name no Verify');
+    assert.ok(article.includes('flow to a Focus, followed in Changes'),
+      'S170 the Cause-lever line must send levers to a Focus, followed in Changes');
+  }, 'S170 the Guide article names Changes');
+}
 // #442: the page's readiness lines print the comparison the page shows, which
 // is an ended record's saved ending assessment, else the retained reassessment.
 // The returned comparison, and every S91 assertion on it, stays the retained read.
@@ -2962,6 +3018,10 @@ export const C4_STORIES = {
   async S139(page) { await watchDock429(page, 'S139', 'trial'); },
   // #429: the same for a watched Focus, including its detail line.
   async S140(page) { await watchDock429(page, 'S140', 'focus'); },
+  // #447: the dock and Changes print one Trial day count, the served one.
+  async S169(page) { await trialDayCount447(page); },
+  // #447: the Guide's Diagnose article names no Verify.
+  async S170(page) { await guideArticle447(page); },
   // #433: the basal lane stays within reach on short and narrow desktop
   // windows. `assertBasalLaneReachable` is the scenario, exported so a fake
   // page can drive it.

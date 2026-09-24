@@ -172,7 +172,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       return Promise.all([
         api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
         api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
-        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
+        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(),
       ]);
     }).then(([a, s, e, x, preparation, outcomes]) => {
       const values = [a, s, e, x, outcomes].map((value, i) =>

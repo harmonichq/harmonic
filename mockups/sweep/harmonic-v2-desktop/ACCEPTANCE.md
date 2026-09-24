@@ -221,20 +221,11 @@ or failed run is identified explicitly; it is not a successful timing proof.
 
 | Browser leg | Measured runner wall time | Job ceiling | Headroom above sample |
 | --- | --- | --- | --- |
-| Day lifecycle | 0m57s | 5 min | 4m03s |
-| Diagnose workstation | 4m37s | 10 min | 5m23s |
-| Diagnose canvas composition | 2m32s | 6 min | 3m28s |
-| Cockpit shell | 1m10s | 6 min | 4m50s |
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
-| V2 desk | 0m47s | 5 min | 4m13s |
-| V2 Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
-| V2 full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
-| V2 PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
-| First-plan reconcile | 0m38s | 5 min | 4m22s |
-| Diagnose workstation behaviour ledger | 10m32s successful | 21 min | 10m28s |
-| Diagnose event comparisons | 1m29s | 6 min | 4m31s |
-| Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
-| Verify behaviour ledger | 0m36s | 5 min | 4m24s |
+| Desk | 0m47s | 5 min | 4m13s |
+| Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
+| Full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
+| PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
 
 The full-ledger replay process ceiling is 960 seconds for a shard, leaving five
 minutes inside its CI job for setup, server teardown and retention. Unsharded

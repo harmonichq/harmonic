@@ -116,8 +116,8 @@ The most-used routes are GET `/api/analyze`, GET/POST
 `/api/report`, and GET `/api/health`, plus the UI at `/diagnose`.
 They are a small sample. The server registers roughly seventy routes, about half
 of them data endpoints — the Diagnose findings queue, event comparisons,
-scenarios, the Plan draft and its history, Verify trials, outcomes and their
-trend, the carb log, prompts, focus, the timeline, the model view and more — and the rest the static files the UI loads. The complete list is
+scenarios, the Plan draft and its history, the Trial roster
+(`/api/verify/trials`), outcomes, the watched change, the carb log, prompts, focus, the timeline, the model view and more — and the rest the static files the UI loads. The complete list is
 browsable at `/api/docs` (FastAPI's Swagger UI) once `serve` is running.
 
 `fetch` is idempotent: re-pulling an overlapping window merges rather than
@@ -222,21 +222,23 @@ normal operation.
 detectors) over one `AnalysisResult`, rendered by both the CLI and a localhost
 HTTP API. First real fetch run validates the Tandem Source login on your account.
 
-**Web UI**: built. Four working surfaces, each covered by browser gates in CI:
+**Web UI**: built. One desk with three destinations, covered by browser gates in
+CI:
 
-- **Day** — one day at a time: the glucose trace against what insulin actually
-  ran, and the model's own account of what it saw.
 - **Diagnose** — the ranked findings queue and the settings audit. Each
   suggested basal, ISF or I:C change is read beside the evidence behind it, and
   a suggestion the data cannot support is held rather than offered.
-- **Plan** — stage the changes you accept into a draft profile, read the whole
-  schedule as your pump would run it, then apply it.
-- **Verify** — after a change, the before-and-after comparison that says whether
-  it did what it was meant to.
+- **Changes** — the change you are watching, and its Plan. Stage the changes you
+  accept into the Plan, read the whole schedule as your pump would run it, and
+  record your decision; then follow the Trial or Focus through the
+  before-and-after comparison that says whether it did what it was meant to.
+- **Day** — one day at a time: the glucose trace against what insulin actually
+  ran, and the model's own account of what it saw.
 
-Alongside them: App settings (encrypted credential storage, the hourly fetch
-loop), Pump settings, the detailed report, and a Guide. Harmonic still only
-**advises** — it never writes to your pump.
+A utility strip sits alongside them: Log carbs, Questions, the Guide, Settings
+(the API token, your Tandem Source credentials, stored encrypted, and Developer
+mode) and the Glossary, with Pump settings reached from Changes. Harmonic still
+only **advises** — it never writes to your pump.
 
 Still future work: scheduled auto-fetch beyond the hourly loop, change-triggered
 notifications, and mmol/L display — tracked as [GitHub issues](https://github.com/harmonichq/harmonic/issues).

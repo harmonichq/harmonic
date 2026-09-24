@@ -11,7 +11,7 @@ import { ApiTransportError } from './data.js';
 import {
   adherenceTable, comparisonPairs, comparisonReasonWords, comparisonTables, conclusionForm,
   dailyEvidence, evidenceFigure, failureMessage, maturitySection, outcomesTable, periodsSection,
-  planRouteSection, readinessArm, readinessSection, saveErrorBlock,
+  planRouteSection, readinessArm, readinessSection, saveErrorBlock, trialDayCount,
 } from './follow-up.js';
 
 // What a reader sees: the markup with its tags (and so its data attributes,
@@ -283,6 +283,36 @@ test('a mapped outcome leads the outcome table and context rows are marked', () 
   assert.ok(html.indexOf('data-outcome="tir"') < html.indexOf('data-outcome="tbr"'));
 });
 
+// #447: a Trial's rows arrive in the served TIR, TBR, TAR order with no role;
+// its served `target_metrics` say which of them lead. This is c3-trial's shape:
+// a basal 03:00 Trial whose served target is TBR.
+const trialRows = (keys) => ({ outcomes: keys.map((key) => ({
+  key, label: key, unit: '%', before: 1, after: 1, difference: 0, denominator: 'readings',
+  denominators: { before: 10, after: 10 }, assessment: { state: 'unclear' },
+})) });
+const rowOrder = (html) => [...html.matchAll(/data-outcome="([^"]+)"/g)].map(([, key]) => key);
+
+test('#447 · a Trial\'s served target metric leads its outcome table, marked as its target', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar', 'nights_with_low']), 'trial', ['tbr']);
+  assert.deepEqual(rowOrder(html), ['tbr', 'tir', 'tar', 'nights_with_low']);
+  assert.match(html, /<tr class="gf-target" data-outcome="tbr"><td>tbr<small>target metric<\/small>/);
+  assert.equal((html.match(/gf-target/g) || []).length, 1, 'only the served target is marked');
+  // The Trial's tables pass the served target through.
+  assert.deepEqual(rowOrder(comparisonTables(trialRows(['tir', 'tbr', 'tar']), 'trial', { targets: ['tbr'] })), ['tbr', 'tir', 'tar']);
+});
+
+test('#447 · a carb-ratio Trial\'s arc target leads with the arc\'s peak and nadir rows', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar', 'peak', 'nadir', 'bg0']), 'trial', ['arc']);
+  assert.deepEqual(rowOrder(html), ['peak', 'nadir', 'tir', 'tbr', 'tar', 'bg0']);
+  assert.equal((html.match(/gf-target/g) || []).length, 2);
+});
+
+test('#447 · a Trial with no served target keeps the served order and marks nothing', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar']), 'trial');
+  assert.deepEqual(rowOrder(html), ['tir', 'tbr', 'tar']);
+  assert.doesNotMatch(html, /gf-target/);
+});
+
 test('a null outcome against a zero denominator is not an unavailable measurement', () => {
   const html = outcomesTable(SETTING_COMPARISON, 'trial');
   // The prototype's own wording: an absent population says so in its own terms,
@@ -302,6 +332,7 @@ test('a habit’s second table is its Glucose outcomes, beside its behavior', ()
 
 test('watch maturity is labelled lifecycle metadata and its bar never overfills', () => {
   const html = maturitySection({
+    state: 'complete',
     maturing: { days_elapsed: 15, days_required: 14, gap_count: 1 },
     readiness: { label: 'Ready to judge', message: 'This Trial is ready for a before-and-Trial read.' },
   });
@@ -314,11 +345,23 @@ test('watch maturity is labelled lifecycle metadata and its bar never overfills'
 
 test('a maturing watch reads against what it still needs', () => {
   const html = maturitySection({
+    state: 'maturing',
     maturing: { days_elapsed: 6, days_required: 14, gap_count: 2 },
     readiness: { label: 'Maturing', message: 'Still collecting.' },
   });
   assert.match(html, /6 of 14 days<small>2 data gaps<\/small>/);
   assert.match(html, /<progress value="6" max="14"/);
+});
+
+test('#447 · a Trial day count takes its form from the served verdict, never a count comparison', () => {
+  assert.deepEqual(trialDayCount({ days_elapsed: 6, days_required: 14 }, false),
+    { number: '6 of 14', days: '6 of 14 days', required: null });
+  assert.deepEqual(trialDayCount({ days_elapsed: 15, days_required: 14 }, true),
+    { number: '15', days: '15 days', required: '14 required' });
+  // The served verdict decides, so a ready Trial at exactly its requirement is
+  // still "14 days · 14 required", not the maturing form.
+  assert.deepEqual(trialDayCount({ days_elapsed: 14, days_required: 14 }, true),
+    { number: '14', days: '14 days', required: '14 required' });
 });
 
 /* -------------------------------------------- the Available-days read */

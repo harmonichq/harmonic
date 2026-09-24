@@ -26,10 +26,8 @@ from ciq_autotune.outcomes_trend import (
     ARC_MIN_MEALS,
     SCHEMA_VERSION,
     ArcRescueContext,
-    ArcTrend,
     OutcomesTrend,
     ProgrammedIcRange,
-    PreMealTrend,
     _meal_arc,
     _overnight_lows_cleared,
     _window_bounds,
@@ -1113,6 +1111,20 @@ class CliRendererTest(unittest.TestCase):
         self.assertIn("Time in range", md)
         self.assertIn("Watched change", md)
 
+    def test_json_keeps_every_rolling_window_series(self):
+        # #447: the route serves only the watched change; the CLI keeps the series.
+        import contextlib
+        import io
+
+        from ciq_autotune.cli import main
+        path, _ = _synthetic_store(self, _materialize("c3-trial"))
+        out = io.StringIO()
+        with mock.patch("ciq_autotune.cli._load_env"), contextlib.redirect_stdout(out):
+            self.assertEqual(main(["outcomes-trend", "--db", path, "--json"]), 0)
+        self.assertLessEqual({"schema_version", "windows", "behaviors", "metrics", "arc",
+                              "pre_meal", "overnight_lows", "watched_change"},
+                             set(json.loads(out.getvalue())))
+
 
 class WatchedChangeInPayloadTest(unittest.TestCase):
     """The active watched change (#244) rides on the trend payload, one at a time."""
@@ -1170,43 +1182,152 @@ class WatchedChangeInPayloadTest(unittest.TestCase):
         self.assertIsNone(trend.to_dict()["watched_change"])
 
 
+def _materialize(name):
+    """Build one manufactured QA case into a store (synthetic rows only)."""
+    from scripts.qa_e2e_cases import QA_CASES, materialize_case
+
+    return lambda store: materialize_case(store, next(c for c in QA_CASES if c.name == name))
+
+
+def _nothing_watched(store):
+    """Four weeks of in-range CGM, reconciled, with no setting change and no pin."""
+    from ciq_autotune.watched_change import reconcile_ingested_follow_up
+    start = datetime(2026, 6, 1, 0, 0, 0)
+    store.upsert_cgm([{"EventDateTime": (start + timedelta(minutes=5 * k)).strftime("%Y-%m-%dT%H:%M:%S"),
+                       "Readings (CGM / BGM)": 120, "Description": "EGV"}
+                      for k in range(288 * 28)])
+    reconcile_ingested_follow_up(store)
+
+
+def _synthetic_store(test, build):
+    """A store file built by ``build``, plus a separate copy of the same store."""
+    import shutil
+    import sqlite3
+    import tempfile
+    from contextlib import closing
+
+    from ciq_autotune.store import Store
+    folder = tempfile.mkdtemp()
+    test.addCleanup(shutil.rmtree, folder)
+    path, copy = f"{folder}/synthetic.sqlite", f"{folder}/copy.sqlite"
+    with Store.open(path) as store:
+        build(store)
+    with closing(sqlite3.connect(path)) as source, closing(sqlite3.connect(copy)) as target:
+        source.backup(target)
+    return path, copy
+
+
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
-class ApiRendererTest(unittest.TestCase):
-    def setUp(self):
-        import tempfile
+class TrendRouteTest(unittest.TestCase):
+    """#447: ``/api/outcomes/trend`` serves only the watched change the watch dock
+    reads, plus the ``input_data_age`` a fixed read adds whenever it serves the
+    prior revision's answer. The rolling-window
+    series belong to the CLI trend, and the route's ``watched_change`` is the one
+    ``summarize_trend`` resolves over the same store."""
 
-        from ciq_autotune.store import Store
-        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
-        with Store.open(self.tmp.name) as store:
-            cgm = []
-            for d in range(1, 29):  # 28 days of full-cadence readings → 2 windows
-                t0 = datetime(2026, 6, 1, 0, 0, 0) + timedelta(days=d - 1)
-                for k in range(288):
-                    tt = t0 + timedelta(minutes=5 * k)
-                    cgm.append({"EventDateTime": tt.strftime("%Y-%m-%dT%H:%M:%S"),
-                                "Readings (CGM / BGM)": 120, "Description": "EGV"})
-            store.upsert_cgm(cgm)
+    #: The live Trial the synthetic ``c3-trial`` case serves at its data anchor.
+    C3_TRIAL = {"kind": "trial", "parameter": "basal_rate", "slot": "03:00",
+                "changed_at": "2024-05-15 00:00:00", "before": 0.6, "after": 0.54,
+                "target_metrics": ["tbr"],
+                "maturing": {"is_maturing": False, "days_elapsed": 15, "days_required": 14},
+                "deliberate": False}
+
+    def _client(self, path):
         from ciq_autotune.api import create_app
-        self.app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
-        self.client = TestClient(self.app)
+        return TestClient(create_app(db_path=path, token=None, enable_fetch_loop=False))
 
-    def tearDown(self):
-        self.tmp.close()
+    def _read(self, path, **params):
+        response = self._client(path).get("/api/outcomes/trend", params=params)
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
 
-    def test_trend_endpoint_returns_versioned_payload(self):
-        r = self.client.get("/api/outcomes/trend", params={"window": 14})
-        self.assertEqual(r.status_code, 200)
-        body = r.json()
-        self.assertEqual(body["schema_version"], SCHEMA_VERSION)
-        self.assertEqual(body["window_days"], 14)
-        self.assertEqual(len(body["behaviors"]), 8)
-        self.assertEqual(len(body["metrics"]), 4)
-        self.assertIn("arc", body)
-        self.assertGreaterEqual(len(body["windows"]), 2)
+    def _summarized(self, path):
+        from ciq_autotune.store import Store
+        with Store.open(path) as store:
+            return summarize_trend(store, window_days=30).to_dict()["watched_change"]
 
-    def test_window_param_flows_through(self):
-        r = self.client.get("/api/outcomes/trend", params={"window": 7})
-        self.assertEqual(r.json()["window_days"], 7)
+    def assertServedAlone(self, body):
+        self.assertEqual(set(body) - {"input_data_age"}, {"watched_change"})
+
+    def test_a_watched_trial_is_served_alone(self):
+        path, copy = _synthetic_store(self, _materialize("c3-trial"))
+        body = self._read(path)
+        self.assertServedAlone(body)
+        self.assertEqual(body["watched_change"], self._summarized(copy))
+        self.assertEqual(body["watched_change"], self.C3_TRIAL)
+
+    def test_a_labelled_predecessor_keeps_its_input_data_age(self):
+        # Diagnose's age check reads ``input_data_age``, which a fixed read carries
+        # only while it serves the prior revision's answer during a rebuild.
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        import ciq_autotune.outcomes_trend as trend_mod
+        from ciq_autotune.store import Store
+        path, _ = _synthetic_store(self, _materialize("c3-trial"))
+        client = self._client(path)
+        self.assertEqual(client.get("/api/outcomes/trend").json()["watched_change"], self.C3_TRIAL)
+        with Store.open(path) as store:
+            store.upsert_cgm([{"EventDateTime": "2024-06-02 00:00:00",
+                               "Readings (CGM / BGM)": 110, "Description": "EGV"}])
+        client.app.state.result_cache.bump()
+        entered, release = threading.Event(), threading.Event()
+        real = trend_mod.trend_watched_change
+
+        def blocked(store):
+            entered.set()
+            self.assertTrue(release.wait(3))
+            return real(store)
+
+        with mock.patch.object(trend_mod, "trend_watched_change", side_effect=blocked):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                rebuild = pool.submit(client.get, "/api/outcomes/trend")
+                self.assertTrue(entered.wait(3))
+                stale = client.get("/api/outcomes/trend").json()
+                release.set()
+                self.assertEqual(rebuild.result(timeout=3).status_code, 200)
+        self.assertServedAlone(stale)
+        self.assertIn("input_data_age", stale)
+        self.assertEqual(stale["watched_change"], self.C3_TRIAL)
+
+    def test_a_watched_focus_and_nothing_watched_are_served_alone(self):
+        path, copy = _synthetic_store(self, _materialize("c3-focus"))
+        body = self._read(path)
+        self.assertServedAlone(body)
+        self.assertEqual(body["watched_change"]["kind"], "focus")
+        self.assertEqual(body["watched_change"], self._summarized(copy))
+
+        path, copy = _synthetic_store(self, _nothing_watched)
+        body = self._read(path)
+        self.assertServedAlone(body)
+        self.assertIsNone(body["watched_change"])
+        self.assertIsNone(self._summarized(copy))
+
+    def test_a_supplied_window_changes_nothing(self):
+        path, _ = _synthetic_store(self, _materialize("c3-trial"))
+        client = self._client(path)
+        bodies = [client.get("/api/outcomes/trend", params=params).json()
+                  for params in ({}, {"window": 7}, {"window": 90})]
+        self.assertEqual(bodies[1], bodies[0])
+        self.assertEqual(bodies[2], bodies[0])
+
+    def test_a_settings_read_after_the_last_data_point_does_not_move_the_anchor(self):
+        from ciq_autotune.watched_change import reconcile_follow_up
+
+        def late_snapshot(store):
+            _materialize("c3-trial")(store)
+            anchor = max([e.t for e in store.basal_events()] + [r.t for r in store.cgm_readings()]
+                         + [b.t for b in store.bolus_events()])
+            self.assertEqual(anchor, datetime(2024, 6, 1, 23, 59, 0))
+            # Unchanged settings, captured past the Trial's 28-day watch horizon.
+            store.upsert_settings_snapshot("2024-06-15 00:00:00",
+                                           store.settings_snapshots()[-1].settings)
+            with store.follow_up_transaction():
+                reconcile_follow_up(store, now=anchor, recorded_at=anchor)
+
+        path, copy = _synthetic_store(self, late_snapshot)
+        self.assertEqual(self._read(path)["watched_change"], self.C3_TRIAL)
+        self.assertEqual(self._summarized(copy), self.C3_TRIAL)
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")
@@ -1289,10 +1410,11 @@ class FocusApiTest(unittest.TestCase):
 class DayLevelGateTest(unittest.TestCase):
     """The adr-364 day-level bar (#377): the primitive that must reproduce the kills.
 
-    The Verify digest headlines a "what changed" chip only when a two-arm day-rate
-    comparison clears BOTH the 95% Newcombe interval (excludes zero) AND the two-sided
-    Fisher exact (< 0.05). adr-364 priced six candidates and shipped an EMPTY launch
-    set; the ones carrying clean binary day-counts must NOT clear.
+    A comparison's day-rate outcome (``follow_up_comparison.py`` ``nights_with_low``)
+    reads favorable or concerning only when a two-arm day-rate comparison clears BOTH
+    the 95% Newcombe interval (excludes zero) AND the two-sided Fisher exact (< 0.05).
+    adr-364 priced six candidates and shipped an EMPTY launch set; the ones carrying
+    clean binary day-counts must NOT clear.
     """
 
     def test_sunday_lows_do_not_clear(self):
@@ -1346,7 +1468,7 @@ class TrialWindowInvarianceTest(unittest.TestCase):
     def _store(self, **kwargs):
         # One ISF change at 2026-06-05 08:00 with dense CGM (4/day) through day 24
         # — the 15–28-day band where the dock's unbounded count used to run ahead
-        # of Verify's bounded one.
+        # of the roster's bounded one.
         bolus = [BolusEvent(t=datetime(2026, 6, d, 8, 0, 0), insulin=5.0, carbs=40,
                             isf=30 if d <= 4 else 45, carb_ratio=7.0, target_bg=110)
                  for d in range(1, 25)]
@@ -1372,10 +1494,11 @@ class TrialWindowInvarianceTest(unittest.TestCase):
         self.assertEqual(wc["parameter"], "isf")
         self.assertEqual(roster[0]["parameter"], "isf")
         # Maturity accrues only inside the Trial's own bounded 14-day period, so
-        # the dock and Verify report the same count (15 dates span that period).
+        # the dock and Changes read the same served count (15 dates span that period).
         self.assertEqual(wc["maturing"]["days_elapsed"], 15)
         self.assertEqual(roster[0]["maturing"]["days_elapsed"], 15)
         self.assertFalse(wc["maturing"]["is_maturing"])
+        self.assertEqual(roster[0]["state"], "complete")
 
     def test_aged_out_change_is_no_trial_and_keeps_the_pinned_focus(self):
         # A change 40 calendar days before now sits past the fixed 28-day horizon:

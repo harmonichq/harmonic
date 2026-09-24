@@ -223,7 +223,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 187)
+            self.assertEqual(plan['count'], 189)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -289,11 +289,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 169)] + [f"R{i}" for i in range(1, 20)])
+        self.inventory([f"S{i}" for i in range(1, 171)] + [f"R{i}" for i in range(1, 20)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 170)] + [f"R{i}" for i in range(1, 19)]
-        self.assertEqual(len(ids), 187)
+        ids = [f"S{i}" for i in range(1, 172)] + [f"R{i}" for i in range(1, 19)]
+        self.assertEqual(len(ids), 189)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 

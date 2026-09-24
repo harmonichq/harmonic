@@ -138,8 +138,9 @@ const days = (value) => (value == null ? '—' : `${Math.floor(value)}`);
 const percent = (value) => (value == null ? '—' : `${value}%`);
 
 // The prototype's own figure palette (harmonic-v2-glucose.js:115-126), read off
-// the live desk rather than transcribed: the shipped Verify hero takes a plain
-// dict, and these are the tokens the locked prototype resolved for it.
+// the live desk rather than transcribed: the shipped Trial hero
+// (`verify-workstation-chart.js`) takes a plain dict, and these are the tokens
+// the locked prototype resolved for it.
 export function figureColors(root) {
   const host = root || document.documentElement;
   const v = (name) => getComputedStyle(host).getPropertyValue(name).trim();
@@ -288,6 +289,14 @@ export function periodsSection(comparison, kind = 'trial') {
     <p class="gf-meta">Pump-local time, half-open. Observations are limited to these periods; data was read to ${e(stamp(periods.after.data_cutoff))}.</p></section>`;
 }
 
+// A Trial's served target metric names the rows its table leads with: a metric
+// key is its own row, and the Post-meal arc is its peak and nadir rows
+// (CONTEXT.md "Post-meal arc"), the reading the server gives a Focus's arc
+// outcome. The target is served; nothing here infers it from the setting.
+// Held identical to the server's Focus arc rows by tests/test_arc_rows_mirror.py.
+const ARC_ROWS = ['peak', 'nadir'];
+const targetRows = (targets) => new Set((targets || []).flatMap((metric) => (metric === 'arc' ? ARC_ROWS : [metric])));
+
 /**
  * The served outcome rows: one Before/After table.
  *
@@ -296,7 +305,7 @@ export function periodsSection(comparison, kind = 'trial') {
  * of them becomes another (HV2-26, HV2-31). Each row keeps its own assessment
  * state, which is the only place `favorable` can appear.
  */
-export function outcomesTable(comparison, kind) {
+export function outcomesTable(comparison, kind, targets = []) {
   if (!comparison) return `<p class="gf-meta" data-outcomes="not-requested">${NOT_READ}</p>`;
   const outcomes = comparison.outcomes || [];
   if (!outcomes.length) {
@@ -322,15 +331,19 @@ export function outcomesTable(comparison, kind) {
     }
     return `<td class="v">${e(row.unit === '%' ? percent(value) : `${value} ${row.unit}`)}<small>${e(n != null ? `${n} ${row.denominator}` : row.denominator)}</small></td>`;
   };
-  // Mapped outcomes lead; the served context rows follow and are marked as
-  // context so they are never read as the Focus's own result.
-  const ordered = [...outcomes].sort((a, b) => (a.role === 'mapped_outcome' ? 0 : 1) - (b.role === 'mapped_outcome' ? 0 : 1));
+  // The record's own result leads, marked: a Focus's served mapped outcome, or a
+  // Trial's served target metric (#447). The rest keep their served order; a
+  // Focus's context rows are marked as context so they are never read as its
+  // own result.
+  const target = kind === 'trial' ? targetRows(targets) : new Set();
+  const leads = (row) => row.role === 'mapped_outcome' || target.has(row.key);
+  const ordered = [...outcomes].sort((a, b) => (leads(a) ? 0 : 1) - (leads(b) ? 0 : 1));
   // The head is the prototype's: a setting change reads Before against Trial,
   // and the habit's second table is its Glucose outcomes.
   const head = kind === 'focus'
     ? '<th scope="col">Glucose outcomes</th><th scope="col">Before</th><th scope="col">After</th>'
     : '<th scope="col">Glucose observations</th><th scope="col">Before</th><th scope="col">Trial</th>';
-  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${row.role === 'mapped_outcome' ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${row.difference > 0 ? '+' : ''}${row.difference}`)}</small></td></tr>`).join('')}</tbody></table>`;
+  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${leads(row) ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : target.has(row.key) ? 'target metric' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${row.difference > 0 ? '+' : ''}${row.difference}`)}</small></td></tr>`).join('')}</tbody></table>`;
 }
 
 /**
@@ -375,11 +388,12 @@ export function adherenceTable(comparison, { leverTitle = null } = {}) {
 }
 
 /** The behavior table, then the mapped outcomes, in that order: the habit leads
-    with what it intended, not with glucose (HV2-26). */
-export function comparisonTables(comparison, kind, { leverTitle = null } = {}) {
+    with what it intended, not with glucose (HV2-26). A Trial's table leads with
+    its served `target_metrics`. */
+export function comparisonTables(comparison, kind, { leverTitle = null, targets = [] } = {}) {
   return kind === 'focus'
     ? `${adherenceTable(comparison, { leverTitle })}${outcomesTable(comparison, kind)}`
-    : outcomesTable(comparison, kind);
+    : outcomesTable(comparison, kind, targets);
 }
 
 /**
@@ -411,8 +425,9 @@ function viewSegment(mode) {
 /* ------------------------------------------------------------- the figure */
 
 /**
- * The chart host. Its figure is the shipped Verify hero over the comparison's
- * own clock envelopes, so no facsimile stands behind any reading here.
+ * The chart host. Its figure is the shipped Trial hero
+ * (`verify-workstation-chart.js`) over the comparison's own clock envelopes, so
+ * no facsimile stands behind any reading here.
  *
  * The selectors and the legend words are the prototype's
  * (harmonic-v2-glucose.js:545): a setting change's figure is
@@ -535,12 +550,28 @@ export function mountComparisonChart(host, comparison, holdCleanup = hold) {
 /* ========================= watch maturity, separately ===================== */
 
 /**
+ * A Trial's watch-maturity day count, in the words Changes prints, for both of
+ * its printers: Changes' Watch maturity and Diagnose's watch dock (#447). The
+ * count is the served `days_elapsed`, never clamped or re-derived, and the form
+ * follows the served ready verdict, never a count comparison: while maturing,
+ * "‹n› of ‹R› days"; once ready, "‹N› days" with "‹R› required". `number` is the
+ * part a printer emphasises.
+ */
+export function trialDayCount(maturing, ready) {
+  const elapsed = maturing.days_elapsed ?? 0;
+  const required = maturing.days_required ?? 0;
+  const number = ready ? `${elapsed}` : `${elapsed} of ${required}`;
+  return { number, days: `${number} days`, required: ready ? `${required} required` : null };
+}
+
+/**
  * The watch's own lifecycle progress: fourteen days to maturity, twenty-eight to
  * expiry. Retained metadata, and labelled as such — it supplies no evidence
  * readiness and it truncates no comparison bound (HV2-24).
  *
  * The bar is clamped to its maximum and never overfilled: this is the B-08
- * repair, and "15 of 14 days" must not return.
+ * repair, and "15 of 14 days" must not return. Only the bar clamps; the printed
+ * count is the served one, and its form follows the served `state`.
  */
 export function maturitySection(detail) {
   const maturing = detail.maturing;
@@ -549,11 +580,11 @@ export function maturitySection(detail) {
     return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
       <p class="gf-meta">This record carries no watch maturity.</p></section>`;
   }
-  const met = maturing.days_elapsed >= maturing.days_required;
+  const count = trialDayCount(maturing, detail.state === 'complete');
   const gaps = `${maturing.gap_count} data ${maturing.gap_count === 1 ? 'gap' : 'gaps'}`;
-  const figure = met
-    ? `${e(maturing.days_elapsed)} days<small>${e(maturing.days_required)} required · ${e(gaps)}</small>`
-    : `${e(maturing.days_elapsed)} of ${e(maturing.days_required)} days<small>${e(gaps)}</small>`;
+  const figure = count.required
+    ? `${e(count.days)}<small>${e(count.required)} · ${e(gaps)}</small>`
+    : `${e(count.days)}<small>${e(gaps)}</small>`;
   return `<section class="gf-section" data-part="maturity"><h3>Watch maturity <span class="meta">lifecycle</span></h3>
     <div class="gf-figure">${figure}</div>
     <progress value="${Math.min(maturing.days_elapsed, maturing.days_required)}" max="${maturing.days_required}" aria-label="Trial progress"></progress>
@@ -742,7 +773,7 @@ function trialFrame(state) {
   const comparison = (retained || {}).comparison || null;
   const body = shown.mode === 'daily'
     ? dailyEvidence(detail, { period: shown.period, day: shown.day })
-    : comparisonTables(comparison, 'trial');
+    : comparisonTables(comparison, 'trial', { targets: detail.target_metrics });
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({
     kicker: `Trial · <b>${e((detail.readiness || {}).label || 'Active')}</b>`,
     title: e(changeTitle(detail)),

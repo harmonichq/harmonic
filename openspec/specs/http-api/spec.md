@@ -7,7 +7,7 @@ binds a port, serves the single-page app, and answers the JSON endpoints that ap
 reads. This capability owns the *service* contract — how the app and its assets are
 served, how requests are authenticated, and above all how the in-process result
 cache is filled and invalidated. It owns none of the analysis behind those
-endpoints: the analyzers, the Plan, Diagnose, Verify, and the store each specify
+endpoints: the analyzers, the Plan, Diagnose, Changes, and the store each specify
 their own behavior, and the service is a thin renderer over their results.
 
 ## Requirements

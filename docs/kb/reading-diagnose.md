@@ -17,8 +17,8 @@ you:
 
 - **⚙ Setting** findings (basal, ISF, or I:C) flow to
   [The Plan tab](#the-plan-tab) as a proposed settings change.
-- **◈ Cause** levers (late bolus, over-treated low) flow to Focus / Verify, because
-  no pump setting fixes them.
+- **◈ Cause** levers (late bolus, over-treated low) flow to a Focus, followed in
+  Changes, because no pump setting fixes them.
 
 ## "Why so few?"
 

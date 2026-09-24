@@ -18,6 +18,7 @@
  * verdict is the server's; a confirmed Plan is never served as pending, so it
  * holds no state here.
  */
+import { trialDayCount } from './follow-up.js';
 import { SETTING_NAME } from './plan-view.js';
 import { PLAN_PARAMS } from './plan.js';
 
@@ -70,20 +71,21 @@ export function watchDockView({ watched = null, pendingPlan = null, staged = nul
     const maturing = watched.maturing || {};
     // "Maturing" and "ready to judge" are the domain's own words for a Trial's
     // watch phase (CONTEXT.md) — neither is invented here.
-    const lead = maturing.is_maturing ? 'Maturing — ' : 'Ready to judge — ';
-    // Changes' Trial progress bar clamps its value to the requirement; the dock
-    // clamps its day count the same way, so a completed Trial whose bounded period
-    // spans 15 dates never reads past its requirement here. The payload's true
-    // count is untouched — this is display only.
-    const elapsed = Math.min(maturing.days_elapsed ?? 0, maturing.days_required ?? 0);
+    const ready = !maturing.is_maturing;
+    const lead = ready ? 'Ready to judge — ' : 'Maturing — ';
+    // The dock prints the served count through Changes' own printer, so the two
+    // surfaces read one number for one Trial (#447). A completed Trial whose
+    // bounded period spans 15 dates reads "15 days · 14 required" here as it does
+    // in Changes; only Changes' progress bar clamps.
+    const count = trialDayCount(maturing, ready);
     return {
       state: 'trial',
       kind: KIND.trial,
       title: trialTitle(watched),
       detail: [
         { text: lead },
-        { strong: `${elapsed} of ${maturing.days_required ?? 0}` },
-        { text: ` days since ${monthDay(watched.changed_at)}` },
+        { strong: count.number },
+        { text: ` days since ${monthDay(watched.changed_at)}${count.required ? ` · ${count.required}` : ''}` },
       ],
       route: { label: 'Open Changes', to: 'changes' },
     };

@@ -192,7 +192,7 @@ fail-first evidence is its broken-variant run, not a base run.
   as `openspec/changes/read-time-pump-zone/evidence/clock-sites.txt`. It must
   equal the 15 pinned lines, except that the one `store.py` line is whichever
   line holds `wall_clock_now`'s process-clock fallback.
-- [ ] 2.4 `frontend/day.js`: `readAt: status.last_success_at || null` (Decision 5).
+- [x] 2.4 `frontend/day.js`: `readAt: status.last_success_at || null` (Decision 5).
   The commit message names the invariant: `Store.record_fetch_result` advances
   `last_success_at` and `last_written_json` in one statement under the same `ok`
   condition. Change no other line of `day.js`.

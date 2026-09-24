@@ -1,6 +1,82 @@
 # Behavior ledger — harmonic-v2-desktop
 
 ```text
+★ FROZEN 2026-09-24 · base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1
+  · generator b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e
+  · predecessor shipped single-shell desk (#422–#434 re-freeze) · retired 19
+  · inventory 193 issued · 174 active · 19 retired
+      (equal to acceptance.py inventory()'s pinned literal)
+  · lifecycle revise · contract this ledger + frontend/desk-behavior.replay.mjs
+```
+
+This #442–#457 release re-freeze adds 22 stories and amends 7. Each is recorded
+in its ticket's dated #<issue> amendment section below. The sanction is Connor
+Griffin's (operator, repo owner) Q3 delegation of 2026-09-23, quoted with each
+ticket's ruling: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R<issue>`.
+It covers every shipped-surface revision and ledger amendment that these issues'
+checklists and the coordinator's rulings call for, and nothing outside them. No
+inherited story is weakened and none is retired; the ledger's retirements stay
+at 19.
+
+Added:
+- S157 (#442), an older detected change superseded inside its watch window
+  reading its saved ending;
+- S162–S165 (#445), Day addresses that name a date, a change record or a carb
+  entry, and the returns that land on them;
+- S166–S168 (#446), Open Plan held for one visit, and a watched Trial's and a
+  watched Focus's way to a saved draft;
+- S169–S170 (#447), one served day count on the watch dock and in Changes, and
+  a Guide article that names no Verify;
+- S173–S176 (#449 and #450), a Focus's watched behavior by its served name, and
+  served reasons printed in words;
+- S177–S179 (#451), the correction factor in the wearer's words on Changes, on
+  Diagnose and in "What was known";
+- S180 (#452), an empty Later conclusion form on reopening after a failed save;
+- S182 (#454), a claimed Occurrence's sentence printed once;
+- S183–S185 (#455), the glucose overview's window caption, the Spotlight's
+  verdict line and the canvas header kept whole at narrow sizes.
+
+Amended: S46, S91, S92 and S93 (#449 and #450); S91 also by #442; S89 (#453);
+S4 (#451's prose em-dash widening). S169, which #447 adds, also carries a #451
+line: the Trial's values lead the dock's detail line. #443, #444, #448 and #457
+change no story; #453 adds none. The fixed PR smoke slice is 25 stories, digest
+9b92ee77d0e2e046753bdb5b80eb87d6451ce18ff1c35b7ca494d4de112b6523. S177 joined
+it, as the only story on the `isf-strengthen` case store.
+
+Safe start is unchanged from the #404 freeze below: AGENTS.md's QA
+copy-then-serve command, with the showcase or a named `scripts/qa_e2e_cases.py`
+case store.
+
+Base preservation is main push CI run 35959034199 on b03431d2, which passed: the
+complete ledger, 171 issued, at both sizes. The scheduled nightly on the same
+commit is run 36011270820.
+
+The new stories were proved with each ticket's harness laid over b03431d2, at
+1280x720 and 1440x900. The coordinator ran every leg. Each story's status line
+names its commits and how it failed:
+- S162–S168 and S177–S180 fail there at their feature assertions at both sizes,
+  and S169 and S170 at their content assertions at both sizes.
+- S157 and S182 fail there for the right reason, and S173–S176 at their feature
+  assertions. The coordinator's log of those base runs names no size; their
+  status lines record both sizes.
+- S183 and S184 fail there on #455's final harness (c13c6f7a). S183–S185 all
+  fail on its first harness (d3e276ed), their premises holding. No base run of
+  S185 on the final harness is recorded; its status line says the base result
+  stands on the first harness.
+- All 22 pass on their ticket branches at both sizes.
+- On the release trunk at 25392ade, S157, S169, S170, S177–S180 and S182 pass at
+  both sizes, in a 15-story run with S25, S46, S73, S139, S140, S149 and S150
+  that passed 15 of 15. The other 14 new stories have no trunk run recorded.
+
+Raw logs, captures and renders are retained in the release's evidence record.
+The complete ledger, 193 issued, runs at both sizes once on the integration
+commit before the push. Every story must pass on the commit that is pushed. No
+failure is waived by this freeze.
+
+The earlier freezes below remain historical provenance.
+
+```text
 ★ FROZEN 2026-09-23 · base a4d374a72c8048d9d93ee4925805b91cf5674835
   · generator a4d374a72c8048d9d93ee4925805b91cf5674835 · window n/a
   · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: e9b6f279dd3e

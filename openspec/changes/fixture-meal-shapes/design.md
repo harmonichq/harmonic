@@ -284,6 +284,29 @@ counts, folds and Pattern rows do not move.
 The `#395` mini-host test projects its own inputs directly, and its answer is
 unchanged.
 
+**Measured on sub-order 5's commit (59ec95f5).** The regenerated projection fixture
+moved these keys and nothing else:
+- `browser_outcome_patterns`: Lows after meals k 1 → 0, rate 0.05 → 0, Wilson
+  0.0151–0.1532 → 0–0.0759.
+- `browser_window_queues` was removed; `browser_inputs` and `browser_windows` were added.
+
+The scoped rosters, the scoped and family Pattern case files, `pattern_clock_case` and
+the guidance Patterns did not move. In the capture, only `outcome_patterns` moved (the
+same Lows after meals change). The server's row order is:
+- whole day: Basal 07:00 (basal:420-450) 39, Over-treated low 28, Highs after meals
+  21 [Late bolus 18], Lows after correcting highs 20 [Correction on active insulin
+  20, Correction stacking unpriced], Missed / unannounced meal, Lows after meals,
+  Overnight lows.
+- 00:00–06:00 and 02:15–04:45: Over-treated low, Highs after meals, Lows after
+  correcting highs, then the held settings.
+- 12:00–18:00: Over-treated low, Highs after meals [Late bolus], Lows after
+  correcting highs [Correction on active insulin, Correction stacking], Missed /
+  unannounced meal, then the held settings.
+
+Through the browser adapter the fixture mirror equals `browser_windows` byte for byte
+in all four answers. On the sub-order 4 adapter it fails at "0-360 row order". The
+desk locators read through against the list below: none changes target.
+
 **The public-tree dose/ratio baseline.** Of the files this change touches, only
 `frontend/__fixtures__/findings-projection.json` carries acknowledged entries (86 of
 the baseline). The scan keys each acknowledged entry on its path and matched text,

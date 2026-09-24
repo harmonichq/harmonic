@@ -58,7 +58,7 @@ sub-order 1 worker): manufactured cause sentences carry no dose or ratio text (n
 insulin still active; glucose fell to 48…"), so the public-tree dose/ratio set stays
 unchanged in sub-order 2.
 
-- [ ] 2.1 Implement behavioral-layer **Manufactured browser-gate rows carry only
+- [x] 2.1 Implement behavioral-layer **Manufactured browser-gate rows carry only
   shapes their producer can serve** in `.claude/qa/gen_synthetic_fixtures.py`
   (`verdicts`, `occurrence`, `build_exposures`, `build_case_file_capture`) to
   `design.md`'s row table: kind and label per family; the judged classifiers per
@@ -68,9 +68,9 @@ unchanged in sub-order 2.
   unjudgeable; High anchor glucose `250 + (draw − 58)`; each claimed case-file
   member's claim text equal to its recorded sentence. Add, remove or reorder no
   random draw. Correct the docstrings that describe the old shape.
-- [ ] 2.2 In `mockups/diagnose-event-comparison.synthetic/generate.mjs`, have the
+- [x] 2.2 In `mockups/diagnose-event-comparison.synthetic/generate.mjs`, have the
   lows comparison view judge only Over-treated low and Correction on active insulin.
-- [ ] 2.3 Add `tests/test_synthetic_fixture_shapes.py` (stdlib `unittest`) over the
+- [x] 2.3 Add `tests/test_synthetic_fixture_shapes.py` (stdlib `unittest`) over the
   committed `mockups/diagnose-workstation.synthetic/payload.json` exposures and the
   event-comparison capture's views: every row's kind and label are
   `model_view._KIND_LABEL`'s for its family; its verdicts are exactly the classifiers
@@ -80,9 +80,9 @@ unchanged in sub-order 2.
   matched with `detail == text`; an unclaimed row has every verdict unmatched and an
   empty text; a High's anchor glucose reaches `ScenarioConfig().anchor_high_mgdl`.
   Show it failing on the base fixtures for its feature reason.
-- [ ] 2.4 Regenerate in `design.md`'s order and confirm the moved and unmoved sets
+- [x] 2.4 Regenerate in `design.md`'s order and confirm the moved and unmoved sets
   match `design.md`.
-- [ ] 2.5 Amend the node tests the moved facts reach, to the served values:
+- [x] 2.5 Amend the node tests the moved facts reach, to the served values:
   `frontend/diagnose-workstation.test.js` (`#432 · a selected Pattern Occurrence
   lists each served habit with its band label`, and `#432 · a selected claimed meal
   reads as its facts, cause and habit sentence`, which now prints the sentence once);
@@ -91,16 +91,23 @@ unchanged in sub-order 2.
   Correction on active insulin; `browser preparation mirrors the wrapped row` keeps
   its assertions over a test-local clone of the payload whose unclaimed High is an
   Over-treated low rebound High, the one two-family Cause the producer serves).
-- [ ] 2.6 Run `docs/scope/454-row-shapes.measure.py` (base payload from
+- [x] 2.6 Run `docs/scope/454-row-shapes.measure.py` (base payload from
   `origin/main`, regenerated payload) and return its output; it must match
   `design.md`'s moved-fact list.
 
+Evidence (sub-order 2, commit c4f41861; review fix 2d8d1895): the shape test failed on
+the base fixtures for its feature reasons (6 of 7). The measurement matched
+`design.md`'s first moved-fact table cell for cell. The dose/ratio set was unchanged.
+The review fix, coordinator-authorized, serves no silence reason on a matched
+comparison verdict, as `attribute._mv` records it; its shape assertion failed first on
+c4f41861.
+
 ## 3. The Pattern mirror judges only its rate family (sub-order 3)
 
-- [ ] 3.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
+- [x] 3.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
   `habit_rate_families` into `frontend/__fixtures__/findings-projection.json`: one
   entry per `Lever`, its `policy_for(lever).rate_family` value, or null.
-- [ ] 3.2 In the same generator, freeze `pattern_family_cases` for Lows after
+- [x] 3.2 In the same generator, freeze `pattern_family_cases` for Lows after
   correcting highs with a Correction stacking scenario Pattern and Highs after meals
   with a High-carb sequence scenario Pattern: the browser inputs plus that one
   scenario Pattern, assembled as `docs/scope/454-backend-family.repro.py` does,
@@ -108,24 +115,30 @@ unchanged in sub-order 2.
   `PreparedCases.case` over the browser exposures. Each entry holds the roster
   row, the whole clock case and the clock case selected at its first Occurrence.
   Assert in the generator that each roster row carries its out-of-family member.
-- [ ] 3.3 In `generate.mjs`, delete the hand-written lever→family table and publish
+- [x] 3.3 In `generate.mjs`, delete the hand-written lever→family table and publish
   the frozen `habit_rate_families` as the capture's `pattern_families`, read from
   `findings-projection.json` beside `browser_outcome_patterns`; keep every
   `buildCapture` caller working.
-- [ ] 3.4 Implement behavioral-layer **A Pattern case file judges only the habit
+- [x] 3.4 Implement behavioral-layer **A Pattern case file judges only the habit
   members in its rate family** in `project.mjs` `projectPatternCaseFile`: keep a
   habit member only when `capture.pattern_families[lever]` equals the Pattern's
   family, and feed that one list to both the row verdict and the selected reason.
-- [ ] 3.5 In `frontend/browser-fixture-population.test.js`, for each
+- [x] 3.5 In `frontend/browser-fixture-population.test.js`, for each
   `pattern_family_cases` entry, swap its roster row into a clone of the committed
   capture, project the whole clock case and the first-Occurrence selection, and
   require the frozen verdict counts, each row's verdict and member in order, and the
   selected reason. Show it failing on the base `project.mjs`; confirm
   `docs/scope/454-mirror-family.repro.mjs` passes.
 
+Evidence (sub-order 3, commit 632c6076): the parity test failed on the unfiltered
+mirror for its feature reason (an extra High-carb sequence reason entry). The repro
+passed 2 of 2. The frozen table also corrected Meal bolus fell short's family, from
+highs to meals. Coordinator-authorized: the event-comparison capture's scan pin,
+which suppressed nothing, was removed.
+
 ## 4. The browser findings mirror serves the server's scoped Pattern list (sub-order 4)
 
-- [ ] 4.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
+- [x] 4.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
   `browser_outcome_patterns_by_window`: the server's scoped roster
   (`prepare_findings_projection(...).project(WindowQuery.clock(...))["outcome_patterns"]`
   over the same browser inputs as `browser_outcome_patterns`) for the closed set of
@@ -134,14 +147,14 @@ unchanged in sub-order 2.
   `720-1080` (the fast-gate calls). Beside it, freeze `browser_window_queues`: for
   each such window, the server's rows as `[id, claimed_by]`, its `counts` and its
   `chip_counts`.
-- [ ] 4.2 In the same generator, freeze `browser_pattern_cases_by_window`: for each
+- [x] 4.2 In the same generator, freeze `browser_pattern_cases_by_window`: for each
   such window and each Pattern the server charts there, its clock and event case
   files with no selection, read through `PreparedCases.case` over the browser inputs
   with that window's `outcome_window_population` (as `finding_case_file.prepare`
   builds it) and with glucose and boluses rebuilt from the capture's population
   traces (as `pattern_clock_case` does). `generate.mjs` publishes them in the
   capture as `pattern_cases_by_window`.
-- [ ] 4.3 Implement behavioral-layer **The browser-gate findings mirror serves the
+- [x] 4.3 Implement behavioral-layer **The browser-gate findings mirror serves the
   server's scoped Pattern list or fails**: `populateFindingsProjectionInput`
   (`frontend/browser-fixture-population.js`) supplies `outcome_patterns_by_window`
   from the frozen map unless the caller brings its own map (sub-order 5 then
@@ -151,7 +164,7 @@ unchanged in sub-order 2.
   coordinate only from `pattern_cases_by_window`, with the requested projection id,
   and throws naming the coordinate for any other scoped window or alignment, and for
   any scoped selection.
-- [ ] 4.4 In `frontend/browser-fixture-population.test.js`: for each frozen window,
+- [x] 4.4 In `frontend/browser-fixture-population.test.js`: for each frozen window,
   the mirror through the browser population serves the frozen server rows (as a
   set of `[id, claimed_by]`), counts and chip counts, and each scoped Pattern row's
   prepared header carries its frozen case's summary and verdict counts. Show this
@@ -162,9 +175,13 @@ unchanged in sub-order 2.
   "4 in this window". Both comparisons read rows as a set here; sub-order 5 makes
   them ordered once the test desk projects the server's own inputs.
 
+Evidence (sub-order 4, commit 35511b89): the scoped parity test failed on the base
+adapter (00:00–06:00 missing both Pattern rows). Each fail-by-name case threw naming
+its window or coordinate. No in-span date was added, so no pin was needed.
+
 ## 5. The test desk projects the server's own inputs (sub-order 5)
 
-- [ ] 5.1 In `scripts/gen_findings_projection_fixtures.py`, freeze `browser_inputs`:
+- [x] 5.1 In `scripts/gen_findings_projection_fixtures.py`, freeze `browser_inputs`:
   the browser analysis (the payload's analysis with the projection's tuning
   levers), the browser scenarios, and the analysis generation, exactly as the
   rosters use them. Build every browser roster, guidance Pattern, scoped roster,
@@ -174,7 +191,7 @@ unchanged in sub-order 2.
   Freeze `browser_windows`: the server's full projection of those inputs for the
   whole day and each frozen scoped window, replacing sub-order 4's
   `browser_window_queues`.
-- [ ] 5.2 Implement behavioral-layer **The browser-gate test desk projects the
+- [x] 5.2 Implement behavioral-layer **The browser-gate test desk projects the
   server's own inputs**: `populateFindingsProjectionInput` builds the server input
   from the frozen analysis, scenarios, analysis generation, rosters and per-window
   map, taking only exposures (and any event charts) from the caller. The `#395 ·
@@ -185,7 +202,7 @@ unchanged in sub-order 2.
   `/api/analyze` and `/api/scenarios` stubs serve the frozen browser inputs, so every
   desk read shares one input as in the app (the desk renders no scenario field and no
   tuning lever).
-- [ ] 5.3 In `frontend/browser-fixture-population.test.js`, replace sub-order 4's set
+- [x] 5.3 In `frontend/browser-fixture-population.test.js`, replace sub-order 4's set
   comparison with a deep equality of the mirror, through the browser population,
   against `browser_windows` for the whole day and each frozen window, row order
   included; show it failing on the sub-order 4 adapter. Amend the tests whose
@@ -204,9 +221,22 @@ unchanged in sub-order 2.
   over-delivery, the shape the producer serves (that verdict matched, its sentence as
   the row's text), then runs `build_outcome_patterns` with the frozen browser inputs.
   This moves the deleted `memberless_low` mutation into the one test that needs it.
-- [ ] 5.4 Confirm, by reading against `design.md`'s locator list, that no desk
+- [x] 5.4 Confirm, by reading against `design.md`'s locator list, that no desk
   browser test or replay story clicks a changed queue position or asserts the old
   order, and amend any that does.
 - [ ] 5.5 Run the lock's whole worker gate on this final commit, including every
   drift check, the public-tree line and the backend pytest once, and state the
   pytest wall time.
+
+Evidence (sub-order 5, commit 59ec95f5): the ordered whole-answer parity test failed
+on the sub-order 4 adapter at "0-360 row order". The mirror, pricing from the payload,
+put Over-treated low after the Patterns; the server leads with it. With the frozen
+inputs the mirror equals the server's projection byte for byte in the whole day and
+all three narrowed windows. Task 5.5's whole backend pytest belongs to the
+coordinator's close-out legs, so 5.5 stays open until they run.
+
+Coordinator-authorized note (release coordinator, 2026-09-24): the posted lock
+header's baseline line ("Sub-orders 3, 4 and 5 shift it … re-record") is superseded.
+The scan keys each acknowledged dose/ratio entry on its path and matched text, never
+its line, so a sub-order re-records only when matched text changes. None did: the
+set held at 227 entries with the same digest through sub-order 5.

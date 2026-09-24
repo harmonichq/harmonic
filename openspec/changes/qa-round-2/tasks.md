@@ -141,7 +141,7 @@ which holds a pick made in Changes and not yet saved ahead of the saved draft
 (ADR 459 point 1). A Diagnose item's `family` (`basal`, `ic`, `isf`) is already
 the Plan item `type` it stages as.
 
-- [ ] 11. Add the manufactured case `basal-and-carb-ratio-lower` to
+- [x] 11. Add the manufactured case `basal-and-carb-ratio-lower` to
   `scripts/qa_e2e_cases.py`, composing the `basal-lower` and `ic-lower` recipes
   with the carb-ratio source span stretched to end on the basal lane's last day
   (ADR 459 point 6), following AGENTS.md "Maintaining QA coverage eras" steps

@@ -66,6 +66,7 @@ globalThis.document = { documentElement: {} };
 globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#222222' });
 const { mount, configureFollowUp, retainedEvidenceContext } = await import('./follow-up.js');
 const { mount: mountHistory } = await import('./history.js');
+const { navigate } = await import('./routes.js');
 const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve)); };
 function host() {
   const field = { value: '' }; const form = {};
@@ -338,7 +339,7 @@ test('a failed retained read stays with its record: the next record opened from 
     assert.deepEqual(await press(A), [null, 'retained'], 'reopening A retries its retained read');
     assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
     assert.match(seat.innerHTML, /data-figure-state="paired"/);
-  } finally { refusedFor = null; served = comparison; globalThis.window = previousWindow; }
+  } finally { refusedFor = null; served = comparison; navigate('diagnose'); globalThis.window = previousWindow; }
 });
 
 /* ------------------------------- a later conclusion stays with its record */
@@ -346,7 +347,6 @@ test('a failed retained read stays with its record: the next record opened from 
 // ADR 452: the later-conclusion text, a failed save and its request id belong
 // to the open record, and clear whenever another record opens or the reader
 // leaves for the roster — a roster press as much as an address.
-const { navigate } = await import('./routes.js');
 const conclusionPosts = (from = 0) => requests.slice(from).filter(row => String(row.path).endsWith('/conclusion'));
 async function onExpiredRoster(run) {
   const was = { expired, fail, lateConclusion, window: globalThis.window };

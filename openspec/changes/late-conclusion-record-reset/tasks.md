@@ -81,6 +81,14 @@ excludes.
     - "an exact expired Trial records a later conclusion…": the same record's
       failed save and Retry send one request id and keep the words;
     - #430's "a failed retained read stays with its record…".
+- [x] 2.2 Coordinator-authorized widening, 2026-09-23 (Q3 delegation; coordinator
+  ruling on a finding from this ticket's start): #430's "a failed retained read
+  stays with its record…" test in `frontend/follow-up-lifecycle.test.js` now
+  resets the router with `navigate('diagnose')` in its `finally`, before it
+  restores `globalThis.window`. Before this, its roster presses left the
+  router's module state on Changes for every later test in the file.
+  `navigate` is imported once, beside the file's other dynamic imports, and
+  every test in the file that navigates shares that import.
 
 ## 3. Replay story S180 (desk)
 

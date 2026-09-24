@@ -169,7 +169,11 @@ selected night's Occurrence id where it carried a date. The desk's router gains
 one in-place write, the workstation one published case, and Diagnose one
 capture-phase reader-input listener on `window` that ends a pending restoration;
 none adds a request. The Changes and utility Day entries keep their own selector-shaped
-return targets until their follow-up issue.
+return targets until their follow-up issue. A restoration that can never finish
+(its Finding or Occurrence no longer served) stays pending, so an identical
+contextual re-entry after leaving Diagnose re-reads where ADR 414 alone kept the
+desk, because must-prevent 1 below outranks that retention (coordinator ruling,
+review round 4).
 
 ## Risk contract
 

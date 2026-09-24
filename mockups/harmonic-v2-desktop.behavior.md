@@ -3002,11 +3002,11 @@ S136 · After a Day return on a Finding case with an Occurrence held, ↓ steps 
   evidence: C4_STORIES.S136; reads the page's own address after ↓, after the
             Afternoon choice (against the Occurrence on screen and
             history.length), after Backspace, and after a reload
-  status:   owed by the coordinator — base with this harness laid over it is
-            expected to fail at "S136 ↓ must re-address to the stepped
-            Occurrence" (the base address keeps the Day entry's date, moment,
-            lever, from, focus and first Occurrence); branch expected to pass,
-            at 1280x720 and 1440x900
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S136 ↓ must re-address to the stepped Occurrence" (the
+            base address keeps the Day entry's date, moment, lever, from, focus
+            and first Occurrence), at 1280x720 and 1440x900; branch 136b9981
+            passes at both sizes; coordinator-run 2026-09-23
 ```
 
 ```
@@ -3022,11 +3022,12 @@ S137 · Day return, then Changes, then Diagnose issues exactly one GET
   evidence: C4_STORIES.S137; heldReturnToDiagnose414 holds /api/status and
             records every request, then compares the crumb, the pressed window
             and the address
-  status:   owed by the coordinator — base expected to fail at "S137 the return
-            to Diagnose after a Day return must issue no request besides the
-            held status check" (the base compares the held Day context with the
-            empty topbar entry and re-reads every guidance read); branch
-            expected to pass, at 1280x720 and 1440x900
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S137 the return to Diagnose after a Day return must
+            issue no request besides the held status check" (the base compares
+            the held Day context with the empty topbar entry and re-reads every
+            guidance read), at 1280x720 and 1440x900; branch 136b9981 passes at
+            both sizes; coordinator-run 2026-09-23
 ```
 
 ```
@@ -3047,8 +3048,9 @@ S138 · A Finding case with an Occurrence held in a preset window other than
             Occurrence held under a pressed Afternoon, reads the Day address,
             then heldStatusReturn holds /api/status across Return to Diagnose
             and checks document.activeElement
-  status:   owed by the coordinator — base expected to fail at "S138 the
-            address must name the Finding, its held Occurrence and the
-            Afternoon window" (base drills never write the address, which stays
-            /diagnose); branch expected to pass, at 1280x720 and 1440x900
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S138 the address must name the Finding, its held
+            Occurrence and the Afternoon window" (base drills never write the
+            address, which stays /diagnose), at 1280x720 and 1440x900; branch
+            136b9981 passes at both sizes; coordinator-run 2026-09-23
 ```

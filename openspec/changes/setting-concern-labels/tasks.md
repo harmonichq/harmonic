@@ -207,6 +207,11 @@
     `frontend/diagnose-workstation.js`, with the helper and parameter only they
     read. No shell or template declares either id (grep of the built shell and
     every template).
+  - The capture production that only these deleted writes read, in
+    `frontend/diagnose-workstation-data.js`: `exposureCapture` (read only by the
+    scope writes) and the explore-day capture's `isf` and `programmed_ic` (read
+    only by the status line), with the test lines that exist only to read them.
+    A whole-tree grep finds no other reader.
 
 ## 4. The watch dock's title names the change; its values wrap below
 

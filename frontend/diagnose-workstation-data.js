@@ -42,7 +42,7 @@ export function envelopeFromPooled(pooled) {
    restated, so the two can't drift. */
 
 /**
- * Build the mock's four captures from one API payload.
+ * Build the mock's three captures from one API payload.
  *
  * `payload` is `{analyze, scenarios, evidence, exposures}` — the app's
  * `/api/analyze`, `/api/scenarios`, `/api/explore/time-of-day` and `/api/explore/exposures`.
@@ -52,7 +52,6 @@ export function envelopeFromPooled(pooled) {
 export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, state = null } = {}) {
   const analyze = payload.analyze || {};
   const evidence = payload.evidence || {};
-  const feed = payload.exposures || {};
   // Keep the asserting replay on the payload's matching I:C evidence (#654).
   const blocks = ((state === 'icassert' && analyze.ic_blocks_asserting) || analyze.ic_blocks || []).map((block) =>
     ({ ...block, __planKey: blockKey(block) }));
@@ -60,17 +59,9 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
     ({ ...slot, __planKey: `basal:${slot.slot}` }));
 
   return {
-    /* The mock's explore-day capture. `isf` and `programmed_ic` are the status
-       line's identity figures; the mock reads nothing else off this object
-       except `days`. */
+    /* The mock's explore-day capture; the ported surface reads only its `days`. */
     day: {
-      isf: (analyze.isf || [])[0]?.current ?? null,
-      programmed_ic: (blocks[0]?.current_values || [])[0] ?? null,
       days: dayMap(loadDay, onDayLoaded),
-    },
-    exposureCapture: {
-      window: feed.window || evidence.window || { start: null, end: null },
-      exposures: feed.exposures || {},
     },
     /* The mock's settings-audit capture carries several named states and binds
        `trial`; the API returns one analysis, so it fills that slot. */

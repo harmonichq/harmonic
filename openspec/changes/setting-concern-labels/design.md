@@ -327,6 +327,10 @@ engine words or unrendered ids are deleted, for the same kind of reason:
   all four, so the fallback never ran and the table's "ISF (mg/dL/U)" and
   "I:C (g/U)" never rendered. A node test through the mismatch reader pins that
   every cell it emits has a name. This replaces relabelling the table.
+- **The capture fields only those writes read.** The workstation's data adapter
+  stops producing `exposureCapture`, which only the scope writes read, and the
+  explore-day capture's `isf` and `programmed_ic`, which only the status line
+  read. A whole-tree grep finds no other reader.
 
 ## Revise preparation
 

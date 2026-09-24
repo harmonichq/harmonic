@@ -4765,8 +4765,11 @@ S185 · With Diagnose at rest, the canvas header keeps its title, its whole
             control's 3.5px box overhang; that is a story defect, corrected by
             placing the control by its icon and word (coordinator-authorized,
             2026-09-23). Branch a9a2b56a, and branch c13c6f7a in each of three
-            runs, pass at 1280x720 and 1440x900 with the widths above; the base
-            result stands on the d3e276ed harness. Coordinator-run 2026-09-23
+            runs, pass at 1280x720 and 1440x900 with the widths above.
+            Coordinator-run 2026-09-23. Base b03431d2 with #455's final harness
+            575464e7 laid over it fails at its feature assertion at both sizes:
+            the title's box is 0px wide at 832×720 and 832×560 (scrollWidth
+            144). Coordinator-run 2026-09-24
 ```
 
 ### #455 handler inventory
@@ -5134,7 +5137,10 @@ S169 · A watched Trial's dock and Changes print one day count, the served
             "‹N› days" and carry "‹R› required", the progress bar at value ‹R›
             of max ‹R›, and the outcome table's first row to be the served
             target's, marked gf-target
-  status:   replays done; renders owed at integration. Base b03431d2 with
+  status:   replays done; renders taken at integration (447-A1 the dock,
+            447-B1 Watch maturity, 447-B2 the outcome table, before on
+            b03431d2 and after on the release trunk, kept in a private
+            design-evidence record). Base b03431d2 with
             this harness laid over it fails at its dock-count assertion ("S169
             the dock must print the served day count in Changes' words"), its
             first content assertion, at both sizes (ed1c29bd harness); branch
@@ -5158,7 +5164,10 @@ S170 · The Guide's "Reading the Diagnose surface" article names no Verify; its
             requires its ◈ Cause line as a premise, opens the Guide and the
             article, and requires the whitespace-normalised .gf-article text to
             carry no "Verify" and to carry "flow to a Focus, followed in Changes"
-  status:   replays done; renders owed at integration. Base b03431d2 with
+  status:   replays done; renders taken at integration (447-C1 the article's
+            top, 447-C2 its Cause line, before on b03431d2 and after on the
+            release trunk, kept in a private design-evidence record). Base
+            b03431d2 with
             this harness laid over it fails at its no-Verify assertion ("S170
             the article must name no Verify") at both sizes (ed1c29bd harness);
             branch e662c080, code-identical to 2de52828, passes at both sizes
@@ -5340,6 +5349,6 @@ Additional handler inventory for this amendment:
 | Staged dock title and values | frontend/diagnose-workstation.js stagedDescriptor; frontend/watched-change-dock.js watchDockView, paintWatchDock | S178 |
 | Plan "What was known" | frontend/plan-view.js knownSection | S179 |
 
-Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Expected: base 25392ade fails S4 at "the advisory line drifted" at both sizes, and this branch passes at 1280x720 and 1440x900. Coordinator-run evidence pending.
+Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Base b03431d2 with this branch's harness laid over it fails S4 at "the advisory line drifted" at both sizes, and branch 678fb544 passes it at 1280x720 and 1440x900; coordinator-run 2026-09-24. S4 runs again on the trunk in the complete ledger, on the commit that is pushed.
 
 No other story's asserted text moved under this widening. S42 reads "Re-key the flagged values on your pump" and "rechecks on the next fetch", and both remain. S142 counts the open ending's `[data-unavailable="ending"]` element, not its words. S153 reads "no direction asserted" in the basal panel, which remains. The findings queue's held-row prefix now reads "no direction asserted: <served reason>"; no story, replay or browser suite reads a held row's reason line. S178 reads only the values that lead the dock's detail line; the staged sentence after them now reads "Staged, not applied: nothing has changed on the pump", one character shorter.

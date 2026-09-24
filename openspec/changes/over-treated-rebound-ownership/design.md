@@ -207,3 +207,65 @@ and the context id derived from it. A first prototype that put ownership before 
 context gate failed one findings-projection test, whose committed fixture freezes
 the gate's verdict text for a High that shares the low's Episode. That failure is
 why Decision 4 consults ownership after the gate.
+
+### Budgets
+
+Measured by the #422 start worker on commit `50a8fa86`, with the commands
+`acceptance.py budget` runs, while other release workers shared the machine (load
+averages 11 to 33 over the run). No limit was raised. The coordinator re-measures
+serially; its receipt lands in `docs/scope/release-422-434-evidence/422/`.
+
+| Budget | Measurement | Limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,409,024 bytes; SHA-256 identical before and after | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.61 s wall | 30 s |
+| Focused QA suite | 169.59 s wall; 93 passed | 90 s |
+| Slowest generated case | 37.406 s (`test_case_c4_profile`) | 15 s |
+| Whole pytest | 980.24 s wall; 2552 passed, 1 skipped | 400 s |
+
+```text
+========== 2552 passed, 1 skipped, 399 warnings in 979.10s (0:16:19) ===========
+================== 93 passed, 9 warnings in 168.88s (0:02:48) ==================
+qa-e2e database: current (mockups/qa-e2e.synthetic/harmonic.sqlite)
+```
+
+The three wall-time budgets over their limits were measured under that load. The
+new `test_case_behavioral_over_treated_rebound_ownership` took 0.515 s. An
+alternating A/B of `c4-profile` (materialize plus `execute_case`) at load averages
+8 to 11 measured 31.95 s and 37.48 s on the base package against 33.78 s and
+30.36 s on this branch, so the slowest case's time is load, not this change.
+
+### Gate
+
+Run once on commit `50a8fa86`, serially: exit code, wall time, command.
+
+```text
+1|0|4.4s|npm ci && npm run build
+2|0|980.24s|uv run python -m pytest
+3|0|3.28s|node --test 'frontend/**/*.test.js'
+4|0|1.91s|npx --yes @fission-ai/openspec@1 validate --all --strict
+5|0|0.21s|python3 scripts/check_adr_numbers.py
+6|0|0.12s|python3 scripts/check_owned_identifiers.py
+7|0|0.16s|python3 scripts/check_public_allowlist.py
+8|0|5.0s|uv run python scripts/gen_chart_builder_fixtures.py --check
+9|0|2.0s|uv run python scripts/check_demo_fixtures.py
+10|0|0.61s|uv run python scripts/gen_qa_e2e_db.py --check
+11|0|14.86s|uv run python scripts/gen_findings_projection_fixtures.py --check
+12|0|0.46s|uv run python scripts/gen_ic_history_event_fixtures.py --check
+13|0|0.43s|uv run python scripts/gen_ic_block_evidence_fixtures.py --check
+14|0|1.03s|uv run python scripts/gen_basal_night_evidence_fixtures.py --check
+15|0|0.54s|uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
+16|0|0.42s|uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
+17|0|42.91s|uv run python scripts/gen_eating_sequence_fixtures.py --check
+18|0|239.5s|uv run python mockups/harmonic-v2.exploration/generate.py --check
+19|0|0.18s|node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
+```
+
+Output tails: pytest `2552 passed, 1 skipped`; the frontend line `tests 821, pass
+821, fail 0`; OpenSpec `Totals: 79 passed, 0 failed (79 items)`; `check-adr: 184
+ADRs in 90 design.md files, all identities unique and issue-keyed.`;
+`check-owned-identifiers: 30 owned-identifier rules passed.`;
+`check-public-allowlist: 419 tracked file(s) cleared to ship, 2194 excluded. Every
+tracked path dispositioned.`; every drift check reports current (the basal
+night-evidence check exits 0 silently). `acceptance.py case-cache --check` binds
+port 8765, so the coordinator runs it.

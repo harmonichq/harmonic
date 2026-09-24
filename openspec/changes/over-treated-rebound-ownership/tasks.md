@@ -104,20 +104,20 @@
   values, including `uncaused_highs`. Add its name to `EXPECTED_CASE_NAMES` in
   `tests/test_qa_e2e_cases.py` and to the case map in `tests/test_pattern_replay.py`.
   Run `test_case_behavioral_over_treated_rebound_ownership`.
-- [ ] 3.2 Re-measure the five QA budgets without raising a limit, and record the
+- [x] 3.2 Re-measure the five QA budgets without raising a limit, and record the
   literal output in this change's `design.md` under a `### Budgets` heading.
 
 ## 4. Record, generated artifacts and gates
 
 - [x] 4.1 Widen the *upstream-cause* entry under **Silence reason** in `CONTEXT.md`
   to include a rise owned by an over-treated low's rebound.
-- [ ] 4.2 Regenerate `mockups/harmonic-v2.exploration/focus.json` and `journey.json`
+- [x] 4.2 Regenerate `mockups/harmonic-v2.exploration/focus.json` and `journey.json`
   with `uv run python mockups/harmonic-v2.exploration/generate.py`. Leave every
   drift check current: the eleven in `DRIFTS` in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` (each `uv run python <path>
   --check`, except `scripts/check_demo_fixtures.py`, which takes no `--check` flag) and
   `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check`.
   `acceptance.py case-cache --check` binds port 8765, so the coordinator runs it.
-- [ ] 4.3 Run the AGENTS.md pull-request gate in full, once, on the commit that will
+- [x] 4.3 Run the AGENTS.md pull-request gate in full, once, on the commit that will
   be handed to the coordinator, and record the result in `design.md` under
   `### Gate`.

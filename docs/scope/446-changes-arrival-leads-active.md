@@ -38,10 +38,17 @@ reproduction is `docs/scope/446-changes-arrival.repro.mjs`.
 - **Stories: S166 and S167 on `basal-lower` (Trial), S168 on `c3-focus`
   (Focus), each `lock: HV2-15`.** S166 is the one-visit journey before and after
   a Trial begins. S167 is the Trial's nameplate Open Plan and the server's
-  refusal. S168 is the Focus's Open Plan and "Return to Focus". Why: in-process
-  probes showed these stores serve each premise. No store serves both a
-  stageable action and a pinnable Pattern, so the Focus-pin landing after Open
-  Plan is proved at node level through the desk's `navigate('changes')`. inline.
+  refusal. S168 is "Return to Focus" (checked first) and the Focus's Open Plan.
+  Why: the committed probes (`docs/scope/446-*.probe.py`, literal output in ADR
+  446's generated facts) show each store serves its story's premises. The
+  Focus-pin landing is `loadGuidance({ force: true }); navigate('changes')`, the
+  same no-context arrival S166 drives from the topbar, so it stays proved at
+  node level. inline.
+- **Plan-review round 1 rulings (coordinator, 2026-09-23).** The premise probes
+  and ledger counts are committed with literal output. The fail-first clause
+  names only the tests tasks.md marks fail-first. S167 and S168 reload after
+  each pump capture and Plan write before asserting the nameplate. S168 checks
+  the return label first, and base renders 1 and 2 are driven directly. inline.
 - **Flat order, Targeted review.** Why: the only slicing trait that fires for
   the worker is multiple deliverables (code, ledger and replay, spec). The
   release already gives the live browser run to the coordinator. A nearby
@@ -83,4 +90,13 @@ None. The operator ruled out follow-up issues for this release.
 
 ## Review rounds
 
-(Instrumented per round by the coordinator's `/plan-review` dispatch.)
+- **Round 1 (lock pinned at a36cc438): blocked, 3 blockers and 1 note, all
+  `authoring`, none `injected`.**
+  1. The premise evidence lived only in session scratch. The probes are now
+     committed with literal output, and the partial-survey premise is replaced.
+  2. The Expectation's fail-first clause was broader than the tests that can
+     fail first.
+  3. S167 and S168 asserted after server-side writes without reloading.
+  4. (Note) S168's check order hid the base crumb render, and the base renders
+     1 and 2 had no driver stated.
+  All four are fixed in one commit.

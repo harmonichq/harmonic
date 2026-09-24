@@ -120,12 +120,16 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
        showing the saved draft unchanged.
     4. Record decision there fails visibly and adds no Plan history record.
     5. The next topbar Changes lands on the Trial.
-  - S168, on `c3-focus`: a watched Focus reaches its draft and names its return.
-    1. With a Plan draft saved while the Focus runs, the Focus's nameplate Open
-       Plan lands at `/changes?subject=plan`, showing the draft.
+  - S168, on `c3-focus`: a watched Focus names its return and reaches its draft.
+    The return label is checked before the nameplate, so a base run captures
+    Diagnose's crumb before it fails.
+    1. With a Plan draft saved while the Focus runs, Changes shows the Focus's
+       own view.
     2. Diagnose, opened from the Focus's Inspect evidence, offers "Return to
        Focus" and no "Return to Trial".
     3. Pressing it lands on the Focus.
+    4. The Focus's nameplate Open Plan lands at `/changes?subject=plan`, showing
+       the draft.
 
   Leave the frozen header, its inventory line and
   `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` alone: the release
@@ -143,8 +147,12 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   S166 and S167 advance the pump only through `ctx.capturePump('match')`, and
   save their drafts through the Trial's Revert to Plan or through `PUT /api/plan`,
   as S146 does. S167 records its Plan through `PUT /api/plan` and
-  `POST /api/plan/apply`, as S147 does. S166 never reloads the page, because a
-  reload discards the remembered state it tests. Before its first watched topbar
+  `POST /api/plan/apply`, as S147 does. S167 and S168 reload after each
+  `capturePump` and after each Plan write made through the story's own requests,
+  before they assert the nameplate. They reload with `page.goto` to
+  `/?to=changes`, as S146 does, so the page reads the store they just wrote. S166
+  never reloads the page, because a reload discards the remembered state it
+  tests. Before its first watched topbar
   arrival, it visits Diagnose, whose read refreshes guidance and the Plan state.
   Register each body exactly once in `frontend/desk-behavior.replay.mjs`
   as an `appOnly('HV2-15', …)` export behind its

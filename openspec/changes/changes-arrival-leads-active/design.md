@@ -22,9 +22,8 @@ Verified on the base (b03431d2):
 - The API serves the `draft` and `pending_plan` dispositions only when no change
   is watched. While one is watched it serves `active_change`, and it refuses to
   record a Plan (`occupied_admission`). It does not refuse saving a draft.
-  In-process against the `basal-lower` case store: a draft saved during a Trial
-  answers 200 and is served as guidance's `draft`, and recording it answers 409
-  `occupied_admission`.
+  Generated facts C and D below show both on the `basal-lower` and `c3-focus`
+  case stores.
 - While `active_change` is served, Changes renders the follow-up
   (`follow-up.js`). No `[data-set="open-plan"]` control renders there. The only
   Plan route is the Trial's "Revert to Plan" section, whose Open Plan runs
@@ -36,8 +35,11 @@ Verified on the base (b03431d2):
   the concern's frame, and focus has nowhere to go.
 - Diagnose opened from the watched change shows its return control whenever the
   trend serves a watched change. It labels it "Return to Trial" for either kind.
-  In-process against the `c3-focus` case store, the trend's `watched_change` is
-  the Focus.
+  Generated fact D shows that on `c3-focus` the trend's `watched_change` is the
+  Focus.
+- The Focus-pin landing (`focus-entry.js`) runs
+  `await loadGuidance({ force: true }); navigate('changes');`. That is the same
+  no-context arrival the topbar makes, and S166 drives it from the topbar.
 
 **Reproduction** (`docs/scope/446-changes-arrival.repro.mjs`, node, synthetic):
 after Stage and Open Plan, a plain arrival while `active_change` is served reads
@@ -45,6 +47,67 @@ after Stage and Open Plan, a plain arrival while `active_change` is served reads
 same arrival without the earlier Open Plan reads `/api/verify/trials`. The dock's
 arrival reads `/api/verify/trials`. With nothing watched, the Plan reopens on the
 next plain arrival.
+
+### Generated facts (base b03431d2)
+
+Each command runs from the repo root, and the output under it is its complete,
+literal stdout. The three probes emit their synthetic case store with the
+committed generator into a temporary directory. They reconcile it as
+`frontend/replay-cases.mjs` does and answer through FastAPI's in-process test
+client: no port, no fetch loop, no real data.
+
+A. `node docs/scope/446-changes-arrival.repro.mjs` (Node's module-type and
+localStorage warnings go to stderr):
+
+```text
+control · plain arrival, no earlier Open Plan, active_change: ["/api/verify/trials"]
+plain arrival after Open Plan, active_change:             ["/api/plan","/api/plan/history","/api/pump-settings"]
+watch arrival (subject=watch) after Open Plan:             ["/api/verify/trials"]
+plain arrival after Open Plan, nothing watched · Plan frame: true · Open Plan offered: false
+```
+
+B. `uv run python docs/scope/446-basal-lower.probe.py` is S166's first-half
+premise: a stageable basal action, with nothing watched.
+
+```text
+{"disposition": "eligible_action", "active_kind": null, "selected": "pattern:overnight_lows_no_iob", "stageable_action": [["basal_rate", 180]]}
+```
+
+C. `uv run python docs/scope/446-basal-lower-trial.probe.py` covers the premises of
+S166's second half and of S167. A recorded Plan and a `match` pump read start a
+Trial. No draft is served until one is saved. A draft saves while the Trial runs
+and is served beside `active_change`. Recording it is refused, and nothing is
+added to the history.
+
+```text
+draft 200 apply 200 then pending_plan
+after match: {"disposition": "active_change", "active_kind": "trial", "served_draft_items": 0}
+draft saved while watched: 200
+after draft: {"disposition": "active_change", "served_draft_items": 1}
+record while watched: 409 {'detail': 'occupied_admission'} history grew: False
+```
+
+D. `uv run python docs/scope/446-c3-focus.probe.py` covers S168's premises: an
+active Focus, a draft saved beside it and served, and the trend's watched change
+(which Diagnose's return reads) being the Focus.
+
+```text
+before: {"disposition": "active_change", "active_kind": "focus"}
+draft saved while watched: 200
+after draft: {"disposition": "active_change", "served_draft_items": 1}
+trend watched_change kind: focus
+```
+
+E. The ledger's inventory, counted as `acceptance.py` `inventory()` counts it:
+
+```text
+$ grep -cE '^[SR][0-9]+[a-z]? ·' mockups/harmonic-v2-desktop.behavior.md
+171
+$ grep -cE '^S[0-9]+[a-z]? ·' mockups/harmonic-v2-desktop.behavior.md
+152
+$ grep -cE '^R[0-9]+[a-z]? ·' mockups/harmonic-v2-desktop.behavior.md
+19
+```
 
 ### Decision
 
@@ -155,12 +218,11 @@ of Plan's own Stage, 2026-09-23, fall under the same delegation.
   own Stage. In the browser: S166–S168 at both sizes, each failing on the base
   first at a feature assertion, not a premise. S45, S45b, S56, S57, S139 and S140
   must still pass on the branch at both sizes.
-- **Evidence limit:** no generated case store serves both a stageable setting
-  action and a pinnable Pattern. The Focus-pin landing after an earlier Open Plan
-  therefore has node-level proof through the desk's own `navigate('changes')`,
-  plus S56's unchanged landing, and no browser story. This was checked in-process:
-  `basal-lower` serves a basal action and no pinnable Pattern, and `c3-pin` serves
-  a pinnable Pattern whose action is a habit.
+- **Focus-pin landing:** proved at node level, with no browser story of its own.
+  The landing is `await loadGuidance({ force: true }); navigate('changes');`
+  (`focus-entry.js`), the same no-context arrival S166 drives from the topbar.
+  The desk-level node test drives that exact `navigate('changes')`, and S56 keeps
+  proving the landing itself.
 
 Why: the change is advisory-free routing and one control, so the stakes are a
 reader misled about which change they are looking at, not a dose.
@@ -182,6 +244,13 @@ the desk's one theme, at 1280×720 and 1440×900:
 4. The watched Focus's nameplate with a saved draft (S168).
 5. Diagnose's crumb opened from a watched Focus (S168): "Return to Trial" on the
    base, "Return to Focus" on the branch.
+
+Base S166 fails at its first step (Stage inside the Plan's own frame), before it
+reaches the states of renders 1 and 2. For those two base renders, the
+coordinator drives the base app to each state directly, as the release render
+driver does. The base runs of S167 and S168 reach renders 3, 4 and 5 before they
+fail. S168 checks Diagnose's return label before the Focus nameplate, so its base
+run captures the crumb first.
 
 They land in a private design-evidence record, not part of the public tree.
 

@@ -8,7 +8,7 @@ test text carries a unit-suffixed dose (such as "0.5 U").
 
 ## 1. Delete the uncalled browser on-pump check
 
-- [ ] 1.1 Delete `detectOnPump` and its JSDoc from `frontend/plan.js`. Delete
+- [x] 1.1 Delete `detectOnPump` and its JSDoc from `frontend/plan.js`. Delete
   its four tests, its import and the "Confirmation B: on-pump detection"
   section heading from `frontend/plan.test.js`. Correct the prose that names the
   check: the `plan.js` module header's "(and the Confirmation-B detection)" and
@@ -17,7 +17,7 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   `reconcileDeliverable`, which draws a served mismatch's rows. Leave
   `collapseDeliverable`, `segmentAt`, `PLAN_PARAMS` and every other export
   unchanged; each keeps a production caller.
-- [ ] 1.2 Prove the deletion leaves no caller and no rendered change. Grep the
+- [x] 1.2 Prove the deletion leaves no caller and no rendered change. Grep the
   whole tree for `detectOnPump`, excluding only `node_modules`, `frontend/dist`,
   `openspec/changes/archive`, `evidence/` directories and this change's own
   directory, `openspec/changes/plan-cleanup-s89/`. The only match is
@@ -29,7 +29,7 @@ test text carries a unit-suffixed dose (such as "0.5 U").
 
 ## 2. S89 certifies the decision it recorded
 
-- [ ] 2.1 Fail first. Add one test to `frontend/replay-cases.test.js`, named
+- [x] 2.1 Fail first. Add one test to `frontend/replay-cases.test.js`, named
   `S89 certifies the newest Plan record as the decision it recorded`. It drives
   `C2_STORIES.S89` on a stateful fake page in the manner of that file's
   draft-retry (S40) test, adapting the fake in
@@ -50,7 +50,7 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   fails. `node docs/scope/453-s89-history-order.repro.mjs` on the base prints
   B FAIL at "Plan reloaded withdrawal", C PASS, D PASS, and E FAIL at "Plan
   reloaded withdrawal", so every case of the test fails on the base body.
-- [ ] 2.2 Implement surfaces **The Plan lifecycle replay certifies the decision
+- [x] 2.2 Implement surfaces **The Plan lifecycle replay certifies the decision
   it recorded** in `planPersistence` (`frontend/c2.replay.mjs`). The "Plan
   durable decision" assertion reads the served history's first record, and in
   the same attempt asserts two things: the history holds exactly one more record
@@ -61,24 +61,24 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   by `applied_at` stay. Task 2.1's test passes, and the reproduction prints
   A PASS, B PASS, C FAIL at "Plan reloaded withdrawal", D FAIL at "Plan
   durable decision" and E FAIL at "Plan durable decision".
-- [ ] 2.3 Re-run the sweep grep from design.md over `frontend/`,
+- [x] 2.3 Re-run the sweep grep from design.md over `frontend/`,
   `mockups/sweep/` and `tests/` for last-index reads of `history`, `focuses`,
   `trials` or `records`. It returns nothing.
 
 ## 3. Behavior ledger
 
-- [ ] 3.1 Append design.md's settled `## #453 amendment — 2026-09-23` section,
+- [x] 3.1 Append design.md's settled `## #453 amendment — 2026-09-23` section,
   byte for byte, at the end of `mockups/harmonic-v2-desktop.behavior.md`. Add no
   line beginning `S89 ·` or any other story id. Edit no ★ FROZEN block, header
   inventory line or ACCEPTANCE.md sentence.
-- [ ] 3.2 `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory
+- [x] 3.2 `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py inventory
   --out <fresh scratch dir>` prints
   `ledger inventory: {'issued': 171, 'active': 152, 'retired': 19}` and
   `ledger=171 registry=171 missing=[] extra=[]`.
 
 ## 4. Verification
 
-- [ ] 4.1 Port-free, on the commit to be integrated, each command run on its own:
+- [x] 4.1 Port-free, on the commit to be integrated, each command run on its own:
   `node --test 'frontend/**/*.test.js'` (fail 0);
   `node --test frontend/plan.test.js frontend/replay-cases.test.js` (pass 83,
   fail 0: 63 and 20);

@@ -6,7 +6,10 @@ The coordinator's rulings on this change (2026-09-23): Q1 accept the four band m
 Q2 re-claim the two correction-cluster rows for Correction stacking and list every
 fact that moves; Q3 widen to the High anchor glucose; Q4 widen to the duplicated
 sentence, served once, with ledger story S182; Q5 widen to the event-comparison
-capture's comparison rows.
+capture's comparison rows; Q2 limit, keep the re-claim to the rows themselves; Q6
+widen to the browser gate's scoped Pattern list (freeze the server's list for each
+window the browser checks use, pass it in, fail loudly for any other window, amend
+the Afternoon fast-gate test to the server's answer, list every moved fact).
 
 ## Verified facts (origin/main b03431d2, 2026-09-23)
 
@@ -96,14 +99,15 @@ removed or reordered. The case-file capture's claimed member carries its recorde
 sentence as its claim text. The lows comparison view judges Over-treated low and
 Correction on active insulin only.
 
-**Row-level, not episode-level.** The fixture manufactures rows, each alone in its
-episode; no family's claimed row brings its episode's other anchors (a Late bolus
-meal has no High beside it, an Over-treated low no rebound). A real Correction
-stacking claim also emits the pair's first correction as an unclaimed row and
-stamps the low it reached with Correction stacking in `attributed_levers`. Adding
-those siblings would change the twenty-row low population and credit Lows after
-correcting highs one more claim. So the re-claim stays row-level, like every other
-family.
+**Row-level, not episode-level (coordinator ruling, Q2 limit).** The fixture
+manufactures rows, each alone in its episode; no family's claimed row brings its
+episode's other anchors (a Late bolus meal has no High beside it, an Over-treated
+low no rebound). A real Correction stacking claim also emits the pair's first
+correction as an unclaimed row and stamps the low it reached with Correction
+stacking in `attributed_levers`. Whole episodes are not re-claimed. Adding those
+siblings would move the twenty-row low population and add a claim to Lows after
+correcting highs, which goes beyond the fixture-honesty defect this change fixes: a
+row serving a kind, verdict, claim or cause text its producer never serves.
 
 ## ADR 454 — The fixture Pattern mirror judges only its rate family, from the backend's own table
 
@@ -164,6 +168,66 @@ attribution's narrative and must stay non-empty wherever the claimant drove the
 episode. A desk-side filter: a second rule over served text, which Q4 and the
 "backend is the one source" invariant rule out.
 
+## ADR 454 — The browser findings mirror serves the server's scoped Pattern list, or fails
+
+**Grounded (base b03431d2).** `populateFindingsProjectionInput` supplies only the
+whole-day roster (`browser_outcome_patterns`). For a scoped query the mirror reads
+`outcome_patterns_by_window[window]`, and falls back to no Patterns at all when that
+map is absent. So in every scoped browser window the fixture queue serves no Pattern
+row and folds no cause. The server serves both Patterns there, with charts
+(00:00–06:00: Highs after meals n 4 k 0, Lows after correcting highs n 8 k 0;
+02:15–04:45: n 1 and 5; 12:00–18:00: n 7 k 1 and n 6 k 1), and folds Late bolus and
+both correction Findings in 12:00–18:00. The browser checks request exactly three
+scoped windows of the fixture mirror: `0-360` in the desk suite (its `prepare`
+refuses any scope `finding-case-files.json` lacks, and that holds only `0-360`), and
+`135-285` and `720-1080` in the fast gate. Every other mirror call uses the
+projection fixture's own inputs, which carry their own per-window map.
+
+**Decision.** The projection fixture generator freezes the server's scoped roster
+(`browser_outcome_patterns_by_window`) and the server's queue shape
+(`browser_window_queues`) for those three windows over the same browser inputs as
+the whole-day roster. The browser population passes the map in, unless the caller
+brings its own; the mirror throws, naming the window, when a supplied map lacks the
+window. Because scoped Pattern rows now appear with charts, the browser population
+builds their headers through the fixture Pattern case-file mirror, which answers
+from the whole-day population (00:00–06:00 Highs after meals would read 2 of 20
+where the server serves 0 of 4). So the generator also freezes the server's scoped
+Pattern case files (`browser_pattern_cases_by_window`: clock and event, no
+selection) and the Pattern mirror answers a scoped coordinate only from them. It
+throws for any other scoped coordinate and for any scoped selection; no browser
+check selects inside a scoped Pattern.
+
+**Why.** Q6: freeze the server's answer for each window the browser checks use, and
+fail loudly for any other. Freezing the scoped case files extends that ruling to the
+headers the roster newly exposes; without it, the fix would swap a missing Pattern
+for a Pattern with the wrong counts (coordinator confirmation owed, Q6a).
+
+**Order caveat (Q7, returned to the coordinator).** With the roster in, the mirror's
+Pattern rows, folds, counts and chip counts equal the server's in all three windows.
+Row order still differs. The browser population prices habit and basal rows from
+the payload's own scenarios and analysis (unpriced), while the rosters and Pattern
+prices come from the projection fixture's browser scenarios. The whole day on base
+already shows this: the server orders basal 39, Over-treated low 28, Highs after
+meals 21, Late bolus 18…, while the fixture mirror leads with the priced Patterns.
+The parity test and the Afternoon test therefore compare rows as a set until Q7 is
+ruled.
+
+**Moved facts (fixture mirror, browser windows; after the Q2 re-claim).**
+
+| Window | Before | After (= server's rows, folds, counts, chips) |
+|---|---|---|
+| 00:00–06:00 | Over-treated low only; finding 1; chips highs 1 · lows 0 · meals 0 · corrections 0 | Highs after meals and Lows after correcting highs Patterns (charted; headers 0 of 4 meals and 0 of 8 lows) and Over-treated low; finding 3; chips 2 · 1 · 1 · 1 |
+| 02:15–04:45 | Over-treated low only; finding 1; chips 1 · 0 · 0 · 0 | both Patterns (headers 0 of 1 meals, 0 of 5 lows) and Over-treated low; finding 3; chips 2 · 1 · 1 · 1 |
+| 12:00–18:00 | Over-treated low, Correction on active insulin, Correction stacking, Late bolus, Missed meal, unfolded; finding 5; lows chip 2 | Highs after meals (folds Late bolus; header 1 of 7 meals), Lows after correcting highs (folds Correction on active insulin and Correction stacking; header 1 of 6 lows), Over-treated low, Missed meal; finding 4; chips 3 · 1 · 1 · 1 |
+
+The Afternoon fast-gate test (12:00–18:00, Highs, Meals and Corrections chips) moves
+from Over-treated low, Correction stacking, Late bolus, Missed meal to the server's
+Highs after meals, Lows after correcting highs, Over-treated low, Missed meal, still
+"4 in this window". The desk suite's Overnight test ("after a Day return, acting
+inside Diagnose re-addresses it in place…") now shows both Patterns in the
+00:00–06:00 queue while it holds its Over-treated low case; none of its assertions
+reads the queue.
+
 ## Revise lifecycle record (sub-order 1)
 
 - **Route.** Embodiment shipped, runnability runnable, declaration complete, data
@@ -203,14 +267,11 @@ Every moved fact, by window (fired · outranked):
 | 12:00–15:00 (drawn) | Late bolus 0·1 → 1·0; Missed meal 0·1 → 1·0 |
 | 00:00–06:00, 22:00–02:00, 03:00–04:00, 02:15–04:45 | nothing |
 
-The JS findings mirror moves the same cells, rows and order, and two things the
-Python projection does not. In 06:00–12:00 and 12:00–18:00 it leaves the new row
-unclaimed (so `counts.finding` 4 → 5 and `chip_counts.lows` 1 → 2) where Python
-folds it under Lows after correcting highs. This is not caused by #454; it is a
-pre-existing divergence (the browser population supplies no scoped Pattern roster,
-so the mirror serves no Pattern rows in any scoped window), returned to the
-coordinator as a finding. The desk draws a case file's own `verdict_counts`, never
-these queue-row bands.
+The JS findings mirror moves the same cells, rows and order, with one exception
+the Q6 ADR above removes. In 06:00–12:00 and 12:00–18:00 the unscoped mirror leaves
+the new row unclaimed (`counts.finding` 4 → 5, `chip_counts.lows` 1 → 2), where the
+server folds it under Lows after correcting highs. The desk draws a case file's own
+`verdict_counts`, never these queue-row bands.
 
 Moved artifacts: `explore-exposures.capture.json`, `payload.json` and
 `finding-case-files.json` among the workstation generator's seven files;
@@ -247,8 +308,8 @@ One ordered pass reaches the fixed point (the chain reads in a cycle:
 | Artifact | Moves | Check |
 |---|---|---|
 | `mockups/diagnose-workstation.synthetic/explore-exposures.capture.json`, `payload.json`, `finding-case-files.json` | rows; claimed members | `uv run python scripts/check_demo_fixtures.py` |
-| `frontend/__fixtures__/findings-projection.json` | `pattern_clock_case`; adds `habit_rate_families`, `pattern_family_cases` | `uv run python scripts/gen_findings_projection_fixtures.py --check` |
-| `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
+| `frontend/__fixtures__/findings-projection.json` | `pattern_clock_case`; adds `habit_rate_families`, `pattern_family_cases`, `browser_outcome_patterns_by_window`, `browser_window_queues`, `browser_pattern_cases_by_window` | `uv run python scripts/gen_findings_projection_fixtures.py --check` |
+| `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families`; adds `pattern_cases_by_window` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
 | `mockups/harmonic-v2.exploration/focus.json`, `journey.json`, `workstation.json` | claimant sentences → null | `uv run python mockups/harmonic-v2.exploration/generate.py --check` |
 
 Unmoved and still checked: the workstation's other four generator files, the three
@@ -263,6 +324,9 @@ externally generated workstation captures, and every other `--check` generator.
   Retry beside its explanation", "a grouped comparison owns its cohort label once",
   "c2 carries one Findings composition, Patterns and all basal slots" — at 1280x720
   and 1440x900.
+- The desk suite's only scoped fixture window is 00:00–06:00, in "after a Day
+  return, acting inside Diagnose re-addresses it in place, and its Findings address
+  reloads with no case open" (one test); after Q6 its queue carries both Patterns.
 - `frontend/follow-up.browser.test.mjs` and `frontend/browser-runner.browser.test.mjs`
   read none of them.
 - Desk ledger replay (QA case stores; the served reason moves): S182 new; S25, S149
@@ -282,7 +346,9 @@ externally generated workstation captures, and every other `--check` generator.
 - **Accepted failure:** a drift check that fails because the chain was regenerated
   out of order; clear stop, rerun in the documented order.
 - **Unsupported:** an out-of-family member in the committed browser roster (none;
-  the frozen variants cover it); episode-level completeness of manufactured rows.
+  the frozen variants cover it); episode-level completeness of manufactured rows; a
+  scoped browser window, scoped Pattern case or scoped Pattern selection that is not
+  frozen (each fails by name).
 - **Evidence owed:** the backend test over analyzer output that fails on base for
   the repeated sentence; the mirror's once-rule and family-parity tests that fail on
   base; the generator shape test that fails on base; S182 failing on base at its

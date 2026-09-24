@@ -94,6 +94,36 @@ stacking claim moves, each recorded in the change's design.
 - **WHEN** its claimed meal is selected
 - **THEN** its anchor kind is meal and its cause text is the Late bolus sentence
 
+### Requirement: The browser-gate findings mirror serves the server's scoped Pattern list or fails
+
+For every scoped window the browser gates request of the fixture findings mirror,
+the gates SHALL supply the server's own Pattern roster for that window and the
+server's own Pattern case files for each Pattern the server charts there, frozen by
+the projection fixture generator from the same browser inputs as the whole-day
+roster. The mirror SHALL then serve the server's Pattern rows, folded causes, counts
+and chip counts for that window, and the fixture Pattern case-file mirror SHALL
+answer those Patterns' scoped case files exactly as frozen. A scoped request for a
+window with no frozen roster, a scoped Pattern case file that is not frozen, or a
+selection inside a scoped Pattern case file SHALL fail naming what is missing,
+never answer from the whole day or with no Patterns.
+
+#### Scenario: A scoped browser window carries the server's Patterns
+
+- **GIVEN** the browser-gate payload and the 00:00–06:00, 02:15–04:45 and
+  12:00–18:00 windows
+- **WHEN** the mirror projects each window through the browser population
+- **THEN** its Pattern rows, folded causes, counts and chip counts equal the
+  server's for that window
+- **AND** each scoped Pattern row's prepared header carries the frozen scoped case
+  file's summary and verdict counts
+
+#### Scenario: Any other scoped request fails by name
+
+- **GIVEN** the browser-gate payload
+- **WHEN** the mirror is asked for an unfrozen window, or the Pattern mirror for an
+  unfrozen scoped case file or a scoped selection
+- **THEN** each request fails with an error naming the missing window or coordinate
+
 ## MODIFIED Requirements
 
 ### Requirement: A selected case-file Occurrence serves why it was judged

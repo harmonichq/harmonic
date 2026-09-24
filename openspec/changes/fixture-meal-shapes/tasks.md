@@ -109,5 +109,43 @@
   require the frozen verdict counts, each row's verdict and member in order, and the
   selected reason. Show it failing on the base `project.mjs`; confirm
   `docs/scope/454-mirror-family.repro.mjs` passes.
-- [ ] 3.6 Run the lock's whole worker gate on this final commit, including every
+
+## 4. The browser findings mirror serves the server's scoped Pattern list (sub-order 4)
+
+- [ ] 4.1 In `scripts/gen_findings_projection_fixtures.py`, freeze
+  `browser_outcome_patterns_by_window`: the server's scoped roster
+  (`prepare_findings_projection(...).project(WindowQuery.clock(...))["outcome_patterns"]`
+  over the same browser inputs as `browser_outcome_patterns`) for the closed set of
+  scoped windows the browser checks request: `0-360` (the desk suite's only scoped
+  preparation, the one scope `finding-case-files.json` holds) and `135-285` and
+  `720-1080` (the fast-gate calls). Beside it, freeze `browser_window_queues`: for
+  each such window, the server's rows as `[id, claimed_by]`, its `counts` and its
+  `chip_counts`.
+- [ ] 4.2 In the same generator, freeze `browser_pattern_cases_by_window`: for each
+  such window and each Pattern the server charts there, its clock and event case
+  files with no selection, read through `PreparedCases.case` over the browser inputs
+  with that window's `outcome_window_population` (as `finding_case_file.prepare`
+  builds it) and with glucose and boluses rebuilt from the capture's population
+  traces (as `pattern_clock_case` does). `generate.mjs` publishes them in the
+  capture as `pattern_cases_by_window`.
+- [ ] 4.3 Implement behavioral-layer **The browser-gate findings mirror serves the
+  server's scoped Pattern list or fails**: `populateFindingsProjectionInput`
+  (`frontend/browser-fixture-population.js`) supplies `outcome_patterns_by_window`
+  from the frozen map unless the caller brings its own map, and
+  `mockups/findings-projection.mirror.mjs` throws, naming the window, when a
+  supplied map lacks a scoped window. `projectPatternCaseFile` answers a scoped
+  coordinate only from `pattern_cases_by_window`, with the requested projection id,
+  and throws naming the coordinate for any other scoped window or alignment, and for
+  any scoped selection.
+- [ ] 4.4 In `frontend/browser-fixture-population.test.js`: for each frozen window,
+  the mirror through the browser population serves the frozen server rows (as a
+  set of `[id, claimed_by]`), counts and chip counts, and each scoped Pattern row's
+  prepared header carries its frozen case's summary and verdict counts. Show this
+  failing on the base adapter. An unfrozen window, an unfrozen scoped case and a
+  scoped selection each throw by name. Amend `the Afternoon fixture retains all four
+  published behavioral Findings` to the server's shown set: Highs after meals, Lows
+  after correcting highs, Over-treated low and Missed / unannounced meal, still
+  "4 in this window". Both comparisons read rows as a set; the fixture queue's order
+  is design.md's Q7 caveat.
+- [ ] 4.5 Run the lock's whole worker gate on this final commit, including every
   drift check and the backend pytest once, and state the pytest wall time.

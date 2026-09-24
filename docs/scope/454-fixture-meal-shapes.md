@@ -42,32 +42,53 @@ and `docs/scope/454-row-shapes.measure.py`.
   High.** Why: after the re-claim no committed Cause appears in two families, and
   Over-treated low is the one lever the producer drives from two anchor kinds, with
   its case-file family sorting second as the test requires. inline.
-- **Chunked, three serial sub-orders.** Why: after the widening, five slicing traits
-  fire (multiple deliverable artifacts, live run inside the ticket, split-path
-  evidence, lockstep copies, lifecycle-gated revision), and each sub-order
-  projects inside the 120k–180k band. The served rule and S182 come first; the rows
-  and the mirror's family filter follow in order, because each regenerates what the
-  next reads. Reviewer-memory anchor: absent. inline.
+- **Chunked, serial sub-orders (four after round 2).** Why: after the widening, five
+  slicing traits fire (multiple deliverable artifacts, live run inside the ticket,
+  split-path evidence, lockstep copies, lifecycle-gated revision), and each
+  sub-order projects inside the 120k–180k band. The served rule and S182 come
+  first; the rows, the mirror's family filter and the scoped Pattern list follow in
+  order, because each regenerates what the next reads. Reviewer-memory anchor:
+  absent. inline.
 
 ### Risk contract
 
 Copied verbatim into `openspec/changes/fixture-meal-shapes/design.md` ("Risk
 contract"), which is the admitted authority.
 
+### Coordinator rulings, round 2 (2026-09-23)
+
+- **Q2 limit (coordinator, 2026-09-23): keep the re-claim to the rows themselves;
+  record why whole episodes are not re-claimed.** → ADR (design.md).
+- **Q6 (coordinator, 2026-09-23): freeze the server's Pattern list for each window
+  the browser checks use, pass it in, fail loudly for any other window, amend the
+  Afternoon test to the server's answer, list every moved fact; this release fixes
+  it.** The windows are closed: 00:00–06:00 (desk suite), 02:15–04:45 and
+  12:00–18:00 (fast gate). → ADR (design.md "The browser findings mirror serves the
+  server's scoped Pattern list, or fails").
+- **Q6 moves to its own sub-order 4, serial after the family filter.** Why: it
+  shares the projection generator, capture and Pattern mirror with sub-order 3, and
+  together they would exceed the 180k target. inline.
+
 ## Open questions
 
-- **Q6 (new finding, returned to the coordinator).** The browser-gate population
-  (`frontend/browser-fixture-population.js` `populateFindingsProjectionInput`)
-  supplies only the whole-day Pattern roster, so in every scoped window the findings
-  mirror serves no Pattern row and folds no Cause, where the server serves both
-  Patterns and folds Late bolus and Correction on active insulin (base 06:00–12:00
-  verified). Base counts match only by coincidence. After the Q2 re-claim, the
-  mirror serves `counts.finding` 5 and `chip_counts.lows` 2 in 06:00–12:00 and
-  12:00–18:00, where the server serves 4 and 1. The Afternoon fast-gate test
-  already pins the mirror's answer. Default recommended to the coordinator: widen
-  #454's third sub-order to freeze the server's scoped rosters for the closed set of
-  windows the browser gates request, have the population supply them, and fail
-  closed for any other scoped window.
+- **Q6a (extension of Q6, default applied, confirmation owed).** Supplying the
+  scoped roster makes charted scoped Pattern rows appear, whose headers the browser
+  population builds through the whole-day Pattern mirror (00:00–06:00 Highs after
+  meals would read 2 of 20 where the server serves 0 of 4). Default in the lock:
+  also freeze the server's scoped Pattern case files (clock and event, no selection)
+  and fail by name for any other scoped Pattern request.
+- **Q7 (new finding, returned to the coordinator).** The browser population prices
+  habit and basal rows from the payload's own scenarios and analysis (unpriced),
+  while the Pattern rosters and prices come from the projection fixture's browser
+  scenarios and tuning levers. So the fixture queue's order differs from the
+  server's for the same rows, in the whole day on base as well (server: basal 39,
+  Over-treated low 28, Highs after meals 21, Late bolus 18…; fixture: priced
+  Patterns first, the rest unpriced). Recommended default: freeze the browser
+  inputs (analysis with tuning levers, scenarios) the rosters come from and have the
+  population feed them to the mirror, so the fixture queue is the server's byte for
+  byte; this moves the whole-day and scoped order the desk suite reads, so it needs
+  its own measured list before it is locked. Until ruled, the Q6 tests compare rows
+  as a set.
 
 ## Spawned tasks
 
@@ -76,5 +97,6 @@ None.
 ## Review rounds
 
 - Round 0 (triage draft, lock 1 at 99bb43cd): returned to the coordinator.
-- Round 1 (coordinator rulings Q1–Q5, 2026-09-23): change amended and re-pinned;
+- Round 1 (coordinator rulings Q1–Q5, 2026-09-23): change amended and re-pinned (a4b4106f).
+- Round 2 (coordinator rulings Q2 limit and Q6, 2026-09-23): change amended and re-pinned;
   awaiting the coordinator's `/plan-review`.

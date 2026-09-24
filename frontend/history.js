@@ -35,8 +35,8 @@ import { hold, navigate, render, view } from './routes.js';
 // dependency runs one way only: follow-up.js imports nothing from here, and the
 // Changes composition is handed both mounts by the entry module.
 import {
-  comparisonReasonWords, comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
-  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock,
+  comparisonReasonWords, comparisonTables, evidenceFigure, failureMessage, figureColors, mountComparisonChart,
+  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock, stateWords,
 } from './follow-up.js';
 
 // The backend's own ending vocabulary, rendered as the words a reader reads.
@@ -64,6 +64,9 @@ const ENDING_NOTE = {
   user_finished: 'You recorded this ending. Harmonic did not program the pump; the change was entered by hand.',
 };
 const KIND_WORD = { trial: 'Setting change', focus: 'Focus' };
+// The three reads a record offers, named as its segment names them; the
+// reassessment heading names its served mode by the same words (ADR 450).
+const MODE_WORD = { original: 'Original', retained: 'Retained context', current: 'Current policy' };
 const STATUS_WORD = { active: 'Active', resolved: 'Resolved', dropped: 'Dropped',
   not_selected_for_watch: 'Not watched' };
 const SETTING_NAME = {
@@ -325,8 +328,8 @@ export function endingSection(ending, { kind }) {
     </dl>
     ${ENDING_NOTE[ending.kind] ? `<p class="gf-meta">${e(ENDING_NOTE[ending.kind])}</p>` : ''}
     <dl><dt>Ending assessment</dt><dd data-ending-assessment="${e(assessment.state || 'unavailable')}">${assessment.state === 'available'
-      ? `Recorded · ${e(inference.state || 'unclear')}`
-      : `Unavailable · ${e(assessment.reason || 'not recorded')}`}</dd></dl>
+      ? `Recorded · ${e(stateWords(inference.state || 'unclear'))}`
+      : `Unavailable · ${e(comparisonReasonWords(assessment.reason || 'not_recorded'))}`}</dd></dl>
     ${assessment.state === 'available' && inference.reason ? `<p class="gf-meta">${e(inference.reason)}</p>` : ''}
     <p class="gf-meta">An observation period may end without a clear answer. Nothing here required a favourable result.</p></section>`;
 }
@@ -345,12 +348,17 @@ export function lateConclusionSection(conclusion, { eligible = false, state = {}
       fieldLabel: 'Later conclusion', note: 'Nothing here is sent to your pump.' })}</section>`;
 }
 
-/** The observed change: the setting, and what it became. */
+/** The observed change: the setting, and what it became. A Focus changed no
+    setting, so it names the behavior it watched by its served name (ADR 449),
+    which a Pattern's nameplate title is not. */
 export function changeSection(detail) {
   const changes = detail.changes || [];
   if (!changes.length) {
+    const behavior = detail.lever_title
+      ? `The intended behavior: ${e(detail.lever_title)}.`
+      : 'The behavior this Focus watched is no longer an offered lever.';
     return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
-      <p class="gf-meta">${detail.kind === 'focus' ? `The intended behavior: ${e(detail.title)}. No pump setting changed.` : 'Not recorded'}</p></section>`;
+      <p class="gf-meta">${detail.kind === 'focus' ? `${behavior} No pump setting changed.` : 'Not recorded'}</p></section>`;
   }
   return `<section class="gf-section" data-record-part="change"><h3>What changed</h3>
     <table class="gf-table"><thead><tr><th scope="col">Setting</th><th scope="col">Before</th><th scope="col">Detected</th></tr></thead><tbody>${changes.map((change) => `<tr><td>${e(SETTING_NAME[change.parameter] || change.parameter)}${change.slots_changed ? `<small>${e(change.slots_changed)} time slots changed${change.uniform ? ' · uniform' : ` · values shown at ${e(change.slot)}`}</small>` : change.slot ? `<small>${e(change.slot)}</small>` : ''}</td><td class="v">${e(settingValue(change.parameter, change.before))}</td><td class="v">${e(settingValue(change.parameter, change.after))}</td></tr>`).join('')}</tbody></table>
@@ -360,7 +368,7 @@ export function changeSection(detail) {
 /** The reassessment: a second, explicitly requested read, kept beside the
     original rather than in place of it. */
 export function reassessmentSection(detail, mode, { kind } = {}) {
-  const controls = `<div class="seg" role="group" aria-label="Assessment"><button data-assessment="original" aria-pressed="${mode === 'original'}">Original</button><button data-assessment="retained" aria-pressed="${mode === 'retained'}">Retained context</button><button data-assessment="current" aria-pressed="${mode === 'current'}">Current policy</button></div>`;
+  const controls = `<div class="seg" role="group" aria-label="Assessment">${Object.entries(MODE_WORD).map(([value, word]) => `<button data-assessment="${value}" aria-pressed="${mode === value}">${word}</button>`).join('')}</div>`;
   const reassessment = detail.reassessment;
   if (mode === 'original' || !reassessment) {
     // A record with no saved ending has nothing above to point at: its Original
@@ -374,14 +382,14 @@ export function reassessmentSection(detail, mode, { kind } = {}) {
   const comparison = reassessment.comparison || {};
   const availability = comparison.availability || {};
   const context = reassessment.comparison_context || {};
-  return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment <span class="meta">${e(reassessment.mode)}</span></h3>${controls}
+  return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment <span class="meta">${e(MODE_WORD[reassessment.mode] || reassessment.mode)}</span></h3>${controls}
     <dl>
       <dt>Computed</dt><dd>${e(stamp(reassessment.computed_at))}</dd>
       <dt>Context</dt><dd data-reassessment-context="${e(reassessment.mode)}">${reassessment.mode === 'current'
         ? 'Current policy — this is not a like-for-like comparison with the saved ending.'
         : `Stored context ${e(context.id ? String(context.id).slice(0, 12) : 'unavailable')}`}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
-        ? e((comparison.assessment || {}).state || 'unclear')
+        ? e(stateWords((comparison.assessment || {}).state || 'unclear'))
         : `Unavailable · ${e(comparisonReasonWords(availability.reason || 'not_recorded'))}`}</dd>
     </dl>
     <p class="gf-meta">A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.</p></section>`;
@@ -442,7 +450,7 @@ function recordFrame(state) {
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
-    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind)}</div></section>`;
+    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind, { leverTitle: detail.lever_title })}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.
   const pane = kind === 'focus' ? 'This Focus' : 'This trial';
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">
@@ -479,10 +487,6 @@ const conclusionAttemptId = () => {
     || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
   return memory.conclusionAttempt;
 };
-
-const failureMessage = error => error?.detail?.code
-  ? `${error.detail.code} (${error.status})`
-  : error?.detail || error?.message || 'no response from the store';
 
 async function submitLateConclusion({ retry = false } = {}) {
   const state = memory.record;

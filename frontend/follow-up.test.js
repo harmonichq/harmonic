@@ -7,11 +7,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { ApiTransportError } from './data.js';
 import {
   adherenceTable, comparisonPairs, comparisonReasonWords, comparisonTables, conclusionForm,
-  dailyEvidence, evidenceFigure, maturitySection, outcomesTable, periodsSection,
+  dailyEvidence, evidenceFigure, failureMessage, maturitySection, outcomesTable, periodsSection,
   planRouteSection, readinessArm, readinessSection, saveErrorBlock,
 } from './follow-up.js';
+
+// What a reader sees: the markup with its tags (and so its data attributes,
+// which keep the served codes) removed.
+const visible = html => html.replace(/<[^>]*>/g, ' ');
+const CODE_TOKEN = /\b[a-z]+(?:_[a-z]+)+\b/;
 
 /* ---------------------------------------------------------------- payloads */
 
@@ -149,7 +155,7 @@ test('a setting arm renders its required count, its availability and its served 
   assert.match(html, /3\.5 of 8 effective qualifying closed meal runs/);
   assert.match(html, /data-required="8"/);
   assert.match(html, /data-readiness-available="true"/);
-  assert.match(html, /Not met — collecting\./);
+  assert.match(html, /Not met — still collecting\./);
   assert.match(html, /14 days elapsed/);
 });
 
@@ -173,7 +179,8 @@ test('the browser reads criterion_met and never evaluates the criterion itself',
   const overshoot = { ...SETTING_ARM, observed: 40, required: 8, criterion_met: false, reason: 'unmatchable_captured_membership' };
   const html = readinessArm('after', overshoot);
   assert.match(html, /data-criterion-met="false"/);
-  assert.match(html, /Not met — unmatchable_captured_membership\./);
+  assert.match(html, new RegExp(`Not met — ${comparisonReasonWords('unmatchable_captured_membership')}\\.`));
+  assert.doesNotMatch(html, /unmatchable_captured_membership/);
   assert.doesNotMatch(html, /Criterion met\./);
 
   // And the reverse: short of the requirement, and the backend says met.
@@ -189,7 +196,8 @@ test('an unavailable setting arm prints the served reason rather than a gap', ()
     reason: 'unmatchable_captured_membership', observed: 0, contributing_dates: [],
   });
   assert.match(html, /data-readiness-available="false"/);
-  assert.match(html, /unavailable: unmatchable_captured_membership/);
+  assert.match(html, new RegExp(`This period's evidence is unavailable: ${comparisonReasonWords('unmatchable_captured_membership')}\\.`));
+  assert.doesNotMatch(visible(html), CODE_TOKEN);
   assert.match(html, /No contributing date has qualified in this period yet\./);
 });
 
@@ -247,7 +255,8 @@ test('zero opportunities, an absent measurement and a measured rate stay distinc
 
   const partial = adherenceTable(FOCUS_COMPARISON);
   assert.match(partial, /data-adherence-state="unavailable"/);
-  assert.match(partial, /insufficient_measurement · 0 of 1 measured/);
+  assert.match(partial, new RegExp(`${comparisonReasonWords('insufficient_measurement')} · 0 of 1 measured`));
+  assert.doesNotMatch(partial, /insufficient_measurement/);
   assert.match(partial, /data-adherence-state="available"/);
   assert.match(partial, /2 of 5/);
   // A missing measurement is never rendered as an observed zero.
@@ -419,6 +428,16 @@ const REASON_CODES = [
   'no_source_evidence', 'change_predates_pin', 'missing_legacy_ending', 'data_not_yet_arrived',
   'lever_unavailable', 'missing_continuous_setting_history', 'no_readable_period_evidence',
   'unavailable_adherence', 'not_recorded',
+  // ADR 450: every other code the backend serves on a Focus or record line.
+  'collecting', 'zero_opportunities', 'insufficient_measurement',
+  'candidate_high_without_closed_attribution', 'attribution_exceeds_owned_population',
+  'unassociated_recurrence_anchor', 'missing_override_provenance', 'unreadable_harm_interval',
+  'unmatchable_captured_membership', 'reconciliation_required', 'legacy_not_recorded',
+  'no_readable_outcome', 'context_after_ending',
+];
+const MEASUREMENT_CODES = [
+  'insufficient_measurement', 'candidate_high_without_closed_attribution',
+  'attribution_exceeds_owned_population', 'unassociated_recurrence_anchor', 'missing_override_provenance',
 ];
 const NO_CURVE_WORDS = /no clock envelope|no readings yet|half-hours read|Before · unavailable/;
 
@@ -501,6 +520,97 @@ test('every comparison reason has plain words, and an unknown code prints as ser
   assert.equal(comparisonReasonWords('a_new_served_reason'), 'a_new_served_reason');
 });
 
+/* ------------------------------------- the watched behavior's served name */
+
+// An adherence arm as the comparison serves it, for a given lever.
+const arm = (lever, extra = {}) => ({ ...FOCUS_COMPARISON.adherence.after, lever, ...extra });
+const behavior = (lever, extra = {}) => ({ adherence: { before: arm(lever, extra), after: arm(lever),
+  assessment: { state: 'unclear', unit: 'proportion' } } });
+
+test('the behavior row names a sequence habit by its served name, never its key', () => {
+  for (const html of [
+    adherenceTable(behavior('high_carb_sequence'), { leverTitle: 'High-carb sequence' }),
+    comparisonTables(behavior('high_carb_sequence'), 'focus', { leverTitle: 'High-carb sequence' }),
+  ]) {
+    assert.match(html, /<td>High-carb sequence<small>the intended behavior/);
+    assert.doesNotMatch(visible(html), CODE_TOKEN);
+  }
+});
+
+test('the behavior row names a Focus the way its own served name does', () => {
+  const html = adherenceTable(behavior('correction_stacking'), { leverTitle: 'Correction stacking' });
+  assert.match(html, /<td>Correction stacking<small>/);
+  assert.doesNotMatch(html, /Stacked corrections/);
+});
+
+test('with no served name the behavior row says so and prints no key', () => {
+  for (const html of [adherenceTable(behavior('overnight_drift')), comparisonTables(behavior('repeat_eating'), 'focus')]) {
+    assert.match(html, /<td>Watched behavior<small>the intended behavior/);
+    assert.doesNotMatch(visible(html), /overnight_drift|repeat_eating/);
+  }
+});
+
+/* ------------------------------------------ served reasons print as words */
+
+test('every measurement reason on a behavior cell prints in words and keeps its measured count', () => {
+  for (const code of MEASUREMENT_CODES) {
+    const html = adherenceTable(behavior('late_bolus', { opportunities: 4, measured_opportunities: 3, rate: null,
+      availability: { state: 'unavailable', reason: code } }), { leverTitle: 'Late bolus' });
+    assert.match(html, new RegExp(`data-adherence-state="unavailable">unavailable<small>${comparisonReasonWords(code)} · 3 of 4 measured`), code);
+    assert.doesNotMatch(visible(html), CODE_TOKEN, code);
+  }
+});
+
+test('an unavailable harm cell names its reason in words', () => {
+  for (const code of ['unreadable_harm_interval', 'zero_opportunities']) {
+    const html = adherenceTable(behavior('late_bolus', { harm_availability: { state: 'unavailable', reason: code } }),
+      { leverTitle: 'Late bolus' });
+    assert.match(html, new RegExp(`data-harm-state="unavailable">unavailable<small>${comparisonReasonWords(code)}<`), code);
+    assert.doesNotMatch(visible(html), CODE_TOKEN, code);
+  }
+});
+
+test('every arm’s Not met line names its served reason in words', () => {
+  const legacy = { unit: 'meals', observed: 3, measured: 2, unmeasured: 1, elapsed_days: 9,
+    required_elapsed_days: 14, criterion_met: false, contributing_dates: [] };
+  const pattern = { unit: 'meals', count: 4, gate: 12, verdict: 'withheld', criterion_met: false,
+    elapsed_days: 3, contributing_dates: [] };
+  for (const [shape, base] of [['legacy', legacy], ['pattern', pattern], ['setting', SETTING_ARM]]) {
+    for (const code of ['collecting', 'zero_opportunities', 'insufficient_measurement', 'unmatchable_captured_membership']) {
+      const html = readinessArm('before', { ...base, criterion_met: false, reason: code });
+      assert.match(html, new RegExp(`data-criterion>Not met — ${comparisonReasonWords(code)}\\.`), `${shape} ${code}`);
+      assert.doesNotMatch(visible(html), CODE_TOKEN, `${shape} ${code}`);
+    }
+  }
+  // A reason the desk has no words for still prints as served.
+  assert.match(readinessArm('before', { ...legacy, reason: 'a_new_served_reason' }), /Not met — a_new_served_reason\./);
+});
+
+test('a Pattern opportunity line names its verdict and its reason in words', () => {
+  const pattern = { unit: 'meals', count: 4, gate: 12, criterion_met: false, elapsed_days: 3, contributing_dates: [] };
+  const withheld = readinessArm('before', { ...pattern, verdict: 'withheld', reason: 'zero_opportunities' });
+  assert.match(withheld, new RegExp(`data-opportunity-verdict="withheld">Withheld · ${comparisonReasonWords('zero_opportunities')}<`));
+  const ready = readinessArm('after', { ...pattern, count: 12, verdict: 'ready', criterion_met: true, reason: null });
+  assert.match(ready, /data-opportunity-verdict="ready">Ready</);
+  for (const html of [withheld, ready]) assert.doesNotMatch(visible(html), /\b(ready|withheld)\b|zero_opportunities/);
+});
+
+test('a correction-stacking Focus names its denominator in words', () => {
+  const clusters = { denominator: 'correction_clusters' };
+  const table = adherenceTable({ adherence: {
+    before: arm('correction_stacking', { ...clusters, opportunities: 0 }),
+    after: arm('correction_stacking', { ...clusters, opportunities: 5, numerator: 2, rate: 0.4, unmeasured_opportunities: 1 }),
+    assessment: { state: 'unclear', unit: 'proportion' },
+  } }, { leverTitle: 'Correction stacking' });
+  assert.match(table, /the intended behavior · correction clusters</);
+  assert.match(table, /no correction clusters</);
+  assert.match(table, /40% of correction clusters · 1 unmeasured</);
+  const readiness = readinessArm('after', { unit: 'correction_clusters', count: 2, gate: 12, verdict: 'withheld',
+    criterion_met: false, reason: 'collecting', elapsed_days: 3, contributing_dates: [] });
+  assert.match(readiness, /2 of 12 correction clusters/);
+  for (const html of [table, readiness]) assert.doesNotMatch(visible(html), /correction_clusters/);
+});
+
 test('with no comparison read, the periods and outcomes notes say so; a served one keeps its notes', () => {
   assert.match(periodsSection(null), /data-periods="not-requested">No comparison has been read for this record yet\./);
   assert.match(outcomesTable(null, 'trial'), /data-outcomes="not-requested">No comparison has been read for this record yet\./);
@@ -529,12 +639,19 @@ test('a separately dated conclusion can name its input without changing the ordi
 });
 
 test('a failed write keeps the wearer’s words and offers a Retry, recording nothing', () => {
+  // A durable refusal as the API serves it (ADR 450): its code beside its sentence.
+  const refused = new ApiTransportError(409, { code: 'stale_input_revision',
+    message: 'New pump or sensor data arrived since this page was read.', input_revision: 8 }, 'Conflict');
   const html = saveErrorBlock({
     conclusion: 'It held overnight.',
-    failure: { operation: 'finish', headline: 'Recording the conclusion failed', message: 'stale_input_revision (409)' },
+    failure: { operation: 'finish', headline: 'Recording the conclusion failed', message: failureMessage(refused) },
   });
   assert.match(html, /role="alert"/);
-  assert.match(html, /Recording the conclusion failed: stale_input_revision \(409\)/);
+  assert.match(html, /Recording the conclusion failed: New pump or sensor data arrived since this page was read\./);
+  assert.doesNotMatch(html, /stale_input_revision|\(409\)/);
+  // A plain string refusal and a transport failure keep their own words.
+  assert.equal(failureMessage(new ApiTransportError(503, 'Synthetic refusal', 'Service Unavailable')), 'Synthetic refusal');
+  assert.equal(failureMessage(null), 'no response from the store');
   assert.match(html, /Nothing was recorded\. Your conclusion is still here\./);
   assert.match(html, /data-retry-save="finish"/);
   assert.doesNotMatch(html, /Retry" disabled/);

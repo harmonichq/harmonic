@@ -226,6 +226,10 @@ test('an unavailable original context states its served reason in words', () => 
   // A served reason with no word is printed verbatim rather than swallowed.
   assert.match(originalSection({ context: { state: 'unavailable', reason: 'unworded_reason' } }),
     /unavailable: unworded_reason\./);
+  // An earlier record, kept before Harmonic saved its context, says so in words.
+  const legacy = originalSection({ context: { state: 'unavailable', reason: 'legacy_not_recorded' } });
+  assert.match(legacy, new RegExp(`unavailable: ${comparisonReasonWords('legacy_not_recorded')}\\.`));
+  assert.doesNotMatch(legacy, /legacy_not_recorded/);
 });
 
 test('a still-open record has no ending, and says that rather than inventing one', () => {
@@ -244,8 +248,22 @@ test('a saved ending keeps its kind, its times and the wearer’s own words', ()
   // The ending assessment was not computable, and the record says so instead of
   // implying the period went well.
   assert.match(html, /data-ending-assessment="unavailable"/);
-  assert.match(html, /Unavailable · unavailable_adherence/);
+  assert.match(html, new RegExp(`Unavailable · ${comparisonReasonWords('unavailable_adherence')}<`));
+  assert.doesNotMatch(html.replace(/<[^>]*>/g, ' '), /\b[a-z]+(?:_[a-z]+)+\b/, 'the saved ending prints no code');
   assert.match(html, /Nothing here required a favourable result\./);
+});
+
+test('a backfilled ending whose context postdates it names that reason in words', () => {
+  const html = endingSection({ ...MANUAL_ENDING, assessment: { version: '386:1', state: 'unavailable',
+    reason: 'context_after_ending' } }, { kind: 'trial' });
+  assert.match(html, new RegExp(`Unavailable · ${comparisonReasonWords('context_after_ending')}<`));
+  assert.doesNotMatch(html.replace(/<[^>]*>/g, ' '), /\b[a-z]+(?:_[a-z]+)+\b/);
+});
+
+test('a saved ending that was assessed reads its recorded state as a word', () => {
+  const html = endingSection({ ...PREEMPTED_ENDING, assessment: { ...PREEMPTED_ENDING.assessment,
+    assessment: { state: 'concerning', reason: 'Read each outcome separately.' } } }, { kind: 'focus' });
+  assert.match(html, /data-ending-assessment="available">Recorded · Concerning</);
 });
 
 test('a late Trial conclusion is separate from the immutable expired ending', () => {
@@ -323,6 +341,19 @@ test('a current-policy reassessment labels its context and claims no like-for-li
   assert.doesNotMatch(html, /data_not_yet_arrived/);
 });
 
+test('an available current-policy result names its mode and its state in words', () => {
+  const html = reassessmentSection({
+    reassessment: {
+      mode: 'current', computed_at: '2026-09-08 15:15:44', comparison_context: {},
+      comparison: { availability: { state: 'available', reason: null }, assessment: { state: 'context' } },
+    },
+  }, 'current');
+  assert.match(html, /<h3>Reassessment <span class="meta">Current policy<\/span><\/h3>/);
+  assert.match(html, /data-reassessment-state="available">Context only</);
+  assert.match(html, /data-reassessment-context="current"/);
+  assert.doesNotMatch(html, />(current|context)</, 'no served mode or state prints as its value');
+});
+
 test('the Original line points at a saved ending only when the record has one', () => {
   const open = reassessmentSection({ reassessment: null, original: FIRST_OBSERVED }, 'original', { kind: 'trial' });
   assert.match(open, /data-reassessment="none">Not requested\. The saved read carries no comparison until this change ends\./);
@@ -346,10 +377,18 @@ test('the observed change reads its own units, and says the pump was not program
 });
 
 test('a Focus changed no setting, and its record says that rather than showing a blank table', () => {
-  const html = changeSection({ kind: 'focus', lever: 'carb_undercount', title: 'Highs after meals', changes: [] });
-  assert.match(html, /The intended behavior: Highs after meals\. No pump setting changed\./);
+  const html = changeSection({ kind: 'focus', lever: 'high_carb_sequence', title: 'Highs after meals',
+    lever_title: 'High-carb sequence', changes: [] });
+  assert.match(html, /The intended behavior: High-carb sequence\. No pump setting changed\./);
+  assert.doesNotMatch(html, /Highs after meals/, 'the Pattern title stays the nameplate, not the behavior');
   assert.doesNotMatch(html, /<table/);
-  assert.doesNotMatch(html, /_/, 'the behavior is named by its served title, never its key');
+  assert.doesNotMatch(html, /_/, 'the behavior is named by its served name, never its key');
+});
+
+test('a Focus whose behavior is no longer a lever says so, naming neither its key nor "Focus"', () => {
+  const html = changeSection({ kind: 'focus', lever: 'overnight_drift', title: 'Focus', lever_title: null, changes: [] });
+  assert.match(html, /The behavior this Focus watched is no longer an offered lever\./);
+  assert.doesNotMatch(html, /overnight_drift|intended behavior: Focus/);
 });
 
 test('a correction factor reads insulin first on both sides', () => {

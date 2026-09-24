@@ -154,6 +154,8 @@ const REASON_SAID = {
     'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
   active_focus:
     'A Focus is already being watched, so Harmonic is not offering another Focus from this read.',
+  pending_plan:
+    'A recorded Plan is still pending, so Harmonic is not offering a Focus from this read.',
 };
 
 const REASON_LABEL = {

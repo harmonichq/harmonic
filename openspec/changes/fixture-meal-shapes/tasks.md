@@ -235,6 +235,14 @@ inputs the mirror equals the server's projection byte for byte in the whole day 
 all three narrowed windows. Task 5.5's whole backend pytest belongs to the
 coordinator's close-out legs, so 5.5 stays open until they run.
 
+Coordinator-authorized fence widening (release coordinator, 2026-09-24, Q3 delegation):
+`frontend/diagnose-workstation.test.js` joins the fence, for a sub-order 5 finding.
+The browser adapter reads only `exposures` from its caller, so the always-undefined
+`event_charts` argument and the ignored `analysis` and `scenarios` inputs were removed
+from its callers there and in `frontend/diagnose-findings-queue.test.js` and
+`frontend/browser-fixture-population.test.js`. That also removed the local that only
+the dead argument read. No assertion changed.
+
 Coordinator-authorized note (release coordinator, 2026-09-24): the posted lock
 header's baseline line ("Sub-orders 3, 4 and 5 shift it … re-record") is superseded.
 The scan keys each acknowledged dose/ratio entry on its path and matched text, never

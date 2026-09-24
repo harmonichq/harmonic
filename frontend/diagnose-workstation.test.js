@@ -236,19 +236,11 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
   const payload = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8',
   ));
-  const projectionFixture = JSON.parse(readFileSync(
-    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
-  ));
   const caseFiles = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
-  const served = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-    event_charts: projectionFixture.inputs.event_charts,
-  }));
+  const served = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const projection = generatedFindingProjection(id)(served, caseFiles);
   assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');

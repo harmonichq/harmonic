@@ -80,11 +80,7 @@ test('the expanded meal population preserves the workstation queue sift shape', 
 
 test('browser preparation joins keep each scoped event-chart coordinate intact', () => {
   const requested = { start_min: 135, end_min: 285 };
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }), requested);
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }), requested);
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection, capture);
@@ -103,11 +99,7 @@ test('browser fixture population supplies the backend-prepared Pattern roster', 
 });
 
 test('browser Pattern rows and case files share the public producer denominator', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
@@ -173,11 +165,7 @@ test('#454 · the Pattern mirror judges only its rate family, as the Python prod
 });
 
 test('correction-on-IOB claims the lows in its Pattern population', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const member = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
@@ -193,11 +181,7 @@ test('correction-on-IOB claims the lows in its Pattern population', () => {
 });
 
 test('correcting-highs Pattern selection uses the low-nadir comparison idiom', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
   const enriched = structuredClone(capture);
@@ -226,11 +210,7 @@ test('Pattern misses prefer near misses over outranked member states', () => {
 });
 
 test('memberless Patterns remain served without an invented chart', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
@@ -246,9 +226,7 @@ test('memberless Patterns remain served without an invented chart', () => {
 });
 
 test('every chartable fixture Pattern resolves through preparation validation', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
   );
@@ -283,11 +261,7 @@ function withReboundHigh(exposures) {
 }
 
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: withReboundHigh(payload.exposures),
-    scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: withReboundHigh(payload.exposures) }));
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection, capture);
@@ -308,20 +282,12 @@ test('browser preparation mirrors the wrapped row: both families, case file firs
 });
 
 test('the cockpit exposure population produces its event-comparison Finding row', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
 });
 
 test('the Afternoon fixture retains all four published behavioral Findings', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }), { start_min: 720, end_min: 1080 });
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }), { start_min: 720, end_min: 1080 });
   const selected = new Set(['highs', 'meals', 'corrections']);
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);

@@ -685,10 +685,7 @@ test('#63 · the sentence never enters the queue meta, which counts the window',
 test('#395/#413 · the default replay keeps its claimed Late bolus reachable, folded, under every matching sift', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
-    event_charts: fixture.inputs.event_charts,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   assert.ok(!projection.rows.some((row) => row.id === 'finding:carb_undercount'),
     'Carb undercount is not a subject in this input');
   const preparation = populateFindingCasePreparation(

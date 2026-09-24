@@ -12,39 +12,59 @@ value, or removed) with `time.tzset()` again. Set `TIMEZONE_NAME` with
 - **Apart:** the process is on Pacific/Kiritimati (UTC+14) and `TIMEZONE_NAME` is
   Pacific/Pago_Pago (UTC−11). The wall clocks are 25 h apart and neither observes
   daylight saving, so a stamp and its date differ at every instant.
+- **Swapped:** the two zones exchanged, so the process is a day behind the pump.
 - **Stamp check:** a stamp is on the pump's clock when it lies within two minutes
-  of `datetime.now(ZoneInfo("Pacific/Pago_Pago"))`, made naive.
+  of `datetime.now(ZoneInfo(<pump zone>))`, made naive.
+- **Window check:** a window end is right when it equals the later of
+  `datetime.now(ZoneInfo(<pump zone>)).date()` and
+  `datetime.now(timezone.utc).date()`, and is no earlier than the first.
 - **Runner-independent:** no test may depend on the runner's zone or on
   `tests/conftest.py`'s `UTC` default.
 
 Seed stores only from committed synthetic sources:
 - `scripts/qa_e2e_cases.materialize_case`, as `tests/test_api.py`
   `_guidance_client` and `tests/test_durable_follow_up.py` `seed_case` do;
-- vendor-shaped pump reads, as `tests/test_sync_partial.py` `_details_blob` does.
+- vendor-shaped pump reads, as `tests/test_sync_partial.py` `_details_blob` does,
+  or `docs/scope/443-read-time-pump-zone.repro.py` `_pump_read`.
 
-Run 1.1, 1.3, 1.4 and 1.5 on the unfixed code before task 2.1, and save the raw
-failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
-`docs/scope/443-read-time-pump-zone.repro.py` shows the failures on base.
+**Base fail-first.** Run the following on the unfixed code before task 2.1, and
+save the raw failing output as
+`openspec/changes/read-time-pump-zone/evidence/failfirst.txt`:
+- the 1.1 stamp cases and the 1.1 window case in the swapped order;
+- the 1.2 unknown-zone case;
+- 1.3;
+- every 1.4 case.
 
-- [ ] 1.1 `tests/test_fetch_loop.py`: a new class, zones apart, pull patched,
-  results read through `Store.fetch_status()`. Cases:
+On base the window end is the process date. In the swapped order that date is
+always a day before the pump's, so the case fails deterministically. The pinned
+order's base result depends on the hour, so it is not a fail-first case. 1.5's
+fail-first evidence is its broken-variant run, not a base run.
+`docs/scope/443-read-time-pump-zone.repro.py` shows the base failures.
+
+- [ ] 1.1 `tests/test_fetch_loop.py`: a new class, pull patched, results read
+  through `Store.fetch_status()`. Cases, zones apart:
   - **Success.** `last_success_at` and `last_attempt_at` are on the pump's clock.
   - **Failed attempt.** An attempt whose pull raises records `last_attempt_at` on
     the pump's clock, and `last_success_at` stays unset.
-  - **Window.** The pull is called with `end` equal to the pump's date and `start`
-    equal to `end` minus `FETCH_WINDOW_DAYS`. Run it twice: once as pinned, and
-    once with the two zones swapped (the process a day behind the pump).
-- [ ] 1.2 `tests/test_fetch_loop.py`, unset zone. Remove `TIMEZONE_NAME` from the
-  environment (`mock.patch.dict(os.environ, env, clear=True)`) and do **not**
-  mock the pull. `run_fetch_once` returns without raising and records:
-  - `last_error` naming `TIMEZONE_NAME`;
-  - `last_attempt_at` set;
-  - `last_success_at` unset.
-
-  The real pull refuses before any network call.
-- [ ] 1.3 `tests/test_cli.py`, zones apart, `ciq_autotune.sync.pull_from_tconnect`
+  - **Window.** The pull is called with an `end` that passes the window check,
+    and a `start` of `end` minus `FETCH_WINDOW_DAYS`. Run it both apart and
+    swapped.
+- [ ] 1.2 `tests/test_fetch_loop.py`, zones the fetch cannot use. Do **not** mock
+  the pull, and call `run_fetch_once` with a temporary `key_path`. Build the
+  environment with `mock.patch.dict(os.environ, env, clear=True)`, leaving out
+  every `TCONNECT_*` variable. A base run then refuses at the credential check,
+  before any login. Run from the ticket worktree, which has no `.env`.
+  - **Unset.** With `TIMEZONE_NAME` also left out, `run_fetch_once` returns
+    without raising and records `last_error` naming `TIMEZONE_NAME`,
+    `last_attempt_at` set, and `last_success_at` unset.
+  - **Unknown.** With `TIMEZONE_NAME="Not/AZone"` and the process pinned to UTC,
+    `run_fetch_once` returns without raising and records:
+    - `last_error` naming `TIMEZONE_NAME`;
+    - `last_attempt_at` within two minutes of the process clock (`datetime.now()`);
+    - `last_success_at` unset.
+- [ ] 1.3 `tests/test_cli.py`, zones swapped, `ciq_autotune.sync.pull_from_tconnect`
   patched. `main(["fetch", "--days", "3", "--db", <temp path>])` calls the pull
-  with `end` equal to the pump's date and `start` three days before it.
+  with an `end` that passes the window check and a `start` three days before it.
 - [ ] 1.4 `tests/test_wall_clock.py` (new), zones apart. Each case checks one
   stamp family through its public path:
   1. **Pump read.** Capture a vendor-shaped read with
@@ -67,6 +87,10 @@ failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
   7. **Analysis.** `GET /api/analyze` serves `generated_at` on the pump's clock.
   8. **Reconcile.** After a switch read is captured, `reconcile_ingested_follow_up`
      saves a Trial whose `first_observed_at` is on the pump's clock.
+  9. **Reassessment.** From case 8's store, `GET /api/verify/trials` lists the
+     Trial under `trials`. `GET /api/verify/trials?selected=<its id>&assessment=current`
+     serves `selected.reassessment.computed_at` (`watched_change.py:793`) on the
+     pump's clock.
 - [ ] 1.5 `tests/test_wall_clock.py`, the step. Pin the process to UTC. Make one
   write with `TIMEZONE_NAME` = `UTC` (the container's stamps before this change),
   then the next with `America/Phoenix` (after it, 7 h back). Cases:
@@ -84,14 +108,16 @@ failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
      (`POST /api/focus/{id}/resolve`). The saved ending's `effective_at` is later
      than `pinned_at`.
 
-  Show each case is not vacuous: in a throwaway edit that drops the `after`
-  argument at the three floored sites, watch all three fail, then revert. Save
-  that run as `openspec/changes/read-time-pump-zone/evidence/nonvacuity-floor.txt`.
+  Fail-first here is the broken variant. In a throwaway edit that drops the
+  `after` argument at the three floored sites, watch all three fail, then revert.
+  Save that run as
+  `openspec/changes/read-time-pump-zone/evidence/nonvacuity-floor.txt`.
 - [ ] 1.6 `tests/test_wall_clock.py`, unset zone through the API. With
   `TIMEZONE_NAME` removed, a Focus pin through `POST /api/focus` succeeds, and its
   `pinned_at` lies within two minutes of the process clock (`datetime.now()`).
-  Show 1.2 and 1.6 are not vacuous: in a throwaway edit where `wall_clock_now`
-  raises when the zone is unset, watch both fail, then revert. Save that run as
+  Show 1.2's unset case and 1.6 are not vacuous: in a throwaway edit where
+  `wall_clock_now` raises when the zone is unset, watch both fail, then revert.
+  Save that run as
   `openspec/changes/read-time-pump-zone/evidence/nonvacuity-unset-zone.txt`.
 
 ## 2. One clock (ADR 443, Decisions 1–6)
@@ -99,20 +125,29 @@ failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
 - [ ] 2.1 `ciq_autotune/store.py`:
   - Add `wall_clock_now(after=None)` beside `normalize_time`. It returns the
     current UTC instant converted to `TIMEZONE_NAME` with `normalize_time`'s
-    expression, naive, to the microsecond. With the variable unset it returns
+    expression, naive, to the microsecond. When the variable is unset, or
+    `ZoneInfo` raises `ZoneInfoNotFoundError` or `ValueError` for it, it returns
     `datetime.now()`. When `after` is given and the result, truncated to the
     second, is not later than `after`, it returns `after + 1 s`. The floor has no
     bound (Decision 3).
   - Add `Store.latest_server_stamp()`: the latest of
     `profile_settings.captured_at`, `plan_history.applied_at` and
     `focus.pinned_at`, parsed with `datetime.fromisoformat`, or `None`.
-  - Replace the carb-log `created_at`, prompt `answered_at` and guidance
-    `decided_at` fallbacks (`or datetime.now()`) with `wall_clock_now()`.
-- [ ] 2.2 Call `wall_clock_now()` at every other site in the Decision 1 table,
+  - Replace three fallbacks (`or datetime.now()`) with `wall_clock_now()`: the
+    carb-log `created_at`, the prompt `answered_at`, and `record_pattern_review`'s
+    sign-off `decided_at` (`store.py:1842`).
+- [ ] 2.2 `ciq_autotune/sync.py`:
+  - Add `window_end(pump_now)`, returning the later of `pump_now.date()` and the
+    current UTC date (Decision 4).
+  - In `pull_from_tconnect`, directly after the unset-zone refusal, refuse a
+    `TIMEZONE_NAME` that `ZoneInfo` cannot load. Raise a `RuntimeError` naming
+    `TIMEZONE_NAME`, before the sync-extra import, the credential read or any
+    network call (Decision 2).
+- [ ] 2.3 Call `wall_clock_now()` at every other site in the Decision 1 table,
   imported by name into each module:
   - `fetch_loop.py`: one reading per attempt supplies both `attempted_at` and
-    `end = reading.date()`;
-  - `cli.py`: the `--days` window end;
+    `end = sync_mod.window_end(reading)`;
+  - `cli.py`: `end = sync_mod.window_end(wall_clock_now())`;
   - `watched_change.py:793` `computed_at`;
   - `pending_prompts.py:348` `wall_now`;
   - `api.py:862` `decided_at`;
@@ -126,17 +161,21 @@ failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
   - `api.py:1513` `recorded_at`;
   - `watched_change.py:1712` `recorded_at`.
 
-  Leave every data-time anchor Decision 1 lists untouched. Delete any import this
-  leaves unused. When done, record
-  `grep -rn "datetime.now()\|date.today()" ciq_autotune/` as
-  `openspec/changes/read-time-pump-zone/evidence/clock-sites.txt`; it must list
-  only those anchors.
-- [ ] 2.3 `frontend/day.js`: `readAt: status.last_success_at || null` (Decision 5).
+  Point the two `pending_prompts.py` docstrings that name `datetime.now` as the
+  grace's clock (lines 329–331 and 405 on base) at
+  `~ciq_autotune.store.wall_clock_now`. Leave every data-time anchor Decision 1
+  lists untouched, and delete any import this leaves unused.
+
+  Run the command in design.md's "Clock sites after the change". Save its output
+  as `openspec/changes/read-time-pump-zone/evidence/clock-sites.txt`. It must
+  equal the 15 pinned lines, except that the one `store.py` line is whichever
+  line holds `wall_clock_now`'s process-clock fallback.
+- [ ] 2.4 `frontend/day.js`: `readAt: status.last_success_at || null` (Decision 5).
   The commit message names the invariant: `Store.record_fetch_result` advances
   `last_success_at` and `last_written_json` in one statement under the same `ok`
   condition. Change no other line of `day.js`.
-- [ ] 2.4 Re-point the six clock patches (Decision 6), and change nothing else in
-  those tests:
+- [ ] 2.5 Re-point the seven clock patches (Decision 6), and change nothing else
+  around them:
   - `tests/test_api.py`: `patch("ciq_autotune.api.datetime")` becomes
     `patch("ciq_autotune.api.wall_clock_now", return_value=…)`, and
     `patch("ciq_autotune.analyze.datetime")` becomes
@@ -146,7 +185,7 @@ failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py`: the case-cache check keeps
     its `patch.object(watched_change, 'datetime', Clock)` and adds
     `patch.object(watched_change, 'wall_clock_now', lambda after=None: clock)`.
-- [ ] 2.5 Regenerate the design exploration with
+- [ ] 2.6 Regenerate the design exploration with
   `uv run python mockups/harmonic-v2.exploration/generate.py`. A triage spike
   moved only the `code_version` hashes and the ids derived from them in
   `focus.json` and `journey.json`. Any other change there is a finding to report,

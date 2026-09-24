@@ -3,9 +3,10 @@
 Run from the repo root: uv run python docs/scope/443-read-time-pump-zone.repro.py
 
 PinnedZones: the process zone is Pacific/Kiritimati (UTC+14) and TIMEZONE_NAME is
-Pacific/Pago_Pago (UTC-11). The wall clocks are 25 h apart and neither observes
-daylight saving, so the stamp and the calendar date differ at every instant. The
-pull is mocked; nothing is fetched.
+Pacific/Pago_Pago (UTC-11); the window case swaps them. The wall clocks are 25 h
+apart and neither observes daylight saving, so the stamp and the calendar date
+differ at every instant. The pull is mocked; nothing is fetched. After #443 the
+window ends on the later of the pump's date and UTC's (design.md Decision 4).
 
 BackwardStep: what a stamping clock that steps back 7 h does to durable records.
 A container west of UTC takes that step once, when its stamps move from UTC to
@@ -19,7 +20,7 @@ import sys
 import tempfile
 import time
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -83,12 +84,19 @@ class PinnedZones(unittest.TestCase):
         self.assertLess(abs(stamp - pump_now), timedelta(minutes=2))
 
     @mock.patch("ciq_autotune.sync.pull_from_tconnect")
-    def test_fetch_window_ends_on_the_pump_calendar_day(self, pull):
+    def test_fetch_window_ends_no_earlier_than_the_pump_day(self, pull):
+        # Swapped: the process a day behind the pump, so base's process-date end
+        # is always the pump's yesterday.
+        _process_zone(self, PUMP_ZONE)
+        _pump_zone(self, PROCESS_ZONE)
         pull.return_value = {}
         run_fetch_once(self.tmp.name)
-        pump_today = datetime.now(ZoneInfo(PUMP_ZONE)).date()
-        print(f"\nwindow end={pull.call_args.kwargs['end']} pump_today={pump_today}")
-        self.assertEqual(pull.call_args.kwargs["end"], pump_today)
+        pump_today = datetime.now(ZoneInfo(PROCESS_ZONE)).date()
+        utc_today = datetime.now(timezone.utc).date()
+        end = pull.call_args.kwargs["end"]
+        print(f"\nwindow end={end} pump_today={pump_today} utc_today={utc_today}")
+        self.assertEqual(end, max(pump_today, utc_today))
+        self.assertGreaterEqual(end, pump_today)
 
 
 class UnsetZone(unittest.TestCase):

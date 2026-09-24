@@ -29,14 +29,21 @@ below is recorded in `openspec/changes/read-time-pump-zone/design.md`, ADR 443.
   states after a 7 h backward step: an inverted Trial, a new Plan served
   superseded, and a Focus ending before its pin. A spike of the floor clears all
   three, and removing the floor brings them back. `→ ADR` (Decision 3)
-- The fetch window ends on the pump's day, in both the scheduled fetch and
-  `harmonic fetch --days`. Why: the coordinator's Q2 ruling; the CLI shares the
-  fault. `→ ADR` (Decision 4)
+- The fetch window ends on the later of the pump's date and the UTC date, in both
+  the scheduled fetch and `harmonic fetch --days`. Why: the coordinator's Q2
+  ruling and plan-review round 1 ruling. Upstream sends `endDate` as a
+  `<day>T23:59:59Z` literal, and nothing records whether the vendor reads it as
+  the pump's day or UTC's. The CLI shares the fault. `→ ADR` (Decision 4)
+- An unknown `TIMEZONE_NAME` reads the process clock for stamps, and the fetch
+  refuses it by name before any network call, so the attempt is recorded and
+  the loop never stops. Why: the plan-review round 1 ruling. A raising clock
+  would also fail stamped API writes and serve startup's recovery reconcile,
+  which run on the process clock on base. `→ ADR` (Decision 2)
 - Day reads `last_success_at` alone. Why: the coordinator's Q3 ruling;
   `record_fetch_result` advances both fields in one statement. `→ ADR`
   (Decision 5)
-- The six clock patches in tests and the case-cache check re-point to the bound
-  `wall_clock_now`. Why: a patched `datetime` no longer reaches a stamp. `→ ADR`
+- The seven clock patches (six in tests, one in the case-cache check) re-point to
+  the bound `wall_clock_now`. Why: a patched `datetime` no longer reaches a stamp. `→ ADR`
   (Decision 6)
 - Surface lifecycle `none`, no new replay story, no browser test. Why: no rendered
   behavior changes. Replay and browser serves run without `TIMEZONE_NAME`, on the
@@ -89,7 +96,8 @@ advisory dosing guidance. Disposition: copied unchanged into
 ## Open questions
 
 None open. The coordinator settled Q1 (widen), Q2 (fix the window end here) and
-Q3 (remove the `day.js` fallback) on 2026-09-23.
+Q3 (remove the `day.js` fallback) on 2026-09-23, and plan-review round 1's
+blockers on 2026-09-24.
 
 ## Spawned tasks
 
@@ -98,5 +106,16 @@ None. No follow-up issue is filed by this release.
 ## Review rounds
 
 - Coordinator ruling round, 2026-09-23. The default was rejected, the scope
-  widened, and the change re-authored. Blockers: none from review yet; the
-  mandatory plan review follows this re-pin.
+  widened, and the change re-authored.
+- Plan-review round 1, 2026-09-24: blocked, 5 blockers and 1 note. The
+  coordinator's rulings were applied in one commit.
+  - Window end's unverified vendor reading: `authoring`.
+  - An unknown zone could stop the loop: `authoring`.
+  - The clock-site grep was not pinned, two docstrings still named
+    `datetime.now`, `store.py:1842` was mislabelled, and the patch count said
+    six: `injected`.
+  - 1.5 was listed as base fail-first: `injected`.
+  - No case for reassessment `computed_at`: `injected`.
+  - Note, the floor's claims were broader than its three tables: `injected`.
+  - Count: 2 authoring and 3 injected, plus the injected note. The injected
+    items all trace to the widening re-author.

@@ -37,12 +37,15 @@ UTC. Reproduced on base, such a step writes three durable wrong states:
 
 - One clock function, `wall_clock_now`, returns now on `TIMEZONE_NAME`'s wall
   clock through the same conversion every record takes. Every stamp the server
-  writes calls it. With the variable unset it reads the process clock, as today.
-- Pump reads, Plans, Focus pins and change-record times are never stamped before
-  a stamp already written in those histories. A clock that stepped back
-  therefore writes after the older stamps, not before them.
-- The fetch window, scheduled or `harmonic fetch --days`, ends on the pump's
-  current day.
+  writes calls it. With the variable unset, or naming no known zone, it reads the
+  process clock, as today. A fetch refuses an unknown zone by name, before any
+  network call, and the attempt is recorded.
+- Three writes are never stamped before the latest stored pump-read capture,
+  recorded Plan or Focus pin: the pump-read capture, the follow-up write (a Plan,
+  withdrawal, Focus pin or ending) and the ingestion reconcile. A clock that
+  stepped back therefore writes after those stamps, not before them.
+- The fetch window, scheduled or `harmonic fetch --days`, ends on the later of
+  the pump's current date and the UTC date.
 - Day reads the fetch's success time alone. The removed fallback cannot fire.
 - Stored stamps are not rewritten.
 

@@ -32,6 +32,15 @@ replaces it.
 - **AND** the fetch loop keeps running
 - **AND** `last_success_at` does not advance
 
+#### Scenario: An unknown zone is recorded on the process clock, not raised
+
+- **GIVEN** `TIMEZONE_NAME` names no known time zone
+- **WHEN** a scheduled fetch attempt runs
+- **THEN** the attempt is recorded with an error naming `TIMEZONE_NAME`, and
+  `last_attempt_at` is the process clock's time
+- **AND** the fetch loop keeps running
+- **AND** `last_success_at` does not advance
+
 ### Requirement: Every stamp the server writes is on the pump's wall clock
 
 Every time the server stamps SHALL be read from one clock: the current instant
@@ -48,8 +57,9 @@ takes, whatever zone the server process runs in. This covers:
 - a carb-log entry's and a prompt answer's recorded time;
 - an analysis time.
 
-When `TIMEZONE_NAME` is unset, that clock SHALL be the process clock. A data-time
-anchor, the latest record instant, is not a stamp and is unchanged.
+When `TIMEZONE_NAME` is unset or names no known time zone, that clock SHALL be
+the process clock. A data-time anchor, the latest record instant, is not a stamp
+and is unchanged.
 
 #### Scenario: A pump read, a Plan and a Focus pin name the pump's time
 
@@ -71,7 +81,7 @@ anchor, the latest record instant, is not a stamp and is unchanged.
 - **WHEN** a Focus is pinned
 - **THEN** the pin succeeds and `pinned_at` is the process clock's time
 
-### Requirement: A stamp in an ordered history never sorts before one already written
+### Requirement: A floored stamp never sorts before the latest capture, Plan or Focus pin
 
 A pump read's capture time, a recorded Plan's time and every follow-up write's
 time (a Focus pin, a withdrawal, an ending, a reconciliation) SHALL be later than

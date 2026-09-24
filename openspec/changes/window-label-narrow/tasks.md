@@ -542,3 +542,16 @@ its new box, the chart is idle, and two animation frames have passed.
   - the render matrix in design.md;
   - the complete desk ledger at both sizes, once, on the integrated commit;
   - the backend pytest and the rest of `acceptance.test.py`.
+
+  Evidence, coordinator-run 2026-09-23 on c13c6f7a (the round-2 code review
+  converged clean on that commit). The branch leg `ONLY=S183,S184,S185`, three
+  runs at each of 1280x720 and 1440x900, printed `# executed 3 · failed 0`
+  every run, with S185's widths as recorded in design.md. Base b03431d2 with
+  the c13c6f7a harness laid over it fails S183 (72 failures) and S184 (6
+  failures) at both sizes, for the reasons in the ledger, each measured after
+  `readSettled`'s bounded wait; S185's base result stands on the d3e276ed
+  harness (task 1.5). The port-free node filters for the three #455 chart
+  tests and the three `readSettled` tests each printed 3/3 ✔. This task stays
+  open. The render matrix is owed to the integration render batch, and the
+  complete desk ledger at both sizes, the backend pytest and the socket-bound
+  rest of `acceptance.test.py` run once on the integrated commit.

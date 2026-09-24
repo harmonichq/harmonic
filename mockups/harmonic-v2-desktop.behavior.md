@@ -4198,7 +4198,11 @@ S183 · The glucose overview's window caption stays whole inside the chart, and
             every run-size check but read the 1010 px or 850 px chart's one-line
             Evening caption after the narrowing. That is the resize-to-the-
             first-report race, now fixed in observeResize, with the bounded wait
-            above. The branch re-run is owed. Coordinator-run 2026-09-23
+            above. On base b03431d2 with the c13c6f7a harness laid over it,
+            S183 fails at both sizes with 72 failures, for the reasons above,
+            each measured after readSettled's bounded wait. Branch c13c6f7a
+            passes at 1280x720 and 1440x900 in each of three runs. Coordinator-
+            run 2026-09-23
 ```
 
 ```
@@ -4227,8 +4231,10 @@ S184 · With Diagnose at rest, the Spotlight's middle-rank verdict line keeps
             and no tally line is painted. Branch d3e276ed passes at 1280x720 and
             1440x900. Branch a9a2b56a read the 1200×736 one-line verdict at
             832×720 (26.86px past the chart, 20px under Keep): the same race as
-            S183's, now fixed. The branch re-run is owed. Coordinator-run
-            2026-09-23
+            S183's, now fixed. On base b03431d2 with the c13c6f7a harness laid
+            over it, S184 fails at both sizes with 6 failures, each measured
+            after readSettled's bounded wait. Branch c13c6f7a passes at 1280x720
+            and 1440x900 in each of three runs. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -4259,7 +4265,9 @@ S185 · With Diagnose at rest, the canvas header keeps its title, its whole
             control. Both base and branch also failed at every size on the
             control's 3.5px box overhang; that is a story defect, corrected by
             placing the control by its icon and word (coordinator-authorized,
-            2026-09-23). The branch re-run is owed. Coordinator-run 2026-09-23
+            2026-09-23). Branch a9a2b56a, and branch c13c6f7a in each of three
+            runs, pass at 1280x720 and 1440x900 with the widths above; the base
+            result stands on the d3e276ed harness. Coordinator-run 2026-09-23
 ```
 
 ### #455 handler inventory

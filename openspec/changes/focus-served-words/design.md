@@ -195,7 +195,10 @@ producers rather than from this ADR: `refusals.py` in this change scans every
 module under `ciq_autotune/` for `FollowUpConflict` raises in either quote
 style, adds the handler's default, and fails when a raise passes a code that is
 not a string literal. On the base it finds 32 raise sites, all literal, and 22
-codes: the twenty-one below plus `lifecycle_conflict`.
+codes: the twenty-one below plus `lifecycle_conflict`. The shipped completeness
+test (task 1.2) carries its own copy of the scan; `refusals.py` is triage
+evidence and nothing imports it, because the public tree excludes this
+directory.
 
 | Code | Message | Raised at |
 |---|---|---|

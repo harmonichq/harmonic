@@ -123,3 +123,14 @@ draft at the pinned commit):
   with a focus-entry test (and the data.js import-time fetch capture recorded as
   a test trap); (5) the later-conclusion lifecycle test gains a 409
   `{code, message}` refusal through history.js's failure-message path.
+- Round 2 (coordinator-dispatched `/plan-review`, lock 1 draft at d7785fd9):
+  all five round-1 objections resolved; BLOCKED on 1 + 1 note, both
+  `injected` by the round-1 fix. Coordinator rulings fixed both: (1) task
+  1.2(b)'s test would have named or imported this change's `refusals.py`, which
+  the public tree excludes and CI's public-link check flags → the test carries
+  its own copy of the three patterns, imports nothing from `openspec/`, names
+  no excluded path in a comment, and the public-tree checks join Verification;
+  (2) the fetch-capture trap now says to convert `focus-entry.test.js:3`'s
+  static import to a dynamic one after the stub. The replay leg also names its
+  exact `# executed 8 · failed 0 · deferred 0` line (brief rule on named-test
+  proof).

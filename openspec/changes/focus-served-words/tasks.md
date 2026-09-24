@@ -32,13 +32,17 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   code's sentence as `detail.message`, and `detail.admission` and
   `detail.input_revision` still served; (b) a completeness test that
   enumerates the codes from their producers, never from a list in the test or
-  the ADR: it scans every module under `ciq_autotune/` with the scan committed
-  in this change's `refusals.py` (every `FollowUpConflict(` call, a string
-  literal code in either quote style, plus the handler's `getattr` default),
+  the ADR: it scans every module under `ciq_autotune/` with its own copy of
+  three patterns (every `FollowUpConflict(` call; a string-literal code in
+  either quote style; the handler's `getattr(error, "reason", …)` default),
   asserts every raise site passes a literal, and asserts every code found has a
   non-empty table message with no underscore. On the base the scan finds 32
-  literal raise sites and 22 codes. Both fail first on the base (no message is
-  served; the table does not exist).
+  literal raise sites and 22 codes. The test imports nothing from `openspec/`
+  and names no `openspec/changes/`, `docs/scope/` or `mockups/` path in a
+  comment or docstring: the public tree excludes those paths and CI's
+  public-link check fails on them; cite ADR 450 instead. This change's
+  `refusals.py` is triage evidence of the same scan and is not imported. Both
+  fail first on the base (no message is served; the table does not exist).
 
 ## 2. The desk names the watched behavior
 
@@ -123,7 +127,11 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   the module-level entry `mount` uses only sees a fetch stub installed before
   `focus-entry.js` is first imported; the test file installs its stub first and
   imports the module dynamically, as `frontend/follow-up-lifecycle.test.js`
-  does. Fails first on the base.
+  does. `frontend/focus-entry.test.js:3` imports `focus-entry.js` statically,
+  so data.js captures the real fetch before any stub; convert that line to a
+  dynamic import after the stub is installed, which is the only way to do this
+  inside the expected diff (the existing tests pass their own `api` and are
+  unaffected). Fails first on the base.
 - [ ] 3.5 The Trial finish, Focus resolve and later-conclusion failure lines
   (`frontend/follow-up.js`, `frontend/history.js`) print the served refusal
   message (`error.message`) and never `<code> (<status>)`; the two modules share
@@ -183,13 +191,20 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 5. Verification
 
-- [ ] 5.1 The worker's gate: the lock's Verification command exits 0, and
-  `uv run python mockups/harmonic-v2.exploration/generate.py --check` is green
-  (regenerated on this branch and said so if the backend edit moved it).
+- [ ] 5.1 The worker's gate: the lock's Verification command exits 0,
+  including `uv run python mockups/harmonic-v2.exploration/generate.py --check`
+  (regenerated on this branch and said so if the backend edit moved it) and the
+  public-tree checks over a freshly built public tree
+  (`t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" &&
+  python3 scripts/check_public_links.py "$t" &&
+  python3 scripts/scan_public_tree.py "$t"`). No comment in a shipping file
+  (`frontend/`, `ciq_autotune/`, `tests/`, `scripts/`) names a `docs/scope/`,
+  `mockups/` or `openspec/changes/` path or a prose date; decisions are cited as
+  "ADR 449" / "ADR 450".
 - [ ] 5.2 Coordinator, port-bound: `ONLY=S46,S91,S92,S93,S173,S174,S175,S176`
-  through `frontend/desk-behavior.replay.mjs` at 1280x720 and 1440x900 passes 8
-  on the branch and fails each story at its feature assertion with the branch
-  harness laid over the base; the follow-up and desk browser suites; the full
+  through `frontend/desk-behavior.replay.mjs` at 1280x720 and 1440x900 prints
+  `# executed 8 · failed 0 · deferred 0` on the branch, and with the branch
+  harness laid over the base fails each of S173–S176 at its feature assertion; the follow-up and desk browser suites; the full
   ledger and the full `acceptance.test.py` once before the push.
 - [ ] 5.3 Coordinator: before/after renders of c3-focus's active Focus,
   c3-preempted's manual-ended and `overnight_drift` records and c4-history's

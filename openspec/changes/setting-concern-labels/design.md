@@ -382,6 +382,12 @@ existed, once, on the integration trunk.
   aside, the Plan's confirmed, mismatch and pending lines and its re-key message,
   the persistent advisory line, the dock's staged sentence, and the Glossary's
   definitions.
+- **The findings queue's held-row prefix** (`HELD_PREFIX` in
+  `frontend/diagnose-findings-queue.js`). A held or blind row prints it before
+  the backend's own reason, which is a full clause. The prefix joined a label to
+  that clause, so under the definition below it is prose. It now reads
+  "no direction asserted: <served reason>". Its node test moves with it; no
+  replay, browser suite or ledger story reads the held row's reason line.
 - **The four Guide articles** in `docs/kb/`, served raw by `/api/kb/<slug>`.
 
 **Kept: separators, not prose.** A dash after a short label, followed by a value
@@ -392,7 +398,6 @@ or a verbless fragment, is a label separator. These dashes stay:
 - "Not met — …";
 - the dock's "On the pump — awaiting confirmation" and "Recorded — waiting for a
   pump read that matches";
-- term 14's held-row prefix "no direction asserted — <served reason>";
 - "INSUFFICIENT SAMPLE — …";
 - the "<weekday> — <summary>" and "<weekday> — no data" aria-labels;
 - "Label — value" tooltips;
@@ -431,9 +436,13 @@ assertion moves with it.
 generator never calls a production builder, so it does not refresh its frozen
 over-treated-low exposure slice
 (`frontend/__fixtures__/findings-projection.json`, `inputs.exposures`).
-`test_cross_family_episode_pair_is_emitted_by_the_real_producer` holds that
-slice equal to the live producer. The three sentences that moved there were
-re-captured, and that test now passes against the producer.
+The three sentences that moved there were re-captured by hand.
+`test_cross_family_episode_pair_is_emitted_by_the_real_producer` holds all six
+occurrences the generator selects from that slice (`fired`, `rebound`,
+`near_miss`, `clean`, `no_data`, `outranked`) equal to the live producer,
+sentence for sentence. It leaves out only `outcome_minute`, which the slice
+never carried for five of the six. The outranked low's correction-on-IOB
+sentence is pinned with the rest.
 
 **Guards**, each through the interface that serves the copy:
 

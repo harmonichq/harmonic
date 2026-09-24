@@ -1856,6 +1856,24 @@ class FindingEvidenceBlockTest(unittest.TestCase):
 
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
+        # The generator reads its six selected occurrences back from the frozen
+        # fixture and never runs this producer, so each is held equal to it here:
+        # every served sentence included, the outranked low's correction-on-IOB
+        # detail among them (ADR 451). The frozen slice never carried
+        # `outcome_minute` for five of the six, so it is left out of the match.
+        def unstamped(occurrence):
+            return {key: value for key, value in occurrence.items()
+                    if key != "outcome_minute"}
+
+        selected = gen._real_over_treated_low_occurrences()
+        self.assertEqual(set(selected), {"fired", "rebound", "near_miss", "clean",
+                                         "no_data", "outranked"})
+        for name, item in selected.items():
+            family = "highs" if name == "rebound" else "lows"
+            with self.subTest(occurrence=name):
+                live = [unstamped(occ) for occ in produced[family]["occurrences"]
+                        if occ["ep_id"] == item["ep_id"] and occ["t"] == item["t"]]
+                self.assertEqual(live, [unstamped(item)])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
         self.assertEqual(fired["t"], "2026-08-13 13:55:00")
         self.assertEqual(rebound["t"], "2026-08-13 14:35:00")

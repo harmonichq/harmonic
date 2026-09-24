@@ -338,8 +338,10 @@
   text and CLI output stay.
 - [x] 7.2 Rewrite the desk's own prose em dashes in `frontend/*.js`: Diagnose's
   setting panels, the record's ending and context lines, the Plan status lines
-  and re-key message, the advisory line, the dock's staged sentence, and the
-  Glossary's definitions. Label separators and the empty-value glyph stay.
+  and re-key message, the advisory line, the dock's staged sentence, the
+  findings queue's held-row prefix ("no direction asserted: <served reason>"),
+  and the Glossary's definitions. Label separators and the empty-value glyph
+  stay.
 - [x] 7.3 Rewrite the four Guide articles in `docs/kb/`.
 - [x] 7.4 Carry the consequences:
   - the node and pytest assertions that pin the moved text;

@@ -477,9 +477,9 @@ test('term 14/38 · a held row is words-first and offers no stage affordance', (
   assert.equal(isf.stageable, false);
   assert.deepEqual(isf.detail, {
     kind: 'reason',
-    text: 'no direction asserted — fasting data agrees with the set factor',
+    text: 'no direction asserted: fasting data agrees with the set factor',
   });
-  assert.equal(HELD_PREFIX, 'no direction asserted — ');
+  assert.equal(HELD_PREFIX, 'no direction asserted: ');
 });
 
 test('term 14 · a blind span carries the analyzer\u2019s own reason, verbatim', () => {

@@ -147,6 +147,31 @@ test('browser Pattern rows and case files share the public producer denominator'
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
+test('#454 · the Pattern mirror judges only its rate family, as the Python producer answers', () => {
+  const frozen = Object.entries(findingsFixture.pattern_family_cases);
+  assert.deepEqual(frozen.map(([key]) => key).sort(), ['highs_after_meals', 'lows_after_correcting_highs']);
+  for (const [key, answer] of frozen) {
+    assert.ok(answer.roster_row.members.some(({ subject }) => subject === `habit:${answer.lever}`),
+      `${key} premise: the frozen roster carries its out-of-family member`);
+    const variant = structuredClone(capture);
+    variant.outcome_patterns = variant.outcome_patterns.map((row) => (row.key === key
+      ? structuredClone(answer.roster_row) : row));
+    const patternChart = { key, window: { scoped: false, start_min: null, end_min: null, label: null } };
+    const clock = projectPatternCaseFile(variant, { patternChart, alignment: 'clock' });
+    assert.deepEqual(clock.verdict_counts, answer.clock.verdict_counts, `${key} verdict counts`);
+    assert.deepEqual(clock.occurrences.map(({ verdict, member }) => [verdict, member]),
+      answer.clock.occurrences.map(({ verdict, member }) => [verdict, member]), `${key} rows in order`);
+    const selected = projectPatternCaseFile(variant, {
+      patternChart, alignment: 'clock', occurrenceId: clock.occurrences[0].id });
+    assert.deepEqual(selected.selection.detail.reason, answer.selected.selection.detail.reason,
+      `${key} selected reason`);
+    const unmapped = structuredClone(variant);
+    delete unmapped.pattern_families[answer.lever];
+    assert.throws(() => projectPatternCaseFile(unmapped, { patternChart, alignment: 'clock' }),
+      new RegExp(`no frozen rate family: ${answer.lever}`));
+  }
+});
+
 test('correction-on-IOB claims the lows in its Pattern population', () => {
   const inputs = populateFindingsProjectionInput({
     analysis: payload.analyze,

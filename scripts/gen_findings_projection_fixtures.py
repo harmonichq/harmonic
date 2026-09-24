@@ -59,6 +59,7 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     PreemptedLows,
     ScenarioReport,
 )
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for  # noqa: E402
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns  # noqa: E402
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
 from ciq_autotune.guidance import candidates as guidance_candidates  # noqa: E402
@@ -72,6 +73,7 @@ from ciq_autotune.finding_case_file import PreparedCases  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
+    pattern_rate_family,
     prepare_findings_projection,
 )
 from ciq_autotune.window_membership import outcome_minute  # noqa: E402
@@ -740,6 +742,62 @@ def empty_projection() -> FindingsProjection:
     )
 
 
+def _pattern_cases(query, findings, exposures, *, cgm=(), bolus=()):
+    """The Python case producer over one projected answer and its exposures."""
+    return PreparedCases(
+        projection_id="fp_" + "2" * 32, version=0, query=query, findings=findings,
+        recurrence={}, members={lever: () for lever in Lever},
+        associations={lever: frozenset() for lever in Lever},
+        attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
+        cgm=cgm, basal=(), bolus=bolus, carbs=(), lease_until=0, exposures=exposures,
+    )
+
+
+def habit_rate_families():
+    """Each habit lever's evidence-population rate family, or None (ADR 454).
+
+    The Pattern case producer judges a habit member only when this family is its
+    Pattern's; the fixture Pattern mirror reads this frozen table rather than a
+    second transcription of it.
+    """
+    return {lever.value: (None if policy_for(lever).rate_family is None
+                          else policy_for(lever).rate_family.value) for lever in Lever}
+
+
+def pattern_family_cases(browser_analysis, browser_exposures, browser_scenarios):
+    """Freeze the Python Pattern case producer over two rosters with an out-of-family
+    habit member (ADR 454): Correction stacking (correction clusters) under Lows after
+    correcting highs, and High-carb sequence (no rate family) under Highs after meals.
+
+    Each is the browser inputs plus that one scenario Pattern, which is what admits the
+    member. Each entry holds the roster row, the whole clock case and the clock case
+    selected at its first Occurrence, so the fixture mirror can be held to them.
+    """
+    query = WindowQuery.whole_day()
+    result = {}
+    for extra, key in ((Lever.CORRECTION_STACKING, "lows_after_correcting_highs"),
+                       (Lever.HIGH_CARB_SEQUENCE, "highs_after_meals")):
+        scenarios = json.loads(json.dumps(browser_scenarios))
+        scenarios["patterns"].append(Pattern(
+            lever=extra, confidence=Confidence(n=40, k=5, effect=0.3), rank=5,
+            recommendation=recommendation(extra), hero_episode="ep1",
+            occurrences=["ep1"]).to_dict())
+        prepared = prepare_findings_projection(
+            analysis=browser_analysis, exposures=browser_exposures, scenarios=scenarios,
+        )
+        roster_row = next(row for row in prepared._outcome_patterns if row["key"] == key)
+        assert f"habit:{extra.value}" in {member["subject"] for member in roster_row["members"]}, key
+        assert policy_for(extra).rate_family is not pattern_rate_family(roster_row), key
+        cases = _pattern_cases(query, prepared.project(
+            query, analysis_generation=ANALYSIS_GENERATION), browser_exposures)
+        clock = cases.case(f"pattern:{key}", "clock", None)
+        result[key] = {
+            "lever": extra.value, "roster_row": roster_row, "clock": clock,
+            "selected": cases.case(f"pattern:{key}", "clock", clock["occurrences"][0]["id"]),
+        }
+    return result
+
+
 def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
     """Freeze one selected Pattern clock answer through the Python case producer."""
     query = WindowQuery.whole_day()
@@ -760,14 +818,7 @@ def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
         anchor + timedelta(minutes=dose["minute"]), completion=dose.get("completion"),
         insulin=dose.get("insulin"), carbs=dose.get("carbs"), seq_num=dose.get("seq_num"),
     ) for dose in source["trace"]["boluses"])
-    prepared = PreparedCases(
-        projection_id="fp_" + "2" * 32, version=0, query=query, findings=findings,
-        recurrence={}, members={lever: () for lever in Lever},
-        associations={lever: frozenset() for lever in Lever},
-        attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
-        cgm=cgm, basal=(), bolus=bolus, carbs=(), lease_until=0,
-        exposures=browser_exposures,
-    )
+    prepared = _pattern_cases(query, findings, browser_exposures, cgm=cgm, bolus=bolus)
     finding_id = "pattern:highs_after_meals"
     case = prepared.case(finding_id, "clock", None)
     return prepared.case(finding_id, "clock", case["occurrences"][0]["id"])
@@ -912,6 +963,13 @@ def payload() -> dict:
             ) if row["kind"] == "pattern"
         ],
         "pattern_clock_case": pattern_clock_case(
+            browser_analysis, browser_case_exposures, browser_scenarios,
+        ),
+        # The lever-to-rate-family table the Pattern case producer filters habit
+        # members by, and its answers for two rosters that carry a member outside
+        # the family, which the fixture Pattern mirror is held to (ADR 454).
+        "habit_rate_families": habit_rate_families(),
+        "pattern_family_cases": pattern_family_cases(
             browser_analysis, browser_case_exposures, browser_scenarios,
         ),
         "direction_only_inputs": {

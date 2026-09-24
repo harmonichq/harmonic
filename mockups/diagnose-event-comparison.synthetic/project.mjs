@@ -400,10 +400,19 @@ export function projectPatternCaseFile(capture, {
   if (!pattern || pattern.collapse !== 'remain_pattern') {
     throw new Error(`served Pattern coordinate has no roster entry: ${key}`);
   }
-  const habits = pattern.members.filter((member) => member.kind === 'habit')
-    .map((member) => member.subject.replace('habit:', ''));
   const family = patternFamilies[key];
   if (!family) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
+  // The habit members the Python case producer judges: only those in the Pattern's
+  // rate family, by its own frozen table. This one list feeds both each row's verdict
+  // and the selected reason (ADR 454).
+  const habits = pattern.members.filter((member) => member.kind === 'habit')
+    .map((member) => member.subject.replace('habit:', ''))
+    .filter((lever) => {
+      if (!(lever in (capture.pattern_families || {}))) {
+        throw new Error(`served Pattern member has no frozen rate family: ${lever}`);
+      }
+      return capture.pattern_families[lever] === family;
+    });
   const source = capture.pattern_populations[family] || [];
   if (!source.length) throw new Error(`served Pattern coordinate has no population: ${key}`);
   const attribution = capture.pattern_attribution?.[key] || {};

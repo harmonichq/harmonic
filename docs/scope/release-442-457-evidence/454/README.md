@@ -65,8 +65,12 @@ Coordinator-run, 2026-09-23 and 2026-09-24:
   header's line saying step 4 re-records the baseline is superseded ("none changed").
 - **Dose/ratio baseline:** the coordinator log records sub-order 5 at `091d8146` as "baseline
   239 re-recorded, 12 synthetic entries — whole-diff reviewer to verify", and the whole-diff
-  review on `25f5738c` as clean. Its earlier line "INTEGRATION TODO: review 454's dose/ratio
-  baseline additions" has no separate closing line.
+  review on `25f5738c` as clean. That whole-diff Full review (the coordinator log's "454
+  whole-diff Full CLEAN") is the review the TODO line "review 454's dose/ratio baseline
+  additions" asked for. It verified all 12 new baseline entries as fixed-seed synthetic
+  generator output inside a stamped fixture: the headlines of the fixed-seed workstation
+  payload's setting rows (basal delivered rates 0.61–1.13 U/h, a 4.9 g/U carb ratio, a
+  1 U : 42 mg/dL correction factor), which the change's tasks.md records.
 - **Branch `25f5738c`:** S25, S149, S150 and S182 passed at 1280x720 and at 1440x900, each
   `# executed 4 · failed 0 · deferred 0 · selected 4` (`logs/454b-branch-1280x720.log`,
   `logs/454b-branch-1440x900.log`). The whole desk suite printed

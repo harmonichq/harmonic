@@ -68,8 +68,14 @@ Coordinator-run, 2026-09-24:
 
 ## Renders
 
-None owed: the render manifest records #443's surface lifecycle as `none` (read-time stamps)
-and says it changes no rendered surface.
+None owed. #443's only desk change is in `frontend/day.js`: Day's read time drops its
+`|| status.last_written` fallback and reads `last_success_at` alone (`4f2c6e72`). The
+coordinator's triage ruling named it a dead fallback to remove. The ADR 443 record says why the
+branch cannot run: the store writes `last_success_at` and `last_written_json` in one statement
+under the same success flag, so `last_written` is never set while `last_success_at` is empty
+(and it is a record of counts, never a time). No rendered state changes. The served stamp's wall
+clock is pinned by the backend tests in the requirement map above (`tests/test_fetch_loop.py`
+and `tests/test_wall_clock.py`), and the render manifest records the lifecycle as `none`.
 
 ## Logs
 

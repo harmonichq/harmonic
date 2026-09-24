@@ -202,7 +202,7 @@ def upstream_cause(
     if has_suspend:
         parts.append("Control-IQ suspended basal defensively")
     detail = (
-        f"{' and '.join(parts)} in the prior {lookback_min:.0f} min — the rise is "
+        f"{' and '.join(parts)} in the prior {lookback_min:.0f} min, so the rise is "
         "a recovery, not a from-flat meal climb"
         if parts
         else ""

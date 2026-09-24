@@ -1838,7 +1838,7 @@
      ],
      "priority": 28,
      "rank": 1,
-     "recommendation": "The low rebounded high — follow your usual low-treatment plan and recheck in 15 min before treating again.",
+     "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
      "recurrence": 0.1221,
      "title": "Over-treated low"
     },
@@ -1870,7 +1870,7 @@
      ],
      "priority": 21,
      "rank": 2,
-     "recommendation": "Carbs were likely undercounted — estimate higher, or split the dose for big meals.",
+     "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
      "recurrence": 0.1003,
      "title": "Carb undercount"
     },
@@ -1902,7 +1902,7 @@
      ],
      "priority": 18,
      "rank": 3,
-     "recommendation": "Glucose was already climbing at the dose — try bolusing ~15 min before eating.",
+     "recommendation": "Glucose was already climbing at the dose. Try bolusing ~15 min before eating.",
      "recurrence": 0.0885,
      "title": "Late bolus"
     },
@@ -1934,7 +1934,7 @@
      ],
      "priority": 20,
      "rank": 4,
-     "recommendation": "A correction landed on insulin still working, then went low — give one ~1–2 h to act before adding more.",
+     "recommendation": "A correction landed on insulin still working, then went low. Give one ~1–2 h to act before adding more.",
      "recurrence": 0.1165,
      "title": "Correction on active insulin"
     }
@@ -28990,14 +28990,14 @@
        "verdicts": [
         {
          "classifier": "missed_meal",
-         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min — the rise is a recovery, not a from-flat meal climb — the rise is a post-low/post-suspend recovery, not a missed meal",
+         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min, so the rise is a recovery, not a from-flat meal climb; the rise is a post-low/post-suspend recovery, not a missed meal",
          "evidence_tier": "inferred",
          "matched": false,
          "silence_reason": "upstream_cause"
         },
         {
          "classifier": "meal_bolus_short",
-         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min — the rise is a recovery, not a from-flat meal climb — the rise is a post-low/post-suspend recovery, not a meal dose that fell short",
+         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min, so the rise is a recovery, not a from-flat meal climb; the rise is a post-low/post-suspend recovery, not a meal dose that fell short",
          "evidence_tier": "inferred",
          "matched": false,
          "silence_reason": "upstream_cause"
@@ -29112,11 +29112,11 @@
        "outcome_minute": 875,
        "state": "fired",
        "t": "2026-08-13 13:55:00",
-       "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL — the low was likely over-treated with fast carbs",
+       "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
        "verdicts": [
         {
          "classifier": "over_treated_low",
-         "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL — the low was likely over-treated with fast carbs",
+         "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
          "evidence_tier": "inferred",
          "matched": true,
          "silence_reason": null
@@ -29246,7 +29246,7 @@
        "label": "Low",
        "state": "fired",
        "t": "2026-08-16 22:00:00",
-       "text": "a correction landed with 4.6 U of insulin still on board and BG not high/rising — it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
+       "text": "a correction landed with 4.6 U of insulin still on board and BG not high/rising; it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
        "verdicts": [
         {
          "classifier": "over_treated_low",
@@ -29257,7 +29257,7 @@
         },
         {
          "classifier": "correction_on_iob",
-         "detail": "a correction landed with 4.6 U of insulin still on board and BG not high/rising — it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
+         "detail": "a correction landed with 4.6 U of insulin still on board and BG not high/rising; it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
          "evidence_tier": "inferred",
          "matched": true,
          "silence_reason": null
@@ -32518,7 +32518,7 @@
      ],
      "priority": 28,
      "rank": 1,
-     "recommendation": "The low rebounded high — follow your usual low-treatment plan and recheck in 15 min before treating again.",
+     "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
      "recurrence": 0.1221,
      "title": "Over-treated low"
     },
@@ -32550,7 +32550,7 @@
      ],
      "priority": 21,
      "rank": 2,
-     "recommendation": "Carbs were likely undercounted — estimate higher, or split the dose for big meals.",
+     "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
      "recurrence": 0.1003,
      "title": "Carb undercount"
     }
@@ -46578,14 +46578,14 @@
        "verdicts": [
         {
          "classifier": "missed_meal",
-         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min — the rise is a recovery, not a from-flat meal climb — the rise is a post-low/post-suspend recovery, not a missed meal",
+         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min, so the rise is a recovery, not a from-flat meal climb; the rise is a post-low/post-suspend recovery, not a missed meal",
          "evidence_tier": "inferred",
          "matched": false,
          "silence_reason": "upstream_cause"
         },
         {
          "classifier": "meal_bolus_short",
-         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min — the rise is a recovery, not a from-flat meal climb — the rise is a post-low/post-suspend recovery, not a meal dose that fell short",
+         "detail": "glucose was rising 5.3 mg/dL/min, but BG bottomed at 48 mg/dL in the prior 90 min, so the rise is a recovery, not a from-flat meal climb; the rise is a post-low/post-suspend recovery, not a meal dose that fell short",
          "evidence_tier": "inferred",
          "matched": false,
          "silence_reason": "upstream_cause"
@@ -46700,11 +46700,11 @@
        "outcome_minute": 875,
        "state": "fired",
        "t": "2026-08-13 13:55:00",
-       "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL — the low was likely over-treated with fast carbs",
+       "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
        "verdicts": [
         {
          "classifier": "over_treated_low",
-         "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL — the low was likely over-treated with fast carbs",
+         "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL; the low was likely over-treated with fast carbs",
          "evidence_tier": "inferred",
          "matched": true,
          "silence_reason": null
@@ -46834,7 +46834,7 @@
        "label": "Low",
        "state": "fired",
        "t": "2026-08-16 22:00:00",
-       "text": "a correction landed with 4.6 U of insulin still on board and BG not high/rising — it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
+       "text": "a correction landed with 4.6 U of insulin still on board and BG not high/rising; it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
        "verdicts": [
         {
          "classifier": "over_treated_low",
@@ -46845,7 +46845,7 @@
         },
         {
          "classifier": "correction_on_iob",
-         "detail": "a correction landed with 4.6 U of insulin still on board and BG not high/rising — it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
+         "detail": "a correction landed with 4.6 U of insulin still on board and BG not high/rising; it then drove BG to 50 mg/dL 120 min later. Give one correction ~1–2 h to act before adding more",
          "evidence_tier": "inferred",
          "matched": true,
          "silence_reason": null
@@ -50446,7 +50446,7 @@
      ],
      "priority": 28,
      "rank": 1,
-     "recommendation": "The low rebounded high — follow your usual low-treatment plan and recheck in 15 min before treating again.",
+     "recommendation": "The low rebounded high. Follow your usual low-treatment plan and recheck in 15 min before treating again.",
      "recurrence": 0.1221,
      "title": "Over-treated low"
     },
@@ -50478,7 +50478,7 @@
      ],
      "priority": 21,
      "rank": 2,
-     "recommendation": "Carbs were likely undercounted — estimate higher, or split the dose for big meals.",
+     "recommendation": "Carbs were likely undercounted. Estimate higher, or split the dose for big meals.",
      "recurrence": 0.1003,
      "title": "Carb undercount"
     }
@@ -98990,7 +98990,7 @@
    ],
    "Missed / unannounced meal",
    "2040-01-01 00:30:00",
-   "glucose rising 6.0 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it — likely an unannounced or missed meal",
+   "glucose rising 6.0 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it, likely an unannounced or missed meal",
    [
     "classifier",
     "detail",
@@ -99052,7 +99052,7 @@
          "$ref",
          278
         ],
-        "glucose was rising 6.0 mg/dL/min with no counted meal bolus in the prior 150 min — there was no meal dose to fall short",
+        "glucose was rising 6.0 mg/dL/min with no counted meal bolus in the prior 150 min, so there was no meal dose to fall short",
         "observed",
         false,
         "no_trigger"
@@ -99090,7 +99090,7 @@
       "$ref",
       278
      ],
-     "glucose was rising 6.4 mg/dL/min with no counted meal bolus in the prior 150 min — there was no meal dose to fall short",
+     "glucose was rising 6.4 mg/dL/min with no counted meal bolus in the prior 150 min, so there was no meal dose to fall short",
      "observed",
      false,
      "no_trigger"
@@ -99102,7 +99102,7 @@
      277,
      [
       "missed_meal",
-      "glucose was rising 6.4 mg/dL/min, but a meal bolus 60 min ago is still likely driving absorption — the rise is a digestion tail, not a new unannounced meal",
+      "glucose was rising 6.4 mg/dL/min, but a meal bolus 60 min ago is still likely driving absorption, so the rise is a digestion tail, not a new unannounced meal",
       "inferred",
       false,
       "no_trigger"
@@ -99148,7 +99148,7 @@
      277,
      [
       "late_bolus",
-      "glucose was ~flat (0.0 mg/dL/min) before the bolus — the dose led the rise",
+      "glucose was ~flat (0.0 mg/dL/min) before the bolus, so the dose led the rise",
       "observed",
       false,
       "no_trigger"
@@ -108337,7 +108337,7 @@
     ]
    ],
    "2040-01-17-ep34",
-   "glucose rising 6.4 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it — likely an unannounced or missed meal",
+   "glucose rising 6.4 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it, likely an unannounced or missed meal",
    [
     [
      "$ref",
@@ -117566,7 +117566,7 @@
    {
     "Missed / unannounced meal": 9
    },
-   "glucose rising 11.2 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it — likely an unannounced or missed meal",
+   "glucose rising 11.2 mg/dL/min with no bolus in the prior 150 min and no recent low or suspend to explain it, likely an unannounced or missed meal",
    [
     "$ref",
     273,
@@ -117620,7 +117620,7 @@
          "$ref",
          278
         ],
-        "glucose was rising 11.2 mg/dL/min with no counted meal bolus in the prior 150 min — there was no meal dose to fall short",
+        "glucose was rising 11.2 mg/dL/min with no counted meal bolus in the prior 150 min, so there was no meal dose to fall short",
         "observed",
         false,
         "no_trigger"
@@ -120630,7 +120630,7 @@
      2700.0
     ]
    ],
-   "Glucose rose like a meal with no bolus near it — bolusing (even late) keeps the peak down.",
+   "Glucose rose like a meal with no bolus near it. Bolusing (even late) keeps the peak down.",
    [
     "$ref",
     1183,
@@ -136577,7 +136577,7 @@
      277,
      [
       "missed_meal",
-      "glucose was rising 6.4 mg/dL/min, but a meal bolus 63 min ago is still likely driving absorption — the rise is a digestion tail, not a new unannounced meal",
+      "glucose was rising 6.4 mg/dL/min, but a meal bolus 63 min ago is still likely driving absorption, so the rise is a digestion tail, not a new unannounced meal",
       "inferred",
       false,
       "no_trigger"
@@ -136596,7 +136596,7 @@
      277,
      [
       "missed_meal",
-      "glucose was rising 6.4 mg/dL/min, but a meal bolus 62 min ago is still likely driving absorption — the rise is a digestion tail, not a new unannounced meal",
+      "glucose was rising 6.4 mg/dL/min, but a meal bolus 62 min ago is still likely driving absorption, so the rise is a digestion tail, not a new unannounced meal",
       "inferred",
       false,
       "no_trigger"

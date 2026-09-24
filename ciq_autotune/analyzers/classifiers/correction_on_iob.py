@@ -141,7 +141,7 @@ def classify_correction_on_iob(
             matched=False,
             detail=(
                 f"the nadir ({nadir_bg:.0f} mg/dL) did not reach the {low_mgdl:.0f} "
-                "low line — no crash to attribute"
+                "low line, so there is no crash to attribute"
                 if nadir_bg is not None
                 else "no CGM nadir to judge"
             ),
@@ -179,7 +179,7 @@ def classify_correction_on_iob(
                 matched=False,
                 detail=(
                     "a second user correction landed within "
-                    f"{stack_window_min:.0f} min — this is a >= 2 stack, deferred to "
+                    f"{stack_window_min:.0f} min, so this is a >= 2 stack, deferred to "
                     "correction_stacking"
                 ),
                 evidence_tier=EvidenceTier.OBSERVED,
@@ -205,8 +205,8 @@ def classify_correction_on_iob(
         return CorrectionOnIobVerdict(
             matched=False,
             detail=(
-                f"the correction landed with only {iob_at_correction:.1f} U on board "
-                "— it did not stack onto meaningful active insulin"
+                f"the correction landed with only {iob_at_correction:.1f} U on board, "
+                "so it did not stack onto meaningful active insulin"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             # The stack-onto-live-insulin trigger is absent (IOB below the floor).
@@ -225,7 +225,7 @@ def classify_correction_on_iob(
         return CorrectionOnIobVerdict(
             matched=False,
             detail=(
-                f"BG was rising ({slope:.1f} mg/dL/min) at the correction — a rational "
+                f"BG was rising ({slope:.1f} mg/dL/min) at the correction: a rational "
                 "spike-chase, not a stack onto settled insulin"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -250,8 +250,8 @@ def classify_correction_on_iob(
         return CorrectionOnIobVerdict(
             matched=False,
             detail=(
-                f"the correction landed while {gate.detail} — a recovery, not a fresh "
-                "over-bolus"
+                f"the correction landed while {gate.detail}; it was a recovery, not a "
+                "fresh over-bolus"
             ),
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=SilenceReason.UPSTREAM_CAUSE,
@@ -274,7 +274,7 @@ def classify_correction_on_iob(
         matched=True,
         detail=(
             f"a correction landed with {iob_at_correction:.1f} U of insulin still on "
-            f"board and BG not high/rising — it then drove BG to {nadir_bg:.0f} mg/dL "
+            f"board and BG not high/rising; it then drove BG to {nadir_bg:.0f} mg/dL "
             f"{mins_to_low:.0f} min later. Give one correction ~1–2 h to act before "
             "adding more"
         ) + (override_enrichment(driver, scenario_config=scenario_config) or ""),

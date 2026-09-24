@@ -155,7 +155,7 @@ def _confirmed_over_treated_text(
         else "carbs logged"
     )
     return (
-        f"{crash} — {logged}; follow your usual low-treatment plan and recheck "
+        f"{crash} ({logged}); follow your usual low-treatment plan and recheck "
         "in ~15 min before treating again"
     )
 
@@ -330,10 +330,10 @@ def _over_treated_text(nadir: Optional[float], peak: float) -> str:
     observed, "over-treated" is the hedged inference)."""
     if nadir is not None:
         return (
-            f"BG bottomed at {nadir:.0f} mg/dL, then rebounded to {peak:.0f} mg/dL — "
+            f"BG bottomed at {nadir:.0f} mg/dL, then rebounded to {peak:.0f} mg/dL; "
             "the low was likely over-treated with fast carbs"
         )
-    return f"a low rebounded to {peak:.0f} mg/dL — likely over-treated"
+    return f"a low rebounded to {peak:.0f} mg/dL, likely over-treated"
 
 
 @dataclass(frozen=True)

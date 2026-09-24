@@ -2574,7 +2574,7 @@ class OverTreatedReboundOwnershipTest(unittest.TestCase):
         self.assertEqual(
             self._verdicts(episode, high)["missed_meal"].detail,
             "glucose was rising 3.1 mg/dL/min, but BG bottomed at 55 mg/dL in the prior "
-            "90 min — the rise is a recovery, not a from-flat meal climb — the rise is a "
+            "90 min, so the rise is a recovery, not a from-flat meal climb; the rise is a "
             "post-low/post-suspend recovery, not a missed meal",
         )
 

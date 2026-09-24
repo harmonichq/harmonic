@@ -34,6 +34,27 @@ class BuildCatalogTest(unittest.TestCase):
     def setUp(self):
         self.cat = build_catalog()
 
+    def test_the_catalog_joins_no_clauses_with_an_em_dash(self):
+        # ADR 451: the Guide prints this payload's strings (every lever's meaning
+        # and recommendation, the pipeline, the silence reasons, the worked
+        # example), so none joins its clauses with an em dash (DESIGN.md, Voice
+        # and user-copy register, rule 1).
+        def strings(node):
+            if isinstance(node, str):
+                yield node
+            elif isinstance(node, dict):
+                for value in node.values():
+                    yield from strings(value)
+            elif isinstance(node, (list, tuple)):
+                for value in node:
+                    yield from strings(value)
+
+        served = list(strings(self.cat))
+        self.assertTrue(any(text == levers.recommendation(Lever.LATE_BOLUS)
+                            for text in served))
+        for text in served:
+            self.assertNotIn("—", text)
+
     def test_top_level_shape(self):
         for key in ("engine", "pipeline", "exposures", "levers",
                     "silence_reasons", "tiers", "worked"):

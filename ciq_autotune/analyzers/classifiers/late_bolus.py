@@ -150,7 +150,7 @@ def classify_late_bolus(
         return LateBolusVerdict(
             matched=False,
             detail=(
-                f"glucose was ~flat ({slope:.1f} mg/dL/min) before the bolus — the "
+                f"glucose was ~flat ({slope:.1f} mg/dL/min) before the bolus, so the "
                 "dose led the rise"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
@@ -166,7 +166,7 @@ def classify_late_bolus(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but "
-                f"{gate.detail} — not a late meal bolus"
+                f"{gate.detail}; this is not a late meal bolus"
             ),
             evidence_tier=EvidenceTier.INFERRED,
             silence_reason=SilenceReason.UPSTREAM_CAUSE,
@@ -183,7 +183,7 @@ def classify_late_bolus(
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but a "
                 f"carb bolus ({prior.carbs:.0f} g) {mins_before:.0f} min earlier is "
-                "still absorbing — this rise is owned by that earlier dose, not a "
+                "still absorbing, so this rise is owned by that earlier dose, not a "
                 "late meal bolus"
             ),
             evidence_tier=EvidenceTier.INFERRED,
@@ -198,8 +198,8 @@ def classify_late_bolus(
             matched=False,
             detail=(
                 f"glucose was rising {slope:.1f} mg/dL/min before the bolus, but BG "
-                f"was already {bg_at_bolus:.0f} mg/dL (clearly high) at bolus time — "
-                "rise is from a prior high baseline, not a from-flat meal spike"
+                f"was already {bg_at_bolus:.0f} mg/dL (clearly high) at bolus time, so "
+                "the rise is from a prior high baseline, not a from-flat meal spike"
             ),
             evidence_tier=EvidenceTier.OBSERVED,
             silence_reason=SilenceReason.PRIOR_HIGH_BASELINE,
@@ -212,7 +212,7 @@ def classify_late_bolus(
         matched=True,
         detail=(
             f"glucose was already rising {slope:.1f} mg/dL/min before the bolus, with "
-            "no recent low or suspend to explain it — bolusing ~15 min before eating "
+            "no recent low or suspend to explain it; bolusing ~15 min before eating "
             "would blunt the spike"
         ),
         evidence_tier=EvidenceTier.INFERRED,

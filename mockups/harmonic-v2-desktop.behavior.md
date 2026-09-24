@@ -50,7 +50,10 @@ case store.
 
 Base preservation is main push CI run 35959034199 on b03431d2, which passed: the
 complete ledger, 171 issued, at both sizes. The scheduled nightly on the same
-commit is run 36011270820.
+commit (run 36011270820) failed S100 once at 1280x720. That is a product defect
+this release fixes: a background repaint emptied the fullscreen chart's keyboard
+readout and dropped its focus. S100 is unchanged; a desk-suite test and a
+forcing harness prove the fix.
 
 The new stories were proved with each ticket's harness laid over b03431d2, at
 1280x720 and 1440x900. The coordinator ran every leg. Each story's status line

@@ -18,9 +18,9 @@
 //
 // THE SCHEDULE IS frontend/plan.js's, not this module's. buildDeliverable,
 // collapseDeliverable, reconcileDeliverable, effectivePlanItems and
-// segmentCapacity own construction, collapsing, the pump-precision match and the
-// capacity copy for v1 and v2 alike. Nothing here rounds a dose, compares a
-// value or counts a segment.
+// segmentCapacity own construction, collapsing, a served mismatch's
+// pump-precision rows and the capacity copy. Nothing here rounds a dose,
+// compares a value or counts a segment.
 //
 // THE STALE CONFLICT IS REAL, AND IT IS THE POINT. A decision is recorded
 // against the revision this page read. Anything that moves the store in between

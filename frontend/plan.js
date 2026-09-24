@@ -6,23 +6,20 @@
      2. Accepted-changes list — removable provenance chips (add/remove only),
         each linking back to the Review evidence it came from.
      3. Deliverable — a unified ≤16-segment four-parameter pump-ready table
-        built from the current active profile + the accepted changes, editable
-        as the source of truth. A hand-edit flips that row's provenance to
-        "manually edited". The raw model recommendation (#98's
+        built from the current active profile + the accepted changes. The raw
+        model recommendation (#98's
         ConsolidatedProfile) is NOT a source here — only accepted picks move a
         cell off its current value (see #93: one source of truth for "the new
         profile").
 
    This module owns everything that is *pure* about layer 3: merging the
-   accepted plan onto the current profile into unified rows, provenance
-   tagging, and hand-edit merge. No Vue, no DOM, no fetch — so `node --test`
-   imports it with no importmap.
+   accepted plan onto the current profile into unified rows, and provenance
+   tagging. No Vue, no DOM, no fetch — so `node --test` imports it with no
+   importmap.
 
    Provenance vocabulary (per row, per parameter):
      'current'   — carried forward unchanged from the active profile.
      'accepted'  — value came from an accepted Review change (a plan pick).
-     'edited'    — the user hand-edited this cell away from both current and
-                   the accepted recommendation.
 
    SHAPES
    ------
@@ -32,7 +29,6 @@
                     basal_slots, basal_max_deviation }], ... }
    acceptedItems: Map|Array of plan picks, each
      { type: 'basal'|'isf'|'ic'|'target', start_min, value, recommended, label, ... }
-   edits: { [`${start_min}:${param}`]: number } — hand-edited overrides.
    ========================================================================= */
 
 /** Tuning variable families allowed in one Plan draft (ADR 0042). */
@@ -103,29 +99,18 @@ function toArray(items) {
   return Object.values(items);
 }
 
-/** The Plan family for a deliverable param, or null for an unknown param. */
-export function planParamFamily(param) {
-  return PLAN_PARAM_FAMILY[param] || null;
-}
-
 /** The Plan family carried by one accepted draft item, or null if unsupported. */
 export function planItemFamily(item) {
   const family = item && item.type;
   return PLAN_FAMILIES.includes(family) ? family : null;
 }
 
-function editParam(editKey) {
-  const s = String(editKey);
-  const i = s.indexOf(':');
-  return i === -1 ? s : s.slice(i + 1);
-}
-
 /**
- * Collect the tuning families represented by accepted picks and hand-edits.
+ * Collect the tuning families represented by accepted picks.
  * Invalid entries are reported separately so callers can choose whether to
  * reject or clear them.
  */
-export function planFamilyState(acceptedItems = null, edits = {}) {
+export function planFamilyState(acceptedItems = null) {
   const seen = new Set();
   const invalid = [];
   const addFamily = (family) => {
@@ -145,16 +130,6 @@ export function planFamilyState(acceptedItems = null, edits = {}) {
     addFamily(family);
   });
 
-  for (const key of Object.keys(edits || {})) {
-    const param = editParam(key);
-    const family = planParamFamily(param);
-    if (!family) {
-      invalid.push(`edit ${key} has unsupported deliverable parameter ${param}`);
-      continue;
-    }
-    addFamily(family);
-  }
-
   const families = Array.from(seen);
   return {
     families,
@@ -166,8 +141,8 @@ export function planFamilyState(acceptedItems = null, edits = {}) {
 }
 
 /** Return the one Plan family, or throw if entries are invalid or mixed. */
-export function assertSinglePlanFamily(acceptedItems = null, edits = {}) {
-  const state = planFamilyState(acceptedItems, edits);
+export function assertSinglePlanFamily(acceptedItems = null) {
+  const state = planFamilyState(acceptedItems);
   if (state.invalid.length) {
     throw new Error(`Invalid Plan draft: ${state.invalid.join('; ')}`);
   }
@@ -252,8 +227,8 @@ export function acceptedChips(acceptedItems) {
  * Build the unified ≤16-segment deliverable table.
  *
  * The deliverable is the current programmed profile with the user's *accepted*
- * changes (and hand-edits) carried in — NOT the raw model recommendation. Until
- * a change is accepted on Review (or hand-edited here), every cell mirrors the
+ * changes carried in — NOT the raw model recommendation. Until
+ * a change is accepted on Review, every cell mirrors the
  * active profile, so a fresh user sees their current profile with no diffs and
  * no new breaks. (Auto-adopting the consolidated recommendation here was the
  * "two competing sources of truth" the Review→Plan rework killed — see #93.)
@@ -270,18 +245,16 @@ export function acceptedChips(acceptedItems) {
  * (a basal pick's start or its synthetic slot-end) does NOT revert them.
  *
  * Each row carries all four params with a value + provenance. Precedence per cell:
- *   1. hand-edit (`edits`)                                                -> 'edited'
- *   2. accepted plan pick at this exact start_min                         -> 'accepted'
- *   2b. for ISF/IC/target: most recent accepted pick of that type still in-effect
+ *   1. accepted plan pick at this exact start_min                         -> 'accepted'
+ *   1b. for ISF/IC/target: most recent accepted pick of that type still in-effect
  *       (pick.start_min <= boundary AND same active-profile segment)      -> 'accepted'
- *   3. carried forward from the active profile                            -> 'current'
+ *   2. carried forward from the active profile                            -> 'current'
  *
  * `current` on each cell is always the active-profile value (the "was").
  *
  * @param {object} args
  * @param {object} args.activeProfile    { segments: [...] }
  * @param {Map|Array} [args.acceptedItems]
- * @param {object} [args.edits]          { `${start_min}:${param}`: number }
  * @returns {Array<row>} rows sorted by start_min, each:
  *   { start_min, label, isNewBreak, count (filled by caller),
  *     basal_rate:{current,value,provenance}, isf:{...},
@@ -290,9 +263,8 @@ export function acceptedChips(acceptedItems) {
 export function buildDeliverable({
   activeProfile,
   acceptedItems = null,
-  edits = {},
 } = {}) {
-  assertSinglePlanFamily(acceptedItems, edits);
+  assertSinglePlanFamily(acceptedItems);
   const segments = (activeProfile && activeProfile.segments) || [];
   if (!segments.length) return [];
 
@@ -332,24 +304,20 @@ export function buildDeliverable({
     };
     for (const { param, type } of PLAN_PARAMS) {
       const current = seg[param] != null ? seg[param] : null;
-      const editKey = `${start_min}:${param}`;
       const pick = type != null ? accepted.get(`${start_min}:${type}`) : null;
 
       let value = current;
       let provenance = 'current';
-      // #581: the I:C block this cell's value traces back to, if any. Kept
-      // riding through a hand-edit override below (rather than cleared) so
-      // normalizeIcBlockProvenance can still tell which block the edit lives
-      // in when it decides whether the group as a whole survives intact.
+      // #581: the I:C block this cell's value traces back to, if any.
       let icBlockProvenance = null;
 
-      // 2: an explicit accepted pick at this boundary.
+      // 1: an explicit accepted pick at this boundary.
       if (pick != null && pick.value != null) {
         value = pick.value;
         provenance = 'accepted';
         if (type === 'ic' && pick.ic_block_provenance) icBlockProvenance = pick.ic_block_provenance;
       } else if (type === 'isf' || type === 'ic' || type === 'target') {
-        // 2b: carry-forward — find the most recent accepted pick of this type
+        // 1b: carry-forward — find the most recent accepted pick of this type
         // whose start_min <= this boundary AND falls in the same active-profile
         // segment (no active-profile segment boundary has intervened).
         const candidates = acceptedByType.get(type) || [];
@@ -368,12 +336,6 @@ export function buildDeliverable({
         }
       }
 
-      // 1: a hand-edit is the source of truth and flips provenance.
-      if (Object.prototype.hasOwnProperty.call(edits, editKey)) {
-        value = edits[editKey];
-        provenance = 'edited';
-      }
-
       row[param] = { current, value, provenance };
       if (icBlockProvenance) row[param].ic_block_provenance = icBlockProvenance;
     }
@@ -387,45 +349,21 @@ export function buildDeliverable({
  *
  * Rows merge only when they agree on BOTH the delivered value AND the baseline
  * (`current`) for all four params. Matching on value alone would silently fold
- * an accepted/edited change into an unchanged neighbour that happens to carry
+ * an accepted change into an unchanged neighbour that happens to carry
  * the same number (e.g. lowering 03:00 from 0.72 to 0.6 when 00:00 is already
  * 0.6) — erasing the change, and its current→new diff, from the schedule the
  * user has to verify. Requiring the baseline to match too keeps every changed
  * boundary visible while still folding a truly redundant run (adjacent segments
  * with the same value and the same "was").
- *
- * When a redundant row DOES fold in, its proposal provenance is carried onto the
- * survivor per cell (edited > accepted > current). Once a staged change is keyed
- * into the pump and refetched, its cell reads value === current — so a change
- * that lands equal to its neighbour would fold away and the survivor, tagged
- * `current`, would read as "no plan here" (#462). Promoting provenance keeps the
- * proposal detectable after the fold without changing any displayed number.
  */
-const PROV_RANK = { current: 0, accepted: 1, edited: 2 };
-
 export function collapseDeliverable(rows) {
   if (!rows || !rows.length) return rows || [];
   const same = (a, b) =>
     PLAN_PARAMS.every(({ param }) =>
       a[param].value === b[param].value && a[param].current === b[param].current);
-  // Clone so promoting a survivor's provenance never mutates the source rows.
-  const clone = (row) => {
-    const copy = { ...row };
-    for (const { param } of PLAN_PARAMS) copy[param] = { ...row[param] };
-    return copy;
-  };
-  const out = [clone(rows[0])];
+  const out = [rows[0]];
   for (let i = 1; i < rows.length; i++) {
-    const survivor = out[out.length - 1];
-    if (same(rows[i], survivor)) {
-      for (const { param } of PLAN_PARAMS) {
-        if (PROV_RANK[rows[i][param].provenance] > PROV_RANK[survivor[param].provenance]) {
-          survivor[param].provenance = rows[i][param].provenance;
-        }
-      }
-    } else {
-      out.push(clone(rows[i]));
-    }
+    if (!same(rows[i], out[out.length - 1])) out.push(rows[i]);
   }
   return out;
 }
@@ -470,7 +408,7 @@ export function segmentCapacity(rows) {
 /**
  * Returns true iff the deliverable carries at least one pending change — i.e.
  * any row has any of the four params where value !== current.  An all-'current'
- * deliverable (nothing staged, no hand-edits) returns false.
+ * deliverable (nothing staged) returns false.
  */
 export function deliverableHasChanges(rows) {
   if (!rows || !rows.length) return false;
@@ -479,55 +417,18 @@ export function deliverableHasChanges(rows) {
 }
 
 /**
- * True iff setting the cell `${start_min}:${param}` to `value` returns it to the
- * value it would show with NO hand-edit there — its accepted pick, or (absent
- * one) the current profile. The edit handler uses this to DELETE the override on
- * such a revert instead of recording it.
- *
- * Without this a 50 → 60 → 50 round-trip keeps `edited` provenance, so the
- * reverted cell still reads as a proposal: an otherwise-empty first Plan would
- * confirm and persist a false 50 → 50 apply-history item (#462). Compared under
- * pump-programmable precision (the same rounding reconcile uses), so a value
- * differing only below the programmable step still counts as a revert.
- *
- * @param {object} active         active profile { segments }
- * @param {Map|Array} acceptedItems
- * @param {object} edits          the current hand-edit overrides
- * @param {number} start_min
- * @param {string} param          basal_rate | isf | carb_ratio | target_bg
- * @param {number} value          the newly-typed value
- */
-export function isDeliverableEditRevert(active, acceptedItems, edits, start_min, param, value) {
-  const key = `${start_min}:${param}`;
-  const rest = {};
-  for (const k of Object.keys(edits || {})) {
-    if (k !== key) rest[k] = edits[k];
-  }
-  const baseline = buildDeliverable({ activeProfile: active, acceptedItems, edits: rest });
-  const cell = segmentAt(baseline, start_min);
-  const baseVal = cell && cell[param] ? cell[param].value : null;
-  if (baseVal == null) return false;
-  const places = PARAM_PRECISION[param];
-  return roundToPrecision(value, places) === roundToPrecision(baseVal, places);
-}
-
-/**
  * The effective plan the user is committing — one item per proposal cell (an
- * accepted pick or a hand-edit), carrying the value actually in effect. A
- * hand-edit wins over the accepted pick, so the item records the post-edit
- * value, not the pre-edit pick.
+ * accepted pick), carrying the value actually in effect.
  *
- * This is what confirmation must record in apply history: reading the stored
- * accepted-item draft instead would post an EMPTY draft for a hand-edit-only
- * plan (nothing was ever accepted) and record the pre-edit value for a mixed
- * accepted+edited plan (#462). Provenance is the source of truth here, so the
- * items survive the keyed-in-and-refetched case where value === current.
+ * This is what confirmation must record in apply history. Provenance is the
+ * source of truth here, so the items survive the keyed-in-and-refetched case
+ * where value === current (#462).
  *
  * Pass the UNCOLLAPSED deliverable rows so every changed boundary is captured
  * (a basal pick's one slot, an ISF fan-out's every segment).
  *
  * Runs through `normalizeIcBlockProvenance` (#581) before returning, so a
- * partial or independently-edited I:C block never reaches the caller carrying
+ * partial or disagreeing I:C block never reaches the caller carrying
  * a provenance claim it no longer backs.
  *
  * @param {Array<row>} rows  from buildDeliverable (uncollapsed)
@@ -570,13 +471,13 @@ function icBlockGroupKey(prov) {
  * minute listed in `block_member_start_mins` is present as exactly one item
  * carrying that same provenance (no member removed, no stray extra claiming
  * the block), AND every one of those items' effective `value` agrees at
- * 4-decimal precision (no member independently edited away from the rest).
+ * 4-decimal precision (no member carrying a different value from the rest).
  * Any other item (non-`ic`, or `ic` with no provenance) passes through
  * untouched.
  *
  * This is the ONE place the Plan lifecycle re-validates a block claim — call
  * it before every draft save, not just from `effectivePlanItems`, since a
- * chip removal or hand-edit can leave the *raw* accepted-picks list (not just
+ * chip removal can leave the *raw* accepted-picks list (not just
  * the derived deliverable) holding a now-broken group.
  *
  * @param {Array<object>} items  plan items, optionally carrying

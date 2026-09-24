@@ -161,17 +161,64 @@ cannot load (its entry module imports `frontend/scenario-chart.js`, which no
 longer exists, and #416 retired the replay's prototype opener for that
 reason); the exploration brief that quotes the old signature; #431's triage
 reproduction `docs/scope/431-plan-state-repro.mjs`, which replayed the browser
-verdict this removes; and `openspec/changes/harmonic-v2/`.
+verdict this removes; and `openspec/changes/harmonic-v2/`. They are records,
+not live code, and stay as they are (coordinator ruling, 2026-09-23).
+
+The same ruling approves the two callers this widening edits outside the
+original allowlist (`plan-view.js` and the contract check) and this change's
+own record edits after the lock's pin; the approval is recorded on the tracker
+at finalize.
+
+### Coordinator-authorized widening — 2026-09-23: the retired hand-edit path
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1 (findings F2,
+F3 and F4).
+
+The v1 Plan tab let the wearer hand-edit a deliverable cell. The desk has no
+such control: `plan-view.js` builds its deliverable from the served profile and
+the accepted items, and no caller in the tree (`frontend/`, `mockups/`,
+`scripts/`, `tests/`, the locked prototype included) passes `edits`. The code
+that served hand-edits had no live reader:
+
+- `buildDeliverable`'s `edits` parameter and the override that set `edited`
+  provenance;
+- the `edits` parameter of `planFamilyState` and `assertSinglePlanFamily`, and
+  with it `editParam` and `planParamFamily`, whose only caller was that loop;
+- `isDeliverableEditRevert`, called only by its four tests, which the built
+  bundle already dropped;
+- `collapseDeliverable`'s provenance promotion (`PROV_RANK`, the survivor clone
+  and its #462 comment). It kept a folded proposal detectable for the first-Plan
+  check the widening above deleted. The desk reads a collapsed row's label, new
+  break, value and "was", never its provenance, and `effectivePlanItems` reads
+  uncollapsed rows.
+
+All of it is deleted, with the module prose that described hand-edits. Tests of
+the path are deleted. The one test that used a hand-edit to make an I:C block's
+members disagree now serves the disagreement in the accepted items, because
+`normalizeIcBlockProvenance` still guards the served draft.
+
+The build diff against the previous widening is removal-only: the parameters,
+the override, the family-state loop and its two helpers, the promotion and the
+clone go, and JSDoc text changes. Old and new agree on `buildDeliverable`,
+`effectivePlanItems`, `segmentCapacity`, `reconcileDeliverable` and every
+collapsed-row field except provenance, over 3000 synthetic inputs in the
+shipped call shape. Collapsed-row provenance differs in 151 of them, which is
+the promotion this removes.
+
+F4: `plan-view.js`'s header said `plan.js` owns the schedule "for v1 and v2
+alike". It now names only what the desk uses.
 
 ### Consequences
 
 - S89 fails at the check where it certifies its decision when Plan history is
   served in another order (D) or one recording adds more than one row (E).
   Before #453 it passed D, and failed E only at the later reload check.
-- The desk bundle loses the dead verdict code and nothing else. S42 is the
-  story that renders a served mismatch's rows. S105, S145 and S146 drive the
-  same Plan status on its confirmed and draft paths. No browser suite renders
-  it.
+- The desk bundle loses the dead verdict and hand-edit code and nothing else.
+  S42 is the story that renders a served mismatch's rows. S105, S145 and S146
+  drive the same Plan status on its confirmed and draft paths. S38, S39, S40,
+  S41, S89 and S90 build the deliverable through staging, the Plan table, its
+  capacity copy and the Plan writes. No browser suite renders the Plan.
 
 ### Risk contract
 
@@ -184,10 +231,10 @@ verdict this removes; and `openspec/changes/harmonic-v2/`.
 - **Unsupported:** two Plans recorded with the same `applied_at` second. The
   server keys Plan identity on it, so that is outside this story.
 - **Evidence owed:** the fake-page test in `frontend/replay-cases.test.js`
-  (histories B, C, D and E, each observed failing on the base body first); S89,
-  S42, S105, S145 and S146 replayed on their case stores at both sizes on the
-  built app; the removal-only bundle diff; the fast gate and the guidance Plan
-  contract green after the tests go.
+  (histories B, C, D and E, each observed failing on the base body first);
+  S38, S39, S40, S41, S42, S89, S90, S105, S145 and S146 replayed on their case
+  stores at both sizes on the built app; the removal-only bundle diffs; the fast
+  gate and the guidance Plan contract green after the tests go.
 
 Why: the change is evidence-only plus dead-code removal, so the risk is a proof
 that proves the wrong row.

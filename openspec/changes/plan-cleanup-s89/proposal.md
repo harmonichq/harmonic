@@ -71,7 +71,9 @@ reader takes the first record or finds a record by its identity (design.md).
 - Widened by the coordinator on 2026-09-23 after code review (design.md):
   `reconcileDeliverable` keeps only the mismatch rows Changes draws. Its unread
   `state` and `matchedAt`, its first-Plan branch and `deliverableIsProposal` are
-  deleted, and the guidance Plan contract check compares on the rows.
+  deleted, and the guidance Plan contract check compares on the rows. The v1
+  hand-edit path the desk never uses (`edits`, `isDeliverableEditRevert`, the
+  collapse provenance promotion) is deleted too.
 
 ## What does not change
 

@@ -124,7 +124,35 @@ records the decision under ADR 453.
   built before and after, and compare old and new `groups` over synthetic inputs
   in the shipped call shape. This supersedes task 1.2's byte-identical hashes for
   the branch as a whole.
-- [ ] 5.5 Port-bound, run by the release coordinator, never two port-bound legs
-  at once: task 4.2's command with `ONLY=S42,S89,S105,S145,S146` at 1280x720 and
-  at 1440x900, each reporting `executed 5 · failed 0 · deferred 0 · selected 5`
-  on the base and on the branch.
+- [ ] 5.5 Port-bound: covered by task 6.5's run, which selects every story this
+  widening touches.
+
+## 6. Coordinator-authorized widening — 2026-09-23 (code review round 1, F2–F4)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1. design.md
+records the decision under ADR 453.
+
+- [x] 6.1 Grep the whole tree (`frontend/`, `mockups/`, `scripts/`, `tests/`)
+  for callers that pass `edits` or call `isDeliverableEditRevert`: there are
+  none. Delete the hand-edit path from `frontend/plan.js`: `buildDeliverable`'s
+  `edits` parameter and `edited` override; the `edits` parameter of
+  `planFamilyState` and `assertSinglePlanFamily` with `editParam` and
+  `planParamFamily`, which lose their only caller; `isDeliverableEditRevert`;
+  and `collapseDeliverable`'s provenance promotion, survivor clone and #462
+  comment. Correct the module prose that describes hand-edits.
+- [x] 6.2 `frontend/plan.test.js` drops the thirteen tests of that path and the
+  `planParamFamily` assertions. The I:C disagreeing-members test serves the
+  disagreement in the accepted items instead of a hand-edit.
+  `node --test frontend/plan.test.js` reports 44 pass, 0 fail, so task 4.1's
+  pair now reports pass 64, fail 0 (44 and 20).
+- [x] 6.3 F4: `frontend/plan-view.js`'s header names what `plan.js` owns for the
+  desk only, without "for v1 and v2 alike".
+- [x] 6.4 Show the build changes only by removal: diff the unminified desk chunk
+  against the section 5 build, and compare old and new outputs of every live
+  entry point over synthetic inputs in the shipped call shape.
+- [ ] 6.5 Port-bound, run by the release coordinator, never two port-bound legs
+  at once: task 4.2's command with
+  `ONLY=S38,S39,S40,S41,S42,S89,S90,S105,S145,S146` at 1280x720 and at
+  1440x900, each reporting `executed 10 · failed 0 · deferred 0 · selected 10`
+  on the base and on the branch. Passing it also ticks 4.2 and 5.5.

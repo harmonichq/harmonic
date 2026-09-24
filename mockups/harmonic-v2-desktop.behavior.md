@@ -5408,7 +5408,8 @@ S186 · The watch dock and Diagnose's staged marks follow the Plan draft. Leg 1:
             legs 2–4 stage through the lane's lower cell and its .stagebtn,
             waiting for the save and its guidance read; the change records open
             in place as a history step (a saved draft seats Changes on the Plan,
-            whose draft has no record door). Leg 3 holds GET /api/plan from the
+            whose draft has no record door), and on basal-lower, which holds no
+            record, they draw their empty frame. Leg 3 holds GET /api/plan from the
             Diagnose press until the desk has settled. Leg 4 reads /api/analyze
             for a basal slot that does not assert. The story runs every leg and
             fails once, naming each failed leg

@@ -715,7 +715,8 @@ const stageLabel = (page) => page.locator('#level .stagebtn').evaluate((button) 
   words.querySelector('.sub')?.remove();
   return words.textContent.trim();
 });
-const dockKind = (page) => page.locator('.inspector > .watch .kind').innerText();
+// textContent: the kind line is set in capitals by CSS, so innerText reads them.
+const dockKind = (page) => page.locator('.inspector > .watch .kind').textContent();
 // The loading frame first: while a return checks the store, the parked desk is
 // still in the document with its settled #level.
 const deskSettled = (page) => page.waitForFunction(() => !document.querySelector('.gf-loading')

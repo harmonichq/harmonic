@@ -2199,10 +2199,12 @@ async function toChanges460(page) {
     && !document.querySelector('.gf .gf-loading') && document.querySelector('.gf-stage'), null, { timeout: 30000 });
 }
 /** The change records, opened in place as a history step: a saved draft seats
-    Changes on the Plan, whose draft offers no change-record door of its own. */
+    Changes on the Plan, whose draft offers no change-record door of its own. A
+    store with no record draws the records' empty frame instead of their roster. */
+const RECORDS460 = '[aria-label="Change records"], .gf-empty [data-destination-action="diagnose"]';
 async function toRecords460(page) {
   await page.evaluate(() => { history.pushState(null, '', '/changes?subject=history'); dispatchEvent(new PopStateEvent('popstate')); });
-  await page.locator('[aria-label="Change records"]').waitFor({ timeout: 30000 });
+  await page.locator(RECORDS460).first().waitFor({ timeout: 30000 });
 }
 async function toDiagnose460(page) {
   await press(page, 'nav.v2-nav [data-destination="diagnose"]');
@@ -2239,7 +2241,7 @@ const LEGS460 = [
     await toChanges460(page);
     await toRecords460(page);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('[aria-label="Change records"]').waitFor({ timeout: 30000 });
+    await page.locator(RECORDS460).first().waitFor({ timeout: 30000 });
     const held = [];
     const hold = route => (route.request().method() === 'GET' ? held.push(route) : route.fallback());
     await page.route('**/api/plan', hold);

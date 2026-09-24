@@ -1413,33 +1413,56 @@ test('#460 · a cold seat whose Plan read lands after the payload hands the view
   } finally { fetchReply = previousFetch; }
 });
 
-test('#460 · a retained return re-reads Plan state and guidance, then refreshes the view', async () => {
+// A retained return with a plain top-nav press: seat, park, return with the
+// input revision unchanged. `between` runs while Diagnose is parked. Answers
+// the events the reads and the view's refreshes logged after the return.
+async function retainedReturn460(between = () => {}) {
   const previous = globalThis.window;
   const previousFetch = fetchReply;
   const events = [];
-  fetchReply = draftTransport(DRAFT_460, { log: events });
+  const served = { draft: DRAFT_460 };
+  const transport = log => async (url) => draftTransport(served.draft, { log })(url);
+  fetchReply = transport(events);
   const page = browser();
   globalThis.window = page;
-  const served = source(); const seat = host(); seat.ownerDocument.defaultView = page;
-  const destination = createDiagnoseDestination({ api: served.api,
+  const source460 = source(); const seat = host(); seat.ownerDocument.defaultView = page;
+  const destination = createDiagnoseDestination({ api: source460.api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() { events.push('refresh'); }, setError() {} }) });
   try {
     await destination.read();
     destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
-    await flush();
+    await afterHandlers();
     park(destination, seat, 0, routed(page));
-    events.length = 0; served.requests.length = 0;
+    between(served);
+    events.length = 0; source460.requests.length = 0;
     destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
     await flush();
-    assert.deepEqual(served.requests, ['status'], 'premise: the input revision is unchanged, so no payload read');
+    assert.deepEqual(source460.requests, ['status'], 'premise: the input revision is unchanged, so no payload read');
     destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
     await afterHandlers();
-    const lastRead = Math.max(events.lastIndexOf('/api/plan'), events.lastIndexOf('/api/guidance'));
-    assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
-      `the return re-reads Plan state and guidance: ${events.join(', ')}`);
-    assert.ok(events.lastIndexOf('refresh') > lastRead, `the view refreshes after both reads: ${events.join(', ')}`);
     destination.leave();
+    return events;
   } finally { globalThis.window = previous; fetchReply = previousFetch; }
+}
+
+test('#460 · a retained return re-reads Plan state and guidance, then refreshes the view', async () => {
+  // A draft replaced while Diagnose was parked, as a Plan route write or another tab does.
+  const events = await retainedReturn460((served) => {
+    served.draft = { items: [{ type: 'basal', start_min: 0, value: 0.7 }], updated_at: 't460-replaced' };
+  });
+  const lastRead = Math.max(events.lastIndexOf('/api/plan'), events.lastIndexOf('/api/guidance'));
+  assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
+    `the return re-reads Plan state and guidance: ${events.join(', ')}`);
+  assert.ok(events.lastIndexOf('refresh') > lastRead, `the view refreshes after both reads: ${events.join(', ')}`);
+});
+
+test('#460 · a retained return whose served Plan state has not moved repaints the view once, at the re-seat', async () => {
+  // A second repaint would rebuild the reading pane under the focus a Day
+  // return has just put back on its Occurrence's Open in Day control.
+  const events = await retainedReturn460();
+  assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
+    `premise: the return re-reads Plan state and guidance: ${events.join(', ')}`);
+  assert.equal(events.filter(event => event === 'refresh').length, 1, `one refresh: ${events.join(', ')}`);
 });
 
 // Last: it seats the desk's one router on a stand-in surface for this module.

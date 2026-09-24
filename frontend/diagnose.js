@@ -154,14 +154,23 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     ((held && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
   }
 
+  // The served Plan state the workstation's marks and watch panel read.
+  const servedPlan = () => JSON.stringify([planDraft(), pendingPlan()]);
+
   // The one in-place repaint waits for the Plan state and for the Focus read,
   // which carries the guidance read whose served pending Plan and Plan draft the
-  // watch panel paints (#431, ADR 460). Both reads start side by side.
-  function readPlan() {
+  // watch panel paints (#431, ADR 460). Both reads start side by side. A
+  // retained return has already repainted at its re-seat, so it repaints again
+  // only when the reads moved the served Plan state: an idle repaint rebuilds
+  // the reading pane under the focus a Day return has just put back.
+  function readPlan({ retained = false } = {}) {
+    const before = retained && servedPlan();
     Promise.all([
       readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); }),
       loadPlanState(),
-    ]).then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
+    ]).then(() => {
+      if (seated && !parked && (!retained || servedPlan() !== before)) workstation.refresh();
+    }).catch(() => {});
   }
 
   async function read() {
@@ -624,7 +633,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // it ends with re-seeds the staged marks. Never while a stage save is
       // pending: a read issued before it commits could land after it and hand
       // back the pre-press draft; the save's own settle re-seeds instead.
-      if (!staging) readPlan();
+      if (!staging) readPlan({ retained: true });
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;
       if (moved) writeCase();

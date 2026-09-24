@@ -21,6 +21,9 @@ string detail.
 
 #### Scenario: Every lifecycle refusal code has a sentence
 
-- **GIVEN** each refusal code the lifecycle writes and the store can raise
+- **GIVEN** every refusal code enumerated from the modules that raise lifecycle
+  refusals, together with the handler's default
 - **WHEN** its message is looked up
 - **THEN** it is non-empty and contains no underscore
+- **AND** every raise in those modules passes its code as a literal, so none
+  escapes the enumeration

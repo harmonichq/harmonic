@@ -24,14 +24,21 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 - [ ] 1.2 Serve a sentence beside the code on the durable lifecycle 409
   (`ciq_autotune/api.py`, the handler that builds
   `{"code": getattr(error, "reason", "lifecycle_conflict"), **current}`):
-  `message` from a closed table beside that handler holding ADR 450's refusal
-  sentences, the code itself for an unknown code. The non-durable string detail
-  is unchanged. Tests in `tests/test_durable_follow_up.py`: a durable Focus
-  resolve with a stale `input_revision` answers 409 with `detail.code`
-  `stale_input_revision`, that code's sentence as `detail.message`, and
-  `detail.admission` and `detail.input_revision` still served; and every
-  refusal code listed literally in ADR 450 has a non-empty message with no
-  underscore. Fails first on the base.
+  `message` from a closed module-level table in `api.py` holding ADR 450's
+  refusal sentences for all 22 codes, the code itself for an unknown code. The
+  non-durable string detail is unchanged. Tests in
+  `tests/test_durable_follow_up.py`: (a) a durable Focus resolve with a stale
+  `input_revision` answers 409 with `detail.code` `stale_input_revision`, that
+  code's sentence as `detail.message`, and `detail.admission` and
+  `detail.input_revision` still served; (b) a completeness test that
+  enumerates the codes from their producers, never from a list in the test or
+  the ADR: it scans every module under `ciq_autotune/` with the scan committed
+  in this change's `refusals.py` (every `FollowUpConflict(` call, a string
+  literal code in either quote style, plus the handler's `getattr` default),
+  asserts every raise site passes a literal, and asserts every code found has a
+  non-empty table message with no underscore. On the base the scan finds 32
+  literal raise sites and 22 codes. Both fail first on the base (no message is
+  served; the table does not exist).
 
 ## 2. The desk names the watched behavior
 
@@ -107,10 +114,16 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 - [ ] 3.4 The Focus entry's withheld copy (`frontend/focus-entry.js`, `mount`)
   prints `admissionReason(reason).said` for a served `focus_pin.reason`; an
   absent reason keeps today's sentence. `frontend/guidance.js`'s `REASON_SAID`
-  gains `pending_plan` with ADR 450's sentence. Test in
-  `frontend/focus-entry.test.js` through `mount` for `pending_plan` and
-  `reconciliation_required`: the copy states the reason and the code is absent.
-  Fails first on the base.
+  gains `pending_plan` with ADR 450's sentence. A reason `admissionReason` does
+  not know reads as its existing generic sentence, the one stated exception in
+  ADR 450. Test in `frontend/focus-entry.test.js` through `mount` for
+  `pending_plan` and `reconciliation_required`: the copy states the reason and
+  the code is absent. Trap: `frontend/data.js` builds its default client at
+  import (`makeDeps()` at data.js:579) and captures `globalThis.fetch` then, so
+  the module-level entry `mount` uses only sees a fetch stub installed before
+  `focus-entry.js` is first imported; the test file installs its stub first and
+  imports the module dynamically, as `frontend/follow-up-lifecycle.test.js`
+  does. Fails first on the base.
 - [ ] 3.5 The Trial finish, Focus resolve and later-conclusion failure lines
   (`frontend/follow-up.js`, `frontend/history.js`) print the served refusal
   message (`error.message`) and never `<code> (<status>)`; the two modules share
@@ -118,12 +131,26 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   failure lines already print `error.message`, which `ApiTransportError` takes
   from a served `message` (pinned by the existing `frontend/data.test.js` case
   that asserts `error.message` equals `detail.message`), so task 1.2 alone
-  ends their "[object Object]" and neither module changes. Tests: the
+  ends their "[object Object]" and neither module changes. The Focus pin failure
+  line (`frontend/focus-entry.js` `mount`, "Starting the Focus failed:
+  <message>. No successful pin was confirmed.") strips one trailing full stop
+  from the message before appending its own. Tests: the
   `frontend/follow-up.test.js` save-error case (today expecting
   `stale_input_revision (409)`) expects a served message and neither the code
   nor "(409)"; a finish refused through `mount` in
   `frontend/follow-up-lifecycle.test.js` with a 409 detail carrying `code` and
-  `message` prints the message only. Fails first on the base.
+  `message` prints the message only; the later-conclusion test in
+  `frontend/follow-up-lifecycle.test.js` ("an exact expired Trial records a
+  later conclusion…") has its refused conclusion POST answered 409 with a detail
+  carrying `code` `stale_input_revision` and that code's message, and asserts
+  the message prints and neither `stale_input_revision` nor "(409)" appears,
+  through history.js's failure-message path; and a `frontend/focus-entry.test.js`
+  case through `mount` whose pin is refused 409 with a message ending in a full
+  stop prints the message once, one full stop before "No successful pin was
+  confirmed.", and neither the code nor "(409)". Each fails first on the base.
+  Keep the history.js and follow-up-lifecycle.test.js edits to the
+  failure-message lines and that test's refusal: #452 rewrites the record's page
+  memory in the same files.
 
 ## 4. Behavior ledger and replay
 

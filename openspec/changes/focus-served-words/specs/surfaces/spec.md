@@ -177,7 +177,10 @@ values SHALL be unchanged in data attributes.
 
 When the Focus entry page cannot offer a Focus, it SHALL state the served
 admission reason through the desk's existing Focus admission words, which SHALL
-include a pending Plan. It SHALL NOT print the reason's code.
+include a pending Plan. It SHALL NOT print the reason's code. A reason those
+words do not know SHALL read as their existing general sentence, "Harmonic is
+not offering a Focus from this read."; this is the one watched-change line where
+an unknown code does not print as served.
 
 #### Scenario: A pending Plan withholds the Focus in words
 
@@ -186,6 +189,13 @@ include a pending Plan. It SHALL NOT print the reason's code.
 - **WHEN** the entry renders
 - **THEN** it says a recorded Plan is still pending
 - **AND** `pending_plan` does not appear
+
+#### Scenario: An unknown admission reason reads as the general sentence
+
+- **GIVEN** the Focus entry while the served Focus admission reason is a code
+  the admission words do not know
+- **WHEN** the entry renders
+- **THEN** it reads "Harmonic is not offering a Focus from this read."
 
 #### Scenario: Unreconciled data withholds the Focus in words
 
@@ -200,7 +210,8 @@ include a pending Plan. It SHALL NOT print the reason's code.
 The Trial finish, Focus resolve and later-conclusion failure lines, the Plan
 record and withdraw failure lines, and the Focus pin failure line SHALL print the
 server's refusal message. They SHALL NOT print the refusal code, a status code
-beside it, or "[object Object]".
+beside it, or "[object Object]". A line that ends the message with its own full
+stop SHALL NOT print two.
 
 #### Scenario: A stale Trial finish names why in a sentence
 
@@ -209,6 +220,22 @@ beside it, or "[object Object]".
 - **WHEN** the failure renders
 - **THEN** the line prints the served message
 - **AND** neither `stale_input_revision` nor "(409)" appears
+
+#### Scenario: A refused later conclusion names why in a sentence
+
+- **GIVEN** a later conclusion the server refuses with 409 code
+  `stale_input_revision` and its message
+- **WHEN** the failure renders
+- **THEN** the line prints the served message
+- **AND** neither `stale_input_revision` nor "(409)" appears
+
+#### Scenario: A refused Focus pin prints one full stop
+
+- **GIVEN** a Focus pin the server refuses with a durable 409 whose message ends
+  in a full stop
+- **WHEN** the failure renders
+- **THEN** the line prints the message followed by exactly one full stop before
+  "No successful pin was confirmed."
 
 #### Scenario: A refused Plan write reads as a sentence
 

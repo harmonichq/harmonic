@@ -86,11 +86,12 @@ requirement and story S176 are dropped and nothing else moves.
 **Decision.** On the active Trial and Focus, the change records and the Focus
 entry, a served code never prints as its code. Each line prints the words of
 the desk's table for its family; a code the table does not know prints as
-served. That fallback keeps the lock's binding note that `availability.reason`
-is an open provider-owned field the UI renders whatever arrives, and it is ADR
-430's existing rule. Codes stay unchanged in payloads and data attributes
-(`data-adherence-state`, `data-harm-state`, `data-opportunity-verdict`,
-`data-ending-assessment`, `data-reassessment-state`, `data-reassessment-context`,
+served, with one stated exception, the Focus entry (below). That fallback keeps
+the lock's binding note that `availability.reason` is an open provider-owned
+field the UI renders whatever arrives, and it is ADR 430's existing rule. Codes
+stay unchanged in payloads and data attributes (`data-adherence-state`,
+`data-harm-state`, `data-opportunity-verdict`, `data-ending-assessment`,
+`data-reassessment-state`, `data-reassessment-context`,
 `data-finish-unavailable`).
 
 **One reason vocabulary.** `comparisonReasonWords` (`COMPARISON_REASON`,
@@ -106,7 +107,7 @@ from the producers below, not from the issue text:
 | `candidate_high_without_closed_attribution` | a high after a meal has not been attributed yet | engine.py:760 |
 | `attribution_exceeds_owned_population` | more episodes were attributed than opportunities were counted | engine.py:746 |
 | `unassociated_recurrence_anchor` | an attributed episode could not be matched to an opportunity | analyzers/scenario/evaluation.py:353, forwarded at engine.py:739 |
-| `missing_override_provenance` | some doses do not record their override gap | analyzers/classifiers/user_override.py:78, forwarded at engine.py:669–675 |
+| `missing_override_provenance` | some boluses do not record their override gap | analyzers/classifiers/user_override.py:78, forwarded at engine.py:669–675 |
 | `unreadable_harm_interval` | the glucose after some opportunities could not be read | engine.py:677 |
 | `unmatchable_captured_membership` | the carb-ratio block recorded with this change cannot be matched in this period | trial_evidence.py:477 |
 | `reconciliation_required` | the latest pump and sensor data have not been reconciled yet | watched_change.py:1515, :1521, :1530 |
@@ -166,6 +167,14 @@ subject and no active change (changes.js), so `pending_plan` and
 `reconciliation_required` are the codes that reach it. An absent reason keeps
 today's sentence.
 
+**The one exception to "an unknown code prints as served."** A
+`focus_pin.reason` that `admissionReason` has no words for reads as its existing
+generic sentence, "Harmonic is not offering a Focus from this read.", not as the
+code. That sentence is what `admissionReason` already returns for every unknown
+reason, and Diagnose's Focus context already prints it from the same function;
+the entry reuses that function whole rather than adding a second rule for one
+caller. Every other line in this ADR prints an unknown code as served.
+
 **A refused change write names its reason in a sentence (Q3, coordinator
 decision pending; default applied).** Every coded refusal the API serves carries
 `code` and `message`, except the durable lifecycle 409 (api.py, the
@@ -174,8 +183,19 @@ detail is `{code, input_revision, admission}`. So the desk's Trial finish, Focus
 resolve and later-conclusion failure lines print `<code> (409)`, and the Plan and
 Focus-pin failure lines print "[object Object]" (data.js `ApiTransportError`
 hands the object detail to `Error`). The handler serves `message` beside `code`
-from a closed table beside it; the desk's failure lines print the served message
-(`error.message`), never the code. The code stays in `detail.code` for tests.
+from a closed module-level table in api.py; the desk's failure lines print the
+served message (`error.message`), never the code. The code stays in
+`detail.code` for tests. A line that appends its own full stop after the message
+(the Focus pin line, focus-entry.js: "Starting the Focus failed: <message>. No
+successful pin was confirmed.") strips one trailing full stop from the message
+first, so it never prints two.
+
+The table covers every code the handler can serve, enumerated from the
+producers rather than from this ADR: `refusals.py` in this change scans every
+module under `ciq_autotune/` for `FollowUpConflict` raises in either quote
+style, adds the handler's default, and fails when a raise passes a code that is
+not a string literal. On the base it finds 32 raise sites, all literal, and 22
+codes: the twenty-one below plus `lifecycle_conflict`.
 
 | Code | Message | Raised at |
 |---|---|---|
@@ -193,7 +213,9 @@ from a closed table beside it; the desk's failure lines print the served message
 | `immature_trial` | This Trial is still maturing. | Trial finish |
 | `trial_not_expired` | This Trial did not expire unreviewed, so it takes no later conclusion. | `conclude` |
 | `transaction_aborted` | The save stopped partway, so nothing was recorded. | store.py |
-| `transaction_required`, `orphan_base_record`, `base_record_mismatch`, `invalid_reconciliation_identity` | Harmonic's change records could not be reconciled, so nothing was recorded. | store.py |
+| `legacy_ending_unavailable` | This earlier Focus ended before Harmonic saved endings, so no ending can be recorded for it now. | store.py:1709 |
+| `unknown_request_subject` | This change has no record to save against, so nothing was recorded. | store.py:1823 |
+| `transaction_required`, `orphan_base_record`, `base_record_mismatch`, `invalid_reconciliation_identity`, `invalid_frontier_trial` | Harmonic's change records could not be reconciled, so nothing was recorded. | store.py (`invalid_frontier_trial` at :1772) |
 | `lifecycle_conflict` | Another change was recorded at the same time, so nothing was saved. | the handler's default (`FocusAlreadyActive`, `IntegrityError`) |
 
 An unknown code's message is the code itself. If the coordinator rules this out,

@@ -39,8 +39,11 @@ goes to the coordinator, never to the user.
   triage: every other raw served-code print on these surfaces is in scope.
   → ADR
 - **The Focus entry's withheld copy words its served admission reason through
-  guidance's existing admission words.** Why: charter reuse rule;
-  `admissionReason` already words three of the four codes. → ADR
+  guidance's existing admission words; an unknown reason keeps their generic
+  sentence, the one stated exception to printing an unknown code as served.**
+  Why: charter reuse rule; `admissionReason` already words three of the four
+  codes and returns that sentence for every unknown reason (review round 1,
+  coordinator ruling). → ADR
 - **A refused lifecycle write serves a sentence beside its code, and the desk
   prints it (Q3 default).** Why: every other coded refusal in `api.py` already
   serves `code` + `message`; only the durable lifecycle 409 omits it, which
@@ -104,3 +107,19 @@ draft at the pinned commit):
 ## Review rounds
 
 (instrumented per round: blockers found, each tagged `authoring` or `injected`)
+
+- Round 1 (coordinator-dispatched `/plan-review`, lock 1 draft at ff548fdb):
+  BLOCKED, 2 blocking + 3 notes, all `authoring`, each reproduced against the
+  tree before fixing. Coordinator rulings (Q3 delegation) fixed all five:
+  (1) three lifecycle refusal codes were missing from the message table
+  (`legacy_ending_unavailable` store.py:1709, `invalid_frontier_trial` :1772,
+  `unknown_request_subject` :1823; the triage grep matched only double-quoted
+  raises) → worded, and task 1.2's test now enumerates codes from the producers
+  through the committed `refusals.py` scan (32 literal raise sites, 22 codes;
+  a non-literal raise fails it); (2) `missing_override_provenance` said
+  "doses" → "boluses"; (3) the Focus entry's generic fallback named as the one
+  exception to "an unknown code prints as served"; (4) focus-entry.js appends
+  its own full stop after the pin failure message → strip one trailing stop,
+  with a focus-entry test (and the data.js import-time fetch capture recorded as
+  a test trap); (5) the later-conclusion lifecycle test gains a 409
+  `{code, message}` refusal through history.js's failure-message path.

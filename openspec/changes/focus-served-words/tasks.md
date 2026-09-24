@@ -191,7 +191,7 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 5. Verification
 
-- [ ] 5.1 The worker's gate: the lock's Verification command exits 0,
+- [x] 5.1 The worker's gate: the lock's Verification command exits 0,
   including `uv run python mockups/harmonic-v2.exploration/generate.py --check`
   (regenerated on this branch and said so if the backend edit moved it) and the
   public-tree checks over a freshly built public tree

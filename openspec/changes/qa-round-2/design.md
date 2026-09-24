@@ -1,6 +1,6 @@
 # QA round 2 — design
 
-## ADR 460 — The watch dock and Diagnose's staged marks follow the saved Plan draft
+## ADR 460 — The watch dock and Diagnose's staged marks follow the Plan draft
 
 **Context.** Parts of this record were decided autonomously during AFK run;
 they are named in their own section below. The watch dock at the foot of the
@@ -27,52 +27,70 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
 
 1. Diagnose's destination hands the workstation the served draft
    (`planDraft`) through its callbacks, the same way it hands `pendingPlan`.
-2. The dock gains the served draft as an input. Its precedence is unchanged:
-   Trial, Focus, recorded Plan awaiting the pump, staged Plan, idle. The staged
-   Plan state reads from two sources in a fixed order:
-   - when this surface's marks name a staged change, the dock names it exactly
-     as it does today, with the served direction and the values that the
-     surface's own descriptor carries;
-   - otherwise, when the served draft holds items and no stage save this
-     surface issued is in flight, the dock reports the draft, named from its
-     own items. While a save is in flight the surface's own optimistic state
-     stands alone: the served draft is the one read before the press, so an
-     Undo would otherwise read "Plan · staged" over a draft being emptied.
-3. The draft's own name, `draftName(draft)` exported from the dock's module,
-   is the setting in the wearer's words and the span its
-   items cover, spelled as the surface spells the same change: a basal draft
-   as "Basal <start>" for one item, else "Basal <first start> to <last start
-   plus 30 minutes>"; a carb-ratio draft as "Carb ratio <block span>" from the
-   items' block provenance, spelled with the span formatter the lane uses
-   (`windowSpanText`), or "Carb ratio <first start>" when the items carry no
-   provenance; a correction-factor draft as "Correction factor". The name
-   carries no direction: the dock derives none (ADR 451), and the draft carries
-   none. The values lead the detail line only where every draft item carries a
-   current and a proposed value and all items carry the same pair, in the
-   wearer's form (a correction factor insulin first). Otherwise no values print.
-4. The workstation's three sets of marks come from one seeding function over
-   `callbacks.isStaged`. It runs at boot; on every `refresh()`, except while a
-   stage save is in flight, so the optimistic paint a press makes is never
-   undone by a repaint that lands mid-save; and after every accepted stage save
-   settles, followed by a repaint. The last is needed because the guidance
-   read the save refreshes lands after the press's own paint, and a seated,
-   unparked Diagnose does not refresh its workstation on that render. A refused
-   save keeps #358's replay of the toggle.
-5. Nothing on the server changes. The guidance read already reads the draft
+2. The dock takes two new inputs: the served draft (`draft`) and whether a stage
+   save this surface issued is in flight (`saving`). Its precedence is
+   unchanged: Trial, Focus, recorded Plan awaiting the pump, staged Plan, idle.
+   The staged Plan state reads, in order:
+   - this surface's own marks, when they name a staged change. The dock names
+     it exactly as it does today, with the served direction and the values the
+     surface's descriptor carries;
+   - otherwise, when `saving` is false and the served draft holds items, the
+     draft itself, named from its own items.
+   While a save is in flight, the served draft is the one read before the
+   press. Skipping it then keeps an Undo from reading "Plan · staged" over a
+   draft being emptied.
+3. The draft's own name, `draftName(draft)` exported from the dock's module, is
+   the setting in the wearer's words and the span its items cover, spelled as
+   the surface spells the same change:
+   - basal: "Basal <start>" for one item, else "Basal <first start> to <last
+     start plus 30 minutes>";
+   - carb ratio: "Carb ratio <block span>" from the items' block provenance,
+     spelled with the lane's span formatter (`windowSpanText`), or
+     "Carb ratio <first start>" when the items carry no provenance;
+   - correction factor: "Correction factor".
+   The name carries no direction: the dock derives none (ADR 451), and the
+   draft carries none. Values lead the detail line only where every item
+   carries the same current and proposed pair, in the wearer's form (a
+   correction factor insulin first).
+4. In `stageAndSettle`, the in-flight flag rises before the press's optimistic
+   toggle and paint, not after them, so that paint already runs with `saving`
+   true. The re-entrancy guard is unchanged: a press while the flag is up is
+   still dropped.
+5. The workstation's three sets of marks come from one seeding function over
+   `callbacks.isStaged`, run at three moments:
+   - at boot;
+   - on every `refresh()` while no stage save is in flight, so a repaint that
+     lands mid-save never undoes the press's mark;
+   - after an accepted stage save settles and the flag has cleared, followed by
+     a repaint. This moment is needed because a seated, unparked Diagnose does
+     not refresh its workstation on the guidance render that the save
+     triggers.
+   A refused save keeps #358's replay of the toggle.
+6. `callbacks.isStaged` stays `evidenceIsStaged`, unchanged. It answers from
+   the Plan surface's draft as it holds it: the saved draft, or a pick made in
+   Changes and not yet saved. Boot seeding already reads it that way on
+   e4862000, so re-seeding changes when the marks are read, not what they
+   mean.
+7. Nothing on the server changes. The guidance read already reads the draft
    fresh, so the draft save keeps its no-bump exception and no second exception
    is added.
 
-**Decided autonomously during AFK run.** The ticket left three choices open.
+**Decided autonomously during AFK run.** The ticket left these choices open.
 Each was taken as the simplest option consistent with the settled decisions:
 
 - The surface's marks stay the dock's first source, and the served draft is its
   fallback. This keeps the staged dock's shipped title, direction and values
   (story S178) byte-identical, and the fallback covers exactly the cases the
   marks miss.
+- The dock skips the fallback while a save is in flight, and the flag rises
+  before the press's paint (points 2 and 4).
+- The marks keep `evidenceIsStaged`'s reading, unsaved Changes picks included
+  (point 6). Narrowing it to the saved draft only would change Changes'
+  staging, which is outside this ticket.
 - The design states `?mode=slot` and `?mode=icassert` paint an at-rest staged
   mark at boot with no draft behind it. The refresh re-seed does not re-apply
   those marks. No test or story opens either state.
-- The ledger stories #460 adds change no existing story, and are recorded under
+- The ledger story #460 adds changes no existing story. It is recorded under
   the AFK run's delegation rather than a quoted operator sentence.
 
 **Consequences.** A partially admitted draft (some items the analysis still
@@ -117,7 +135,7 @@ replaces exactly as today.
 2. Which rows a stage drops is one fact with one implementation.
    `replacesDraft` says whether staging an item of one setting replaces the
    draft's rows, and `stageEvidence`'s keep-only-this-setting filter uses it.
-3. The re-seed after an accepted stage save (ADR 460 point 4) clears the
+3. The re-seed after an accepted stage save (ADR 460 point 5) clears the
    replaced setting's mark, so its control reads the replace state naming the
    change now staged. The interfaces are `replacesDraft(type, draftItems) →
    boolean` exported from the Plan surface, a workstation callback

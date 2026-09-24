@@ -17,69 +17,85 @@ This list is the "touched stories" below.
   `frontend/desk-behavior.replay.mjs`, re-inventory the dock's five states and
   the stage control's two labels in the served app, and record any observed
   behavior with no story before designing.
-- [ ] 2. Failing-first node tests in `frontend/watched-change-dock.test.js`, run
-  against the unchanged dock first and seen to fail there: a served draft with
-  items and no watch, no recorded Plan and no marks on this surface reads
-  "Plan · staged", named from the draft's own items (ADR 460 point 3); the same
-  draft whose slot the current analysis no longer admits still reads
-  "Plan · staged" and names its setting; the draft's values print only where
-  every item carries the same current and proposed pair; no direction prints
-  from the draft alone; the surface's own marks, when they name a change, keep
-  today's title, direction and values; with a stage save in flight and no
-  marks, the served draft is not read and the dock reads idle; a watched Trial,
-  a watched Focus and a recorded Plan each still outrank a served draft.
-- [ ] 3. Give `watchDockView` two inputs, the served draft (`draft`) and whether
-  a stage save is in flight (`saving`), per ADR 460 point 2. Export
-  `draftName(draft) → string` from `frontend/watched-change-dock.js`, the
-  draft's own name per ADR 460 point 3; the dock and #459's stage control both
-  read it. Update the module's header comment so it names the served draft as
-  the staged state's fallback source.
+- [ ] 2. Failing-first node tests in `frontend/watched-change-dock.test.js`, each
+  seen to fail on the unchanged dock:
+  - a served draft with items, with no watch, no recorded Plan, no marks and
+    `saving` false, reads "Plan · staged", named by `draftName` (ADR 460
+    point 3);
+  - the same draft whose slot the current analysis no longer admits still
+    reads "Plan · staged" and names its setting;
+  - the draft's values print only where every item carries the same current
+    and proposed pair, and no direction prints from the draft;
+  - with `saving` true and no marks, the served draft is not read and the dock
+    reads idle.
+  Guards in the same file, passing before and after: the surface's own marks,
+  when they name a change, keep today's title, direction and values; a watched
+  Trial, a watched Focus and a recorded Plan each outrank a served draft.
+- [ ] 3. In `frontend/watched-change-dock.js`, give `watchDockView` the inputs
+  `draft` and `saving` and export `draftName(draft) → string` (ADR 460 points 2
+  and 3). #459's stage control reuses `draftName`. Update the module's header
+  comment so it names the served draft as the staged state's fallback source.
 - [ ] 4. Failing-first test in `frontend/diagnose.test.js`, seen to fail on the
   unchanged destination: on a cold seat whose `/api/plan` answer lands after the
   payload reads, once both settle, the callbacks the destination hands the view
   carry a `planDraft` that answers the served draft.
-- [ ] 5. Pass `planDraft` from `frontend/guidance.js` through Diagnose's
-  callbacks in `frontend/diagnose.js`, beside `pendingPlan`, and into the dock's
-  paint in `frontend/diagnose-workstation.js`, with the workstation's own
-  in-flight flag as `saving`.
-- [ ] 6. In `frontend/diagnose-workstation.js`, move the boot-time seeding of the
-  three sets of marks into one seeding function over `callbacks.isStaged`. Run
-  it at boot, on every `refresh()` except while a stage save is in flight, and
-  after every accepted stage save settles, followed by a repaint (ADR 460
-  point 4). A refused save keeps #358's toggle replay. Update the ADR 354
-  comment above the seeding, the #358 comment above `stageAndSettle` and the
-  comment above the dock's paint.
+- [ ] 5. In `frontend/diagnose.js`, pass `planDraft` from `frontend/guidance.js`
+  through Diagnose's callbacks beside `pendingPlan`. In
+  `frontend/diagnose-workstation.js`, hand the dock's paint `planDraft()` as
+  `draft` and the workstation's in-flight flag as `saving`.
+- [ ] 6. In `frontend/diagnose-workstation.js`:
+  - raise the in-flight flag in `stageAndSettle` before the press's toggle and
+    paint, keeping the re-entrancy guard (ADR 460 point 4);
+  - move the boot-time seeding of the three sets of marks into one seeding
+    function over `callbacks.isStaged`, and run it at boot, on every
+    `refresh()` while no save is in flight, and after an accepted save settles
+    and the flag has cleared, then repaint (ADR 460 point 5). A refused save
+    keeps #358's toggle replay. `callbacks.isStaged` stays `evidenceIsStaged`
+    (ADR 460 point 6);
+  - update the ADR 354 comment above the seeding, the #358 comment above
+    `stageAndSettle` and the comment above the dock's paint.
 - [ ] 7. Desk-suite tests in `frontend/desk.browser.test.mjs`, over a stateful
   `/api/plan` stub (GET answers the saved draft, PUT saves it) and a guidance
-  stub that serves the same draft:
-  - failing-first, seen to fail on the unchanged shell: serve a saved basal
-    draft for the frozen browser analysis's stageable 07:00 slot and hold
-    `/api/plan` until the Diagnose payload has settled; then the 07:00 lane cell
-    carries `data-staged="true"`, its stage control reads "Staged · Undo", and
-    the dock reads "Plan · staged";
-  - regression guard, passing on the unchanged shell and after the change:
-    stage the 07:00 slot, press Undo, and once the save settles the dock reads
-    "Nothing being watched" and the control reads "Stage change";
-  - the in-flight rule: hold a `PUT /api/plan`, press Stage change on 07:00,
-    go to Changes and press Diagnose in the top nav (a retained return
-    refreshes the workstation); while the PUT is still held, the 07:00 cell
-    keeps `data-staged="true"` and its control keeps "Staged · Undo"; then
-    release the PUT.
+  stub that serves the same draft, on the frozen browser analysis's stageable
+  07:00 slot:
+  - failing-first, seen to fail on the unchanged shell: with a saved 07:00
+    basal draft and `/api/plan` held until the Diagnose payload has settled,
+    the 07:00 lane cell carries `data-staged="true"`, its control reads
+    "Staged · Undo", and the dock reads "Plan · staged";
+  - the in-flight Undo: with the 07:00 change staged and saved, hold the next
+    `PUT /api/plan`, press Undo, and while the PUT is held the dock does not
+    read "Plan · staged"; release the PUT. It passes on the unchanged shell,
+    whose dock has no draft input, so its failing-first proof is a deliberately
+    broken variant: seen to fail on a build of tasks 2–6 that raises the flag
+    after the paint, then pass on the real build;
+  - guard, passing before and after: stage 07:00, press Undo, and once the save
+    settles the dock reads "Nothing being watched" and the control reads
+    "Stage change";
+  - guard, passing before and after: hold a `PUT /api/plan`, press Stage change
+    on 07:00, go to Changes and press Diagnose in the top nav (a retained return
+    refreshes the workstation); while the PUT is held the 07:00 cell keeps
+    `data-staged="true"` and its control keeps "Staged · Undo"; release the PUT.
 - [ ] 8. Add one ledger story (the next unissued S id at implementation time) on
   the `basal-lower` case, in a dated `## #460 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md`, with its replay function in
   `frontend/c4.replay.mjs`, its registry entry in
   `frontend/desk-behavior.replay.mjs`, its case in `frontend/replay-cases.mjs`,
   and any story-table row `frontend/c4.replay.test.js` keeps. Three legs:
-  (1) open Diagnose, go to Changes, stage the leading concern's action and save
-  the draft, open the change records, press Diagnose in the top nav: the dock
-  reads "Plan · staged" and "Open Changes ›" lands on the Plan; (2) stage from
-  Diagnose, go to Changes, open the change records, press Diagnose: the dock
-  reads "Plan · staged"; (3) as leg 2, but reload on the change records before
-  pressing Diagnose: the dock reads "Plan · staged". Lay the story's harness
-  over e4862000 and record that base run (legs 1 and 3 expected to fail at
-  their dock assertion) and the branch run at both sizes on the story's status
-  line.
+  - leg 1: open Diagnose, go to Changes, stage the leading concern's action and
+    save the draft, open the change records, press Diagnose in the top nav.
+    The dock reads "Plan · staged" and "Open Changes ›" lands on the Plan.
+    Failing-first on the base: Diagnose's retained return only repaints marks
+    it seeded before the draft existed;
+  - leg 2: stage from Diagnose, go to Changes, open the change records, press
+    Diagnose. The dock reads "Plan · staged". A guard that passes on the base;
+  - leg 3: as leg 2, but reload on the change records, then route-intercept
+    `/api/plan` and hold it until the Diagnose payload reads have settled
+    before releasing it, then press Diagnose. The dock reads "Plan · staged".
+    Failing-first on the base: the hold makes the cold seat's boot seed miss
+    the draft deterministically.
+  Lay the story's harness over e4862000 and record that base run (legs 1 and 3
+  failing at their dock assertion, leg 2 passing) and the branch run at both
+  sizes on the story's status line.
 - [ ] 9. Raise the frozen story inventory by the one story task 8 adds,
   everywhere it is stated: the literals in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` and
@@ -113,16 +129,24 @@ it stages as.
   expected case names and to `tests/test_pattern_replay.py`'s case map. Commit
   this task on its own: that commit is the base for task 16's failing-first
   run.
-- [ ] 12. Failing-first node tests, each seen to fail on the code before tasks
-  13–15: in `frontend/plan-view.test.js`, `replacesDraft('basal', <carb-ratio
-  rows>)` is true, and `replacesDraft('basal', <basal rows>)` and
-  `replacesDraft('basal', [])` are false; staging a carb-ratio block and then a
-  basal slot through `stageEvidence` with a stubbed transport still saves only
-  the basal rows. In `frontend/diagnose-workstation.test.js`, a stage panel
-  whose `replaces` option is a change's name renders "Replace staged change"
-  with the sub-line "replaces <that name>"; an already-staged panel keeps
-  "Staged · Undo" whatever `replaces` holds; a panel with `replaces` null keeps
-  "Stage change" and "staged for Plan".
+- [ ] 12. Node tests:
+  - failing-first, each seen to fail on task 11's commit for the right reason
+    (the assertion, not a missing import):
+    - in `frontend/plan-view.test.js`, `replacesDraft('basal', <carb-ratio
+      rows>)` is true, and `replacesDraft('basal', <basal rows>)` and
+      `replacesDraft('basal', [])` are false. Write the tests against a local
+      stub first to see the assertion fail, then point them at the export;
+    - in `frontend/diagnose-workstation.test.js`, a stage panel whose
+      `replaces` option is a change's name renders "Replace staged change"
+      with the sub-line "replaces <that name>"; an already-staged panel keeps
+      "Staged · Undo" whatever `replaces` holds;
+  - guards in `frontend/plan-view.test.js`, over a stubbed transport, passing
+    on task 11's commit and after task 13: staging a carb-ratio block and then
+    a basal slot through `stageEvidence` saves only the basal rows; staging
+    basal 02:00 and then basal 03:00 makes the second save hold both rows
+    (`basal@120,basal@180`, as `docs/scope/459-repro.mjs` prints);
+  - guard in `frontend/diagnose-workstation.test.js`: a panel with `replaces`
+    null keeps "Stage change" and "staged for Plan".
 - [ ] 13. In `frontend/plan-view.js`, export
   `replacesDraft(type, draftItems) → boolean`: true when `draftItems` holds a
   row whose `type` differs from `type`. Make `stageEvidence`'s

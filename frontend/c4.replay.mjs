@@ -684,6 +684,18 @@ async function heldAfternoonCase445(page) {
   await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
   return { subject, held: await selectOccurrence(page) };
 }
+// Every request a Return from Day issues, from the press until the desk has
+// settled. heldStatusReturn holds the status read and stops recording at its
+// answer; a re-read Diagnose decides on that answer comes after it, and keeps
+// the loading frame standing until it lands, so this listens through
+// heldStatusReturn's own closing waitForDesk.
+async function wholeReturn445(page, storyId) {
+  const requests = [];
+  const onRequest = request => requests.push(new URL(request.url()).pathname);
+  page.on('request', onRequest);
+  try { await heldStatusReturn(page, storyId, '[data-day="return"]'); } finally { page.off('request', onRequest); }
+  return requests;
+}
 
 // Holds the next request matching `pattern` that also satisfies `matches`
 // (other traffic on the same pattern is let through), so a caller can prove
@@ -2461,7 +2473,7 @@ export const C4_STORIES = {
     await press(page, control);
     await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
     await press(page, '[data-utility-close]');
-    const kept = await heldStatusReturn(page, 'S164', '[data-day="return"]');
+    const kept = await wholeReturn445(page, 'S164');
     assert.deepEqual(kept.filter(path => path !== '/api/status'), [],
       'S164 the return after a reload must issue no request besides the held status check');
     assert.equal(kept.filter(path => path === '/api/status').length, 1,
@@ -2494,7 +2506,7 @@ export const C4_STORIES = {
     await open.click();
     await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
     await press(page, '[data-utility-close]');
-    const requests = await heldStatusReturn(page, 'S165', '[data-day="return"]');
+    const requests = await wholeReturn445(page, 'S165');
     assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
       'S165 the Carb questions return must issue no request besides the held status check');
     assert.equal(requests.filter(path => path === '/api/status').length, 1,

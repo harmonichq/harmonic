@@ -221,6 +221,8 @@ test('S162–S165 are unique app-only C4 Day-return stories on their manufacture
 // shape the coordinator's replay of the real app showed: its GET /api/status
 // first, then — only once that read has been answered — whatever the answer set
 // off (a moved store's re-read: its own status read, then its guidance read).
+// The desk settles, and every wait on the page resolves, only once the return
+// has played out, as the app's loading frame stands until a re-read lands.
 function qa445Page({ returns, focused = true } = {}) {
   const held = 'o-1';
   const latest = '2024-06-28';
@@ -233,6 +235,7 @@ function qa445Page({ returns, focused = true } = {}) {
   let windowLabel = '24 h';
   let logged = false;
   let played = 0;
+  let settling = Promise.resolve();
   const request = pathname => ({ url: () => `http://synthetic.invalid${pathname}` });
   const tick = () => new Promise(resolve => setImmediate(resolve));
   const fire = pathname => {
@@ -245,10 +248,12 @@ function qa445Page({ returns, focused = true } = {}) {
   // A click does not wait on the network, so the return plays on after it.
   function playReturn() {
     const { address: left, after = [] } = returns[played++];
+    let settle;
+    settling = new Promise(resolve => { settle = resolve; });
     const answered = async () => {
       await tick();
       for (const pathname of after) { fire(pathname); await tick(); }
-      await tick(); expire();
+      await tick(); expire(); settle();
     };
     address = left;
     fire('/api/status');
@@ -301,7 +306,7 @@ function qa445Page({ returns, focused = true } = {}) {
       if (source.includes('case-occurrence')) return held;
       return null;
     },
-    waitForFunction: async () => {},
+    waitForFunction: async () => { await settling; },
     request: { get: async url => {
       const { pathname } = new URL(url);
       const body = pathname === '/api/carbs' ? { carb_entries: logged ? [entry] : [] } : served[pathname];
@@ -358,6 +363,28 @@ test('S165 fails at its address when the return leaves a title or a from in it',
   const page = qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: DAY_RETURN445 }] });
   await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S165(page)),
     /S165 the address must name the retained case, with no title, from or focus/);
+});
+
+// A return that should be retained but re-reads once its status read is
+// answered: the re-read's requests come after heldStatusReturn has stopped
+// recording, and before the desk settles.
+const LATE_REREAD445 = ['/api/status', '/api/analyze'];
+
+test('S164 fails when the return after a reload re-reads once its status read is answered', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [
+    { address: AFTERNOON445, after: ['/api/status', '/api/analyze'] },
+    { address: AFTERNOON445, after: LATE_REREAD445 },
+  ] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S164(page)),
+    /S164 the return after a reload must issue no request besides the held status check/);
+});
+
+test('S165 fails when its return re-reads once its status read is answered', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa445Page({ returns: [{ address: DAY_RETURN445 }, { address: CASE445, after: LATE_REREAD445 }] });
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S165(page)),
+    /S165 the Carb questions return must issue no request besides the held status check/);
 });
 
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {

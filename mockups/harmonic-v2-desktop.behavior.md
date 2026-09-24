@@ -4264,10 +4264,12 @@ S164 · Log carbs over a drilled Finding case with an Occurrence held: an entry
   evidence: C4_STORIES.S164; reads the served entry and the Day address. On
             the first return it watches from the press for the re-read's GET
             /api/analyze, which the app issues after its own second status
-            read, a round trip after the return's status answer; on the second,
-            heldStatusReturn. Then the held Occurrence, the crumb, the address
-            and document.activeElement. The story's control flow is pinned on a
-            fake page in frontend/c4.replay.test.js
+            read, a round trip after the return's status answer. On the second,
+            heldStatusReturn holds /api/status while every request is counted
+            from the press until the desk settles, so a re-read decided after
+            the status answer counts too. Then the held Occurrence, the crumb,
+            the address and document.activeElement. The story's control flow is
+            pinned on a fake page in frontend/c4.replay.test.js
   status:   pending the coordinator's runs. Expected: base b03431d2 with this
             harness laid over it fails at its feature assertion, "S164 the Day
             address must name the entry by its id"; the branch passes at
@@ -4293,8 +4295,10 @@ S165 · Carb questions over a drilled Finding case with a window pressed: a
   data:     showcase; as S137 up to its Day return, then the first served
             prompt's Open Day
   evidence: C4_STORIES.S165; heldStatusReturn holds /api/status across Return
-            to Carb questions and records every request, then compares the
-            crumb, the pressed window and document.activeElement, and the
+            to Carb questions while every request is counted from the press
+            until the desk settles, so a re-read decided after the status answer
+            counts too. Then it compares the crumb, the pressed window and
+            document.activeElement, and the
             address with the retained case as S137 names it (subject and
             Occurrence). The story's control flow is pinned on a fake page in
             frontend/c4.replay.test.js

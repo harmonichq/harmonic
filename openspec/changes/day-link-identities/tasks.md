@@ -228,3 +228,19 @@ alone.
     pass, 0 fail);
   - the complete ledger through `acceptance.py replay` at both sizes, on the
     commit to be integrated (0 failed, S162–S165 among those executed).
+- [x] 4.6 Coordinator-authorized, 2026-09-23 (Q3 delegation; the first branch
+  replay and code review round 2). Story-only changes to S164 and S165 in
+  `frontend/c4.replay.mjs`, each pinned on the `qa445Page` fake page in
+  `frontend/c4.replay.test.js`:
+  - S164's return after logging watches for the re-read's GET /api/analyze from
+    the press. The re-read makes its own status read first, so its guidance read
+    lands after the window `heldStatusReturn` records.
+  - S165 expects the address a plain return names, `{subject, occurrence}`, as
+    S137 does. The address it read right after the Diagnose Day return still
+    carried that entry's keys (ADR 428).
+  - The unmoved returns (S164 after the reload, and S165) count their requests
+    from the Return press until the desk settles (`wholeReturn445`), so a
+    re-read decided after the status answer fails "no request besides the held
+    status check". The fake proves it: a return that re-reads once its status
+    read is answered fails both stories there. The stories at 5d1319f7 let it
+    through.

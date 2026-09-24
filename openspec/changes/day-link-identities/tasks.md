@@ -26,8 +26,9 @@ alone.
   entry without `focus`. Comment only.
 - [ ] 1.3 In `frontend/day.js` (ADR 445 point 3), `dayReturnTarget` no longer
   returns `focus`. The return control, for a utility origin, hands the utility
-  its identity through `reopenUtility(kind, subject)` and navigates to the
-  destination with no context. Every other origin is unchanged: it hands back the
+  its identity through `reopenUtility(kind, subject)`, makes no focus request of
+  its own, and navigates to the destination with no context. Every other origin
+  is unchanged: it hands back the
   whole entry minus its memo key, and requests the reading heading, or the sheet
   toggle on the narrow desk. Rewrite the module comments that promise a return to
   "the exact target it left" by its focus. In `frontend/day.test.js`, through
@@ -36,11 +37,15 @@ alone.
   - a utility entry's Return leaves the address `/diagnose`, with no Day key,
     title or `from` (fails first: the base writes the utility entry into the
     Diagnose address);
+  - a `from=day.carbs` entry's Return leaves Day on the date the entry opened,
+    with no "Opened from" section and no return control, and Log carbs seated
+    (`seatedUtility()` reads `carbs`). This fails first: the base re-adopts the
+    entry and offers the return again;
   - a Changes entry's Return still hands back its date, occurrence and `from`;
   - `dayReturnTarget`'s expected object loses `focus`, and every fixture drops
     its `focus` and uses a utility identity subject.
 
-## 2. The carb utilities
+## 2. The carb utilities and the desk they return to
 
 - [ ] 2.1 In `frontend/utilities.js`, each Open Day control declares its item's
   identity as the routing subject (`carb:<id>`, `question:<detector>|<anchor_t>`),
@@ -76,6 +81,27 @@ alone.
   In `frontend/utilities.test.js`, the source-reading pin "a utility Open Day
   names no precise return target" becomes one asserting each Open Day declares
   an identity subject and no `data-return-focus`.
+- [ ] 2.5 A Diagnose rebuild takes no focus from a seated utility (ADR 445 point
+  7, ruling r1-1(b)).
+  - `frontend/utilities.js` exports `seatedUtility()`, the seated utility's kind
+    or `null`, which task 1.3's Day test also reads.
+  - `createDiagnoseDestination` in `frontend/diagnose.js` takes a seated-utility
+    read as an option beside `api`, `createView` and `loadCase`, defaulting to
+    `seatedUtility`.
+  - `restoreEntry` sets its `#crumb-trail` focus default only while no utility is
+    seated. Nothing else in Diagnose's focus handling changes: its other focus
+    targets lie in the inspector, which a seated utility makes inert (ADR 445
+    point 7).
+
+  Tests in `frontend/diagnose.test.js`, through the public mount and return
+  path, using the ADR 428 harness (`desk428`, `park`):
+  - A drilled case with an Occurrence held is parked, the store's revision moves,
+    a plain return re-reads, and the rebuild applies the payload. With a utility
+    seated, the router's focus request is still unset after the rebuild. This
+    fails first: the base sets `#crumb-trail`.
+  - A regression pin, passing on the base: with no utility seated, the same path
+    still sets `#crumb-trail`.
+  - Each test clears the router's focus request in `finally`.
 
 ## 3. Changes
 
@@ -129,11 +155,21 @@ alone.
   - **S163**, on `c3-trial`: the same from the Trial's change record, reached as
     S142 reaches it. The return reopens that record and lands focus on the date's
     control.
-  - **S164**, on the showcase: a Log carbs entry's Open Day writes a Day address
-    whose subject names the entry by id, with the printed title and no selector;
-    the story logs an entry first when none is served. Closing the utility and
-    pressing Return to Log carbs reopens Log carbs over Diagnose, with focus on
-    that entry's Open Day control.
+  - **S164**, on the showcase, with both return paths (ruling r1-1(c)):
+    - **Setup.** Drill a Finding's case with an Occurrence held (as S138 does).
+      Open Log carbs and log an entry at a time inside the showcase's recorded
+      range, so its Day is a recorded day. Logging moves the store.
+    - **Its Day address.** The entry's Open Day writes a Day address whose
+      subject names the entry by id, with the printed title and no selector.
+    - **The moved return.** Close the utility and press Return to Log carbs.
+      Diagnose re-reads: at least one guidance read is issued. It restores the
+      same Finding with the same Occurrence held. Log carbs is open over it, and
+      once the restoration settles, focus is on that entry's Open Day control.
+    - **The unmoved return.** Reload the case address, so Diagnose has read the
+      moved store. Open Log carbs, open the same entry in Day, Close, then Return
+      to Log carbs. Exactly one `GET /api/status` is issued and nothing else. The
+      case is unchanged, focus is on that entry's Open Day control, and the
+      address names the case with no `title`, `from` or `focus`.
   - **S165**, on the showcase: over a drilled Finding case with a window pressed
     (S137's path), Carb questions' Open Day, Close, then Return to Carb
     questions. Exactly one `GET /api/status` and nothing else is issued. The case

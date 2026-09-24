@@ -43,15 +43,25 @@ destination underneath, with the utility reopened over it.
      heading on the desktop and the sheet toggle on the narrow desk.
    - *A carb utility*: Day hands the utility its identity and moves to the
      destination the utility was opened over **with no context**, a plain return.
-     The entry names the utility's item, not the destination's case. Handing it
-     to the destination is what made Diagnose compare a display text with its
-     held case and re-read (reproduced below). A plain return into a parked
-     Diagnose is ADR 428 point 7's retained return: one status read, no guidance
-     or evidence read, the drill, window and scroll kept, and the address
-     replaced with the retained case. Into Changes it is a plain arrival. Into
-     Day, for a utility opened over Day, it is a direct entry that keeps the day
-     last looked at (ADR 427) and offers no second return. On the base, that same
-     return re-adopted the utility's entry and offered its return again.
+     Day makes no focus request of its own; the utility's request (point 4)
+     governs. The entry names the utility's item, not the destination's case.
+     Handing it to the destination is what made Diagnose compare a display text
+     with its held case and re-read (reproduced below).
+     - *Into a parked Diagnose*, this is ADR 428 point 7's retained return. Its
+       one status read compares the store's revision with the one Diagnose last
+       read. While the store has not moved, that is the only read. The drill,
+       window and scroll are kept, and the address is replaced with the retained
+       case.
+     - *When the store has moved* since Diagnose last read, Diagnose re-reads and
+       restores the case it held, as ADR 414 requires. Logging a carb or
+       answering a question writes the store, so a return after either one
+       re-reads. That re-read is a consequence of ADR 414, not a failure. Focus
+       lands the same way on both paths (point 7).
+     - *Into Changes*, it is a plain arrival.
+     - *Into Day*, for a utility opened over Day, it is a direct entry. It keeps
+       the day last looked at (ADR 427) and offers no second return. On the base,
+       that same return re-adopted the utility's entry and offered its return
+       again.
 4. **The owner resolves its identity.**
    - *A carb utility* keeps the identity it was handed until it is next seated
      with its items loaded. It then matches the identity against the items it
@@ -61,8 +71,8 @@ destination underneath, with the utility reopened over it.
      request is made once. The identity is dropped when used, when the utility
      closes, or when another utility opens. This applies at every width, because a
      seated utility opens the narrow sheet itself. On the base, Log carbs came
-     back to the entry's Remove button, not the control the reader pressed (see
-     Open question 2).
+     back to the entry's Remove button; the coordinator ruled for the Open Day
+     control (Rulings, Q2).
    - *Changes* resolves an arrival whose context came back from its own Day link
      (`from=changes` with a `date`). On the first render of that arrival that
      shows the change's content — the active change's evidence or the reopened
@@ -84,7 +94,38 @@ destination underneath, with the utility reopened over it.
 6. **A held Changes return is not kept across a utility's Day visit.** A plain
    utility return drops a held `from=changes` ("Return to Trial"), exactly as ADR
    428 point 7 does for every plain return. On the base the same return also lost
-   it, because the utility's context replaced the entry. See Open question 1.
+   it, because the utility's context replaced the entry. The coordinator ruled
+   for this (Rulings, Q1).
+7. **A Diagnose rebuild takes no focus from a seated utility.** While a utility
+   is seated, Diagnose's entry restoration sets no `#crumb-trail` focus default of
+   its own. The router then carries the focus the desk last placed, the utility's
+   return target, across the rebuild.
+   - **How Diagnose knows.** Diagnose reads whether a utility is seated from
+     `frontend/utilities.js`, the owner of that fact, through one new read,
+     `seatedUtility()`. `createDiagnoseDestination` takes that read as an option
+     beside `api`, `createView` and `loadCase`, defaulting to it, as the factory
+     already does for its other collaborators. `diagnose.js` already imports
+     `openUtility` from that module, so no new module edge is added.
+   - **Why the default is the only path that can take focus:**
+     - `restoreEntry` sets `#crumb-trail` as the router's focus request
+       whenever none is set. A moved-store return rebuilds after the utility's
+       own request has already landed on the render that showed the loading
+       frame, so the default is set.
+     - The router focuses the first present candidate and records it as placed
+       without checking that focus moved, and a request outranks carried focus
+       (`view.focusAfterRender || carried`, `frontend/routes.js` `render`).
+     - Every focus target of Diagnose's own lies in the inspector pane:
+       `#crumb-trail`, the drill's `#level`, the held Occurrence's row and its
+       Open in Day control (`frontend/diagnose-workstation.js`'s template). A
+       seated utility makes that pane inert and hidden (`frontend/utilities.js`
+       `seatUtility`). Under a seated utility, then, the default is a silent
+       no-op that still displaces the carried focus, and focus falls to the page
+       body.
+     - The restoration's other focus moves are no-ops for the same reason. The
+       one that runs synchronously, before the render re-seats the utility, is
+       overtaken by the router's focus step in that same render.
+   - **Scope.** This holds for any rebuild under a seated utility, not only a
+     utility's Day return. Coordinator ruling r1-1(b).
 
 ### Authority
 
@@ -95,20 +136,28 @@ date, a carb entry id, a question key), never a page selector; the origin that
 owns the identity resolves it to its control on return, following ADR 428's
 Occurrence-id pattern. A carb-utility Day return into Diagnose is a retained
 return: one status read, the drill kept, the utility reopened over it." Points 1
-to 6 are the triage worker's calls that make R445 hold, reviewed with this
-change. Points 4 (the Log carbs control) and 6 carry defaults the coordinator
-rules on.
+to 7 are the triage worker's calls that make R445 hold, reviewed with this
+change, and point 7 and the store-moved clause of point 3 carry the rulings
+below.
 
-### Open questions for the coordinator
+### Rulings
 
-1. A plain utility return drops a held `from=changes`, as any plain return does
-   under ADR 428 point 7, and as the base did. Keep it instead? Default: drop it.
-   Keeping it adds a second rule to Diagnose's retained return to tell a utility
-   return from a topbar press.
-2. On return, Log carbs lands on the entry's own Open Day control, the control
-   the reader pressed, as Carb questions and Diagnose's Open in Day already do.
-   The base lands on the entry's Remove button. Default: the Open Day control.
-   The base target places the reader's next Enter on a destructive control.
+Coordinator rulings, 2026-09-23, under the Q3 delegation, at plan review round 1:
+
+- **Q1.** A plain utility return drops a held "Return to Trial" (`from=changes`),
+  as every plain return does under ADR 428 point 7 (point 6).
+- **Q2.** Log carbs returns to the entry's own Open Day control, the control the
+  reader pressed, not the base's Remove button (point 4).
+- **r1-1(a).** The "exactly one status read, drill kept" guarantee holds while
+  the store has not moved since Diagnose last read. A return after the store
+  moved re-reads (ADR 414). That is recorded as a consequence, not an accepted
+  failure (point 3).
+- **r1-1(b).** The focus guarantee holds on both paths. After a carb-utility Day
+  return into Diagnose, the utility is reopened over Diagnose and focus lands on
+  the pressed Open Day control, even when Diagnose rebuilds (point 7).
+- **r1-1(c).** S164 proves both paths for Log carbs.
+- **r1-2.** Day's utility return into a utility opened over Day is pinned by a
+  Node test.
 
 ### Grounding
 
@@ -144,7 +193,11 @@ committed), driving the shipped modules through the desk's own router:
   port and no fetch loop.
 - Day reads the entry's `subject` only to hand it back. `seatUtility` runs inside
   the render, before the focus step, so a utility can place its own request on
-  the render that seats it.
+  the render that seats it. On the base, a `from=day.<utility>` return navigates
+  to Day with the whole entry, so Day re-adopts it and offers its return again.
+- Every carb write advances the store's input revision (`ciq_autotune/store.py`
+  `_advance_revision`, on a carb entry's insert and delete and on a prompt
+  response), which is the revision Diagnose's return status read compares.
 - A contributing date is the calendar day of each measured row in its period. A
   change made mid-day can therefore list its change day in both periods, and the
   base selector then lands on the first-listed control.
@@ -157,9 +210,17 @@ reads it for Diagnose. Neither text changes. The surfaces requirement "Day names
 the subject it was opened from by its served name" is modified: it no longer
 names a `focus` field, and a utility's routing subject is its identity. S76 holds
 unchanged, because a utility's Open Day still keeps the utility open over Day and
-its return still reopens it. S162–S165 are added. A utility return into Changes
-is a plain arrival, so #446's plain-arrival rule applies to it, as it would have
-applied to the base's context, which named no Plan either.
+its return still reopens it. S162–S165 are added.
+
+A utility return into Diagnose after the reader logged a carb or answered a
+question re-reads Diagnose. ADR 414 requires that re-read, because the store
+moved. The restoration then reopens the held case, and focus still lands on the
+utility's Open Day control. A Diagnose rebuild under any seated utility no
+longer sets its crumb default.
+
+A utility return into Changes is a plain arrival, so #446's plain-arrival rule
+applies to it, as it would have applied to the base's context, which named no
+Plan either.
 
 ## ADR 444 — The Log carbs header reads the reader's local clock
 
@@ -210,21 +271,33 @@ zone and clock instead.
   existing contract, and no sweep is re-run.
 - **Behavior changes.** Added: S162–S165, in a dated
   `## #445 amendment — 2026-09-23, issue #445` section. Changed, with no story
-  asserting the old fact: the Changes and utility Day addresses; the Changes
-  supporting-date return focus; the utility return's reads, drill and address
-  over Diagnose; the utility-over-Day return; and the Log carbs return control
-  (Open question 2). Retired: none. Moved: none.
+  asserting the old fact:
+  - the Changes and utility Day addresses;
+  - the Changes supporting-date return focus;
+  - the utility return's reads, drill, focus and address over Diagnose;
+  - the utility-over-Day return;
+  - the Log carbs return control (ruling Q2);
+  - a Diagnose rebuild's crumb default under a seated utility.
+
+  Retired: none. Moved: none.
 - **Sanction line.** `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out
-  yourself from here"); coordinator ruling R445` (and R444 for the header).
+  yourself from here"); coordinator ruling R445` (and R444 for the header; the
+  round-1 rulings above for Q1, Q2 and r1-1 to r1-2).
 - **Render matrix owed.** At 1280x720 and 1440x900, in the one shipped theme,
-  base and branch renders of four states. (a) Day opened from the active change's
-  first supporting date on `c3-trial`, then the Changes return with focus visible
-  on that date's control. (b) The same for the Trial's change record. (c) Log
-  carbs over Diagnose on the showcase: its Day, then the return with focus on the
-  entry's Open Day control. (d) Carb questions over a drilled Diagnose case on
-  the showcase: the return with the drill and the question's Open Day control
-  focused. The Log carbs header needs no render; its evidence is the zoned Node
-  test.
+  base and branch renders of four states.
+  - (a) Day opened from the active change's first supporting date on
+    `c3-trial`, then the Changes return with focus visible on that date's
+    control.
+  - (b) The same for the Trial's change record.
+  - (c) Log carbs over a drilled Diagnose case on the showcase, on both return
+    paths. After logging an entry, the store has moved: the return re-reads and
+    restores the case, with focus on the entry's Open Day control. After a
+    reload, it has not: the return keeps the drill, again with focus on the
+    entry's Open Day control.
+  - (d) Carb questions over a drilled Diagnose case on the showcase: the return
+    keeps the drill, with focus on the question's Open Day control.
+
+  The Log carbs header needs no render; its evidence is the zoned Node test.
 
 ## Risk contract
 
@@ -233,10 +306,13 @@ zone and clock instead.
     selector or a return-focus key.
   - Selector text built from any address value other than a well-formed ISO date
     or the identity of an item the utility serves.
-  - A carb-utility return that re-reads a retained Diagnose, discards its drill,
-    or leaves the utility's title, origin or a selector in the Diagnose address.
+  - A carb-utility return that re-reads a retained Diagnose whose store has not
+    moved since Diagnose last read, or that discards its drill.
+  - A carb-utility return that leaves the utility's title, origin or a selector
+    in the Diagnose address.
   - A Changes or utility return whose focus lands anywhere but the named control
-    while that control is present.
+    while that control is present, including when Diagnose rebuilds under the
+    reopened utility.
   - A Log carbs header that names a date other than the reader's local date.
   - Any analyzer, projection, served-payload, cap, floor, admission or staging
     change.
@@ -251,26 +327,32 @@ zone and clock instead.
     renders.
   - A date listed in both evidence periods lands on the first-listed control, as
     on the base.
-  - A plain utility return drops a held "Return to Trial" (Open question 1).
+  - A plain utility return drops a held "Return to Trial" (ruling Q1).
   - An older link's `focus=` is ignored.
-- **Unsupported:** a Changes return's precise focus on the narrow desk, where the
-  sheet toggle takes it as today; Back and Forward through Day visits; whether
-  Plan stays open on a plain arrival to Changes (#446).
+- **Unsupported:**
+  - A Changes return's precise focus on the narrow desk, where the sheet toggle
+    takes it as today.
+  - Back and Forward through Day visits.
+  - Whether Plan stays open on a plain arrival to Changes (#446).
 - **Evidence owed:**
   - The address drops a `focus=` it is handed, and round-trips the utility
     identities with their titles.
   - Day's utility return moves with no context and hands the utility its
-    identity; a Changes return still hands back its whole entry.
+    identity. A utility over Day comes back to Day with no second return. A
+    Changes return still hands back its whole entry.
   - Each writer's Day address carries its identity and no selector.
   - The utility resolves a served identity to that item's Open Day control, and
     an unserved, display-text or crafted one to its heading, once.
+  - A Diagnose rebuild under a seated utility sets no focus default, and one
+    with no utility seated still does.
   - Changes requests the date's control on the first content render of a Day
     return only, once per arrival, desktop only, and the heading for a malformed
     date.
   - The Log carbs header under a pinned Denver clock.
   - The extended desk browser test and stories S162–S165 at both desktop sizes,
-    each failing first on the base at its feature assertion, with S7, S54b, S60,
-    S61, S62, S72b, S76, S108, S133, S136, S137, S138 and S142 still passing.
+    each failing first on the base at its feature assertion. S164 covers the
+    moved and the unmoved return. S7, S54b, S60, S61, S62, S72b, S76, S108,
+    S133, S136, S137, S138 and S142 still pass.
 
 Why: a Day link and its return are one round trip whose failure mode is a link
 that leaks page internals or lets a crafted address reach the page as a

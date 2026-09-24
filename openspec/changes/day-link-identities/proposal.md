@@ -47,9 +47,13 @@ tomorrow's date beside tonight's time (#444).
   content has rendered. The reopened utility puts focus on that item's own Open
   Day control. When the item is gone, focus lands on the origin's heading.
 - A carb utility's Day return is a plain return to the destination underneath,
-  with the utility reopened over it. Over a retained Diagnose that is ADR 414's
-  retained return: one status read, the drill kept, and the address names the
-  retained case.
+  with the utility reopened over it. Over a retained Diagnose whose store has not
+  moved since it last read, that is ADR 414's retained return: one status read,
+  the drill kept, and the address names the retained case. After a carb was
+  logged or a question answered, the store has moved, so Diagnose re-reads and
+  restores the case it held, as ADR 414 requires. On both paths, focus lands on
+  the pressed Open Day control: a Diagnose rebuild under a seated utility no
+  longer sets its own focus default.
 - The Log carbs header prints the reader's local date and time from one local
   wall-clock string.
 

@@ -32,6 +32,22 @@ this session. The OpenSpec change is `openspec/changes/day-link-identities/`.
   served item's own identity. Why: the address is external input. `→ ADR`
 - #444 has a zoned Node test and no replay story. Why: the replay browser runs in
   the runner's zone (UTC on CI), as #427 recorded. `inline`
+- Coordinator ruling Q1 (2026-09-23, Q3 delegation): a plain utility return
+  drops a held "Return to Trial". `→ ADR` (ADR 445 point 6, Rulings)
+- Coordinator ruling Q2: Log carbs returns to the entry's Open Day control.
+  `→ ADR` (ADR 445 point 4, Rulings)
+- Coordinator ruling r1-1(a): one status read and the drill kept hold while the
+  store has not moved; a moved-store return re-reads (ADR 414), recorded as a
+  consequence. `→ ADR` (ADR 445 point 3)
+- Coordinator ruling r1-1(b): focus lands on the pressed Open Day control on both
+  paths. Diagnose's rebuild sets no `#crumb-trail` default while a utility is
+  seated. Why: its other focus targets sit in the inspector the utility makes
+  inert, so the default is the only move that displaces the router's carried
+  focus. `→ ADR` (ADR 445 point 7)
+- Coordinator ruling r1-1(c): S164 carries both the moved and the unmoved Log
+  carbs return. `inline` (task 4.2)
+- Coordinator ruling r1-2: a Node test pins the utility-over-Day return. `inline`
+  (task 1.3)
 
 ### Risk contract
 
@@ -45,13 +61,7 @@ Disposition: copied into the #445 execution lock.
 
 ## Open questions
 
-Handed to the coordinator with recommended defaults; the draft embodies the
-defaults.
-
-1. A plain utility return drops a held `from=changes` ("Return to Trial"), as
-   ADR 428 point 7 does and as the base did. Default: drop.
-2. Log carbs returns to the entry's own Open Day control (the base used its
-   Remove button). Default: Open Day.
+None. Q1 and Q2 were ruled at plan review round 1.
 
 ## Spawned tasks
 
@@ -61,3 +71,10 @@ None. The release allows no follow-up issues.
 
 Plan-review rounds are dispatched by the coordinator; each round's blockers are
 recorded here as `authoring` or `injected`.
+
+- Round 1 (draft pinned at 669327af): 3 blockers, all `authoring`, 0 `injected`.
+  1. A return after the store moved re-reads, and the rebuild's `#crumb-trail`
+     default displaced the utility's focus.
+  2. There was no Node test for the utility-over-Day return.
+  3. The open questions were still open. The coordinator ruled on all three
+     (r1-1, r1-2, Q1/Q2).

@@ -64,11 +64,16 @@ utility serves.
 
 A carb utility's Day return SHALL hand the destination the utility was opened
 over no context, and SHALL reopen the utility over it. A return into a retained
-Diagnose SHALL be a retained return: exactly one status read and no guidance or
-evidence read, with the drilled case, the chosen window and the reading pane's
-scroll as the reader left them. The Diagnose address SHALL then name the
-retained case and SHALL carry no utility title, no return origin and no
-selector. A utility opened over Day SHALL return into Day as a direct entry.
+Diagnose SHALL be a retained return while the store has not moved since Diagnose
+last read it: exactly one status read and no guidance or evidence read, with the
+drilled case, the chosen window and the reading pane's scroll as the reader left
+them. When the store has moved since then, as logging a carb or answering a
+question moves it, Diagnose SHALL re-read and restore the case it held. On
+either path the Diagnose address SHALL then name the held case and SHALL carry
+no utility title, no return origin and no selector. Focus SHALL land on the
+pressed item's Open Day control, and a Diagnose rebuild under a seated utility
+SHALL NOT take focus from it. A utility opened over Day SHALL return into Day as
+a direct entry.
 
 #### Scenario: Carb questions over a drilled case
 
@@ -80,6 +85,27 @@ selector. A utility opened over Day SHALL return into Day as a direct entry.
 - **AND** the drilled case and the pressed window are unchanged, Carb questions
   is open over them, and the address names that case with no utility title,
   return origin or selector
+
+#### Scenario: A carb logged before the round trip moves the store
+
+- **GIVEN** the reader drilled a Finding's case in Diagnose, opened Log carbs over
+  it and logged an entry
+- **WHEN** the reader opens that entry in Day, closes the utility and presses
+  Return to Log carbs
+- **THEN** Diagnose re-reads and opens the same case with the same Occurrence
+  held
+- **AND** Log carbs is open over it, and focus is on that entry's Open Day
+  control
+
+#### Scenario: A carb logged before a reload keeps the drill on the round trip
+
+- **GIVEN** the reader logged an entry in Log carbs, then reloaded the case
+  address so Diagnose has read the store since
+- **WHEN** the reader opens Log carbs, opens that entry in Day, closes the
+  utility and presses Return to Log carbs
+- **THEN** exactly one status read is issued and nothing else
+- **AND** the drilled case is unchanged, Log carbs is open over it, and focus is
+  on that entry's Open Day control
 
 #### Scenario: A utility over Day returns into Day
 

@@ -7,6 +7,8 @@ import {
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
   assertServedRowDescriptions432, assertSelectedFacts432,
+  OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
+  canvasHeadFailures, assertCanvasHead, readSettled,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -2265,4 +2267,345 @@ test('S176 fails when What changed names the Pattern title, the lever key or "Fo
     [records449({ outside: 'The intended behavior: Focus. No pump setting changed.' }), /S176 a record whose behavior has no served name must say it is no longer an offered lever/],
     [records449({ outside: 'The intended behavior: overnight_drift. No pump setting changed.' }), /S176 What changed must not print the lever key/],
   ]) await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S176(page)), message);
+});
+
+// #455: fake readings of the glucose overview on the narrowest split's 402×154
+// chart, whose plot runs from 34 to 350. `caption` lists the caption's spans
+// as [text, x, y, width], `pads` its pad boxes as [x, y, width, height]; the
+// target numerals and one y-axis label stand clear of both.
+const CHART455 = { width: 402, height: 154 };
+const span455 = (group, text, x, y, width, height = 10) => ({ group, text, x, y, width, height });
+function overview455({ caption, pads = [], extra = [] }) {
+  return {
+    ...CHART455,
+    spans: [
+      ...caption.map(([text, x, y, width]) => span455(0, text, x, y, width)),
+      span455(1, '70', 12, 110, 12), span455(2, '180', 6, 60, 18), span455(3, '120', 8, 82, 18),
+      ...extra,
+    ],
+    pads: pads.map(([x, y, width, height]) => ({ group: 0, x, y, width, height })),
+  };
+}
+const NOTICE455 = 'INSUFFICIENT SAMPLE — thinnest bin holds 0';
+const narrow455 = { width: 832, height: 720 };
+const day455 = OVERVIEW_PRESETS.find(({ label }) => label === '24 h');
+const check455 = (reading, extra = {}) => ({ size: narrow455, state: '24 h', head: day455.head,
+  range: day455.range, reading, ...extra });
+// the 24 h caption wrapped inside its window: the head over the notice, each
+// line on its own pad, centred inside [39, 345]
+const wrapped455 = () => overview455({
+  caption: [['24 H 00:00–24:00', 140, 25, 110], [NOTICE455, 60, 39, 250]],
+  pads: [[135, 23, 120, 14], [55, 37, 260, 14]],
+});
+
+test('S183–S185 are unique app-only C4 stories under HV2-11, served from the verdict gallery', () => {
+  for (const id of ['S183', 'S184', 'S185']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-11');
+    assert.equal(storyCase(id), 'basal-verdict-gallery');
+  }
+});
+
+test('S183 passes a caption wholly inside the chart, stacked on its pads', () => {
+  assert.deepEqual(overviewTextFailures(check455(wrapped455())), []);
+  // a window that is not thin may carry its spread tail instead of the notice
+  assert.deepEqual(overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 100, 25, 110], ['  ·  25–75 spread 27 mg/dL', 210, 25, 120]],
+  }))), []);
+});
+
+/* A line whose tokens are right-aligned, as a caption parked left of its
+   window is, is laid out from its right end, so its tail token paints before
+   its head. The caption reads in reading order: line by line, left to right. */
+test('S183 reads a caption parked left in reading order, though its tail paints first', () => {
+  const afternoon = OVERVIEW_PRESETS.find(({ label }) => label === 'Afternoon');
+  const reading = { width: 850, height: 154, pads: [], spans: [
+    span455(0, `  ·  ${NOTICE455}`, 175, 25, 232), span455(0, 'AFTERNOON 12:00–18:00', 34, 25, 141),
+    span455(1, '70', 12, 110, 12),
+  ] };
+  assert.deepEqual(overviewTextFailures({ size: { width: 1280, height: 720 }, state: 'Afternoon',
+    head: afternoon.head, range: afternoon.range, runSize: true, reading }), []);
+});
+
+test('S183 fails a caption parked past the chart\'s right edge', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 356, 25, 107], [`  ·  ${NOTICE455}`, 463, 25, 232]],
+  })));
+  assert.ok(failures.includes('832×720 24 h: caption span "24 H 00:00–24:00" lies 61px outside #chart\'s 402×154 box'),
+    failures.join('\n'));
+  assert.ok(failures.includes('832×720 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart\'s right edge'));
+  assert.ok(failures.includes(`832×720 24 h: caption span "  ·  ${NOTICE455}" reaches 293px past #chart's right edge`));
+});
+
+test('S183 fails a caption parked past the chart\'s left edge after a narrowing', () => {
+  const evening = OVERVIEW_PRESETS.find(({ label }) => label === 'Evening');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Evening, narrowed with nothing pressed',
+    head: evening.head, range: evening.range, reading: overview455({
+      caption: [['EVENING 18:00–24:00', -60, 25, 120], [`  ·  ${NOTICE455}`, 60, 25, 207]] }) });
+  assert.ok(failures.includes('832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" '
+    + 'lies 60px outside #chart\'s 402×154 box'), failures.join('\n'));
+  assert.ok(failures.includes('832×720 Evening, narrowed with nothing pressed: caption span "EVENING 18:00–24:00" '
+    + 'reaches 94px left of the plot\'s left edge, into the y-axis label column'));
+});
+
+test('S183 fails a word split across two spans', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 140, 25, 110], ['INSUFFICIENT SAMPLE — thin', 90, 39, 170],
+      ['nest bin holds 0', 130, 53, 100]],
+  })));
+  assert.deepEqual(failures, ['832×720 24 h: the caption reads ["24","H","00:00–24:00","INSUFFICIENT","SAMPLE","—",'
+    + '"thin","nest","bin","holds","0"]; it must read the words of "24 H 00:00–24:00", then of "INSUFFICIENT SAMPLE '
+    + '— thinnest bin holds <n>" with a whole count, every word whole']);
+});
+
+test('S183 fails a notice missing its count', () => {
+  const failures = overviewTextFailures(check455(overview455({
+    caption: [['24 H 00:00–24:00', 140, 25, 110], ['INSUFFICIENT SAMPLE — thinnest bin holds', 70, 39, 240]],
+  })));
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^832×720 24 h: the caption reads .*"holds"\]; it must read the words of/);
+});
+
+test('S183 fails when the thin-path premise does not hold', () => {
+  assert.deepEqual(overviewTextFailures(check455(overview455({ caption: [['24 H 00:00–24:00', 140, 25, 110]] }),
+    { premiseThin: true })),
+  ['832×720 24 h: premise: the 24 h caption must carry the insufficient-sample notice, so the store exercises the '
+    + 'thin path']);
+});
+
+test('S183 fails two overlapping spans anywhere in the chart', () => {
+  const reading = wrapped455();
+  reading.spans.push(span455(4, 'TARGET 70–180 mg/dL', 39, 45, 99));
+  assert.deepEqual(overviewTextFailures(check455(reading)),
+    ['832×720 24 h: painted text "INSUFFICIENT SAMPLE — thinnest bin holds 0" and "TARGET 70–180 mg/dL" overlap by '
+      + '78px × 4px']);
+  // the struck y-axis label under a target numeral
+  const struck = wrapped455();
+  struck.spans.push(span455(5, '60', 10, 117.7, 12));
+  assert.deepEqual(overviewTextFailures(check455(struck)),
+    ['832×720 24 h: painted text "70" and "60" overlap by 10px × 2.3px']);
+});
+
+test('S183 fails a two-line caption at the run\'s own size', () => {
+  assert.deepEqual(overviewTextFailures(check455(wrapped455(), { runSize: true })),
+    ['832×720 24 h: the caption stands on 2 lines at the run\'s own size; it must stand on one']);
+});
+
+test('S183 fails a pad box inside the text\'s bounds that reaches into the y-axis label column', () => {
+  const evening = OVERVIEW_PRESETS.find(({ label }) => label === 'Evening');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Evening', head: evening.head,
+    range: evening.range, reading: overview455({
+      caption: [['EVENING 18:00–24:00', 140, 25, 120], ['INSUFFICIENT SAMPLE —', 150, 39, 110],
+        ['thinnest bin holds 0', 36, 53, 100]],
+      pads: [[135, 23, 130, 14], [145, 37, 120, 14], [30, 51, 110, 14]] }) });
+  assert.deepEqual(failures, ['832×720 Evening: caption pad box 3 reaches 4px left of the plot\'s left edge, into the '
+    + 'y-axis label column']);
+});
+
+test('S183 fails a pad box straddling a gate', () => {
+  const overnight = OVERVIEW_PRESETS.find(({ label }) => label === 'Overnight');
+  const failures = overviewTextFailures({ size: narrow455, state: 'Overnight', head: overnight.head,
+    range: overnight.range, reading: overview455({
+      caption: [['OVERNIGHT 00:00–06:00', 122, 25, 125], [NOTICE455, 122, 39, 250]],
+      pads: [[110, 23, 140, 14], [117, 37, 260, 14]] }) });
+  assert.deepEqual(failures, ['832×720 Overnight: caption pad box 1 straddles the window\'s 06:00 gate by 3.83px']);
+});
+
+test('S183 fails once, naming failures at two sizes', () => {
+  const parked = () => overview455({
+    caption: [['24 H 00:00–24:00', 356, 25, 107], [`  ·  ${NOTICE455}`, 463, 25, 232]] });
+  assert.throws(() => assertOverviewText([
+    check455(parked()), { ...check455(parked()), size: { width: 832, height: 560 } }, check455(wrapped455()),
+  ]), error => {
+    assert.match(error.message, /^S183 the glucose overview's text must stay whole, inside the chart and unstruck at every size; 8 failures:/);
+    assert.match(error.message, /\n {2}- 832×720 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart's right edge/);
+    assert.match(error.message, /\n {2}- 832×560 24 h: caption span "24 H 00:00–24:00" reaches 61px past #chart's right edge/);
+    return true;
+  });
+  assert.doesNotThrow(() => assertOverviewText([check455(wrapped455())]));
+});
+
+// #455: fake readings of the Spotlight at the narrowest split: a 381×260 chart
+// with the Keep control in its top-right corner. `verdict` lists the verdict's
+// lines as [text, x, y, width]; the tally line stands at `tallyTop`.
+function spotlight455({ verdict, tallyTop = 38, keep = { x: 345, y: 6, width: 22, height: 22 } }) {
+  return {
+    width: 381, height: 260, keep, pads: [],
+    spans: [
+      ...verdict.map(([text, x, y, width]) => span455(0, text, x, y, width, 11)),
+      span455(1, '30 steady nights · 20 more · 0 less · 10 as set · 3 excluded', 14, tallyTop, 320),
+    ],
+  };
+}
+const twoLines455 = [['SUPPORTED · 0.70 U/h · (0.70–0.70)', 14, 8, 230], ['programmed now 0.60', 14, 22, 130]];
+
+test('S184 passes a verdict broken between facts, inside the chart, with the tally below it', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({ verdict: twoLines455 }) }), []);
+  assert.deepEqual(spotlightVerdictFailures({ size: { width: 1200, height: 736 }, oneLine: true,
+    reading: spotlight455({ verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 300]],
+      tallyTop: 24 }) }), []);
+});
+
+test('S184 fails the rate past the chart\'s edge and under the Keep control', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 390]], tallyTop: 24 }) }), [
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" lies 23px outside the Spotlight '
+      + 'chart\'s 381×260 box',
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" runs 22px under the Keep control',
+  ]);
+});
+
+test('S184 fails the rate under the Keep control inside the chart', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60', 14, 8, 335]], tallyTop: 24 }) }), [
+    '832×720: verdict span "SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now 0.60" runs 4px under the Keep control',
+  ]);
+});
+
+test('S184 fails a line break inside a fact', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now', 14, 8, 300], ['0.60', 14, 22, 30]] }) }),
+  ['832×720: a line break falls inside a fact, after "now"']);
+});
+
+test('S184 fails a tally overlapping the verdict', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455,
+    reading: spotlight455({ verdict: twoLines455, tallyTop: 24 }) }),
+  ['832×720: the tally line starts 9px above the verdict\'s last line ends']);
+});
+
+test('S184 fails a missing verdict group, and a wrapped verdict where one line must hold', () => {
+  assert.deepEqual(spotlightVerdictFailures({ size: narrow455, reading: spotlight455({
+    verdict: [['INSUFFICIENT EVIDENCE · 0.74 U/h', 14, 8, 200]] }) }),
+  ['832×720: 0 painted lines begin with "SUPPORTED"; exactly one verdict must']);
+  assert.deepEqual(spotlightVerdictFailures({ size: { width: 1200, height: 736 }, oneLine: true,
+    reading: spotlight455({ verdict: twoLines455 }) }),
+  ['1200×736: the verdict line stands on 2 lines; at this size it must stand on one']);
+});
+
+test('S184 fails once, naming failures at two sizes', () => {
+  const past = () => spotlight455({ verdict: [['SUPPORTED · 0.70 U/h · (0.70–0.70) · programmed now', 14, 8, 300],
+    ['0.60', 14, 22, 30]] });
+  assert.throws(() => assertSpotlightVerdict([
+    { size: narrow455, reading: past() }, { size: { width: 832, height: 560 }, reading: past() },
+  ]), error => {
+    assert.equal(error.message, 'S184 the Spotlight\'s verdict line must keep every fact whole inside the chart; '
+      + '2 failures:\n  - 832×720: a line break falls inside a fact, after "now"\n'
+      + '  - 832×560: a line break falls inside a fact, after "now"');
+    return true;
+  });
+});
+
+// #455: fake readings of the canvas header, each part as its box, clientWidth
+// and scrollWidth. The default is the narrowest split's 402px header on one
+// line, the title truncated to a letter and an ellipsis, the control's word hidden.
+const part455 = (left, right, top, bottom, scrollWidth = right - left, shown = right > left) => ({
+  left, right, top, bottom, width: right - left, clientWidth: right - left, scrollWidth, shown });
+function head455(parts = {}) {
+  const control = parts.control ?? part455(785, 820, 44, 66);
+  return {
+    head: part455(430, 832, 40, 70), title: part455(464, 504, 47, 63, 144),
+    provenance: part455(516, 771, 48, 62), control,
+    // what the reader sees of the control: its icon (and word), inside its box
+    controlInk: { left: control.left + 4, right: control.right - 4, top: control.top + 4, bottom: control.bottom - 4 },
+    word: part455(0, 0, 0, 0, 0, false), titleFont: 13, controlName: 'All charts', controlTitle: 'All charts',
+    ...parts,
+  };
+}
+
+test('S185 passes an 832 header with a truncated title, a whole provenance and a named icon-only control', () => {
+  assert.deepEqual(canvasHeadFailures({ size: narrow455, narrow: true, reading: head455() }), []);
+  assert.deepEqual(canvasHeadFailures({ size: { width: 1280, height: 720 }, narrow: false, reading: head455({
+    title: part455(464, 608, 47, 63), word: part455(760, 810, 49, 61) }) }), []);
+});
+
+test('S185 fails a zero-width title at the narrowest split', () => {
+  assert.deepEqual(canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ title: part455(464, 464, 47, 63, 144) }) }),
+  ['832×720: the title\'s box is 0px wide, under twice its 13px type, so it cannot show a letter and an ellipsis '
+    + '(title 0px box, clientWidth 0, scrollWidth 144; provenance 255px box, clientWidth 255, scrollWidth 255; '
+    + 'control 35px box, clientWidth 35, scrollWidth 35; word 0px box, clientWidth 0, scrollWidth 0)']);
+});
+
+test('S185 fails a cut provenance', () => {
+  const failures = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ provenance: { ...part455(516, 716, 48, 62), scrollWidth: 255 } }) });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^832×720: the provenance is cut: it needs 255px and shows 200px \(title 40px box/);
+});
+
+test('S185 fails a wide header whose control hides its word', () => {
+  const failures = canvasHeadFailures({ size: { width: 1024, height: 768 }, narrow: false,
+    reading: head455({ title: part455(464, 608, 47, 63) }) });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /^1024×768: the All charts control's word does not render \(/);
+});
+
+test('S185 fails a header on two lines, and a control that loses its name', () => {
+  const failures = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ control: part455(785, 820, 50, 70), controlName: null }) });
+  assert.equal(failures.length, 2);
+  assert.match(failures[0], /^832×720: the title, provenance and control do not share one line; their centres differ by 5px/);
+  assert.match(failures[1], /^832×720: the All charts control is named "null" with the tooltip "All charts"; both must be "All charts"/);
+});
+
+/* The shell's 36px button floor outranks the control's 20px height, so its
+   transparent, borderless box overhangs the 30px rail by 3.5px above and 2.5px
+   below while its icon and word sit inside the rail. The story places the
+   control by what the reader sees of it. */
+test('S185 passes a control whose box overhangs the rail while its icon and word sit inside it', () => {
+  assert.deepEqual(canvasHeadFailures({ size: { width: 1280, height: 720 }, narrow: false, reading: head455({
+    title: part455(464, 608, 47, 63), control: part455(744, 821, 36.5, 72.5), word: part455(764, 815, 48, 62),
+    controlInk: { left: 748, right: 815, top: 48, bottom: 62 } }) }), []);
+});
+
+test('S185 fails a control whose icon runs outside the header, or which draws no icon or word', () => {
+  const outside = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ controlInk: { left: 789, right: 802, top: 37, bottom: 50 } }) });
+  assert.equal(outside.length, 2);
+  assert.match(outside[0], /^832×720: the All charts control's icon and word lie 3px outside the header's box \(/);
+  assert.match(outside[1], /^832×720: the title, provenance and control do not share one line; their centres differ by 11.5px/);
+  const blank = canvasHeadFailures({ size: narrow455, narrow: true, reading: head455({ controlInk: null }) });
+  assert.equal(blank.length, 1);
+  assert.match(blank[0], /^832×720: the All charts control draws no icon or word \(/);
+});
+
+test('S185 fails once, naming failures at two sizes', () => {
+  const zero = () => head455({ title: part455(464, 464, 47, 63, 144) });
+  assert.throws(() => assertCanvasHead([
+    { size: narrow455, narrow: true, reading: zero() },
+    { size: { width: 832, height: 560 }, narrow: true, reading: zero() },
+    { size: { width: 1024, height: 768 }, narrow: false, reading: head455({ title: part455(464, 608, 47, 63),
+      word: part455(760, 810, 49, 61) }) },
+  ]), error => {
+    assert.match(error.message, /^S185 the canvas header must keep its title, provenance and All charts control on one line; 2 failures:/);
+    assert.match(error.message, /\n {2}- 832×720: the title's box is 0px wide/);
+    assert.match(error.message, /\n {2}- 832×560: the title's box is 0px wide/);
+    return true;
+  });
+});
+
+/* #455 — A RESIZE'S RELAYOUT LANDS IN A LATER FRAME THAN THE RESIZE. The story
+   reads again until the check holds, within a bound, and judges the last
+   reading with the same check: a reading that never comes clean keeps every
+   failure, and a page error is never taken for one. */
+test('readSettled judges the first reading its check passes', async () => {
+  const readings = [{ stale: true }, { stale: true }, { stale: false }];
+  let reads = 0;
+  const reading = await readSettled(async () => readings[reads++], r => (r.stale ? ['wide layout'] : []), 'settles');
+  assert.deepEqual(reading, { stale: false });
+  assert.equal(reads, 3);
+});
+
+test('readSettled keeps the last reading when the check never passes within its bound', async () => {
+  let reads = 0;
+  const reading = await readSettled(async () => ({ read: ++reads }), () => ['still wide'], 'never settles', 120);
+  assert.ok(reads >= 2, `it read more than once (${reads})`);
+  assert.equal(reading.read, reads, 'the last reading is the one judged');
+});
+
+test('readSettled rethrows a page error rather than judging it', async () => {
+  await assert.rejects(readSettled(async () => { throw new Error('Target page closed'); }, () => [], 'page', 120),
+    /Target page closed/);
 });

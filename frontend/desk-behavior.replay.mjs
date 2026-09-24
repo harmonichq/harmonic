@@ -3161,6 +3161,17 @@ export const S153 = appOnly('HV2-17', '#433 every basal key verdict agrees with 
 export const S154 = appOnly('#434 reader words',
   '#434 a basal slot names why its excluded nights were left out, in the panel and the tile description',
   C4_STORIES.S154);
+// STORY:harmonic-v2-desktop:S183
+export const S183 = appOnly('HV2-11',
+  '#455 the glucose overview\'s window caption stays whole inside the chart, and no chart text overprints another',
+  C4_STORIES.S183);
+// STORY:harmonic-v2-desktop:S184
+export const S184 = appOnly('HV2-11',
+  '#455 the Spotlight\'s verdict line keeps every fact whole inside the chart at the narrowest split', C4_STORIES.S184);
+// STORY:harmonic-v2-desktop:S185
+export const S185 = appOnly('HV2-11',
+  '#455 the canvas header keeps its title, provenance and All charts control on one line at the narrowest split',
+  C4_STORIES.S185);
 // STORY:harmonic-v2-desktop:S136
 export const S136 = appOnly('HV2-14',
   '#428 after a Day return, a key, a window choice and Backspace each rename the address to the case on screen', C4_STORIES.S136);
@@ -3271,6 +3282,7 @@ export const REGISTRY = [
   ['S180', S180, J()],
   ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S154', S154, J()],
+  ['S183', S183, J()], ['S184', S184, J()], ['S185', S185, J()],
   ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],

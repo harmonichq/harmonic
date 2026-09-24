@@ -5,7 +5,7 @@ import {
   BIN_MINUTES, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
   commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText, GRID,
-  stripGlucoseRange, queuePreviewOption,
+  stripGlucoseRange, queuePreviewOption, observeResize,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -490,6 +490,240 @@ test("#366 · every parked label anchors on the strip's own ceiling, so it lands
   assert.equal(wrapped.label.formatter, 'CONTINUES');
   assert.equal(wrapped.label.position, 'insideTop');
   assert.equal(wrapped.label.distance, 5);
+});
+
+/* #455 — A CAPTION THAT FITS ON ONE LINE NOWHERE WRAPS INSIDE THE CHART. At the
+   narrowest split #chart is 402px, so a plot of 316px from 34 to 350: a thin
+   window's one line (its head and the insufficient-sample notice) fits neither
+   inside the 24 h window nor beside a quarter of the day, and was parked past
+   the chart's edge. Each case is read through the emitted option. */
+const LABEL_PAD_455 = 10;   // renderCanvas's breathing room inside the dashed edges
+const TOKEN_PADS_455 = 10;  // the knock-out pad's two 5px sides
+const colors455 = {
+  muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+  rail: '#666', windowDim: '#777', windowEdge: '#888', bandOuter: '#999',
+  bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+  onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', grid: '#678',
+};
+function caption455({ clientWidth, clientHeight = 154, window, windowLabel, counts = 0, range = [60, 200] }) {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(counts), raw: filled(1), days: 12, pool: 45,
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  const el = { clientWidth, clientHeight, setAttribute() {} };
+  renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+    envelope, colors: colors455, supportFloor: 8, stats: { spread: 27 }, range, window, windowLabel,
+  });
+  const context = option.series.find((series) => series.name === '__context');
+  const [target] = context.markArea.data.filter(([start]) => start.yAxis != null);
+  const [area] = context.markArea.data.filter(([start]) => start.xAxis != null);
+  const parked = context.markPoint?.data.find((datum) => datum.label.formatter !== 'CONTINUES') ?? null;
+  return { el, option, target: target[0].label, inside: area[0].label, parked: parked?.label ?? null };
+}
+const NOTICE_455 = 'INSUFFICIENT SAMPLE — thinnest bin holds 0';
+const padded455 = { backgroundColor: '#666', padding: [2, 5] };
+const head455 = { color: '#888', fontSize: 10, fontWeight: 700, letterSpacing: 0.5 };
+const notice455 = { color: '#222', fontSize: 9.5, fontWeight: 700, letterSpacing: 0 };
+const spread455 = { color: '#111', fontSize: 9.5, fontWeight: 500, letterSpacing: 0 };
+const floor455 = { show: true, position: 'insideBottomLeft', distance: 0 };
+
+test('#455 · a thin 24 h caption at the narrowest split wraps inside its window on padded tokens', () => {
+  const drawn = caption455({ clientWidth: 402, window: [0, 1440], windowLabel: '24 H 00:00–24:00' });
+  const [start, end] = [0, 1440].map((minute) => xAtMinute(drawn.el, minute));
+  assert.deepEqual([start, end], [GRID.left, 350]);
+  assert.equal(drawn.inside.show, true);
+  assert.equal(drawn.inside.formatter, `{hd|24 H 00:00–24:00}{th|\n${NOTICE_455}}`,
+    'the newline opens the notice token: one ending a segment is dropped under overflow break');
+  assert.equal(drawn.inside.width, 316 - LABEL_PAD_455 - TOKEN_PADS_455);
+  assert.equal(drawn.inside.overflow, 'break');
+  for (const key of ['backgroundColor', 'padding', 'lineHeight']) {
+    assert.equal(key in drawn.inside, false, `the label carries no ${key}; the tokens carry the pad`);
+  }
+  /* the tokens centre their lines, as the one-line inside caption is centred
+     (coordinator-authorized) */
+  assert.deepEqual(drawn.inside.rich, {
+    hd: { ...head455, ...padded455, align: 'center' },
+    th: { ...notice455, ...padded455, align: 'center' },
+  });
+  assert.equal(drawn.parked, null, 'no parked caption is emitted');
+  assert.deepEqual(drawn.target, { ...drawn.target, ...floor455 }, 'the target caption takes its floor');
+});
+
+test('#455 · a thin quarter-day caption at the narrowest split wraps in its roomier margin', () => {
+  // Overnight: the right margin runs to the chart's right edge
+  const overnight = caption455({ clientWidth: 402, window: [0, 360], windowLabel: 'OVERNIGHT 00:00–06:00' });
+  const overnightEnd = xAtMinute(overnight.el, 360);
+  assert.equal(overnight.inside.show, false);
+  assert.equal(overnight.parked.position, 'right');
+  assert.equal(overnight.parked.align, 'left');
+  assert.equal(overnight.parked.formatter, `{hd|OVERNIGHT 00:00–06:00}{th|\n${NOTICE_455}}`);
+  assert.equal(overnight.parked.width, 402 - (overnightEnd + 6) - TOKEN_PADS_455);
+  assert.equal(overnight.parked.overflow, 'break');
+  assert.deepEqual(overnight.parked.rich, { hd: { ...head455, ...padded455 }, th: { ...notice455, ...padded455 } });
+  assert.ok(overnightEnd + 6 + overnight.parked.width + TOKEN_PADS_455 <= 402 + 1e-9,
+    'the region ends at the chart\'s right edge, never beyond');
+  assert.deepEqual(overnight.target, { ...overnight.target, ...floor455 });
+
+  // Evening: the left margin stops at the plot's left edge, before the y-axis labels
+  const evening = caption455({ clientWidth: 402, window: [1080, 1440], windowLabel: 'EVENING 18:00–24:00' });
+  const eveningStart = xAtMinute(evening.el, 1080);
+  assert.equal(evening.parked.position, 'left');
+  assert.equal(evening.parked.align, 'right');
+  assert.equal(evening.parked.formatter, `{hd|EVENING 18:00–24:00}{th|\n${NOTICE_455}}`);
+  assert.equal(evening.parked.width, eveningStart - 6 - GRID.left - TOKEN_PADS_455);
+  assert.ok(eveningStart - 6 - evening.parked.width - TOKEN_PADS_455 >= GRID.left - 1e-9,
+    'the region ends at the plot\'s left edge: it cannot reach into the y-axis label column');
+  assert.deepEqual(evening.target, { ...evening.target, ...floor455 });
+  for (const label of [evening.parked, overnight.parked]) {
+    for (const key of ['backgroundColor', 'padding', 'lineHeight']) assert.equal(key in label, false);
+  }
+});
+
+/* #455 — EACH PAD HUGS ITS WORDS. ZRender's own `break` keeps the space it
+   broke at inside the line's token, so a line aligned to its pad's right edge
+   ended a space short over blank pad. The caption's lines are broken here,
+   between whole words, by the estimate the fit decisions use, and no line
+   carries a space at either end. */
+test('#455 · a wrapped caption breaks its own lines between whole words, no line ending in a space', () => {
+  const afternoon = caption455({ clientWidth: 402, window: [720, 1080], windowLabel: 'AFTERNOON 12:00–18:00' });
+  const start = xAtMinute(afternoon.el, 720);
+  assert.equal(afternoon.parked.position, 'left');
+  assert.equal(afternoon.parked.width, start - 6 - GRID.left - TOKEN_PADS_455);
+  assert.equal(afternoon.parked.formatter,
+    '{hd|AFTERNOON 12:00–18:00}{th|\nINSUFFICIENT SAMPLE —\nthinnest bin holds 0}');
+  const lines = afternoon.parked.formatter.replace(/\{(hd|th)\||\}/g, '').split('\n').filter(Boolean);
+  for (const line of lines) assert.equal(line, line.trim(), `"${line}" carries no space at its ends`);
+  assert.deepEqual(lines.join(' ').split(' '), ['AFTERNOON', '12:00–18:00', ...NOTICE_455.split(' ')],
+    'every word, whole and in order');
+});
+
+test('#455 · a window that is not thin, narrower than its head, wraps its head alone', () => {
+  // 11:00–13:00 has a little more plot room on its left, so that is its side.
+  // At 402 wide that side holds the 18-character head, estimated at about
+  // 121px, on one line (140px of room), so it parks there exactly as today.
+  const parked = caption455({ clientWidth: 402, window: [660, 780], windowLabel: 'WINDOW 11:00–13:00', counts: 12 });
+  assert.equal(parked.parked.position, 'left');
+  assert.equal(parked.parked.formatter, 'WINDOW 11:00–13:00');
+  assert.equal('width' in parked.parked, false);
+  // At 300 wide the side has 93px, less than the head needs, and the window
+  // 18px: the head wraps alone in the side's room, with no spread tail.
+  const narrow = caption455({ clientWidth: 300, window: [660, 780], windowLabel: 'WINDOW 11:00–13:00', counts: 12 });
+  const start = xAtMinute(narrow.el, 660);
+  assert.equal(narrow.inside.show, false);
+  assert.equal(narrow.parked.position, 'left');
+  assert.equal(narrow.parked.formatter, '{hd|WINDOW\n11:00–13:00}',
+    'no spread tail rides a wrapped head, which breaks between its words');
+  assert.equal(narrow.parked.overflow, 'break');
+  assert.equal(narrow.parked.width, start - 6 - GRID.left - TOKEN_PADS_455);
+  assert.deepEqual(narrow.parked.rich.hd, { ...head455, ...padded455 });
+  assert.deepEqual(narrow.target, { ...narrow.target, ...floor455 });
+});
+
+test('#455 · at 1280\'s chart every thin preset keeps today\'s one-line caption exactly', () => {
+  const tail = `{th|  ·  ${NOTICE_455}}`;
+  const rich = { sp: spread455, th: notice455 };
+  const shipped = { show: true, position: 'insideStartTop', distance: 10 };
+  const parkedLabel = (head, side) => ({
+    show: true, position: side, distance: 6, verticalAlign: 'top', offset: [0, 5],
+    formatter: `${head}${tail}`, rich, align: side === 'right' ? 'left' : 'right',
+    ...head455,
+  });
+  for (const [window, head, side] of [
+    [[0, 360], 'OVERNIGHT 00:00–06:00', 'right'], [[360, 720], 'MORNING 06:00–12:00', 'right'],
+    [[720, 1080], 'AFTERNOON 12:00–18:00', 'left'], [[1080, 1440], 'EVENING 18:00–24:00', 'left'],
+  ]) {
+    const drawn = caption455({ clientWidth: 850, window, windowLabel: head });
+    assert.deepEqual(drawn.parked, parkedLabel(head, side), `${head} parks on one line, as today`);
+    assert.equal(drawn.inside.show, false);
+    assert.deepEqual(drawn.target, { ...drawn.target, ...shipped }, `${head}: the target caption stands where it stood`);
+  }
+  const day = caption455({ clientWidth: 850, window: [0, 1440], windowLabel: '24 H 00:00–24:00' });
+  assert.deepEqual(day.inside, {
+    show: true, position: 'insideTop', distance: 5, ...head455,
+    formatter: `24 H 00:00–24:00${tail}`, rich,
+  });
+  assert.equal(day.parked, null);
+  assert.deepEqual(day.target, { ...day.target, ...shipped });
+});
+
+/* #455 — A Y-AXIS LABEL YIELDS TO A TARGET NUMERAL. The 70 and 180 numerals sit
+   on an opaque pad at the plot's left edge, so a tick label whose centre lands
+   within 13px of a numeral's centre (half the label's 12px line plus half the
+   numeral's 14px padded box) is struck under it; the numeral names the line. */
+test('#455 · the y-axis labels a target numeral would strike print nothing', () => {
+  // a 108px plot for 60–200: "60" sits 7.7px under "70", "180" under "180"
+  const short = caption455({ clientWidth: 402, clientHeight: 154, window: [0, 1440], windowLabel: '24 H 00:00–24:00' });
+  const shortLabel = short.option.yAxis[0].axisLabel.formatter;
+  assert.deepEqual([60, 120, 180, 200].map((value) => shortLabel(value)), ['', '120', '', '200']);
+  // a 300px plot for 40–260: every label stands at least 27px from a numeral
+  const tall = caption455({ clientWidth: 850, clientHeight: 346, window: [0, 1440],
+    windowLabel: '24 H 00:00–24:00', range: [40, 260] });
+  const tallLabel = tall.option.yAxis[0].axisLabel.formatter;
+  for (const value of [40, 100, 160, 220, 260]) {
+    assert.equal(tallLabel(value), String(value));
+    assert.ok(Math.min(...[70, 180].map((bound) => Math.abs(value - bound))) * (300 / 220) >= 27);
+  }
+});
+
+/* #455 — A CHART RE-LAYS OUT WHEN ITS SIZE CHANGES. The observer's first report
+   is the mount's own, which has already drawn; each later size change resizes
+   the canvas and then re-runs the layout, in the same animation frame. */
+test('#455 · observeResize re-lays out after a size change, never on its first report', () => {
+  const saved = { ResizeObserver: globalThis.ResizeObserver, requestAnimationFrame: globalThis.requestAnimationFrame };
+  const frames = [];
+  let report = null;
+  globalThis.ResizeObserver = class { constructor(callback) { report = callback; } observe() {} disconnect() {} };
+  globalThis.requestAnimationFrame = (callback) => frames.push(callback);
+  const flush = () => { while (frames.length) frames.shift()(); };
+  const size = (width, height) => report([{ contentRect: { width, height } }]);
+  try {
+    const log = [];
+    const chart = { resize: ({ width, height }) => log.push(`resize ${width}×${height}`) };
+    observeResize({}, () => chart, () => log.push('relayout'));
+    size(850, 300); flush();
+    assert.deepEqual(log, ['resize 850×300'], 'the first report resizes and does not relayout');
+    size(402, 300); flush();
+    assert.deepEqual(log.slice(1), ['resize 402×300', 'relayout'], 'a later change resizes, then relayouts once');
+    size(402, 300); flush();
+    assert.equal(log.length, 3, 'an unchanged size does neither');
+
+    const plain = [];
+    observeResize({}, () => ({ resize: ({ width }) => plain.push(`resize ${width}`) }));
+    size(850, 300); flush(); size(402, 300); flush();
+    assert.deepEqual(plain, ['resize 850', 'resize 402'], 'with no callback a change only resizes');
+  } finally {
+    Object.assign(globalThis, saved);
+  }
+});
+
+/* #455 — TWO REPORTS BEFORE ONE FRAME. A narrowing can report an intermediate
+   box and then the final one before the queued frame runs. The frame must
+   resize to the latest report and re-lay out once; resizing to the first left
+   the chart at a size its box no longer had, with the wide layout's text. */
+test('#455 · observeResize resizes to the latest of two reports that land before one frame', () => {
+  const saved = { ResizeObserver: globalThis.ResizeObserver, requestAnimationFrame: globalThis.requestAnimationFrame };
+  const frames = [];
+  let report = null;
+  globalThis.ResizeObserver = class { constructor(callback) { report = callback; } observe() {} disconnect() {} };
+  globalThis.requestAnimationFrame = (callback) => frames.push(callback);
+  const flush = () => { while (frames.length) frames.shift()(); };
+  const size = (width, height) => report([{ contentRect: { width, height } }]);
+  try {
+    const log = [];
+    const chart = { resize: ({ width, height }) => log.push(`resize ${width}×${height}`) };
+    observeResize({}, () => chart, () => log.push('relayout'));
+    size(1010, 300); flush();
+    size(1010, 153); size(402, 153); flush();
+    assert.deepEqual(log, ['resize 1010×300', 'resize 402×153', 'relayout'],
+      'one frame, at the latest box, then one relayout');
+  } finally {
+    Object.assign(globalThis, saved);
+  }
 });
 
 test('a tile landing never changes the already-drawn strip range', () => {

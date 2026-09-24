@@ -4535,3 +4535,163 @@ written once on the integration branch. `acceptance.py`'s pinned inventory
 moves to 172 issued · 153 active · 19 retired on this branch.
 
 moves to 175 issued · 156 active · 19 retired on this branch.
+
+## #455 amendment — 2026-09-23
+
+S183–S185 are the fail-first obligations of #455 (the pinned change
+`openspec/changes/window-label-narrow/`, ADR 455): at the narrowest split the
+glucose overview's window caption, the Spotlight's verdict line and the canvas
+header's title stay whole, and at every size no glucose-overview text
+overprints another. All three are app-opener-only, like S101–S117. Browser
+execution belongs to the release coordinator at 1280x720 and 1440x900, each
+story on a fresh `basal-verdict-gallery` case store; the ticket worker binds no
+port. No story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+### #455 sanctioned changes to shipped desk behavior — 2026-09-23
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R455, as amended for the two collision fixes
+("desktop sizes may change for exactly these two collision fixes and nothing
+else"). It covers six changes:
+
+- A window caption that fits on one line nowhere, neither inside its window nor
+  beside it, stacks and wraps inside the wider of the two: the window's name on
+  its own line and, on a thin window, the insufficient-sample notice under it,
+  breaking only between whole words, each line on the knock-out pad. The target
+  caption takes its existing floor placement then.
+- The Spotlight's middle-rank verdict line breaks between its facts where it
+  does not fit, and its tally line and figure move down with it.
+- Between 832 and 1023 px wide, the All charts control shows its icon only,
+  keeping its name and tooltip, so the title draws.
+- A glucose y-axis label that would sit under a target numeral is not printed,
+  at every size.
+- The Spotlight's programmed-rate rule ends at its axis tick, above the tick
+  labels, at every size.
+- The glucose overview and the evidence charts re-lay out when their size
+  changes, not only rescale.
+
+No shipped behavior is retired. At 1280x720 and 1440x900 only the two collision
+fixes are visible.
+
+```
+S183 · The glucose overview's window caption stays whole inside the chart, and
+       no text the chart paints overprints another. At the run's own size each
+       Window preset's caption stands on one line; at 832×720 and 832×560 each
+       preset's caption, and the Evening caption after the window is narrowed
+       with nothing pressed, lies inside #chart with every word whole (the
+       window's name, then on a thin window the whole insufficient-sample
+       notice), and neither its text nor its pad boxes reach into the y-axis
+       label column, past the chart's right edge, or across a window gate.
+  element:  #chart (its painted text spans and their pad boxes),
+            #seg-window buttons
+  source:   frontend/diagnose-workstation-chart.js renderCanvas (the window
+            caption, the target caption, the y-axis labels) and observeResize;
+            frontend/diagnose-workstation.js (the overview's relayout)
+  lock:     HV2-11
+  data:     basal-verdict-gallery (the case S113 uses; its 24 h window is thin)
+  evidence: C4_STORIES.S183 → assertOverviewText; presses each preset at the
+            run's size, then Evening, narrows to 832×720 with nothing pressed,
+            then presses each preset at 832×720 and at 832×560, each press
+            differing from the one before it and settled by laidOutBrace404, a
+            resize settled when the chart has taken its host's box and held
+            still; reads every painted text span and pad box from the chart's
+            ZRender display list, each caption's spans in reading order (line
+            by line, left to right: a caption parked left paints its tail
+            first). The narrowed reading waits, bounded at 10 s, until its
+            check holds (readSettled), since the relayout lands a frame after
+            the resize. It restores the run's size and presses 24 h, records
+            every failure by size, state and check with the measured amount,
+            then fails once, listing them all
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at both
+            sizes with 65 failures: the 24 h caption past #chart's right edge at
+            832×720 and 832×560, the Evening caption past its left edge after
+            the live narrowing, and the "60"/"70" and "180"/"180" overlaps.
+            Branch d3e276ed passed every 832 check and cleared the overlaps. It
+            failed only on the run size's Afternoon and Evening captions, which
+            it read tail first; that is a story defect, corrected by reading
+            order (coordinator-authorized, 2026-09-23). Branch a9a2b56a passed
+            every run-size check but read the 1010 px or 850 px chart's one-line
+            Evening caption after the narrowing. That is the resize-to-the-
+            first-report race, now fixed in observeResize, with the bounded wait
+            above. On base b03431d2 with the c13c6f7a harness laid over it,
+            S183 fails at both sizes with 72 failures, for the reasons above,
+            each measured after readSettled's bounded wait. Branch c13c6f7a
+            passes at 1280x720 and 1440x900 in each of three runs. Coordinator-
+            run 2026-09-23
+```
+
+```
+S184 · With Diagnose at rest, the Spotlight's middle-rank verdict line keeps
+       every fact — SUPPORTED, 0.70 U/h, (0.70–0.70), programmed now 0.60 —
+       whole inside its chart and clear of the Keep control, breaking only
+       between facts, with the tally line wholly below it; at 1200×736 it
+       stands on one line. Each size is reached by resizing, nothing pressed.
+  element:  #tile-focal .tile-chart (its painted text spans), #tile-focal
+            .tile-pin
+  source:   frontend/diagnose-evidence-charts.js basalEditorialOption (the
+            middle rank); frontend/diagnose-workstation.js mountDescriptorChart
+            (the tile's relayout)
+  lock:     HV2-11
+  data:     basal-verdict-gallery (at rest the Spotlight opens the next-in-line
+            basal slot, 00:00)
+  evidence: C4_STORIES.S184 → assertSpotlightVerdict; sets 1200×736, 832×720
+            and 832×560 in turn, settles each resize, then reads the Spotlight
+            chart's painted text and the Keep control's box in the chart's
+            coordinates. Each reading waits, bounded at 10 s, until its check
+            holds (readSettled). It restores the run's size, then fails once,
+            listing every failure by size
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560, and at 1200×736 on the 1280x720 run: the
+            verdict reads ["SUPPORTED"] from the full rank the run's size drew,
+            and no tally line is painted. Branch d3e276ed passes at 1280x720 and
+            1440x900. Branch a9a2b56a read the 1200×736 one-line verdict at
+            832×720 (26.86px past the chart, 20px under Keep): the same race as
+            S183's, now fixed. On base b03431d2 with the c13c6f7a harness laid
+            over it, S184 fails at both sizes with 6 failures, each measured
+            after readSettled's bounded wait. Branch c13c6f7a passes at 1280x720
+            and 1440x900 in each of three runs. Coordinator-run 2026-09-23
+```
+
+```
+S185 · With Diagnose at rest, the canvas header keeps its title, its whole
+       provenance and the All charts control (named and titled "All charts")
+       inside its box on one line at 832×720, 832×560, 1024×768 and the run's
+       own size. At the narrowest split the title shows at least a letter and
+       an ellipsis; at 1024×768 and the run's size the control shows its word
+       and the title prints whole.
+  element:  #canvas-head, #canvas-head .head-rest h2, #canvas-pool,
+            #explorer-trigger, #explorer-trigger > span
+  source:   frontend/diagnose-workstation.css (the ADR 455 832–1023px block);
+            frontend/diagnose-workstation.js chartActionButton
+  lock:     HV2-11
+  data:     basal-verdict-gallery
+  evidence: C4_STORIES.S185 → assertCanvasHead; sets each size in turn, waits
+            until the header's box has held still for two animation frames,
+            reads each part's box, clientWidth and scrollWidth, the box of the
+            control's rendered icon and word, and the control's name and
+            tooltip; restores the run's size, prints every size's widths on a
+            `# S185` line, then fails once, each failure printing every part's
+            widths. The control is placed by its icon and word: its own box is
+            36px tall under the shell's button floor and overhangs the 30px
+            rail by 3.5px, with nothing visible outside it
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560 on the title's 0px box (scrollWidth 144).
+            Branch d3e276ed draws a 41.86px title there, beside a 21px icon-only
+            control. Both base and branch also failed at every size on the
+            control's 3.5px box overhang; that is a story defect, corrected by
+            placing the control by its icon and word (coordinator-authorized,
+            2026-09-23). Branch a9a2b56a, and branch c13c6f7a in each of three
+            runs, pass at 1280x720 and 1440x900 with the widths above; the base
+            result stands on the d3e276ed harness. Coordinator-run 2026-09-23
+```
+
+### #455 handler inventory
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `#seg-window` preset button click, at the run's size and the narrowest split | diagnose-workstation.js (the Window presets) | S183 |
+| `observeResize` relayout on `#chart` (a window resize, nothing pressed) | diagnose-workstation-chart.js observeResize; diagnose-workstation.js | S183 |
+| `observeResize` relayout on a descriptor tile (the Spotlight, nothing pressed) | diagnose-workstation-chart.js observeResize; diagnose-workstation.js installTileMount | S184 |
+| `@media (min-width: 832px) and (max-width: 1023px)` on `#explorer-trigger > span` (the user agent's; no script handler) | diagnose-workstation.css, the ADR 455 block | S185 |

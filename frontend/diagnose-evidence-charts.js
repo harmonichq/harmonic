@@ -542,6 +542,7 @@ function basalEditorialOption(data, mini, colors, surface) {
      set", and that label was also the text the collision audit caught running
      off the plot into the rail. */
   const caps = `500 10px ${FONT}`;
+  const TICK_LENGTH = 4;
   /* THE ROWS ARE PLACED IN PIXELS, not anchored to the rail's margin. A graphic
      element's box is its own text's box: anchor it by `right` and a short label
      lands against the far margin however wide `style.width` says the column is,
@@ -597,13 +598,34 @@ function basalEditorialOption(data, mini, colors, surface) {
      comes along, because the count arguing against the finding may never be the
      one that gets dropped for room; the others stay on the full rail and the
      slot panel (ADR 434). */
-  const compactVerdict = [verdict.toUpperCase(),
+  const verdictFacts = [verdict.toUpperCase(),
     finite(estimateValue) ? `${estimateValue.toFixed(2)} U/h` : 'no estimate',
     ...(hasBand ? [`(${ciLo.toFixed(2)}–${ciHi.toFixed(2)})`] : []),
     /* The rule loses its flag at this size — the deck's own band is where the
        flag flies and the tally line is standing in it — so the rate the whole
        figure is anchored on is named here instead. */
-    ...(hasRule ? [`programmed now ${programmed.toFixed(2)}`] : [])].join(' · ');
+    ...(hasRule ? [`programmed now ${programmed.toFixed(2)}`] : [])];
+  /* THE VERDICT LINE BREAKS BETWEEN FACTS, NEVER INSIDE ONE (ADR 455). Its
+     column ends where the plot does, before the Keep control's column. Where
+     the facts do not fit it on one line, a line break replaces the separator
+     before the first fact that does not fit, each line holding as many whole
+     facts as fit; no fact is shortened or dropped for room. The monospace
+     advance is taken at .62 of the size, wide of the face's own, so a line
+     judged to fit never runs past the column. A line that fits is the line it
+     always was. */
+  const verdictColumn = seatWidth - L.margin - (L.margin + 26);
+  const verdictLines = verdictFacts.reduce((lines, fact) => {
+    const joined = lines.length ? `${lines.at(-1)} · ${fact}` : null;
+    if (joined && joined.length * 11 * .62 <= verdictColumn) lines[lines.length - 1] = joined;
+    else lines.push(fact);
+    return lines;
+  }, []);
+  const compactVerdict = verdictLines.join('\n');
+  /* ZRender's own line pitch equals the type size, which would crowd two lines
+     of 11px type, so a broken line sets its own; the tally and the figure
+     move down one pitch for each line it adds. */
+  const VERDICT_PITCH = 14;
+  const verdictDrop = compact ? (verdictLines.length - 1) * VERDICT_PITCH : 0;
   const low = reasons.find(({ key }) => key === 'below_range_or_suspended');
   const compactTally = `${total} steady night${total === 1 ? '' : 's'}`
     + ` · ${above} more · ${below} less · ${atRate} as set`
@@ -617,11 +639,12 @@ function basalEditorialOption(data, mini, colors, surface) {
     ...chartBase(`${description}${reasonsSaid}`, false, colors),
     legend: { show: false },
     grid: { left: L.margin, right: L.rail + L.margin + (compact ? 26 : 16),
-      top: L.figureTop, bottom: L.footerBand, containLabel: false },
+      top: L.figureTop + verdictDrop, bottom: L.footerBand, containLabel: false },
     graphic: compact ? [
       { type: 'text', left: L.margin, top: L.deckTop, silent: true,
-        style: { text: compactVerdict, fill: colors.text, font: `600 11px ${MONO}` } },
-      { type: 'text', left: L.margin, top: L.tallyTop, silent: true,
+        style: { text: compactVerdict, fill: colors.text, font: `600 11px ${MONO}`,
+          ...(verdictDrop ? { lineHeight: VERDICT_PITCH } : {}) } },
+      { type: 'text', left: L.margin, top: L.tallyTop + verdictDrop, silent: true,
         style: { text: compactTally, fill: colors.muted, font: `500 ${tallySize}px ${FONT}` } },
     ] : [
       /* The verdict slug wears a warm-grey square, never rust: a hold is not an
@@ -657,7 +680,7 @@ function basalEditorialOption(data, mini, colors, surface) {
       name: 'basal rate, U/h', nameLocation: 'middle',
       ...axis(colors, 'horizontal'), splitLine: { show: false }, nameGap: 26,
       nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
-      axisTick: { show: true, length: 4, lineStyle: { color: hair } },
+      axisTick: { show: true, length: TICK_LENGTH, lineStyle: { color: hair } },
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
         formatter: (value) => value.toFixed(tickStep >= .1 ? 1 : 2) } },
     /* The count runs DOWNWARD, because the stack does: the nights at or above
@@ -757,7 +780,10 @@ function basalEditorialOption(data, mini, colors, surface) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];
             const head = compact ? cs.y : cs.y - 14;
-            children.push(box(ruleX - .75, head, 1.5, base + 24 - head, colors.basal));
+            /* The rule stops at the axis's own tick (ADR 455): run on below it,
+               it struck the tick labels 6px under the axis, the one at the
+               programmed rate included. */
+            children.push(box(ruleX - .75, head, 1.5, base + TICK_LENGTH - head, colors.basal));
             /* The flag flies ABOVE the plot, on the head of the rule. Inside it
                used to sit in the top row's band, which was empty while the cells
                grew from the left edge and is the widest cell on the tile now

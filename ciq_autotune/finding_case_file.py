@@ -864,11 +864,22 @@ def _habit_entry(member, lever, verdict, *, mapped=False):
             "detail": own.get("detail") if own is not None and agrees else None}
 
 
+def _served_once(cause, habits):
+    """A reason that serves each sentence once (ADR 454): on a claimed row, the
+    claimant's entry carries no sentence when its recorded sentence is the cause's
+    text, so that sentence is served as the cause's text alone."""
+    if cause is not None:
+        habits = [entry | {"detail": None}
+                  if entry["lever"] == cause["lever"] and entry["detail"] == cause["text"]
+                  else entry for entry in habits]
+    return {"cause": cause, "habits": habits}
+
+
 def _habit_reason(member, lever, claimed):
     """A single-habit row's reason: the case lever as its cause exactly when this case
     file claims the row, and its one judged habit at the row's own verdict."""
-    return {"cause": _cause(lever.value, member.claim_text) if claimed else None,
-            "habits": [_habit_entry(member, lever.value, member.verdict)]}
+    return _served_once(_cause(lever.value, member.claim_text) if claimed else None,
+                        [_habit_entry(member, lever.value, member.verdict)])
 
 
 def _pattern_verdicts(recorded, driver, claimant, habits):
@@ -890,9 +901,9 @@ def _pattern_verdicts(recorded, driver, claimant, habits):
 
 def _pattern_reason(member, claimant, habits):
     verdicts = _pattern_verdicts(member.recorded, member.driver, claimant, habits)
-    return {"cause": _cause(claimant, member.claim_text) if claimant is not None else None,
-            "habits": [_habit_entry(member, lever, verdict, mapped=claimant is None)
-                       for lever, verdict in verdicts.items()]}
+    return _served_once(_cause(claimant, member.claim_text) if claimant is not None else None,
+                        [_habit_entry(member, lever, verdict, mapped=claimant is None)
+                         for lever, verdict in verdicts.items()])
 
 
 def _clock(roster, claimed_ids):

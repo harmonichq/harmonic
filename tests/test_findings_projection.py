@@ -1068,11 +1068,36 @@ class PatternProjectionTest(unittest.TestCase):
         self.assertIsNone(unadmitted["pattern_chart"])
 
     def test_memberless_patterns_keep_their_count_without_a_chart(self):
-        browser = json.loads((pathlib.Path(__file__).resolve().parents[1]
-                              / "frontend" / "__fixtures__"
+        from ciq_autotune.analyzers.scenario.levers import title
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+
+        root = pathlib.Path(__file__).resolve().parents[1]
+        browser = json.loads((root / "frontend" / "__fixtures__"
                               / "findings-projection.json").read_text())
-        pattern = next(row for row in browser["browser_outcome_patterns"]
-                       if row["key"] == "lows_after_meals")
+        exposures = json.loads((root / "mockups" / "diagnose-workstation.synthetic"
+                                / "payload.json").read_text())["exposures"]
+        # A memberless Pattern with k > 0: one unclaimed meal re-marked as claimed by
+        # Meal over-delivery, in the shape the producer serves (that verdict matched
+        # with its sentence as the row's text, every other judged classifier calm).
+        lever = Lever.MEAL_OVER_DELIVERY
+        meals = exposures["exposures"]["meals"]
+        meal = next(row for row in meals["occurrences"] if not row["attributed"])
+        text = "Synthetic over-delivery narrative: the meal bolus carried glucose low."
+        meal.update(attributed=True, attributed_levers=[lever.value], cause_lever=lever.value,
+                    cause_title=title(lever), state="fired", text=text)
+        for verdict in meal["verdicts"]:
+            own = verdict["classifier"] == lever.value
+            verdict.update(
+                matched=own, evidence_tier="inferred" if own else "observed",
+                silence_reason=None if own else "no_trigger",
+                detail=text if own else (f"Synthetic {title(Lever(verdict['classifier'])).lower()}"
+                                         " judgment: this Occurrence did not meet the criteria."))
+        meals.update(attributed=meals["attributed"] + 1, clean=meals["clean"] - 1,
+                     uncaused=meals["uncaused"] - 1, levers=[*meals["levers"], lever.value],
+                     by_cause={**meals["by_cause"], title(lever): 1})
+        inputs = browser["browser_inputs"]
+        pattern = next(row for row in build_outcome_patterns(
+            inputs["analysis"], exposures, inputs["scenarios"]) if row["key"] == "lows_after_meals")
         self.assertGreater(pattern["k"], 0)
         self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
 

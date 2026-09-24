@@ -251,6 +251,15 @@ def correction_stacking():
     ))
 
 
+@pytest.fixture(scope="module")
+def pattern_near_tie():
+    from scripts.qa_e2e_cases import QA_CASES, materialize_case
+
+    return _analyzer_prepared(lambda store: materialize_case(
+        store, next(case for case in QA_CASES if case.name == "pattern-near-tie"),
+    ))
+
+
 @pytest.mark.parametrize("lever", [lever for lever in Lever
                                    if policy_for(lever).recurrence_noun != "sequences"])
 def test_all_eight_levers_publish_one_exact_case_file_population(lever):
@@ -1650,11 +1659,33 @@ def _recorded_sentence(verdicts, driver, lever, verdict, *, mapped):
     return own["detail"] if own is not None and agrees else None
 
 
-def test_every_selected_reason_agrees_with_its_row(meal_facts, correction_stacking):
-    subjects = ([(meal_facts, subject) for subject in _MEAL_FACTS_ACCOUNTS]
-                + [(correction_stacking, subject) for subject in _CORRECTION_STACKING_ACCOUNTS])
-    sentences = 0
-    for prepared, subject in subjects:
+# The single-habit and Pattern case files pattern-near-tie serves a claimed row in.
+_PATTERN_NEAR_TIE_SUBJECTS = ("finding:carb_undercount", "finding:over_treated_low",
+                              "pattern:highs_after_meals")
+# The claimed rows, per store and case file, whose claimant's recorded sentence is the
+# cause's text, measured on these recipes: each would print that sentence twice.
+_SERVED_ONCE = {
+    ("meal_facts", "finding:carb_undercount"): 2,
+    ("meal_facts", "finding:late_bolus"): 1,
+    ("meal_facts", "finding:missed_meal"): 2,
+    ("meal_facts", "pattern:highs_after_meals"): 2,
+    ("correction_stacking", "finding:correction_stacking"): 2,
+    ("correction_stacking", "finding:missed_meal"): 1,
+    ("pattern_near_tie", "finding:carb_undercount"): 3,
+    ("pattern_near_tie", "finding:over_treated_low"): 1,
+    ("pattern_near_tie", "pattern:highs_after_meals"): 3,
+}
+
+
+def test_every_selected_reason_agrees_with_its_row(meal_facts, correction_stacking,
+                                                    pattern_near_tie):
+    subjects = ([("meal_facts", meal_facts, subject) for subject in _MEAL_FACTS_ACCOUNTS]
+                + [("correction_stacking", correction_stacking, subject)
+                   for subject in _CORRECTION_STACKING_ACCOUNTS]
+                + [("pattern_near_tie", pattern_near_tie, subject)
+                   for subject in _PATTERN_NEAR_TIE_SUBJECTS])
+    sentences, once = 0, {}
+    for store, prepared, subject in subjects:
         clock = _case(prepared, subject)
         claimed = {occurrence_id for bucket in clock["projection"]["clock"]["buckets"]
                    for occurrence_id in bucket["occurrence_ids"]}
@@ -1698,20 +1729,37 @@ def test_every_selected_reason_agrees_with_its_row(meal_facts, correction_stacki
                                                  key=_PRECEDENCE.get)
             else:
                 assert entries == [(lever.value, row["verdict"])]
+            # Each sentence is served once (ADR 454): no habit entry repeats the cause.
+            if reason["cause"] is not None:
+                assert reason["cause"]["text"] not in [entry["detail"] for entry in reason["habits"]], (
+                    subject, row["anchor"]["t"], reason)
             for entry in reason["habits"]:
                 assert entry["title"] == title(Lever(entry["lever"]))
-                assert entry["detail"] == _recorded_sentence(
+                recorded = _recorded_sentence(
                     verdicts, driver, entry["lever"], entry["verdict"],
                     mapped=pattern and row["id"] not in claimed,
-                ), (subject, row["anchor"]["t"], entry)
+                )
+                # The claimant's sentence that is the cause's text is served there alone.
+                repeats = (reason["cause"] is not None
+                           and entry["lever"] == reason["cause"]["lever"]
+                           and recorded == reason["cause"]["text"])
+                assert entry["detail"] == (None if repeats else recorded), (
+                    subject, row["anchor"]["t"], entry)
                 sentences += entry["detail"] is not None
+                once[store, subject] = once.get((store, subject), 0) + repeats
     assert sentences > 0
+    # The rule reached every claimed row that would have repeated its sentence.
+    assert {key: count for key, count in once.items() if count} == _SERVED_ONCE
     # The Correction stacking verdict `_population` computes is what judges a cluster:
-    # every matched or nearly matched one reads with the classifier's own sentence.
+    # every matched or nearly matched one serves the classifier's own sentence once, a
+    # claimed cluster as its cause's text and a nearly matched one on its entry.
     for row in _case(correction_stacking, "finding:correction_stacking")["occurrences"]:
-        [entry] = _case(correction_stacking, "finding:correction_stacking", "clock",
-                        row["id"])["selection"]["detail"]["reason"]["habits"]
-        if row["verdict"] in ("fired", "near_miss"):
+        reason = _case(correction_stacking, "finding:correction_stacking", "clock",
+                       row["id"])["selection"]["detail"]["reason"]
+        [entry] = reason["habits"]
+        if row["verdict"] == "fired":
+            assert reason["cause"]["text"] and entry["detail"] is None, row
+        elif row["verdict"] == "near_miss":
             assert entry["detail"], row
 
 

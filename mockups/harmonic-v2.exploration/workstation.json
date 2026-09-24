@@ -26907,7 +26907,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -27327,7 +27327,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -29411,7 +29411,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -30603,7 +30603,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -31023,7 +31023,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -31859,7 +31859,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -44632,7 +44632,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"
@@ -45408,7 +45408,7 @@
               },
               "habits": [
                 {
-                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "detail": null,
                   "lever": "late_bolus",
                   "title": "Late bolus",
                   "verdict": "fired"

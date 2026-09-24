@@ -80,11 +80,7 @@ test('the expanded meal population preserves the workstation queue sift shape', 
 
 test('browser preparation joins keep each scoped event-chart coordinate intact', () => {
   const requested = { start_min: 135, end_min: 285 };
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }), requested);
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }), requested);
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection, capture);
@@ -103,11 +99,7 @@ test('browser fixture population supplies the backend-prepared Pattern roster', 
 });
 
 test('browser Pattern rows and case files share the public producer denominator', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
@@ -147,12 +139,33 @@ test('browser Pattern rows and case files share the public producer denominator'
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
+test('#454 · the Pattern mirror judges only its rate family, as the Python producer answers', () => {
+  const frozen = Object.entries(findingsFixture.pattern_family_cases);
+  assert.deepEqual(frozen.map(([key]) => key).sort(), ['highs_after_meals', 'lows_after_correcting_highs']);
+  for (const [key, answer] of frozen) {
+    assert.ok(answer.roster_row.members.some(({ subject }) => subject === `habit:${answer.lever}`),
+      `${key} premise: the frozen roster carries its out-of-family member`);
+    const variant = structuredClone(capture);
+    variant.outcome_patterns = variant.outcome_patterns.map((row) => (row.key === key
+      ? structuredClone(answer.roster_row) : row));
+    const patternChart = { key, window: { scoped: false, start_min: null, end_min: null, label: null } };
+    const clock = projectPatternCaseFile(variant, { patternChart, alignment: 'clock' });
+    assert.deepEqual(clock.verdict_counts, answer.clock.verdict_counts, `${key} verdict counts`);
+    assert.deepEqual(clock.occurrences.map(({ verdict, member }) => [verdict, member]),
+      answer.clock.occurrences.map(({ verdict, member }) => [verdict, member]), `${key} rows in order`);
+    const selected = projectPatternCaseFile(variant, {
+      patternChart, alignment: 'clock', occurrenceId: clock.occurrences[0].id });
+    assert.deepEqual(selected.selection.detail.reason, answer.selected.selection.detail.reason,
+      `${key} selected reason`);
+    const unmapped = structuredClone(variant);
+    delete unmapped.pattern_families[answer.lever];
+    assert.throws(() => projectPatternCaseFile(unmapped, { patternChart, alignment: 'clock' }),
+      new RegExp(`no frozen rate family: ${answer.lever}`));
+  }
+});
+
 test('correction-on-IOB claims the lows in its Pattern population', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const member = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
@@ -168,11 +181,7 @@ test('correction-on-IOB claims the lows in its Pattern population', () => {
 });
 
 test('correcting-highs Pattern selection uses the low-nadir comparison idiom', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
   const enriched = structuredClone(capture);
@@ -201,11 +210,7 @@ test('Pattern misses prefer near misses over outranked member states', () => {
 });
 
 test('memberless Patterns remain served without an invented chart', () => {
-  const inputs = populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  });
+  const inputs = populateFindingsProjectionInput({ exposures: payload.exposures });
   const projection = projectFindings(inputs);
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
@@ -221,9 +226,7 @@ test('memberless Patterns remain served without an invented chart', () => {
 });
 
 test('every chartable fixture Pattern resolves through preparation validation', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const preparation = populateFindingCasePreparation(
     structuredClone(caseFiles.preparation), projection, capture,
   );
@@ -235,57 +238,114 @@ test('every chartable fixture Pattern resolves through preparation validation', 
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
+// Over-treated low is the one Cause the producer drives from two anchor kinds: its
+// low, and a rebound High it claims. The committed payload claims no rebound High, so
+// this clone makes its unclaimed High one, in the shape the producer serves.
+function withReboundHigh(exposures) {
+  const clone = structuredClone(exposures);
+  const highs = clone.exposures.highs;
+  const high = highs.occurrences.find((row) => !row.attributed);
+  const text = 'Synthetic rebound narrative: the treated low climbed into this high.';
+  Object.assign(high, {
+    attributed: true, attributed_levers: ['over_treated_low'], cause_lever: 'over_treated_low',
+    cause_title: 'Over-treated low', state: 'fired', text,
+    verdicts: [{ classifier: 'over_treated_low', matched: true, detail: text,
+      evidence_tier: 'inferred', silence_reason: null }],
+  });
+  Object.assign(highs, {
+    attributed: highs.attributed + 1, clean: highs.clean - 1, uncaused: highs.uncaused - 1,
+    levers: [...highs.levers, 'over_treated_low'],
+    by_cause: { ...highs.by_cause, 'Over-treated low': 1 },
+  });
+  return clone;
+}
+
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: withReboundHigh(payload.exposures) }));
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection, capture);
 
-  const projected = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
+  const projected = projection.rows.find(({ id }) => id === 'finding:over_treated_low');
   assert.deepEqual(projected.appearances.map(({ family }) => family),
-    ['correction_clusters', 'lows'],
+    ['highs', 'lows'],
     'the projection sorts by family name, so the case file\'s family arrives second');
 
-  const row = preparation.rendered_rows.find(({ id }) => id === 'finding:correction_on_iob');
+  const row = preparation.rendered_rows.find(({ id }) => id === 'finding:over_treated_low');
   assert.deepEqual(row.appearances, [
     { family: 'lows', m: 10, n: 1, noun: 'lows' },
-    { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 2 },
+    { family: 'highs', noun: 'highs', n: 1, m: 4 },
   ], 'the case file\'s family leads at the case file\'s counts and the other family keeps the projection\'s');
   assert.equal(row.headline,
-    'Not ranked in this window yet. Showed up in 1 of 10 lows in this window.',
+    'Ranks among this window\'s findings. Showed up in 1 of 10 lows in this window.',
     'the served sentence is composed from the leading appearance the row publishes');
 });
 
 test('the cockpit exposure population produces its event-comparison Finding row', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
 });
 
 test('the Afternoon fixture retains all four published behavioral Findings', () => {
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-  }), { start_min: 720, end_min: 1080 });
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }), { start_min: 720, end_min: 1080 });
   const selected = new Set(['highs', 'meals', 'corrections']);
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
 
+  // The server's shown rows, in its order: both Patterns fold their causes here, and
+  // the priced Over-treated low leads (ADR 454).
   assert.deepEqual(shown.map(({ id }) => id), [
     'finding:over_treated_low',
-    'finding:correction_on_iob',
-    'finding:late_bolus',
+    'pattern:highs_after_meals',
+    'pattern:lows_after_correcting_highs',
     'finding:missed_meal',
   ]);
   assert.equal(queueMeta(projection, selected, true), '4 in this window');
+});
+
+const browserProjection = (bounds) => projectFindings(
+  populateFindingsProjectionInput({ exposures: payload.exposures }), bounds);
+
+test('#454 · the test desk serves the server\'s own answer, in its order, in each browser window', () => {
+  assert.deepEqual(Object.keys(findingsFixture.browser_windows),
+    ['0-360', '135-285', '720-1080', 'whole_day']);
+  for (const [key, served] of Object.entries(findingsFixture.browser_windows)) {
+    const bounds = key === 'whole_day' ? null
+      : Object.fromEntries(key.split('-').map(Number).map((minute, index) =>
+        [index ? 'end_min' : 'start_min', minute]));
+    const projection = browserProjection(bounds);
+    assert.deepEqual(projection.rows.map(({ id }) => id), served.rows.map(({ id }) => id), `${key} row order`);
+    assert.deepEqual(projection, served, `${key} is the server's projection, byte for byte`);
+    if (!bounds) continue;
+
+    const preparation = structuredClone(caseFiles.preparation);
+    preparation.coordinates.window = projection.window;
+    populateFindingCasePreparation(preparation, projection, capture);
+    const charted = preparation.rendered_rows.filter((row) => row.kind === 'pattern' && row.pattern_chart);
+    const cases = findingsFixture.browser_pattern_cases_by_window[key];
+    assert.deepEqual(charted.map((row) => row.pattern.key).sort(), Object.keys(cases).sort(), key);
+    for (const row of charted) {
+      const { summary, verdict_counts } = cases[row.pattern.key].event;
+      assert.deepEqual([row.case_header.summary, row.case_header.verdict_counts], [summary, verdict_counts],
+        `${key} ${row.id} header`);
+    }
+  }
+});
+
+test('#454 · a narrowed window or Pattern case the server never answered fails by name', () => {
+  assert.throws(() => browserProjection({ start_min: 360, end_min: 720 }),
+    /no frozen Pattern roster for window 360-720/);
+  const frozen = findingsFixture.browser_pattern_cases_by_window['0-360'].highs_after_meals;
+  const served = { key: 'highs_after_meals', window: frozen.event.window };
+  const answered = projectPatternCaseFile(capture, {
+    patternChart: served, projectionId: `fp_${'5'.repeat(32)}`, alignment: 'event' });
+  assert.deepEqual(answered, { ...frozen.event, projection_id: `fp_${'5'.repeat(32)}` });
+  const other = { key: 'highs_after_meals', window: { ...frozen.event.window, start_min: 360, end_min: 720 } };
+  assert.throws(() => projectPatternCaseFile(capture, { patternChart: other, alignment: 'clock' }),
+    /no frozen narrowed Pattern case: highs_after_meals 360-720 clock/);
+  assert.throws(() => projectPatternCaseFile(capture, {
+    patternChart: served, alignment: 'clock', occurrenceId: frozen.clock.occurrences[0].id }),
+  /serves no selection in a narrowed Pattern case: highs_after_meals 0-360 clock/);
 });
 
 test('comparison keeps plan-local outcomes and verdicts when workstation attribution changes', () => {

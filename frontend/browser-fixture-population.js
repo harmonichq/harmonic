@@ -15,11 +15,25 @@ const findingsFixture = JSON.parse(readFileSync(new URL(
 const defaultPatternCapture = JSON.parse(readFileSync(new URL(
   '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
 
-/** Add the server-prepared Pattern roster to every browser-gate mirror input. */
-export function populateFindingsProjectionInput(input) {
+/** The frozen browser analysis, scenarios and analysis generation (ADR 454): the
+ * inputs every browser roster, window and case was built from. The desk suite
+ * serves them from its `/api/analyze` and `/api/scenarios` stubs, so every desk
+ * read shares one input, as in the app. */
+export const BROWSER_INPUTS = findingsFixture.browser_inputs;
+
+/** The server input every browser-gate mirror call projects (ADR 454): the frozen
+ * browser inputs and Pattern rosters (the whole day's and each narrowed window's the
+ * browser checks request), with only the exposures taken from the caller. The test
+ * desk's queue is then the server's own, in the server's order. */
+export function populateFindingsProjectionInput({ exposures }) {
+  const { analysis, scenarios, analysis_generation } = BROWSER_INPUTS;
   return {
-    ...input,
+    analysis: structuredClone(analysis),
+    exposures,
+    scenarios: structuredClone(scenarios),
+    analysis_generation,
     outcome_patterns: structuredClone(findingsFixture.browser_outcome_patterns),
+    outcome_patterns_by_window: structuredClone(findingsFixture.browser_outcome_patterns_by_window),
   };
 }
 

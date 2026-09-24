@@ -6,7 +6,7 @@ import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
-  assertServedRowDescriptions432, assertSelectedFacts432,
+  assertServedRowDescriptions432, assertSelectedFacts432, assertSentenceOnce454,
   OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
   canvasHeadFailures, assertCanvasHead, readSettled,
 } from './c4.replay.mjs';
@@ -138,11 +138,14 @@ const claimedDetail432 = () => {
   const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
   return JSON.parse(JSON.stringify(file.selected_event[claimed].selection.detail));
 };
+// The rendered block, its habit line composed as the renderer does: a null sentence
+// is omitted.
 const block432 = (detail) => {
   const lines = [
     { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
     { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
-    { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+    { kind: 'habit', text: ['Carb undercount', 'Meets criteria', detail.reason.habits[0].detail]
+      .filter(Boolean).join(' · ') },
   ];
   return { figure: '40 g · 4 U at completed carb bolus', lines,
     text: ['Mar 1 · 08:00 Matched 40 g · 4 U at completed carb bolus', 'Evidence facts',
@@ -179,6 +182,54 @@ test('S149/S150 refuse a count-only line, the canvas sentence, or a reason that 
   noPeak.lines = noPeak.lines.filter((line) => line.kind !== 'outcome');
   assert.throws(() => assertSelectedFacts432('S149', detail, noPeak, { outcome: 'peak' }),
     /S149 the outcome line must equal the served outcome/);
+});
+
+test('S182 is a unique app-only #454 story on pattern-near-tie', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S182');
+  assert.equal(entries.length, 1, 'S182 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 454');
+  assert.equal(storyCase('S182'), 'pattern-near-tie');
+});
+
+// A claimed detail served once: the claimant's sentence is the cause's text alone.
+const onceDetail454 = () => {
+  const detail = claimedDetail432();
+  detail.reason.habits[0].detail = null;
+  return detail;
+};
+
+test('S182 passes when the claimant sentence prints once, on the cause line', () => {
+  const detail = onceDetail454();
+  assert.ok(detail.reason.cause.text, 'premise: the claimed detail serves its cause text');
+  assert.doesNotThrow(() => assertSentenceOnce454('S182', detail, block432(detail)));
+});
+
+test('S182 reaches its feature assertion when a habit line repeats the cause sentence, never a premise', () => {
+  // The base server's shape: the claimant's entry serves the cause's sentence again.
+  const repeated = onceDetail454();
+  repeated.reason.habits[0].detail = repeated.reason.cause.text;
+  assert.throws(() => assertSentenceOnce454('S182', repeated, block432(repeated)),
+    /^AssertionError.*S182 the cause's sentence must print once; it repeats on: Carb undercount · Meets criteria · /s);
+  const detail = onceDetail454();
+  const lost = block432(detail);
+  lost.lines = lost.lines.map((line) => line.kind === 'cause' ? { ...line, text: 'Attributed to Carb undercount' } : line);
+  assert.throws(() => assertSentenceOnce454('S182', detail, lost), /S182 the cause line must carry the served sentence/);
+  const renamed = block432(detail);
+  renamed.lines = renamed.lines.map((line) => line.kind === 'habit' ? { ...line, text: 'Carb undercount' } : line);
+  assert.throws(() => assertSentenceOnce454('S182', detail, renamed),
+    /S182 the claimant's habit line must read its title and band label only/);
+});
+
+test('S182 separates a setup error from the feature', () => {
+  const detail = onceDetail454();
+  const block = block432(detail);
+  assert.throws(() => assertSentenceOnce454('S182', null, block), /S182 premise: a selected Occurrence/);
+  const unclaimed = onceDetail454();
+  unclaimed.reason.cause = null;
+  assert.throws(() => assertSentenceOnce454('S182', unclaimed, block), /S182 premise: the selected Occurrence is claimed/);
+  const outside = onceDetail454();
+  outside.reason.habits = [];
+  assert.throws(() => assertSentenceOnce454('S182', outside, block), /S182 premise: the claimant is one of the served habits/);
 });
 
 test('S108–S114 are unique app-only C4 stories with their required manufactured cases', () => {

@@ -685,10 +685,7 @@ test('#63 · the sentence never enters the queue meta, which counts the window',
 test('#395/#413 · the default replay keeps its claimed Late bolus reachable, folded, under every matching sift', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
-    event_charts: fixture.inputs.event_charts,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   assert.ok(!projection.rows.some((row) => row.id === 'finding:carb_undercount'),
     'Carb undercount is not a subject in this input');
   const preparation = populateFindingCasePreparation(
@@ -756,19 +753,19 @@ test('#413 · a Pattern with no served count sentence renders like any other row
   assert.ok(button.children.some((node) => node.className === 'tag pattern'));
 });
 
-test('#413 · an unpriced claimed member folds under the tail Pattern, printing every served sentence', () => {
+test('#413 · an unpriced claimed member folds under the Pattern, printing every served sentence', () => {
   const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
   const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
-  const projection = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
-    event_charts: fixture.inputs.event_charts,
-  }));
+  const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const rows = queueRows(projection);
-  const late = rows.flatMap((row) => row.members || []).find((member) => member.id === 'finding:late_bolus');
-  assert.ok(late, 'Late bolus folds under its parent');
-  assert.equal(late.raw.priority, null);
-  assert.ok(late.raw.fold_sentences.length, 'premise: the folded cause serves fold sentences');
-  assert.deepEqual(late.sentences, late.raw.fold_sentences.map((s) => ({
+  // Correction stacking is the server's unpriced claimed member (Late bolus carries
+  // its server price); it folds under Lows after correcting highs.
+  const parent = rows.find((row) => row.id === 'pattern:lows_after_correcting_highs');
+  const stacking = parent?.members?.find((member) => member.id === 'finding:correction_stacking');
+  assert.ok(stacking, 'Correction stacking folds under Lows after correcting highs');
+  assert.equal(stacking.raw.priority, null);
+  assert.equal(stacking.raw.fold_sentences.length, 2, 'premise: the folded cause serves both fold sentences');
+  assert.deepEqual(stacking.sentences, stacking.raw.fold_sentences.map((s) => ({
     count: `${s.count} of ${s.denominator}`, noun: s.noun, scope: s.scope,
   })), 'every served fold sentence is kept, never merged');
 });
@@ -814,8 +811,9 @@ test('#413 · a claim naming no served row falls back to an ordinary row, never 
 test('#395 · the browser input publishes only its renderable mini hosts in served order', () => {
   const cases = JSON.parse(readFileSync(new URL(
     '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
-  const input = populateFindingsProjectionInput(fixture.inputs);
-  const prepared = populateFindingCasePreparation(cases.preparation, projectFindings(input));
+  // The projection fixture's own inputs carry their own rosters; they need no
+  // browser population.
+  const prepared = populateFindingCasePreparation(cases.preparation, projectFindings(fixture.inputs));
   const { miniSlots } = paint({ ...prepared.findings, rows: prepared.rendered_rows });
   const chartable = miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
     .map(({ row }) => row.id);

@@ -139,10 +139,13 @@ test('#432 · a selected claimed meal reads as its facts, cause and habit senten
     lines: [
       { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
       { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
-      { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+      { kind: 'habit', text: 'Carb undercount · Meets criteria' },
     ],
   });
-  assert.ok(detail.reason.cause.text && detail.reason.habits[0].detail);
+  // ADR 454: the claim's cause text is the claimant's recorded sentence, so the server
+  // serves that sentence once, on the cause.
+  assert.ok(detail.reason.cause.text);
+  assert.equal(detail.reason.habits[0].detail, null);
 });
 
 test('#432 · a selected Pattern Occurrence lists each served habit with its band label', () => {
@@ -151,9 +154,15 @@ test('#432 · a selected Pattern Occurrence lists each served habit with its ban
   const [bolus] = detail.markers.filter((marker) => marker.kind === 'bolus' && marker.minute === 0);
   assert.deepEqual([bolus.carbs, bolus.insulin], [30, 3], 'the selected meal is its own minute-0 bolus');
   assert.equal(figure, '30 g · 3 U');
+  assert.deepEqual(detail.reason.habits.map((habit) => [habit.lever, habit.verdict, habit.detail]), [
+    ['carb_undercount', 'outranked',
+      'Synthetic carb undercount judgment: this Occurrence did not meet the criteria.'],
+    ['late_bolus', 'fired', null],
+  ]);
   assert.deepEqual(lines, [
     { kind: 'cause', text: `Attributed to Late bolus · ${detail.reason.cause.text}` },
-    { kind: 'habit', text: 'Carb undercount · claimed by another finding' },
+    { kind: 'habit', text: 'Carb undercount · claimed by another finding · '
+      + 'Synthetic carb undercount judgment: this Occurrence did not meet the criteria.' },
     { kind: 'habit', text: 'Late bolus · Meets criteria' },
   ]);
 });
@@ -227,19 +236,11 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
   const payload = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8',
   ));
-  const projectionFixture = JSON.parse(readFileSync(
-    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
-  ));
   const caseFiles = JSON.parse(readFileSync(
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
-  const served = projectFindings(populateFindingsProjectionInput({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-    event_charts: projectionFixture.inputs.event_charts,
-  }));
+  const served = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }));
   const projection = generatedFindingProjection(id)(served, caseFiles);
   assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');

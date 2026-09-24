@@ -302,21 +302,25 @@ function patternState(occurrence, lever) {
 // The served reason, by the Pattern rule the Python case producer applies: the
 // claimant is fired and every other habit keeps its row-relative state, except that an
 // unclaimed row reads fired as outranked. An entry carries its classifier sentence
-// only where that recorded verdict reads as the entry's verdict.
+// only where that recorded verdict reads as the entry's verdict, and the claimant's
+// entry carries none when its sentence is the cause's text, so it is served once
+// (ADR 454).
 function patternReason(row, habits, states, claimant) {
+  const cause = claimant ? {
+    lever: claimant, title: labels[claimant],
+    text: row.cause_lever === claimant ? row.text ?? '' : '',
+  } : null;
   return {
-    cause: claimant ? {
-      lever: claimant, title: labels[claimant],
-      text: row.cause_lever === claimant ? row.text ?? '' : '',
-    } : null,
+    cause,
     habits: habits.map((lever, index) => {
       const state = states[index];
       const verdict = claimant ? (lever === claimant ? 'fired' : state)
         : (state === 'fired' ? 'outranked' : state);
       const fact = row.verdicts.find((item) => item.classifier === lever);
       const agrees = state === verdict || (!claimant && state === 'fired');
+      const detail = fact && agrees ? fact.detail ?? null : null;
       return { lever, title: labels[lever], verdict,
-        detail: fact && agrees ? fact.detail ?? null : null };
+        detail: cause && lever === cause.lever && detail === cause.text ? null : detail };
     }),
   };
 }
@@ -392,14 +396,35 @@ export function projectPatternCaseFile(capture, {
 } = {}) {
   if (!patternChart) return null;
   const { key } = patternChart;
+  if (patternChart.window?.scoped) {
+    // A narrowed window's Pattern case is the server's own, frozen for exactly the
+    // windows the browser checks request (ADR 454); anything else fails by name.
+    const coordinate = `${key} ${patternChart.window.start_min}-${patternChart.window.end_min} ${alignment}`;
+    if (occurrenceId) {
+      throw new Error(`fixture mirror serves no selection in a narrowed Pattern case: ${coordinate} ${occurrenceId}`);
+    }
+    const frozen = capture.pattern_cases_by_window?.[
+      `${patternChart.window.start_min}-${patternChart.window.end_min}`]?.[key]?.[alignment];
+    if (!frozen) throw new Error(`fixture mirror has no frozen narrowed Pattern case: ${coordinate}`);
+    return { ...structuredClone(frozen), projection_id: projectionId };
+  }
   const pattern = capture.outcome_patterns.find((row) => row.key === key);
   if (!pattern || pattern.collapse !== 'remain_pattern') {
     throw new Error(`served Pattern coordinate has no roster entry: ${key}`);
   }
-  const habits = pattern.members.filter((member) => member.kind === 'habit')
-    .map((member) => member.subject.replace('habit:', ''));
   const family = patternFamilies[key];
   if (!family) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
+  // The habit members the Python case producer judges: only those in the Pattern's
+  // rate family, by its own frozen table. This one list feeds both each row's verdict
+  // and the selected reason (ADR 454).
+  const habits = pattern.members.filter((member) => member.kind === 'habit')
+    .map((member) => member.subject.replace('habit:', ''))
+    .filter((lever) => {
+      if (!(lever in (capture.pattern_families || {}))) {
+        throw new Error(`served Pattern member has no frozen rate family: ${lever}`);
+      }
+      return capture.pattern_families[lever] === family;
+    });
   const source = capture.pattern_populations[family] || [];
   if (!source.length) throw new Error(`served Pattern coordinate has no population: ${key}`);
   const attribution = capture.pattern_attribution?.[key] || {};

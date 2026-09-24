@@ -433,7 +433,9 @@
         "ep_id": "2020-03-01-ep90",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 10:10:00",
-        "anchor_bg": 70.5,
+        "anchor_bg": null,
+        "anchor_insulin": 2,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Correction cluster",
         "attributed": true,
@@ -441,6 +443,7 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
+        "text": "Treated a low at 10:10 and the glucose kept falling to 55 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -468,7 +471,9 @@
         "ep_id": "2020-03-02-ep91",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 15:00:00",
-        "anchor_bg": 65.5,
+        "anchor_bg": null,
+        "anchor_insulin": 1.5,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Correction cluster",
         "attributed": true,
@@ -476,6 +481,7 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
+        "text": "Treated a low at 15:00 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -506,6 +512,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 08:40:00",
         "anchor_bg": 77.8,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
@@ -513,6 +521,7 @@
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
+        "text": "Treated a low at 08:40 and the glucose kept falling to 68 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -541,6 +550,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 13:50:00",
         "anchor_bg": 70,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
@@ -548,6 +559,7 @@
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
+        "text": "Treated a low at 13:50 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -576,6 +588,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 20:00:00",
         "anchor_bg": 76.4,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
@@ -583,6 +597,7 @@
           "missed_meal"
         ],
         "cause_lever": "missed_meal",
+        "text": "Treated a low at 20:00 and the glucose kept falling to 67 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -611,11 +626,14 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 21:50:00",
         "anchor_bg": 72.1,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "High excursion",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -646,6 +664,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 01:35:00",
         "anchor_bg": 64.3,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -653,6 +673,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 01:35 and the glucose kept falling to 49 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -852,6 +873,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 02:20:00",
         "anchor_bg": 65.2,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -859,6 +882,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 02:20 and the glucose kept falling to 46 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1029,6 +1053,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 03:05:00",
         "anchor_bg": 65.8,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1036,6 +1062,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 03:05 and the glucose kept falling to 48 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1194,6 +1221,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 03:50:00",
         "anchor_bg": 69.3,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1201,6 +1230,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 03:50 and the glucose kept falling to 49 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1351,6 +1381,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 04:35:00",
         "anchor_bg": 77.1,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1358,6 +1390,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 04:35 and the glucose kept falling to 61 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1500,6 +1533,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 05:20:00",
         "anchor_bg": 71.9,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1507,6 +1542,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 05:20 and the glucose kept falling to 60 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1641,6 +1677,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 08:25:00",
         "anchor_bg": 64.8,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1648,6 +1686,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 08:25 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1774,6 +1813,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 10:40:00",
         "anchor_bg": 71.6,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1781,6 +1822,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 10:40 and the glucose kept falling to 51 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -1939,6 +1981,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 15:05:00",
         "anchor_bg": 72.1,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -1946,6 +1990,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 15:05 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2100,6 +2145,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 17:55:00",
         "anchor_bg": 68.3,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -2107,6 +2154,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 17:55 and the glucose kept falling to 61 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2261,6 +2309,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 06:50:00",
         "anchor_bg": 68.4,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -2268,6 +2318,7 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
+        "text": "Treated a low at 06:50 and the glucose kept falling to 48 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2430,6 +2481,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 11:40:00",
         "anchor_bg": 65.2,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -2437,6 +2490,7 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
+        "text": "Treated a low at 11:40 and the glucose kept falling to 43 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2615,6 +2669,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 16:55:00",
         "anchor_bg": 72.8,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -2622,6 +2678,7 @@
           "correction_on_iob"
         ],
         "cause_lever": "correction_on_iob",
+        "text": "Treated a low at 16:55 and the glucose kept falling to 55 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2796,11 +2853,14 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 02:40:00",
         "anchor_bg": 66,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -2967,11 +3027,14 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 16:20:00",
         "anchor_bg": 60.2,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3130,6 +3193,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 00:55:00",
         "anchor_bg": 70.9,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -3137,6 +3202,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 00:55 and the glucose kept falling to 56 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3287,6 +3353,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 06:05:00",
         "anchor_bg": 65.5,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -3294,6 +3362,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 06:05 and the glucose kept falling to 59 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3436,6 +3505,8 @@
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 08:35:00",
         "anchor_bg": 65.2,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -3443,6 +3514,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 08:35 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3621,6 +3693,8 @@
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 12:35:00",
         "anchor_bg": 77.6,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -3628,6 +3702,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 12:35 and the glucose kept falling to 73 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3806,6 +3881,8 @@
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 13:55:00",
         "anchor_bg": 72.6,
+        "anchor_insulin": null,
+        "anchor_carbs": null,
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
@@ -3813,6 +3890,7 @@
           "over_treated_low"
         ],
         "cause_lever": "over_treated_low",
+        "text": "Treated a low at 13:55 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -3992,7 +4070,9 @@
         "ep_id": "2020-03-02-ep70",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 07:35:00",
-        "anchor_bg": 62.1,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": true,
@@ -4000,6 +4080,7 @@
           "late_bolus"
         ],
         "cause_lever": "late_bolus",
+        "text": "Treated a low at 07:35 and the glucose kept falling to 54 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -4328,7 +4409,9 @@
         "ep_id": "2020-03-03-ep71",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 13:00:00",
-        "anchor_bg": 65.3,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": true,
@@ -4336,6 +4419,7 @@
           "late_bolus"
         ],
         "cause_lever": "late_bolus",
+        "text": "Treated a low at 13:00 and the glucose kept falling to 53 before it turned — the treatment was larger than the fall needed.",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -4656,12 +4740,15 @@
         "ep_id": "2020-03-01-ep72",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 19:10:00",
-        "anchor_bg": 63,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -4990,12 +5077,15 @@
         "ep_id": "2020-03-02-ep73",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 07:45:00",
-        "anchor_bg": 68,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -5296,12 +5386,15 @@
         "ep_id": "2020-03-03-ep74",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 13:10:00",
-        "anchor_bg": 63.2,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -5594,12 +5687,15 @@
         "ep_id": "2020-03-01-ep75",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 16:50:00",
-        "anchor_bg": 76.9,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -5884,12 +5980,15 @@
         "ep_id": "2020-03-02-ep76",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 01:20:00",
-        "anchor_bg": 65.5,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -6166,12 +6265,15 @@
         "ep_id": "2020-03-03-ep77",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 06:05:00",
-        "anchor_bg": 67.1,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -6456,12 +6558,15 @@
         "ep_id": "2020-03-01-ep78",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 12:10:00",
-        "anchor_bg": 77.3,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -6746,12 +6851,15 @@
         "ep_id": "2020-03-02-ep79",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 18:05:00",
-        "anchor_bg": 66.9,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -7036,12 +7144,15 @@
         "ep_id": "2020-03-03-ep80",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 04:50:00",
-        "anchor_bg": 72.4,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -7338,12 +7449,15 @@
         "ep_id": "2020-03-01-ep72",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 19:10:00",
-        "anchor_bg": 59.1,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -7672,12 +7786,15 @@
         "ep_id": "2020-03-02-ep82",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 15:20:00",
-        "anchor_bg": 74.5,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -8002,12 +8119,15 @@
         "ep_id": "2020-03-03-ep83",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 20:35:00",
-        "anchor_bg": 77.9,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -8324,12 +8444,15 @@
         "ep_id": "2020-03-01-ep84",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 03:25:00",
-        "anchor_bg": 74.1,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -8638,12 +8761,15 @@
         "ep_id": "2020-03-02-ep85",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 10:50:00",
-        "anchor_bg": 71.1,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -8944,12 +9070,15 @@
         "ep_id": "2020-03-03-ep86",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 16:30:00",
-        "anchor_bg": 75.7,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -9242,12 +9371,15 @@
         "ep_id": "2020-03-01-ep87",
         "date": "2020-03-01",
         "anchor_t": "2020-03-01 05:50:00",
-        "anchor_bg": 66.8,
+        "anchor_bg": null,
+        "anchor_insulin": 6.8,
+        "anchor_carbs": 38,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -9576,12 +9708,15 @@
         "ep_id": "2020-03-02-ep88",
         "date": "2020-03-02",
         "anchor_t": "2020-03-02 14:05:00",
-        "anchor_bg": 75,
+        "anchor_bg": null,
+        "anchor_insulin": 9.1,
+        "anchor_carbs": 51,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",
@@ -9910,12 +10045,15 @@
         "ep_id": "2020-03-03-ep89",
         "date": "2020-03-03",
         "anchor_t": "2020-03-03 19:40:00",
-        "anchor_bg": 61.3,
+        "anchor_bg": null,
+        "anchor_insulin": 7.9,
+        "anchor_carbs": 44,
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
         "attributed_levers": [],
         "cause_lever": null,
+        "text": "",
         "verdicts": [
           {
             "classifier": "over_treated_low",

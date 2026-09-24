@@ -48,7 +48,7 @@
 
 ## 2. Generated evidence
 
-- [ ] 2.1 In `.claude/qa/gen_synthetic_fixtures.py`: build the case-file capture's
+- [x] 2.1 In `.claude/qa/gen_synthetic_fixtures.py`: build the case-file capture's
   meal Opportunities with `opportunities.build_opportunities` over its synthetic
   meal boluses; give its hand-paired correction clusters no anchor glucose; pass its
   synthetic readings as the preparation's judged series so meal rows serve arc
@@ -60,14 +60,14 @@
   leaving their kinds, labels, states, attribution and verdicts unchanged.
   `scripts/gen_missed_meal_comparison_fixtures.py` keeps its `Member` defaults.
   Regenerate; `scripts/check_demo_fixtures.py` is clean.
-- [ ] 2.2 Carry the exposure rows' dose, carbs and `text` through
+- [x] 2.2 Carry the exposure rows' dose, carbs and `text` through
   `mockups/diagnose-event-comparison.synthetic/generate.mjs` into
   `pattern_populations`, and make `project.mjs` serve the case-file shape of
   `design.md` for Pattern rows and details: dose and carbs on every anchor, a null
   outcome, and a `reason` by the Pattern rule using its existing per-habit state
   function and fired-to-outranked mapping. Regenerate; `node
   mockups/diagnose-event-comparison.synthetic/generate.mjs --check` passes.
-- [ ] 2.3 In `scripts/gen_findings_projection_fixtures.py`'s `exposures()`, give the
+- [x] 2.3 In `scripts/gen_findings_projection_fixtures.py`'s `exposures()`, give the
   meal and correction rows a null glucose and a dose and carbs (carbs null on
   corrections). Regenerate every artifact whose generator drifts
   (`scripts/gen_findings_projection_fixtures.py`,

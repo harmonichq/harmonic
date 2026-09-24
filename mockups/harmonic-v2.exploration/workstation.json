@@ -15,177 +15,305 @@
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
             },
             "date": "2024-05-01",
             "id": "o_bee18b5854e57ef13e2189f5223b18d1",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-01 00:15:00"
+            },
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-06 12:05:00"
             },
             "date": "2024-05-06",
             "id": "o_c76bc770545091ed7d6772b085c11a84",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-06 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-07 12:05:00"
             },
             "date": "2024-05-07",
             "id": "o_3b1f707f53946ac8f7f4f0a6aae8e39d",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-07 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-08 12:05:00"
             },
             "date": "2024-05-08",
             "id": "o_bfc5a257b0c0676490b51a2556d40c22",
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-08 12:30:00"
+            },
             "verdict": "outranked"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-09 12:05:00"
             },
             "date": "2024-05-09",
             "id": "o_e20f020acb31e6bf94be0ffa4d448545",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-09 12:20:00"
+            },
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-10 12:05:00"
             },
             "date": "2024-05-10",
             "id": "o_227b6d0147ef28dcf0b109f05d2d9309",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-10 12:20:00"
+            },
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-14 12:05:00"
             },
             "date": "2024-05-14",
             "id": "o_e132a479a21e868f3246c5fbc5c39a62",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-14 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-15 12:05:00"
             },
             "date": "2024-05-15",
             "id": "o_3eaff84537e0d4766df4fdad91d86046",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-15 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-16 12:05:00"
             },
             "date": "2024-05-16",
             "id": "o_1015b402008647434a446c4809873908",
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-16 12:30:00"
+            },
             "verdict": "outranked"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-17 12:05:00"
             },
             "date": "2024-05-17",
             "id": "o_8a683d07cf9cffe6043d6d6c03f7917e",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-17 12:20:00"
+            },
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-18 12:05:00"
             },
             "date": "2024-05-18",
             "id": "o_ec2f1a75fdf3a94ea6c6f4c6cae60d1a",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-18 12:20:00"
+            },
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
             },
             "date": "2024-05-24",
             "id": "o_ac56a2f9cd0f195e1152e73088a76131",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-24 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
             },
             "date": "2024-05-25",
             "id": "o_e74704c21bed9d7a9887d1c83cf09981",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-25 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
             },
             "date": "2024-05-26",
             "id": "o_8c1ee964d36af1e739d5099b1f17ef9d",
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-26 12:30:00"
+            },
             "verdict": "outranked"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
             },
             "date": "2024-05-27",
             "id": "o_91eb80514d1126032d86924a23523100",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-27 12:20:00"
+            },
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
             },
             "date": "2024-05-28",
             "id": "o_69d967ff60a613351502256768bea214",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-28 12:20:00"
+            },
             "verdict": "clean"
           }
         ],
@@ -25531,6 +25659,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-16 12:05:00"
@@ -25918,6 +26048,23 @@
                 "t": "2024-05-16 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-16 12:30:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -25928,6 +26075,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-10 12:05:00"
@@ -26315,6 +26464,23 @@
                 "t": "2024-05-10 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-10 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -26325,6 +26491,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-07 12:05:00"
@@ -26712,6 +26880,27 @@
                 "t": "2024-05-07 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-07 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -26722,6 +26911,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-15 12:05:00"
@@ -27109,6 +27300,27 @@
                 "t": "2024-05-15 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-15 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -27119,6 +27331,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
@@ -27506,6 +27720,23 @@
                 "t": "2024-05-28 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-28 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -27516,6 +27747,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-17 12:05:00"
@@ -27903,6 +28136,23 @@
                 "t": "2024-05-17 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-17 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was rising 2.0 mg/dL/min before the bolus, but BG bottomed at 65 mg/dL in the prior 90 min \u2014 the rise is a recovery, not a from-flat meal climb \u2014 not a late meal bolus",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -27913,6 +28163,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
@@ -28300,6 +28552,23 @@
                 "t": "2024-05-26 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-26 12:30:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -28310,6 +28579,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
@@ -28697,6 +28968,23 @@
                 "t": "2024-05-27 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-27 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was rising 2.0 mg/dL/min before the bolus, but BG bottomed at 65 mg/dL in the prior 90 min \u2014 the rise is a recovery, not a from-flat meal climb \u2014 not a late meal bolus",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -28707,6 +28995,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
@@ -29094,6 +29384,27 @@
                 "t": "2024-05-24 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-24 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -29104,6 +29415,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
@@ -29431,6 +29744,23 @@
                 "t": "2024-05-01 00:00:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-01 00:15:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "not enough CGM around the bolus to judge whether it was late",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -29441,6 +29771,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-08 12:05:00"
@@ -29828,6 +30160,23 @@
                 "t": "2024-05-08 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-08 12:30:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -29838,6 +30187,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-06 12:05:00"
@@ -30225,6 +30576,27 @@
                 "t": "2024-05-06 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-06 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -30235,6 +30607,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-14 12:05:00"
@@ -30622,6 +30996,27 @@
                 "t": "2024-05-14 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-14 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -30632,6 +31027,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-09 12:05:00"
@@ -31019,6 +31416,23 @@
                 "t": "2024-05-09 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-09 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was rising 2.0 mg/dL/min before the bolus, but BG bottomed at 65 mg/dL in the prior 90 min \u2014 the rise is a recovery, not a from-flat meal climb \u2014 not a late meal bolus",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -31029,6 +31443,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
@@ -31416,6 +31832,27 @@
                 "t": "2024-05-25 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-25 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -31426,6 +31863,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-18 12:05:00"
@@ -31813,6 +32252,23 @@
                 "t": "2024-05-18 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-18 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -31834,67 +32290,115 @@
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
             },
             "date": "2024-05-01",
             "id": "o_bee18b5854e57ef13e2189f5223b18d1",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-01 00:15:00"
+            },
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
             },
             "date": "2024-05-24",
             "id": "o_ac56a2f9cd0f195e1152e73088a76131",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-24 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
             },
             "date": "2024-05-25",
             "id": "o_e74704c21bed9d7a9887d1c83cf09981",
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-25 12:20:00"
+            },
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
             },
             "date": "2024-05-26",
             "id": "o_8c1ee964d36af1e739d5099b1f17ef9d",
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-26 12:30:00"
+            },
             "verdict": "outranked"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
             },
             "date": "2024-05-27",
             "id": "o_91eb80514d1126032d86924a23523100",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-27 12:20:00"
+            },
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
             },
             "date": "2024-05-28",
             "id": "o_69d967ff60a613351502256768bea214",
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-28 12:20:00"
+            },
             "verdict": "clean"
           }
         ],
@@ -42451,6 +42955,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
@@ -42838,6 +43344,23 @@
                 "t": "2024-05-28 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-28 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -42848,6 +43371,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 30.0,
+              "insulin": 6.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
@@ -43235,6 +43760,23 @@
                 "t": "2024-05-26 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 360.0,
+              "kind": "peak",
+              "minute": 25.0,
+              "t": "2024-05-26 12:30:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was ~flat (0.0 mg/dL/min) before the bolus \u2014 the dose led the rise",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -43245,6 +43787,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
@@ -43632,6 +44176,23 @@
                 "t": "2024-05-27 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-27 12:20:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "glucose was rising 2.0 mg/dL/min before the bolus, but BG bottomed at 65 mg/dL in the prior 90 min \u2014 the rise is a recovery, not a from-flat meal climb \u2014 not a late meal bolus",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -43642,6 +44203,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
@@ -44029,6 +44592,27 @@
                 "t": "2024-05-24 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-24 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -44039,6 +44623,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
@@ -44366,6 +44952,23 @@
                 "t": "2024-05-01 00:00:00"
               }
             ],
+            "outcome": {
+              "bg": 150.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-01 00:15:00"
+            },
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "not enough CGM around the bolus to judge whether it was late",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -44376,6 +44979,8 @@
           "detail": {
             "anchor": {
               "bg": null,
+              "carbs": 45.0,
+              "insulin": 9.0,
               "kind": "meal",
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
@@ -44763,6 +45368,27 @@
                 "t": "2024-05-25 12:05:00"
               }
             ],
+            "outcome": {
+              "bg": 180.0,
+              "kind": "peak",
+              "minute": 15.0,
+              "t": "2024-05-25 12:20:00"
+            },
+            "reason": {
+              "cause": {
+                "lever": "late_bolus",
+                "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                "title": "Late bolus"
+              },
+              "habits": [
+                {
+                  "detail": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike",
+                  "lever": "late_bolus",
+                  "title": "Late bolus",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },

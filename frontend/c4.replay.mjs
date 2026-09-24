@@ -2,6 +2,7 @@
 import { waitForReplayAssertion } from './replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { hhmm, xAtMinute } from './diagnose-workstation-chart.js';
+import { scopeNote } from './diagnose-findings-queue.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -1426,6 +1427,12 @@ const queueNum451 = value => {
 };
 const panelNum451 = value => Number(value).toFixed(2);
 const correctionFactor451 = value => `1 U : ${value} mg/dL`;
+/** The served correction-factor row's queue numbers line, as the queue prints it:
+    both values insulin first at the queue's rounding, then the row's served scope
+    note from the queue's own source. */
+export const queueNumbers451 = row =>
+  `now ${correctionFactor451(queueNum451(row.current))} → ${correctionFactor451(queueNum451(row.recommended))}`
+  + scopeNote(row);
 const STATUS_WORDS_451 = ['Ready to stage', 'Staged', 'Ready to start a Focus', 'Focus withheld',
   'Action identified', 'Evidence to inspect'];
 const ENGINE_WORDS_451 = /mg\/dL\/U|\bISF\b|eligible_action|guided_investigation|active_change|pending_plan/;
@@ -2518,9 +2525,10 @@ export const C4_STORIES = {
     await waitForReplayAssertion(async seen => {
       assert.equal(seen((await node.locator('.lab').innerText()).trim()), title,
         'S178 the queue row is titled by the setting and its served direction');
-      assert.equal(seen((await node.locator('.den.nums').innerText()).trim()),
-        `now ${correctionFactor451(queueNum451(row.current))} → ${correctionFactor451(queueNum451(row.recommended))}`,
-        'S178 the queue numbers read insulin first, at the queue\'s own rounding');
+      const numbers = seen((await node.locator('.den.nums').innerText()).trim());
+      assert.equal(numbers, queueNumbers451(row),
+        'S178 the queue numbers read insulin first, at the queue\'s own rounding, then the row\'s served scope');
+      assert.doesNotMatch(numbers, /mg\/dL\/U/, 'S178 the queue numbers never print the engine unit');
     }, 'S178 the correction-factor queue row');
 
     await node.click();

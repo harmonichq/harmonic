@@ -72,6 +72,12 @@ function num(value) {
   return text.endsWith('.') ? `${text}0` : text;
 }
 
+/** The note a whole-day row that is not a Pattern carries after its detail line:
+    the served `window_scope`, in words. One source for the queue and its replay. */
+export function scopeNote(row) {
+  return row.window_scope === 'whole_day' && row.kind !== 'pattern' ? ' · Whole day' : '';
+}
+
 /** Validate the additive server coordinate as protocol data, without deciding
  * which Finding kinds are eligible. Membership remains entirely server-owned. */
 export function eventChartCoordinate(row) {
@@ -545,9 +551,8 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // to two lines by the stylesheet
     if (row.summary) add(node, 'sum', row.summary);
     const detail = paintDetail(node, row.detail);
-    if (detail && row.raw.window_scope === 'whole_day' && !row.pattern) {
-      add(detail, 'scope-note', ' · Whole day');
-    }
+    const note = scopeNote(row.raw);
+    if (detail && note) add(detail, 'scope-note', note);
     /* Chart-backed Watching rows use the same evidence preview as ranked rows
        when the reader expands them. The workstation registry decides whether
        a descriptor actually exists; rows without one lose the empty host. */

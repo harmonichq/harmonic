@@ -141,8 +141,12 @@ implemented and verified, never attempted; the coordinator ticks.
   series helpers read the served `median` / `p25` / `p75` and `cohort.name`
   exactly as they do for a case file. The tile mounts the ECharts option in its
   own element as every other kind does; `renderEventSurface`'s `ec-*` ids are not
-  involved. The key prints each cohort's served `name` and `usable_count`, and the
-  served `unread` count. Failing-first node test through the registry:
+  involved. The key prints each cohort's served `name` and `routed_count` — the
+  cohort's tally count, since every non-`unread` meal is traced — never
+  `usable_count` (a traced meal whose window falls in a CGM gap is routed but not
+  usable, so the two diverge), plus the served `unread` count; a cohort whose
+  served `support` is `withheld` draws no series and its key entry says so
+  ("not drawn"). Failing-first node test through the registry:
   `option('meal')` on the v2 fixture yields the served cohorts as named series
   with point counts equal to the served cohort sizes, and
   `eventComparisonChartOption` still throws on a non-case-file input; on main the

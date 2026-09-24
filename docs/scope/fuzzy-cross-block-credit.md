@@ -134,7 +134,7 @@ Both bars run in-ticket, through the committed harnesses only.
 - **Entry bar:** pass.
 - **Real-data bar:** pass.
 - **Shipped:** the candidate is now the engine's block estimator (ADR 117 in
-  `openspec/changes/fuzzy-cross-block-credit/design.md`); the whole-run
+  `openspec/changes/archive/2026-09-24-fuzzy-cross-block-credit/design.md`); the whole-run
   estimator stays as the ladder's incumbent reference.
 
 Q4's permanence attaches to the pinned inverse-ratio regression design, as

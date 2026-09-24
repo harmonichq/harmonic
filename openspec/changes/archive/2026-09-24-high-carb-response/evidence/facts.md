@@ -3,7 +3,7 @@
 Read-only command run from the ticket worktree:
 
 ```sh
-python3 openspec/changes/high-carb-response/evidence/probe.py
+python3 openspec/changes/archive/2026-09-24-high-carb-response/evidence/probe.py
 ```
 
 Verbatim stdout:

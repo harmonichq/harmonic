@@ -35,5 +35,5 @@
 
 ## Not in this change
 
-- [ ] Any production behavior change. `ciq_autotune/` and `frontend/` are
+- Any production behavior change. `ciq_autotune/` and `frontend/` are
       untouched here; the map's issues carry the implementation.

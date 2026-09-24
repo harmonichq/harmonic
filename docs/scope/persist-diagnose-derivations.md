@@ -50,4 +50,4 @@
   113.3s cold arrival, and its cost is a whole-history rescan per meal, not a
   cache miss. The persistence boundary is still worth building; it is no longer
   the fix for the five-minute symptom. See
-  `openspec/changes/persist-diagnose-derivations/design.md`.
+  `openspec/changes/archive/2026-09-24-persist-diagnose-derivations/design.md`.

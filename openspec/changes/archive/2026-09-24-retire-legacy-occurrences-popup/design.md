@@ -3,7 +3,7 @@
 ## Existing decision and sanction
 
 This change makes no new product or visual decision. ADR 31 in
-`openspec/changes/finding-evidence-routing/design.md` already settles the
+`openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md` already settles the
 Inspector as the only occurrence-evidence route and says the dead
 `occurrenceModal` hash machinery retires app-wide.
 

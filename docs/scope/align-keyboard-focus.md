@@ -100,7 +100,7 @@ carried over on trust from the ticket text or the behavior ledger.
   `uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`,
   whose database is generated in full by `scripts/gen_revise_e2e_db.py` from
   fixed seed 620 (recorded in the 2026-08-19 revise safe-start amendment,
-  `openspec/changes/finding-evidence-routing/design.md:248`). Frozen behavior
+  `openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md:248`). Frozen behavior
   ledger: `mockups/finding-evidence-routing.behavior.md`. App-only replay:
   `frontend/diagnose-workstation-behavior.replay.mjs`. inline
 

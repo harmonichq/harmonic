@@ -93,7 +93,7 @@
 - [x] Capture before/after renders of the basal drill — the roster at rest, one
   night selected with its trace, and the detail block — from the merge-base and
   the revision served on the same scratch copy of the QA showcase, at 1440×900,
-  1280×800, 1024×768 (tablet, landscape) and 390×844, into `openspec/changes/basal-night-drill/evidence/`,
+  1280×800, 1024×768 (tablet, landscape) and 390×844, into `openspec/changes/archive/2026-09-24-basal-night-drill/evidence/`,
   alongside the base, fail-first and final replay outputs; and add the #291
   revision clause to the Finding → evidence routing row of `mockups/INDEX.md`.
 - [x] Fast gate, every generator drift check, and every app-targeted browser

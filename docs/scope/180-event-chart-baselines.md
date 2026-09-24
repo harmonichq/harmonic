@@ -33,7 +33,7 @@ interlocking design decisions the operator holds, not missing facts.
 - #178 settled the missed-meal lever only, and its baseline is *cross-Exposure*
   (highs versus announced meals), so the nesting question never arose there.
   `not_comparable` does not exist in the tree yet; #178 introduces it.
-- Decision 6 in `openspec/changes/diagnose-finding-case-files/design.md:86-102`
+- Decision 6 in `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md:86-102`
   pins today's five-verdict cohorts and the per-Exposure anchors and horizons. Any
   generalization amends it explicitly.
 - Basal clean-night (#143), ISF rest-window (#144) and current I:C meal-run

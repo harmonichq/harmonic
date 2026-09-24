@@ -3,7 +3,7 @@
 This round tests the hierarchy of one priority, evidence, and an active change.
 It implements a synthetic design exploration for #348, not the application or
 an approved visual lock. Product decisions live in
-`openspec/changes/harmonic-v2/design.md`; the complete journeys live beside it.
+`openspec/changes/archive/2026-09-24-harmonic-v2/design.md`; the complete journeys live beside it.
 
 ## Shared decision
 

@@ -72,7 +72,7 @@ remains untested is how it lands in the code that exists.
 - The workstation boots on the overnight window; the v2 owner selects 24 h only
   for a Pattern subject.
 - The cold loading frame is an empty field-coloured block.
-- `openspec/changes/v2-findings-ledger` (#404) is still active and unarchived
+- `openspec/changes/archive/2026-09-24-v2-findings-ledger` (#404) is still active and unarchived
   with task 3.3 checked; #404 is closed but was never finalized.
 
 ## Review rounds

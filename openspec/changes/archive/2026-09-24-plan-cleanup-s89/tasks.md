@@ -21,7 +21,7 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   whole tree for `detectOnPump`, excluding only `node_modules`, `frontend/dist`,
   `openspec/changes/archive`, `evidence/` directories and this change's own
   directory, `openspec/changes/plan-cleanup-s89/`. The only match is
-  `openspec/changes/harmonic-v2/contracts.md`, which stays as history
+  `openspec/changes/archive/2026-09-24-harmonic-v2/contracts.md`, which stays as history
   (design.md). Build the shell with `npm run build` on base b03431d2 and on the
   branch. The sha256 of `frontend/dist/index.html` and of every
   `frontend/dist/assets/*` file are identical. Report both hash lists to the
@@ -117,7 +117,7 @@ records the decision under ADR 453.
   argument; `scripts/check_guidance_plan_contract.mjs` compares on an empty
   `groups`. Grep the whole tree, including `mockups/` and `scripts/`. The
   remaining readers of the old fields are the unloadable locked prototype, its
-  exploration brief, #431's triage reproduction and `openspec/changes/harmonic-v2/`,
+  exploration brief, #431's triage reproduction and `openspec/changes/archive/2026-09-24-harmonic-v2/`,
   all left as history (design.md).
 - [x] 5.3 `frontend/plan.test.js` tests `groups` only through
   `reconcileDeliverable`, and drops the six first-Plan branch tests.

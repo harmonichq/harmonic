@@ -13,7 +13,7 @@ verified live 2026-08-25).
 - The sidecar is **exact-match and fixed-coordinate**: a hit requires the Store
   input revision, the complete ResultCache coordinates and the package source
   fingerprint to match. There is no nearest match and no partial-key fallback
-  (ADR 82, `openspec/changes/persist-diagnose-derivations/design.md`) — with one
+  (ADR 82, `openspec/changes/archive/2026-09-24-persist-diagnose-derivations/design.md`) — with one
   deliberate, labeled exception: while an exact key recomputes, the newest
   prior-revision artifact with identical coordinates and marker may be served
   carrying its visible age (ADR 124, `derived_artifacts.load_latest_prior`).

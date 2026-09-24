@@ -17,7 +17,7 @@ Checked: 14/14 items.
 13. PASS — long-title geometry, narrow preview reachability, 44px controls, and content-clearance witnesses now exist.  
 14. PASS — no new unguarded trust boundary or unreachable-state guard.
 
-The prior scroll finding is fixed in [diagnose-workstation.js:2586-2604](../../../../../frontend/diagnose-workstation.js:2586): opening All charts saves the inspector’s nonzero `queueScrollTop`, while the final browser witness independently scrolls the catalog and verifies inspector scroll, window, finding, and focus on dismissal.
+The prior scroll finding is fixed in [diagnose-workstation.js:2586-2604](../../../../../../frontend/diagnose-workstation.js:2586): opening All charts saves the inspector’s nonzero `queueScrollTop`, while the final browser witness independently scrolls the catalog and verifies inspector scroll, window, finding, and focus on dismissal.
 
 The useful-mini corrections are substantiated: `queuePreviewOption` preserves null gaps and withheld bands, renders served p25/p75 directly, and S140 compares served median points against the full chart. Final renders show dedicated uniform wells with full-width evidence text; narrow previews scroll fully into view individually.
 

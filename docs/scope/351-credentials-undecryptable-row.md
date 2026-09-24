@@ -106,5 +106,5 @@ draft) or `injected` (introduced by a prior fix round).
      this ticket".
   4. Note: a hand-counted generated fact read "57 of its 59 active changes".
      Regenerated from the tree — 58 of 59 active changes carry `.openspec.yaml`
-     with `skip_specs: true`; the holdout is `openspec/changes/basal-night-drill/`,
+     with `skip_specs: true`; the holdout is `openspec/changes/archive/2026-09-24-basal-night-drill/`,
      which has none. Corrected.

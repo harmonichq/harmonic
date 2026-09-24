@@ -1,7 +1,7 @@
 # Scope — stage-1 toolchain and pinning policy (#239)
 
 Child of #238. Deliverable is a ruling recorded as an ADR in
-`openspec/changes/adopt-frontend-build-tooling/design.md`; no harness code.
+`openspec/changes/archive/2026-09-24-adopt-frontend-build-tooling/design.md`; no harness code.
 
 ## Decisions
 

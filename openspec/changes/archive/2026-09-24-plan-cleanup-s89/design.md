@@ -108,7 +108,7 @@ mismatch's rows (`reconcileDeliverable`, live in `plan-view.js`). Its callees,
 `collapseDeliverable`, `segmentAt` and `PLAN_PARAMS`, keep production callers
 and stay.
 
-`openspec/changes/harmonic-v2/contracts.md` lists `detectOnPump` among the
+`openspec/changes/archive/2026-09-24-harmonic-v2/contracts.md` lists `detectOnPump` among the
 Plan module's exports in a #348-era planning table. That record is not
 maintained: it still names the `frontend-v2/` tree that #416 retired. It is left
 as history, like the verbatim test logs under archived changes' `evidence/`
@@ -161,7 +161,7 @@ cannot load (its entry module imports `frontend/scenario-chart.js`, which no
 longer exists, and #416 retired the replay's prototype opener for that
 reason); the exploration brief that quotes the old signature; #431's triage
 reproduction `docs/scope/431-plan-state-repro.mjs`, which replayed the browser
-verdict this removes; and `openspec/changes/harmonic-v2/`. They are records,
+verdict this removes; and `openspec/changes/archive/2026-09-24-harmonic-v2/`. They are records,
 not live code, and stay as they are (coordinator ruling, 2026-09-23).
 
 The same ruling approves the two callers this widening edits outside the

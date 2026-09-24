@@ -33,8 +33,9 @@ let served = comparison;
 // A held assessment read: the record read answers, the reassessment waits.
 let assessmentGate = null;
 // The record whose assessment read the server refuses, as it answers one whose
-// history inputs changed during every snapshot.
+// history inputs changed during every snapshot, or with a coded refusal.
 let refusedFor = null;
+let codedRefusal = null;
 globalThis.fetch = async (path, options = {}) => {
   requests.push({ path, options });
   if (options.method === 'POST') {
@@ -54,6 +55,7 @@ globalThis.fetch = async (path, options = {}) => {
   const assessment = params.get('assessment');
   if (assessment && assessmentGate) await assessmentGate;
   if (assessment && selected === refusedFor) {
+    if (codedRefusal) return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: codedRefusal }) };
     return { ok: false, status: 503, statusText: 'Service Unavailable',
       json: async () => ({ detail: 'history inputs changed during every snapshot' }) };
   }
@@ -361,6 +363,18 @@ test('a failed retained read keeps the record and its Original read, and retries
     assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
     assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
   } finally { refusedFor = null; served = comparison; }
+});
+
+test('a coded refusal of a reassessment read prints its sentence with exactly one full stop', async () => {
+  kind = 'trial'; identity = 'coded-reassessment-synthetic'; served = PAIRED; refusedFor = identity;
+  codedRefusal = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.' };
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    const line = /The retained-context reassessment could not load: ([^<]*)<\/p>/.exec(seat.innerHTML);
+    assert.ok(line, 'the stage names the refused read');
+    assert.equal(line[1], 'New pump or sensor data arrived since this page was read.');
+    assert.doesNotMatch(seat.innerHTML, /stale_input_revision|\(409\)/);
+  } finally { refusedFor = null; codedRefusal = null; served = comparison; }
 });
 
 test('a failed retained read stays with its record: the next record opened from the roster reads its own', async () => {

@@ -427,11 +427,12 @@ function shownComparison(detail) {
     : { comparison: (detail.reassessment || {}).comparison || null, source: 'reassessment' };
 }
 
-/** A failed reassessment read, in the stage: which read failed, and its retry. */
+/** A failed reassessment read, in the stage: which read failed, and its retry.
+    A served sentence keeps one full stop: the line appends its own. */
 function reassessmentFailure(failed) {
   if (!failed) return '';
   const read = failed.mode === 'current' ? 'current-policy' : 'retained-context';
-  return `<div class="gf-status" role="alert" data-reassessment-failed="${e(failed.mode)}"><p class="gf-error">The ${e(read)} reassessment could not load: ${e(failureMessage(failed.error))}.</p><p class="gf-meta">The record itself is unchanged.</p><div class="gf-actions"><button class="gf-btn primary" data-retry-reassessment>Retry reassessment</button></div></div>`;
+  return `<div class="gf-status" role="alert" data-reassessment-failed="${e(failed.mode)}"><p class="gf-error">The ${e(read)} reassessment could not load: ${e(failureMessage(failed.error).replace(/\.$/, ''))}.</p><p class="gf-meta">The record itself is unchanged.</p><div class="gf-actions"><button class="gf-btn primary" data-retry-reassessment>Retry reassessment</button></div></div>`;
 }
 
 /** One open record: its evidence on the stage, its four parts in the reading. */

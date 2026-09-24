@@ -159,6 +159,15 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   Keep the history.js and follow-up-lifecycle.test.js edits to the
   failure-message lines and that test's refusal: #452 rewrites the record's page
   memory in the same files.
+- [x] 3.6 Coordinator-authorized after start (Q3 delegation, Connor Griffin,
+  2026-09-23; coordinator ruling on #449, 2026-09-24): the record's
+  reassessment-failure line (`frontend/history.js`, `reassessmentFailure`),
+  which appends its own full stop, strips one trailing full stop from the
+  served message first, as the Focus pin line does. Test through `mount` in
+  `frontend/follow-up-lifecycle.test.js`: a retained reassessment read refused
+  409 with a coded message ending in a full stop prints that message with
+  exactly one full stop and neither the code nor "(409)". Fails first on the
+  prior head (it printed "…read..").
 
 ## 4. Behavior ledger and replay
 

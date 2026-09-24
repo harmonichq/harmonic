@@ -2973,10 +2973,13 @@ Shipped desk behavior that changes, and no story that asserted the old fact:
 - **A Day return to the held case, and a plain Diagnose press after a Day
   return, are ADR 414 retained returns**: one status read, the drill kept. S26
   and S62 still hold on the retained path; S108 and S109 are unchanged. By the
-  coordinator's round-2 ruling a parked Diagnose is inert — its workstation's
+  coordinator's review rulings a parked Diagnose is inert — its workstation's
   page-level keys (Backspace, ↑/↓, Escape) act only while Diagnose is on screen
-  — so the case cannot move while another destination holds the surface, and a
-  return compares its entry with the held entry, as ADR 414 does.
+  — so input cannot move the case while another destination holds the surface
+  and a return compares its entry with the held entry, as ADR 414 does, while a
+  case-file answer already in flight when Diagnose parked can still move it and
+  is reconciled when the root re-seats: a Day return then re-reads and restores
+  its entry, and a plain return names the case on screen.
 
 ```
 S136 · After a Day return on a Finding case with an Occurrence held, ↓ steps to

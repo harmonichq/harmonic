@@ -79,12 +79,15 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // written or not. `restoring` is an entry restoration still pending: open
   // from mount's decision to apply a contextual entry until the restoration has
   // done its own work or the reader acts. `rebuilding` is a setData rebuild in
-  // progress, whose Findings root is never written. `returnTo` is the
-  // Occurrence a retained Day return puts focus back on when the root re-seats.
+  // progress, whose Findings root is never written. `parkedOn` is the case on
+  // screen when Diagnose parked, and `returning` the retained return in hand
+  // (plain or not, and the Occurrence it puts focus back on); the re-seat reads
+  // both.
   let published = null;
   let restoring = false;
   let rebuilding = false;
-  let returnTo = null;
+  let parkedOn = null;
+  let returning = null;
 
   // Context names a served identity or an explicit slot; the window is the
   // route's own string coordinate. Equal on all three means "the same return".
@@ -457,6 +460,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.style.display = 'none';
     root.ownerDocument.body.append(root);
     parked = true;
+    parkedOn = published;
   }
 
   function mount(host, deps = {}) {
@@ -465,12 +469,14 @@ export function createDiagnoseDestination({ api = client, createView = createDia
 
     // A return: the desk was seated and a navigation moved since. A changed
     // subject/occurrence/window always re-reads; the same entry only checks
-    // whether the store moved, and the loading frame stands for either. The
-    // held entry still names the case on screen because a parked Diagnose is
-    // inert: its workstation takes no key until it is on screen again. A
-    // repeated press of Diagnose while on Diagnose is not a return: the root
-    // was never parked by leaving, and re-pressing the destination restores
-    // the shipped Findings index the way it always has (S3), by re-reading.
+    // whether the store moved, and the loading frame stands for either. Input
+    // cannot move a parked case — the workstation takes no key until Diagnose
+    // is on screen — so the held entry names the case Diagnose parked on; a
+    // case-file answer already in flight when it parked can still move it, and
+    // the re-seat below reconciles that. A repeated press of Diagnose while on
+    // Diagnose is not a return: the root was never parked by leaving, and
+    // re-pressing the destination restores the shipped Findings index the way
+    // it always has (S3), by re-reading.
     if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
       // ADR 428 point 7: a return whose context names no case (a plain press of
@@ -489,7 +495,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       }
       // ADR 428 point 6: a Day return to the held case keeps the drill too, and
       // puts focus back on the Occurrence it opened Day from.
-      returnTo = plain ? null : entry.occurrence || null;
+      returning = { plain, occurrence: plain ? null : entry.occurrence || null };
       checking = true;
       host.innerHTML = loadingFrame('Diagnose');
       api.fetchStatus().then((status) => {
@@ -557,10 +563,23 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // Never restoreEntry() here: the drill and scroll retention preserves are
     // exactly what restoreEntry()'s row/occurrence clicks would disturb.
     } else if (wasParked) {
+      // An answer already in flight when Diagnose parked may have moved the case
+      // since (input cannot). Compared by the workstation's own publications, so
+      // an entry's spelling never counts as a move. A Day return then restores
+      // its entry exactly; a plain return names the case on screen.
+      const back = returning;
+      returning = null;
+      const moved = !sameEntry(published, parkedOn);
+      if (moved && !back.plain) {
+        reread();
+        host.innerHTML = loadingFrame('Diagnose');
+        return;
+      }
       workstation.refresh(); showFocusAction();
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;
-      if (returnTo) { focusReturn(returnTo); returnTo = null; }
+      if (moved) writeCase();
+      else if (back.occurrence) focusReturn(back.occurrence);
     }
     arrival = deps.navigation;
     (deps.hold || hold)((pagehide) => {

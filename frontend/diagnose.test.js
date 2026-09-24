@@ -1015,6 +1015,82 @@ test('ADR 428 · an identical Changes re-entry stays retained, whatever spelling
   } finally { globalThis.window = previous; }
 });
 
+// Review round 3: input cannot move a parked case, but a case-file answer
+// already in flight when Diagnose parked can. The re-seat compares the case on
+// screen with the one Diagnose parked on and reconciles.
+async function answerLandsAfterPark(when, returnTo) {
+  const observers = [];
+  globalThis.MutationObserver = class {
+    constructor(callback) { this.callback = callback; this.live = false; observers.push(this); }
+    observe() { this.live = true; } disconnect() { this.live = false; }
+  };
+  let focused = null;
+  let current = null; // the case the stand-in workstation has on screen
+  const env = desk428({ root: {
+    querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : selector === '.case-occurrence' ? [member] : []),
+    querySelector: selector => (selector === '.occ-foot button:last-child' ? openDay : null),
+  } });
+  const { page, served, seat, view, destination } = env;
+  const row = { dataset: { id: 'finding:late_bolus' },
+    click() { view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null }); } };
+  const member = { dataset: { occurrenceId: 'o-1' },
+    getAttribute: () => String(current?.occurrence === 'o-1'),
+    click() { view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null }); },
+    focus() { focused = 'row'; } };
+  const openDay = { focus() { focused = 'open-day'; } };
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {} });
+  const caseChanged = view.callbacks.caseChanged;
+  view.callbacks.caseChanged = next => { current = next; caseChanged(next); };
+  view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+  // ↓ pressed, then Open in Day (or a topbar destination) before the answer.
+  park(destination, seat, 0, routed(page));
+  const answer = () => view.publish({ subject: 'finding:late_bolus', occurrence: 'o-2', window: null });
+  if (when === 'parked') answer();
+  page.history.pushState(null, '', returnTo);
+  served.requests.length = 0; focused = null;
+  destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+  if (when === 'checking') answer();
+  await flush();
+  destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+  const notify = () => { for (const observer of observers.filter(o => o.live)) observer.callback(); };
+  return { ...env, focused: () => focused, current: () => current, notify };
+}
+
+for (const when of ['parked', 'checking']) {
+  test(`ADR 428 · an answer landing while Diagnose is ${when} makes the Day return re-read and restore its Occurrence`, async () => {
+    const previous = globalThis.window;
+    const previousMO = globalThis.MutationObserver;
+    try {
+      const { page, served, seat, destination, focused, current, notify } = await answerLandsAfterPark(when,
+        serializeRoute({ destination: 'diagnose', context: DAY_RETURN }));
+      assert.ok(served.requests.includes('analysis'),
+        `the case moved off o-1 after the park, so the Day return re-reads: ${served.requests}`);
+      await flush();
+      destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+      notify();
+      assert.equal(current()?.occurrence, 'o-1', 'the restoration holds the Occurrence the Day entry names');
+      assert.equal(routed(page).occurrence, 'o-1', 'the address names it');
+      assert.equal(focused(), 'open-day', 'focus lands on its Open in Day control');
+      destination.leave();
+    } finally { globalThis.window = previous; globalThis.MutationObserver = previousMO; }
+  });
+
+  test(`ADR 428 · an answer landing while Diagnose is ${when} leaves a plain return naming the case on screen`, async () => {
+    const previous = globalThis.window;
+    const previousMO = globalThis.MutationObserver;
+    try {
+      const { page, served, view, destination, current } = await answerLandsAfterPark(when, '/diagnose');
+      assert.deepEqual(served.requests, ['status'], 'a plain return stays retained');
+      assert.equal(view.refreshes, 1, 'premise: the retained root re-seated');
+      assert.equal(current()?.occurrence, 'o-2', 'premise: o-2 is on screen');
+      assert.equal(page.address(), '/diagnose?subject=finding%3Alate_bolus&occurrence=o-2',
+        'the address names the case on screen, with no from');
+      destination.leave();
+    } finally { globalThis.window = previous; globalThis.MutationObserver = previousMO; }
+  });
+}
+
 // Review round 1, kept: the return focus and the superseded walk.
 
 test('ADR 428 · a retained return focuses Open in Day only when it belongs to the returning Occurrence', async () => {

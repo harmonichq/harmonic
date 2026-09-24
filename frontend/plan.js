@@ -13,11 +13,10 @@
         cell off its current value (see #93: one source of truth for "the new
         profile").
 
-   This module owns everything that is *pure* about layer 3 (and the
-   Confirmation-B detection): merging the accepted plan onto the current profile
-   into unified rows, provenance tagging, hand-edit merge, and detecting when
-   the deliverable has landed on the pump. No Vue, no DOM, no fetch — so
-   `node --test` imports it with no importmap.
+   This module owns everything that is *pure* about layer 3: merging the
+   accepted plan onto the current profile into unified rows, provenance
+   tagging, and hand-edit merge. No Vue, no DOM, no fetch — so `node --test`
+   imports it with no importmap.
 
    Provenance vocabulary (per row, per parameter):
      'current'   — carried forward unchanged from the active profile.
@@ -636,41 +635,6 @@ export function normalizeIcBlockProvenance(items) {
     const { ic_block_provenance, ...rest } = it;
     return rest;
   });
-}
-
-/**
- * Confirmation B: has the deliverable landed on the pump?
- *
- * Compares the (collapsed) deliverable against a freshly-fetched active-profile
- * snapshot. Returns { onPump: boolean, matchedAt } — `onPump` true iff every
- * collapsed deliverable segment's four values match the snapshot's schedule at
- * that time-of-day (the pump now delivers what the plan proposed).
- *
- * `snapshotSegments` is the /api/pump-settings active profile segments; `fetchedAt`
- * is the snapshot's capture time, returned as `matchedAt` on a match. Changes no
- * longer shows it: a confirmed Plan's "On pump since" names the server's
- * confirming read (#431).
- *
- * @param {Array<row>} deliverableRows  from buildDeliverable
- * @param {Array} snapshotSegments      [{ start_min, basal_rate, isf, carb_ratio, target_bg }]
- * @param {string} [fetchedAt]
- * @returns {{ onPump: boolean, matchedAt: string|null }}
- */
-export function detectOnPump(deliverableRows, snapshotSegments, fetchedAt = null) {
-  const rows = collapseDeliverable(deliverableRows || []);
-  const segs = snapshotSegments || [];
-  if (!rows.length || !segs.length) return { onPump: false, matchedAt: null };
-  const approx = (a, b) => {
-    if (a == null || b == null) return a === b;
-    return Math.abs(a - b) < 1e-6;
-  };
-  const onPump = rows.every((row) => {
-    const seg = segmentAt(segs, row.start_min);
-    if (!seg) return false;
-    return PLAN_PARAMS.every(({ param }) =>
-      approx(row[param].value, seg[param] != null ? seg[param] : null));
-  });
-  return { onPump, matchedAt: onPump ? fetchedAt : null };
 }
 
 /* =========================================================================

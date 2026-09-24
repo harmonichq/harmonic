@@ -1,7 +1,7 @@
 // #99 — tests for the pure Plan deliverable module (plan.js).
 //   node --test 'frontend/**/*.test.js'
 // Vue-free, DOM-free: covers consolidation, provenance tagging, hand-edit
-// merge, collapse, segment count, and Confirmation-B on-pump detection.
+// merge, collapse, segment count, and pump-precision reconciliation.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,7 +24,6 @@ import {
   planFamilyState,
   planItemFamily,
   planParamFamily,
-  detectOnPump,
   reconcileDeliverable,
   roundToPrecision,
 } from './plan.js';
@@ -381,41 +380,6 @@ test('deliverableHasChanges is true for a hand-edit with zero accepted picks', (
 test('deliverableHasChanges is false for empty rows', () => {
   assert.equal(deliverableHasChanges([]), false);
   assert.equal(deliverableHasChanges(null), false);
-});
-
-// --- Confirmation B: on-pump detection ------------------------------------
-
-test('detectOnPump is false when the pump snapshot still shows the old profile', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  const res = detectOnPump(rows, activeProfile.segments, '2026-07-02 08:00');
-  assert.equal(res.onPump, false);
-  assert.equal(res.matchedAt, null);
-});
-
-test('detectOnPump is true once the snapshot matches the deliverable', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  // Simulate the user programming the deliverable: new snapshot = deliverable.
-  const newSnapshot = [
-    { start_min: 0, basal_rate: 0.8, isf: 55, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 40, carb_ratio: 9, target_bg: 110 },
-  ];
-  const res = detectOnPump(rows, newSnapshot, '2026-07-02 09:00');
-  assert.equal(res.onPump, true);
-  assert.equal(res.matchedAt, '2026-07-02 09:00');
-});
-
-test('detectOnPump tolerates float noise within 1e-6', () => {
-  const rows = buildDeliverable({ activeProfile });
-  const snap = [
-    { start_min: 0, basal_rate: 0.8 + 1e-9, isf: 50, carb_ratio: 10, target_bg: 110 },
-    { start_min: 720, basal_rate: 1.0, isf: 45, carb_ratio: 9, target_bg: 110 },
-  ];
-  assert.equal(detectOnPump(rows, snap).onPump, true);
-});
-
-test('detectOnPump is false with empty inputs', () => {
-  assert.equal(detectOnPump([], activeProfile.segments).onPump, false);
-  assert.equal(detectOnPump(buildDeliverable({ activeProfile }), []).onPump, false);
 });
 
 // --- #94 reconcile: planned deliverable vs detected pump profile ----------

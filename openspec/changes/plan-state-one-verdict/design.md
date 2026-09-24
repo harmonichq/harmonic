@@ -20,10 +20,12 @@ today: a row that mixes tuning families, and a carb-ratio block row whose
 hold such rows (for example a key-only basal item), and `validate_plan_items`
 checks only the family and block-group consistency, so `Store.save_plan_draft`
 and `Store.apply_plan` still record the key-only kind. `plan_deliverable` runs
-that validator, so feeding it a refused row raises. Feeding a row with no start
-minute or no value to `plan_deliverable` or `schedule_matches` raises too, and a
-null value would let an unchanged read appear to hold it. Sub-order 1 shipped
-the wider rule (amended after its review). An incomparable Plan is therefore never
+that validator, so feeding it a refused row raises, and a row with no start
+minute raises there too. A null value does not raise: `plan_deliverable` keeps
+the slot's current value, so `schedule_matches` would find an unchanged read
+holding the Plan. The value check is therefore what prevents a false "on the
+pump", not only a guard against a crash. Sub-order 1 shipped the wider rule
+(amended after its review). An incomparable Plan is therefore never
 confirmed by a read, serves `pending` with `on_pump` false, and leaves pending
 only by Withdraw. Neither the reconciler nor the verdict raises on it:
 reconciliation runs inside Withdraw, after every fetch and at `serve` startup,

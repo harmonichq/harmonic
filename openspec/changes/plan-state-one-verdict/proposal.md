@@ -43,7 +43,9 @@ found why:
   decision holds the Plan's schedule, stamping the first read of that matching
   run. A Plan recorded before schedules were captured is compared as its
   recorded values over that read; one whose items cannot be compared (no start
-  minute or no value) is never confirmed by a read and leaves by Withdraw. The
+  minute or no value, or items today's item rules refuse: a row mixing tuning
+  families, or a carb-ratio block row ending at minute 0) is never confirmed by
+  a read and leaves by Withdraw. The
   Trial-matched confirmation still wins in the same pass. (ADR 431; operator
   decision D5.)
 - Only the newest recorded Plan can be pending; older unconfirmed history is

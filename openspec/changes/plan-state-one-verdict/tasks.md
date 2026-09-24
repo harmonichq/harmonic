@@ -18,8 +18,10 @@ the risk contract. Every value in tests and comments is synthetic.
 - [ ] 1.3 Implement plan **The server confirms a pending Plan from a matching
   pump read** in `reconcile_follow_up`, after the per-Trial pass, reusing
   `guidance.schedule_matches` and `guidance.plan_deliverable`. A Plan with any
-  item lacking an integer `start_min` or a numeric `value` is incomparable: it is
-  never confirmed, and neither the reconciler nor the verdict raises on it.
+  item lacking an integer `start_min` or a numeric `value`, or whose items
+  today's item rules refuse (a row mixing tuning families, or a carb-ratio block
+  row whose `block_end_min` is 0), is incomparable: it is never confirmed, and
+  neither the reconciler nor the verdict raises on it.
   `_reconcile_plan`'s matching is unchanged.
 - [ ] 1.4 Implement plan **Every recorded Plan serves one verdict** as one
   read-only function in `ciq_autotune/watched_change.py`, served on every

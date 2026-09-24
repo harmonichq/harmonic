@@ -3050,9 +3050,12 @@ S147 · With a Plan pending, a Pattern case's header carries no pending-Plan
             ever reaches a header note and its base proof could not fail at the
             header.
   evidence: C4_STORIES.S147; waits for the Focus and guidance reads, then in
-            each window drills the Pattern and waits for its occurrences (the
-            case read settles the header first) and reads the header; only then
-            reads the watch panel in each window and presses Open Changes
+            each window drills the Pattern from the rail, waits for its
+            occurrences (the case read settles the header first), reads the
+            header, and returns to the rail by the Findings crumb (a Window
+            press on a drilled case re-scopes it rather than listing the rail);
+            only then reads the watch panel in each window and presses Open
+            Changes
   status:   owed — base a4d374a7 with this harness laid over it is expected to
             fail at the header check (the base names the pending Plan there as
             "View Plan" with its reason); coordinator runs base and branch at

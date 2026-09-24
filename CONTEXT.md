@@ -685,9 +685,10 @@ A recorded Plan is **pending** until it is **confirmed** — by its matched Tria
 or by a later pump read that holds its schedule — **withdrawn** by the user, or
 **superseded** by a newer recorded Plan. Only the newest recorded Plan can be
 pending, and while it is pending it withholds a Focus and a new decision. The
-server serves one verdict per recorded Plan (pending; mismatch, a pending Plan
-the latest pump read after its decision does not hold; confirmed; withdrawn;
-superseded) with when it was confirmed and whether the latest read still holds
+server serves one verdict per recorded Plan (pending; mismatch, a comparable
+pending Plan the latest pump read after its decision does not hold — a Plan
+whose recorded items cannot be compared with a read stays pending; confirmed;
+withdrawn; superseded) with when it was confirmed and whether the latest read still holds
 it (on pump). A confirmed Plan stays confirmed when a later read stops holding
 it. Surfaces read the verdict; none decides it.
 _Avoid_: applied or entered (for confirmed), canceled or deleted (for

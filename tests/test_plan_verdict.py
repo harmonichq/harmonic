@@ -316,6 +316,28 @@ class ServedVerdictTest(PlanCase):
         self.assertEqual(row["reconciliation"]["state"], "unavailable")
         self.assertEqual(row["verdict"], {"state": "pending", "confirmed_at": None, "on_pump": True})
 
+    def test_withdraw_refuses_a_pending_plan_the_latest_read_already_holds(self):
+        # Served pending with on_pump true: the withdraw lifecycle reconciles
+        # first, which confirms the Plan, so it refuses as nonpending_plan and
+        # rolls that confirmation back with the refused write.
+        plan = self.record_plan()
+        self.write_read(at(plan) + timedelta(minutes=5), rows=plan["deliverable"]["rows"])
+        held = {"state": "pending", "confirmed_at": None, "on_pump": True}
+        self.assertEqual(self.row(plan)["verdict"], held)
+        revision = self.get("/api/plan/history")["input_revision"]
+        response = self.client.post("/api/plan/history/withdraw", headers=self.headers, json={
+            "request_id": f"withdraw-{time.time_ns()}", "input_revision": revision,
+            "applied_at": plan["applied_at"], "reason": None})
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(response.json()["detail"]["code"], "nonpending_plan")
+        row = self.row(plan)
+        self.assertEqual((row["withdrawal"]["state"], row["reconciliation"]["state"]),
+                         ("unavailable", "unavailable"))
+        self.assertEqual(row["verdict"], held)
+        # The refusal withdrew nothing: the next reconciliation confirms it.
+        self.reconcile()
+        self.assertEqual(self.row(plan)["verdict"]["state"], "confirmed")
+
     def test_a_confirmed_plan_the_pump_stops_holding_stays_confirmed(self):
         plan = self.record_plan()
         confirmed_at = at(plan) + timedelta(minutes=5)

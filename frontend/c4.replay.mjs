@@ -881,6 +881,11 @@ export const C4_STORIES = {
         startFocus: document.querySelectorAll('[data-start-focus]').length,
         planWords: /View Plan|awaiting confirmation/.test(document.querySelector('header.crumb')?.textContent || ''),
       }));
+      // Back to the rail (as S29 and S103 do): a Window press on a drilled case
+      // re-scopes that case instead of listing the rail, and clears the case
+      // Diagnose had selected, so the next window's Pattern must be drilled anew.
+      await page.getByRole('button', { name: 'Findings', exact: true }).click();
+      await settled(page);
     }
     const clean = { note: 0, startFocus: 0, planWords: false };
     assert.deepEqual(headers, Object.fromEntries(windows.map(window => [window, clean])),

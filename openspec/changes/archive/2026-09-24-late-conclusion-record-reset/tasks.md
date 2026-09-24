@@ -242,7 +242,6 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
   branch. Base shows the typed words; the branch shows an empty form.
   Evidence, coordinator-run 2026-09-24: 452-A1 (the later conclusion typed) and
   452-A2 (the record reopened after Back to records), before on b03431d2 and after
-  on the release trunk 9882bcfe (served with the desk shell built at 25392ade, after
-  every ticket's desk change had merged), at 1280x720 and 1440x900, in the release's
-  evidence record. Before, the reopened form holds the typed words; after, it is
-  empty.
+  on the release trunk dd5a93bb (served with a desk shell built from that commit),
+  at 1280x720 and 1440x900, in the release's evidence record. Before, the reopened
+  form holds the typed words; after, it is empty.

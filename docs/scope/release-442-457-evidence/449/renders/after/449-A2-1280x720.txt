@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-focus · 449-A2 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c3-focus · 449-A2 · 1280x720
 URL: http://127.0.0.1:8791/?to=changes
 Element: viewport
 Focused: body
@@ -162,7 +162,7 @@ Record conclusion & end Focus
 
 Ending the Focus fixes its periods. Nothing here is sent to your pump.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

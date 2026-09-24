@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store isf-strengthen · 451-B1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-B1 · 1440x900
 URL: http://127.0.0.1:8791/diagnose
 Element: viewport
 Focused: <button> "24 h"
@@ -62,7 +62,7 @@ Overnight lows with no insulin on board
 NOTHING BEING WATCHED
 No change staged, no trial or focus active
 Stage a change from a finding to start one.
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

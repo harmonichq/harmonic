@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store basal-verdict-gallery · 455-D3 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store basal-verdict-gallery · 455-D3 · 1440x900
 URL: http://127.0.0.1:8791/diagnose
 Element: viewport
 Focused: <button> "Afternoon"
@@ -42,7 +42,7 @@ Watching · 1 read
 NOTHING BEING WATCHED
 No change staged, no trial or focus active
 Stage a change from a finding to start one.
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

@@ -136,8 +136,8 @@
   theme: the desk is Dark with its bone reading sheet. Use the QA no-fetch serve
   AGENTS.md permits. The evidence lives in a private design-evidence record, not
   part of the public tree.
-  Evidence, coordinator-run 2026-09-24: 448-A1 (the silence article at its Upstream
-  cause row) and 448-B1 (the Glossary's Episode Log group at Quiet), before on
-  b03431d2 and after on the release trunk 9882bcfe (served with the desk shell built
-  at 25392ade, after every ticket's desk change had merged), at 1280x720 and
-  1440x900, in the release's evidence record.
+  Evidence, coordinator-run 2026-09-24: 448-A1 (the silence article at its
+  Upstream cause row) and 448-B1 (the Glossary's Episode Log group at Quiet),
+  before on b03431d2 and after on the release trunk dd5a93bb (served with a desk
+  shell built from that commit), at 1280x720 and 1440x900, in the release's
+  evidence record.

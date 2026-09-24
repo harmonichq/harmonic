@@ -325,15 +325,14 @@
   Coordinator-run 2026-09-24.
 - [x] 6.3 The renders design.md owes (before and after, 1280x720 and 1440x900,
   on isf-strengthen): coordinator-owned, integration render phase.
-  Evidence, coordinator-run 2026-09-24: 451-A1 (Changes' plain arrival),
-  451-B1 (the Diagnose findings queue), 451-B2 (the correction-factor panel),
-  451-C1 (the dock with the correction factor staged) and 451-D1 (the recorded
-  Plan's "What was known"), before on b03431d2 and after on the release trunk
-  9882bcfe (served with the desk shell built at 25392ade, after every ticket's
-  desk change had merged), at 1280x720 and 1440x900, in the release's evidence
-  record. That shell predates the prose em-dash sweep (task 7), so these
-  captures carry every sub-order's change but not the sweep's desk strings;
-  the sweep's evidence is task 7.7's legs.
+  Evidence, coordinator-run 2026-09-24: 451-A1 (Changes' plain arrival), 451-B1
+  (the Diagnose findings queue), 451-B2 (the correction-factor panel), 451-C1 (the
+  dock with the correction factor staged) and 451-D1 (the recorded Plan's "What
+  was known"), before on b03431d2 and after on the release trunk dd5a93bb (served
+  with a desk shell built from that commit), at 1280x720 and 1440x900, in the
+  release's evidence record. These captures carry every sub-order's change and the
+  prose em-dash sweep's desk strings (task 7), whose own evidence is task 7.7's
+  legs.
 - [x] 6.4 The complete desk ledger once per size (174 selected, zero failed,
   zero deferred): coordinator-owned, integration.
   It runs once on the commit that is pushed, and the pull request records the

@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store showcase · 447-C1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store showcase · 447-C1 · 1440x900
 URL: http://127.0.0.1:8791/
 Element: viewport
 Focused: <h2 class="gf-title"> "Reading the Diagnose surface"
@@ -58,7 +58,7 @@ A short queue is a good sign, not a broken one. The tail of the surface tells yo
 
 Open your Diagnose surface → (Diagnose here) to see your own ranked levers.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

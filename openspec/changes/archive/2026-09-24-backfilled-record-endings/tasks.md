@@ -320,9 +320,9 @@ the whole replay at module link.
   `c4-ic` records roster and its 06-01 record, at both sizes, and ticks this
   task with them.
 
-  Evidence, coordinator-run 2026-09-24: 442-A1 (the records roster) and 442-A2 (the
-  06-01 record opened), before on b03431d2 and after on the release trunk 9882bcfe
-  (served with the desk shell built at 25392ade, after every ticket's desk change
-  had merged), at 1280x720 and 1440x900, in the release's evidence record. Before,
-  the 06-01 row reads "Still open" and "Not watched"; after, it reads "Superseded by
-  a later change" with "Jun 10, 2024 · 09:00".
+  Evidence, coordinator-run 2026-09-24: 442-A1 (the records roster) and 442-A2
+  (the 06-01 record opened), before on b03431d2 and after on the release trunk
+  dd5a93bb (served with a desk shell built from that commit), at 1280x720 and
+  1440x900, in the release's evidence record. Before, the 06-01 row reads "Still
+  open" and "Not watched"; after, it reads "Superseded by a later change" with
+  "Jun 10, 2024 · 09:00".

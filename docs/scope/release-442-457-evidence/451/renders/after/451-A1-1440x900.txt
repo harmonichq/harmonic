@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store isf-strengthen · 451-A1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-A1 · 1440x900
 URL: http://127.0.0.1:8791/changes
 Element: viewport
 Focused: <h2> "Action"
@@ -36,7 +36,7 @@ Priority 0 leads the available admitted actions; an exact tie breaks by canonica
 Focus is withheld: 0 opportunities, gate 12.
 
 Inspect evidence
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

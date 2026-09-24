@@ -1,7 +1,7 @@
-SYNTHETIC — after · tree 9882bcfe · store isf-strengthen · 451-D1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-D1 · 1440x900
 URL: http://127.0.0.1:8791/changes
 Element: viewport
-Focused: <div class="gf-status" data-state="pending"> "Pending — program these into your pump. After the next fetch, this reconciles au"
+Focused: <div class="gf-status" data-state="pending"> "Pending: program these into your pump. After the next fetch, this reconciles aut"
 Note: the recorded Plan (correction factor staged in Diagnose, Open Plan, Record decision): What was known
 
 Harmonic
@@ -21,7 +21,7 @@ DELIVERABLE
 pump-ready schedule
 Pump-local time
 
-Pending — program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.
+Pending: program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.
 
 START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
 00:00	0.6	1 U : 40 mg/dL 1 U : 32 mg/dL	10	110
@@ -29,7 +29,7 @@ THIS CHANGE
 Pending
 DECISION
 Decision recorded
-Sep 24, 2026 · 07:46
+Sep 24, 2026 · 08:24
 On pump
 Awaiting pump evidence
 WHAT WAS KNOWN
@@ -38,7 +38,7 @@ Correction factor
 Change
 1 U : 32 mg/dL
 Read at
-Sep 24, 2026 · 07:46
+Sep 24, 2026 · 08:24
 
 Correction factor
 
@@ -50,7 +50,7 @@ START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
 Detected schedule. The proposed schedule is the Plan beside it.
 
 Pump settings
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

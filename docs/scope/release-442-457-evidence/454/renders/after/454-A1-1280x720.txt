@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store pattern-near-tie · 454-A1 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store pattern-near-tie · 454-A1 · 1280x720
 URL: http://127.0.0.1:8791/diagnose?subject=pattern%3Ahighs_after_meals&occurrence=o_c845f32474b457a76a53e9268b18410c
 Element: viewport
 Focused: <button class="ev-row case-occurrence case-compact" data-occurrence-id="o_c845f32474b457a76a53e9268b18410c" data-comparison-cohort="matched"> "May 24 · 19:0052 g · 7.4 U · peak 238"
@@ -69,7 +69,7 @@ Open May 24 in Day
 NOTHING BEING WATCHED
 No change staged, no trial or focus active
 Stage a change from a finding to start one.
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

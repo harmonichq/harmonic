@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-trial · 445-B1 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 445-B1 · 1280x720
 URL: http://127.0.0.1:8791/day?date=2024-05-03&subject=history&title=Basal+03%3A00+%C2%B7+0.6+U%2Fh+%E2%86%92+0.54+U%2Fh&occurrence=record%3Atrial%3Abasal_rate-03-00-20240515000000&from=changes
 Element: viewport
 Focused: <h2> "Episode Log"
@@ -11,7 +11,7 @@ Changes
 Day
 ＋
 Log carbs
-DAY · VIEWED SEP 24, 2026 · 07:42
+DAY · VIEWED SEP 24, 2026 · 08:20
 Fri, May 3, 2024
 100% in range · 0 lows · 0 highs · 288 readings · 120–120 mg/dL
 RECORDED DAYS
@@ -51,7 +51,7 @@ carbs (bolus)
 basal Δ · adding above, cutting below
 context · sleep, fasting, suspend
 EPISODE LOG
-viewed Sep 24, 2026 · 07:42
+viewed Sep 24, 2026 · 08:20
 OPENED FROM
 
 Basal 03:00 · 0.6 U/h → 0.54 U/h
@@ -71,7 +71,7 @@ Range
 
 No episode falls on this day.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

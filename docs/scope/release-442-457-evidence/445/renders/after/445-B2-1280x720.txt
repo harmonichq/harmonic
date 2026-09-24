@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-trial · 445-B2 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 445-B2 · 1280x720
 URL: http://127.0.0.1:8791/changes?date=2024-05-03&subject=history&title=Basal+03%3A00+%C2%B7+0.6+U%2Fh+%E2%86%92+0.54+U%2Fh&occurrence=record%3Atrial%3Abasal_rate-03-00-20240515000000&from=changes
 Element: viewport
 Focused: <button class="gf-btn" data-day-date="2024-05-03" data-day-subject="before"> "May 3"
@@ -76,7 +76,7 @@ From the Trial record
 
 ENDING
 
-Not recorded — this change is still open.
+Not recorded: this change is still open.
 
 EVIDENCE PERIODS
 Before
@@ -142,7 +142,7 @@ Original
 Retained context
 Current policy
 Computed
-Sep 24, 2026 · 07:42
+Sep 24, 2026 · 08:20
 Context
 Stored context 7601437821dc
 Result
@@ -150,7 +150,7 @@ Unclear
 
 A reassessment never replaces the saved ending, and cannot claim an improvement the ending did not record.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

@@ -79,10 +79,8 @@ Coordinator-run, 2026-09-23 and 2026-09-24:
 ## Renders
 
 - **Before**: base `b03431d2` (origin/main before the release).
-- **After**: release trunk `9882bcfe`'s server, serving the desk shell last built at trunk
-  `25392ade`. Every ticket's desk change had merged by then; the evidence record's root
-  [README](../README.md) records what that shell lacks (the #451 prose em-dash sweep's
-  desk strings).
+- **After**: the release trunk `dd5a93bb`, served with a desk shell built fresh from that
+  commit (`npm ci && npm run build`) before the after batch.
 - **Owed by**: the lock (tasks.md 5.3): on `c4-isf`, the expired Trial opened from the
   roster, a later conclusion typed, Back to records, and the record reopened, at both sizes
   (452-A2). 452-A1 is supplementary context, the state before leaving.

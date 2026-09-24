@@ -552,14 +552,13 @@ its new box, the chart is idle, and two animation frames have passed.
   `readSettled`'s bounded wait; S185's base result stands on the d3e276ed
   harness (task 1.5). The port-free node filters for the three #455 chart
   tests and the three `readSettled` tests each printed 3/3 ✔. With the final
-  harness 575464e7 laid over base b03431d2, S183 (72 failures), S184 (6
-  failures) and S185 (2 failures: the title's box is 0px wide at 832x720 and
-  832x560) fail at both sizes. The render matrix, coordinator-run 2026-09-24:
-  455-A1 to 455-A5 (832x720, 832x560), 455-B1 and 455-B2 (1200x736), 455-C1
-  (1024x768), 455-D1 to 455-D5 (1280x720, 1440x900), 455-E1 and 455-E2 (832x720
-  crops), 455-F1 and 455-G1 (1280x720 narrowed to 832x720), before on b03431d2
-  and after on the release trunk 9882bcfe (served with the desk shell built at
-  25392ade, after every ticket's desk change had merged), in the release's
-  evidence record. The complete desk ledger at both sizes, the backend pytest
-  and the full `acceptance.test.py` each runs once on the commit that is pushed,
-  and the pull request records the result.
+  harness 575464e7 laid over base b03431d2, S183 (72 failures), S184 (6 failures)
+  and S185 (2 failures: the title's box is 0px wide at 832x720 and 832x560) fail
+  at both sizes. The render matrix, coordinator-run 2026-09-24: 455-A1 to 455-A5
+  (832x720, 832x560), 455-B1 and 455-B2 (1200x736), 455-C1 (1024x768), 455-D1 to
+  455-D5 (1280x720, 1440x900), 455-E1 and 455-E2 (832x720 crops), 455-F1 and
+  455-G1 (1280x720 narrowed to 832x720), before on b03431d2 and after on the
+  release trunk dd5a93bb (served with a desk shell built from that commit), in the
+  release's evidence record. The complete desk ledger at both sizes, the backend
+  pytest and the full `acceptance.test.py` each runs once on the commit that is
+  pushed, and the pull request records the result.

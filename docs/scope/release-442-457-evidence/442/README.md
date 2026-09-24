@@ -100,10 +100,8 @@ Coordinator-run, 2026-09-24:
 ## Renders
 
 - **Before**: base `b03431d2` (origin/main before the release).
-- **After**: release trunk `9882bcfe`'s server, serving the desk shell last built at trunk
-  `25392ade`. Every ticket's desk change had merged by then; the evidence record's root
-  [README](../README.md) records what that shell lacks (the #451 prose em-dash sweep's
-  desk strings).
+- **After**: the release trunk `dd5a93bb`, served with a desk shell built fresh from that
+  commit (`npm ci && npm run build`) before the after batch.
 - **Owed by**: the lock. Task 5.4 of the change's tasks.md names the synthetic before and
   after renders of the `c4-ic` records roster and its 06-01 record, at both sizes.
 - **How**: both trees were served with AGENTS.md's QA copy-then-serve command

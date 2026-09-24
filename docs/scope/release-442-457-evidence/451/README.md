@@ -42,7 +42,7 @@ serve other tickets' stories in the same 15-story run.
 | Changes says why its concern leads in words | S177 | `frontend/changes.test.js` "Changes says why its concern leads in words, never the served code", "a set-aside concern on screen prints no words for the concern that leads next", "a staged change reads Staged, as the pane does, until it is undone" | `logs/451c-branch-*.log`, `logs/451c-base-*.log`, `logs/trunkA-*.log` | `renders/after/451-A1-*.png` |
 | Diagnose names the correction factor and carb ratio in the wearer's words | S178 | `frontend/diagnose-findings-queue.test.js` "an asserting correction-factor row prints its numbers insulin first (#451)"; `frontend/diagnose-workstation.test.js` "the correction-factor panel names its setting and prints each value insulin first (#451)", "the breadcrumb names the correction-factor level in the wearer's words (#451)", "a case head names the peak hour's carb ratio block in the wearer's words (#451)"; `frontend/c4.replay.test.js` "S178 expects the numbers line the queue prints, served scope note included"; `tests/test_classifier_carb_undercount.py` `NotInDataTest.test_missing_settings_sentence_names_the_settings_in_the_wearers_words` | `logs/451c-branch-*.log`, `logs/451c-base-*.log`, `logs/trunkA-*.log` | `renders/after/451-B1-*.png`, `renders/after/451-B2-*.png` |
 | The watch dock's title names the change and its values wrap below | S178; S169 (its #451 line: the Trial's values lead the dock's detail line) | `frontend/watched-change-dock.test.js` "#451 · a Trial is named by its setting, and its values lead the wrapping line" | `logs/451c-branch-*.log`, `logs/451c-base-*.log`, `logs/trunkA-*.log` | `renders/after/451-C1-*.png` |
-| Desk copy joins no clauses with an em dash | S4 (amended) | `tests/test_guide_catalog.py` `BuildCatalogTest.test_the_catalog_joins_no_clauses_with_an_em_dash`; `tests/test_findings_projection.py` `FindingEvidenceBlockTest.test_served_occurrence_sentences_join_no_clauses_with_an_em_dash`, `FindingEvidenceBlockTest.test_cross_family_episode_pair_is_emitted_by_the_real_producer`; `frontend/utilities.test.js` "ADR 451 · no Glossary definition joins its clauses with an em dash"; `frontend/kb.test.js` "ADR 451 · no Guide article joins its clauses with an em dash"; `frontend/chrome.test.js` "the topbar and footer carry their verbatim strings"; `frontend/diagnose-findings-queue.test.js` "term 14/38 · a held row is words-first and offers no stage affordance" (the held-row prefix); `frontend/desk.browser.test.mjs` "the desk opens on Diagnose behind its persistent chrome" | `logs/emdash-branch-*.log`, `logs/emdash-base-*.log`, `logs/emdash-desk-whole.log` | none: the after shell predates the widening (see Renders) |
+| Desk copy joins no clauses with an em dash | S4 (amended) | `tests/test_guide_catalog.py` `BuildCatalogTest.test_the_catalog_joins_no_clauses_with_an_em_dash`; `tests/test_findings_projection.py` `FindingEvidenceBlockTest.test_served_occurrence_sentences_join_no_clauses_with_an_em_dash`, `FindingEvidenceBlockTest.test_cross_family_episode_pair_is_emitted_by_the_real_producer`; `frontend/utilities.test.js` "ADR 451 · no Glossary definition joins its clauses with an em dash"; `frontend/kb.test.js` "ADR 451 · no Guide article joins its clauses with an em dash"; `frontend/chrome.test.js` "the topbar and footer carry their verbatim strings"; `frontend/diagnose-findings-queue.test.js` "term 14/38 · a held row is words-first and offers no stage affordance" (the held-row prefix); `frontend/desk.browser.test.mjs` "the desk opens on Diagnose behind its persistent chrome" | `logs/emdash-branch-*.log`, `logs/emdash-base-*.log`, `logs/emdash-desk-whole.log` | every after-capture's footer (the new advisory line); `renders/after/451-C1-*.png`, `renders/after/451-D1-*.png` |
 
 ## Recorded results
 
@@ -136,10 +136,8 @@ Coordinator-run, 2026-09-24:
 ## Renders
 
 - **Before**: base `b03431d2` (origin/main before the release).
-- **After**: release trunk `9882bcfe`'s server, serving the desk shell last built at trunk
-  `25392ade`. Every ticket's desk change had merged by then; the evidence record's root
-  [README](../README.md) records what that shell lacks (the #451 prose em-dash sweep's
-  desk strings).
+- **After**: the release trunk `dd5a93bb`, served with a desk shell built fresh from that
+  commit (`npm ci && npm run build`) before the after batch.
 - **Owed by**: the lock: design.md's "Renders owed" (before and after, 1280x720 and 1440x900,
   all on `isf-strengthen`): Changes plain arrival, the Diagnose findings queue and
   correction-factor panel, the dock with the correction factor staged, and the recorded Plan's
@@ -153,16 +151,14 @@ Coordinator-run, 2026-09-24:
 - **Files**: each `.png` is the render; each `.txt` beside it holds the page's visible text,
   the address, the focused element and the capture note.
 
-The after-captures were served by `9882bcfe`'s Python server, but the desk shell they loaded was
-last built at 06:41:43 on 2026-09-24, right after trunk `25392ade` (the #451 merge), and was not
-rebuilt before the after batch. Every #451 sub-order change is in that shell; the em-dash
-widening's desk strings are not. So every after footer still reads the old advisory line, the
-same as every before footer: 442-A1, 447-A1, 455-A1 (832x560) and 451-C1 (1440x900) each read
-"Advisory only — review with your clinician before changing pump settings." before and after,
-and none of the release's 99 after `.txt` files carries "Advisory only. Review with your
-clinician before changing pump settings." Likewise 451-C1 after still reads "Staged, not applied —
-nothing has changed on the pump", and 451-D1 after still reads "Pending — program these into your
-pump." The widening's desk evidence is its replay legs (the `emdash-*` logs, whose preparation
+The after-captures carry the em-dash widening's desk strings as well as every #451 sub-order
+change. Every after footer reads "Advisory only. Review with your clinician before changing pump
+settings.", where every before footer reads "Advisory only — review with your clinician before
+changing pump settings.". In 451-C1 the staged dock's detail line ends "Staged, not applied:
+nothing has changed on the pump" after, and 451-D1's pending line reads "Pending: program these
+into your pump. …" after. A first after batch, served with a shell left over from trunk
+`25392ade`, lacked these strings and was replaced whole (see the evidence record's root
+README). The widening's proof is still its replay legs (the `emdash-*` logs, whose preparation
 built the shell from `678fb544`; S4 passes there only on the new line) and its node and backend
 tests.
 

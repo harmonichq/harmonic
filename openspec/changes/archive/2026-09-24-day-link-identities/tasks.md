@@ -241,12 +241,12 @@ alone.
     commit to be integrated (0 failed, S162–S165 among those executed). Runs at
     integration, on the release branch, with the full `acceptance.test.py` and
     the render matrix in `design.md`.
-    The complete ledger and the full `acceptance.test.py` each run once on the commit
-    that is pushed, and the pull request records the result. The render matrix,
-    coordinator-run 2026-09-24: 445-A1, 445-A2, 445-B1, 445-B2, 445-C1, 445-C2 and
-    445-D1, before on b03431d2 and after on the release trunk 9882bcfe (served with
-    the desk shell built at 25392ade, after every ticket's desk change had merged),
-    at 1280x720 and 1440x900, in the release's evidence record.
+    The complete ledger and the full `acceptance.test.py` each run once on the
+    commit that is pushed, and the pull request records the result. The render
+    matrix, coordinator-run 2026-09-24: 445-A1, 445-A2, 445-B1, 445-B2, 445-C1,
+    445-C2 and 445-D1, before on b03431d2 and after on the release trunk dd5a93bb
+    (served with a desk shell built from that commit), at 1280x720 and 1440x900,
+    in the release's evidence record.
 - [x] 4.6 Coordinator-authorized, 2026-09-23 (Q3 delegation; the first branch
   replay and code review round 2). Story-only changes to S164 and S165 in
   `frontend/c4.replay.mjs`, each pinned on the `qa445Page` fake page in

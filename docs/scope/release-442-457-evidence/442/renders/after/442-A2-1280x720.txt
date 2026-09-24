@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c4-ic · 442-A2 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c4-ic · 442-A2 · 1280x720
 URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Acarb_ratio-all-20240601000000
 Element: viewport
 Focused: <h2> "This trial"
@@ -84,7 +84,7 @@ Not recorded
 Original explanation
 Observed programmed setting transition; original decision is not recorded.
 Recorded by Harmonic
-Sep 24, 2026 · 07:41
+Sep 24, 2026 · 08:20
 
 Original user decision is unavailable.
 
@@ -99,7 +99,7 @@ Not recorded
 Finished
 Jun 10, 2024 · 09:00
 Recorded
-Sep 24, 2026 · 07:41
+Sep 24, 2026 · 08:20
 
 A later setting change was detected inside the watch window. This record keeps the period it actually observed.
 
@@ -163,7 +163,7 @@ Current policy
 
 Not requested. The saved ending above is what this record was decided on.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

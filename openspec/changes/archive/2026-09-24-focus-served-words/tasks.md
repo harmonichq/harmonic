@@ -232,9 +232,8 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   Focus record at both sizes, kept in a private design-evidence record that is
   not part of the public tree. Owed at the release integration render batch
   (coordinator, 2026-09-24).
-  Evidence, coordinator-run 2026-09-24: 449-A1 and 449-A2 (c3-focus's active Focus),
-  449-B1 (c3-preempted's manual-ended record), 449-C1 and 449-C2 (its
+  Evidence, coordinator-run 2026-09-24: 449-A1 and 449-A2 (c3-focus's active
+  Focus), 449-B1 (c3-preempted's manual-ended record), 449-C1 and 449-C2 (its
   `overnight_drift` record) and 449-D1 (c4-history's Focus record), before on
-  b03431d2 and after on the release trunk 9882bcfe (served with the desk shell built
-  at 25392ade, after every ticket's desk change had merged), at 1280x720 and
-  1440x900, in the release's evidence record.
+  b03431d2 and after on the release trunk dd5a93bb (served with a desk shell built
+  from that commit), at 1280x720 and 1440x900, in the release's evidence record.

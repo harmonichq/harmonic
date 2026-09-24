@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-trial · 447-A1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 447-A1 · 1440x900
 URL: http://127.0.0.1:8791/diagnose
 Element: .inspector > .watch
 Focused: <h2 id="crumb-trail" class="trail"> "Findings"
@@ -76,7 +76,7 @@ TRIAL · WATCHING
 Basal 03:00
 0.6 → 0.54 U/hr · Ready to judge — 15 days since 05-15 · 14 required
 Open Changes ›
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store isf-strengthen · 451-B2 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-B2 · 1440x900
 URL: http://127.0.0.1:8791/diagnose?subject=isf
 Element: viewport
 Focused: <div id="level" class="level" data-dir="push" data-loading="false"> "Correction factor suggests a change Measured in the overnight fasting window. A "
@@ -54,7 +54,7 @@ staged for Plan
 NOTHING BEING WATCHED
 No change staged, no trial or focus active
 Stage a change from a finding to start one.
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

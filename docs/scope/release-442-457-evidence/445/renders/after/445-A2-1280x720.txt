@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-trial · 445-A2 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 445-A2 · 1280x720
 URL: http://127.0.0.1:8791/changes?date=2024-05-03&subject=setting%3Abasal_rate&title=Basal+03%3A00+%C2%B7+0.6+U%2Fh+%E2%86%92+0.54+U%2Fh&occurrence=basal_rate-03-00-20240515000000&window=180-210&from=changes
 Element: viewport
 Focused: <button class="gf-btn" data-day-date="2024-05-03" data-day-subject="before"> "May 3"
@@ -144,7 +144,7 @@ The evidence is limited to the selected Before and Trial periods.
 
 Observed movement does not establish that the setting caused it.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

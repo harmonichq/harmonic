@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-trial · 447-B1 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c3-trial · 447-B1 · 1280x720
 URL: http://127.0.0.1:8791/changes?subject=watch
 Element: viewport
 Focused: <h2> "This trial"
@@ -144,7 +144,7 @@ The evidence is limited to the selected Before and Trial periods.
 
 Observed movement does not establish that the setting caused it.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

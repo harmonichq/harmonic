@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c3-preempted · 449-B1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store c3-preempted · 449-B1 · 1440x900
 URL: http://127.0.0.1:8791/?to=changes&subject=history&occurrence=record%3Afocus%3A1
 Element: viewport
 Focused: body
@@ -179,7 +179,7 @@ Current policy
 
 Not requested. The saved ending above is what this record was decided on.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

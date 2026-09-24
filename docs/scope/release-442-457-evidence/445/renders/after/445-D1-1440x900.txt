@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store showcase · 445-D1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store showcase · 445-D1 · 1440x900
 URL: http://127.0.0.1:8791/diagnose?subject=finding%3Aover_treated_low&occurrence=o_28b23a9c1b6fa5ab54f21c4b88b26ea4
 Element: viewport
 Focused: <button class="gf-btn" data-action="day" data-date="2024-06-26" data-subject="question:low|2024-06-26 13:55:00" data-title="Carb questions · Jun 26 13:55" data-utility-from="questions" data-utility-label="Carb questions"> "Open Jun 26"
@@ -173,7 +173,7 @@ Open Jun 29
 Or, this reading wasn't real:
 
 Not real (sensor noise / compression low)
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 5
 Guide

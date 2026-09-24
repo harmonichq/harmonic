@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store isf-strengthen · 451-C1 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store isf-strengthen · 451-C1 · 1280x720
 URL: http://127.0.0.1:8791/diagnose?subject=isf
 Element: .inspector > .watch
 Focused: body
@@ -7,7 +7,7 @@ Note: the watch dock with the correction factor staged
 --- element text ---
 PLAN · STAGED
 Correction factor · strengthen
-1 U : 40.00 mg/dL → 1 U : 32.00 mg/dL · Staged, not applied — nothing has changed on the pump
+1 U : 40.00 mg/dL → 1 U : 32.00 mg/dL · Staged, not applied: nothing has changed on the pump
 Open Changes ›
 
 --- page text ---
@@ -60,9 +60,9 @@ Staged · Undo
 staged for Plan
 PLAN · STAGED
 Correction factor · strengthen
-1 U : 40.00 mg/dL → 1 U : 32.00 mg/dL · Staged, not applied — nothing has changed on the pump
+1 U : 40.00 mg/dL → 1 U : 32.00 mg/dL · Staged, not applied: nothing has changed on the pump
 Open Changes ›
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

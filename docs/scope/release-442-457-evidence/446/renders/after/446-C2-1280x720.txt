@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store basal-lower · 446-C2 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store basal-lower · 446-C2 · 1280x720
 URL: http://127.0.0.1:8791/?to=changes
 Element: viewport
 Focused: body
@@ -13,7 +13,7 @@ Day
 Log carbs
 TRIAL · MATURING
 Basal 03:00 · 0.6 U/h → 0.54 U/h
-Detected Sep 24, 2026 · 07:44
+Detected Sep 24, 2026 · 08:23
 Inspect nights
 View change record
 Open Plan
@@ -110,11 +110,11 @@ Maturity is where this watch is in its own lifecycle. It is not the evidence cri
 
 EVIDENCE PERIODS
 Before
-Jun 26, 2026 · 07:44 to Sep 24, 2026 · 07:44 90-day limit → Setting change
+Jun 26, 2026 · 08:23 to Sep 24, 2026 · 08:23 90-day limit → Setting change
 Trial
-Sep 24, 2026 · 07:44 to Sep 24, 2026 · 07:44 Setting change → Data read through
+Sep 24, 2026 · 08:23 to Sep 24, 2026 · 08:23 Setting change → Data read through
 
-Pump-local time, half-open. Observations are limited to these periods; data was read to Sep 24, 2026 · 07:44.
+Pump-local time, half-open. Observations are limited to these periods; data was read to Sep 24, 2026 · 08:23.
 
 CONCLUSION
 
@@ -135,7 +135,7 @@ Observed movement does not establish that the setting caused it.
 
 1 data gap remains in the post-change period.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

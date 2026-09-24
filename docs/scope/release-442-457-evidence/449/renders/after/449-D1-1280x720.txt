@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c4-history · 449-D1 · 1280x720
+SYNTHETIC — after · tree dd5a93bb · store c4-history · 449-D1 · 1280x720
 URL: http://127.0.0.1:8791/?to=changes&subject=history&occurrence=record%3Afocus%3A1
 Element: viewport
 Focused: body
@@ -117,7 +117,7 @@ Not recorded
 Ended
 May 12, 2024 · 09:00
 Recorded
-Sep 24, 2026 · 07:41
+Sep 24, 2026 · 08:23
 
 A setting change took the active-change seat. This Focus was dropped and does not resume; a later attempt is a new Focus with its own identity.
 
@@ -183,7 +183,7 @@ Current policy
 
 Not requested. The saved ending above is what this record was decided on.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

@@ -39,19 +39,14 @@ with that ticket's raw leg logs. Absolute paths in the logs are replaced with
 
 - **Before** = base `b03431d2` (origin/main before the release), from a clean detached
   worktree whose shell was built from that commit.
-- **After** = the release trunk `9882bcfe`'s server (the Python process, and the Guide
-  articles it reads from `docs/kb/` on each request) serving a desk shell last built at trunk
-  `25392ade` (the #451 merge). The render driver serves the tree's `frontend/dist` as it
-  finds it, and that build was not refreshed before the after batch. Every ticket's own desk
-  change had merged by `25392ade`, so every ticket's after state below is its shipped state.
-  What the after shell lacks is the #451 prose em-dash sweep's desk strings, merged later
-  (`5cdc6457`, `9879f196`: the advisory line, the Glossary definitions, the dock's staged
-  sentence, and the findings-queue, workstation, record and Plan copy). Every after-capture's
-  footer therefore still reads "Advisory only — review with your clinician before changing
-  pump settings.", and 451-C1 still reads "Staged, not applied — nothing has changed on the
-  pump". The sweep's desk evidence is its replay legs, which build their own shell (see
-  [451](451/README.md)). The one other shipping desk-module change after `25392ade` is a
-  JSDoc comment in `frontend/plan.js` (`faaf1143`), which renders nothing.
+- **After** = the release trunk `dd5a93bb` (the evidence, task ticks and OpenSpec archive on
+  top of `9882bcfe`; no shipping code differs), served with a desk shell built fresh from that
+  commit (`npm ci && npm run build`) before the batch. Every after-capture therefore carries
+  the #451 prose em-dash sweep's desk strings: each footer reads "Advisory only. Review with
+  your clinician before changing pump settings.", where each before footer reads "Advisory
+  only — review with your clinician before changing pump settings.". A first after batch
+  served a shell left over from trunk `25392ade`, because the render driver serves the tree's
+  `frontend/dist` as it finds it. It lacked those strings and was replaced whole by this one.
 - Driver: the coordinator's capture script, adapted from the first release's render driver,
   run one batch at a time under the coordinator's port lock. Stores were prebuilt outside the
   lock.
@@ -144,9 +139,10 @@ state; **review ruling** = a review round added it.
 - **#454**: no lock names a render. R454 records a shipped-desk revision (a claimed Pattern
   row prints each fact once, S182), so the charter owes one before and after of that state
   (454-A1).
-- **#451's prose em-dash widening**: no after-capture shows its desk strings (see "Render
-  trees" above). Its evidence is the S4, S42, S142, S153 and S178 replay legs and the base S4
-  failure, in [451](451/README.md).
+- **#451's prose em-dash widening**: no shot of its own is owed. Every after-capture shows
+  its new advisory line, and 451-C1 and 451-D1 show its staged and pending sentences. Its
+  proof is the S4, S42, S142, S153 and S178 replay legs and the base S4 failure, in
+  [451](451/README.md).
 - Shots marked supplementary in their note (447-C2, 452-A1, 455-G1) are context beside the
   owed state, not owed themselves.
 

@@ -196,10 +196,9 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   at 1280x720 and 1440x900. They are coordinator-owned at the release's
   integration render batch and are not committed.
   Evidence, coordinator-run 2026-09-24, driven directly on both trees: 446-B1,
-  446-A1, 446-C1 with 446-C2, 446-D1 and 446-E1, before on b03431d2 and after on the
-  release trunk 9882bcfe (served with the desk shell built at 25392ade, after every
-  ticket's desk change had merged), at 1280x720 and 1440x900, in the release's
-  evidence record, not in the public tree.
+  446-A1, 446-C1 with 446-C2, 446-D1 and 446-E1, before on b03431d2 and after on
+  the release trunk dd5a93bb (served with a desk shell built from that commit), at
+  1280x720 and 1440x900, in the release's evidence record, not in the public tree.
 
 ## 6. Verification
 

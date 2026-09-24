@@ -1,4 +1,4 @@
-SYNTHETIC — after · tree 9882bcfe · store c4-isf · 452-A1 · 1440x900
+SYNTHETIC — after · tree dd5a93bb · store c4-isf · 452-A1 · 1440x900
 URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Aisf-all-20240601000000
 Element: viewport
 Focused: <textarea id="late-conclusion-conclusion"> ""
@@ -66,7 +66,7 @@ Not recorded
 Original explanation
 Observed programmed setting transition; original decision is not recorded.
 Recorded by Harmonic
-Sep 24, 2026 · 07:41
+Sep 24, 2026 · 08:24
 
 Original user decision is unavailable.
 
@@ -81,7 +81,7 @@ Not recorded
 Finished
 Jun 29, 2024 · 00:00
 Recorded
-Sep 24, 2026 · 07:41
+Sep 24, 2026 · 08:24
 
 The watch reached the end of its lifecycle window without being reviewed. Its observations are still here.
 
@@ -173,7 +173,7 @@ Current policy
 
 Not requested. The saved ending above is what this record was decided on.
 
-Advisory only — review with your clinician before changing pump settings.
+Advisory only. Review with your clinician before changing pump settings.
 Carb questions
 0
 Guide

@@ -26,7 +26,8 @@
     twice: once as pinned above (the process a day ahead of the pump), and
     once with the two zones swapped (the process a day behind).
 
-  Record each test failing on the unfixed `fetch_loop.py` before task 2.1.
+  Run them on the unfixed `fetch_loop.py` before task 2.1, and save the raw
+  failing output as `openspec/changes/read-time-pump-zone/evidence/failfirst.txt`.
   `docs/scope/443-read-time-pump-zone.repro.py` shows the expected failures.
 - [ ] 1.2 Unset-zone test. With `TIMEZONE_NAME` removed from the environment
   (`mock.patch.dict(os.environ, env, clear=True)`) and the pull **not** mocked,
@@ -37,7 +38,8 @@
 
   The real pull refuses before any network call, so nothing is fetched. This
   passes on base, and it pins the fallback. Show it is not vacuous: in a
-  throwaway edit that drops the fallback, watch it fail, then revert.
+  throwaway edit that drops the fallback, watch it fail, then revert. Save that
+  failing run as `openspec/changes/read-time-pump-zone/evidence/nonvacuity-unset-zone.txt`.
 - [ ] 1.3 Leave every existing test in `tests/test_fetch_loop.py` and the
   fetch-status tests in `tests/test_store.py` passing, and do not edit them.
 

@@ -227,6 +227,15 @@
     ratio measurements" instead of "ISF/I:C measurements", and the exploration's
     glossary copy is regenerated. S178's replay restates the queue's scope note
     instead of importing it, so the base overlay loads.
+  - After that review's second round: a sweep of every served user-facing string
+    in `ciq_autotune/` for "ISF", "I:C" and "mg/dL/U" reaching the desk. One
+    does: the carb-undercount classifier's missing-settings sentence
+    (`ciq_autotune/analyzers/classifiers/carb_undercount.py`, a widened file),
+    which the desk prints in a case's facts, now names the correction factor and
+    carb ratio; its test (`tests/test_classifier_carb_undercount.py`) and the
+    regenerated findings-projection fixture move with it. Engine ids, codes, keys,
+    served `units`, the tuning lever's title, the engine report, CLI help,
+    docstrings and error messages keep the engine terms.
 
 ## 4. The watch dock's title names the change; its values wrap below
 

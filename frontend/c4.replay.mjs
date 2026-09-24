@@ -2505,6 +2505,8 @@ export const C4_STORIES = {
     await press(page, '[data-action="aside"]');
     await page.locator('#aside-reason').waitFor({ timeout: 30000 });
     await press(page, 'form[data-form="aside"] button[type="submit"]');
+    // Both the nameplate and the set-aside section carry this Restore; either one
+    // proves the write and its re-read have landed.
     await page.locator(`[data-restore="${guidance.selected.subject}"]`).first().waitFor({ timeout: 30000 });
     const reread = await read(page, '/api/guidance');
     const held = reread.candidates.find(row => row.subject === guidance.selected.subject);
@@ -2544,7 +2546,9 @@ export const C4_STORIES = {
       const numbers = seen(await page.locator('#level .numrow b').allInnerTexts()).map(text => text.trim());
       assert.equal(numbers[0], correctionFactor451(panelNum451(row.current)), 'S178 the panel\'s current value reads insulin first');
       assert.equal(numbers[2], correctionFactor451(panelNum451(row.recommended)), 'S178 the panel\'s recommended value reads insulin first');
-      assert.doesNotMatch(seen(await page.locator('.dw').innerText()), /mg\/dL\/U|\bISF\b/,
+      // `.dw[data-state]` is the Diagnose workstation root alone: the desk surface
+      // around it carries the `dw` theme class too, but no `data-state`.
+      assert.doesNotMatch(seen(await page.locator('.dw[data-state]').innerText()), /mg\/dL\/U|\bISF\b/,
         'S178 the Diagnose desk prints neither the engine unit nor the engine name');
     }, 'S178 the correction-factor panel');
 
@@ -2568,7 +2572,7 @@ export const C4_STORIES = {
       assert.ok(dock.howFits && dock.howBox.bottom <= dock.dockBox.bottom + 1 && dock.howBox.right <= dock.dockBox.right + 1
         && dock.dockBox.top >= 0 && dock.dockBox.bottom <= dock.viewport.height + 1,
         `S178 the dock's values must be fully visible: ${JSON.stringify(dock)}`);
-      assert.doesNotMatch(seen(await page.locator('.dw').innerText()), /mg\/dL\/U|\bISF\b/,
+      assert.doesNotMatch(seen(await page.locator('.dw[data-state]').innerText()), /mg\/dL\/U|\bISF\b/,
         'S178 the staged Diagnose desk prints neither the engine unit nor the engine name');
     }, 'S178 the staged dock');
   },

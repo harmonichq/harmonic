@@ -265,3 +265,29 @@ They land in a private design-evidence record, not part of the public tree.
 - The desk ledger gains S166–S168. Its pinned inventory moves from 171 issued ·
   152 active · 19 retired to 174 · 155 · 19 on this branch. The coordinator
   reconciles release totals on the integration branch.
+
+### Widening — 2026-09-23: each arrival re-reads guidance
+
+Review round 1 found a second way a Plan could take the watched change's seat.
+The desk keeps the last guidance read it made. When the server starts a watch
+behind the page (the hourly fetch reading a pump switch, say), that read can
+still say `pending_plan` or `draft`. A plain arrival then seated the Plan from
+it, because the served-disposition Plan branch ran before any fresh read. The
+coordinator widened this ADR under the same delegation. Sanction:
+`Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R446`.
+
+6. **Each new arrival re-reads guidance once, before a served draft or pending
+   Plan can seat the Plan.** It is the same place that clears the Plan-open
+   state (decision 1), on the same new `navigation` value. A re-render within
+   the visit makes no read. While that read has not answered, a served `draft`
+   or `pending_plan` shows the Reading frame instead of the Plan. When the read
+   answers, Changes redraws and follows the disposition the server serves now.
+   The Focus options read on the same arrival shares that one request.
+
+   Only the served Plan branch waits. The explicit Plan arrival and Open Plan
+   within the visit are the reader's own choice, and they open the Plan at once.
+   The change record opens at once too. Every other frame draws from the read in
+   hand and redraws when the new one lands, as it did before this change. Making
+   every arrival wait would put a Reading frame on every visit to Changes. No
+   frame other than the Plan can put the wrong change in the watched seat.
+   If the arrival's read fails, the precedence from before this ADR stands.

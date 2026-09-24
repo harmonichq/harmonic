@@ -46,7 +46,9 @@ const candidate = { subject: 'pattern:served', kind: 'pattern', title: 'Served c
   members: [], preference: {} };
 const eligible = { disposition: 'eligible_action', selected: candidate, candidates: [candidate], reasons: {} };
 const watching = { disposition: 'active_change', selected: null, candidates: [], reasons: {} };
+const pendingPlan = { disposition: 'pending_plan', selected: null, candidates: [], reasons: {} };
 const PLAN_READS = ['/api/plan', '/api/plan/history', '/api/pump-settings'];
+const guidanceReads = (urls) => urls.filter((url) => url.split('?')[0] === '/api/guidance').length;
 
 // Changes binds its controls by selector; this host answers for whichever of
 // them the markup it was last given actually carries. A `data-set` control and a
@@ -162,6 +164,36 @@ test('Open Plan holds for the rest of its visit: a re-render keeps the Plan', as
   assert.ok(isPlan(again.frame), 'a re-render within the visit is still the Plan');
 });
 
+test('a new arrival re-reads guidance, so a stale cached Plan cannot take the seat of a change the server now watches', async () => {
+  const previous = { document: globalThis.document, style: globalThis.getComputedStyle };
+  // The Trial's figure reads the desk's colour tokens.
+  globalThis.document = { documentElement: {} };
+  globalThis.getComputedStyle = () => ({ getPropertyValue: () => '' });
+  try {
+    // The page last read a pending Plan; since then the server started a Trial
+    // (the hourly fetch, say) and the page has not read guidance again.
+    await serve(pendingPlan);
+    unstage();
+    trials = activeTrial;
+    guidanceAnswer = watching;
+    const plain = await arrive(newVisit());
+    assert.match(plain.frame, /gf-stage-trial/, 'the watched Trial leads, not the stale pending Plan');
+    assert.equal(guidanceReads(plain.reads), 1, `the arrival re-reads guidance once; it read ${JSON.stringify(plain.reads)}`);
+  } finally {
+    trials = noWatch;
+    globalThis.document = previous.document; globalThis.getComputedStyle = previous.style;
+  }
+});
+
+test('each arrival re-reads guidance once, and a re-render within the visit reads none', async () => {
+  await serve(watching);
+  const visit = newVisit();
+  const arrival = await arrive(visit);
+  assert.equal(guidanceReads(arrival.reads), 1, `the arrival re-reads guidance once; it read ${JSON.stringify(arrival.reads)}`);
+  const again = await arrive(visit);
+  assert.equal(guidanceReads(again.reads), 0, `a re-render within the visit reads no guidance; it read ${JSON.stringify(again.reads)}`);
+});
+
 test('while a change is watched, an explicit Plan arrival still opens the Plan', async () => {
   await openPlanOnVisit();
   await serve(watching);
@@ -253,6 +285,24 @@ test('on the desk, navigate(\'changes\') after Open Plan lands on the watched re
     assert.ok(!reads.some((url) => PLAN_READS.includes(url.split('?')[0])),
       `the arrival reads nothing of the Plan; it read ${JSON.stringify(reads)}`);
     assert.ok(!isPlan(seat.innerHTML), 'the desk does not show the Plan');
+
+    // A pending Plan the page last read, and the server still serves: the arrival
+    // holds the Plan back until its own read answers, then redraws the desk
+    // itself rather than leaving it on the Reading frame.
+    await serve(pendingPlan);
+    navigate('changes');
+    await settle(); await settle(); await settle();
+    assert.ok(!/Reading/.test(seat.innerHTML), 'once its read answers, the arrival redraws the desk off the Reading frame');
+
+    // The page's last read names a pending Plan, and the server has since
+    // started a watch: the fresh read seats the watched record, not the Plan.
+    guidanceAnswer = watching;
+    reads.length = 0;
+    navigate('changes');
+    await settle(); await settle(); await settle();
+    assert.ok(reads.some((url) => url.startsWith('/api/verify/trials')),
+      `once its read answers, the arrival redraws onto the watched record; it read ${JSON.stringify(reads)}`);
+    assert.ok(!isPlan(seat.innerHTML) && !/Reading/.test(seat.innerHTML), 'the desk shows neither the Plan nor a standing Reading frame');
   } finally {
     navigate('diagnose');
     await settle(); await settle();

@@ -208,3 +208,24 @@ change no behavior.
   `frontend/harmonic-v2-desktop-behavior.replay.mjs` becomes
   `frontend/desk-behavior.replay.mjs`, the runner's current path. Nothing else in
   that file changes; its count sentence and timing table are owned elsewhere.
+
+## 8. Coordinator-authorized widening — 2026-09-23: each arrival re-reads guidance
+
+Authorized by the release coordinator under the Q3 delegation (Connor Griffin,
+2026-09-23), for review round 1's spec finding. ADR 446 records it as decision 6.
+
+- [x] 8.1 Fail first in `frontend/changes-watch-arrival.test.js`, through Changes'
+  public `mount`. The page's cached read serves `pending_plan`, the server then
+  serves `active_change` with an active Trial, and a new arrival with no context
+  and no Diagnose visit shows the watched Trial and makes one guidance read.
+  A second test covers an arrival while `active_change` is served: it makes one
+  guidance read, and a re-render within the visit makes none. The desk-level
+  test gains two phases after `navigate('changes')`. With `pending_plan` still
+  served, the desk redraws itself off the Reading frame once the arrival's read
+  answers. With `active_change` newly served, the desk lands on the watched
+  record. Observed failing before 8.2: the Trial did not lead, and no guidance
+  read was made. Removing 8.2's redraw fails the Reading-frame phase.
+- [x] 8.2 In `frontend/changes.js` `mount`, the new `navigation` value also
+  forces one guidance read. A served `draft` or `pending_plan` shows the Reading
+  frame until that read answers, and Changes then redraws. The explicit Plan
+  arrival, Open Plan within the visit and the record routes are unchanged.

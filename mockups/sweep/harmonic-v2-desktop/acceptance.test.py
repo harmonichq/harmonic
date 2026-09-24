@@ -223,7 +223,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 147)
+            self.assertEqual(plan['count'], 150)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -289,11 +289,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 129)] + [f"R{i}" for i in range(1, 20)])
+        self.inventory([f"S{i}" for i in range(1, 132)] + [f"R{i}" for i in range(1, 20)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 130)] + [f"R{i}" for i in range(1, 19)]
-        self.assertEqual(len(ids), 147)
+        ids = [f"S{i}" for i in range(1, 133)] + [f"R{i}" for i in range(1, 19)]
+        self.assertEqual(len(ids), 150)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 
@@ -436,10 +436,12 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         import hashlib
         # #413: S113 joins the slice because it is the only story on the
         # manufactured `basal-verdict-gallery` store, and the slice covers every
-        # real replay case.
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 22)
+        # real replay case. #424: S125 and S126 join it for the same reason, as
+        # the only stories on `behavioral-missed-meal` and
+        # `behavioral-correction-stacking`.
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 24)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         'd7a7939d4fdcc21c9e3ec79611800223c67af77e1c171471bb7df93cff5a56aa')
+                         '03fb703acc99ed8092c1e3186fc5e0609141184715d4662ce7269409fd9af1bc')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

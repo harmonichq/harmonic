@@ -2937,3 +2937,111 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #424 amendment — 2026-09-23, issue #424
+
+S124–S126 are the fail-first obligations of the #424 case-file counts revision:
+the Response comparison caption on a same-population and on a cross-population
+case file, and a folded cause's share of its Pattern. They are the added surfaces
+requirements of the pinned change `openspec/changes/highs-after-meals-counts`.
+Like S113–S117 they are app-opener-only, and each runs on a named manufactured
+case store. Browser execution belongs to the release coordinator at 1280x720 and
+1440x900. S115's fold lines are amended below; no story is retired, and no story
+asserts the claimed-state words, which #423 owns.
+
+Sanction: Connor Griffin, 2026-09-23, in the release coordinator session, answered
+"Q1 A, Q2 A, defaults all fine, go" to "Can your reply here count as sign-off for
+the UI copy and tone changes?", recorded in the pinned `proposal.md` as the
+approval for every change the #424 checklist calls for.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command, with the named
+case store.
+
+Amended S115 · 2026-09-23 · #424 / Q2 sanction: Connor Griffin, 2026-09-23, "Q1 A, Q2 A, defaults all fine, go" (quoted in openspec/changes/highs-after-meals-counts/proposal.md). A folded member line is read from its served `fold_sentences`, not its `count_sentences`: its share of the Pattern's count (scope `pattern`) beside its name on one line, and every sentence served as outside the Pattern's count set apart behind "outside the count"; under a Pattern that serves no count the line leads with those words. Still no outcome word, never merged, never a sibling row; the toggle, its arrival states, the tier urgency and the Pattern's own row are unchanged. The replay checks every folded member's served `fold_sentences` before reading a line (C4_STORIES.S115 → assertServedFold424, assertFoldLine424). S115's original text above stays as frozen.
+
+```
+S124 · On a same-population event case file the Response comparison caption
+       names every served cohort by its served name and served count, in served
+       order, each matching its section heading; it follows Matched with the
+       band's words for Meets criteria and Nearly matched with Borderline, once
+       each; its counts add up to the header denominator; it prints nothing
+       outside the comparison; and no visible count but the band's no-data count
+       reads "not comparable".
+  element:  #level .lvl-cap .meta, #level .ev-group, #level .vband .key,
+            #level .vband-foot, #level .statline
+  source:   frontend/diagnose-workstation.js renderEventComparisonRoster /
+            renderVerdictBand
+  lock:     HV2-18 (the cohort names, unchanged); #424 Q2 sanction for the caption
+  data:     behavioral-carb-undercount (scripts/qa_e2e_cases.py QaCase): Highs
+            after meals over 6 meals, with Matched, Nearly matched and Other meal
+            opportunities cohorts and one no-data meal; every number is read from
+            the served case file at run time
+  evidence: C4_STORIES.S124; opens pattern:highs_after_meals from the rail
+            (`openComparisonCase`), first requires the served case file to carry
+            `outside_comparison` and every cohort's `band_verdict`
+            (assertServedComparison424), then reads the rendered caption, cohort
+            headings, band keys, band foot and header (comparisonView424),
+            compares them with the served cohorts, counts and verdict counts
+            (assertComparisonCaption424), and sums the caption's counts against
+            the header denominator
+  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
+            and 1440x900 are coordinator-run and not yet reported
+```
+
+```
+S125 · On the cross-population Missed / unannounced meal case file the caption
+       names every served cohort as its section heading does, prints the served
+       Highs outside the comparison in those words, links no band word to the
+       attributed Matched cohort, and labels no count "not comparable"; the
+       band's no-data count keeps "not comparable".
+  element:  #level .lvl-cap .meta, #level .ev-group, #level .vband .key,
+            #level .vband-foot
+  source:   frontend/diagnose-workstation.js renderEventComparisonRoster /
+            renderVerdictBand
+  lock:     HV2-18 (the cohort names, unchanged); ADR 180's cross-population
+            comparison; #424 Q2 sanction for the caption
+  data:     behavioral-missed-meal (scripts/qa_e2e_cases.py QaCase): Missed /
+            unannounced meal over 6 Highs compared against announced meals, with
+            Highs outside the comparison and one no-data High
+  evidence: C4_STORIES.S125; opens finding:missed_meal from the rail
+            (`openComparisonCase`), first requires the served case file's new
+            fields (assertServedComparison424), then requires the served
+            comparison to be cross-population, with a non-zero count outside it and
+            a no-data High, and compares the rendered caption, headings, band keys
+            and band foot with them (assertComparisonCaption424)
+  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
+            and 1440x900 are coordinator-run and not yet reported
+```
+
+```
+S126 · Under a Pattern that serves a count, the open fold prints each folded
+       cause's share of that count, on the Pattern's own denominator and noun,
+       beside its name, and its counts on any other family behind "outside the
+       count"; Correction stacking reads its share of Lows after correcting highs
+       first and its correction-cluster count outside; the cause lines' shares
+       add up to the Pattern's served count; no outcome word prints.
+  element:  .qitem.member .qmember .den, .qmember .out
+  source:   frontend/diagnose-findings-queue.js queueRows / paintMember;
+            frontend/diagnose-workstation.css .qmember .out
+  lock:     #413 design lock (the fold's structure, unchanged); #424 Q2 sanction
+            for the share-first line
+  data:     behavioral-correction-stacking (scripts/qa_e2e_cases.py QaCase): Lows
+            after correcting highs counts its lows and folds Correction stacking,
+            whose own count is on correction clusters
+  evidence: C4_STORIES.S126; reads the served preparation, requires every
+            folded cause to serve `fold_sentences` (assertServedFold424) and
+            Correction stacking to lead with its share, opens the fold, reads each
+            line's share and outside rows (foldLines424) against its served fold
+            sentences (assertFoldLine424), and sums the rendered shares against
+            the Pattern's served count sentence
+  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
+            and 1440x900 are coordinator-run and not yet reported
+```
+
+S125 and S126 run on case stores no other story covers, so they join the fixed PR
+smoke slice (`SMOKE_STORIES` in `mockups/sweep/harmonic-v2-desktop/acceptance.py`);
+S124's `behavioral-carb-undercount` is already covered by R8. The replay driver's
+pinned inventory literals move to 150 issued · 131 active · 19 retired on this
+branch. This ledger's header inventory line, `ACCEPTANCE.md`'s count sentence and
+`mockups/INDEX.md`'s counts are the release coordinator's, written once across the
+release.

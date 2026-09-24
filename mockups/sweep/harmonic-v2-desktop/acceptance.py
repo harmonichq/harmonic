@@ -33,6 +33,7 @@ TOKEN = "synthetic-replay-token"
 SMOKE_STORIES = (
     "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
     "S74", "S76", "S77", "R19", "S91", "S98", "S99", "S110", "S113", "R8", "R18",
+    "S125", "S126",
 )
 DRIFTS = [
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
@@ -391,7 +392,7 @@ def smoke_selection(run, base, ids):
         "import {storyCase} from './frontend/replay-cases.mjs';"
         "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
     defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
-    require(len(SMOKE_STORIES) == 22 and len(set(SMOKE_STORIES)) == 22
+    require(len(SMOKE_STORIES) == 24 and len(set(SMOKE_STORIES)) == 24
             and set(SMOKE_STORIES) <= set(ids), "smoke inventory differs from the frozen registry")
     case_names = {key.removeprefix("case:") for graph in recipes for key in graph if key.startswith("case:")}
     selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}
@@ -490,7 +491,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 147, "active": 128, "retired": 19}
+    require(counts == {"issued": 150, "active": 131, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")

@@ -3129,6 +3129,15 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S124
+export const S124 = appOnly('HV2-18',
+  '#424 a same-population caption names each cohort as its heading does and adds up', C4_STORIES.S124);
+// STORY:harmonic-v2-desktop:S125
+export const S125 = appOnly('HV2-18',
+  '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
+// STORY:harmonic-v2-desktop:S126
+export const S126 = appOnly('#413 design lock',
+  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3186,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -160,3 +160,13 @@ line as #423 leaves it. The per-meal reason for a selected Occurrence is #432's.
 - The frozen projection fixture already folds a two-family rate-lever cause and a
   cause counted only outside its Pattern's family, so mirror parity exercises both
   fold scopes.
+
+## Safe surface for the revision
+
+The desk revision is exercised only through AGENTS.md's QA copy-then-serve
+command: a scratch copy of a manufactured store served with
+`uv run harmonic serve --no-fetch --token '' --db <scratch copy> --port 8765`,
+never a normal serve or a fetch. The fold is read on the named case store
+`behavioral-correction-stacking` (`scripts/gen_qa_e2e_db.py --case`), the two
+captions on `behavioral-carb-undercount` and `behavioral-missed-meal`, and the
+whole rail on the committed showcase `mockups/qa-e2e.synthetic/harmonic.sqlite`.

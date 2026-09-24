@@ -155,8 +155,7 @@ const icEvidence = generated('../mockups/diagnose-workstation.synthetic/ic-block
 // The generated roster has no Focus and withholds pin admission. Keep those
 // served facts; the quiet guidance stub offers no pinnable Pattern either.
 const followUp = generated('../mockups/verify-660-story.synthetic/payload.json').roster;
-const fixtureInputs = populateFindingsProjectionInput({ analysis: evidence.analyze,
-  scenarios: evidence.scenarios, exposures: evidence.exposures });
+const fixtureInputs = populateFindingsProjectionInput({ exposures: evidence.exposures });
 const preparations = new Map();
 function prepare(url) {
   const start = url.searchParams.get('start_min');

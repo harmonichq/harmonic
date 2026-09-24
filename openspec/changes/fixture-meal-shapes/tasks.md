@@ -241,7 +241,9 @@ The browser adapter reads only `exposures` from its caller, so the always-undefi
 `event_charts` argument and the ignored `analysis` and `scenarios` inputs were removed
 from its callers there and in `frontend/diagnose-findings-queue.test.js` and
 `frontend/browser-fixture-population.test.js`. That also removed the local that only
-the dead argument read. No assertion changed.
+the dead argument read. A second widening, on the same authority, trims
+`frontend/desk.browser.test.mjs`'s adapter call to `{ exposures }` as well, so no caller
+passes inputs the adapter ignores. No assertion changed.
 
 Coordinator-authorized note (release coordinator, 2026-09-24): the posted lock
 header's baseline line ("Sub-orders 3, 4 and 5 shift it … re-record") is superseded.

@@ -19,7 +19,8 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   unchanged; each keeps a production caller.
 - [ ] 1.2 Prove the deletion leaves no caller and no rendered change. Grep the
   whole tree for `detectOnPump`, excluding only `node_modules`, `frontend/dist`,
-  `openspec/changes/archive` and `evidence/` directories. The only match is
+  `openspec/changes/archive`, `evidence/` directories and this change's own
+  directory, `openspec/changes/plan-cleanup-s89/`. The only match is
   `openspec/changes/harmonic-v2/contracts.md`, which stays as history
   (design.md). Build the shell with `npm run build` on base b03431d2 and on the
   branch. The sha256 of `frontend/dist/index.html` and of every
@@ -36,17 +37,19 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   `/api/plan/history` (newest first) and `/api/pump-settings`. Its
   `ctx.failNext(method, path)` fails the next matching write once, and
   `[data-set="retry-save"]` performs the failed write. The test covers the
-  requirement's three scenarios:
+  requirement's four scenarios, and pins each rejection to the named check:
   - an older never-withdrawn Plan already listed: S89 resolves;
   - an older withdrawn Plan listed, with the fake dropping the new decision's
     withdrawal: S89 rejects at "Plan reloaded withdrawal";
   - the fake listing the new decision after the older Plan: S89 rejects at
-    "Plan durable decision".
-  Bound both rejections with `withReplayAssertionTimeout`, as the S37b and S61
+    "Plan durable decision";
+  - no earlier Plan, with the fake writing two rows for one recording: S89
+    rejects at "Plan durable decision".
+  Bound every rejection with `withReplayAssertionTimeout`, as the S37b and S61
   tests do. Run the new test against the base S89 before 2.2 and record that it
   fails. `node docs/scope/453-s89-history-order.repro.mjs` on the base prints
-  B FAIL, C PASS, D PASS, which shows each of the three clauses failing on the
-  base body.
+  B FAIL at "Plan reloaded withdrawal", C PASS, D PASS, and E FAIL at "Plan
+  reloaded withdrawal", so every case of the test fails on the base body.
 - [ ] 2.2 Implement surfaces **The Plan lifecycle replay certifies the decision
   it recorded** in `planPersistence` (`frontend/c2.replay.mjs`). The "Plan
   durable decision" assertion reads the served history's first record, and in
@@ -56,7 +59,8 @@ test text carries a unit-suffixed dose (such as "0.5 U").
   history" assertion reads the first record too. Nothing else in S89 changes:
   its draft path, reloads, pump read, wait names and the reload check that finds
   by `applied_at` stay. Task 2.1's test passes, and the reproduction prints
-  A PASS, B PASS, C FAIL, D FAIL.
+  A PASS, B PASS, C FAIL at "Plan reloaded withdrawal", D FAIL at "Plan
+  durable decision" and E FAIL at "Plan durable decision".
 - [ ] 2.3 Re-run the sweep grep from design.md over `frontend/`,
   `mockups/sweep/` and `tests/` for last-index reads of `history`, `focuses`,
   `trials` or `records`. It returns nothing.

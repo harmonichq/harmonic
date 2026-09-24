@@ -14,11 +14,33 @@ read. The failed-Withdraw check compares that same first record's withdrawal
 with the certified decision's. The reload check keeps finding the record by
 `applied_at`, which does not depend on order.
 
-A position-only fix (`history[0]` with no identity proof) would pass history D
-in the reproduction. There the history is served oldest first and the first row
-is the older Plan, so the fix would move the wrong-reason pass rather than close
-it. The two identity clauses are what #453's checklist asks for. The reproduction
-shows they reject both B's inverse (C) and D.
+The two identity clauses are what #453's checklist asks for. The reproduction
+(`docs/scope/453-s89-history-order.repro.mjs`) measured what each clause adds,
+across five served histories: A (no earlier Plan), B (an older never-withdrawn
+Plan listed), C (an older withdrawn Plan listed, the new withdrawal dropped),
+D (history served oldest first) and E (no earlier Plan, recording writes two
+rows).
+
+| S89 body | A | B | C | D | E |
+|---|---|---|---|---|---|
+| base, last listed record | PASS | FAIL reload | PASS | PASS | FAIL reload |
+| `history[0]` only | PASS | PASS | FAIL reload | FAIL reload | PASS |
+| `history[0]` + `applied_at` clause | PASS | PASS | FAIL reload | FAIL decision | PASS |
+| `history[0]` + length clause | PASS | PASS | FAIL reload | FAIL reload | FAIL decision |
+| `history[0]` + both clauses | PASS | PASS | FAIL reload | FAIL decision | FAIL decision |
+
+"reload" is the "Plan reloaded withdrawal" check and "decision" is the "Plan
+durable decision" check.
+
+- Reading `history[0]` alone already fails C and D, but only at the later
+  reload check, after S89 has certified the wrong record as its decision.
+- The `applied_at` clause moves D's failure to the check where S89 certifies
+  the decision.
+- Only the length clause catches E. Without it, a recording that adds two rows
+  passes.
+
+The fake-page test pins each failure to its check, so removing either clause
+fails the test.
 
 ### Sweep
 
@@ -98,8 +120,9 @@ findings. The config is not edited.
 
 ### Consequences
 
-- S89 fails if a later change serves Plan history in another order, records a
-  second row, or records none. Before #453 it passed in all three cases.
+- S89 fails at the check where it certifies its decision when Plan history is
+  served in another order (D) or one recording adds more than one row (E).
+  Before #453 it passed D, and failed E only at the later reload check.
 - The desk bundle is unchanged, so no render, browser suite or other replay
   story is owed.
 
@@ -114,7 +137,7 @@ findings. The config is not edited.
 - **Unsupported:** two Plans recorded with the same `applied_at` second. The
   server keys Plan identity on it, so that is outside this story.
 - **Evidence owed:** the fake-page test in `frontend/replay-cases.test.js`
-  (histories B, C and D, each observed failing on the base body first); S89
+  (histories B, C, D and E, each observed failing on the base body first); S89
   replayed on its case store at both sizes on the built app; the fast gate green
   after the four tests go.
 

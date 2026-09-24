@@ -36,3 +36,11 @@ checks.
 - **WHEN** S89 checks its durable decision
 - **THEN** the story fails at that check, because the first served record was
   already served before recording
+
+#### Scenario: A recording that adds more than one record fails the story
+
+- **GIVEN** a Plan history with no earlier Plan
+- **AND** a server that adds two records when the story records one decision
+- **WHEN** S89 checks its durable decision
+- **THEN** the story fails at that check, because the history grew by more than
+  one record

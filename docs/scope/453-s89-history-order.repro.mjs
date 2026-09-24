@@ -6,23 +6,28 @@
 // fake page. The fake serves /api/plan/history newest first, as the server does,
 // fails the next write a story names through ctx.failNext, and performs it on
 // Retry. Every value is synthetic, and every timestamp predates the public scan's
-// span. Four served histories:
+// span. Five served histories:
 //   A  no Plan before the story records (the basal-lower case store today)
 //   B  an older Plan that was never withdrawn is already listed
 //   C  an older withdrawn Plan is listed, and the fake drops the new withdrawal
 //   D  the fake lists history oldest first (a perturbation of the served order)
-// Base b03431d2 prints A PASS, B FAIL, C PASS, D PASS: S89 reads the last listed
-// record, so it certifies the older row. It passes C although the new decision's
-// withdrawal never persisted. It passes D although the served order is wrong.
-// With S89 reading history[0] and proving that row is new, it prints A PASS,
-// B PASS, C FAIL, D FAIL.
+//   E  no earlier Plan, and recording writes two rows instead of one
+// Base b03431d2 reads the last listed record and prints:
+//   A PASS · B FAIL at "Plan reloaded withdrawal" · C PASS · D PASS ·
+//   E FAIL at "Plan reloaded withdrawal"
+// It passes C although the new decision's withdrawal never persisted, and D
+// although the served order is wrong. With S89 reading history[0], asserting
+// the history grew by exactly one and that history[0]'s applied_at was not
+// served before recording, it prints:
+//   A PASS · B PASS · C FAIL at "Plan reloaded withdrawal" ·
+//   D FAIL at "Plan durable decision" · E FAIL at "Plan durable decision"
 import { withReplayAssertionTimeout } from '../../frontend/replay-assertions.mjs';
 
 const BASE = 'http://127.0.0.1:8765';
 const unavailable = reason => ({ version: '386:1', state: 'unavailable', reason });
 const deliverable = value => ({ rows: [{ start_min: 180, basal_rate: { value } }] });
 
-function fakePage({ older = [], dropWithdraw = false, oldestFirst = false } = {}) {
+function fakePage({ older = [], dropWithdraw = false, oldestFirst = false, twoRows = false } = {}) {
   const history = older.map(row => structuredClone(row));
   let draft = [];
   let failing = null;
@@ -37,6 +42,8 @@ function fakePage({ older = [], dropWithdraw = false, oldestFirst = false } = {}
     if (path === '/api/plan') draft = [{ type: 'basal', start_min: 180, value: 0.54 }];
     if (path === '/api/plan/apply') {
       history[oldestFirst ? 'push' : 'unshift']({ applied_at: '2024-02-01 09:00:00', items: draft,
+        deliverable: deliverable(0.54), withdrawal: unavailable('not_recorded'), verdict: { state: 'pending' } });
+      if (twoRows) history.unshift({ applied_at: '2024-02-01 09:00:01', items: draft,
         deliverable: deliverable(0.54), withdrawal: unavailable('not_recorded'), verdict: { state: 'pending' } });
       draft = [];
     }
@@ -91,6 +98,7 @@ const histories = [
   ['B older never-withdrawn Plan listed', { older: [olderConfirmed] }],
   ['C older withdrawn Plan listed; new withdrawal dropped', { older: [olderWithdrawn], dropWithdraw: true }],
   ['D history served oldest first', { older: [olderConfirmed], oldestFirst: true }],
+  ['E no earlier Plan; recording writes two rows', { twoRows: true }],
 ];
 
 const target = process.argv[2]

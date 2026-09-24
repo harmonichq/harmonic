@@ -41,9 +41,13 @@ base it prints:
 - C, an older withdrawn Plan listed while the fake drops the new decision's
   withdrawal: PASS. The older row's withdrawal satisfied the check.
 - D, history served oldest first: PASS.
+- E, no earlier Plan while recording writes two rows: FAIL at "Plan reloaded
+  withdrawal".
 
-A body that reads the newest record and proves it is new prints PASS, PASS,
-FAIL, FAIL.
+A body that reads the newest record and proves it is new prints A PASS, B PASS,
+C FAIL at "Plan reloaded withdrawal", D FAIL at "Plan durable decision" and
+E FAIL at "Plan durable decision". design.md records what each identity clause
+adds.
 
 The sweep of every replay module found no other story that reads a newest-first
 served list at its last index. The newest-first lists are Plan history and the
@@ -61,7 +65,7 @@ reader takes the first record or finds a record by its identity (design.md).
   records served before recording. The failed-Withdraw check reads that same
   first record.
 - A failing-first fake-page test in `frontend/replay-cases.test.js` drives S89
-  through histories B, C and D.
+  through histories B, C, D and E.
 - A dated `#453 amendment` in the behavior ledger records S89's strengthened
   evidence. The story text, its lock term and the inventory are unchanged.
 

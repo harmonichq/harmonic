@@ -7,6 +7,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
 
 import {
   ARTICLES, CATEGORIES, REF_ENTRIES,
@@ -222,4 +223,17 @@ test('every REF_ENTRY and NEXT_STEP slug resolves to a real article', () => {
   // the 4 authored how-tos are present with the right kind
   const authored = ARTICLES.filter((a) => a.kind === 'authored').map((a) => a.slug);
   assert.deepEqual(authored, ['start-here', 'reading-diagnose', 'reading-day', 'the-plan-tab']);
+});
+
+// ADR 451: the Guide serves these articles raw into the desk, so their prose
+// joins no clauses with an em dash (DESIGN.md, Voice and user-copy register,
+// rule 1).
+test('ADR 451 · no Guide article joins its clauses with an em dash', () => {
+  const dir = new URL('../docs/kb/', import.meta.url);
+  const articles = readdirSync(dir).filter((name) => name.endsWith('.md'));
+  assert.ok(articles.length > 0);
+  for (const name of articles) {
+    const lines = readFileSync(new URL(name, dir), 'utf8').split('\n');
+    lines.forEach((line, index) => assert.ok(!line.includes('—'), `${name}:${index + 1}: ${line}`));
+  }
 });

@@ -112,6 +112,38 @@ Each fact names its evidence. Theory is marked as theory.
   stylesheets (`desk.css`, 701–1100 px) sizes the paired Changes and Day
   panes, not Diagnose.
 
+- **Measured: the header's widths (base leg, coordinator-run 2026-09-23).**
+  S185 printed the same widths at 1280x720 and 1440x900 runs.
+  - On base b03431d2 at 832×720 and 832×560 the title's box is 0 px wide
+    (clientWidth 0, scrollWidth 144). The provenance is 255.14 px, the All
+    charts control 76.86 px and its word 50.86 px.
+  - At 1024×768, 1280×720 and 1440×900 the title prints whole (143.94 px box,
+    scrollWidth 144), with the same provenance, control and word.
+  - On the branch at 832 the title's box is 41.86 px (scrollWidth 144,
+    truncated to a letter or two and an ellipsis), the control 21 px, and its
+    word 0 px.
+  - The title's theory above holds: at 1024 it prints whole.
+- **Measured: the All charts control's box overhangs the header rail by
+  3.5 px, and nothing of it is hidden.** On base and branch alike, at every
+  size S185 visits, the control's box reaches 3.5 px past the header's box.
+  The cause is in the cascade (read from the stylesheets):
+  - chrome.css's shell floor `.v2-content button { min-height: 36px }`
+    outranks `.chart-headacts button { height: 20px }`, because a larger
+    `min-height` beats `height`. So the button is 36 px tall inside its 20 px
+    cluster.
+  - The rail is 30 px (`min-height`), with 4 px pads and a 1 px bottom rule, so
+    its content box is 21 px. The cluster is centred in it.
+  - The 36 px box therefore reaches (36 − 21) / 2 − 4 = 3.5 px above the rail
+    and 2.5 px below it.
+
+  It is not a visible clip. The header sets no overflow, and the button has a
+  transparent ground and no border. Its 13 px icon and 11 px word are centred
+  in the box, inside the rail. Only an empty box overhangs. Theory, not
+  measured: it may also take a pointer in that strip where no later sibling
+  covers it. S185
+  therefore places the control by what the reader sees of it: its rendered
+  icon and word. The box stays unchanged (coordinator ruling, 2026-09-23).
+
 ### Collisions at every size
 
 - **The lowest y-axis label sits under the "70" numeral.** `renderCanvas`'s
@@ -160,6 +192,15 @@ Each fact names its evidence. Theory is marked as theory.
   `style.text` is the whole formatted label. `laidOutBrace404`
   (`frontend/c4.replay.mjs`) presses a Window preset and waits until the chart
   and its brace are idle.
+- **Paint order is not reading order.** ZRender's `_renderRichText`
+  (`zrender/lib/graphic/Text.js`) places a line's right-aligned tokens from
+  the line's right end, walking the tokens backwards. So a one-line caption
+  parked left of its window (label `align: 'right'`) creates, and paints, its
+  tail's span before its head's. Its words therefore read in reading order:
+  line by line from the top, each line left to right. The coordinator's first
+  branch leg showed the one-line Afternoon and Evening captions at 1280×720
+  and 1440×900 as "0 painted captions". They were read tail first, the same as
+  on base; the captions are unchanged there, as the 850 px node test pins.
 - **No story measures any of this.** S151 checks `#chart`'s box inside the
   pane, not the text drawn in it. No story reads the Spotlight's verdict line,
   the header's title, or text overlaps in either chart.
@@ -451,6 +492,14 @@ reaches.
 
   No shipped behavior is retired. At 1280×720 and 1440×900 only the two
   collision fixes are visible.
+- **Story corrections after the coordinator's legs (coordinator-authorized,
+  2026-09-23).** Both of the first branch leg's failures were story defects,
+  not product defects.
+  - S183 reads each caption in reading order, not paint order (see
+    "Measurement").
+  - S185 places the All charts control by its rendered icon and word, not by
+    its box, which overhangs the rail by 3.5 px (see "The canvas header at
+    832"). No product change follows from either, and R455 is not widened.
 - **Ledger records.**
   - Following the release's freeze-header rule, this change records its
     stories in its own `## #455 amendment — 2026-09-23` section.

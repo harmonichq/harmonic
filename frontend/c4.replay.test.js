@@ -1949,6 +1949,19 @@ test('S183 passes a caption wholly inside the chart, stacked on its pads', () =>
   }))), []);
 });
 
+/* A line whose tokens are right-aligned, as a caption parked left of its
+   window is, is laid out from its right end, so its tail token paints before
+   its head. The caption reads in reading order: line by line, left to right. */
+test('S183 reads a caption parked left in reading order, though its tail paints first', () => {
+  const afternoon = OVERVIEW_PRESETS.find(({ label }) => label === 'Afternoon');
+  const reading = { width: 850, height: 154, pads: [], spans: [
+    span455(0, `  ·  ${NOTICE455}`, 175, 25, 232), span455(0, 'AFTERNOON 12:00–18:00', 34, 25, 141),
+    span455(1, '70', 12, 110, 12),
+  ] };
+  assert.deepEqual(overviewTextFailures({ size: { width: 1280, height: 720 }, state: 'Afternoon',
+    head: afternoon.head, range: afternoon.range, runSize: true, reading }), []);
+});
+
 test('S183 fails a caption parked past the chart\'s right edge', () => {
   const failures = overviewTextFailures(check455(overview455({
     caption: [['24 H 00:00–24:00', 356, 25, 107], [`  ·  ${NOTICE455}`, 463, 25, 232]],
@@ -2124,9 +2137,12 @@ test('S184 fails once, naming failures at two sizes', () => {
 const part455 = (left, right, top, bottom, scrollWidth = right - left, shown = right > left) => ({
   left, right, top, bottom, width: right - left, clientWidth: right - left, scrollWidth, shown });
 function head455(parts = {}) {
+  const control = parts.control ?? part455(785, 820, 44, 66);
   return {
     head: part455(430, 832, 40, 70), title: part455(464, 504, 47, 63, 144),
-    provenance: part455(516, 771, 48, 62), control: part455(785, 820, 44, 66),
+    provenance: part455(516, 771, 48, 62), control,
+    // what the reader sees of the control: its icon (and word), inside its box
+    controlInk: { left: control.left + 4, right: control.right - 4, top: control.top + 4, bottom: control.bottom - 4 },
     word: part455(0, 0, 0, 0, 0, false), titleFont: 13, controlName: 'All charts', controlTitle: 'All charts',
     ...parts,
   };
@@ -2166,6 +2182,27 @@ test('S185 fails a header on two lines, and a control that loses its name', () =
   assert.equal(failures.length, 2);
   assert.match(failures[0], /^832×720: the title, provenance and control do not share one line; their centres differ by 5px/);
   assert.match(failures[1], /^832×720: the All charts control is named "null" with the tooltip "All charts"; both must be "All charts"/);
+});
+
+/* The shell's 36px button floor outranks the control's 20px height, so its
+   transparent, borderless box overhangs the 30px rail by 3.5px above and 2.5px
+   below while its icon and word sit inside the rail. The story places the
+   control by what the reader sees of it. */
+test('S185 passes a control whose box overhangs the rail while its icon and word sit inside it', () => {
+  assert.deepEqual(canvasHeadFailures({ size: { width: 1280, height: 720 }, narrow: false, reading: head455({
+    title: part455(464, 608, 47, 63), control: part455(744, 821, 36.5, 72.5), word: part455(764, 815, 48, 62),
+    controlInk: { left: 748, right: 815, top: 48, bottom: 62 } }) }), []);
+});
+
+test('S185 fails a control whose icon runs outside the header, or which draws no icon or word', () => {
+  const outside = canvasHeadFailures({ size: narrow455, narrow: true,
+    reading: head455({ controlInk: { left: 789, right: 802, top: 37, bottom: 50 } }) });
+  assert.equal(outside.length, 2);
+  assert.match(outside[0], /^832×720: the All charts control's icon and word lie 3px outside the header's box \(/);
+  assert.match(outside[1], /^832×720: the title, provenance and control do not share one line; their centres differ by 11.5px/);
+  const blank = canvasHeadFailures({ size: narrow455, narrow: true, reading: head455({ controlInk: null }) });
+  assert.equal(blank.length, 1);
+  assert.match(blank[0], /^832×720: the All charts control draws no icon or word \(/);
 });
 
 test('S185 fails once, naming failures at two sizes', () => {

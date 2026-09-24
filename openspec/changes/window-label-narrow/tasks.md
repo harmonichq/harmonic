@@ -105,6 +105,15 @@ its new box, the chart is idle, and two animation frames have passed.
   still found), and a caption on a window that is not thin may carry its
   spread tail (`25–75 spread <n> mg/dL`) instead of the notice.
 
+  Coordinator-authorized (ruling on the first branch leg, 2026-09-23): a
+  caption's spans are read in reading order, line by line from the top and
+  each line left to right, not in paint order. ZRender lays a right-aligned
+  line from its right end, so a one-line caption parked left paints its tail
+  first, and the branch leg read the unchanged Afternoon and Evening captions
+  at the run's size as "0 painted captions". Node test "S183 reads a caption
+  parked left in reading order, though its tail paints first" fails on the
+  earlier matcher with that exact line.
+
 - [x] 1.2 Add S184, the Spotlight's verdict line. S184 opens Diagnose at rest,
   where the Spotlight shows the next-in-line basal slot. It reads the
   Spotlight chart's painted text from its host in `#tile-focal`, and the Keep
@@ -173,6 +182,15 @@ its new box, the chart is idle, and two animation frames have passed.
   animation frames. The story prints every size's widths on a `# S185` line,
   passing or not, so the base leg can record them in design.md's facts.
 
+  Coordinator-authorized (ruling on the first branch leg, 2026-09-23): the
+  control is placed by what the reader sees of it, its rendered icon and word,
+  and not by its box. The shell's 36px button floor makes that box overhang
+  the header rail by 3.5px at every size, on base as on the branch, with
+  nothing visible clipped (design.md, "The canvas header at 832"). Node tests
+  "S185 passes a control whose box overhangs the rail while its icon and word
+  sit inside it" and "S185 fails a control whose icon runs outside the header,
+  or which draws no icon or word" both fail on the earlier judgment.
+
 - [x] 1.4 Pin S183, S184 and S185 in `frontend/c4.replay.test.js` beside
   S151–S153: each is registered once, with term `HV2-11` and case
   `basal-verdict-gallery`. `SMOKE_STORIES` and its pinned hash do not change,
@@ -189,7 +207,7 @@ its new box, the chart is idle, and two animation frames have passed.
   issued · 155 active · 19 retired, registry 174, none missing;
   `SMOKE_STORIES` and its hash unchanged.
 
-- [ ] 1.5 Hand the coordinator the base leg and wait for its result. The
+- [x] 1.5 Hand the coordinator the base leg and wait for its result. The
   coordinator lays this branch's replay harness and case recipes over a base
   b03431d2 worktree and runs `ONLY=S183,S184,S185` at 1280x720 and at
   1440x900. The premises hold when all of these are true:
@@ -205,6 +223,21 @@ its new box, the chart is idle, and two animation frames have passed.
   Record the header widths S185 prints in design.md's facts. If any premise
   does not hold, stop and report to the coordinator. Implement nothing
   further, because the change's premise is wrong.
+
+  Evidence, coordinator-run 2026-09-23 on base b03431d2 with the d3e276ed
+  harness laid over it, `ONLY=S183,S184,S185` at 1280x720 and 1440x900: all
+  three fail, `# executed 0 · failed 3` at both sizes. S183 fails with 65
+  failures at each size: the 24 h caption past #chart's right edge at 832×720
+  and 832×560, and the Evening caption after the live narrowing. At the run's
+  own size it fails on the "60"/"70" and "180"/"180" overlaps and on the
+  Afternoon and Evening captions read tail first, a story defect since
+  corrected (task 1.1's ruling). S184 fails at 832×720 and 832×560, and at
+  1200×736 on the 1280 run, with its verdict read as ["SUPPORTED"] from the
+  full rank the run's size drew. S185 fails on the title's 0px box at 832×720
+  and 832×560. It also fails on the control's 3.5px box overhang at every
+  size, the story defect corrected under task 1.3; the 1024×768 and run-size
+  widths are otherwise clean. The coordinator judged the premises held. The
+  widths S185 printed are in design.md's facts.
 
 ## 2. The window caption stacks and wraps (ADR 455, first decision)
 

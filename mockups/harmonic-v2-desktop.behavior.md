@@ -4180,11 +4180,20 @@ S183 · The glucose overview's window caption stays whole inside the chart, and
             differing from the one before it and settled by laidOutBrace404, a
             resize settled when the chart has taken its host's box and held
             still; reads every painted text span and pad box from the chart's
-            ZRender display list; restores the run's size and presses 24 h. It
-            records every failure by size, state and check with the measured
-            amount, then fails once, listing them all
-  status:   owed — the coordinator's base leg (#455 tasks 1.5) and branch leg
-            (tasks 8.2)
+            ZRender display list, each caption's spans in reading order (line
+            by line, left to right: a caption parked left paints its tail
+            first); restores the run's size and presses 24 h. It records every
+            failure by size, state and check with the measured amount, then
+            fails once, listing them all
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at both
+            sizes with 65 failures: the 24 h caption past #chart's right edge at
+            832×720 and 832×560, the Evening caption past its left edge after
+            the live narrowing, and the "60"/"70" and "180"/"180" overlaps.
+            Branch d3e276ed passed every 832 check and cleared the overlaps. It
+            failed only on the run size's Afternoon and Evening captions, which
+            it read tail first; that is a story defect, corrected by reading
+            order (coordinator-authorized, 2026-09-23). The branch re-run is
+            owed. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -4206,8 +4215,11 @@ S184 · With Diagnose at rest, the Spotlight's middle-rank verdict line keeps
             chart's painted text and the Keep control's box in the chart's
             coordinates, restores the run's size, then fails once, listing
             every failure by size
-  status:   owed — the coordinator's base leg (#455 tasks 1.5) and branch leg
-            (tasks 8.2)
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560, and at 1200×736 on the 1280x720 run: the
+            verdict reads ["SUPPORTED"] from the full rank the run's size drew,
+            and no tally line is painted. Branch d3e276ed passes at 1280x720 and
+            1440x900. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -4225,12 +4237,20 @@ S185 · With Diagnose at rest, the canvas header keeps its title, its whole
   data:     basal-verdict-gallery
   evidence: C4_STORIES.S185 → assertCanvasHead; sets each size in turn, waits
             until the header's box has held still for two animation frames,
-            reads each part's box, clientWidth and scrollWidth and the
-            control's name and tooltip, restores the run's size, prints every
-            size's widths on a `# S185` line, then fails once, each failure
-            printing every part's widths
-  status:   owed — the coordinator's base leg (#455 tasks 1.5) and branch leg
-            (tasks 8.2)
+            reads each part's box, clientWidth and scrollWidth, the box of the
+            control's rendered icon and word, and the control's name and
+            tooltip; restores the run's size, prints every size's widths on a
+            `# S185` line, then fails once, each failure printing every part's
+            widths. The control is placed by its icon and word: its own box is
+            36px tall under the shell's button floor and overhangs the 30px
+            rail by 3.5px, with nothing visible outside it
+  status:   base b03431d2 with the d3e276ed harness laid over it fails at
+            832×720 and 832×560 on the title's 0px box (scrollWidth 144).
+            Branch d3e276ed draws a 41.86px title there, beside a 21px icon-only
+            control. Both base and branch also failed at every size on the
+            control's 3.5px box overhang; that is a story defect, corrected by
+            placing the control by its icon and word (coordinator-authorized,
+            2026-09-23). The branch re-run is owed. Coordinator-run 2026-09-23
 ```
 
 ### #455 handler inventory

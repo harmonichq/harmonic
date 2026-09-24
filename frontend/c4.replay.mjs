@@ -1506,24 +1506,32 @@ const overlapOf = (a, b) => ({
   y: Math.min(spanBottom(a), spanBottom(b)) - Math.max(a.y, b.y),
 });
 const overlaps = (a, b) => { const shared = overlapOf(a, b); return shared.x > 1 && shared.y > 1; };
-// A caption's or a verdict's words: its spans' text in paint order, split on
-// whitespace, the `·` separator ignored. A word split across two spans reads
-// as two words, so it can never match the whole word it was cut from.
-const wordsOf = texts => texts.join(' ').split(/\s+/).filter(word => word && word !== '·');
-// The painted text elements, each with its spans and pad boxes, in paint order.
-const textGroups = reading => {
-  const groups = new Map();
-  const group = id => groups.get(id) ?? groups.set(id, { spans: [], pads: [] }).get(id);
-  for (const span of reading.spans) group(span.group).spans.push(span);
-  for (const pad of reading.pads) group(pad.group).pads.push(pad);
-  return [...groups.values()].filter(({ spans }) => spans.length);
-};
 // Spans on one line share a top within 1px.
 const linesOf = spans => spans.reduce((lines, span) => {
   const line = lines.find(([first]) => Math.abs(first.y - span.y) <= 1);
   if (line) line.push(span); else lines.push([span]);
   return lines;
 }, []);
+// A text element's spans in reading order: line by line from the top, each
+// line left to right. Paint order is not reading order: ZRender lays a line of
+// right-aligned tokens from its right end, so a caption parked left of its
+// window paints its tail before its head.
+const readingOrder = spans => linesOf([...spans].sort((a, b) => a.y - b.y))
+  .flatMap(line => line.sort((a, b) => a.x - b.x));
+// A caption's or a verdict's words: its spans' text in reading order, split on
+// whitespace, the `·` separator ignored. A word split across two spans reads
+// as two words, so it can never match the whole word it was cut from.
+const wordsOf = texts => texts.join(' ').split(/\s+/).filter(word => word && word !== '·');
+// The painted text elements, each with its spans in reading order and its pad
+// boxes.
+const textGroups = reading => {
+  const groups = new Map();
+  const group = id => groups.get(id) ?? groups.set(id, { spans: [], pads: [] }).get(id);
+  for (const span of reading.spans) group(span.group).spans.push(span);
+  for (const pad of reading.pads) group(pad.group).pads.push(pad);
+  return [...groups.values()].filter(({ spans }) => spans.length)
+    .map(({ spans, pads }) => ({ spans: readingOrder(spans), pads }));
+};
 const sizeName = size => `${size.width}×${size.height}`;
 const failOnce = (story, what, failures) => {
   if (failures.length) {
@@ -1711,7 +1719,12 @@ const CANVAS_HEAD_SIZES = Object.freeze([
 
 // #455: runs in the page. The canvas header, its title, provenance and All
 // charts control with the control's word, each with its box, clientWidth and
-// scrollWidth, once the header's box has held still for two frames.
+// scrollWidth, once the header's box has held still for two frames; and the
+// box of what the reader sees of the control, its rendered icon and word
+// (`controlInk`). The control's own box is taller than the header rail: the
+// shell's 36px button floor outranks its 20px height, and its transparent,
+// borderless box overhangs the rail by 3.5px while its icon and word sit
+// inside it (ADR 455).
 async function readCanvasHead() {
   await document.fonts.ready;
   const head = document.querySelector('#canvas-head');
@@ -1730,7 +1743,12 @@ async function readCanvasHead() {
   };
   const title = head?.querySelector('.head-rest h2');
   const control = document.querySelector('#explorer-trigger');
+  const inks = [...(control?.children ?? [])].map(child => child.getBoundingClientRect())
+    .filter(box => box.width > 0 && box.height > 0);
+  const edge = (pick, key) => pick(...inks.map(box => box[key]));
   return {
+    controlInk: inks.length ? { left: edge(Math.min, 'left'), right: edge(Math.max, 'right'),
+      top: edge(Math.min, 'top'), bottom: edge(Math.max, 'bottom') } : null,
     head: part(head), title: part(title), provenance: part(document.querySelector('#canvas-pool')),
     control: part(control), word: part(document.querySelector('#explorer-trigger > span')),
     titleFont: title ? parseFloat(getComputedStyle(title).fontSize) : null,
@@ -1750,22 +1768,30 @@ const headWidths = reading => ['title', 'provenance', 'control', 'word'].map(nam
 // #455: every way the canvas header fails at one size, one line each, each
 // printing every part's widths. `narrow` marks the narrowest split, where the
 // title need only show a letter and an ellipsis; elsewhere the control shows
-// its word and the title prints whole.
+// its word and the title prints whole. The control is placed by what the
+// reader sees of it, its icon and word, not by its overhanging box.
 export function canvasHeadFailures({ size, narrow, reading }) {
   const at = sizeName(size);
   const parts = ['title', 'provenance', 'control'];
   const measured = headWidths(reading);
   const failures = [];
   const fail = message => failures.push(`${at}: ${message} (${measured})`);
-  const shown = parts.filter(name => reading[name]);
-  for (const name of parts.filter(name => !reading[name])) fail(`the header has no ${name}`);
+  const seen = name => (name === 'control' ? reading.control && reading.controlInk : reading[name]);
+  const shown = parts.filter(seen);
+  for (const name of parts.filter(name => !seen(name))) {
+    fail(name === 'control' && reading.control ? 'the All charts control draws no icon or word'
+      : `the header has no ${name}`);
+  }
   for (const name of shown) {
-    const box = reading[name];
+    const box = seen(name);
     const over = reading.head && Math.max(reading.head.left - box.left, box.right - reading.head.right,
       reading.head.top - box.top, box.bottom - reading.head.bottom);
-    if (!reading.head || over > 1) fail(`the ${name} lies ${px(over || 0)} outside the header's box`);
+    if (!reading.head || over > 1) {
+      fail(`${name === 'control' ? 'the All charts control\'s icon and word lie' : `the ${name} lies`} `
+        + `${px(over || 0)} outside the header's box`);
+    }
   }
-  const centres = shown.map(name => (reading[name].top + reading[name].bottom) / 2);
+  const centres = shown.map(name => (seen(name).top + seen(name).bottom) / 2);
   const spread = centres.length ? Math.max(...centres) - Math.min(...centres) : 0;
   if (spread > 2) fail(`the title, provenance and control do not share one line; their centres differ by ${px(spread)}`);
   const { provenance, title, word } = reading;

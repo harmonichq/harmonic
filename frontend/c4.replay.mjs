@@ -841,6 +841,70 @@ export const C4_STORIES = {
         'S146 names the confirmed Plan on its own line');
     }, 'S146 a draft after a confirmed Plan');
   },
+  // #431 · 2026-09-23. A pending Plan reads the same in every window and case:
+  // the watch panel carries it, and no case-file header names it. Every header
+  // is checked before the panel, because the base panel has no Plan state and a
+  // panel-first story would fail there instead of at the base's header note.
+  async S147(page) {
+    // Record a Plan from the served basal action through the routes, as S105 does.
+    const guidance = await read(page, '/api/guidance');
+    const basal = guidance.candidates.find(row => row.subject === 'setting:basal_rate' && row.action?.length);
+    assert.ok(basal, 'S147 premise: a served basal action admits a Plan');
+    const items = basal.action.flatMap(action => (action.member_start_mins || [action.start_min])
+      .map(start => ({ type: 'basal', start_min: start, value: action.recommended })));
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href, { data: { items } });
+    assert.equal(saved.status(), 200, 'S147 premise: the Plan draft saves');
+    const applied = await page.request.post(new URL('/api/plan/apply', page.url()).href, { data: {} });
+    assert.equal(applied.status(), 200, `S147 premise: the Plan decision records: ${await applied.text()}`);
+    const { applied_at: appliedAt } = await applied.json();
+    assert.equal((await read(page, '/api/focus')).admission.focus_pin.reason, 'pending_plan',
+      'S147 premise: the recorded Plan withholds Focus');
+    // A fresh Diagnose arrival: the header's decisions wait for the Focus read,
+    // which carries the guidance read.
+    const focusRead = Promise.all(['/api/focus', '/api/guidance'].map(path => page.waitForResponse(
+      response => new URL(response.url()).pathname === path && response.ok(), { timeout: 60000 })));
+    await page.goto(new URL('/', page.url()).href);
+    await focusRead;
+    await settled(page);
+    const pattern = 'pattern:highs_after_meals';
+    const windows = ['24 h', 'Evening'];
+    const headers = {};
+    for (const window of windows) {
+      await page.getByRole('button', { name: window, exact: true }).click();
+      await settled(page);
+      await press(page, `#level .qrow[data-id="${pattern}"]`);
+      // The case's occurrences render only after its case read, and that read
+      // settles the header before the workstation receives it.
+      await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+      headers[window] = await page.evaluate(() => ({
+        note: document.querySelectorAll('[data-focus-context], [data-focus-reason]').length,
+        startFocus: document.querySelectorAll('[data-start-focus]').length,
+        planWords: /View Plan|awaiting confirmation/.test(document.querySelector('header.crumb')?.textContent || ''),
+      }));
+    }
+    const clean = { note: 0, startFocus: 0, planWords: false };
+    assert.deepEqual(headers, Object.fromEntries(windows.map(window => [window, clean])),
+      `S147 no case-file header may carry a pending-Plan note (${pattern} in ${windows.join(' and ')})`);
+    const expected = { state: 'recorded', kind: 'Plan · awaiting pump', what: `Basal · recorded ${appliedAt.slice(5, 10)}`,
+      how: 'Recorded — waiting for a pump read that matches', go: 'Open Changes ›' };
+    for (const window of windows) {
+      await page.getByRole('button', { name: window, exact: true }).click();
+      await settled(page);
+      await waitForReplayAssertion(async seen => {
+        assert.deepEqual(seen(await page.locator('.inspector > .watch').evaluate(node => ({
+          state: node.dataset.state, kind: node.querySelector('.kind')?.textContent,
+          what: node.querySelector('.what')?.textContent, how: node.querySelector('.how')?.textContent,
+          go: node.querySelector('.go')?.textContent,
+        }))), expected, `S147 the watch panel reads the pending Plan in ${window}`);
+      }, `S147 the watch panel in ${window}`);
+    }
+    await press(page, '.inspector > .watch .go');
+    await page.waitForFunction(() =>
+      document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'changes', null, { timeout: 30000 });
+    const address = new URL(page.url());
+    assert.equal(address.pathname, '/changes', 'S147 Open Changes lands on Changes');
+    assert.equal(address.searchParams.get('subject'), 'plan', 'S147 Open Changes opens the Plan, never the watched-change address');
+  },
   async S107(page) {
     await fullDayDiagnose(page);
     await filterParity404(page);

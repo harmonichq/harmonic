@@ -514,13 +514,20 @@ test(`a failed Focus read keeps a short visible Retry beside its explanation at 
 }
 
 for (const viewport of ['1280x720', '1440x900']) {
-test(`a pending Plan keeps its reason and a compact View Plan route visible at ${viewport}`, async () => {
+test(`a pending Plan shows in the watch panel with Open Changes and leaves no note in the case-file header at ${viewport}`, async () => {
+  // #431 (ADR 431): the guidance read serves the pending Plan with the server's
+  // verdict, and the watch panel carries it in every window and case. The case
+  // file's header names no pending Plan, offers no Plan route, and Start Focus
+  // stays withheld exactly as the served admission says.
+  const plan = { id: '2024-06-14 21:14:00', applied_at: '2024-06-14 21:14:00',
+    items: [{ type: 'basal', start_min: 180, value: 0.55 }],
+    deliverable: { state: 'unavailable', reason: 'legacy_not_recorded' },
+    decision_context: { state: 'unavailable', reason: 'legacy_not_recorded' },
+    reconciliation: { state: 'unavailable' }, withdrawal: { state: 'unavailable' },
+    verdict: { state: 'pending', confirmed_at: null, on_pump: false } };
   const desk = await openDesk({ beforeNavigate: async page => {
-    // This is a renderer boundary: the API-shaped admission owns both the
-    // withholding decision and its reason. The desk only presents the existing
-    // Changes route; it does not manufacture a Plan or calculate eligibility.
     await page.route('**/api/guidance', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-      disposition: 'pending_plan', selected: null, input_revision: followUp.input_revision,
+      disposition: 'pending_plan', selected: null, input_revision: followUp.input_revision, pending_plan: plan,
       candidates: [{ subject: 'pattern:over-treated-low', kind: 'pattern', title: 'Over-treated low',
         collapse: 'remain_pattern', members: [{ subject: 'habit:over_treated_low' }] }],
     }) }));
@@ -528,27 +535,37 @@ test(`a pending Plan keeps its reason and a compact View Plan route visible at $
       focuses: followUp.focuses, pinnable: [], pinnable_patterns: [], input_revision: followUp.input_revision,
       admission: { focus_pin: { available: false, reason: 'pending_plan' } },
     }) }));
+    await page.route('**/api/plan/history', route => route.fulfill({ contentType: 'application/json',
+      body: JSON.stringify({ history: [plan] }) }));
   }, viewport });
   const { page } = desk;
   try {
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    // The panel repaints once the Focus read, which carries the guidance read,
+    // has landed; from here every header decision below has its admission.
+    const dock = page.locator('.inspector > .watch');
+    await page.locator('.inspector > .watch[data-state="recorded"]').waitFor({ state: 'visible', timeout: 30000 });
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
-    const action = page.locator('[data-focus-context]');
-    await action.waitFor({ state: 'visible' });
-    assert.equal((await action.innerText()).trim(), 'View Plan');
-    assert.equal(await action.getAttribute('title'),
-      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
-    const reason = page.locator('[data-focus-reason]');
-    assert.equal((await reason.innerText()).trim(),
-      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
-    assert.equal(await action.getAttribute('aria-describedby'), await reason.getAttribute('id'));
-    await capture(page, `focus-pending-plan-${viewport}`);
-    assert.equal(await action.evaluate(node => node.scrollWidth > node.clientWidth), false,
-      'the compact Plan action must be fully readable in the Findings header');
-    await action.click();
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    assert.deepEqual(await page.evaluate(() => ({
+      note: document.querySelectorAll('[data-focus-context], [data-focus-reason]').length,
+      startFocus: document.querySelectorAll('[data-start-focus]').length,
+      planWords: /View Plan|awaiting confirmation/.test(document.querySelector('header.crumb')?.textContent || ''),
+    })), { note: 0, startFocus: 0, planWords: false }, 'the case-file header carries no pending-Plan note');
+    assert.equal(await dock.getAttribute('data-state'), 'recorded', 'selecting a case keeps the Plan in the panel');
+    assert.deepEqual(await dock.evaluate(node => ({
+      kind: node.querySelector('.kind')?.textContent, what: node.querySelector('.what')?.textContent,
+      how: node.querySelector('.how')?.textContent, go: node.querySelector('.go')?.textContent,
+    })), { kind: 'Plan · awaiting pump', what: 'Basal · recorded 06-14',
+      how: 'Recorded — waiting for a pump read that matches', go: 'Open Changes ›' });
+    await capture(page, `watch-pending-plan-${viewport}`);
+    await dock.locator('.go').click();
     await page.waitForFunction(() => document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination === 'changes');
     assert.equal(new URL(page.url()).pathname, '/changes');
+    assert.equal(new URL(page.url()).searchParams.get('subject'), 'plan', 'Open Changes lands on the Plan, never the watched-change address');
+    await page.locator('.gf-stage .gf-kicker b').waitFor({ state: 'visible', timeout: 30000 });
+    assert.equal(await page.locator('.gf-stage .gf-kicker b').textContent(), 'Pending');
   } finally { await desk.close(); }
 });
 }

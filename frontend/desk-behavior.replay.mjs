@@ -3133,6 +3133,8 @@ export const S117 = appOnly('#413 design lock',
 export const S145 = appOnly('HV2-20', '#431 the server confirms an in-place Plan and Changes names that read', C4_STORIES.S145);
 // STORY:harmonic-v2-desktop:S146
 export const S146 = appOnly('HV2-20', '#431 a draft after a confirmed Plan reads Draft saved and can be recorded', C4_STORIES.S146);
+// STORY:harmonic-v2-desktop:S147
+export const S147 = appOnly('HV2-20', '#431 the watch panel carries a pending Plan and no case-file header names it', C4_STORIES.S147);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3181,7 +3183,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
-  ['S145', S145, J()], ['S146', S146, J()],
+  ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

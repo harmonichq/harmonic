@@ -3089,12 +3089,13 @@ function boot(root, data, callbacks, signal) {
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
      it is the pane's floor, not the level's content. The watched object's
-     precedence is the server's (Trial XOR Focus, pump wins); the Plan branch is
-     this surface's own staged draft, which is what the deleted header used to
-     report. */
+     precedence is the server's (Trial XOR Focus, pump wins). Below it sits the
+     recorded Plan awaiting the pump, as the guidance read serves it (#431), and
+     below that this surface's own staged draft, which is what the deleted
+     header used to report. */
   function paintWatch() {
     paintWatchDock(el('watch-dock'),
-      watchDockView({ watched, staged: stagedDescriptor() }),
+      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor() }),
       (to) => callbacks.go?.(to));
   }
 

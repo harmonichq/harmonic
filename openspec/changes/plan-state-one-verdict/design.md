@@ -12,12 +12,18 @@ deliverable rows. A Plan recorded before #388 captured deliverables has none, so
 its recorded items are applied over that read's active profile with the existing
 `guidance.plan_deliverable`, and the result is compared with the same read.
 
-A Plan any of whose recorded items lacks an integer `start_min` or a numeric
-`value` is incomparable. Pre-#388 history can hold such rows (for example a
-key-only basal item), and `validate_plan_items` checks only the family, so
-`Store.save_plan_draft` and `Store.apply_plan` still record them. Feeding one to
-`plan_deliverable` or `schedule_matches` raises, and a null value would let an
-unchanged read appear to hold it. An incomparable Plan is therefore never
+A Plan is incomparable when any of its recorded items lacks an integer
+`start_min` or a numeric `value`, or when today's item rules
+(`validate_plan_items`) refuse its items. Two legacy row shapes are refused
+today: a row that mixes tuning families, and a carb-ratio block row whose
+`block_end_min` is 0, since the all-day close is now 1440. Pre-#388 history can
+hold such rows (for example a key-only basal item), and `validate_plan_items`
+checks only the family and block-group consistency, so `Store.save_plan_draft`
+and `Store.apply_plan` still record the key-only kind. `plan_deliverable` runs
+that validator, so feeding it a refused row raises. Feeding a row with no start
+minute or no value to `plan_deliverable` or `schedule_matches` raises too, and a
+null value would let an unchanged read appear to hold it. Sub-order 1 shipped
+the wider rule (amended after its review). An incomparable Plan is therefore never
 confirmed by a read, serves `pending` with `on_pump` false, and leaves pending
 only by Withdraw. Neither the reconciler nor the verdict raises on it:
 reconciliation runs inside Withdraw, after every fetch and at `serve` startup,
@@ -124,19 +130,35 @@ ratio, Target) and is sanctioned under Q2.
 - **Changes phase words:** Pending, Mismatch, On pump, Confirmed, Draft saved,
   Staged, Save failed. On pump and Confirmed come only from a served
   `confirmed`.
-- **Changes status:** "✓ On pump since <confirmed_at> — the pump matches your
-  plan." while `on_pump`; "✓ Confirmed on the pump <confirmed_at>. The latest
-  pump read no longer matches this Plan." after. Pending and mismatch copy, the
-  mismatch rows and Re-key are unchanged; the rows are drawn only under a served
-  `mismatch`.
-- **Actions:** a pending or mismatched Plan offers Withdraw and "View change
-  record", as shipped. A confirmed Plan with no newer draft keeps "View change
-  record" and offers no Withdraw. Today that door comes only from the pending
-  branch of the Plan frame, and S105's no-op Plan is confirmed by the server once
-  this change lands, so the confirmed frame must supply it.
+- **Changes status:**
+  - While `on_pump`: "✓ On pump since <confirmed_at> — the pump matches your plan."
+  - After: "✓ Confirmed on the pump <confirmed_at>. The latest pump read no longer
+    matches this Plan."
+  - Pending with `on_pump` false, and mismatch, keep their shipped copy. The
+    mismatch rows and Re-key are unchanged, and the rows are drawn only under a
+    served `mismatch`.
+  - Pending with `on_pump` true reads "Pending — on the pump, awaiting
+    confirmation. The latest pump read holds this Plan; it is confirmed
+    automatically once that read is reconciled."
+- **Actions:**
+  - A pending Plan served with `on_pump` false, and a mismatched Plan, offer
+    Withdraw and "View change record", as shipped.
+  - A pending Plan served with `on_pump` true offers "View change record" and no
+    Withdraw. The server refuses Withdraw on it (409 `nonpending_plan`), because
+    the withdraw lifecycle reconciles first, which confirms the Plan, and then
+    rolls back.
+  - A Withdraw the server refuses as `nonpending_plan` is not shown as a failed
+    write. Changes re-reads and renders the served verdict.
+  - A confirmed Plan with no newer draft keeps "View change record" and offers no
+    Withdraw. Today that door comes only from the pending branch of the Plan
+    frame, and the server confirms S105's no-op Plan once this change lands, so
+    the confirmed frame must supply it.
 - **Decision block:** fields describe only the recorded Plan: Decision recorded,
-  On pump (the confirmed time, "Awaiting pump evidence", or "The latest pump read
-  doesn't match"), Re-key asked. A draft saved during a pending Plan is the line
+  On pump, and Re-key asked. The On pump field reads one of:
+  - the confirmed time;
+  - "Awaiting pump evidence";
+  - "Awaiting confirmation", for a pending Plan served with `on_pump` true;
+  - "The latest pump read doesn't match". A draft saved during a pending Plan is the line
   "Next change: draft saved <time>. It can be recorded once this Plan is
   confirmed or withdrawn." With no Plan pending, a draft is the frame's subject
   (Draft saved / Decision recorded: Not recorded, Save draft, Record decision),
@@ -145,8 +167,10 @@ ratio, Target) and is sanctioned under Q2.
 - **Newest record:** the served history is newest first, so the recorded Plan is
   the first served row that is neither withdrawn nor superseded.
 - **Watch panel:** kind "Plan · awaiting pump"; title "<setting> · recorded
-  MM-DD"; detail "Recorded — waiting for a pump read that matches" (`pending`)
-  or "The latest pump read doesn't match this Plan" (`mismatch`); route "Open
+  MM-DD"; detail "Recorded — waiting for a pump read that matches" (`pending`),
+  "On the pump — awaiting confirmation" (`pending` with `on_pump` true, so the
+  panel and Changes make the same claim about one Plan) or "The latest pump
+  read doesn't match this Plan" (`mismatch`); route "Open
   Changes ›" to Changes at `subject=plan`. Precedence: Trial, Focus, pending Plan,
   staged draft, idle. The staged-draft route reads "Open Changes ›" to the same
   address. Per the coordinator's ruling from #429, no Plan state routes to the
@@ -199,7 +223,10 @@ ratio, Target) and is sanctioned under Q2.
   agree on the confirmation (the branch harness supplies the `in-place`
   capture). S146's premise, a server-confirmed Plan, is unreachable on the base;
   that premise failure is accepted, and task 2.3's unit test is its fail-first
-  half. S147 fails on the pending-Plan note still present in the `basal-lower`
+  half. S147 runs on `pattern-near-tie`, not `basal-lower`: every `basal-lower`
+  Pattern case file answers 404 ("Finding has no inspectable member"), so no
+  case there reaches a header note. S147 fails on the pending-Plan note still
+  present in the `pattern-near-tie`
   Pattern case's header.
 - **Render evidence:** the release coordinator captures, at 1280x720 and
   1440x900 in the one shipped Dark theme, base a4d374a7 against the integration
@@ -227,7 +254,8 @@ ratio, Target) and is sanctioned under Q2.
 - **Accepted failure:** a Plan whose pump reads stopped matching before any
   reconciliation saw a match stays pending with a visible mismatch and leaves by
   Withdraw; an incomparable recorded Plan (an item without an integer start
-  minute or a numeric value) is never confirmed by a read, stays pending, and
+  minute or a numeric value, or items today's rules refuse) is never confirmed
+  by a read, stays pending, and
   leaves by Withdraw; an older unconfirmed Plan superseded by a newer record is
   neither confirmed nor withdrawn, and is not listed as either.
 - **Unsupported:** an out-of-process CLI fetch while `serve` runs (the existing

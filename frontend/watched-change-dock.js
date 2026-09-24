@@ -3,7 +3,7 @@
  * CONTEXT.md's watching-changes rule already settles the shape: Plan, Trial and
  * Focus all obey one variable under study, at most one is active at a time, and the
  * app exposes a SINGLE active watched-change object, never two lists. So the floor
- * of the inspector is that one object, in one reserved height, in four mutually
+ * of the inspector is that one object, in one reserved height, in mutually
  * exclusive states — and the pane header's staged status is deleted in the same
  * change, because two claims about one object on one screen is the defect term 47
  * exists to remove (the header could read "nothing staged" while a Trial was being
@@ -13,13 +13,19 @@
  * `watched_change.active_watched_change` — Trial XOR Focus, pump wins, a Focus is
  * blocked under a Trial and dropped when a setting change preempts it (ADR 0029).
  * This module only fills the slot: the watched object if there is one, else the
- * Plan draft staged on this surface, else idle.
+ * recorded Plan awaiting the pump (the guidance read's served pending Plan, #431),
+ * else the Plan draft staged on this surface, else idle. The pending Plan's
+ * verdict is the server's; a confirmed Plan is never served as pending, so it
+ * holds no state here.
  */
+import { SETTING_NAME } from './plan-view.js';
+import { PLAN_PARAMS } from './plan.js';
 
-/** Term 47 — the four kind labels, byte for byte. */
+/** Term 47 — the kind labels, byte for byte. */
 export const KIND = {
   trial: 'Trial · watching',
   focus: 'Focus · watching',
+  recorded: 'Plan · awaiting pump',
   plan: 'Plan · staged',
   idle: 'Nothing being watched',
 };
@@ -41,6 +47,9 @@ const num = (value) => {
 /** `2026-08-11 07:00:00` -> `08-11`. The year is noise at this size. */
 const monthDay = (stamp) => (typeof stamp === 'string' ? stamp.slice(5, 10) : '');
 
+/** A recorded Plan's setting in the wearer's words, from its recorded item family. */
+const planSetting = (plan) => SETTING_NAME[PLAN_PARAMS.find(({ type }) => type === plan.items[0]?.type)?.param];
+
 /** A Trial's own name for the change it is watching. */
 function trialTitle(trial) {
   const name = PARAMETER[trial.parameter] || trial.parameter;
@@ -56,7 +65,7 @@ function trialTitle(trial) {
  * `detail` is a list of `{ text }` / `{ strong }` parts rather than markup, so the
  * painter can emphasise a count without this module writing HTML.
  */
-export function watchDockView({ watched = null, staged = null } = {}) {
+export function watchDockView({ watched = null, pendingPlan = null, staged = null } = {}) {
   if (watched && watched.kind === 'trial') {
     const maturing = watched.maturing || {};
     // "Maturing" and "ready to judge" are the domain's own words for a Trial's
@@ -90,13 +99,26 @@ export function watchDockView({ watched = null, staged = null } = {}) {
       route: { label: 'Open Verify', to: 'verify' },
     };
   }
+  if (pendingPlan) {
+    // The server's verdict, said in the same words Changes uses for it.
+    const { state, on_pump: onPump } = pendingPlan.verdict;
+    return {
+      state: 'recorded',
+      kind: KIND.recorded,
+      title: `${planSetting(pendingPlan)} · recorded ${monthDay(pendingPlan.applied_at)}`,
+      detail: [{ text: state === 'mismatch' ? "The latest pump read doesn't match this Plan"
+        : onPump ? 'On the pump — awaiting confirmation' : 'Recorded — waiting for a pump read that matches' }],
+      // Changes on the Plan itself — never the watched-change address.
+      route: { label: 'Open Changes', to: 'plan' },
+    };
+  }
   if (staged && staged.count > 0) {
     return {
       state: 'plan',
       kind: KIND.plan,
       title: staged.title,
       detail: [{ text: PLAN_DETAIL }],
-      route: { label: 'Open Plan', to: 'plan' },
+      route: { label: 'Open Changes', to: 'plan' },
     };
   }
   return {

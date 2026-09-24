@@ -10,13 +10,20 @@ a Plan is on the pump. The phase SHALL read Pending for `pending`, Mismatch for
 `confirmed_at`, so a later pump read does not move it: "✓ On pump since
 <confirmed_at> — the pump matches your plan." while the pump holds the Plan, and
 "✓ Confirmed on the pump <confirmed_at>. The latest pump read no longer matches
-this Plan." after it stops. The pending and mismatch status wording SHALL stay as
-shipped. The browser's pump comparison SHALL only draw the planned-versus-pump
-rows, and only under a served `mismatch`. The recorded Plan Changes reads SHALL
-be the newest served record that is neither withdrawn nor superseded. A pending
-or mismatched Plan SHALL offer Withdraw and "View change record"; a confirmed
-Plan with no newer draft SHALL keep "View change record" and SHALL offer no
-Withdraw.
+this Plan." after it stops. The mismatch status wording, and the pending status
+wording for a Plan served with `on_pump` false, SHALL stay as shipped. A pending
+Plan served with `on_pump` true SHALL read "Pending — on the pump, awaiting
+confirmation. The latest pump read holds this Plan; it is confirmed automatically
+once that read is reconciled." The browser's pump comparison SHALL only draw the
+planned-versus-pump rows, and only under a served `mismatch`. The recorded Plan
+Changes reads SHALL be the newest served record that is neither withdrawn nor
+superseded. A pending Plan served with `on_pump` false and a mismatched Plan
+SHALL offer Withdraw and "View change record". A pending Plan served with
+`on_pump` true SHALL offer "View change record" and no Withdraw, because the
+server refuses Withdraw on it (409 `nonpending_plan`). A Withdraw the server
+refuses as `nonpending_plan` SHALL re-read the served verdict and SHALL NOT be
+shown as a failed write. A confirmed Plan with no newer draft SHALL keep "View
+change record" and SHALL offer no Withdraw.
 
 #### Scenario: A server-pending Plan with a matching pump read reads Pending
 
@@ -24,6 +31,21 @@ Withdraw.
   pump profile that holds its schedule
 - **WHEN** Changes renders the Plan
 - **THEN** the phase reads Pending and no status claims the pump matches
+
+#### Scenario: A pending Plan the latest read already holds offers no Withdraw
+
+- **GIVEN** a recorded Plan whose served verdict is `pending` with `on_pump` true
+- **WHEN** Changes renders the Plan
+- **THEN** the phase reads Pending, the status says it is on the pump awaiting
+  confirmation, and no Withdraw is offered
+
+#### Scenario: A Withdraw refused as no longer pending re-reads the verdict
+
+- **GIVEN** a pending Plan and a Withdraw the server refuses with
+  `nonpending_plan`
+- **WHEN** the refusal arrives
+- **THEN** Changes re-reads and renders the served verdict, with no failed-write
+  status
 
 #### Scenario: The On pump time stays on the confirming read
 
@@ -47,8 +69,10 @@ Withdraw.
 ### Requirement: Changes keeps a recorded Plan apart from a newer draft
 
 The Decision block SHALL describe only the recorded Plan: when it was recorded,
-its pump confirmation (the served confirmed time, "Awaiting pump evidence", or
-"The latest pump read doesn't match") and any re-key request. A draft saved while
+its pump confirmation and any re-key request. The pump confirmation SHALL read
+the served confirmed time, "Awaiting pump evidence", "Awaiting confirmation" (a
+pending Plan served with `on_pump` true), or "The latest pump read doesn't
+match". A draft saved while
 a Plan is pending SHALL show as a separate line, "Next change: draft saved
 <time>. It can be recorded once this Plan is confirmed or withdrawn.", never as
 a field of the recorded Plan. With no Plan pending, a staged or saved draft SHALL
@@ -83,7 +107,8 @@ whenever no Trial or Focus is watched. Its kind SHALL read "Plan · awaiting
 pump"; its title SHALL name the Plan's setting in the wearer's words (Basal,
 Correction factor, Carb ratio, Target) and the month and day it was recorded, as
 "Basal · recorded 09-20"; its detail SHALL read "Recorded — waiting for a pump
-read that matches" under `pending` and "The latest pump read doesn't match this
+read that matches" under `pending`, "On the pump — awaiting confirmation" under
+`pending` with `on_pump` true, and "The latest pump read doesn't match this
 Plan" under `mismatch`; its route SHALL read "Open Changes ›" and open Changes on
 the Plan (`subject=plan`), never the watched-change address. A watched Trial or
 Focus SHALL keep precedence over the Plan, and the Plan SHALL take precedence

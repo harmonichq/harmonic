@@ -3006,3 +3006,55 @@ S146 · A draft saved after a confirmed Plan that differs from the pump reads
             draft after a confirmed Plan reads Draft saved and can be recorded";
             coordinator runs the branch at both sizes
 ```
+
+Sub-order 3 of the same change moves the pending-Plan note under the same
+sanction. The Diagnose case-file header no longer carries a pending-Plan note
+or a Plan route, for any case. Before #431 the note appeared only on
+Pattern-linked cases, through the Focus admission's `pending_plan` reason.
+The watch panel now carries a recorded Plan awaiting the pump whenever no Trial
+or Focus is watched, in every window and case:
+- its kind reads "Plan · awaiting pump";
+- its title names the setting in the wearer's words and the recorded month and
+  day;
+- its detail says what the served verdict says;
+- its route reads "Open Changes ›" and opens Changes at `subject=plan`, never the
+  watched-change address.
+
+Precedence is Trial, Focus, the pending Plan, the staged draft, idle. The
+staged draft's route also reads "Open Changes ›", to the same address. A
+confirmed Plan holds no panel state. The panel's one-object rule (lock term 47)
+is unchanged; the panel gains one state, which is still the only object it
+reports.
+
+Every reader of the moved note is updated in the same change: the desk
+browser test (its "pending Plan" test at both desktop sizes),
+`frontend/focus-entry.test.js`, and S147.
+
+```
+S147 · With a Plan pending, a Pattern case's header carries no pending-Plan
+       note in either of two windows, and the watch panel reads the same
+       "Plan · awaiting pump" state in both; "Open Changes ›" lands on Changes
+       at subject=plan.
+  element:  header.crumb [data-focus-context], [data-focus-reason],
+            [data-start-focus]; .inspector > .watch (.kind, .what, .how, .go)
+  source:   frontend/focus-entry.js contextForCase; frontend/watched-change-dock.js
+            watchDockView; frontend/diagnose-workstation.js paintWatch;
+            frontend/diagnose.js read (one repaint after the Focus/guidance read)
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict); lock term 47
+  data:     pattern-near-tie; record a Plan from the served basal action through
+            the routes (as S105 does), then a fresh Diagnose arrival;
+            pattern:highs_after_meals is served, loads with occurrences and is
+            its own Pattern parent in both the 24 h and Evening windows. The
+            order named basal-lower, but every basal-lower Pattern case file
+            answers 404 ("Finding has no inspectable member"), so no case there
+            ever reaches a header note and its base proof could not fail at the
+            header.
+  evidence: C4_STORIES.S147; waits for the Focus and guidance reads, then in
+            each window drills the Pattern and waits for its occurrences (the
+            case read settles the header first) and reads the header; only then
+            reads the watch panel in each window and presses Open Changes
+  status:   owed — base a4d374a7 with this harness laid over it is expected to
+            fail at the header check (the base names the pending Plan there as
+            "View Plan" with its reason); coordinator runs base and branch at
+            both sizes
+```

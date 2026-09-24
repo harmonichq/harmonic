@@ -1181,8 +1181,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"configured": False}
         return {
             "configured": True,
-            # #99: the capture time of this snapshot — Plan's Confirmation-B
-            # shows "✓ on pump as of <fetch>" against it.
+            # #99: the capture time of this snapshot — Changes shows it as the
+            # detected settings' "Captured <fetch>". A confirmed Plan's "On pump
+            # since" names the server's confirming read instead (#431).
             "fetched_at": (
                 latest.captured_at.isoformat()
                 if hasattr(latest.captured_at, "isoformat")

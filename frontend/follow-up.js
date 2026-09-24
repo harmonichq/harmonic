@@ -42,10 +42,9 @@
 //   mountComparisonChart, dailyEvidence
 //   comparisonReasonWords                          the one reason vocabulary
 //   stateWords                                     the served inference states
-//   failureMessage                                 a refused write, in its words
 import { heroOption } from './verify-workstation-chart.js';
 import {
-  fetchVerifyTrials, finishTrial, resolveFocus,
+  failureMessage, fetchVerifyTrials, finishTrial, resolveFocus,
 } from './client.js';
 import {
   date, desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, shortDate, stamp,
@@ -681,10 +680,6 @@ const attemptId = (operation) => {
   return id;
 };
 
-/** A failed or refused write in words: the server's own sentence for a coded
-    refusal (ADR 450), never its code or status, else the transport's own
-    failure. The record's writes print through this one helper too. */
-export const failureMessage = (error) => (error && error.message) || 'no response from the store';
 
 /**
  * Record the ending. The revision sent is the one the rendered evidence was read

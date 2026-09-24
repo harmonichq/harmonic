@@ -26,7 +26,7 @@
 //
 //   mount(host, deps)        the record destination's content
 //   openRecord(kind, id)     open one record on itself, before anything else
-import { concludeTrial, fetchVerifyTrials } from './client.js';
+import { concludeTrial, failureMessage, fetchVerifyTrials } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, stamp } from './frame.js';
 import { settingValue } from './plan.js';
 import { hold, navigate, render, view } from './routes.js';
@@ -35,7 +35,7 @@ import { hold, navigate, render, view } from './routes.js';
 // dependency runs one way only: follow-up.js imports nothing from here, and the
 // Changes composition is handed both mounts by the entry module.
 import {
-  comparisonReasonWords, comparisonTables, evidenceFigure, failureMessage, figureColors, mountComparisonChart,
+  comparisonReasonWords, comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
   conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock, stateWords, supportingDateFocus,
 } from './follow-up.js';
 

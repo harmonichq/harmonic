@@ -112,7 +112,7 @@ export function mount(host, deps = {}) {
   host.innerHTML = emptyFrame('Changes', 'Start a Pattern Focus', copy,
     `${offered ? `<button class="gf-btn primary" data-focus="${state.failure ? 'retry-pin' : 'pin'}" ${state.saving ? 'disabled' : ''}>${state.failure ? 'Retry' : 'Start Focus'}</button>` : '<button class="gf-btn" data-focus="refresh">Retry read</button>'}<button class="gf-btn" data-destination-action="changes">Cancel</button>`,
     state.readFailure ? 'Focus status could not load. Retry the read.'
-      : state.failure ? `Starting the Focus failed: ${String(state.failure.message).replace(/\.$/, '')}. No successful pin was confirmed.`
+      : state.failure ? `Starting the Focus failed: ${client.failureMessage(state.failure).replace(/\.$/, '')}. No successful pin was confirmed.`
         : 'No pump setting changes.');
   const start = host.querySelector('[data-focus="pin"], [data-focus="retry-pin"]');
   if (start) start.onclick = async () => {

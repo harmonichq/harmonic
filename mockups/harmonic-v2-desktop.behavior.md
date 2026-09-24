@@ -10,7 +10,7 @@
   · lifecycle revise · contract this ledger + frontend/desk-behavior.replay.mjs
 ```
 
-This #442–#457 release re-freeze adds 22 stories and amends 7. Each is recorded
+This #442–#457 release re-freeze adds 22 stories and amends 6. Each is recorded
 in its ticket's dated #<issue> amendment section below. The sanction is Connor
 Griffin's (operator, repo owner) Q3 delegation of 2026-09-23, quoted with each
 ticket's ruling: `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R<issue>`.
@@ -4199,7 +4199,7 @@ Additional handler inventory for this amendment:
 Changes remembered that the reader pressed Open Plan, and nothing cleared it, so
 the topbar's Changes, Diagnose's return and the landing after a Focus pin opened
 a Plan in the watched change's seat. S166–S168 pin the rule that replaces it
-(ADR 446 in `openspec/changes/changes-arrival-leads-active/design.md`): the
+(ADR 446 in `openspec/changes/archive/2026-09-24-changes-arrival-leads-active/design.md`): the
 served active change leads every plain arrival to Changes, Open Plan holds for
 the visit it was pressed in, a Plan draft stays reachable from the watched
 Trial's and Focus's own view, and Diagnose's return names the watched change.
@@ -4326,7 +4326,7 @@ Additional handler inventory for this amendment:
 ## #453 amendment — 2026-09-23
 
 Replay S89 now certifies the Plan decision it records (ADR 453,
-`openspec/changes/plan-cleanup-s89`). Its story text and lock term are
+`openspec/changes/archive/2026-09-24-plan-cleanup-s89`). Its story text and lock term are
 unchanged. No story is added or retired, and no ★ FROZEN block or inventory
 line is edited.
 
@@ -4341,7 +4341,7 @@ Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
 from here"); coordinator ruling R452, with its triage rulings Q1 (add S180) and
 Q2 (reopening the same record from the roster starts empty). This section
 changes shipped desk behavior on that sanction only. The decision is ADR 452 in
-`openspec/changes/late-conclusion-record-reset/design.md`.
+`openspec/changes/archive/2026-09-24-late-conclusion-record-reset/design.md`.
 
 Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
 AGENTS.md's QA copy-then-serve command
@@ -4385,7 +4385,7 @@ S180 · Reopening an expired Trial from the Changes roster, after its later
             [data-form="late-conclusion"], [data-save-error="conclude"],
             [data-record-close], [data-late-conclusion="available"]
   source:   frontend/history.js
-  lock:     HV2-28; ADR 452 (openspec/changes/late-conclusion-record-reset/design.md)
+  lock:     HV2-28; ADR 452 (openspec/changes/archive/2026-09-24-late-conclusion-record-reset/design.md)
   data:     c4-isf; its one retained Trial ended expired_unreviewed with no
             later conclusion saved
   evidence: C4_STORIES.S180; opens the expired Trial by its roster press, has
@@ -4432,7 +4432,7 @@ Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
 from here"); coordinator rulings R449 and R450. It covers the shipped-desk
 changes and the ledger additions and amendments below, and nothing else. The
 decisions are ADR 449 and ADR 450 in
-`openspec/changes/focus-served-words/design.md`.
+`openspec/changes/archive/2026-09-24-focus-served-words/design.md`.
 
 Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
 AGENTS.md's QA copy-then-serve command
@@ -4621,7 +4621,7 @@ moves to 175 issued · 156 active · 19 retired on this branch.
 ## #455 amendment — 2026-09-23
 
 S183–S185 are the fail-first obligations of #455 (the pinned change
-`openspec/changes/window-label-narrow/`, ADR 455): at the narrowest split the
+`openspec/changes/archive/2026-09-24-window-label-narrow/`, ADR 455): at the narrowest split the
 glucose overview's window caption, the Spotlight's verdict line and the canvas
 header's title stay whole, and at every size no glucose-overview text
 overprints another. All three are app-opener-only, like S101–S117. Browser
@@ -4985,7 +4985,7 @@ S165 · Carb questions over a drilled Finding case with a window pressed: a
 Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
 from here"); coordinator ruling R442. It covers S157, the S91 amendment below
 and the superseded-note wording, and nothing outside #442's checklist. The
-decision is ADR 442 in `openspec/changes/backfilled-record-endings/design.md`.
+decision is ADR 442 in `openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md`.
 
 Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
 AGENTS.md's QA copy-then-serve command
@@ -5028,7 +5028,7 @@ S157 · An older detected change that a later detected change superseded inside
   source:   ciq_autotune/watched_change.py reconcile_follow_up /
             _end_open_records / capture_ending; frontend/history.js
             recordRowHtml / endingSection; frontend/follow-up.js periodsSection
-  lock:     HV2-28; ADR 442 (openspec/changes/backfilled-record-endings/design.md)
+  lock:     HV2-28; ADR 442 (openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md)
   data:     c4-ic; its one reconcile records carb-ratio changes on 06-01 and
             06-10. The 06-10 record is the watched, open Trial; the 06-01
             record ends superseded at 06-10 09:00, its saved assessment read to
@@ -5083,7 +5083,7 @@ on this branch.
 ## #447 amendment — 2026-09-23, issue #447
 
 S169 and S170 are the fail-first obligations of ADR 447
-(`openspec/changes/retire-verify-language/design.md`). A watched Trial's dock and
+(`openspec/changes/archive/2026-09-24-retire-verify-language/design.md`). A watched Trial's dock and
 Changes' Watch maturity print one day count, the served `days_elapsed`, in the
 words Changes already prints. The Guide's "Reading the Diagnose surface" article
 names no Verify. Both are app-opener-only, like S139 and S140. Browser execution
@@ -5237,7 +5237,7 @@ Additional handler inventory for this amendment:
 ## #451 amendment — 2026-09-23
 
 S177–S179 are the fail-first obligations of ADR 451
-(`openspec/changes/setting-concern-labels/design.md`): the desk names the
+(`openspec/changes/archive/2026-09-24-setting-concern-labels/design.md`): the desk names the
 correction factor and the carb ratio in the wearer's words, prints a correction
 factor insulin first, says why its concern leads in words, names a recorded
 concern by its served name, and lets the watch dock's title name the change
@@ -5267,7 +5267,7 @@ S177 · On a plain arrival at Changes, the Action figure reads the served
             .gf-reading .gf-section h3 .meta; .gf-desk
   source:   frontend/changes.js actionLead, concernFrame, leadWords;
             frontend/guidance.js statusWords; frontend/plan.js settingValue
-  lock:     none (revise; ADR 451 in openspec/changes/setting-concern-labels/design.md)
+  lock:     none (revise; ADR 451 in openspec/changes/archive/2026-09-24-setting-concern-labels/design.md)
   data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
             eligible_action, carrying the correction factor's served
             "strengthen" instruction
@@ -5349,6 +5349,6 @@ Additional handler inventory for this amendment:
 | Staged dock title and values | frontend/diagnose-workstation.js stagedDescriptor; frontend/watched-change-dock.js watchDockView, paintWatchDock | S178 |
 | Plan "What was known" | frontend/plan-view.js knownSection | S179 |
 
-Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Base b03431d2 with this branch's harness laid over it fails S4 at "the advisory line drifted" at both sizes, and branch 678fb544 passes it at 1280x720 and 1440x900; coordinator-run 2026-09-24. S4 runs again on the trunk in the complete ledger, on the commit that is pushed.
+Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/archive/2026-09-24-setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Base b03431d2 with this branch's harness laid over it fails S4 at "the advisory line drifted" at both sizes, and branch 678fb544 passes it at 1280x720 and 1440x900; coordinator-run 2026-09-24. S4 runs again on the trunk in the complete ledger, on the commit that is pushed.
 
 No other story's asserted text moved under this widening. S42 reads "Re-key the flagged values on your pump" and "rechecks on the next fetch", and both remain. S142 counts the open ending's `[data-unavailable="ending"]` element, not its words. S153 reads "no direction asserted" in the basal panel, which remains. The findings queue's held-row prefix now reads "no direction asserted: <served reason>"; no story, replay or browser suite reads a held row's reason line. S178 reads only the values that lead the dock's detail line; the staged sentence after them now reads "Staged, not applied: nothing has changed on the pump", one character shorter.

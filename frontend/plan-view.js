@@ -34,7 +34,7 @@ import {
 } from './plan.js';
 import { stageItemsFor } from './diagnose-workspaces.js';
 import {
-  applyPlan, fetchPumpSettings, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
+  applyPlan, failureMessage, fetchPumpSettings, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
 } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, sheetToggle, stamp } from './frame.js';
 import {
@@ -337,7 +337,7 @@ function saveFailure() {
   // The locked copy is the sentence and nothing else. The store's conflict code
   // is transport vocabulary — it belongs in the response a test reads, not in
   // front of a wearer who cannot act on it.
-  return `<div class="gf-status" role="alert"><p class="gf-error">${e(what)}: ${e(held.error.message)}</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${e(retry)}</button></div></div>`;
+  return `<div class="gf-status" role="alert"><p class="gf-error">${e(what)}: ${e(failureMessage(held.error))}</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${e(retry)}</button></div></div>`;
 }
 
 // Shipped Plan reconciliation copy (index.html), chosen by the served verdict.

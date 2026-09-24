@@ -16,6 +16,7 @@
 //
 // It does NOT duplicate Diagnose's findings roster: it shows the selected
 // concern's own members and one named route across (HV2-10, S14).
+import { failureMessage } from './client.js';
 import { formatStartMin, settingValue } from './plan.js';
 import { desk, e, emptyFrame, nameplate, readingHeader, sheetToggle, stamp } from './frame.js';
 import {
@@ -166,7 +167,7 @@ function concernFrame(candidate) {
     end: end + '<button class="gf-btn" data-action="history">View change record</button>' + (focusOffer(candidate.subject) ? '<button class="gf-btn primary" data-start-focus>Start Focus</button>' : '') + '<button class="gf-btn" data-action="pump">Pump settings</button>',
   });
   const wrote = writeFailed
-    ? `<p class="gf-error" role="alert">That did not save: ${e(writeFailed.message)}</p>`
+    ? `<p class="gf-error" role="alert">That did not save: ${e(failureMessage(writeFailed))}</p>`
     : '';
   const stage = `<section class="pane gf-stage gf-stage-table" aria-label="Evidence">${head}
     <div class="instruments"><div class="instrument"><span class="cap">Members in this read</span><span class="meta">${e(read?.reasons?.admission || '')}</span></div><div class="instrument gf-tools">${sheetToggle('Action', view.sheetOpen)}</div></div>

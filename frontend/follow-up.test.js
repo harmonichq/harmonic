@@ -7,10 +7,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ApiTransportError } from './data.js';
+import { ApiTransportError, failureMessage } from './data.js';
 import {
   adherenceTable, comparisonPairs, comparisonReasonWords, comparisonTables, conclusionForm,
-  dailyEvidence, evidenceFigure, failureMessage, maturitySection, outcomesTable, periodsSection,
+  dailyEvidence, evidenceFigure, maturitySection, outcomesTable, periodsSection,
   planRouteSection, readinessArm, readinessSection, saveErrorBlock, trialDayCount,
 } from './follow-up.js';
 

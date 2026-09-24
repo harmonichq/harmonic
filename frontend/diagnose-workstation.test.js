@@ -289,6 +289,39 @@ test('#223 · direction-only Correction factor detail leaves evidence ownership 
   }
 });
 
+test('the correction-factor panel names its setting and prints each value insulin first (#451)', () => {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const held = fixture.inputs.analysis.isf[0];
+  const stageable = { ...held, asserts_move: true, recommended: 32,
+    evidence: { ...held.evidence, direction: 'strengthen' } };
+  const originalDocument = globalThis.document;
+  const element = () => ({
+    className: '', dataset: {}, innerHTML: '', children: [],
+    append(...children) { this.children.push(...children); },
+    addEventListener() {},
+  });
+  const rendered = (node) => [node.innerHTML, ...node.children.map(rendered)].join(' ');
+  try {
+    globalThis.document = { createElement: element };
+    for (const row of [held, stageable]) {
+      const host = element();
+      renderIsfLevel(host, row, false, () => {});
+      const text = rendered(host);
+      assert.match(text, /<span class="time">Correction factor<\/span>/, 'the heading names the setting');
+      assert.match(text, /daytime Correction factor is not separately identifiable/i, 'the scope sentence names it');
+      assert.match(text, /<b>1 U : 36\.00 mg\/dL<\/b>/, 'the current value keeps the panel rounding');
+      assert.doesNotMatch(text, /ISF|mg\/dL\/U/);
+    }
+    const host = element();
+    renderIsfLevel(host, stageable, false, () => {});
+    assert.match(rendered(host), /<b>1 U : 32\.00 mg\/dL<\/b>/, 'the recommended value reads insulin first');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
 test('basal detail states the served support floor', () => {
   const originalDocument = globalThis.document;
   const element = () => ({

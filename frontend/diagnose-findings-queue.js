@@ -18,6 +18,7 @@
  * committed `frontend/__fixtures__/findings-projection.json`, which is the real
  * projection's own frozen output.
  */
+import { settingValue } from './plan.js';
 
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
@@ -51,8 +52,11 @@ export const TIER = {
 export const MIN_ROW_MINI_WIDTH = 120;
 
 /* Display units per parameter. Formatting, not policy: the projection publishes the
-   numbers and the parameter id, and a unit is how a number is spelled. */
-const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
+   numbers and the parameter id, and a unit is how a number is spelled. A correction
+   factor is spelled insulin first by the desk's one formatter (ADR 451). */
+const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U' };
+const shown = (parameter, value) =>
+  (parameter === 'isf' ? settingValue(parameter, num(value)) : `${num(value)} ${UNIT[parameter]}`);
 
 /**
  * A rate as the surface spells it: rounded to the two decimals every parameter
@@ -161,9 +165,10 @@ function assertDetail(row) {
     const support = supportPart(row);
     return support ? { kind: 'support', parts: support } : null;
   }
-  const unit = UNIT[row.parameter];
-  if (row.current != null && row.recommended != null && unit) {
-    return { kind: 'nums', now: `now ${num(row.current)} ${unit} → `, then: `${num(row.recommended)} ${unit}` };
+  const spelled = row.parameter === 'isf' || Boolean(UNIT[row.parameter]);
+  if (row.current != null && row.recommended != null && spelled) {
+    return { kind: 'nums', now: `now ${shown(row.parameter, row.current)} → `,
+      then: shown(row.parameter, row.recommended) };
   }
   const support = supportPart(row);
   return support ? { kind: 'support', parts: support } : null;

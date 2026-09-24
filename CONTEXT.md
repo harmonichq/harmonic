@@ -417,6 +417,14 @@ chart; it is the subject the app prices, leads with, sets aside and follows as a
 Focus.
 _Avoid_: shape, trend, theme, cluster, problem.
 
+**Concern**:
+One thing **Changes** can lead with, as guidance serves it: a setting, a habit, a
+Pattern or an investigation. Each is named by its served name. A concern the
+wearer set aside that the current read no longer carries is still listed, and one
+with no served name reads "A concern no longer in this read", never its
+identifier (ADR 451).
+_Avoid_: candidate, subject (in user copy; both are the API's words).
+
 **Lever pattern**:
 A group of episodes sharing one Lever, scored and ranked — the recurring behavior a
 user should act on. The outcome-shaped advisory-selection unit is a **Pattern**;

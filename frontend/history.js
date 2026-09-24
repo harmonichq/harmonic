@@ -29,6 +29,7 @@
 //   selectedRecord()         which record is open, or null
 import { concludeTrial, fetchVerifyTrials } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, stamp } from './frame.js';
+import { settingValue } from './plan.js';
 import { hold, navigate, render, view } from './routes.js';
 // The comparison itself is the follow-up's evidence, and one record is a read of
 // it, so its renderers have one owner and this module consumes them. The
@@ -70,14 +71,6 @@ const SETTING_NAME = {
   basal_rate: 'Basal', carb_ratio: 'Carb ratio', isf: 'Correction factor',
   target_bg: 'Target glucose', profile: 'Whole profile',
 };
-const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
-
-/** One programmed value in its own unit; a correction factor reads insulin first. */
-export function settingValue(parameter, value) {
-  if (value == null) return 'not recorded';
-  if (parameter === 'isf') return `1 U : ${value} mg/dL`;
-  return `${value} ${UNIT[parameter] || ''}`.trim();
-}
 
 /* ------------------------------------------------------- the record's memory */
 

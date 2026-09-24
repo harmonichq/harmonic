@@ -48,6 +48,7 @@ import {
 import {
   date, desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, shortDate, stamp,
 } from './frame.js';
+import { settingValue } from './plan.js';
 import { stagePrior } from './plan-view.js';
 import { hold, narrow, navigate, render, view } from './routes.js';
 
@@ -62,7 +63,6 @@ const LEVER_NAME = {
   meal_bolus_short: 'Meal bolus fell short', missed_meal: 'Missed or unannounced meal',
   user_override: 'Override of the pump’s dose',
 };
-const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
 // The served inference states. `favorable` exists per outcome row only: the
 // overall assessment is one of these three and never favourable, so no summary
 // on this surface can claim a favourable ending (lock "Backend binding notes").
@@ -101,13 +101,6 @@ export const comparisonReasonWords = (code) => COMPARISON_REASON[code] || code;
 // What every part of a record says when no comparison was read for it at all:
 // not requested, which is neither unavailable nor empty.
 const NOT_READ = 'No comparison has been read for this record yet.';
-
-/** One programmed value in its own unit; a correction factor reads insulin first. */
-const settingValue = (parameter, value) => {
-  if (value == null) return 'not recorded';
-  if (parameter === 'isf') return `1 U : ${value} mg/dL`;
-  return `${value} ${UNIT[parameter] || ''}`.trim();
-};
 
 // A served count that may be fractional — I:C ownership weights are not rounded
 // into whole runs — printed at the precision it arrived with.

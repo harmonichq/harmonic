@@ -132,6 +132,35 @@ export const selectedConcern = () => memory.read?.selected || null;
 /** The one word for what this read found, rendered verbatim. */
 export const disposition = () => memory.read?.disposition || null;
 
+// What the reader can do about this read, in words (ADR 451). The served
+// disposition is a code from a closed set; these are its words.
+const STATUS_WORDS = {
+  guided_investigation: 'Evidence to inspect',
+  active_change: 'A change is being watched',
+  quiet: 'No priority needs action',
+  unavailable: 'No action from this read',
+  draft: 'Plan draft saved',
+  pending_plan: 'Plan awaiting the pump',
+};
+
+/**
+ * The served disposition in words. Under `eligible_action` the words follow the
+ * selected concern's served action: setting instruction rows are ready to stage;
+ * an identified action is ready to start a Focus when Changes passes the served
+ * Focus offer, is a withheld Focus on a Pattern whose served readiness is
+ * withheld, and is otherwise an identified action. A code outside the set prints
+ * no words. Every input is served; nothing here decides eligibility.
+ */
+export function statusWords(focusOffered = false) {
+  const state = disposition();
+  if (state !== 'eligible_action') return STATUS_WORDS[state] || '';
+  const concern = selectedConcern();
+  if (Array.isArray(concern?.action)) return 'Ready to stage';
+  if (focusOffered) return 'Ready to start a Focus';
+  if (concern?.kind === 'pattern' && concern.readiness?.verdict === 'withheld') return 'Focus withheld';
+  return 'Action identified';
+}
+
 /**
  * The lifecycle verdict this read was composed at.
  *

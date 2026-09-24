@@ -30,7 +30,7 @@
 // that a write "probably" landed.
 import {
   buildDeliverable, collapseDeliverable, effectivePlanItems, formatStartMin,
-  reconcileDeliverable, segmentCapacity, PLAN_PARAMS, PLAN_PARAM_FAMILY, isStageableIsf,
+  reconcileDeliverable, segmentCapacity, settingValue, PLAN_PARAMS, PLAN_PARAM_FAMILY, isStageableIsf,
 } from './plan.js';
 import { stageItemsFor } from './diagnose-workspaces.js';
 import {
@@ -65,7 +65,7 @@ const PARAM_FAMILY = PLAN_PARAM_FAMILY;
  */
 export function userValue(param, value) {
   if (value == null || value === '') return '';
-  return param === 'isf' ? `1 U : ${value} mg/dL` : String(value);
+  return param === 'isf' ? settingValue(param, value) : String(value);
 }
 
 /** A pump profile's schedule as the Plan reads it — one row per segment. */
@@ -394,14 +394,19 @@ function decisionSection() {
 
 /**
  * What the store retained about the concern this decision was made from — the
- * record's own `decision_context`, not this page's recollection of it.
+ * record's own `decision_context`, not this page's recollection of it. Each
+ * recorded concern prints by its served name, never its identifier, and each
+ * recorded value in the wearer's form for the action row it was captured from;
+ * the explanation prints as recorded (ADR 451).
  */
 function knownSection() {
   const context = framePlan()?.decision_context;
   if (!context || context.state !== 'available') return '';
-  const settings = (context.settings || []).map((setting) => `${setting.value} ${setting.unit}`).join(' · ');
+  const captured = Array.isArray(context.action) ? context.action : [];
+  const settings = (context.settings || [])
+    .map((setting, index) => settingValue(captured[index]?.parameter, setting.value)).join(' · ');
   return `<section class="gf-section"><h3>What was known</h3><dl>
-    <dt>Priority</dt><dd>${e(context.subjects?.join(', ') || '')}</dd>
+    <dt>Priority</dt><dd>${e((context.subject_titles || []).filter(Boolean).join(', '))}</dd>
     <dt>Change</dt><dd>${e(settings)}</dd>
     <dt>Read at</dt><dd>${e(stamp(context.captured_at))}</dd></dl>
     <p>${e(context.explanation)}</p>

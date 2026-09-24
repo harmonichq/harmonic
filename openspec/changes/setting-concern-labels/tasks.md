@@ -125,14 +125,14 @@
 
 ## 3. The Changes and Diagnose lines in the wearer's words
 
-- [ ] 3.1 Move `settingValue(parameter, value)` from `frontend/history.js` into
+- [x] 3.1 Move `settingValue(parameter, value)` from `frontend/history.js` into
   `frontend/plan.js`, unchanged.
   - `history.js` and `follow-up.js` import it and delete their private copies
     and unit tables. They touch no Focus name or reason word (#449/#450).
   - `userValue` in `plan-view.js` and in `utilities.js` takes its
     correction-factor branch from it.
   - Its unit test moves to `frontend/plan.test.js`.
-- [ ] 3.2 Changes' Action figure prints each carried setting instruction as
+- [x] 3.2 Changes' Action figure prints each carried setting instruction as
   `<direction> to <settingValue(parameter, recommended)>`, from the
   instruction's own `parameter`, never from the concern's `units`. Node tests in
   `frontend/changes.test.js`, failing first on the base:
@@ -141,7 +141,7 @@
   - one carrying a carb-ratio instruction reads "lower to 9 g/U";
   - a setting concern served with `title` "Correction factor" shows "Correction
     factor" and neither "ISF" nor "mg/dL/U".
-- [ ] 3.3 `frontend/guidance.js` gains the status words (design.md table). They
+- [x] 3.3 `frontend/guidance.js` gains the status words (design.md table). They
   are chosen from the served disposition and, under `eligible_action`, from the
   served action's shape. For an identified action they also depend on whether
   Changes passes a served Focus offer (`focusOffer(subject)`), and on the
@@ -158,7 +158,7 @@
     no offer) shows "Action identified";
   - a `guided_investigation` read shows "Evidence to inspect";
   - no disposition code appears in any frame's text.
-- [ ] 3.4 Changes' set-aside rows print each row's served name. A row with no
+- [x] 3.4 Changes' set-aside rows print each row's served name. A row with no
   name prints "A concern no longer in this read", never the subject. Add a
   **Concern** entry to `CONTEXT.md`: one candidate Changes can lead with (a
   setting, a habit, a Pattern or an investigation) as guidance serves it; avoid
@@ -166,7 +166,7 @@
   `frontend/changes.test.js`, failing first on the base: named rows print their
   names, an unnamed row prints the phrase, and no `setting:`, `habit:` or
   `pattern:` text appears.
-- [ ] 3.5 The Plan's "What was known" names each recorded subject by its served
+- [x] 3.5 The Plan's "What was known" names each recorded subject by its served
   name (`subject_titles`) and never prints an identifier; a subject with no
   served name prints nothing. It prints each recorded setting through
   `settingValue`, using the parameter of the recorded action row it was
@@ -176,13 +176,13 @@
   ["Correction factor"], `settings` value 32 unit "mg/dL/U", `action` parameter
   "isf") prints "Correction factor" and "1 U : 32 mg/dL", and neither "setting:"
   nor "mg/dL/U".
-- [ ] 3.6 Diagnose's findings queue prints an asserting correction-factor row's
+- [x] 3.6 Diagnose's findings queue prints an asserting correction-factor row's
   numbers through `settingValue`, keeping the queue's own rounding: "now 1 U :
   30.0 mg/dL → " and "1 U : 32.0 mg/dL". Carb-ratio and basal numbers are
   unchanged, and the queue's `UNIT` table loses its correction-factor entry.
   Node test in `frontend/diagnose-findings-queue.test.js`, failing first on the
   base.
-- [ ] 3.7 The correction-factor panel prints its current, estimate, recommended
+- [x] 3.7 The correction-factor panel prints its current, estimate, recommended
   and interval values as "1 U : <value> mg/dL", keeping its own rounding, with
   no unit in its qualifiers. Its heading, breadcrumb leaf (`crumbLabel`) and
   scope sentence say "Correction factor". The peak-hour link names a "carb ratio
@@ -191,10 +191,10 @@
   `frontend/diagnose-workstation.test.js`, failing first on the base: the
   rendered text contains "Correction factor" and "1 U : ", and neither "ISF" nor
   "mg/dL/U".
-- [ ] 3.8 Delete the `#status-src` and `#status-clock` writes in
+- [x] 3.8 Delete the `#status-src` and `#status-clock` writes in
   `frontend/diagnose-workstation.js`. No shipped markup declares either id, and
   a whole-tree `git grep` finds only these writes.
-- [ ] 3.9 Coordinator-authorized after sub-order 1's chunk review (Q3
+- [x] 3.9 Coordinator-authorized after sub-order 1's chunk review (Q3
   delegation, Connor Griffin, 2026-09-23; coordinator ruling R451): the Plan's
   pump-mismatch diff labels its parameters from `PARAM_LABEL` in
   `frontend/plan.js`, which reads "ISF (mg/dL/U)" and "I:C (g/U)". It takes the

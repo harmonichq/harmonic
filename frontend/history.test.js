@@ -10,7 +10,7 @@ import { stamp } from './frame.js';
 import { comparisonReasonWords } from './follow-up.js';
 import {
   changeSection, endingSection, lateConclusionSection, originalSection, reassessmentSection,
-  recordRoster, settingValue,
+  recordRoster,
 } from './history.js';
 
 /* ---------------------------------------------------------------- payloads */
@@ -352,8 +352,3 @@ test('a Focus changed no setting, and its record says that rather than showing a
   assert.doesNotMatch(html, /_/, 'the behavior is named by its served title, never its key');
 });
 
-test('a correction factor reads insulin first on both sides', () => {
-  assert.equal(settingValue('isf', 40), '1 U : 40 mg/dL');
-  assert.equal(settingValue('basal_rate', 0.6), '0.6 U/h');
-  assert.equal(settingValue('carb_ratio', null), 'not recorded');
-});

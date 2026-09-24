@@ -9,17 +9,13 @@ import assert from 'node:assert/strict';
 import {
   formatStartMin,
   segmentAt,
-  acceptedChips,
   assertSinglePlanFamily,
   buildDeliverable,
   collapseDeliverable,
-  deliverableHasChanges,
   deliverableSegmentCount,
   effectivePlanItems,
-  filterPlanItemsToFamily,
   isStageableIsf,
   normalizeIcBlockProvenance,
-  normalizePlanItemsToSingleFamily,
   planFamilyState,
   planItemFamily,
   reconcileDeliverable,
@@ -98,60 +94,6 @@ test('assertSinglePlanFamily rejects mixed families and non-tuning items', () =>
   assert.throws(() => assertSinglePlanFamily([
     { type: 'behavior', key: 'late-meal' },
   ]), /unsupported tuning family behavior/);
-});
-
-test('filterPlanItemsToFamily and normalizePlanItemsToSingleFamily clear off-family picks', () => {
-  const items = [
-    { type: 'basal', start_min: 180, value: 0.6 },
-    { type: 'basal', start_min: 210, value: 0.6 },
-    { type: 'ic', start_min: 720, value: 8 },
-  ];
-  assert.deepEqual(
-    filterPlanItemsToFamily(items, 'basal').map((it) => it.type),
-    ['basal', 'basal'],
-  );
-  const normalized = normalizePlanItemsToSingleFamily(items, 'ic');
-  assert.equal(normalized.family, 'ic');
-  assert.equal(normalized.dropped, 2);
-  assert.deepEqual(normalized.items, [{ type: 'ic', start_min: 720, value: 8 }]);
-});
-
-// --- accepted chips --------------------------------------------------------
-
-test('acceptedChips maps picks to removable provenance chips', () => {
-  const items = [
-    { type: 'basal', start_min: 0, label: '00:00', current: 0.8, value: 0.65, recommended: 0.65 },
-    { type: 'isf', start_min: 720, label: '12:00', current: 45, value: 42, recommended: 40 },
-  ];
-  const chips = acceptedChips(items);
-  assert.equal(chips.length, 2);
-  assert.equal(chips[0].key, 'basal:0');
-  assert.equal(chips[0].edited, false);
-  assert.equal(chips[0].evidenceType, 'basal');
-  // The ISF pick was hand-edited away from its recommendation.
-  assert.equal(chips[1].edited, true);
-  assert.equal(chips[1].evidenceType, 'isf');
-});
-
-test('acceptedChips keys a basal chip on the SLOT so removeChip can delete it', () => {
-  // planItems is keyed `${type}:${item.key}` (planKeyOf); for basal `key` is the
-  // slot (6), not start_min (180). The chip must carry that same key or the ✕
-  // (planItems.delete(chip.key)) silently no-ops.
-  const items = [
-    { type: 'basal', key: 6, start_min: 180, label: '03:00', current: 0.72, value: 0.6, recommended: 0.6 },
-  ];
-  const chips = acceptedChips(items);
-  assert.equal(chips[0].key, 'basal:6');
-  assert.equal(chips[0].start_min, 180); // jumpToReview/edit-cleanup still use start_min
-});
-
-test('acceptedChips accepts a Map and sorts by start_min then type', () => {
-  const m = new Map([
-    ['isf:720', { type: 'isf', start_min: 720, value: 42, recommended: 42 }],
-    ['basal:0', { type: 'basal', start_min: 0, value: 0.65, recommended: 0.65 }],
-  ]);
-  const chips = acceptedChips(m);
-  assert.deepEqual(chips.map((c) => c.key), ['basal:0', 'isf:720']);
 });
 
 // --- deliverable build + provenance ---------------------------------------
@@ -307,24 +249,6 @@ test('deliverableSegmentCount counts distinct collapsed segments for the N/16 ba
   const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
   // Two distinct segments (midnight and noon) after the accepted changes.
   assert.equal(deliverableSegmentCount(rows), 2);
-});
-
-// --- #393: deliverableHasChanges ----------------------------------------
-
-test('deliverableHasChanges is false when nothing is staged (all provenance "current")', () => {
-  // Regression test: an all-current deliverable must NOT be treated as pending.
-  const rows = buildDeliverable({ activeProfile });
-  assert.equal(deliverableHasChanges(rows), false);
-});
-
-test('deliverableHasChanges is true when an accepted pick changes a value', () => {
-  const rows = buildDeliverable({ activeProfile, acceptedItems: accepted });
-  assert.equal(deliverableHasChanges(rows), true);
-});
-
-test('deliverableHasChanges is false for empty rows', () => {
-  assert.equal(deliverableHasChanges([]), false);
-  assert.equal(deliverableHasChanges(null), false);
 });
 
 // --- #94 reconcile: planned deliverable vs detected pump profile ----------
@@ -486,7 +410,7 @@ test('effectivePlanItems preserves ic_block_provenance on an untouched, complete
 });
 
 test('effectivePlanItems strips ic_block_provenance when one member was removed', () => {
-  // Only the 720 pick survives (750 was removed via a chip removal) — it still
+  // Only the 720 pick is in the served draft (750 is missing) — it still
   // lists both members, so the group is incomplete.
   const rows = buildDeliverable({
     activeProfile,
@@ -554,7 +478,7 @@ test('buildDeliverable rejects accepted basal plus ISF picks', () => {
 
 test('only an exact true backend ISF verdict is stageable (#468)', () => {
   // Recurring correction-caused lows own the weaken direction but do not size a new
-  // ISF, so the row carries no recommended value. It must never become a Plan chip.
+  // ISF, so the row carries no recommended value. It must never be staged.
   const directionOnly = {
     parameter: 'isf', label: 'Fasting', current: 36, recommended: null,
     evidence: { direction: 'weaken',

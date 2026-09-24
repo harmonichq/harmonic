@@ -1,18 +1,16 @@
 /* =========================================================================
-   #99 PLAN MODULE — pure deliverable-building logic for the Plan tab.
+   #99 PLAN MODULE — pure deliverable-building logic for the Plan.
 
-   The Plan tab has three layers:
+   The Plan has two layers:
      1. Active-profile reference (rendered straight from /api/pump-settings).
-     2. Accepted-changes list — removable provenance chips (add/remove only),
-        each linking back to the Review evidence it came from.
-     3. Deliverable — a unified ≤16-segment four-parameter pump-ready table
+     2. Deliverable — a unified ≤16-segment four-parameter pump-ready table
         built from the current active profile + the accepted changes. The raw
         model recommendation (#98's
         ConsolidatedProfile) is NOT a source here — only accepted picks move a
         cell off its current value (see #93: one source of truth for "the new
         profile").
 
-   This module owns everything that is *pure* about layer 3: merging the
+   This module owns everything that is *pure* about layer 2: merging the
    accepted plan onto the current profile into unified rows, and provenance
    tagging. No Vue, no DOM, no fetch — so `node --test` imports it with no
    importmap.
@@ -33,14 +31,6 @@
 
 /** Tuning variable families allowed in one Plan draft (ADR 0042). */
 export const PLAN_FAMILIES = ['basal', 'isf', 'ic', 'target'];
-
-/** Human-readable labels for plan family controls/messages. */
-export const PLAN_FAMILY_LABEL = {
-  basal: 'Basal',
-  isf: 'ISF',
-  ic: 'I:C',
-  target: 'Target',
-};
 
 /** Map deliverable-table params back to their one-variable Plan family. */
 export const PLAN_PARAM_FAMILY = {
@@ -152,31 +142,6 @@ export function assertSinglePlanFamily(acceptedItems = null) {
   return state.family;
 }
 
-/** Keep only items in the requested family; useful when staging a new family. */
-export function filterPlanItemsToFamily(items, family) {
-  if (!PLAN_FAMILIES.includes(family)) return [];
-  return toArray(items).filter((item) => planItemFamily(item) === family);
-}
-
-/**
- * Clear mixed or invalid items by keeping the preferred family, or the first
- * valid family already present when no preference is supplied.
- */
-export function normalizePlanItemsToSingleFamily(items, preferredFamily = null) {
-  const arr = toArray(items);
-  let family = PLAN_FAMILIES.includes(preferredFamily) ? preferredFamily : null;
-  if (!family) {
-    const first = arr.find((item) => planItemFamily(item));
-    family = first ? planItemFamily(first) : null;
-  }
-  const normalized = family ? filterPlanItemsToFamily(arr, family) : [];
-  return {
-    items: normalized,
-    family,
-    dropped: arr.length - normalized.length,
-  };
-}
-
 /**
  * Index accepted plan items by `${start_min}:${type}` for O(1) lookup.
  * Later items win on collision (last write is the current draft state).
@@ -189,38 +154,6 @@ function indexAccepted(items) {
     }
   }
   return byKey;
-}
-
-/**
- * The provenance chips for the accepted-changes layer — one chip per accepted
- * plan pick, carrying the info the template needs to render a removable chip
- * that links back to Review evidence.
- *
- * @param {Map|Array} acceptedItems
- * @returns {Array<{ key, type, start_min, label, current, value, recommended,
- *                   edited, evidenceType }>}
- */
-export function acceptedChips(acceptedItems) {
-  return toArray(acceptedItems)
-    .filter((it) => it && it.type != null && it.start_min != null)
-    .map((it) => ({
-      // Must equal the planItems Map key (`${type}:${item.key}`) so removeChip's
-      // `planItems.delete(chip.key)` actually hits — for basal `key` is the SLOT,
-      // not start_min, so keying the chip on start_min silently no-ops the ✕.
-      key: `${it.type}:${it.key != null ? it.key : it.start_min}`,
-      type: it.type,
-      start_min: it.start_min,
-      label: it.label != null ? it.label : formatStartMin(it.start_min),
-      current: it.current != null ? it.current : null,
-      value: it.value,
-      recommended: it.recommended != null ? it.recommended : it.value,
-      // A chip is "manually edited" when the staged value diverges from the rec.
-      edited: it.recommended != null && it.value !== it.recommended,
-      // Which Review evidence surface this chip links back to.
-      evidenceType: it.type,
-    }))
-    .sort((a, b) =>
-      a.start_min - b.start_min || a.type.localeCompare(b.type));
 }
 
 /**
@@ -406,17 +339,6 @@ export function segmentCapacity(rows) {
 }
 
 /**
- * Returns true iff the deliverable carries at least one pending change — i.e.
- * any row has any of the four params where value !== current.  An all-'current'
- * deliverable (nothing staged) returns false.
- */
-export function deliverableHasChanges(rows) {
-  if (!rows || !rows.length) return false;
-  return rows.some((row) =>
-    PLAN_PARAMS.some(({ param }) => row[param].value !== row[param].current));
-}
-
-/**
  * The effective plan the user is committing — one item per proposal cell (an
  * accepted pick), carrying the value actually in effect.
  *
@@ -475,10 +397,10 @@ function icBlockGroupKey(prov) {
  * Any other item (non-`ic`, or `ic` with no provenance) passes through
  * untouched.
  *
- * This is the ONE place the Plan lifecycle re-validates a block claim — call
- * it before every draft save, not just from `effectivePlanItems`, since a
- * chip removal can leave the *raw* accepted-picks list (not just
- * the derived deliverable) holding a now-broken group.
+ * This is the ONE place the Plan lifecycle re-validates a block claim.
+ * `effectivePlanItems` runs every item it records through it, because those
+ * items come from the served draft or record, durable state that can hold a
+ * group that no longer holds together.
  *
  * @param {Array<object>} items  plan items, optionally carrying
  *   `ic_block_provenance: {block_start_min, block_end_min, block_member_start_mins}`

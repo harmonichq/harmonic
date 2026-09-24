@@ -73,7 +73,8 @@ reader takes the first record or finds a record by its identity (design.md).
   `state` and `matchedAt`, its first-Plan branch and `deliverableIsProposal` are
   deleted, and the guidance Plan contract check compares on the rows. The v1
   hand-edit path the desk never uses (`edits`, `isDeliverableEditRevert`, the
-  collapse provenance promotion) is deleted too.
+  collapse provenance promotion) is deleted too, and so is every other `plan.js`
+  export with no live caller (design.md holds the export table).
 
 ## What does not change
 

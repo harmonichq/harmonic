@@ -209,6 +209,69 @@ the promotion this removes.
 F4: `plan-view.js`'s header said `plan.js` owns the schedule "for v1 and v2
 alike". It now names only what the desk uses.
 
+### Coordinator-authorized widening — 2026-09-23: every unused `plan.js` export
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1 (finding F5).
+
+One sweep of every export of `frontend/plan.js`, in place of piecemeal
+findings. Each export was searched for across `frontend/` (the desk modules and
+the replay modules), `scripts/`, `tests/` and `mockups/`; `docs/kb/` holds no
+code. A test is not a live caller, and neither is the locked prototype
+(`mockups/harmonic-v2-glucose-setting.js`, which cannot load; it uses only
+exports that are live anyway). An export used only inside `plan.js` is live when
+the export that uses it is. Every export with no live caller is deleted, with
+its tests; no private helper lost its last caller.
+
+| Export | Live callers outside `plan.js` | Used inside `plan.js` by | Status |
+|---|---|---|---|
+| `PLAN_FAMILIES` | none | `planItemFamily` | kept |
+| `PLAN_FAMILY_LABEL` | none | none | deleted |
+| `PLAN_PARAM_FAMILY` | `plan-view.js`, `desk-behavior.replay.mjs` (S90) | `PLAN_PARAMS` | kept |
+| `PLAN_PARAMS` | `plan-view.js`, `utilities.js`, `watched-change-dock.js` | `buildDeliverable`, `collapseDeliverable`, `effectivePlanItems`, `reconcileDeliverable` | kept |
+| `isStageableIsf` | `plan-view.js` | none | kept |
+| `BASAL_SLOT_MIN` | none | `buildDeliverable`, `effectivePlanItems` | kept |
+| `formatStartMin` | `changes.js`, `diagnose-context.js`, `diagnose.js`, `plan-view.js`, `utilities.js` | `buildDeliverable`, `reconcileDeliverable` | kept |
+| `segmentAt` | none | `buildDeliverable`, `reconcileDeliverable` | kept |
+| `planParamFamily` | none | none after the hand-edit path went | deleted |
+| `planItemFamily` | none | `planFamilyState` | kept |
+| `planFamilyState` | none | `assertSinglePlanFamily` | kept |
+| `assertSinglePlanFamily` | none | `buildDeliverable` | kept |
+| `filterPlanItemsToFamily` | none | only `normalizePlanItemsToSingleFamily` | deleted |
+| `normalizePlanItemsToSingleFamily` | none | none | deleted |
+| `acceptedChips` | none | none | deleted, with the v1 chip layer in the module header |
+| `buildDeliverable` | `plan-view.js`, `desk-behavior.replay.mjs` (S90), `scripts/check_guidance_plan_contract.mjs` | none | kept |
+| `collapseDeliverable` | `plan-view.js` | `deliverableSegmentCount`, `reconcileDeliverable` | kept |
+| `deliverableSegmentCount` | none | `segmentCapacity` | kept |
+| `PROFILE_SEGMENT_CAPACITY` | none | `segmentCapacity` | kept |
+| `segmentCapacity` | `plan-view.js`, `desk-behavior.replay.mjs` (S90) | none | kept |
+| `deliverableHasChanges` | none | none | deleted |
+| `isDeliverableEditRevert` | none | none | deleted |
+| `effectivePlanItems` | `plan-view.js`, `scripts/check_guidance_plan_contract.mjs` | none | kept |
+| `normalizeIcBlockProvenance` | none | `effectivePlanItems` | kept |
+| `PARAM_PRECISION` | `scripts/check_guidance_plan_contract.mjs` | `paramMatches`, `reconcileDeliverable` | kept |
+| `roundToPrecision` | `scripts/check_guidance_plan_contract.mjs` | `normalizeIcBlockProvenance`, `paramMatches`, `reconcileDeliverable` | kept |
+| `PARAM_LABEL` | none | `reconcileDeliverable` | kept |
+| `detectOnPump` | none | none | deleted |
+| `reconcileDeliverable` | `plan-view.js`, `scripts/check_guidance_plan_contract.mjs` | none | kept |
+
+Every "kept" row reaches a desk module: `planItemFamily`, `planFamilyState` and
+`assertSinglePlanFamily` through `buildDeliverable`; `deliverableSegmentCount`
+and `PROFILE_SEGMENT_CAPACITY` through `segmentCapacity`;
+`normalizeIcBlockProvenance` through `effectivePlanItems`; `PARAM_LABEL` and
+`segmentAt` through `reconcileDeliverable` and `buildDeliverable`. The private
+`deliverableIsProposal` and `editParam` went with the widenings above; the
+remaining private helpers (`toArray`, `indexAccepted`, `icBlockGroupKey`,
+`paramMatches`, `DAY_MIN`) each keep a live caller.
+
+`normalizeIcBlockProvenance`'s note that it must run "before every draft save"
+described v1's chip removal. It now says what it does: `effectivePlanItems`
+runs every recorded item through it, because those items come from served,
+durable state.
+
+None of the deleted exports was in the built bundle; the build already
+dropped them. The desk chunk changes only in that note's JSDoc text.
+
 ### Consequences
 
 - S89 fails at the check where it certifies its decision when Plan history is

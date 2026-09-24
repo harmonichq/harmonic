@@ -156,3 +156,24 @@ records the decision under ADR 453.
   `ONLY=S38,S39,S40,S41,S42,S89,S90,S105,S145,S146` at 1280x720 and at
   1440x900, each reporting `executed 10 · failed 0 · deferred 0 · selected 10`
   on the base and on the branch. Passing it also ticks 4.2 and 5.5.
+
+## 7. Coordinator-authorized widening — 2026-09-23 (code review round 1, F5)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 1. design.md
+records the decision and the export table under ADR 453.
+
+- [x] 7.1 Enumerate every export of `frontend/plan.js` and search `frontend/`,
+  `mockups/`, `scripts/`, `tests/` and `docs/kb/` for each. Record the export
+  table in design.md.
+- [x] 7.2 Delete every export with no live, non-test caller, with its tests:
+  `PLAN_FAMILY_LABEL`, `filterPlanItemsToFamily`,
+  `normalizePlanItemsToSingleFamily`, `acceptedChips` (with its `edited` flag
+  and the module header's chip layer) and `deliverableHasChanges`. No private
+  helper loses its last caller.
+- [x] 7.3 Rewrite `normalizeIcBlockProvenance`'s draft-save paragraph to what it
+  does now. `node --test frontend/plan.test.js` reports 37 pass, 0 fail, so
+  task 4.1's pair now reports pass 57, fail 0 (37 and 20).
+- [x] 7.4 The desk chunk changes only in that paragraph's JSDoc text: none of the
+  deleted exports was in the bundle. No replay story beyond task 6.5's ten is
+  owed.

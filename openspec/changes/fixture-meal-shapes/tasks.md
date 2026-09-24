@@ -238,5 +238,8 @@ coordinator's close-out legs, so 5.5 stays open until they run.
 Coordinator-authorized note (release coordinator, 2026-09-24): the posted lock
 header's baseline line ("Sub-orders 3, 4 and 5 shift it … re-record") is superseded.
 The scan keys each acknowledged dose/ratio entry on its path and matched text, never
-its line, so a sub-order re-records only when matched text changes. None did: the
-set held at 227 entries with the same digest through sub-order 5.
+its line, so a sub-order re-records only when matched text changes. Sub-orders 1–4
+changed none (227 entries, the same digest). Sub-order 5's `browser_windows` adds 12
+entries, reviewed and all synthetic: the headlines of the fixed-seed workstation
+payload's setting rows (basal delivered rates 0.61–1.13 U/h, a 4.9 g/U carb ratio, a
+1 U : 42 mg/dL correction factor). The baseline is re-recorded at 239 entries.

@@ -316,7 +316,10 @@ baseline only when it adds or removes matched text: its worker reviews every add
 entry (all synthetic), lists them in its result, and runs
 `uv run python scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`, and
 the coordinator reviews those lists at integration under Q3. Measured: through
-sub-order 3 the set is unchanged (227 entries, the same digest).
+sub-order 4 the set is unchanged (227 entries, the same digest). Sub-order 5's
+`browser_windows` adds 12 entries, all headlines of the synthetic workstation
+payload's setting rows (basal delivered rates, a 4.9 g/U carb ratio, a 1 U : 42 mg/dL
+correction factor). They are re-recorded at 239 entries.
 
 **Desk browser tests and replay stories, read for position or order.** None
 encodes the old order:
@@ -425,7 +428,7 @@ One ordered pass reaches the fixed point (the chain reads in a cycle:
 | `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families`; adds `pattern_cases_by_window` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
 | `mockups/harmonic-v2.exploration/focus.json`, `journey.json`, `workstation.json` | claimant sentences → null | `uv run python mockups/harmonic-v2.exploration/generate.py --check` |
 
-| `scripts/public_scan_config.txt` | the dose/ratio baseline block only if a sub-order adds or removes matched text (none through sub-order 3); sub-order 3 removes the event-comparison capture's pin, which suppressed nothing | the public-tree line: `python3 scripts/build_public_tree.py "$t"`, `check_public_links.py`, `scan_public_tree.py` |
+| `scripts/public_scan_config.txt` | the dose/ratio baseline block only if a sub-order adds or removes matched text (re-recorded once, by sub-order 5: 12 added); sub-order 3 removes the event-comparison capture's pin, which suppressed nothing | the public-tree line: `python3 scripts/build_public_tree.py "$t"`, `check_public_links.py`, `scan_public_tree.py` |
 
 Unmoved and still checked: the workstation's other four generator files, the three
 externally generated workstation captures, and every other `--check` generator.

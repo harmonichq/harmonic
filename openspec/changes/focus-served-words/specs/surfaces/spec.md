@@ -77,8 +77,10 @@ the backend can serve on those lines: the comparison availability codes,
 `candidate_high_without_closed_attribution`,
 `attribution_exceeds_owned_population`, `unassociated_recurrence_anchor`,
 `missing_override_provenance`, `unreadable_harm_interval`,
-`unmatchable_captured_membership` and `reconciliation_required`. A code the
-vocabulary does not know SHALL print as served. Served codes SHALL be unchanged
+`unmatchable_captured_membership`, `reconciliation_required` and
+`context_after_ending`, the saved-ending reason of a backfilled ending whose
+retained context postdates it. A code the vocabulary does not know SHALL print
+as served. Served codes SHALL be unchanged
 in payloads and in data attributes.
 
 #### Scenario: A saved Focus ending names its reason
@@ -89,6 +91,14 @@ in payloads and in data attributes.
 - **THEN** the ending assessment reads "Unavailable" followed by that reason's
   words
 - **AND** `unavailable_adherence` does not appear in the reading pane
+
+#### Scenario: A backfilled ending's late context reads as words
+
+- **GIVEN** a record whose saved ending assessment is unavailable with reason
+  `context_after_ending`
+- **WHEN** the record renders
+- **THEN** the ending assessment names the reason in words and the code does not
+  appear
 
 #### Scenario: Behavior and harm cells name their reasons
 

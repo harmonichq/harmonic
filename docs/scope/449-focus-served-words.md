@@ -27,6 +27,12 @@ goes to the coordinator, never to the user.
   outcome-row codes), including `unassociated_recurrence_anchor`, which neither
   issue lists (evaluation.py:353). Why: R450 asks for every code the backend can
   serve there; enumerated from the producers, not the issue. → ADR
+- **The vocabulary also words #442's `context_after_ending`** (a backfilled
+  ending whose retained context postdates the ending, saved unavailable), with a
+  test, although no producer on this branch serves it. Why: coordinator
+  addition, 2026-09-23 (Q3 delegation): this change owns `comparisonReasonWords`,
+  #442 adds no entry of its own, and the integration merges #449/#450 before
+  #442. Further #442 codes arrive from the coordinator. → ADR
 - **Served state, verdict and mode codes on the same lines print as words**
   (ending "Recorded · <state>", reassessment result and mode, Pattern verdict,
   the `correction_clusters` denominator). Why: coordinator instruction for this

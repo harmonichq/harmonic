@@ -112,19 +112,26 @@ from the producers below, not from the issue text:
 | `reconciliation_required` | the latest pump and sensor data have not been reconciled yet | watched_change.py:1515, :1521, :1530 |
 | `legacy_not_recorded` | this earlier record was kept before Harmonic saved its context | store.py:1604 |
 | `no_readable_outcome` | a period has no readable value for this outcome | follow_up_comparison.py:221 |
+| `context_after_ending` | this change's context was recorded after it ended | #442's backfilled ending (saved unavailable when the retained context postdates the ending); no producer on this branch |
 
 The twelve comparison availability codes already worded (ADR 430) are
 unchanged; the served ending-assessment reason is one of them or `not_recorded`
 (`capture_ending` spreads the comparison's availability into the saved
 assessment, watched_change.py:1549). `no_readable_outcome` is named by R450; no
 desk line prints an outcome row's availability today, so its entry keeps the
-comparison family complete rather than serving a line.
+comparison family complete rather than serving a line. `context_after_ending`
+is a coordinator addition (2026-09-23, Q3 delegation): #442 saves a backfilled
+ending's assessment unavailable with that code when the record's retained
+context postdates the ending. #442 adds no entry of its own, and the
+integration merges this change before #442, so the saved ending line prints it
+in words from the moment #442 lands. Any further #442 code reaches this table
+through the coordinator.
 
 **Lines routed through the vocabulary** (each printed its code on the base):
 
 | Line | Served field | Codes it can serve |
 |---|---|---|
-| Saved ending, "Ending assessment · Unavailable" (history.js `endingSection`) | `original.ending.assessment.reason` | the twelve comparison codes, `not_recorded` |
+| Saved ending, "Ending assessment · Unavailable" (history.js `endingSection`) | `original.ending.assessment.reason` | the twelve comparison codes, `not_recorded`, and #442's `context_after_ending` once it lands |
 | Observed behavior cell (follow-up.js `adherenceTable`) | `adherence.<side>.availability.reason` | the five measurement codes (`zero_opportunities` takes the zero-opportunity branch first) |
 | Attributed harm cell (`adherenceTable`) | `adherence.<side>.harm_availability.reason` | `unreadable_harm_interval`, `zero_opportunities` |
 | "Not met — …" (follow-up.js `readinessArm`, every arm shape) | `readiness.<side>.reason` | `collecting`, `zero_opportunities`, the five measurement codes, `unmatchable_captured_membership` |
@@ -293,10 +300,10 @@ the coordinator's.
 
 ## Siblings
 
-- #442 may save a backfilled ending's assessment unavailable "with a reason that
-  prints as words" (R442). Any new code it serves prints through this change's
-  vocabulary and needs an entry in `COMPARISON_REASON`; the coordinator
-  reconciles at integration.
+- #442 saves a backfilled ending's assessment unavailable "with a reason that
+  prints as words" (R442). Its `context_after_ending` is worded here, above;
+  #442 adds no `COMPARISON_REASON` entry, and any further code it serves reaches
+  this change through the coordinator.
 - #445 edits the Day-link handlers in follow-up.js and history.js; #446 edits
   focus-entry.js's plain arrival; #452 edits history.js's later-conclusion
   memory. Different lines of the same files; merges are the coordinator's.

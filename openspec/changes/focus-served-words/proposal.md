@@ -55,7 +55,8 @@ criteria, ranking, staging, caps and floors. Codes in payloads, data attributes
 and addresses. Changes' guidance disposition, set-aside rows that print subject
 ids, and the Plan's "Priority" subject ids (offered to #451, coordinator
 question Q2). Day links (#445), plain arrival to Changes (#446), later-conclusion
-form state (#452), backfilled ending reasons (#442). Pump writes, real data
+form state (#452), and the backfilled endings themselves (#442; this change
+words their `context_after_ending` reason ahead of them). Pump writes, real data
 reads, vendor fetches.
 
 ## Impact

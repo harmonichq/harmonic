@@ -63,11 +63,14 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 
 ## 3. Served codes print in words
 
-- [ ] 3.1 `COMPARISON_REASON` (`frontend/follow-up.js`) gains the twelve codes
-  and words in ADR 450's vocabulary table. `REASON_CODES` in
-  `frontend/follow-up.test.js` gains them, and the existing vocabulary test
-  keeps asserting words of their own with no underscore and an unknown code
-  printed as served. Fails first on the base for the new codes.
+- [ ] 3.1 `COMPARISON_REASON` (`frontend/follow-up.js`) gains the thirteen
+  codes and words in ADR 450's vocabulary table, including #442's
+  `context_after_ending`, which no producer on this branch serves yet.
+  `REASON_CODES` in `frontend/follow-up.test.js` gains them, and the existing
+  vocabulary test keeps asserting words of their own with no underscore and an
+  unknown code printed as served. A `frontend/history.test.js` case renders a
+  saved ending unavailable with `context_after_ending` and expects its words and
+  no underscore token. Fails first on the base for the new codes.
 - [ ] 3.2 Route the enumerated lines through `comparisonReasonWords`: the saved
   ending assessment (`endingSection`); the Observed behavior and Attributed harm
   cells (`adherenceTable`); every arm's "Not met" line, the setting arm's
@@ -111,7 +114,11 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
 - [ ] 3.5 The Trial finish, Focus resolve and later-conclusion failure lines
   (`frontend/follow-up.js`, `frontend/history.js`) print the served refusal
   message (`error.message`) and never `<code> (<status>)`; the two modules share
-  one failure-message helper rather than two copies. Tests: the
+  one failure-message helper rather than two copies. The Plan and Focus-pin
+  failure lines already print `error.message`, which `ApiTransportError` takes
+  from a served `message` (pinned by the existing `frontend/data.test.js` case
+  that asserts `error.message` equals `detail.message`), so task 1.2 alone
+  ends their "[object Object]" and neither module changes. Tests: the
   `frontend/follow-up.test.js` save-error case (today expecting
   `stale_input_revision (409)`) expects a served message and neither the code
   nor "(409)"; a finish refused through `mount` in

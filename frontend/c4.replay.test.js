@@ -1416,9 +1416,8 @@ test('S121 fails as a feature, never a premise, when the model read serves no le
     feature121('the model read serves no lever_title on the claiming episode'));
 });
 
-test('S121 names every changed feature at once on the pre-release base (a4d374a7)', async () => {
-  // That base serves neither the verdict title nor the episode's lever_title,
-  // and names the Lever from its own table.
+test('S121 names every changed feature at once on a desk serving neither the verdict title nor the lever_title', async () => {
+  // The desk before #426: no served name at all, the Lever named from its own table.
   const model = structuredClone(MODEL423);
   delete model.episodes[0].anchors[2].verdicts[1].title;
   delete model.episodes[0].lever_title;
@@ -1432,6 +1431,30 @@ test('S121 names every changed feature at once on the pre-release base (a4d374a7
       'resting ring is #e2be4c']) {
       feature121(part)(error);
     }
+    return true;
+  });
+});
+
+test('S121 fails with exactly the six items the ticket\'s base (e229bef3) showed', async () => {
+  // e229bef3 is the release trunk after #426: it serves the episode's
+  // lever_title, so the row already ends "· Carb undercount", but no verdict
+  // title. The inks and rings are the coordinator's 2026-09-23 base run's.
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  const base = variant423((log) => {
+    Object.assign(log, { firedInk: 'rgb(134, 173, 120)', warnInk: 'rgb(201, 138, 78)', captions: ['Findings · 2', 'Quiet · 2'] });
+    Object.assign(log.claimed, { word: 'outranked', ink: 'rgb(201, 138, 78)', text: '▽ Low · 54 mg/dL · Carb undercount' });
+    log.markers = { claimed: { size: 8, border: '#c98a4e', fill: '#1f1b18' }, fired: { size: 10, border: '#e07f3f', fill: '#1f1b18' } };
+  });
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(base), model), (error) => {
+    // Node appends the collected list's diff after the sentence; the sentence is the first line.
+    assert.equal(error.message.split('\n')[0], 'S121 the claimed low must read as part of the Finding that claimed it: '
+      + 'its tier reads "outranked", not "claimed"; '
+      + "the model read serves no title on the low's matched correction_on_iob verdict; "
+      + "its tier word paints rgb(201, 138, 78), not the fired tier's rgb(134, 173, 120) (it is the warning ink); "
+      + 'the Findings caption reads "Findings · 2", not "Findings · 1 · 1 claimed"; '
+      + "its resting marker is 8, not the fired marker's 10; "
+      + "its resting ring is #c98a4e, not the fired ring's #e07f3f");
     return true;
   });
 });

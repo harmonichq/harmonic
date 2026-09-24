@@ -13,9 +13,9 @@ Beside the chart, the **Episode Log** sorts the day's anchors (a meal bolus, a
 correction, a low, a high, a suspend) into three bands, in time order. The first
 two list an anchor per row; the third counts the rest rather than listing them.
 A row gives the time, a word for what the engine made of that anchor, the anchor
-itself, and the **lever** of the episode it belongs to. Each episode gets **one
-lever**: the shared evaluator compares observed impact when supported
-eating-sequence evidence competes for it. Other matching behaviors remain
+itself, and the **lever** of the episode it belongs to, when that episode has one.
+An episode gets at most **one lever**: the shared evaluator compares observed
+impact when supported eating-sequence evidence competes for it. Other matching behaviors remain
 inspectable as evidence, never stacked as separate blame.
 
 The rows sit in three bands:

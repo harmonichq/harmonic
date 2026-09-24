@@ -3457,13 +3457,17 @@ S121 · On a Day whose Episode Log holds a claimed low, the low's row reads
             row not ending with the lever_title, a caption counting rows, and
             a claimed marker smaller than or hued unlike the fired one, and it
             fails as a premise on a missing claimed low or row.
-  status:   authored on the branch; coordinator-run pending. Expected: the
-            pre-release base a4d374a7 with the branch harness laid over fails
-            at its feature assertion, not a premise (that base serves neither
-            the verdict title nor the episode's lever_title, words the low
-            "outranked" in the warning ink, captions its rows and rests the
-            claimed marker smaller, in the warning ring); the branch passes at
-            1280x720 and 1440x900.
+  status:   replayed-pass on branch 0cd74cd5 at 1280x720 and 1440x900. The
+            ticket's base e229bef3 (the release trunk after #426) with the
+            branch harness laid over fails at its feature assertion at both
+            sizes, naming six items: its tier reads "outranked", not
+            "claimed"; the model read serves no title on the low's matched
+            correction_on_iob verdict; its tier word paints rgb(201, 138, 78),
+            not the fired tier's rgb(134, 173, 120) (the warning ink); the
+            Findings caption reads "Findings · 2", not "Findings · 1 · 1
+            claimed"; its resting marker is 8, not the fired marker's 10; its
+            resting ring is #c98a4e, not the fired ring's #e07f3f.
+            Coordinator-run 2026-09-23.
 
 S122 · On the same Day, the Findings caption's Glossary control, operated from
        the keyboard, opens the Glossary with its Episode Log group in view,
@@ -3486,10 +3490,12 @@ S122 · On the same Day, the Findings caption's Glossary control, operated from
             drives it on fake pages: it fails on a missing or misnamed control,
             a group out of view and focus not returned, and as a premise on a
             missing caption.
-  status:   authored on the branch; coordinator-run pending. Expected: the
-            pre-release base a4d374a7 with the branch harness fails at "S122
-            the Findings caption must carry a Glossary button named for its
-            band"; the branch passes at 1280x720 and 1440x900.
+  status:   replayed-pass on branch 0cd74cd5 at 1280x720 and 1440x900. Base
+            a4d374a7 with the branch harness laid over fails at both sizes at
+            its feature assertion, "the Findings caption must carry a
+            Glossary button named for its band" (actual null). No such button
+            exists before #423, so the base commit does not change this
+            check. Coordinator-run 2026-09-23.
 ```
 
 ### #423 handler inventory

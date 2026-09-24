@@ -244,7 +244,7 @@ const MIDDLE_RANK_WIDTH = 780;
    PAIR stays tight and the block of pairs sits against the rail's own margin:
    stretched to the full rail width the numerals ended up marooned a column away
    from the words they belong to, with the white space inside the row. */
-const RAIL = Object.freeze({ gutter: 10, label: 132, pitch: 24, lead: 14 });
+const RAIL = Object.freeze({ gutter: 10, label: 132, pitch: 24, lead: 14, ruleAbove: 6, ruleBelow: 8 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
    cheaper than measuring text the layout cannot reflow anyway. */
@@ -258,6 +258,26 @@ const editorialWrap = (text, width, size) => {
   }
   return lines.join('\n');
 };
+/* WHY A NIGHT WAS LEFT OUT (#434, the second ADR 434). The analyzer stamps each
+   excluded night with one reason, first by rank, and the payload carries the six
+   counts. This is the one table from a served key to the words a reader sees, in
+   that rank: the tile's rail, tally and description and the slot panel's line
+   all read it, and none of them sums, derives or reclassifies a count — the
+   total is the served `excluded_night_count`, and each count is its served
+   bucket. A reason with no nights is not printed. */
+const EXCLUDED_NIGHT_REASONS = Object.freeze([
+  ['before_current_setting', 'before the current rate'],
+  ['below_range_or_suspended', 'low or suspended'],
+  ['above_range', 'high'],
+  ['insulin_acting', 'insulin on board'],
+  ['carb_log', 'logged carbs'],
+  ['other', 'other reasons'],
+]);
+export function excludedNightReasons(evidence) {
+  const served = evidence?.excluded_night_reasons || {};
+  return EXCLUDED_NIGHT_REASONS.filter(([key]) => served[key] > 0)
+    .map(([key, words]) => ({ key, count: served[key], words }));
+}
 
 function basalEditorialOption(data, mini, colors, surface) {
   const seatWidth = surface?.clientWidth || surface?.getBoundingClientRect?.().width || 0;
@@ -444,6 +464,8 @@ function basalEditorialOption(data, mini, colors, surface) {
         ? ` · programmed ${params.data.programmed.toFixed(2)}`
         : ' · no programmed rate on file') },
   });
+  const excluded = data?.excluded_night_count ?? 0;
+  const reasons = excludedNightReasons(data);
   /* A staircase read aloud is its crossing and its tally — the standing kind
      description ("N nights of steady data") names the roster this form is not
      drawing. */
@@ -460,8 +482,12 @@ function basalEditorialOption(data, mini, colors, surface) {
     ...(finite(estimateValue)
       ? [`estimate ${estimateValue.toFixed(2)} U/h`
         + (hasBand ? `, range ${ciLo.toFixed(2)} to ${ciHi.toFixed(2)}` : '')] : []),
-    `${data?.excluded_night_count ?? 0} night${(data?.excluded_night_count ?? 0) === 1 ? '' : 's'} excluded`,
+    `${excluded} night${excluded === 1 ? '' : 's'} excluded`,
   ].join('; ');
+  /* The tile reads the total out and then why, reason by reason. The thumbnail
+     keeps the total alone: the miniature is unchanged (ADR 434). */
+  const reasonsSaid = reasons.length
+    ? `: ${reasons.map(({ count, words }) => `${count} ${words}`).join(', ')}` : '';
   if (mini) {
     /* THE THUMBNAIL IS ONE SENTENCE: a lopsided hill with a line through it and
        most of the mass on the far side. Axis, ticks and every word but the slot
@@ -530,24 +556,42 @@ function basalEditorialOption(data, mini, colors, surface) {
     [atRate, 'exactly as set'],
     ...(unpaired ? [[unpaired, 'no programmed rate']] : []),
   ];
-  const railRule = EDITORIAL.figureTop + 26 + tallyRows.length * RAIL.pitch + 6;
-  const railRows = [
-    ...tallyRows.map(([count, label], index) =>
-      [count, label, EDITORIAL.figureTop + 26 + index * RAIL.pitch]),
-    /* One statement, one line: the rail's head already says these are the steady
-       nights, so "not steady" carries the reason without reciting the criterion
-       and without wrapping into what read as a second data point. */
-    [data?.excluded_night_count ?? 0, 'excluded — not steady', railRule + 8],
-  ];
+  /* Below its own rule the table says how many nights were left out and then
+     why: the served total on its own row, then each served reason that has
+     nights, in rank order (ADR 434). */
+  const excludedRows = [[excluded, 'excluded'],
+    ...reasons.map(({ count, words }) => [count, words])];
+  /* THE TABLE FITS ITS CANVAS. With the reasons on rows of their own it can
+     outgrow the tile: nights left out for every reason, beside a night with no
+     programmed rate, make eleven rows. Where the rows fit between the table head
+     and the footer rule — keeping the clearance the table keeps under its own
+     rule — they stand at today's pitch, exactly where they always did. Where they
+     do not, the pitch and the rule's spacing shrink by one factor until they fit,
+     and the type follows the pitch down (see the rail series). */
+  const railLayout = (height) => {
+    const top = EDITORIAL.figureTop + 26;
+    const room = height - 28 - RAIL.ruleBelow - top;
+    const need = (tallyRows.length + excludedRows.length) * RAIL.pitch + RAIL.ruleAbove + RAIL.ruleBelow;
+    const scale = Math.min(1, room / need);
+    const pitch = RAIL.pitch * scale;
+    const rule = top + tallyRows.length * pitch + RAIL.ruleAbove * scale;
+    return { pitch, rule, rows: [
+      ...tallyRows.map(([count, label], index) => [count, label, top + index * pitch]),
+      ...excludedRows.map(([count, label], index) =>
+        [count, label, rule + RAIL.ruleBelow * scale + index * pitch]),
+    ] };
+  };
   /* The verdict block reads as the table's own head: same right margin, same
      width, so the section has one edge rather than four. */
   const railHead = (style, top) => ({ type: 'text', right: EDITORIAL.margin, top,
     silent: true, style: { align: 'right', width: EDITORIAL.rail, ...style } });
   /* AT THE MIDDLE RANK THE DECK AND THE RAIL SPEAK IN ONE VOICE EACH. The
      verdict line carries what the slug carried — the backend's word, the
-     estimate, its range — and the tally line carries the rail's four counts,
-     exclusions included, because the count arguing against the finding may never
-     be the one that gets dropped for room. */
+     estimate, its range — and the tally line carries the rail's counts, the
+     excluded total included. Of the reasons only the low-or-suspended count
+     comes along, because the count arguing against the finding may never be the
+     one that gets dropped for room; the others stay on the full rail and the
+     slot panel (ADR 434). */
   const compactVerdict = [verdict.toUpperCase(),
     finite(estimateValue) ? `${estimateValue.toFixed(2)} U/h` : 'no estimate',
     ...(hasBand ? [`(${ciLo.toFixed(2)}–${ciHi.toFixed(2)})`] : []),
@@ -555,12 +599,17 @@ function basalEditorialOption(data, mini, colors, surface) {
        flag flies and the tally line is standing in it — so the rate the whole
        figure is anchored on is named here instead. */
     ...(hasRule ? [`programmed now ${programmed.toFixed(2)}`] : [])].join(' · ');
+  const low = reasons.find(({ key }) => key === 'below_range_or_suspended');
   const compactTally = `${total} steady night${total === 1 ? '' : 's'}`
     + ` · ${above} more · ${below} less · ${atRate} as set`
     + (unpaired ? ` · ${unpaired} unpaired` : '')
-    + ` · ${data?.excluded_night_count ?? 0} excluded`;
+    + ` · ${excluded} excluded`
+    + (low ? ` (${low.count} ${low.words})` : '');
+  /* A crowded tally steps down to the design system's smallest type rather than
+     run past the seat's margin: every token keeps its words and its order. */
+  const tallySize = compactTally.length * 10 * .52 <= seatWidth - L.margin * 2 ? 10 : 9;
   return {
-    ...chartBase(description, false, colors),
+    ...chartBase(`${description}${reasonsSaid}`, false, colors),
     legend: { show: false },
     grid: { left: L.margin, right: L.rail + L.margin + (compact ? 26 : 16),
       top: L.figureTop, bottom: L.footerBand, containLabel: false },
@@ -568,7 +617,7 @@ function basalEditorialOption(data, mini, colors, surface) {
       { type: 'text', left: L.margin, top: L.deckTop, silent: true,
         style: { text: compactVerdict, fill: colors.text, font: `600 11px ${MONO}` } },
       { type: 'text', left: L.margin, top: L.tallyTop, silent: true,
-        style: { text: compactTally, fill: colors.muted, font: `500 10px ${FONT}` } },
+        style: { text: compactTally, fill: colors.muted, font: `500 ${tallySize}px ${FONT}` } },
     ] : [
       /* The verdict slug wears a warm-grey square, never rust: a hold is not an
          alarm, and the word beside it is the backend's own. */
@@ -587,7 +636,7 @@ function basalEditorialOption(data, mini, colors, surface) {
       railHead({ text: `${total} STEADY NIGHT${total === 1 ? '' : 'S'}`,
         fill: colors.muted, font: caps }, EDITORIAL.figureTop),
       /* The footer is the window and nothing else: the exclusion rule it used to
-         recite is the rail's last row. */
+         recite is the rail's excluded rows. */
       ...(slotWindow ? [{ type: 'text', left: EDITORIAL.margin, bottom: 10, silent: true,
         style: { text: slotWindow, fill: colors.muted, font: caps } }] : []),
     ],
@@ -615,15 +664,22 @@ function basalEditorialOption(data, mini, colors, surface) {
       ...(compact ? [] : [{ type: 'custom', id: 'rail', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
           const numeralEnd = api.getWidth() - EDITORIAL.margin - RAIL.label - RAIL.gutter;
-          return { type: 'group', children: railRows.flatMap(([count, label, top]) => {
-            const middle = top + RAIL.pitch / 2;
+          const { pitch, rows } = railLayout(api.getHeight());
+          /* The type follows a shrunk pitch down and never grows past today's: a
+             line of type sets about 1.25 of its size tall, so each row's text
+             stays inside its own pitch and no two rows touch. */
+          const numeralSize = Math.min(16, Math.floor(pitch / 1.25));
+          const lead = Math.min(RAIL.lead, pitch);
+          const labelSize = Math.min(11, Math.floor(lead / 1.25));
+          return { type: 'group', children: rows.flatMap(([count, label, top]) => {
+            const middle = top + pitch / 2;
             return [
               { type: 'text', style: { text: String(count), x: numeralEnd, y: middle,
                 align: 'right', verticalAlign: 'middle',
-                fill: colors.text, font: `600 16px ${MONO}` } },
-              { type: 'text', style: { text: editorialWrap(label, RAIL.label, 11),
+                fill: colors.text, font: `600 ${numeralSize}px ${MONO}` } },
+              { type: 'text', style: { text: editorialWrap(label, RAIL.label, labelSize),
                 x: numeralEnd + RAIL.gutter, y: middle, align: 'left', verticalAlign: 'middle',
-                lineHeight: RAIL.lead, fill: colors.muted, font: `11px ${FONT}` } },
+                lineHeight: lead, fill: colors.muted, font: `${labelSize}px ${FONT}` } },
             ];
           }) };
         } }]),
@@ -644,7 +700,7 @@ function basalEditorialOption(data, mini, colors, surface) {
           const children = compact ? [] : [
             box(EDITORIAL.margin, height - 28, width - EDITORIAL.margin * 2, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
-            box(railLeft, railRule, EDITORIAL.rail, 1, hair),
+            box(railLeft, railLayout(height).rule, EDITORIAL.rail, 1, hair),
           ];
           /* A 12px text sets to about .52 of its size per character. Nothing on
              this canvas reflows, so a label that would overrun the plot is

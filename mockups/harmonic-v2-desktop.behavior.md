@@ -3371,3 +3371,67 @@ ends with the desk's own word, not the served Lever name.
 Amended S61 · 2026-09-23 · #426 / Q2 sanction: The contextual entry also carries a display title beside its canonical subject, in the address, and its Opened-from section names the subject by that served title (for a selected occurrence, the case file's served finding title), never by the routing subject; no `finding:`, `pattern:` or `basal:` text appears there. Given the Day's served model read carries at least one attributed episode and the Episode Log renders a row of one (a premise that fails loudly), each row of an attributed episode ends with that episode's served Lever name, and no row prints an underscore token. App body: frontend/c2.replay.mjs S61; fail-first proof: frontend/replay-cases.test.js, "S61 requires Day to name its origin and each attributed row by the served names". Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900 (`ONLY=S61,S62`: executed 2 · failed 0 · deferred 0 · selected 2), coordinator-run 2026-09-23; base a4d374a7 with the branch harness at 1280x720 fails it at the origin assertion (saw Opened from `finding:over_treated_low` and the 13:55 row ending `over-treated low`; executed 1 · failed 1 · selected 2). Before/after renders are owed to the coordinator's integration batch.
 
 Amended S62 · 2026-09-23 · #426 / Q2 sanction: While away, the Day desk names that subject by its served title, no longer verbatim; the return still holds and focuses the exact occurrence held when Day opened. App body: frontend/c2.replay.mjs S62, unchanged. Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900, and on base a4d374a7 with the branch harness at 1280x720, coordinator-run 2026-09-23.
+
+## #434 amendment — 2026-09-23
+
+S154 is the fail-first obligation for the desk's excluded-night reasons, the
+served-desk scenario of the pinned change's surfaces requirement ("The basal
+evidence names why its nights were excluded", in
+`openspec/changes/basal-excluded-night-reasons/specs/surfaces/spec.md`). The
+basal analyzer now stamps one reason on every excluded night, and the basal tile
+and the basal slot panel name each nonzero reason beside the served total, in
+the reader words the second ADR 434 in that change's `design.md` fixes. The full
+rail's retired label "excluded — not steady" was asserted by no story in this
+ledger, and no story asserted the panel's or the description's exclusion
+wording, so no story is amended or retired.
+
+The sanction is Connor Griffin's, 2026-09-23: he answered "Q1 A, Q2 A, defaults
+all fine, go" to the question "Can your reply here count as sign-off for the UI
+copy and tone changes? … Yes. I record your answer as the approval for every
+change these 13 checklists call for, and write the wording in CONTEXT.md
+terms." #434's checklist calls for these words and this story.
+
+S154 is app-opener-only, like S113–S117; browser execution belongs to the
+coordinator at 1280x720 and 1440x900. The crowded rail and the crowded
+middle-rank tally have node-level evidence only (`frontend/diagnose-evidence-charts.test.js`):
+no showcase slot serves more than two reasons, so no served desk state can
+show them. This section leaves the header's inventory line, every existing
+frozen block and `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` to the
+release coordinator.
+
+```
+S154 · Opening a basal slot with excluded nights in Diagnose names why they
+       were left out: the slot panel's one excluded-night line and the basal
+       tile's accessible description each carry the served total and every
+       nonzero served reason with its served count, in rank order, in the
+       reader words "before the current rate", "low or suspended", "high",
+       "insulin on board", "logged carbs" and "other reasons".
+  element:  #level .empty; #tile-focal .evidence-tile .tile-chart (aria-label)
+  source:   frontend/diagnose-evidence-charts.js excludedNightReasons /
+            basalEditorialOption; frontend/diagnose-workstation.js
+            renderSlotLevel
+  lock:     ADR 434 — the desk names excluded-night reasons in fixed reader
+            words (openspec/changes/basal-excluded-night-reasons/design.md)
+  data:     the app's own showcase; its 12:30 slot serves three excluded
+            nights, 1 insulin_acting and 2 other (the served 30-day payload,
+            read in-process through the API test client over a scratch copy
+            of the showcase, 2026-09-23)
+  evidence: C4_STORIES.S154; opens the 24 h rail, reads the 12:30 night
+            evidence and requires its served total of 3 (the premise),
+            selects the 12:30 lane cell, requires the panel line "3 excluded
+            nights: 1 insulin on board, 2 other reasons" (the feature
+            assertion, made before anything reads the served breakdown),
+            holds the served breakdown to those pinned counts, then requires
+            the focal basal:750 tile's aria-label to carry "3 nights
+            excluded: 1 insulin on board, 2 other reasons"
+  status:   base a4d374a7 with the 4895f80b harness fails at its feature
+            assertion at 1280x720 ("S154 the panel's excluded-night line must
+            name each served reason", saw ["3 excluded nights"]); the base run
+            at 1440x900 timed out loading the page under machine load before
+            the story began, and the coordinator re-runs it at integration;
+            branch 4895f80b passes at 1280x720 and 1440x900; the desk browser
+            suite passed 40 of 40 and the full acceptance.test.py passed;
+            coordinator-run 2026-09-23. Raw logs and the before-and-after
+            renders are owed to docs/scope/release-422-434-evidence/434/ at
+            integration
+```

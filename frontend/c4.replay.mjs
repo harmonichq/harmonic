@@ -1628,6 +1628,37 @@ export const C4_STORIES = {
       }, `S153 the ${head} slot's panel agrees with its key verdict`);
     }
   },
+  // #434: the served desk names why a basal slot's nights were left out. The
+  // showcase's 12:30 slot serves three excluded nights, one under insulin on
+  // board and two for other reasons (the served 30-day payload, read in-process
+  // through the API test client over a scratch copy of the showcase,
+  // 2026-09-23). The panel line is asserted before anything reads the new
+  // served breakdown, so the base app fails at that line rather than at a
+  // premise; the served breakdown is then held to the pinned counts, so the
+  // words on screen are proven to be the served ones.
+  async S154(page) {
+    await openDiagnoseRail(page);
+    const served = await read(page, '/api/diagnose/basal-night-evidence', { slot: 25 });
+    assert.equal(served.excluded_night_count, 3,
+      'S154 premise: the showcase must serve three excluded nights at 12:30');
+    await page.getByRole('button', { name: /^12:30 basal slot,/ }).click();
+    await page.waitForFunction(() => document.querySelector('#lane > button[aria-pressed="true"]')
+      ?.getAttribute('aria-label')?.startsWith('12:30 basal slot,'), null, { timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const lines = seen(await page.locator('#level .empty').allInnerTexts());
+      assert.ok(lines.includes('3 excluded nights: 1 insulin on board, 2 other reasons'),
+        `S154 the panel's excluded-night line must name each served reason: ${JSON.stringify(lines)}`);
+    }, 'S154 the panel line names the served reasons');
+    assert.deepEqual(served.excluded_night_reasons, { before_current_setting: 0,
+      below_range_or_suspended: 0, above_range: 0, insulin_acting: 1, carb_log: 0, other: 2 },
+    'S154 the pinned counts must be the served breakdown');
+    await waitForReplayAssertion(async seen => {
+      const label = seen(await page.locator('#tile-focal .evidence-tile[data-chart-id="basal:750"] .tile-chart')
+        .getAttribute('aria-label'));
+      assert.ok(label?.includes('; 3 nights excluded: 1 insulin on board, 2 other reasons'),
+        `S154 the tile's accessible description must name each served reason: ${label}`);
+    }, 'S154 the tile description names the served reasons');
+  },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

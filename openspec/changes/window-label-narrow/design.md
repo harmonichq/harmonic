@@ -49,6 +49,18 @@ Each fact names its evidence. Theory is marked as theory.
   newline that ends a plain segment is dropped, and the head fuses into the
   tail ("24:00INSUFFICIENT"). A newline that opens the tail's rich token
   (`{th|\n…}`) stacks correctly.
+- **A label-level pad would not hug the text.** ZRender
+  (`zrender/lib/graphic/helper/parseText.js`, `parseRichText`) sets a label's
+  content width to its `width` whenever one is set, and draws a label-level
+  `backgroundColor` at that full width. It draws a rich token's background at
+  the token's own width, which is its text width plus its horizontal padding.
+  The spike's second part lays the padded head and tail tokens out as
+  `_renderRichText` does, with the label `width` at the region less 2 × 5 px.
+  At 832 wide every pad stays inside its region in all five cases: a centred
+  24 h caption, Evening and Afternoon parked left, Overnight parked right, and
+  a head that itself wraps. The opening newline's empty first piece is not
+  added to a line that already holds the head, so it moves nothing. ZRender
+  reads padding in ECharts' normalized four-value form.
 
 ### The Spotlight's middle-rank verdict line
 
@@ -172,16 +184,24 @@ inside the chart bounds (words kept whole, nothing shortened); no change at
   Anchor, distance, offset and alignment stay as today.
 - **Otherwise it wraps.** The caption goes inside whichever region is wider:
   the window, less `LABEL_PAD`, or that side's room. It gets:
-  - `width` set to that region and `overflow: 'break'`;
-  - on a thin window, a stacked formatter: the head, then the tail on its own
-    line, where the one-line separator " · " gives way to the line break. The
-    newline opens the tail's rich token, per the spike;
-  - on a window that is not thin, the head alone, which also breaks only
-    between words;
-  - the knock-out pad the target caption and the 70/180 numerals already use:
-    `backgroundColor: colors.rail`, padded;
-  - an explicit 13 px line height, because ZRender's default line pitch
-    equals the type size;
+  - a label `width` of that region less 2 × 5 px, the pad's two sides, and
+    `overflow: 'break'`;
+  - the head in its own rich token, `hd`, which restates the label's colour,
+    10 px size, 700 weight and 0.5 letter spacing, so it paints as the head
+    does today;
+  - on a thin window, the tail in the `th` token on its own line: the
+    formatter is `{hd|<head>}{th|\n<tail>}`, and the one-line separator
+    " · " gives way to the line break. The newline opens the tail's token, per
+    the spike;
+  - on a window that is not thin, the `hd` token alone, which also breaks
+    only between words;
+  - the knock-out pad the target caption and the 70/180 numerals already use,
+    on the tokens and never on the label: `hd` and `th` each carry
+    `backgroundColor: colors.rail` and `padding: [2, 5]`. Each line's pad
+    then hugs its own text, and none reaches past the region (the spike);
+  - no explicit line height: each padded token's own height, about 14 px,
+    sets the pitch, so two lines' pads abut without covering each other's
+    text;
   - the same anchor as today for its region: the window area's `insideTop`
     label inside the window, or the parked `markPoint` outside it.
 - **The target caption moves when the window caption wraps.** It takes its
@@ -459,6 +479,10 @@ reaches.
   - 1024×768 on 24 h: the header unchanged.
   - 1280×720 and 1440×900 on every preset: changed only where the "60" (and
     the hidden "180") tick label and the Spotlight rule's stub are concerned.
+  - 832×720, a crop of the glucose overview with Evening pressed and one with
+    Afternoon pressed. The parked caption is shown wrapped. Before, it runs
+    past the chart's left edge. After, each line's pad hugs its own text
+    inside the left margin, clear of the y-axis labels.
   - 1280×720 with Evening pressed, then narrowed to 832×720 with nothing
     pressed. Before, the parked caption is cut at the chart's left edge and
     the Spotlight keeps its full layout. After, both are laid out for 832.
@@ -476,6 +500,8 @@ reaches.
     header's bounds, or under the Keep control, in a state S183, S184 or S185
     covers, including one reached by resizing the window;
   - any text in the glucose overview overprinting other text there;
+  - a caption's pad reaching past its region, straddling a window gate, or
+    entering the y-axis label column;
   - the programmed rule crossing a tick label;
   - any change at 1280×720 or 1440×900 beyond the two collision fixes, in the
     states S183, S184 and S185 cover;
@@ -512,10 +538,15 @@ reaches.
     - S185 failing at 832 on the title, and passing at 1024×768 and the run's
       own size.
 
-    On the branch all three pass at 1280×720 and at 1440×900.
+    On the branch all three pass at 1280×720 and at 1440×900. On the branch
+    S183 also finds every wrapped caption's pad boxes inside their region,
+    straddling no gate and clear of the y-axis label column. On base no
+    caption wraps, so none is drawn.
   - Node tests through `renderCanvas`'s emitted option cover:
-    - the stacked formatter, with the newline opening the rich token;
-    - the region width, the break overflow, the pad and the line height;
+    - the stacked formatter, `{hd|…}{th|\n…}`, with the newline opening the
+      tail's token;
+    - the label width at the region less 10 px, and the break overflow;
+    - the pad on the `hd` and `th` tokens and none on the label;
     - the target caption's floor placement;
     - one-line placements unchanged, both where they fit inside and where they
       park;

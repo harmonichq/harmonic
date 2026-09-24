@@ -106,3 +106,35 @@ None. This release files no follow-up issue.
   at a55b8f8e left Q1–Q3 and the two findings open. The coordinator ruled all
   five, and this revision absorbs them. There are no reviewer blockers yet.
   The mandatory `/plan-review` is the coordinator's to dispatch.
+- **Round 1 (`/plan-review` r1 on e1524cae): BLOCKED, 2 blockers, both
+  authoring.** The coordinator verified them and ruled the fixes:
+  1. The lock's Verification transcribed AGENTS.md's gate as seven lines. The
+     pinned AGENTS.md has eight: the public-tree scan
+     (`build_public_tree.py` / `check_public_links.py` / `scan_public_tree.py`)
+     was missing. Fixed:
+     - the eighth line is transcribed byte-exact and marked worker-run;
+     - tasks 8.1 runs it, and it passes on e1524cae (0 findings);
+     - a Traps line and the tasks preamble say that shipping-file comments
+       cite decision records by number and never name `docs/scope/`,
+       `mockups/` or `openspec/changes/` paths.
+  2. The knock-out pad sat on the label. ZRender draws a label-level
+     background at the label's full `width`, so the pad would fill the whole
+     region instead of hugging the text. Fixed:
+     - the pad moves onto the `hd` and `th` rich tokens;
+     - the label width is the region less 2 × 5 px;
+     - ADR 455's first record, tasks 2.1 and 2.2 are restated;
+     - S183 checks every caption pad box (the text element's `rect` children)
+       against the y-axis label column, the chart's right edge and the gates;
+     - the render matrix names the parked, wrapped caption at Evening and
+       Afternoon at 832.
+
+  Verified while fixing:
+  - the extended spike lays the padded tokens out as ZRender does and
+    finds every pad inside its region in five layouts;
+  - the opening newline's empty first piece joins no occupied line, so it
+    moves nothing;
+  - ZRender reads token padding in the normalized four-value form;
+  - the 13 px line height is dropped: the padded tokens' own height sets the
+    pitch.
+
+  No injected blockers.

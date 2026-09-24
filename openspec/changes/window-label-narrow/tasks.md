@@ -5,6 +5,11 @@ binds a port: the coordinator runs every browser leg. This ticket's replay story
 IDs are S183, S184 and S185. `design.md` holds the verified facts, the five
 decisions, the revise preparation and the risk contract.
 
+Comments in shipping files cite decision records by number only, as
+`ADR 455`, and dated rulings by their date. They never name a `docs/scope/`,
+`mockups/` or `openspec/changes/` path, including the wrap spike and the
+ledger's rulings. The publishable tree's link check rejects such paths.
+
 ## 1. The three stories, before any implementation
 
 Each story is built the way S151 is:
@@ -28,7 +33,9 @@ in the page from `chart.getZr().storage.getDisplayList()`
 (`type === 'tspan'`), with the box from `getBoundingRect()` and the span's
 transform applied, as `assertResponseAnchorGeometry` in
 `frontend/diagnose-replay.mjs` does. Spans are grouped by their `parent` text
-element. "Settled" means `laidOutBrace404` has returned after a preset press.
+element. A caption's "pad boxes" are that same text element's `rect` children
+in the display list: ZRender's token backgrounds, boxed the same way. The text
+spans alone cannot show a pad. "Settled" means `laidOutBrace404` has returned after a preset press.
 After a resize with no press, it means the chart host's `clientWidth` equals
 its new box, the chart is idle, and two animation frames have passed.
 
@@ -62,7 +69,16 @@ its new box, the chart is idle, and two animation frames have passed.
     this check;
   - any two painted text spans in `#chart` overlap, at any size;
   - at the run's own size, the caption stands on more than one line, that
-    is, its spans do not share one top within 1 px.
+    is, its spans do not share one top within 1 px;
+  - a caption pad box, or a caption span, fails any of these three bounds:
+    - it reaches left of the plot's left edge (`GRID.left`, 34 px), into the
+      y-axis label column;
+    - it reaches past `#chart`'s right edge;
+    - it straddles either of the window's gates, that is, it lies partly
+      inside and partly outside the window by more than 1 px.
+
+    The gates are `xAtMinute({ clientWidth }, minute)` of the preset's start
+    and end, as `laidOutBrace404` computes them.
 
   Premise: at 832×720 the 24 h caption carries the insufficient-sample notice,
   so the store exercises the thin path. Otherwise S183 fails its premise.
@@ -75,6 +91,9 @@ its new box, the chart is idle, and two animation frames have passed.
   - a notice missing its count;
   - two overlapping spans;
   - a two-line caption at the run's size;
+  - a pad box inside the text's bounds but reaching into the y-axis label
+    column;
+  - a pad box straddling a gate;
   - one message naming failures at two sizes.
 - [ ] 1.2 Add S184, the Spotlight's verdict line. S184 opens Diagnose at rest,
   where the Spotlight shows the next-in-line basal slot. It reads the
@@ -173,38 +192,57 @@ its new box, the chart is idle, and two animation frames have passed.
     distance, offset and alignment, only when its estimated width fits that
     side's room. On the right, the room runs to the chart's right edge; on the
     left, to the plot's left edge;
-  - otherwise, wrap it inside the wider of the window (less `LABEL_PAD`) and
-    that room:
-    - `width` set to the region, and `overflow: 'break'`;
-    - on a thin window, a stacked formatter whose newline opens the tail's
-      rich token (`docs/scope/455-caption-wrap.spike.mjs`);
-    - on a window that is not thin, the head alone;
-    - the knock-out pad (`backgroundColor: colors.rail`, padded as the target
-      caption is);
-    - an explicit 13 px line height.
+  - otherwise, wrap it inside the wider of two regions. One is the window,
+    `winPx − LABEL_PAD`. The other is that side's room: on the right
+    `el.clientWidth − (xEnd + 6)`, on the left `xStart − 6 − GRID.left`. The
+    wrapped label gets:
+    - `width` set to the region less 2 × 5 px, and `overflow: 'break'`;
+    - the head in its own rich token, `hd`, whose style restates the label's
+      `colors.windowEdge`, 10 px size, 700 weight and 0.5 letter spacing;
+    - on a thin window, the formatter `{hd|<head>}{th|\n<tail>}`, whose
+      newline opens the tail's token. The wrap spike in `docs/scope/` proves
+      that a newline ending a segment is dropped instead;
+    - on a window that is not thin, `{hd|<head>}` alone;
+    - the knock-out pad on the tokens and never on the label: in this label's
+      own `rich`, `hd` and `th` each carry `backgroundColor: colors.rail` and
+      `padding: [2, 5]`, and the label carries neither;
+    - no explicit line height, so each padded token's own height sets the
+      pitch.
   - whenever the caption wraps, give the target caption its existing floor
     placement (`insideBottomLeft`, distance 0).
 
-  Read no new field, floor or count. Rewrite the block's comment so it states
-  the new rule, including "never straddling an edge" and "one line, one side",
-  which no longer hold as written.
+  A one-line caption keeps today's option exactly, including its unpadded
+  `th` tail. Read no new field, floor or count. Rewrite the block's comment so
+  it states the new rule. "Out it goes, one line, one side" no longer holds as
+  written; "never straddling an edge" still holds, and S183 now measures it.
+  Cite ADR 455 by number only.
 - [ ] 2.2 Add node tests in `frontend/diagnose-workstation-chart.test.js`,
   through `renderCanvas`'s emitted option, beside the existing
   window-label test:
   - a thin 24 h window at `clientWidth` 402 shows its caption inside, on the
-    window area's label, with the stacked formatter (the newline opens the
-    `th` token), width `316 − LABEL_PAD`, `overflow: 'break'`, the pad and
-    the line height; no parked caption is emitted, and the target caption is
-    on its floor;
-  - a thin Overnight window at 402 parks right with a width that runs to the
-    chart's edge;
-  - a thin Evening window at 402 parks left with a width that runs to the
-    plot's edge;
+    window area's label. It has:
+    - the formatter `{hd|24 H 00:00–24:00}{th|\nINSUFFICIENT SAMPLE — thinnest
+      bin holds <n>}`, whose newline opens the `th` token;
+    - `width` equal to `316 − LABEL_PAD − 10`, and `overflow: 'break'`;
+    - no `backgroundColor`, `padding` or `lineHeight` on the label;
+    - `rich.hd` and `rich.th` each with `backgroundColor: colors.rail` and
+      `padding: [2, 5]`;
+    - `rich.hd` restating the label's colour, size, weight and letter spacing.
+
+    No parked caption is emitted, and the target caption is on its floor;
+  - a thin Overnight window at 402 parks right, with `width` equal to
+    `402 − (xEnd + 6) − 10` and the same token pads;
+  - a thin Evening window at 402 parks left, with `width` equal to
+    `xStart − 6 − GRID.left − 10` and the same token pads;
+  - in each wrapped case, the region the width was taken from ends at the
+    plot's left edge or the chart's right edge, never beyond: the region
+    arithmetic cannot reach into the y-axis label column;
   - a window that is not thin, too narrow for its head, and with less room on
-    both sides than the head needs, wraps the head alone;
+    both sides than the head needs, wraps `{hd|<head>}` alone;
   - at `clientWidth` 850 (1280's chart), each of the five presets, thin,
-    emits exactly today's option: one line, no `width`, `overflow` or pad
-    keys, and the target caption where it stood.
+    emits exactly today's option. That means one line, no `width` or
+    `overflow` key, no `hd` token, no pad on any token, and the target caption
+    where it stood.
 
   The existing fit-or-move test's cases stay unchanged and pass.
 
@@ -242,8 +280,9 @@ its new box, the chart is idle, and two animation frames have passed.
   `#explorer-trigger > span`, and nothing else. Leave `chartActionButton`'s
   `title` and `aria-label` as they are. Leave the header's grid, truncation
   rules, provenance and the ≤831 px and ≤480 px blocks unchanged. Comment the
-  block with the 2026-08-19 ruling it keeps and the coordinator ruling it
-  implements.
+  block with the 2026-08-19 owner ruling it keeps, by its date, and with
+  ADR 455 by number. Name no `docs/scope/`, `mockups/` or `openspec/changes/`
+  path.
 
 ## 5. Chart furniture yields to axis labels (ADR 455, fourth decision)
 
@@ -328,6 +367,9 @@ its new box, the chart is idle, and two animation frames have passed.
   - `node --test 'frontend/**/*.test.js'`;
   - `npx --yes @fission-ai/openspec@1 validate --all --strict`;
   - the three guards from `AGENTS.md`;
+  - the public-tree scan from `AGENTS.md`, byte-exact:
+    `t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" && \`
+    `python3 scripts/check_public_links.py "$t" && python3 scripts/scan_public_tree.py "$t"`;
   - `node docs/scope/455-caption-wrap.spike.mjs`;
   - `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
     ReplayPlanTest InventoryProofTest SmokeSelectionTest`;

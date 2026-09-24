@@ -12,7 +12,8 @@
 //   Save draft        PUT  /api/plan
 //   Record decision   POST /api/plan/apply, a DURABLE request quoting the
 //                     input_revision and analysis_generation it was read at
-//   reconciliation    reconcileDeliverable() over the detected pump profile
+//   reconciliation    the server's one verdict on each recorded Plan (ADR 431);
+//                     reconcileDeliverable() only draws a served mismatch's rows
 //   Withdraw          POST /api/plan/history/withdraw
 //
 // THE SCHEDULE IS frontend/plan.js's, not this module's. buildDeliverable,
@@ -152,57 +153,60 @@ export function evidenceIsStaged(item, analyze = {}) {
 const detectedProfile = () => memory.pump?.profile || null;
 const detectedAt = () => memory.pump?.fetched_at || null;
 
-/** Every Plan the store has recorded, newest last, as it serves them. */
-const records = () => (memory.history?.history || []).filter((record) => record.withdrawal?.state !== 'available');
-
 /**
- * The Plan awaiting the pump: recorded, not yet reconciled, not withdrawn.
- * The store's own predicate, read from the served record rather than re-derived.
+ * The recorded Plan: the newest served record that is neither withdrawn nor
+ * superseded. The history is served newest first, and every row carries the
+ * server's one verdict (ADR 431) — nothing here decides whether a Plan is on
+ * the pump.
  */
-const pendingRecord = () => records().find((record) =>
-  record.reconciliation?.state !== 'available' && record.withdrawal?.state !== 'available') || null;
+const recordedPlan = () => (memory.history?.history || []).find((record) =>
+  !['withdrawn', 'superseded'].includes(record.verdict.state)) || null;
+
+/** The recorded Plan while it awaits the pump: served pending or mismatch. */
+const pendingRecord = () => {
+  const plan = recordedPlan();
+  return plan && ['pending', 'mismatch'].includes(plan.verdict.state) ? plan : null;
+};
 
 /** The draft the store holds, or the items this page staged and has not saved. */
 const draftItems = () => memory.staged || memory.plan?.items || [];
 
-/** The deliverable, uncollapsed: what the wearer keys in, before folding. */
-const rows = () => buildDeliverable({
-  activeProfile: pendingRecord()?.deliverable?.source_profile || detectedProfile() || { segments: [] },
-  acceptedItems: pendingRecord()?.items || draftItems(),
-});
-
 /** Whether the store already holds the items this page staged. */
 const draftSaved = () => Boolean(memory.plan?.updated_at) && !memory.staged;
 
-/** The time the decision this schedule belongs to was recorded, if it was. */
-const decidedAt = () => (pendingRecord() || records().at(-1))?.applied_at || null;
+/** A next change in hand: staged on this page, or a saved draft with items. */
+const drafting = () => Boolean(memory.staged || (draftSaved() && draftItems().length));
 
-// The decision's own time goes in, so a pump read from before it is held
-// pending rather than read as a keying error the wearer could not have made.
-const reconcile = () => {
-  const readAt = String(detectedAt() || '').replace('T', ' ');
-  if (decidedAt() && readAt <= String(decidedAt()).replace('T', ' ')) return { state: 'pending', matchedAt: null, groups: [] };
-  return reconcileDeliverable(rows(), detectedProfile()?.segments || null, detectedAt(), records().length > 0);
-};
+/**
+ * The recorded Plan this frame describes. A pending Plan always is, and a draft
+ * saved beside it waits its turn; with none pending, a draft is the subject and
+ * the newest confirmed Plan is its previous one.
+ */
+const framePlan = () => pendingRecord() || (drafting() ? null : recordedPlan());
+
+/** The deliverable, uncollapsed: what the wearer keys in, before folding. */
+const rows = () => buildDeliverable({
+  activeProfile: framePlan()?.deliverable?.source_profile || detectedProfile() || { segments: [] },
+  acceptedItems: framePlan()?.items || draftItems(),
+});
 
 /**
  * The one phase word for this change, from the served state alone.
  * Diagnose's roster row and this head read the same word, so nothing can name a
- * decision the store has not recorded.
+ * decision the store has not recorded, or a confirmation the server has not made.
  */
 export function phase() {
   if (memory.saveError) return 'Save failed';
-  if (pendingRecord()) {
-    const result = reconcile();
-    return result.state === 'confirmed' ? 'On pump' : result.state === 'mismatch' ? 'Mismatch' : 'Pending';
-  }
-  if (records().length) return 'On pump';
+  const verdict = framePlan()?.verdict;
+  if (verdict?.state === 'pending') return 'Pending';
+  if (verdict?.state === 'mismatch') return 'Mismatch';
+  if (verdict) return verdict.on_pump ? 'On pump' : 'Confirmed';
   if (draftSaved()) return 'Draft saved';
   return memory.staged ? 'Staged' : null;
 }
 
 /** True while this desk carries a change the wearer has not finished with. */
-export const planUnderway = () => Boolean(memory.staged || (draftSaved() && draftItems().length) || pendingRecord());
+export const planUnderway = () => drafting() || Boolean(pendingRecord());
 
 /* -------------------------------------------------------------- the actions */
 
@@ -292,7 +296,14 @@ async function withdraw() {
       reason: null,
     };
   }
-  await commit('withdraw', () => withdrawPlan(memory.withdrawalRequest));
+  await commit('withdraw', async () => {
+    try { await withdrawPlan(memory.withdrawalRequest); } catch (error) {
+      // The store no longer holds this Plan pending: its withdraw reconciled a
+      // pump read first, or another window withdrew it. Nothing failed — the
+      // re-read that follows serves what the Plan is now.
+      if (error?.status !== 409 || error.code !== 'nonpending_plan') throw error;
+    }
+  });
   const status = memory.saveError?.error?.status;
   if (!memory.saveError || (status >= 400 && status < 500)) memory.withdrawalRequest = null;
 }
@@ -329,34 +340,56 @@ function saveFailure() {
   return `<div class="gf-status" role="alert"><p class="gf-error">${e(what)}: ${e(held.error.message)}</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${e(retry)}</button></div></div>`;
 }
 
-// Shipped Plan reconciliation copy (index.html), verbatim, chosen by the
-// shipped reconcile function's own state.
-function planStatus(result) {
+// Shipped Plan reconciliation copy (index.html), chosen by the served verdict.
+// The confirmed sentences name the server's confirming read, so a later fetch
+// never moves them; the browser's own comparison only draws a mismatch's rows.
+function planStatus() {
   if (memory.saveError) return saveFailure();
   const flash = memory.flash ? `<p class="gf-meta gf-flash" role="status">${e(memory.flash)}</p>` : '';
-  if (!records().length) {
+  const plan = framePlan();
+  if (!plan) {
     return `<div class="gf-status"><p class="gf-meta">${draftSaved()
       ? `Draft saved ${e(stamp(memory.plan.updated_at))}. Recording the decision preserves what was known then.`
       : 'Draft not saved. Saving the draft preserves consideration.'}</p></div>`;
   }
-  if (result.state === 'confirmed') {
-    return `<div class="gf-status" data-state="confirmed" tabindex="-1"><p>✓ On pump as of ${e(stamp(result.matchedAt))} — the pump matches your plan.</p>${flash}</div>`;
+  const { state, confirmed_at: confirmedAt, on_pump: onPump } = plan.verdict;
+  if (state === 'confirmed') {
+    return `<div class="gf-status" data-state="confirmed" tabindex="-1"><p>${onPump
+      ? `✓ On pump since ${e(stamp(confirmedAt))} — the pump matches your plan.`
+      : `✓ Confirmed on the pump ${e(stamp(confirmedAt))}. The latest pump read no longer matches this Plan.`}</p>${flash}</div>`;
   }
-  if (result.state === 'mismatch') {
-    const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${result.groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param] || cell.label)}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
+  if (state === 'mismatch') {
+    const { groups } = reconcileDeliverable(rows(), detectedProfile()?.segments || null, detectedAt());
+    const diff = `<table class="gf-table gf-diff"><thead><tr><th scope="col">Start time</th><th scope="col">Parameter</th><th scope="col">Planned</th><th scope="col">On pump</th></tr></thead><tbody>${groups.flatMap((group) => group.cells.map((cell) => `<tr><td class="v">${e(group.label)}</td><td>${e(SETTING_NAME[cell.param] || cell.label)}</td><td class="v">${e(userValue(cell.param, cell.planned))}</td><td class="v">${e(userValue(cell.param, cell.actual))}</td></tr>`)).join('')}</tbody></table>`;
     return `<div class="gf-status" data-state="mismatch" tabindex="-1"><p>The pump doesn't match your plan. Check these values — likely a keying error.</p>${diff}<div class="gf-actions"><button class="gf-btn primary" data-set="rekey">Re-key &amp; recheck</button></div>${flash}</div>`;
+  }
+  if (onPump) {
+    return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — on the pump, awaiting confirmation. The latest pump read holds this Plan; it is confirmed automatically once that read is reconciled.</p>${flash}</div>`;
   }
   return `<div class="gf-status" data-state="pending" tabindex="-1"><p>Pending — program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.</p>${flash}</div>`;
 }
 
-function decisionSection(result) {
-  const record = pendingRecord() || records().at(-1) || null;
-  return `<section class="gf-section"><h3>Decision</h3><dl>
+// The fields describe only the recorded Plan. A draft saved beside a pending
+// Plan is its own line, and a draft with none pending is the frame's subject,
+// with the newest confirmed Plan as the line before it.
+function decisionSection() {
+  const plan = framePlan();
+  if (!plan) {
+    const previous = recordedPlan();
+    return `<section class="gf-section"><h3>Decision</h3><dl>
     <dt>Draft saved</dt><dd>${draftSaved() ? e(stamp(memory.plan.updated_at)) : 'Not saved'}</dd>
-    <dt>Decision recorded</dt><dd>${record ? e(stamp(record.applied_at)) : 'Not recorded'}</dd>
-    ${record ? `<dt>On pump</dt><dd>${result?.state === 'confirmed' ? e(stamp(result.matchedAt)) : 'Awaiting pump evidence'}</dd>` : ''}
-    ${memory.rekeyedAt ? `<dt>Re-key asked</dt><dd>${e(stamp(memory.rekeyedAt))}</dd>` : ''}
-    ${record?.withdrawal?.state === 'available' ? `<dt>Withdrawn</dt><dd>${e(stamp(record.withdrawal.withdrawn_at))}</dd>` : ''}</dl></section>`;
+    <dt>Decision recorded</dt><dd>Not recorded</dd></dl>
+    ${previous ? `<p class="gf-meta">Previous Plan: recorded ${e(stamp(previous.applied_at))}, confirmed on the pump ${e(stamp(previous.verdict.confirmed_at))}.</p>` : ''}</section>`;
+  }
+  const { state, confirmed_at: confirmedAt, on_pump: onPump } = plan.verdict;
+  const confirmation = state === 'confirmed' ? e(stamp(confirmedAt))
+    : state === 'mismatch' ? "The latest pump read doesn't match"
+      : onPump ? 'Awaiting confirmation' : 'Awaiting pump evidence';
+  return `<section class="gf-section"><h3>Decision</h3><dl>
+    <dt>Decision recorded</dt><dd>${e(stamp(plan.applied_at))}</dd>
+    <dt>On pump</dt><dd>${confirmation}</dd>
+    ${memory.rekeyedAt ? `<dt>Re-key asked</dt><dd>${e(stamp(memory.rekeyedAt))}</dd>` : ''}</dl>
+    ${draftSaved() && draftItems().length ? `<p class="gf-meta">Next change: draft saved ${e(stamp(memory.plan.updated_at))}. It can be recorded once this Plan is confirmed or withdrawn.</p>` : ''}</section>`;
 }
 
 /**
@@ -364,7 +397,7 @@ function decisionSection(result) {
  * record's own `decision_context`, not this page's recollection of it.
  */
 function knownSection() {
-  const context = (pendingRecord() || records().at(-1))?.decision_context;
+  const context = framePlan()?.decision_context;
   if (!context || context.state !== 'available') return '';
   const settings = (context.settings || []).map((setting) => `${setting.value} ${setting.unit}`).join(' · ');
   return `<section class="gf-section"><h3>What was known</h3><dl>
@@ -375,11 +408,11 @@ function knownSection() {
     ${(context.unknowns || []).map((text) => `<p class="gf-note">${e(text)}</p>`).join('')}</section>`;
 }
 
-function changePane(result, status) {
+function changePane(status) {
   const profile = detectedProfile();
   const meta = detectedAt() ? `Captured ${e(stamp(detectedAt()))}` : 'Current';
   return `${readingHeader('This change', e(status))}<div class="gf-pane-body">
-    ${decisionSection(result)}
+    ${decisionSection()}
     ${knownSection()}
     <section class="gf-section"><h3>Detected pump settings <span class="meta">${meta}</span></h3>${profileTable(profile)}<p class="gf-meta">Detected schedule. The proposed schedule is the Plan beside it.</p>
       <div class="gf-actions"><button class="gf-btn" data-set="pump-settings">Pump settings</button></div></section>
@@ -388,17 +421,19 @@ function changePane(result, status) {
 
 function planFrame(candidate) {
   const planned = collapseDeliverable(rows());
-  const result = reconcile();
   const capacity = segmentCapacity(rows());
   const status = phase() ?? 'Staged';
-  const record = pendingRecord();
+  const plan = framePlan();
   // Once the decision is recorded there is nothing left to save; what remains is
-  // the pump, and — while it is still pending — the way to take it back.
-  const end = record
-    ? '<button class="gf-btn" data-set="withdraw">Withdraw</button><button class="gf-btn" data-action="history">View change record</button>'
-    : records().length
-      ? ''
-      : '<button class="gf-btn" data-set="save-draft">Save draft</button><button class="gf-btn primary" data-set="record">Record decision</button>';
+  // the pump, the record, and — while the Plan awaits a read that holds it — the
+  // way to take it back. A pending Plan the latest read already holds offers no
+  // Withdraw: the store reconciles before withdrawing, and that confirms it.
+  const door = '<button class="gf-btn" data-action="history">View change record</button>';
+  const end = !plan
+    ? '<button class="gf-btn" data-set="save-draft">Save draft</button><button class="gf-btn primary" data-set="record">Record decision</button>'
+    : pendingRecord() && !plan.verdict.on_pump
+      ? `<button class="gf-btn" data-set="withdraw">Withdraw</button>${door}`
+      : door;
   const title = candidate
     ? `${e(SETTING_NAME[candidate.parameter] || candidate.title)} · ${e(actionSpan(candidate))}`
     : 'This change';
@@ -417,8 +452,8 @@ function planFrame(candidate) {
   const table = `<table class="gf-table gf-plan"><thead><tr><th scope="col">Start time</th>${PLAN_PARAMS.map(({ param }) => `<th scope="col">${PLAN_HEAD[param]}</th>`).join('')}</tr></thead><tbody>${planned.map((row) => `<tr><td class="v">${e(row.label)}${row.isNewBreak ? ' <span class="gf-pill">new break</span>' : ''}</td>${PLAN_PARAMS.map(({ param }) => cell(row, param)).join('')}</tr>`).join('')}</tbody></table>`;
   const stage_ = `<section class="pane gf-stage gf-stage-table" aria-label="Plan">${head}
     <div class="instruments"><div class="instrument"><span class="cap">Deliverable</span><span class="meta">pump-ready schedule</span></div><div class="instrument gf-tools"><span class="meta gf-desk-only">Pump-local time</span>${sheetToggle('This change', view.sheetOpen)}</div></div>
-    <div class="gf-scroll">${planStatus(result)}${table}</div></section>`;
-  return desk(stage_, `<aside class="pane gf-reading" aria-label="This change">${changePane(result, status)}</aside>`);
+    <div class="gf-scroll">${planStatus()}${table}</div></section>`;
+  return desk(stage_, `<aside class="pane gf-reading" aria-label="This change">${changePane(status)}</aside>`);
 }
 
 /** The span a setting action covers, from the served action rows themselves. */
@@ -506,8 +541,8 @@ export function mount(host) {
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'This change'); bind(host); return; }
   if (!memory.plan || !memory.pump) { load('plan', loadPlanState); host.innerHTML = loadingFrame('Changes'); return; }
 
-  if (!planUnderway() && !records().length) { host.innerHTML = idleFrame(); bind(host); return; }
-  const subject = (pendingRecord() || records().at(-1))?.decision_context?.subjects?.[0];
+  if (!framePlan() && !drafting()) { host.innerHTML = idleFrame(); bind(host); return; }
+  const subject = framePlan()?.decision_context?.subjects?.[0];
   host.innerHTML = planFrame(candidateFor(subject) || selectedConcern());
   bind(host);
 }

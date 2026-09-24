@@ -350,8 +350,9 @@ class ApiTest(unittest.TestCase):
                              f"{bad!r} should 404")
 
     def test_pump_settings_includes_fetched_at(self):
-        # #99: Confirmation-B shows "on pump as of <fetch>" — the endpoint
-        # must surface the snapshot's capture time.
+        # #99: Changes shows when the detected pump settings were captured
+        # ("Captured <fetch>") — the endpoint must surface the snapshot's
+        # capture time. "On pump since" names the server's confirming read (#431).
         r = self.client.get("/api/pump-settings")
         self.assertEqual(r.status_code, 200)
         body = r.json()

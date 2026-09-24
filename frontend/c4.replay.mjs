@@ -5,6 +5,7 @@ import { xAtMinute } from './diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
+import { stamp } from './frame.js';
 
 const read = async (page, path, params = {}, timeout = 30000) => {
   const url = new URL(path, page.url());
@@ -751,6 +752,9 @@ export const C4_STORIES = {
     await ctx.capturePump('mismatch');
     await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
     await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    // #431: the server, not the browser, confirms it; the door is the confirmed frame's.
+    assert.equal((await read(page, '/api/plan/history')).history[0].verdict?.state, 'confirmed',
+      'S105 premise: the server confirms the recorded Plan');
     assert.equal((await read(page, '/api/verify/trials')).admission.active_kind, null,
       'S105 premise: confirmed Plan with no active watch');
     assert.equal(await page.getByRole('button', { name: 'View change record', exact: true }).count(), 1,
@@ -767,6 +771,73 @@ export const C4_STORIES = {
   },
   async S106(page) {
     await selectedPattern404(page);
+  },
+  // #431 · 2026-09-23. The server confirms a recorded Plan from the pump read
+  // that holds it (ADR 431); Changes names that read, never the latest fetch.
+  // The first check reads the served verdict and the Changes status together,
+  // so a base history row that serves no verdict fails it rather than throwing.
+  async S145(page, ctx) {
+    assert.ok(ctx.capturePump, 'S145 requires CASE_STORE_DIR for synthetic in-place pump captures');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    await ctx.capturePump('in-place');
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-status').waitFor({ timeout: 30000 });
+    const confirmedAt = await waitForReplayAssertion(async seen => {
+      const newest = seen(await read(page, '/api/plan/history')).history[0];
+      const status = seen(await page.locator('.gf-status').innerText());
+      assert.ok(newest?.verdict?.state === 'confirmed' && /On pump since/.test(status),
+        `S145 the server must confirm the in-place Plan and Changes must say so (verdict ${newest?.verdict?.state}; status "${status}")`);
+      assert.ok(status.includes(`On pump since ${stamp(newest.verdict.confirmed_at)}`),
+        'S145 Changes must name the served confirming read');
+      return newest.verdict.confirmed_at;
+    }, 'S145 the served confirmation and the Changes status agree');
+    await ctx.capturePump('in-place');
+    await page.reload();
+    await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const newest = seen(await read(page, '/api/plan/history')).history[0];
+      const pump = seen(await read(page, '/api/pump-settings'));
+      const status = seen(await page.locator('.gf-status').innerText());
+      assert.notEqual(stamp(pump.fetched_at), stamp(confirmedAt), 'S145 premise: the second capture is a later pump read');
+      assert.equal(newest.verdict.confirmed_at, confirmedAt, 'S145 a later pump read must not move the confirmation');
+      assert.ok(status.includes(`On pump since ${stamp(confirmedAt)}`) && !status.includes(stamp(pump.fetched_at)),
+        `S145 Changes must keep naming the confirming read after a later one ("${status}")`);
+    }, 'S145 a later pump read leaves the confirmed time unchanged');
+  },
+  // #431 · 2026-09-23. A draft saved after a confirmed Plan is the frame's
+  // subject: Draft saved, recordable, with the confirmed Plan on its own line.
+  async S146(page, ctx) {
+    assert.ok(ctx.capturePump, 'S146 requires CASE_STORE_DIR for a synthetic in-place pump capture');
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    await ctx.capturePump('in-place');
+    const confirmed = (await read(page, '/api/plan/history')).history[0];
+    assert.equal(confirmed.verdict?.state, 'confirmed', 'S146 premise: the server confirms the in-place Plan');
+    // The next draft restores the source profile's value at each recorded slot:
+    // it differs from the pump, which now holds the Plan, and carries no value
+    // the store did not already hold.
+    const source = confirmed.deliverable.source_profile.segments;
+    const at = minute => [...source].reverse().find(row => row.start_min <= minute).basal_rate;
+    const items = confirmed.items.map(item => ({ type: item.type, start_min: item.start_min, value: at(item.start_min) }));
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href, { data: { items } });
+    assert.equal(saved.status(), 200, 'S146 premise: the next draft saves');
+    await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const kicker = seen(await page.locator('.gf-stage .gf-kicker').innerText());
+      const desk = seen(await page.locator('.gf-desk').innerText());
+      assert.match(kicker, /Draft saved/, 'S146 a draft after a confirmed Plan reads Draft saved');
+      assert.ok(!/doesn't match your plan|keying error/.test(desk), 'S146 a next draft is not read as a keying error');
+      assert.equal(seen(await page.locator('[data-set="record"]').filter({ visible: true }).count()), 1,
+        'S146 offers Record decision');
+      assert.equal(seen(await page.locator('[data-set="save-draft"]').filter({ visible: true }).count()), 1,
+        'S146 offers Save draft');
+      assert.ok(desk.includes(`Previous Plan: recorded ${stamp(confirmed.applied_at)}, confirmed on the pump ${stamp(confirmed.verdict.confirmed_at)}.`),
+        'S146 names the confirmed Plan on its own line');
+    }, 'S146 a draft after a confirmed Plan');
   },
   async S107(page) {
     await fullDayDiagnose(page);

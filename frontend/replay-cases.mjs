@@ -15,7 +15,7 @@ export const STORY_CASES = Object.freeze({
   S101: 'showcase', S102: 'pattern-near-tie', S103: 'showcase', S104: 'showcase', S105: 'c3-trial',
   S106: 'pattern-near-tie', S107: 'showcase',
   S108: 'showcase', S109: 'showcase', S110: 'edit-chain', S111: 'edit-chain', S112: 'edit-chain',
-  S113: 'basal-verdict-gallery',
+  S113: 'basal-verdict-gallery', S145: 'basal-lower', S146: 'basal-lower',
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {
@@ -99,7 +99,7 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
     throw new Error(`Synthetic server did not become ready; see ${scratch}`);
   }
   async function capturePump(mode) {
-    if (!['mismatch', 'match'].includes(mode) || !child) throw new Error('A running synthetic story and named capture are required.');
+    if (!['mismatch', 'match', 'in-place'].includes(mode) || !child) throw new Error('A running synthetic story and named capture are required.');
     await stop();
     log = await open(join(scratch, `${++serial}-pump-${mode}.log`), 'w');
     await command(['python', 'frontend/replay-pump.py', db, mode]);

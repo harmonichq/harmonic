@@ -760,8 +760,9 @@ export const C2_STORIES = {
     }, "S42");
     await ctx.capturePump('match');
     await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
-    await page.getByText(/On pump as of/).waitFor();
-    const record = (await read(page, '/api/plan/history')).history.at(-1);
+    await page.getByText(/On pump since/).waitFor();
+    // The served history is newest first: the Plan this story recorded is [0].
+    const record = (await read(page, '/api/plan/history')).history[0];
     assert.equal(record.reconciliation.state, 'available', 'the Store, not the browser, observes the match');
   },
   S43: async page => { await openBasalLane(page); await C2_STORIES.S33(page); },

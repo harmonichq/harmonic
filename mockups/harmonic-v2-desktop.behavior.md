@@ -2937,3 +2937,72 @@ R19 · No retired address is served, and none is redirected: every old v1 page
             still answer 200, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## #431 amendment — 2026-09-23
+
+Changes now reads the server's one verdict on each recorded Plan (ADR 431,
+`openspec/changes/plan-state-one-verdict`). The server confirms a pending Plan
+once the latest pump read after its decision holds its schedule. Changes names
+the phase, status, actions and Decision block from that verdict, and makes no
+pump comparison of its own except to draw a served mismatch's rows. S145 and
+S146 are the fail-first obligations for sub-order 2 of that change, and S42 and
+S105 are amended under the same sanction. Every one of them runs on the app
+opener only. Browser execution belongs to the release coordinator at 1280x720
+and 1440x900; the worker order forbids serve and browser runs.
+
+Sanction: Connor Griffin (Q2), 2026-09-23: "Yes. I record your answer as the
+approval for every change these 13 checklists call for, and write the wording in
+CONTEXT.md terms."
+
+Amended S42 · 2026-09-23 · #431 / Q2 sanction: after the matched capture, the story reads "On pump since" — the server's confirming read — in place of "On pump as of" the latest fetch. It reads the Store's observation from the newest history record, which the served history lists first, not from the last one listed.
+The preceding S42 wording and results are the attributed pre-amendment record.
+
+Amended S105 · 2026-09-23 · #431 / Q2 sanction: the premise also asserts that the server confirms the recorded no-op Plan (the newest history row's verdict reads confirmed). Its View change record door now comes from the confirmed frame, not the pending one. Before #431 the base left that Plan unconfirmed, and its door came from the pending branch.
+The preceding S105 wording and results are the attributed pre-amendment record.
+
+```
+S145 · A pump read that holds a recorded Plan on the unchanged active profile
+       confirms it on the server, and Changes reads "✓ On pump since <that
+       read>"; a later read that still holds it leaves the named time unchanged.
+  element:  .gf-status[data-state="confirmed"], [data-set="record"]
+  source:   frontend/plan-view.js planStatus / phase; ciq_autotune/watched_change.py
+            reconcile_follow_up (the pump-read confirmation) and with_plan_verdicts
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict)
+  data:     basal-lower; stage and record the served basal action, then the
+            replay pump producer's `in-place` capture (the recorded Plan's
+            deliverable on the unchanged active profile, no profile switch, so
+            no Trial), then a second `in-place` capture one minute later
+  evidence: C4_STORIES.S145; its first confirmation check reads the newest
+            history row's `verdict?.state` together with the Changes status in
+            one assertion, so a base row serving no verdict fails it rather
+            than throwing; then the status must name the served `confirmed_at`,
+            and after the second capture the served `confirmed_at` and the
+            status are unchanged while the pump read has moved
+  status:   owed — base a4d374a7 with this harness laid over it is expected to
+            fail at that first check (the base serves no verdict and leaves the
+            in-place Plan unconfirmed, while its Changes decides "On pump as of"
+            the latest read); coordinator runs base and branch at both sizes
+```
+
+```
+S146 · A draft saved after a confirmed Plan that differs from the pump reads
+       Draft saved, offers Save draft and Record decision, and names the
+       confirmed Plan on its own line — never a keying error.
+  element:  .gf-stage .gf-kicker, [data-set="save-draft"], [data-set="record"],
+            the Decision section's "Previous Plan:" line
+  source:   frontend/plan-view.js framePlan / phase / decisionSection / planFrame
+  lock:     HV2-20; ADR 431 (plan-state-one-verdict)
+  data:     basal-lower; stage and record the served basal action, `in-place`
+            capture, then save a draft restoring the source profile's value at
+            each recorded slot (a value the store already held, which differs
+            from the pump that now holds the Plan)
+  evidence: C4_STORIES.S146; premise asserts the newest history row's verdict
+            reads confirmed; then the kicker reads Draft saved, no keying-error
+            copy shows, both writes are offered, and the line reads "Previous
+            Plan: recorded <time>, confirmed on the pump <confirmed_at>."
+  status:   owed — its premise, a server-confirmed Plan, is unreachable on base
+            a4d374a7, and that premise failure is accepted as its base result;
+            the fail-first half is frontend/plan-actions.test.js "a differing
+            draft after a confirmed Plan reads Draft saved and can be recorded";
+            coordinator runs the branch at both sizes
+```

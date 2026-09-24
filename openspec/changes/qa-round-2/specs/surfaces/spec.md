@@ -62,7 +62,9 @@ to Diagnose from another destination, and after a stage save settles. The
 surface SHALL clear its marks and ask the staging verdict again whenever it
 refreshes while no stage save it issued is in flight, and once an accepted
 stage save settles, so a mark the draft no longer holds drops. A return to
-Diagnose SHALL re-read the Plan draft and guidance before it refreshes. A
+Diagnose SHALL re-read the Plan draft and guidance before it refreshes, except
+while a stage save the surface issued is pending, when it SHALL skip that
+re-read. A
 refresh that lands while a save is in flight SHALL NOT undo the mark the press
 painted. The verdict SHALL be the Plan surface's own, unchanged: the saved
 draft, or a pick made in Changes and not yet saved. The surface SHALL derive no
@@ -119,3 +121,12 @@ lets that item stage.
 - **THEN** the run's lane cells are no longer marked staged and their stage
   control reads "Stage change"
 - **AND** the watch dock reads "Plan · staged" named for the new row
+
+#### Scenario: A return during a stage save keeps the saved change marked
+
+- **GIVEN** the reader has pressed Stage change on a basal slot and its draft
+  save has not yet settled
+- **WHEN** the reader goes to Changes, presses Diagnose in the top nav, and the
+  save then settles
+- **THEN** the slot's lane cell stays marked staged, because the return did not
+  re-read the Plan draft while the save was pending

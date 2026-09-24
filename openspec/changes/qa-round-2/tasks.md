@@ -46,7 +46,8 @@ This list is the "touched stories" below.
   through Diagnose's callbacks beside `pendingPlan`, and on a retained return
   re-read Plan state and guidance, the same pair a cold read starts, then
   refresh the workstation while it is still seated and on screen (ADR 460
-  point 7). In
+  point 7). Keep the promise the `stage` callback returns, and skip that
+  re-read while it is pending. In
   `frontend/diagnose-workstation.js`, hand the dock's paint `planDraft()` as
   `draft` and the workstation's in-flight flag as `saving`.
 - [ ] 6. In `frontend/diagnose-workstation.js`:
@@ -82,7 +83,15 @@ This list is the "touched stories" below.
   - guard, passing before and after: hold a `PUT /api/plan`, press Stage change
     on 07:00, go to Changes and press Diagnose in the top nav (a retained return
     refreshes the workstation); while the PUT is held the 07:00 cell keeps
-    `data-staged="true"` and its control keeps "Staged · Undo"; release the PUT.
+    `data-staged="true"` and its control keeps "Staged · Undo"; release the PUT;
+  - the retained return during a save: hold the `PUT /api/plan`, press Stage
+    change on 07:00, go to Changes and press Diagnose in the top nav, and hold
+    any `GET /api/plan` that return issues. Release the PUT, then release the
+    held GET answering the pre-press draft. Once settled, the 07:00 cell keeps
+    `data-staged="true"`. It passes on the unchanged shell, which issues no
+    such read, so its failing-first proof is a deliberately broken variant:
+    seen to fail on a build of tasks 2–6 whose retained return re-reads
+    without the pending-save check, then pass on the real build.
 - [ ] 8. Add one ledger story (the next unissued S id at implementation time) on
   the `basal-lower` case, in a dated `## #460 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md`, with its replay function in

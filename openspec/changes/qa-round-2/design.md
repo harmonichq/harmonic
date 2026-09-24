@@ -78,7 +78,13 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
    seated and on screen. A draft save does not move the input revision, so
    without this a draft written while Diagnose was parked, by a route or
    another tab, would leave the Plan surface's copy stale and the re-seed
-   would keep the old marks. Both reads are query-only and uncached.
+   would keep the old marks. Both reads are query-only and uncached. The
+   destination keeps the promise the `stage` callback returns, and a retained
+   return skips the re-read while that stage save is pending: a re-read issued
+   before the save commits could resolve after it and overwrite the Plan
+   surface's copy with the pre-press draft. The clearing re-seed after the save
+   settles (point 5) already covers that return. Decided autonomously during
+   AFK run (plan-review round-3 re-check).
 8. Nothing on the server changes. The guidance read already reads the draft
    fresh, so the draft save keeps its no-bump exception and no second exception
    is added.

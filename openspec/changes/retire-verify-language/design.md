@@ -308,6 +308,10 @@ receipt classifies every printed line. CONTEXT.md is strict:
 
 `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R447`.
 It covers the Guide article's copy change and the ledger amendment adding S170.
+S170 cites HV2-12, because the claim it checks is that a Focus is followed in
+Changes, which is HV2-12's ownership rule; HV2-33 stays second, as the lock files
+the Guide utility under it. No lock term is written for Guide article content
+itself (coordinator ruling F-d).
 The coordinator's rulings Q1–Q4 on #447 are made under the same delegation.
 
 ## ADR 447 — The outcomes-trend route serves only the watched change

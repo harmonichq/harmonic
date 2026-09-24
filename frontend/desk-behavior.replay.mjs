@@ -3149,7 +3149,7 @@ export const S140 = appOnly('HV2-12',
 export const S169 = appOnly('HV2-24',
   "#447 a watched Trial's dock and Changes print one day count, the served one", C4_STORIES.S169);
 // STORY:harmonic-v2-desktop:S170
-export const S170 = appOnly('HV2-33',
+export const S170 = appOnly('HV2-12',
   "#447 the Guide's Reading the Diagnose surface article names no Verify", C4_STORIES.S170);
 // STORY:harmonic-v2-desktop:S142
 export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);

@@ -110,6 +110,8 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 - `scripts/profile_cold_shapes.py` drops its emptied warm-only stage and flag.
 - Each sub-order commits directly on the ticket branch
   `447-retire-verify-language` rather than on a per-chunk branch.
+- F-d: S170 cites HV2-12 (Changes owns Focus progress, the article's corrected
+  claim), with HV2-33 second for the Guide utility; tasks 2.6 and 2.7 name it.
 
 ## 2. Shipped surfaces (sub-order 2)
 
@@ -175,7 +177,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
     `lock: HV2-24, HV2-12`.
   - **S170**: the Guide's "Reading the Diagnose surface" article names no Verify.
     Its Cause-lever line says those levers flow to a Focus, followed in Changes.
-    `lock: HV2-33`.
+    `lock: HV2-12, HV2-33` (coordinator ruling F-d).
 
   The ledger's frozen header, its inventory line and ACCEPTANCE.md's count
   sentence stay as they are; the release coordinator owns them.
@@ -197,7 +199,8 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 
   Register each exactly once in `frontend/desk-behavior.replay.mjs`, behind a
   `// STORY:harmonic-v2-desktop:S169` / `S170` marker, as `appOnly('HV2-24', …)`
-  / `appOnly('HV2-33', …)`, and in `REGISTRY` as `['S169', S169, J()]` and
+  / `appOnly('HV2-12', …)` (coordinator ruling F-d), and in `REGISTRY` as
+  `['S169', S169, J()]` and
   `['S170', S170, J()]`. Map `S169: 'c3-trial'` and `S170: 'showcase'` in
   `frontend/replay-cases.mjs`. Smoke stories S7 and S13 already cover both case
   stores, so `SMOKE_STORIES` and its digest stay as they are. In

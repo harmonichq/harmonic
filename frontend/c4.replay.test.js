@@ -1406,7 +1406,7 @@ test('S139 and S140 fail at the label, not at a premise, when the dock still rea
 });
 
 test('S169 and S170 are unique app-only C4 stories on their cases and terms', () => {
-  for (const [id, expectedCase, term] of [['S169', 'c3-trial', 'HV2-24'], ['S170', 'showcase', 'HV2-33']]) {
+  for (const [id, expectedCase, term] of [['S169', 'c3-trial', 'HV2-24'], ['S170', 'showcase', 'HV2-12']]) {
     const entries = REGISTRY.filter(([entry]) => entry === id);
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);

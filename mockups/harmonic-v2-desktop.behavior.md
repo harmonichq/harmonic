@@ -4137,6 +4137,12 @@ It covers the dock's ready-state copy (S169), the Guide article's Cause-lever
 line (S170) and this amendment, and nothing outside #447. Changes' locked Watch
 maturity strings and its progress-bar clamp are unchanged.
 
+S170's claim is the article's statement that a Focus is followed in Changes,
+which is HV2-12's ownership rule ("Changes owns current Plan or Focus, Trial/Focus
+progress …"), so HV2-12 is its term. HV2-33 stays second because the lock's
+utilities scenario files the Guide under it, as S73 and S73c do. No lock term is
+written for Guide article content itself (coordinator ruling F-d).
+
 The pinned inventory in `acceptance.py` `inventory()` moves to 173 issued · 154
 active · 19 retired on this branch.
 
@@ -4178,7 +4184,7 @@ S170 · The Guide's "Reading the Diagnose surface" article names no Verify; its
   element:  [data-utility="guide"], [data-utility-slug="reading-diagnose"], .gf-article
   source:   docs/kb/reading-diagnose.md, served by /api/kb/reading-diagnose;
             frontend/utilities.js guideBody
-  lock:     HV2-33
+  lock:     HV2-12, HV2-33
   data:     showcase; the served article carries its ◈ Cause line
   evidence: C4_STORIES.S170 → guideArticle447; reads /api/kb/reading-diagnose and
             requires its ◈ Cause line as a premise, opens the Guide and the

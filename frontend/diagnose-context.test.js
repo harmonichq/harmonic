@@ -23,28 +23,25 @@ test('tile loads, failed replacements and late responses do not choose a drill s
 
 // ADR 428 points 4 and 5: the Day entry reads subject, Occurrence and window
 // from the one case the workstation publishes, and names its return target by
-// that Occurrence — no CSS selector travels in it. Its title is the selected
-// case file's served finding title while that file is the case published (ADR 426).
+// that Occurrence — no CSS selector travels in it. Its title is the served
+// finding title the workstation publishes with that case (ADR 426).
 test('Day carries the published case, its served title, the Occurrence\'s own moment and lever, and no selector', () => {
-  const selected = { subject: 'pattern:served', occurrence: 'opaque-7', finding: { id: 'pattern:served', title: 'Highs after meals' },
-    window: { start_min: 360, end_min: 720 } };
   const context = evidenceDayContext({
     occurrence: { id: 'opaque-7', anchor: { t: '2024-06-01 08:12:00' }, cause_lever: 'late_bolus' },
-    current: { subject: 'pattern:served', occurrence: 'opaque-7', window: '360-720' },
-    selected,
+    current: { subject: 'pattern:served', occurrence: 'opaque-7', window: '360-720', title: 'Highs after meals' },
   });
   assert.deepEqual(context, { date: '2024-06-01', moment: '2024-06-01 08:12:00', subject: 'pattern:served',
     title: 'Highs after meals', occurrence: 'opaque-7', window: '360-720', lever: 'late_bolus', from: 'diagnose' });
   assert.equal(Object.hasOwn(context, 'focus'), false, 'the return target is the Occurrence id, never a selector');
-  // A key moved the published case to another Finding without a new selection:
-  // the file still selected names a different case, so it lends no title.
-  const moved = evidenceDayContext({ occurrence: { id: 'o-2', t: '2024-06-01 09:00:00' },
-    current: { subject: 'finding:late_bolus', occurrence: 'o-2', window: '360-720' }, selected });
-  assert.equal(moved.title, '');
+  // A case published before its file answers carries no title yet, so Day
+  // names the way back instead (ADR 426 3.2), never the routing subject.
+  const early = evidenceDayContext({ occurrence: { id: 'o-2', t: '2024-06-01 09:00:00' },
+    current: { subject: 'finding:late_bolus', occurrence: 'o-2', window: '360-720', title: null } });
+  assert.equal(early.title, '');
   // A basal slot has no case file to name it, so the door names the setting
   // and the half-hour range in the wearer's words (CONTEXT.md, Slot).
   const night = evidenceDayContext({ occurrence: { t: '2024-06-01 03:00:00', cause_lever: 'basal_rate' },
-    current: { subject: 'basal:180', occurrence: '2024-06-01', window: '180-210' }, selected });
+    current: { subject: 'basal:180', occurrence: '2024-06-01', window: '180-210', title: null } });
   assert.equal(night.subject, 'basal:180');
   assert.equal(night.title, 'Basal · 03:00–03:30');
   assert.equal(night.occurrence, '2024-06-01');

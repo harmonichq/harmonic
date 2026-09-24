@@ -817,6 +817,27 @@ function laneCell(publish, start = 180) {
 const DAY_RETURN = { date: '2024-06-26', moment: '2024-06-26 13:55:00', subject: 'finding:late_bolus',
   occurrence: 'o-1', lever: 'late_bolus', from: 'diagnose' };
 
+// ADR 426 over ADR 428: a window preset, a Pattern cause drill or a lane hop
+// and Backspace leaves Diagnose with no selection while a Finding's case file
+// stays on screen. The Day door reads the title the workstation publishes with
+// the case, so "Opened from" still names that Finding.
+test('ADR 426 · the Day door names the published case by its served title with nothing selected', async () => {
+  const previous = globalThis.window;
+  const { page, seat, view, destination } = desk428();
+  const { navigate } = await import('./routes.js');
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: '0-360', title: 'Late bolus' });
+    view.callbacks.day({ id: 'o-1', t: '2024-06-26 13:55:00', cause_lever: 'late_bolus' });
+    assert.equal(page.location.pathname, '/day');
+    const context = routed(page);
+    assert.equal(context.title, 'Late bolus', 'Day names the Finding on screen, not the way back');
+    assert.equal(context.subject, 'finding:late_bolus');
+    assert.equal(context.occurrence, 'o-1');
+  } finally { navigate('diagnose'); globalThis.window = previous; destination.leave(); }
+});
+
 test('ADR 428 · a published case with no restoration pending replaces the address in place, and the Findings root clears it', async () => {
   const previous = globalThis.window;
   const { page, seat, view, destination } = desk428();

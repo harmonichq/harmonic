@@ -254,9 +254,7 @@ test('a contextual entry names the served title it was opened from and returns t
   // The entry comes from the Diagnose door itself, over a served case file.
   const entry = evidenceDayContext({
     occurrence: { id: 'occ-7', t: '2024-06-26 13:55:00' },
-    current: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7', window: '720-1080' },
-    selected: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7',
-      finding: { id: 'pattern:highs-after-meals', title: 'Highs after meals' }, window: { start_min: 720, end_min: 1080 } },
+    current: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7', window: '720-1080', title: 'Highs after meals' },
   });
   const markup = dayFrame(state({ entry }));
   assert.equal(openedFrom(markup), 'Highs after meals');

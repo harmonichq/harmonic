@@ -351,9 +351,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // while this answers true.
       onScreen,
       day: (occurrence) => {
-        const context = evidenceDayContext({ occurrence, current: published, selected: caseContext.current() });
-        // A case callback alone never supplies a subject; a successful reader
-        // drill (or explicitly selected basal cell) must have established it.
+        const context = evidenceDayContext({ occurrence, current: published });
+        // The case on screen names the subject (ADR 428); at the Findings
+        // root nothing is published, so there is no Day to open.
         if (context.subject) navigate('day', context);
       },
       loadDay: async (date) => {

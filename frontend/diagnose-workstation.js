@@ -2115,7 +2115,9 @@ function boot(root, data, callbacks, signal) {
      Occurrence or night it holds, and the window its served case file answered
      for, or the slot's span. The Findings index names none. `paint()` publishes
      it after every change, whatever moved it — a click, a key, a chart tile, a
-     response — and only when it differs from this boot's last publication. */
+     response — and only when it differs from this boot's last publication. A
+     Finding's case also carries its served title, the name Day prints for where
+     it was opened from (ADR 426); the address never reads it. */
   let publishedCase;
   function publishCase() {
     const f = top();
@@ -2123,7 +2125,8 @@ function boot(root, data, callbacks, signal) {
     const served = f.caseFile?.window;
     const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
       : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
-    const current = subject ? { subject, occurrence: f.selectedId || null, window } : null;
+    const current = subject ? { subject, occurrence: f.selectedId || null, window,
+      title: f.k === 'factor' ? crumbLabel(f) : null } : null;
     const key = JSON.stringify(current);
     if (key === publishedCase) return;
     publishedCase = key;

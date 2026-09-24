@@ -73,6 +73,7 @@ import statistics
 from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .insulin import iob_fraction
+from .store import wall_clock_now
 
 GRAMMAR_VERSION = 1
 
@@ -1317,7 +1318,7 @@ def sweep(cgm_readings, bolus_events, pump_events, *, carb_log=(),
     era_start_str = era_start.isoformat() if era_start else None
     return {
         "grammar_version": GRAMMAR_VERSION,
-        "generated_at": (generated_at or datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_at": (generated_at or wall_clock_now()).strftime("%Y-%m-%d %H:%M:%S"),
         "era_start": era_start_str,
         "cells_swept": n_cells,
         "cells_testable": sum(1 for c in cells if c.a_n and c.b_n),

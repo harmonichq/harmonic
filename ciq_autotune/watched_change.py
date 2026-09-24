@@ -35,6 +35,7 @@ from .analyzers.scenario.levers import (
     exposure as lever_exposure,
     title as lever_title,
 )
+from .store import wall_clock_now
 from .trial_evidence import trial_breakdown
 
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
@@ -790,7 +791,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         else:
             comparison = compare_follow_up(store, record=record, data_cutoff=now,
                                            input_revision=store.input_data_revision(), context_mode=assessment)
-        detail["reassessment"] = {"mode": assessment, "computed_at": datetime.now().strftime(_DT_FMT),
+        detail["reassessment"] = {"mode": assessment, "computed_at": wall_clock_now().strftime(_DT_FMT),
                                   "input_revision": store.input_data_revision(), **comparison}
     result["selected"] = detail
     return result
@@ -1709,4 +1710,4 @@ def reconcile_ingested_follow_up(store):
              + [row.t for row in store.bolus_events()] + [row.captured_at for row in store.settings_snapshots()])
     now = max(times) if times else datetime.now()
     with store.follow_up_transaction():
-        return reconcile_follow_up(store, now=now, recorded_at=datetime.now())
+        return reconcile_follow_up(store, now=now, recorded_at=wall_clock_now(after=store.latest_server_stamp()))

@@ -1,0 +1,40 @@
+# #443 task 1.5 non-vacuity: a throwaway edit replaced wall_clock_now(after=store.latest_server_stamp()) with wall_clock_now() at the three floored sites (sync.py capture, api.py follow-up path, watched_change.py reconcile), then was reverted.
+# Command: uv run python -m pytest -p no:cacheprovider --tb=short -q tests/test_wall_clock.py::BackwardStepTest
+# Exit code: 1 (all three fail). Raw output follows.
+
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____ BackwardStepTest.test_a_focus_ended_after_the_step_ends_after_its_pin _____
+tests/test_wall_clock.py:257: in test_a_focus_ended_after_the_step_ends_after_its_pin
+    self.assertGreater(ended.json()["record"]["ending"]["effective_at"], pinned["pinned_at"])
+E   AssertionError: '2026-09-24 00:55:18' not greater than '2026-09-24 07:55:18'
+___ BackwardStepTest.test_a_plan_recorded_after_the_step_is_the_pending_plan ___
+tests/test_wall_clock.py:246: in test_a_plan_recorded_after_the_step_is_the_pending_plan
+    self.assertEqual(client.get("/api/plan/history").json()["history"][0]["applied_at"], second)
+E   AssertionError: '2026-09-24 07:55:18' != '2026-09-24 00:55:19'
+E   - 2026-09-24 07:55:18
+E   ?             ^     ^
+E   + 2026-09-24 00:55:19
+E   ?             ^     ^
+____ BackwardStepTest.test_a_switch_read_after_the_step_is_recorded_forward ____
+tests/test_wall_clock.py:226: in test_a_switch_read_after_the_step_is_recorded_forward
+    self.assertEqual([snapshot.settings.active_idp for snapshot in snapshots], [1, 2])
+E   AssertionError: Lists differ: [2, 1] != [1, 2]
+E   
+E   First differing element 0:
+E   2
+E   1
+E   
+E   - [2, 1]
+E   + [1, 2]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/connor/worktrees/harmonic/443/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_wall_clock.py::BackwardStepTest::test_a_focus_ended_after_the_step_ends_after_its_pin
+FAILED tests/test_wall_clock.py::BackwardStepTest::test_a_plan_recorded_after_the_step_is_the_pending_plan
+FAILED tests/test_wall_clock.py::BackwardStepTest::test_a_switch_read_after_the_step_is_recorded_forward
+3 failed, 1 warning in 2.50s

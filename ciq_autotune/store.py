@@ -26,8 +26,8 @@ import json
 import os
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Iterable, List, Optional
 
 from .events import (
@@ -242,6 +242,48 @@ def normalize_time(s: Optional[str]) -> Optional[str]:
                 "timezone (see .env.example).")
         dt = dt.astimezone(ZoneInfo(tz_name)).replace(tzinfo=None)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def pump_zone() -> Optional[ZoneInfo]:
+    """The pump's zone, ``ZoneInfo(TIMEZONE_NAME)``; ``None`` when the variable
+    is unset or names no loadable zone.
+
+    The one zone loader (ADR 443): :func:`wall_clock_now` and the pull's refusal
+    both ask it. ``zoneinfo`` refuses a name three ways: ``ZoneInfoNotFoundError``
+    for an unknown key, ``ValueError`` for a malformed one, and ``OSError`` from
+    the file lookup, which a region name such as ``America`` raises.
+    """
+    name = os.environ.get("TIMEZONE_NAME")
+    if not name:
+        return None
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        return None
+
+
+def wall_clock_now(after: Optional[datetime] = None) -> datetime:
+    """Now on the pump's wall clock: the server's clock of record for every stamp
+    it writes (ADR 443).
+
+    The current instant is converted to ``TIMEZONE_NAME`` with the expression
+    :func:`normalize_time` applies to a tz-aware record, and returned naive, to
+    the microsecond, whatever zone the process runs in. With no loadable zone it
+    is the process clock, as every stamp read before.
+
+    ``after`` floors the result: when now, to the second, is no later than
+    ``after``, the stamp is one second after it. The three writes that order a
+    history pass :meth:`Store.latest_server_stamp`, so a clock that steps back
+    (a container moving its stamps from UTC to a zone west of it) never writes
+    one out of order. The floor is unbounded on purpose: a stamp that runs ahead
+    for a while is the lesser harm.
+    """
+    zone = pump_zone()
+    now = (datetime.now(timezone.utc).astimezone(zone).replace(tzinfo=None)
+           if zone else datetime.now())
+    if after is not None and now.replace(microsecond=0) <= after:
+        return after + timedelta(seconds=1)
+    return now
 
 
 def _f(v) -> Optional[float]:
@@ -987,6 +1029,25 @@ class Store:
         ).fetchone()
         return parse_t(row["latest"]) if row["latest"] is not None else None
 
+    def latest_server_stamp(self) -> Optional[datetime]:
+        """The latest stored pump-read capture, recorded Plan or Focus pin.
+
+        The floor a history-ordering write passes to :func:`wall_clock_now`
+        (ADR 443). It reads exactly these three tables, so a floored stamp is
+        later than every capture, Plan and Focus pin already stored, and than
+        nothing else.
+        """
+        row = self.conn.execute(
+            "SELECT MAX(stamp) AS latest FROM ("
+            "SELECT MAX(captured_at) AS stamp FROM profile_settings "
+            "UNION ALL "
+            "SELECT MAX(applied_at) AS stamp FROM plan_history "
+            "UNION ALL "
+            "SELECT MAX(pinned_at) AS stamp FROM focus"
+            ")"
+        ).fetchone()
+        return datetime.fromisoformat(row["latest"]) if row["latest"] is not None else None
+
     def settings_snapshots(self) -> List[Snapshot]:
         """Every settings snapshot, oldest first, grouped back into typed
         :class:`~ciq_autotune.settings.Snapshot` objects (one per fetch)."""
@@ -1101,7 +1162,7 @@ class Store:
         never moved by an update — editing ``t``/``grams``/``note`` leaves it intact.
         """
         t = format_t(entry.t)
-        created = format_t(entry.created_at or datetime.now())
+        created = format_t(entry.created_at or wall_clock_now())
         with self._write_transaction():
             if id is None:
                 cur = self.conn.execute(
@@ -1169,7 +1230,7 @@ class Store:
                 "(detector, anchor_t, answer, carb_entry_id, answered_at) "
                 "VALUES (?, ?, ?, ?, ?)",
                 (detector, format_t(anchor_t), answer, carb_entry_id,
-                 format_t(answered_at or datetime.now())),
+                 format_t(answered_at or wall_clock_now())),
             )
             self._advance_revision()
         return int(cur.lastrowid)
@@ -1187,8 +1248,8 @@ class Store:
         """Create a carb entry and its prompt response in ONE transaction (the
         atomicity slice 4 / #128 enforces at the API). Returns
         ``(carb_entry_id, prompt_response_id)``; the response references the entry."""
-        created = format_t(entry.created_at or datetime.now())
-        answered = format_t(answered_at or datetime.now())
+        created = format_t(entry.created_at or wall_clock_now())
+        answered = format_t(answered_at or wall_clock_now())
         with self._write_transaction():
             cur = self.conn.execute(
                 "INSERT INTO carb_entries (t, grams, certainty, source, note, created_at) "
@@ -1839,7 +1900,7 @@ class Store:
         """Approve or dismiss a cleared sweep cell for one era (upsert on re-decide)."""
         if decision not in ("approved", "dismissed"):
             raise ValueError(f"invalid pattern-review decision: {decision!r}")
-        when = decided_at or format_t(datetime.now())
+        when = decided_at or format_t(wall_clock_now())
         with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO pattern_reviews (cell_id, era_start, decision, decided_at) "

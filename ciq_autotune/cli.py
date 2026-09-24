@@ -20,7 +20,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Optional
 
@@ -29,7 +29,7 @@ from . import sync as sync_mod
 from .backtest import BacktestResult, backtest, dia_sweep, render_dia_sweep
 from .config import resolve_db_path
 from .model import ModelConfig
-from .store import Store
+from .store import Store, wall_clock_now
 
 DEFAULT_DB = "tconnect-data/ciq.db"
 
@@ -213,7 +213,7 @@ def _cmd_serve(args) -> int:
 
 def _cmd_fetch(args) -> int:
     if args.days is not None:
-        end = date.today()
+        end = sync_mod.window_end(wall_clock_now())
         start = end - timedelta(days=args.days)
     elif args.start and args.end:
         start, end = args.start, args.end

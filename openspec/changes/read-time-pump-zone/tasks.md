@@ -48,7 +48,7 @@ order's base result depends on the hour, so it is not a fail-first case. 1.5's
 fail-first evidence is its broken-variant run, not a base run.
 `docs/scope/443-read-time-pump-zone.repro.py` shows the base failures.
 
-- [ ] 1.1 `tests/test_fetch_loop.py`: a new class, pull patched, results read
+- [x] 1.1 `tests/test_fetch_loop.py`: a new class, pull patched, results read
   through `Store.fetch_status()`. Cases, zones apart:
   - **Success.** `last_success_at` and `last_attempt_at` are on the pump's clock.
   - **Failed attempt.** An attempt whose pull raises records `last_attempt_at` on
@@ -56,7 +56,7 @@ fail-first evidence is its broken-variant run, not a base run.
   - **Window.** The pull is called with an `end` that passes the window check,
     and a `start` of `end` minus `FETCH_WINDOW_DAYS`. Run it both apart and
     swapped.
-- [ ] 1.2 `tests/test_fetch_loop.py`, zones the fetch cannot use. Do **not** mock
+- [x] 1.2 `tests/test_fetch_loop.py`, zones the fetch cannot use. Do **not** mock
   the pull. Do patch `ciq_autotune.credentials.load_credentials` with a mock
   returning `None`, and assert it is never called: on the fixed code the zone
   refusal comes before the credential read. Call `run_fetch_once` with a
@@ -81,10 +81,10 @@ fail-first evidence is its broken-variant run, not a base run.
     ingestion reconcile. The fetch-loop half is base fail-first (base refuses at
     the credential check and never names the zone). The API half passes on base,
     where every stamp is the process clock.
-- [ ] 1.3 `tests/test_cli.py`, zones swapped, `ciq_autotune.sync.pull_from_tconnect`
+- [x] 1.3 `tests/test_cli.py`, zones swapped, `ciq_autotune.sync.pull_from_tconnect`
   patched. `main(["fetch", "--days", "3", "--db", <temp path>])` calls the pull
   with an `end` that passes the window check and a `start` three days before it.
-- [ ] 1.4 `tests/test_wall_clock.py` (new), zones apart. Each case checks one
+- [x] 1.4 `tests/test_wall_clock.py` (new), zones apart. Each case checks one
   stamp family through its public path:
   1. **Pump read.** Capture a vendor-shaped read with
      `sync._capture_settings_snapshot`, the capture writer. `/api/pump-settings`
@@ -110,7 +110,7 @@ fail-first evidence is its broken-variant run, not a base run.
      Trial under `trials`. `GET /api/verify/trials?selected=<its id>&assessment=current`
      serves `selected.reassessment.computed_at` (`watched_change.py:793`) on the
      pump's clock.
-- [ ] 1.5 `tests/test_wall_clock.py`, the step. Pin the process to UTC. Make one
+- [x] 1.5 `tests/test_wall_clock.py`, the step. Pin the process to UTC. Make one
   write with `TIMEZONE_NAME` = `UTC` (the container's stamps before this change),
   then the next with `America/Phoenix` (after it, 7 h back). Cases:
   1. **Pump read.** Capture a read with profile 1 active, then a read that
@@ -131,7 +131,7 @@ fail-first evidence is its broken-variant run, not a base run.
   `after` argument at the three floored sites, watch all three fail, then revert.
   Save that run as
   `openspec/changes/read-time-pump-zone/evidence/nonvacuity-floor.txt`.
-- [ ] 1.6 `tests/test_wall_clock.py`, unset zone through the API. With
+- [x] 1.6 `tests/test_wall_clock.py`, unset zone through the API. With
   `TIMEZONE_NAME` removed, a Focus pin through `POST /api/focus` succeeds, and its
   `pinned_at` lies within two minutes of the process clock (`datetime.now()`).
   Show 1.2's unset case and 1.6 are not vacuous: in a throwaway edit where
@@ -141,7 +141,7 @@ fail-first evidence is its broken-variant run, not a base run.
 
 ## 2. One clock (ADR 443, Decisions 1–6)
 
-- [ ] 2.1 `ciq_autotune/store.py`:
+- [x] 2.1 `ciq_autotune/store.py`:
   - Add `pump_zone()` beside `normalize_time`, the one zone loader (Decision 2).
     It returns `ZoneInfo(TIMEZONE_NAME)`, or `None` when the variable is unset or
     `ZoneInfo` raises `ZoneInfoNotFoundError`, `ValueError` or `OSError`.
@@ -157,7 +157,7 @@ fail-first evidence is its broken-variant run, not a base run.
   - Replace three fallbacks (`or datetime.now()`) with `wall_clock_now()`: the
     carb-log `created_at`, the prompt `answered_at`, and `record_pattern_review`'s
     sign-off `decided_at` (`store.py:1842`).
-- [ ] 2.2 `ciq_autotune/sync.py`:
+- [x] 2.2 `ciq_autotune/sync.py`:
   - Add `window_end(pump_now)`, returning the later of `pump_now.date()` and the
     current UTC date (Decision 4).
   - In `pull_from_tconnect`, directly after the unset-zone refusal, refuse when
@@ -165,7 +165,7 @@ fail-first evidence is its broken-variant run, not a base run.
     before the sync-extra import, the credential read or any network call
     (Decision 2). Add no other loadable-zone check anywhere; `normalize_time`
     stays as it is.
-- [ ] 2.3 Call `wall_clock_now()` at every other site in the Decision 1 table,
+- [x] 2.3 Call `wall_clock_now()` at every other site in the Decision 1 table,
   imported by name into each module:
   - `fetch_loop.py`: one reading per attempt supplies both `attempted_at` and
     `end = sync_mod.window_end(reading)`;
@@ -196,7 +196,7 @@ fail-first evidence is its broken-variant run, not a base run.
   The commit message names the invariant: `Store.record_fetch_result` advances
   `last_success_at` and `last_written_json` in one statement under the same `ok`
   condition. Change no other line of `day.js`.
-- [ ] 2.5 Re-point the seven clock patches (Decision 6), and change nothing else
+- [x] 2.5 Re-point the seven clock patches (Decision 6), and change nothing else
   around them:
   - `tests/test_api.py`: `patch("ciq_autotune.api.datetime")` becomes
     `patch("ciq_autotune.api.wall_clock_now", return_value=…)`, and
@@ -215,7 +215,7 @@ fail-first evidence is its broken-variant run, not a base run.
   `watched_change.datetime` for the data-time anchor, for both generations,
   instead of dropping fields. Touch nothing else in ACCEPTANCE.md: other tickets
   in this release edit its other paragraphs.
-- [ ] 2.6 Regenerate the design exploration with
+- [x] 2.6 Regenerate the design exploration with
   `uv run python mockups/harmonic-v2.exploration/generate.py`. A triage spike
   moved only the `code_version` hashes and the ids derived from them in
   `focus.json` and `journey.json`. Any other change there is a finding to report,

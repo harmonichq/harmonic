@@ -82,7 +82,7 @@ from .result import (
 from .events import CarbEntry
 from . import settings
 from .settings import Snapshot
-from .store import Store
+from .store import Store, wall_clock_now
 
 # Boluses delivered before a basal window still leave decaying IOB inside it, so
 # the basal clean-window filter must see a day of lead-in (cf. backtest).
@@ -511,7 +511,7 @@ def analyze(
     ]
     return AnalysisResult(
         schema_version=SCHEMA_VERSION,
-        generated_at=datetime.now().strftime(_FMT),
+        generated_at=wall_clock_now().strftime(_FMT),
         window_days=window_days,
         span=Span(start=_fmt(span_start), end=_fmt(span_end)),
         epochs=epochs,

@@ -2,8 +2,8 @@
  * workstation's locked mock; Changes' Trial stage draws it.
  *
  * Source: the archived mock (#722), which carries contract terms 5-11.
- * Transferred byte-identical below this header, bar the hero's name in the
- * opening comment (#447). Edit only to re-sync with the mock.
+ * Transferred byte-identical below this header, bar its opening comment,
+ * which #416 and #447 re-pointed. Edit only to re-sync with the mock.
  *
  * The two-median ribbon: the area between the Before and Trial medians, tinted
  * by which ran higher; no quartile bands. #416 retired the v1 binder that fed

@@ -22,19 +22,26 @@ reproduction is `docs/scope/446-changes-arrival.repro.mjs`.
   target is the Plan's Save draft, and after the clear a plain arrival never
   reaches the Plan. This is the one consumer whose landing depended on the
   remembered state. → ADR.
-- **Q1 default (awaiting the coordinator): the watched Trial's and Focus's
-  nameplate offers "Open Plan" while a draft exists.** Why: nothing else renders
+- **Q1 A (coordinator ruling, Q3 delegation, 2026-09-23): while a watch runs and
+  a Plan draft exists, the watched Trial's and Focus's nameplate offers "Open
+  Plan", which opens the Plan for that visit; no draft, no control.** Its apply
+  stays refused by the server, with no frontend gate. Why: nothing else renders
   an Open Plan while `active_change` is served. A Focus has no Plan route, and a
-  Trial's Revert to Plan replaces a saved draft on its stage-prior route. → ADR.
-- **Q2 default (awaiting the coordinator): Diagnose's return from a watched Focus
-  reads "Return to Focus".** Why: the served watched change is the Focus, the
-  return lands on the Focus, and today its label names a Trial. It is one of the
-  three arrivals #446 names, fixed here under the no-follow-ups rule. → ADR.
-- **Stories S166 (Trial, `basal-lower`), S167 (nothing watched, `basal-lower`)
-  and S168 (Focus, `c3-focus`), each `lock: HV2-15`.** Why: in-process probes
-  showed these stores serve each premise. No store serves both a stageable
-  action and a pinnable Pattern, so the Focus-pin landing after Open Plan is
-  proved at node level through the desk's `navigate('changes')`. inline.
+  Trial's Revert to Plan replaces a saved draft on its stage-prior route. The
+  Trial carries both because they are different actions. → ADR.
+- **Q2 widened (coordinator ruling, 2026-09-23): Diagnose opened from a watched
+  Focus reads "Return to Focus", in `frontend/diagnose.js` and
+  `frontend/diagnose.test.js`, carried by S168.** Why: the served watched change
+  is the Focus, the return lands on the Focus, and its label named a Trial. → ADR.
+- **Plan's own Stage in this change (coordinator acceptance, 2026-09-23).**
+  inline.
+- **Stories: S166 and S167 on `basal-lower` (Trial), S168 on `c3-focus`
+  (Focus), each `lock: HV2-15`.** S166 is the one-visit journey before and after
+  a Trial begins. S167 is the Trial's nameplate Open Plan and the server's
+  refusal. S168 is the Focus's Open Plan and "Return to Focus". Why: in-process
+  probes showed these stores serve each premise. No store serves both a
+  stageable action and a pinnable Pattern, so the Focus-pin landing after Open
+  Plan is proved at node level through the desk's `navigate('changes')`. inline.
 - **Flat order, Targeted review.** Why: the only slicing trait that fires for
   the worker is multiple deliverables (code, ledger and replay, spec). The
   release already gives the live browser run to the coordinator. A nearby
@@ -67,16 +74,8 @@ Disposition: inline (copied unchanged into ADR 446).
 
 ## Open questions
 
-- **Q1 (coordinator).** R446 says a saved draft stays reachable "by pressing Open
-  Plan while a watch runs". No Open Plan renders while `active_change` is served,
-  except the Trial's Revert to Plan. A: add "Open Plan" to the watched Trial's and
-  Focus's nameplate while a draft exists (the default). B: rely on the address
-  and Revert to Plan only. Under B a Focus has no route, and Revert replaces the
-  draft on its stage-prior route.
-- **Q2 (coordinator).** Widen the fence to relabel Diagnose's return from a
-  watched Focus as "Return to Focus", in `frontend/diagnose.js` and
-  `frontend/diagnose.test.js`, carried by S168 (the default)? Or leave it as it
-  is?
+None. Q1 and Q2 were settled by the coordinator's rulings, recorded under
+Decisions.
 
 ## Spawned tasks
 

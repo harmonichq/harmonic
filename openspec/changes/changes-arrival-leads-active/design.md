@@ -48,8 +48,10 @@ next plain arrival.
 
 ### Decision
 
-The operator's settled ruling R446 decides the rule. This ADR records how it
-lands.
+The operator's settled ruling R446 decides the rule. The coordinator's #446
+rulings (Q3 delegation, 2026-09-23) settle decisions 3 to 5: Q1 A (decision 4),
+Q2 widened to Diagnose's return (decision 5), and Plan's own Stage accepted into
+this change (decision 3). This ADR records how they land.
 
 1. **One place clears the Plan-open state.** Changes' `mount` compares
    `deps.navigation` with the last arrival it saw. On a new one, it clears the
@@ -68,17 +70,31 @@ lands.
    re-renders in place (`render()`), so the reader stays at the Plan request they
    are in, and Save draft takes focus. Before, it made a plain arrival that the
    rule above would never let reach the Plan.
-4. **A draft is reachable while a change is watched.** The watched Trial's and
-   Focus's nameplate in Changes offers "Open Plan" when a Plan draft exists. That
-   means guidance serves a `draft` with items, or `planUnderway()` holds for the
-   page. It sits beside "View change record" and makes the explicit Plan arrival
-   `navigate('changes', { subject: 'plan' })`. The label matches the concern
-   frame's control and R446's wording. The Plan renders unchanged. Record
-   decision stays offered, and the server's 409 shows through the Plan's existing
-   failed-record path. The desk adds no gate.
-5. **Diagnose's return names the served watched kind.** It reads "Return to
-   Focus" when the served watched change is a Focus. Otherwise it reads "Return to
-   Trial". It still makes the same plain arrival.
+4. **A draft is reachable while a change is watched** (coordinator ruling Q1 A).
+   The watched Trial's and Focus's nameplate in Changes offers "Open Plan" when a
+   Plan draft exists. That means guidance serves a `draft` with items, or
+   `planUnderway()` holds for the page. With no draft there is no control. It sits
+   beside "View change record" and makes the explicit Plan arrival
+   `navigate('changes', { subject: 'plan' })`, the same arrival the Trial's Revert
+   to Plan already makes. The Plan it opens holds for that visit. The next plain
+   arrival leads with the watched change again, under decision 1. It is an arrival
+   rather than the in-page flag because a page opened straight onto a watched
+   change has not loaded the Plan's state, so the flag alone could not open a
+   saved draft. The label matches the concern frame's control and R446's wording.
+   The Plan renders unchanged. Record decision stays offered, and the server's 409
+   (`occupied_admission`) shows through the Plan's existing failed-record path.
+   The desk adds no gate.
+
+   **Why a watched Trial carries both this Open Plan and Revert to Plan.** They are
+   different actions. Revert to Plan stages the Trial's prior values: on a
+   `stage-prior` route it saves them as the draft, replacing whatever draft was
+   saved, then opens the Plan. The nameplate's Open Plan changes nothing. It opens
+   the draft as it stands. Removing either would drop an action the other cannot
+   take. A Focus has no Revert route, so it carries only the nameplate's.
+5. **Diagnose's return names the served watched kind** (coordinator ruling Q2,
+   widened to `frontend/diagnose.js`). It reads "Return to Focus" when the served
+   watched change is a Focus. Otherwise it reads "Return to Trial". It still makes
+   the same plain arrival.
 
 ### Alternatives considered
 
@@ -91,8 +107,7 @@ lands.
   frame instead of the concern. S38, S39 and S90 would change for no reason in
   this issue.
 - **Reach the draft only through the address and the Trial's Revert to Plan.**
-  Rejected as the default; it is the coordinator's question Q1. A Focus has no
-  Plan route. On a Trial whose route stages the prior setting, Revert replaces
+  Rejected by the coordinator's Q1 ruling. A Focus has no Plan route. On a Trial whose route stages the prior setting, Revert replaces
   the saved draft it was meant to reach.
 - **Gate Record decision while a change is watched.** Rejected by R446. The
   server's refusal is the one owner, and the frontend re-derives no admission.
@@ -102,7 +117,8 @@ lands.
 `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R446`.
 It covers the shipped-surface revision (the arrival rule, the watched change's
 Open Plan, Plan's own Stage and the Focus return label) and the ledger amendment
-adding S166–S168.
+adding S166–S168. The coordinator's #446 rulings on Q1 and Q2 and its acceptance
+of Plan's own Stage, 2026-09-23, fall under the same delegation.
 
 ### Safe start (revise lifecycle)
 
@@ -155,14 +171,17 @@ Disposition: inline (carried by this ADR and the pinned tasks).
 The coordinator captures before/after renders from the base and the branch, in
 the desk's one theme, at 1280×720 and 1440×900:
 
-1. Changes after the topbar arrival in S166's journey. The base shows the Plan;
-   the branch shows the Trial.
-2. The watched Trial's nameplate with a saved draft. The branch shows Open Plan.
-3. The watched Focus's nameplate with a saved draft (S168's store).
-4. Diagnose's crumb opened from a watched Focus: "Return to Trial" on the base,
-   "Return to Focus" on the branch.
-5. Changes after a plain return with nothing watched (S167). The base shows the
-   Plan; the branch shows the concern with "Staged", Undo and Open Plan.
+1. Changes after the topbar arrival once S166's Trial has begun. The base shows
+   the Plan; the branch shows the Trial.
+2. Changes after a plain return with nothing watched, in S166's first half. The
+   base shows the Plan; the branch shows the concern with "Staged", Undo and Open
+   Plan.
+3. The watched Trial's view with a saved draft (S167). The base has no nameplate
+   Open Plan. The branch shows it beside "View change record", with Revert to Plan
+   unchanged in the reading pane.
+4. The watched Focus's nameplate with a saved draft (S168).
+5. Diagnose's crumb opened from a watched Focus (S168): "Return to Trial" on the
+   base, "Return to Focus" on the branch.
 
 They land in a private design-evidence record, not part of the public tree.
 
@@ -171,9 +190,9 @@ They land in a private design-evidence record, not part of the public tree.
 - Open Plan is a choice for one visit. Pressing it again after returning is one
   extra press, and it is the price of never opening a Plan in the watched
   change's seat.
-- On a Trial with a draft, two controls named "Open Plan" show. The nameplate's
-  opens the draft. The Revert to Plan section's stages the prior setting, as it
-  does today.
+- On a Trial with a draft, two controls named "Open Plan" show, one per action
+  (decision 4). The nameplate's opens the draft as it stands. The Revert to Plan
+  section's stages the prior setting, as it does today.
 - The desk ledger gains S166–S168. Its pinned inventory moves from 171 issued ·
   152 active · 19 retired to 174 · 155 · 19 on this branch. The coordinator
   reconciles release totals on the integration branch.

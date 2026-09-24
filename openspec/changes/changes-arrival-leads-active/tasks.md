@@ -94,23 +94,38 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   existing story is amended or retired. It adds three stories in the ledger's
   STORY format (element, source, lock, data, evidence, status), each citing
   `lock: HV2-15`:
-  - S166, on `basal-lower`. A Plan opened before a Trial began does not take the
-    Trial's seat. The reader presses Stage, Open Plan and Record decision. A
-    synthetic `match` pump read then starts a Trial, and a Plan draft is saved
-    while it runs. The topbar's Changes and Diagnose's "Return to Trial" both
-    land on the Trial. The Trial's nameplate Open Plan reaches the saved draft at
-    `/changes?subject=plan`. Record decision there fails visibly and adds no Plan
-    history record. The next topbar Changes lands on the Trial.
-  - S167, on `basal-lower`, with nothing watched. Open Plan holds for one visit.
-    After Stage and Open Plan, leaving Changes and returning by the topbar shows
-    the concern with "Staged", Undo and Open Plan, not the Plan. Open Plan
-    reopens the Plan with the staged change. Separately, at
-    `/changes?subject=plan` with nothing staged, Stage in the Plan's own frame
-    keeps the address and shows the Plan with Save draft focused.
-  - S168, on `c3-focus`. A Plan draft saved while the Focus runs is reached by
-    the Focus's nameplate Open Plan at `/changes?subject=plan`. Diagnose opened
-    from the Focus offers "Return to Focus" and no "Return to Trial", and
-    pressing it lands on the Focus.
+  - S166, on `basal-lower`: Open Plan holds for one visit, before and after a
+    Trial begins. The journey runs in one page, never reloaded.
+    1. At `/changes?subject=plan` with nothing staged, Stage in the Plan's own
+       frame keeps the address and shows the Plan with Save draft focused.
+    2. The topbar's Changes shows the staged concern. The reader presses Open
+       Plan, goes to Day and comes back by the topbar. Changes shows the concern
+       with "Staged", Undo and Open Plan, not the Plan.
+    3. Open Plan reopens the Plan with the staged change, and the reader presses
+       Record decision.
+    4. A synthetic `match` pump read starts a Trial, and a Plan draft is saved
+       while it runs.
+    5. After a visit to Diagnose, the topbar's Changes lands on the Trial, not the
+       Plan, and the Trial's nameplate offers Open Plan.
+    6. The reader inspects the Trial's nights in Diagnose. "Return to Trial"
+       lands on the Trial.
+  - S167, on `basal-lower`: a watched Trial reaches its saved draft. The store
+    reaches a Trial through the production routes: the served basal action is
+    saved and recorded as a Plan, then a synthetic `match` pump read starts the
+    Trial.
+    1. With no draft, the Trial's nameplate offers no Open Plan.
+    2. With a draft saved while the Trial runs, it offers Open Plan beside "View
+       change record". The Revert to Plan section still offers its own control.
+    3. Pressing the nameplate's Open Plan lands at `/changes?subject=plan`,
+       showing the saved draft unchanged.
+    4. Record decision there fails visibly and adds no Plan history record.
+    5. The next topbar Changes lands on the Trial.
+  - S168, on `c3-focus`: a watched Focus reaches its draft and names its return.
+    1. With a Plan draft saved while the Focus runs, the Focus's nameplate Open
+       Plan lands at `/changes?subject=plan`, showing the draft.
+    2. Diagnose, opened from the Focus's Inspect evidence, offers "Return to
+       Focus" and no "Return to Trial".
+    3. Pressing it lands on the Focus.
 
   Leave the frozen header, its inventory line and
   `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` alone: the release
@@ -118,27 +133,31 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
 - [ ] 5.2 Add the three bodies as `C4_STORIES.S166`, `C4_STORIES.S167` and
   `C4_STORIES.S168` in `frontend/c4.replay.mjs`. Every body first reads its
   premises from the production routes and requires them, the way S145 to S147 do:
-  - S166: `/api/guidance` serves an eligible basal action. After the `match`
-    capture, `/api/verify/trials` admits an active Trial. The draft is served
-    while the Trial runs.
-  - S167: nothing is admitted as watched.
+  - S166: `/api/guidance` serves an eligible basal action and nothing is
+    admitted as watched. After the `match` capture, `/api/verify/trials` admits
+    an active Trial. The draft is served while the Trial runs.
+  - S167: after its route setup and the `match` capture, `/api/verify/trials`
+    admits an active Trial, and guidance serves no draft until the story saves
+    one.
   - S168: an active Focus is admitted, and the saved draft is served.
-  S166 advances the pump only through `ctx.capturePump('match')`. It saves its
-  draft through the Trial's Revert to Plan or through `PUT /api/plan`, as S146
-  does. The page is not reloaded between Open Plan and the first topbar arrival,
-  because a reload discards the remembered state this story tests. Before that
-  arrival, the page goes to Diagnose, whose read refreshes guidance and the Plan
-  state. Register each body exactly once in `frontend/desk-behavior.replay.mjs`
+  S166 and S167 advance the pump only through `ctx.capturePump('match')`, and
+  save their drafts through the Trial's Revert to Plan or through `PUT /api/plan`,
+  as S146 does. S167 records its Plan through `PUT /api/plan` and
+  `POST /api/plan/apply`, as S147 does. S166 never reloads the page, because a
+  reload discards the remembered state it tests. Before its first watched topbar
+  arrival, it visits Diagnose, whose read refreshes guidance and the Plan state.
+  Register each body exactly once in `frontend/desk-behavior.replay.mjs`
   as an `appOnly('HV2-15', …)` export behind its
   `// STORY:harmonic-v2-desktop:S16n` marker, and in `REGISTRY` as `J()`, the way
   S139 and S140 are registered. Map `S166: 'basal-lower'`, `S167: 'basal-lower'`
   and `S168: 'c3-focus'` in `frontend/replay-cases.mjs` `STORY_CASES`. Both cases
   are already in the PR smoke slice (S14 and S57), so `SMOKE_STORIES` and its
   digest do not move. In `frontend/c4.replay.test.js`, pin that each story is
-  registered once with term HV2-15 on its case. Run S167 and S168 against fake
-  pages shaped like the base: the Plan reopened on return, no nameplate Open
-  Plan, "Return to Trial". Each must reject at its feature assertion, not at a
-  premise.
+  registered once with term HV2-15 on its case. Run S168 against a fake page
+  shaped like the base, with no nameplate Open Plan and "Return to Trial". It
+  must reject at a feature assertion, not at a premise. S166 and S167 advance the
+  pump between steps, so their base failure is proved by the coordinator's base
+  replay in 5.4.
 - [ ] 5.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()`,
   move the pinned literal to `{"issued": 174, "active": 155, "retired": 19}`. In
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, move the counted

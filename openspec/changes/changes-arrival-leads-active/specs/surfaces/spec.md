@@ -132,18 +132,23 @@ While the server serves an active change, the watched Trial's and Focus's own
 view in Changes SHALL offer "Open Plan" whenever a Plan draft exists. A draft
 exists when the guidance read serves a saved draft with items, or when the page
 holds a staged or pending Plan. Open Plan SHALL open the Plan with an explicit
-Plan arrival (`/changes?subject=plan`). With no draft, the view SHALL NOT offer
-it. The Plan SHALL render as it does without a watch. The desk SHALL add no gate
-of its own on recording that draft. The server's refusal SHALL show as a failed
-record, with nothing recorded.
+Plan arrival (`/changes?subject=plan`), and the Plan it opens holds for that
+visit only. It SHALL change no draft. With no draft, the view SHALL NOT offer it.
+A watched Trial's Revert to Plan SHALL keep its own control and action, which
+stages the Trial's prior values. The Plan SHALL render as it does without a
+watch. The desk SHALL add no gate of its own on recording that draft. The
+server's refusal SHALL show as a failed record, with nothing recorded.
 
 #### Scenario: A saved draft beside a watched Trial is reachable, and recording it is refused
 
 - **GIVEN** the synthetic `basal-lower` store with an active Trial begun by a
   synthetic pump read, and a Plan draft saved while it runs
-- **WHEN** the reader presses Open Plan on the Trial's own view
-- **THEN** the desk is at `/changes?subject=plan` showing the saved draft, with
-  Record decision offered
+- **WHEN** Changes shows the Trial's own view
+- **THEN** its nameplate offers Open Plan beside "View change record", and its
+  Revert to Plan section still offers its own control
+- **WHEN** the reader presses the nameplate's Open Plan
+- **THEN** the desk is at `/changes?subject=plan` showing the saved draft
+  unchanged, with Record decision offered
 - **AND** pressing Record decision shows the record failed, and the served Plan
   history gains no record
 - **AND** the next plain arrival to Changes shows the Trial's own view
@@ -157,9 +162,10 @@ record, with nothing recorded.
 
 #### Scenario: No draft, no Open Plan
 
-- **GIVEN** the server serves an active change and neither the guidance read nor
-  the page holds a Plan draft
-- **WHEN** Changes shows the watched change's own view
+- **GIVEN** the synthetic `basal-lower` store with an active Trial begun by a
+  synthetic pump read, and neither the guidance read nor the page holds a Plan
+  draft
+- **WHEN** Changes shows the Trial's own view
 - **THEN** its nameplate offers no Open Plan
 
 ### Requirement: Diagnose's return names the watched change

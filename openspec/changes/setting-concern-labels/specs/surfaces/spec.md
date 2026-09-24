@@ -73,10 +73,6 @@ suffix as today (" · <direction>" or " · leaning <direction>"). A basal row
 keeps "Basal <span>". The JS mirror, the regenerated fixtures and the QA
 finding-title literals SHALL carry the same titles.
 
-The correction-factor panel's heading, breadcrumb and scope sentence SHALL say
-"Correction factor". No Diagnose line SHALL print "ISF" or "I:C" as a setting's
-name.
-
 #### Scenario: A correction-factor finding reads as Correction factor
 
 - **GIVEN** the manufactured case isf-strengthen
@@ -161,7 +157,7 @@ A code outside that set SHALL print no words there.
 - **THEN** the frames read "Ready to stage" and "Evidence to inspect"
 - **AND** neither frame's text contains a disposition code
 
-### Requirement: Diagnose prints a correction-factor value insulin first
+### Requirement: Diagnose prints the correction factor in the wearer's words
 
 These Diagnose values SHALL print as "1 U : <value> mg/dL", each keeping the
 rounding its line prints today:
@@ -170,8 +166,10 @@ rounding its line prints today:
 - the correction-factor panel's current, estimate, recommended and interval
   values.
 
-No Diagnose line SHALL print "mg/dL/U". Carb-ratio and basal values on Diagnose
-keep their unit after the value.
+The correction-factor panel's heading, breadcrumb and scope sentence SHALL say
+"Correction factor". No Diagnose line SHALL print "mg/dL/U", or "ISF" or "I:C"
+as a setting's name. Carb-ratio and basal values on Diagnose keep their unit
+after the value.
 
 #### Scenario: An asserting correction-factor queue row reads insulin first
 

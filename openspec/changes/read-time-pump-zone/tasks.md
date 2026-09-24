@@ -223,7 +223,7 @@ fail-first evidence is its broken-variant run, not a base run.
 
 ## 3. Verification
 
-- [ ] 3.1 On the commit to be delivered, run each command on its own and record
+- [x] 3.1 On the commit to be delivered, run each command on its own and record
   its exit code. A failure in one does not skip the rest.
   1. `npm ci && npm run build`
   2. `uv run python -m pytest tests/test_fetch_loop.py tests/test_cli.py tests/test_wall_clock.py tests/test_store.py tests/test_sync_partial.py tests/test_api.py tests/test_durable_follow_up.py tests/test_plan_verdict.py tests/test_follow_up_store.py tests/test_watched_change.py tests/test_pending_prompts.py tests/test_pattern_sweep.py tests/test_credentials.py tests/test_guidance_preferences.py tests/test_carbs.py`

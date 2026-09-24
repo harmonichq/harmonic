@@ -57,17 +57,16 @@ The new stories were proved with each ticket's harness laid over b03431d2, at
 names its commits and how it failed:
 - S162–S168 and S177–S180 fail there at their feature assertions at both sizes,
   and S169 and S170 at their content assertions at both sizes.
-- S157 and S182 fail there for the right reason, and S173–S176 at their feature
-  assertions. The coordinator's log of those base runs names no size; their
-  status lines record both sizes.
-- S183 and S184 fail there on #455's final harness (c13c6f7a). S183–S185 all
-  fail on its first harness (d3e276ed), their premises holding. No base run of
-  S185 on the final harness is recorded; its status line says the base result
-  stands on the first harness.
+- S157, S173–S176 and S182 fail there at their feature assertions at both
+  sizes.
+- S183, S184 and S185 fail there at their feature assertions at both sizes on
+  #455's final harness (575464e7): overlapping axis labels, a clipped verdict
+  line and a zero-width header title.
 - All 22 pass on their ticket branches at both sizes.
 - On the release trunk at 25392ade, S157, S169, S170, S177–S180 and S182 pass at
   both sizes, in a 15-story run with S25, S46, S73, S139, S140, S149 and S150
-  that passed 15 of 15. The other 14 new stories have no trunk run recorded.
+  that passed 15 of 15. The complete ledger run below covers all 22 on the
+  commit that is pushed.
 
 Raw logs, captures and renders are retained in the release's evidence record.
 The complete ledger, 193 issued, runs at both sizes once on the integration

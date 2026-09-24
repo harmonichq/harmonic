@@ -2957,7 +2957,7 @@ approval for every change the #424 checklist calls for.
 Safe start is unchanged: AGENTS.md's QA copy-then-serve command, with the named
 case store.
 
-Amended S115 · 2026-09-23 · #424 / Q2 sanction: Connor Griffin, 2026-09-23, "Q1 A, Q2 A, defaults all fine, go" (quoted in openspec/changes/highs-after-meals-counts/proposal.md). A folded member line is read from its served `fold_sentences`, not its `count_sentences`: its share of the Pattern's count (scope `pattern`) beside its name on one line, and every sentence served as outside the Pattern's count set apart behind "outside the count"; under a Pattern that serves no count the line leads with those words. Still no outcome word, never merged, never a sibling row; the toggle, its arrival states, the tier urgency and the Pattern's own row are unchanged. The replay checks every folded member's served `fold_sentences` before reading a line (C4_STORIES.S115 → assertServedFold424, assertFoldLine424). S115's original text above stays as frozen.
+Amended S115 · 2026-09-23 · #424 / Q2 sanction: Connor Griffin, 2026-09-23, "Q1 A, Q2 A, defaults all fine, go" (quoted in openspec/changes/highs-after-meals-counts/proposal.md). A folded member line is read from its served `fold_sentences`, not its `count_sentences`: its share of the Pattern's count (scope `pattern`) beside its name on one line, and every sentence served as outside the Pattern's count set apart behind "outside the count"; under a Pattern that serves no count the line leads with those words. Still no outcome word, never merged, never a sibling row; the toggle, its arrival states, the tier urgency and the Pattern's own row are unchanged. The replay checks every folded member's served `fold_sentences` before reading a line (C4_STORIES.S115 → assertServedFold424, assertFoldLine424). S115's original text above stays as frozen. Coordinator-run 2026-09-23: branch 5b7a4bc6 passes at 1280x720 and 1440x900; base a4d374a7, with the 5b7a4bc6 replay harness laid over it, fails at its served-fold check ("S115 every folded cause must serve its fold sentences") at both sizes, which is informational.
 
 ```
 S124 · On a same-population event case file the Response comparison caption
@@ -2984,8 +2984,12 @@ S124 · On a same-population event case file the Response comparison caption
             compares them with the served cohorts, counts and verdict counts
             (assertComparisonCaption424), and sums the caption's counts against
             the header denominator
-  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
-            and 1440x900 are coordinator-run and not yet reported
+  status:   base a4d374a7, with the 5b7a4bc6 replay harness laid over it,
+            fails at its served-data check at both sizes ("S124 the case file
+            must serve its count outside the comparison and each cohort's band
+            state"); branch 5b7a4bc6 passes at both sizes (S115 and S124–S126
+            selected: 4 executed, 0 failed at each size); coordinator-run
+            2026-09-23. Captures: docs/scope/release-422-434-evidence/424/
 ```
 
 ```
@@ -3009,8 +3013,12 @@ S125 · On the cross-population Missed / unannounced meal case file the caption
             comparison to be cross-population, with a non-zero count outside it and
             a no-data High, and compares the rendered caption, headings, band keys
             and band foot with them (assertComparisonCaption424)
-  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
-            and 1440x900 are coordinator-run and not yet reported
+  status:   base a4d374a7, with the 5b7a4bc6 replay harness laid over it,
+            fails at its served-data check at both sizes ("S125 the case file
+            must serve its count outside the comparison and each cohort's band
+            state"); branch 5b7a4bc6 passes at both sizes (S115 and S124–S126
+            selected: 4 executed, 0 failed at each size); coordinator-run
+            2026-09-23. Captures: docs/scope/release-422-434-evidence/424/
 ```
 
 ```
@@ -3034,8 +3042,12 @@ S126 · Under a Pattern that serves a count, the open fold prints each folded
             line's share and outside rows (foldLines424) against its served fold
             sentences (assertFoldLine424), and sums the rendered shares against
             the Pattern's served count sentence
-  status:   owed — the base a4d374a7 fail-first and the branch pass at 1280x720
-            and 1440x900 are coordinator-run and not yet reported
+  status:   base a4d374a7, with the 5b7a4bc6 replay harness laid over it,
+            fails at its served-data check at both sizes ("S126 every folded
+            cause must serve its fold sentences"); branch 5b7a4bc6 passes at
+            both sizes (S115 and S124–S126 selected: 4 executed, 0 failed at
+            each size); coordinator-run 2026-09-23. Captures:
+            docs/scope/release-422-434-evidence/424/
 ```
 
 S125 and S126 run on case stores no other story covers, so they join the fixed PR

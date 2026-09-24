@@ -148,5 +148,5 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   `mockups/INDEX.md`'s counts untouched: the release coordinator writes those
   once, across every ticket, and reconciles the smoke slice, its length and its
   digest across tickets.
-- [ ] 4.4 Record in each new story's status line the base fail-first and branch
+- [x] 4.4 Record in each new story's status line the base fail-first and branch
   pass at 1280x720 and 1440x900, from runs the coordinator makes serially.

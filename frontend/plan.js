@@ -342,9 +342,9 @@ export function segmentCapacity(rows) {
  * The effective plan the user is committing — one item per proposal cell (an
  * accepted pick), carrying the value actually in effect.
  *
- * This is what confirmation must record in apply history. Provenance is the
- * source of truth here, so the items survive the keyed-in-and-refetched case
- * where value === current (#462).
+ * This is what the draft saves, and recording the decision copies the saved
+ * draft into Plan history. Provenance is the source of truth here, so the items
+ * survive the keyed-in-and-refetched case where value === current (#462).
  *
  * Pass the UNCOLLAPSED deliverable rows so every changed boundary is captured
  * (a basal pick's one slot, an ISF fan-out's every segment).

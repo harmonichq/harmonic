@@ -177,3 +177,23 @@ records the decision and the export table under ADR 453.
 - [x] 7.4 The desk chunk changes only in that paragraph's JSDoc text: none of the
   deleted exports was in the bundle. No replay story beyond task 6.5's ten is
   owed.
+
+## 8. Coordinator-authorized widening — 2026-09-23 (code review round 2, F6 and F7)
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 2. design.md
+records the decision under ADR 453.
+
+- [x] 8.1 F6: the comments in `frontend/plan.js` (`effectivePlanItems`),
+  `frontend/plan-view.js` (`saveDraft`) and the `frontend/plan.test.js` section
+  heading say the draft saves the effective plan and recording the decision
+  copies it into Plan history, not that "confirmation" records it.
+- [x] 8.2 F7: `specs/plan/spec.md` carries MODIFIED deltas for the draft, apply
+  and deliverable requirements without hand-edits, and the plan spec's Purpose
+  is corrected in place. The surfaces requirement "Plan surface asks…" is left
+  to #447. `npx --yes @fission-ai/openspec@1 validate --all --strict` passes.
+- [x] 8.3 Expectations amended by the coordinator for the widened branch.
+  Expectation 2 (`node --test frontend/plan.test.js frontend/replay-cases.test.js`)
+  reports pass 57, fail 0 (plan.test.js 37, replay-cases.test.js 20), not 83.
+  Expectation 4 (byte-identical shell) is replaced by a removal-only build diff
+  (tasks 5.4, 6.4 and 7.4).

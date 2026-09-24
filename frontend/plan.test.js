@@ -363,7 +363,7 @@ test('reconcile flags each planned change the pump does not hold', () => {
   assert.equal(isfCell.actual, 50);
 });
 
-// --- effective plan: what confirmation records (#462) ----------------------
+// --- effective plan: what the draft saves and the decision records (#462) ---
 
 test('effectivePlanItems survives keyed-in-and-refetched (value === current) (#462)', () => {
   // After keying the change in, current catches up to value so the cell reads

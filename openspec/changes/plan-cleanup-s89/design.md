@@ -272,6 +272,30 @@ durable state.
 None of the deleted exports was in the built bundle; the build already
 dropped them. The desk chunk changes only in that note's JSDoc text.
 
+### Coordinator-authorized widening — 2026-09-23: Plan wording and the plan spec
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling on #453's code review, round 2 (findings F6 and
+F7).
+
+- F6: three comments said the effective plan is "what confirmation must
+  record". In CONTEXT.md a Plan is **confirmed** when the server's verdict finds
+  a pump read that holds it; recording is a separate step. The draft saves the
+  effective plan, and recording the decision copies the saved draft into Plan
+  history (`/api/plan/apply` reads the draft). `plan.js`, `plan-view.js` and a
+  `plan.test.js` section heading now say that.
+- F7: the plan capability still described the retired hand-edit path. The
+  change carries MODIFIED deltas (`specs/plan/spec.md`) for "A draft persists
+  unsaved changes locally", "Applying a plan records the applied changes in
+  history" and "The deliverable is a unified 4-parameter schedule built from the
+  active profile plus accepted changes", each without hand-edits. A delta cannot
+  carry a spec's Purpose, so the plan spec's Purpose sentence ("review and
+  edit … may hand-edit it") is corrected in place in `openspec/specs/plan/spec.md`.
+  The surfaces requirement "Plan surface asks…" also names hand-edits, but
+  #447 removes and replaces it in this release, so this change leaves it alone:
+  two changes on one requirement would collide at archive. No other in-flight
+  change modifies the three plan requirements.
+
 ### Consequences
 
 - S89 fails at the check where it certifies its decision when Plan history is

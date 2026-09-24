@@ -257,8 +257,8 @@ async function commit(kind, run) {
 }
 
 function saveDraft() {
-  // The draft is the effective plan — the value in effect on each proposal cell,
-  // which is what plan.js says confirmation must record.
+  // The draft is the effective plan — the value in effect on each proposal cell.
+  // Recording the decision copies the saved draft into Plan history.
   const items = effectivePlanItems(rows());
   return commit('draft', () => savePlanDraft({ items }));
 }

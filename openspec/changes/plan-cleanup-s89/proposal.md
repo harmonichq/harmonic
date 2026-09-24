@@ -75,6 +75,8 @@ reader takes the first record or finds a record by its identity (design.md).
   hand-edit path the desk never uses (`edits`, `isDeliverableEditRevert`, the
   collapse provenance promotion) is deleted too, and so is every other `plan.js`
   export with no live caller (design.md holds the export table).
+- The plan capability's draft, apply and deliverable requirements, and its
+  Purpose, stop describing hand-edits.
 
 ## What does not change
 

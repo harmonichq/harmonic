@@ -232,6 +232,9 @@ test('Focus admission copy translates known backend tokens without inventing adm
     said: 'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
     label: 'Trial in progress', action: 'View Trial', route: { subject: 'trial' },
   });
+  // ADR 450: the Focus entry words a pending Plan from this same table.
+  assert.equal(guidance.admissionReason('pending_plan').said,
+    'A recorded Plan is still pending, so Harmonic is not offering a Focus from this read.');
   assert.deepEqual(guidance.admissionReason('new_backend_reason'), {
     said: 'Harmonic is not offering a Focus from this read.',
     label: 'Unavailable from this read', action: 'Focus unavailable', route: null,

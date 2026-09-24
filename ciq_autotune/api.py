@@ -107,6 +107,37 @@ DESTINATION_PAGES = tuple(f"{PAGE}{destination}" for destination in DESTINATIONS
 _KB_DIR = Path(__file__).resolve().parent.parent / "docs" / "kb"
 _KB_SLUG_RE = re.compile(r"[a-z0-9-]+")
 
+# ADR 450: a refused durable Plan, Trial, Focus or later-conclusion write names
+# its reason in a sentence, served beside its code as every other coded refusal
+# here already is. The keys are every code a lifecycle write can raise, plus the
+# handler's default; an unknown code is served as its own message.
+_RECONCILE_REFUSED = "Harmonic's change records could not be reconciled, so nothing was recorded."
+_REFUSAL_MESSAGES = {
+    "request_identity_mismatch": "This request was already recorded for a different change.",
+    "late_conclusion_mismatch": "A different later conclusion is already recorded for this Trial.",
+    "stale_input_revision": "New pump or sensor data arrived since this page was read.",
+    "stale_source": "The findings changed since this page was read.",
+    "ineligible_source": "This finding is not offering an action from the current read.",
+    "stale_draft": "The Plan draft changed since this page was read.",
+    "occupied_admission": "Another change is already being watched, or a recorded Plan is still pending.",
+    "missing_source_profile": "No pump profile has been read to record this Plan against.",
+    "ineligible_draft": "The Plan draft no longer matches the action this read offers.",
+    "nonpending_plan": "This Plan is no longer pending.",
+    "nonactive_subject": "This change is no longer the one being watched.",
+    "immature_trial": "This Trial is still maturing.",
+    "trial_not_expired": "This Trial did not expire unreviewed, so it takes no later conclusion.",
+    "transaction_aborted": "The save stopped partway, so nothing was recorded.",
+    "legacy_ending_unavailable": ("This earlier Focus ended before Harmonic saved endings, "
+                                  "so no ending can be recorded for it now."),
+    "unknown_request_subject": "This change has no record to save against, so nothing was recorded.",
+    "transaction_required": _RECONCILE_REFUSED,
+    "orphan_base_record": _RECONCILE_REFUSED,
+    "base_record_mismatch": _RECONCILE_REFUSED,
+    "invalid_reconciliation_identity": _RECONCILE_REFUSED,
+    "invalid_frontier_trial": _RECONCILE_REFUSED,
+    "lifecycle_conflict": "Another change was recorded at the same time, so nothing was saved.",
+}
+
 
 def _analysis_payload(result) -> dict:
     """Render the analysis with its backend-owned basal support floor."""
@@ -1540,7 +1571,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
             with Store.open_queryonly(db_path) as store:
                 current = follow_up_read(store)
-            detail = {"code": getattr(error, "reason", "lifecycle_conflict"), **current}
+            code = getattr(error, "reason", "lifecycle_conflict")
+            detail = {"code": code, "message": _REFUSAL_MESSAGES.get(code, code), **current}
             raise HTTPException(status_code=409, detail=detail if durable else str(error))
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error))

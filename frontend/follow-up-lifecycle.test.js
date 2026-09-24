@@ -8,7 +8,14 @@ let identity = 'basal_rate-03-00-synthetic';
 let context = {};
 let expired = false;
 let lateConclusion = { state: 'unavailable' };
-const admission = () => ({ state: 'available', active_kind: kind, active_id: identity,
+// A durable 409 as the API serves it (ADR 450): the code beside its sentence.
+let refusal = null;
+const STALE = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.',
+  input_revision: 8, admission: { state: 'available' } };
+// Served fields a test adds to the selected record, and an admission it serves instead.
+let selectedExtra = {};
+let unreconciled = null;
+const admission = () => unreconciled || ({ state: 'available', active_kind: kind, active_id: identity,
   can_finish_trial: true, focus_pin: { available: false } });
 const comparison = { availability: { state: 'available' }, periods: {}, views: {}, outcomes: [],
   assessment: { state: 'unclear' }, readiness: { before: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] }, after: { observed: 0, required: 14, criterion_met: false, unit: 'nights', contributing_dates: [] } } };
@@ -26,7 +33,7 @@ let served = comparison;
 // A held assessment read: the record read answers, the reassessment waits.
 let assessmentGate = null;
 // The record whose assessment read the server refuses, as it answers one whose
-// history inputs changed during every snapshot.
+// history inputs changed during every snapshot, or with a coded refusal.
 let refusedFor = null;
 // The next request `held.matches` names waits for `held.gate`, so a test can
 // leave a record while that request is in flight. Its answer is decided when it
@@ -37,10 +44,12 @@ function holdNext(matches) {
   held = { matches, gate: new Promise(resolve => { release = resolve; }) };
   return () => { held = null; release(); };
 }
+let codedRefusal = null;
 globalThis.fetch = async (path, options = {}) => {
   requests.push({ path, options });
   if (held?.matches(String(path), options)) { const { gate } = held; held = null; await gate; }
   if (options.method === 'POST') {
+    if (refusal) return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: refusal }) };
     const body = JSON.parse(options.body || '{}');
     if (!fail && String(path).endsWith('/conclusion')) {
       lateConclusion = { state: 'available', conclusion: body.conclusion,
@@ -56,6 +65,7 @@ globalThis.fetch = async (path, options = {}) => {
   const assessment = params.get('assessment');
   if (assessment && assessmentGate) await assessmentGate;
   if (assessment && selected === refusedFor) {
+    if (codedRefusal) return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: codedRefusal }) };
     return { ok: false, status: 503, statusText: 'Service Unavailable',
       json: async () => ({ detail: 'history inputs changed during every snapshot' }) };
   }
@@ -68,7 +78,7 @@ globalThis.fetch = async (path, options = {}) => {
           recorded_at: '2026-09-01 00:00:00', conclusion: null, assessment: { state: 'unavailable' } },
         late_conclusion: lateConclusion } : {}) },
       reassessment: assessment ? { mode: assessment, computed_at: '2026-09-23 12:00:00',
-        comparison_context: { id: 'synthetic-context-0001' }, comparison: served } : null } } : {}),
+        comparison_context: { id: 'synthetic-context-0001' }, comparison: served } : null, ...selectedExtra } } : {}),
   };
   return { ok: true, json: async () => result };
 };
@@ -185,7 +195,7 @@ test('Focus does not repeat a retained explanation identical to its served title
 test('an exact expired Trial records a later conclusion through the public client, retries, and reloads its immutable record', async () => {
   kind = 'trial'; identity = 'expired-trial-synthetic';
   context = { subject: 'pattern:served-pattern', outcome_window: { start_min: 1320, end_min: 120 } };
-  expired = true; lateConclusion = { state: 'unavailable' }; fail = true;
+  expired = true; lateConclusion = { state: 'unavailable' }; fail = false; refusal = STALE;
   try {
     const seat = host(); const route = { occurrence: `record:trial:${identity}` };
     for (let step = 0; step < 3; step++) { mountHistory(seat, { context: route, hold() {} }); await flush(); }
@@ -193,11 +203,12 @@ test('an exact expired Trial records a later conclusion through the public clien
     seat.lateField.oninput({ target: { value: 'Later synthetic observation' } });
     seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
     mountHistory(seat, { context: route, hold() {} });
-    assert.match(seat.innerHTML, /Recording the later conclusion failed/);
+    assert.match(seat.innerHTML, /Recording the later conclusion failed: New pump or sensor data arrived since this page was read\./);
+    assert.doesNotMatch(seat.innerHTML, /stale_input_revision|\(409\)/, 'the refusal prints its sentence, never its code');
     assert.match(seat.innerHTML, /Later synthetic observation/);
     const failed = requests.filter(row => String(row.path).endsWith('/conclusion')).at(-1);
     assert.match(failed.path, new RegExp(`/trials/${identity}/conclusion$`));
-    fail = false;
+    refusal = null;
     seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
     const retried = requests.filter(row => String(row.path).endsWith('/conclusion')).at(-1);
     assert.equal(JSON.parse(failed.options.body).request_id, JSON.parse(retried.options.body).request_id);
@@ -208,7 +219,58 @@ test('an exact expired Trial records a later conclusion through the public clien
     assert.match(seat.innerHTML, /data-ending-kind="expired_unreviewed"/);
     assert.ok(requests.some(row => String(row.path).includes(`selected=${identity}`)),
       'retry re-read the exact expired Trial record');
-  } finally { context = {}; expired = false; lateConclusion = { state: 'unavailable' }; }
+  } finally { context = {}; expired = false; lateConclusion = { state: 'unavailable' }; refusal = null; }
+});
+
+/* ------------------------------------ served names and refusals, in words */
+
+test('an active Focus names its served behavior in its intent and its behavior row, never its key', async () => {
+  kind = 'focus'; identity = 'focus-behavior-synthetic';
+  selectedExtra = { lever: 'repeat_eating', lever_title: 'Repeat eating' };
+  const measured = { lever: 'repeat_eating', numerator: 1, denominator: 'meals', opportunities: 4, rate: 0.25,
+    harm: 0, measured_opportunities: 4, unmeasured_opportunities: 0,
+    harm_availability: { state: 'available' }, availability: { state: 'available' } };
+  served = { ...comparison, adherence: { before: measured, after: measured, assessment: { state: 'unclear', unit: 'proportion' } } };
+  try {
+    const seat = host(); await mountActive(seat, 'focus-behavior');
+    assert.match(seat.innerHTML, /data-part="intent"><h3>What this Focus watches<\/h3>\s*<p>Repeat eating<\/p>/);
+    assert.match(seat.innerHTML, /<td>Repeat eating<small>the intended behavior/);
+    assert.doesNotMatch(seat.innerHTML.replace(/<[^>]*>/g, ' '), /repeat_eating/);
+  } finally { selectedExtra = {}; served = comparison; }
+});
+
+test('an active Focus with no served behavior name omits the watches paragraph rather than print its key', async () => {
+  kind = 'focus'; identity = 'focus-unnamed-synthetic';
+  selectedExtra = { lever: 'overnight_drift', lever_title: null };
+  try {
+    const seat = host(); await mountActive(seat, 'focus-unnamed');
+    assert.match(seat.innerHTML, /data-part="intent"><h3>What this Focus watches<\/h3>\s*<p class="gf-meta">Pinned /);
+    assert.doesNotMatch(seat.innerHTML, /overnight_drift/);
+  } finally { selectedExtra = {}; }
+});
+
+test('an unreconciled store says what Changes is waiting for in words', async () => {
+  unreconciled = { state: 'unavailable', reason: 'reconciliation_required', active_kind: null, active_id: null,
+    focus_pin: { available: false, reason: 'reconciliation_required' } };
+  try {
+    const seat = host();
+    for (let step = 0; step < 3; step++) { mount(seat, { navigation: 'unreconciled', hold() {} }); await flush(); }
+    assert.match(seat.innerHTML, /The backend cannot answer for this store yet: the latest pump and sensor data have not been reconciled yet\./);
+    assert.doesNotMatch(seat.innerHTML, /reconciliation_required/);
+  } finally { unreconciled = null; }
+});
+
+test('a refused finish prints the served sentence, never its code and status', async () => {
+  kind = 'trial'; identity = 'refused-finish-synthetic'; refusal = STALE;
+  try {
+    const seat = host(); await mountActive(seat, 'refused-finish');
+    seat.field.oninput({ target: { value: 'A synthetic finish' } });
+    seat.form.onsubmit({ preventDefault() {} }); await flush();
+    mount(seat, { navigation: 'refused-finish', hold() {} });
+    assert.match(seat.innerHTML, /Recording the conclusion failed: New pump or sensor data arrived since this page was read\./);
+    assert.doesNotMatch(seat.innerHTML, /stale_input_revision|\(409\)/);
+    assert.match(seat.innerHTML, /A synthetic finish/);
+  } finally { refusal = null; }
 });
 
 /* ------------------------------------------ the record door's default read */
@@ -312,6 +374,18 @@ test('a failed retained read keeps the record and its Original read, and retries
     assert.match(seat.innerHTML, /data-assessment="retained" aria-pressed="true"/);
     assert.doesNotMatch(seat.innerHTML, /data-reassessment-failed/);
   } finally { refusedFor = null; served = comparison; }
+});
+
+test('a coded refusal of a reassessment read prints its sentence with exactly one full stop', async () => {
+  kind = 'trial'; identity = 'coded-reassessment-synthetic'; served = PAIRED; refusedFor = identity;
+  codedRefusal = { code: 'stale_input_revision', message: 'New pump or sensor data arrived since this page was read.' };
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    const line = /The retained-context reassessment could not load: ([^<]*)<\/p>/.exec(seat.innerHTML);
+    assert.ok(line, 'the stage names the refused read');
+    assert.equal(line[1], 'New pump or sensor data arrived since this page was read.');
+    assert.doesNotMatch(seat.innerHTML, /stale_input_revision|\(409\)/);
+  } finally { refusedFor = null; codedRefusal = null; served = comparison; }
 });
 
 test('a failed retained read stays with its record: the next record opened from the roster reads its own', async () => {

@@ -53,6 +53,15 @@ alone.
   bogus"; pressing it seats no utility, and the next seat step draws no pane and
   does not throw. This fails first: the base offers "Return to bogus", and its
   next render throws `BODIES[kind] is not a function`.
+- [x] 1.5 Coordinator-authorized widening, 2026-09-23 (Q3 delegation; review
+  round 1 finding F1; ADR 445 point 8). `dayReturnTarget` takes the destination
+  only when `DESTINATION_LABEL` has it as its own key, and labels the return from
+  that resolved destination, so a name every object inherits (`constructor`,
+  `__proto__`) is never a destination: the return is a plain one to Diagnose
+  with no label the address made up. In `frontend/day.test.js`, `from=constructor`
+  and `from=__proto__` print "Opened from" Diagnose and "Return to Diagnose",
+  with no "function …" and no "[object Object]". This fails first: the base
+  printed "Opened from function Object() { [native code] }".
 
 ## 2. The carb utilities and the desk they return to
 

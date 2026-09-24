@@ -171,6 +171,14 @@ coordinator-authorized widening of this change):
   the desk stopped drawing. Recorded as a finding at start and fixed here (task
   1.4), not filed.
 
+  The destination half reads the same way (coordinator ruling, 2026-09-23, on
+  code review round 1's finding F1). `<destination>` is taken only when it is an
+  own key of `DESTINATION_LABEL`, and the return's label comes from the
+  destination so resolved. A name every object inherits (`constructor`,
+  `__proto__`) is therefore never a destination; the return is a plain one to
+  Diagnose, named for it. On the base, `from=constructor` printed "Opened from
+  function Object() { [native code] }" and a return named the same (task 1.5).
+
 ### Grounding
 
 Reproduced in process on origin/main b03431d2 with scratch node tests (not

@@ -4180,6 +4180,11 @@ Shipped desk behavior that changes, and no story that asserted the old fact:
   return named for its destination and reopens nothing. The base offered
   "Return to" that name, and pressing it stopped the desk drawing. A Node test
   pins it (`frontend/day.test.js`).
+- **A Day address naming no destination returns plainly to Diagnose**
+  (coordinator-authorized, 2026-09-23, code review round 1 finding F1, ADR 445
+  point 8). A `from` such as `constructor` or `__proto__` offers "Return to
+  Diagnose". The base printed "Opened from function Object() { [native code] }"
+  and a return named the same. A Node test pins it (`frontend/day.test.js`).
 
 The Log carbs header (ADR 444) has no story: no replay or browser context sets
 a `timezoneId`, so the replay browser runs in the runner's zone, UTC on CI,

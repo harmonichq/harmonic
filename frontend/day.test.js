@@ -289,6 +289,19 @@ test('an entry whose address carries no title names the way back, never its subj
   assert.equal(openedFrom(utility), 'Carb questions');
 });
 
+test('a `from` naming no destination returns plainly to Diagnose and prints no label the address made up', () => {
+  // An address is external input (ADR 445 point 8): a name every object
+  // inherits is not a destination.
+  for (const from of ['constructor', '__proto__']) {
+    const entry = { date: '2024-06-26', subject: 'crafted', from };
+    const markup = dayFrame(state({ entry }));
+    assert.doesNotMatch(markup, /function |\[object Object\]/, `${from}: Day printed a label the address made up`);
+    assert.equal(openedFrom(markup), 'Diagnose', `${from}: "Opened from" names no destination`);
+    assert.match(markup, /data-day="return">Return to Diagnose</, `${from}: the return is not named for Diagnose`);
+    assert.deepEqual(dayReturnTarget(entry), { utility: null, destination: 'diagnose', label: 'Diagnose', title: '' });
+  }
+});
+
 test('each attributed Episode Log row ends with its episode\'s served Lever name', () => {
   // Four Levers the desk once had no word for, each with the name the model
   // read serves, and one unattributed episode whose row names no Lever.

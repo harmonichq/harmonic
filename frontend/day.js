@@ -169,18 +169,20 @@ function adopt(context) {
  * the routing `subject` is never printed (ADR 426).
  * Null on a direct entry, which offers no return at all (HV2-13).
  *
- * The address is external input, so a `from` naming a utility this desk does
- * not have is a plain return to its destination: no utility is reopened for the
- * seat layer to draw (ADR 445).
+ * The address is external input, so only a destination and a utility this
+ * desk has are read from `from`: an unknown destination is Diagnose, and an
+ * unknown utility is a plain return to its destination, with no utility
+ * reopened for the seat layer to draw (ADR 445 point 8).
  */
 export function dayReturnTarget(entry = memory.entry) {
   if (!entry?.date || !entry.from) return null;
-  const [destination, named = null] = String(entry.from).split('.');
-  const utility = named && Object.hasOwn(UTILITY_TITLE, named) ? named : null;
+  const [named, utilityNamed = null] = String(entry.from).split('.');
+  const destination = Object.hasOwn(DESTINATION_LABEL, named) ? named : 'diagnose';
+  const utility = utilityNamed && Object.hasOwn(UTILITY_TITLE, utilityNamed) ? utilityNamed : null;
   return {
     utility,
-    destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
-    label: utility ? UTILITY_TITLE[utility] : (DESTINATION_LABEL[destination] || 'Diagnose'),
+    destination,
+    label: utility ? UTILITY_TITLE[utility] : DESTINATION_LABEL[destination],
     title: entry.title || '',
   };
 }

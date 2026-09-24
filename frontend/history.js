@@ -26,7 +26,6 @@
 //
 //   mount(host, deps)        the record destination's content
 //   openRecord(kind, id)     open one record on itself, before anything else
-//   selectedRecord()         which record is open, or null
 import { concludeTrial, fetchVerifyTrials } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, stamp } from './frame.js';
 import { hold, navigate, render, view } from './routes.js';
@@ -81,33 +80,57 @@ export function settingValue(parameter, value) {
 
 /* ------------------------------------------------------- the record's memory */
 
+// `open` is the record that is open, `{ kind, id }`, or null on the roster, and
+// `setOpenRecord` is its one writer. Whenever the identity changes — a roster
+// press, Back to records, a finished change opening its record, an address
+// naming another record — it drops what was held for the record being left:
+// the chosen assessment, the record read, a failed destination read, any read
+// still in flight, and the Later conclusion's text, failed save and request id
+// (ADR 452); a later-conclusion save still in flight writes nothing when it
+// returns. A re-render of the same record, a Day return included, keeps them.
+//
 // `mode` is the reader's own choice of assessment for the open record, or null
 // until they make one: the record's default read, which its served ending
 // decides once the record read has landed (ADR 430). `failed` is a reassessment
 // read that failed for the open record; the record it was read for stays. It
 // is cleared wherever a record read lands, so every opening of a record — by a
 // roster press, its address or a reload — reads its reassessment afresh.
+// `conclusion`, `conclusionFailure` and `conclusionAttempt` are the Later
+// conclusion form's text, its failed save and that save's request id: held
+// across a re-render so Retry resends the same request id, and emptied by a
+// successful save as well as by the identity rule.
 const memory = {
   roster: null, error: null, open: null, mode: null, failed: null,
   record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
 };
 
-export const selectedRecord = () => memory.open;
-
-/** Open one record on itself. The finished change is acknowledged before any
-    other concern is offered, so finishing hands the identity here (HV2-28). */
-export function openRecord(kind, id) {
-  memory.open = { kind, id: String(id) };
-  memory.roster = null;
-  navigate('changes', { subject: 'history', occurrence: `record:${kind}:${id}` });
-  memory.mode = null;
-  memory.record = null;
+/** Set which record is open, `{ kind, id }` or null, dropping what the record
+    being left held (the rule above). Opening installs a new identity object,
+    so even reopening the record already open is a change. Its callers run it
+    before navigating, which renders synchronously. Nothing started for the
+    record being left lands on the next: the bumped generation drops the
+    destination's own reads, and a later-conclusion save compares the identity
+    it started under after each await and writes nothing once it differs. */
+function setOpenRecord(next) {
+  readGeneration += 1;
+  memory.open = next;
+  memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
+  memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
 }
 
-/** Drop the open record, back to the roster. */
+/** Open one record on itself. The finished change is acknowledged before any
+    other concern is offered, so finishing hands the identity here (HV2-28).
+    Every open starts the record fresh, the one already open included, and
+    re-reads the roster. */
+export function openRecord(kind, id) {
+  setOpenRecord({ kind, id: String(id) });
+  memory.roster = null;
+  navigate('changes', { subject: 'history', occurrence: `record:${kind}:${id}` });
+}
+
+/** Leave the open record for the roster, which holds none. */
 function closeRecord() {
-  memory.open = null;
-  memory.record = null;
+  setOpenRecord(null);
   navigate('changes', { subject: 'history' });
 }
 
@@ -484,22 +507,31 @@ const failureMessage = error => error?.detail?.code
   ? `${error.detail.code} (${error.status})`
   : error?.detail || error?.message || 'no response from the store';
 
+// A save belongs to the record it started on (ADR 452). After each await it
+// writes nothing unless that record's identity is still the one open: a retry
+// whose re-read returns after the record was left is abandoned unsent, and a
+// failure or success returning then leaves the next record as it is.
 async function submitLateConclusion({ retry = false } = {}) {
   const state = memory.record;
   const detail = state?.detail;
   const conclusion = (memory.conclusion || '').trim();
   if (!detail || state.kind !== 'trial' || !conclusion) return;
+  const startedOn = memory.open;
+  const left = () => memory.open !== startedOn;
   try {
     if (retry) {
       const fresh = await fetchVerifyTrials({ kind: 'trial', selected: state.id });
+      if (left()) return;
       memory.record = { ...state, detail: { ...detail, ...fresh.selected, revision: fresh.input_revision } };
       memory.roster.revision = fresh.input_revision;
     }
     const body = { request_id: conclusionAttemptId(), input_revision: memory.record.detail.revision, conclusion };
     await concludeTrial(state.id, body);
+    if (left()) return;
     memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
     memory.roster = null; memory.record = null;
   } catch (error) {
+    if (left()) return;
     memory.conclusionFailure = { operation: 'conclude', headline: 'Recording the later conclusion failed',
       message: failureMessage(error) };
     view.focusAfterRender = '[data-retry-save="conclude"]';
@@ -522,7 +554,7 @@ function bind(host) {
   }
   const close = host.querySelector('[data-record-close]');
   if (close) close.onclick = () => { closeRecord(); view.focusAfterRender = '.gf-stage .gf-title'; render(); };
-  // A press holds for this record until another opens. The mount reads what
+  // A press holds for this record while it stays open. The mount reads what
   // the chosen assessment still needs; pressing the one already shown needs
   // nothing and re-renders it as it stands. A press also clears a failed
   // reassessment read, so pressing its control again is a retry.
@@ -572,11 +604,7 @@ function bind(host) {
 export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   const match = /^record:(trial|focus):(.+)$/.exec(context.occurrence || '');
   const open = match ? { kind: match[1], id: match[2] } : null;
-  if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
-    readGeneration += 1;
-    memory.open = open; memory.mode = null; memory.record = null; memory.error = null; memory.loading = null;
-    memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
-  }
+  if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) setOpenRecord(open);
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
   if (!memory.roster) { load('roster', loadRoster); host.innerHTML = loadingFrame('Changes', 'Reading change records'); return; }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }

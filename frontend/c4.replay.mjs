@@ -2115,6 +2115,73 @@ export const C4_STORIES = {
       }
     }, 'S143 an unavailable record names its reason');
   },
+  // #452 (ADR 452): a record's later conclusion — its typed words, a failed
+  // save and that save's request id — stays with the record it was typed on.
+  // Leaving the record for the roster and reopening it from there starts an
+  // empty form whose next save sends a request id of its own. The carry into a
+  // different expired Trial is proved at node level, because no committed case
+  // store serves two; this proves the same rule on the one this store serves.
+  async S180(page) {
+    await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
+    await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+    const roster = await read(page, '/api/verify/trials');
+    const expired = (roster.trials || []).filter(row => row.ending?.kind === 'expired_unreviewed');
+    assert.ok(expired.length >= 1, 'S180 premise: the store serves an expired Trial');
+    const { id } = expired[0];
+    const record = await read(page, '/api/verify/trials', { kind: 'trial', selected: id });
+    assert.notEqual(record.selected.original.late_conclusion?.state, 'available',
+      'S180 premise: the expired Trial has no later conclusion saved');
+
+    const CONCLUSION_POST = /\/api\/verify\/trials\/[^/]+\/conclusion$/;
+    const row = page.locator(`table.gf-table [data-record="trial:${id}"]`);
+    const form = page.locator('[data-form="late-conclusion"]');
+    const field = page.locator('#late-conclusion-conclusion');
+    await row.click();
+    await form.waitFor({ timeout: 30000 });
+
+    // The first save is refused by a routed synthetic answer, so nothing reaches
+    // the store; its request id is recorded from the routed request.
+    const refused = [];
+    const refuse = async route => {
+      refused.push(route.request().postDataJSON());
+      await route.fulfill({ status: 503, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Synthetic refusal' }) });
+    };
+    await page.route(CONCLUSION_POST, refuse);
+    try {
+      await field.fill('Synthetic observation typed before leaving');
+      await form.locator('[type="submit"]').click();
+      await page.locator('[data-save-error="conclude"]').waitFor({ timeout: 30000 });
+    } finally { await page.unroute(CONCLUSION_POST, refuse); }
+    assert.equal(refused.length, 1, 'S180 premise: the routed save must be sent once and refused');
+
+    await page.locator('[data-record-close]').click();
+    await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+    await row.click();
+    await form.waitFor({ timeout: 30000 });
+    assert.equal(await field.inputValue(), '',
+      'S180 reopening the record from the roster must start its later conclusion empty');
+    assert.equal(await page.locator('[data-save-error]').count(), 0,
+      'S180 reopening the record must carry no failed save');
+
+    const posted = [];
+    const listener = request => {
+      if (request.method() === 'POST' && CONCLUSION_POST.test(new URL(request.url()).pathname)) {
+        posted.push(request.postDataJSON());
+      }
+    };
+    page.on('request', listener);
+    try {
+      await field.fill('Synthetic observation recorded after reopening');
+      await form.locator('[type="submit"]').click();
+      await page.locator('[data-late-conclusion="available"]').waitFor({ timeout: 30000 });
+    } finally { page.off('request', listener); }
+    assert.equal(posted.length, 1, 'S180 the next save must be sent once');
+    assert.notEqual(posted[0].request_id, refused[0].request_id,
+      'S180 the next save must send a request id of its own');
+    assert.equal(await page.locator('[data-late-conclusion-text]').innerText(),
+      'Synthetic observation recorded after reopening', 'S180 the next save must record the later conclusion');
+  },
   // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
   // whichever basal slot the CASE_STORE_DIR case ranks first; the
   // `basal-verdict-gallery` QaCase (scripts/qa_e2e_cases.py) is built to

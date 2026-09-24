@@ -54,11 +54,9 @@ implemented and verified, never attempted; the coordinator ticks.
   rate levers credit it, `in-range` when a meals occurrence exists and neither
   credits it, `unread` when no meals occurrence exists. On `evidence.outcomes`
   (a preparation-owned key, beside the analyzer's): `counts` (`ran_high`,
-  `ran_low`, `in_range`, `unread`, `n`), `low_minutes_median` — the median of
-  minutes from `dominant_bolus_t` to `t` over the block's served `harm.lows`,
-  null when none — and `sentence`, one string from a closed set in
-  `ic_block_evidence.py` keyed on the block's asserted direction (`raise` /
-  `lower` / none), whether `ran_high > ran_low`, and the chain-end read
+  `ran_low`, `in_range`, `unread`, `n`) and `sentence`, one string from a closed
+  set in `ic_block_evidence.py` keyed on the block's asserted direction (`raise`
+  / `lower` / none), whether `ran_high > ran_low`, and the chain-end read
   (design.md, ADR 464 — sentence). The frontend prints `sentence` verbatim and
   composes none. Measure the preparation's wall time on the committed showcase
   store before and after (the endpoint answers from the result cache's fixed
@@ -71,24 +69,38 @@ implemented and verified, never attempted; the coordinator ticks.
 - [ ] 4. **Serve the harm evidence.** On `evidence.harm_evidence`: the block's
   `harm` dict (`arm`, `gated`, `nudged`, `arm_days`, `row_days`, `lows` — each low
   with `t`, `bg`, `dominant_bolus_t`, `attribution_reason`) and the guidance
-  `seriousness` the analyzer stamps on the block, copied verbatim. Pytest: a block
-  with two attributed lows on separate days serves both rows and `row_days == 2`.
+  `seriousness` the analyzer stamps on the block, copied verbatim, plus
+  `minutes_after_bolus_median`: the median of minutes from each served low's
+  `dominant_bolus_t` to its `t`, over exactly these `lows`, null when none — the
+  one population that number is ever read against (task 13 prints it in the lows
+  rows' header, never beside the outcome counts). Pytest: a block with two
+  attributed lows on separate days serves both rows, `row_days == 2` and the
+  median of their two offsets.
 - [ ] 5. **Project it, bump the schema, regenerate the fixture.**
   `prepare_ic_block_evidence` / `project` (`ciq_autotune/ic_block_evidence.py`)
   copy through: `block.current`, `block.estimate` (`value`, `lo`, `hi`, `wide`),
   `block.side` (`side_k`, `side_n` from `recurrence_channels`), `block.support_detail`
   (`whole_runs`, `fractional_run_ownership`, `effective_run_count`), `ledger`,
-  `outcomes` (task 3), `harm_evidence`, each run row's new fields, and
+  `outcomes` (task 3), `harm_evidence` (task 4), each run row's new fields, and
   `meal_comparison`: one comparison **projection** for the block's `points`
-  meals in exactly the shape the Finding case file publishes for a meals-family
-  comparison — `alignment: "event"`, `anchor` (the meals catalog's own anchor
-  label), `window_min`, and `cohorts` keyed `ran-high` / `ran-low` / `in-range`
-  (an `unread` meal is counted, not drawn) each with its pooled `points`
-  (`minute`, `bg`, `support`) and `support`, under schema
-  `diagnose-carb-ratio-meal-comparison-v1` — built by the cohort and pooling
-  functions `ciq_autotune/event_comparison.py` already uses for the meals family,
-  promoted to one named module-level seam if they are private (this is their
-  second caller), never re-implemented. `SCHEMA` becomes
+  meals, assembled exactly as `ciq_autotune/finding_case_file.py:1021-1062`
+  assembles a meals-family comparison — one trace per block-hours meal,
+  `{"id": <meal bolus isoformat>, "trace": {"cgm": [{"minute", "bg"}, …]}}`, its
+  CGM read from ten minutes before the bolus to the end of the post-meal window
+  (−10 to +315 min) over the same store call the run series use (the case file's
+  `_comparison_trace` is that producer; reuse it if it takes a bare anchor
+  instant, else the same read); then, per outcome,
+  `event_comparison.project_cohort(key, traces, (-10, 315))` with `key` in
+  `ran-high` / `ran-low` / `in-range` (an `unread` meal is counted in
+  `outcomes.counts`, not traced), each cohort then given `name` (`Ran high` /
+  `Ran low` / `In range`) and `anchor` `{"kind": "completed_carb_bolus", "label":
+  "Completed carb bolus"}`; the projection is `{"schema":
+  "diagnose-carb-ratio-meal-comparison-v1", "alignment": "event", "anchor": <the
+  same anchor>, "window_min": [-10, 315], "cohorts": [ran-high, ran-low,
+  in-range]}`. Points therefore carry `project_cohort`'s own fields — `minute`,
+  `n`, `support`, `median`, `p25`, `p75` — and cohorts carry `key`, `name`,
+  `anchor`, `routed_count`, `usable_count`, `support`, `occurrence_ids`, `points`.
+  Nothing is re-implemented. `SCHEMA` becomes
   `diagnose-carb-ratio-block-evidence-v2`; the projection raises
   `InconsistentIcBlockEvidence` when any new analyzer fact is absent. Extend
   `scripts/gen_ic_block_evidence_fixtures.py` with one case carrying chained
@@ -121,13 +133,20 @@ implemented and verified, never attempted; the coordinator ticks.
   extracted from the module's private `option()` (which reads only
   `caseFile.projection`); `eventComparisonChartOption` keeps `assertEventCaseFile`
   and delegates to it, so the case-file path and its tests are unchanged and the
-  guard's fate is: untouched. The tile mounts the ECharts option in its own
-  element as every other kind does; `renderEventSurface`'s `ec-*` ids are not
-  involved. The key carries the served cohort counts and the served `unread`
-  count. Failing-first node test through the registry: `option('meal')` on the v2
-  fixture yields the served cohorts as named series with point counts equal to
-  the served cohort sizes, and `eventComparisonChartOption` still throws on a
-  non-case-file input; on main the mode does not exist.
+  guard's fate is: untouched. The module's closed `STYLE` map (`matched`,
+  `nearly_matched`, `comparison`) gains three entries this sub-order owns —
+  `ran-high` → `--ec-matched` solid, `ran-low` → `--ec-nearly-matched` dashed,
+  `in-range` → `--ec-comparison` dotted — reusing the existing tokens, no new
+  colour, so the series helpers' unguarded `STYLE[cohort.key]` reads resolve; the
+  series helpers read the served `median` / `p25` / `p75` and `cohort.name`
+  exactly as they do for a case file. The tile mounts the ECharts option in its
+  own element as every other kind does; `renderEventSurface`'s `ec-*` ids are not
+  involved. The key prints each cohort's served `name` and `usable_count`, and the
+  served `unread` count. Failing-first node test through the registry:
+  `option('meal')` on the v2 fixture yields the served cohorts as named series
+  with point counts equal to the served cohort sizes, and
+  `eventComparisonChartOption` still throws on a non-case-file input; on main the
+  mode does not exist.
 - [ ] 9. **Runs replaces the chain overlay.** New module `frontend/diagnose-run-strips.js`
   (+ `.test.js`, + `frontend/diagnose-run-strips.css` imported where the
   comparison chart's stylesheet is) renders the `runs` option: one row per served
@@ -170,12 +189,13 @@ implemented and verified, never attempted; the coordinator ticks.
   Beneath the numbers-and-staging block, which stays byte-identical: the served
   balance sheet as one labelled row of terms with `pooled_ratio` beside the
   fitted estimate; the served outcome `counts` as a count sentence in the queue's
-  `n of d noun outcome` form and `low_minutes_median` when present; the served
+  `n of d noun outcome` form; the served
   `sentence` verbatim; the attributed lows as rows through the shared
   occurrence-roster mechanism (`frontend/occurrence-roster.js`), one per served
   low printing its date and time and minutes after its bolus, each opening Day at
-  that moment with it ringed, headed by the served `seriousness` word and whether
-  the harm arm gated or nudged this block. Loading and failure states use the
+  that moment with it ringed, headed by the served `seriousness` word, whether the harm arm gated or nudged
+  this block, and the served `minutes_after_bolus_median` ("typically N min after
+  the bolus"). Loading and failure states use the
   inspector's shipped `.empty` line ("Loading run evidence…", "Run evidence
   unavailable."); nothing renders from a payload not received.
 - [ ] 14. **The run roster, and the Day hop from both entry paths.** Through the

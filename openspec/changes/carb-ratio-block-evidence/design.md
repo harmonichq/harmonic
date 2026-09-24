@@ -16,18 +16,21 @@
   ledger on (193 issued · 174 active · 19 retired), so that re-freeze is the
   frozen-ledger replay against this base. Not re-run in triage.
 
-## ADR 464 — The analyzer serves the reconciling sentence from a closed set
+## ADR 464 — The backend serves the reconciling sentence from a closed set
 
 **Status:** accepted, 2026-09-24 (operator, scope Q4 A).
 
 A reader who sees "over-covered" beside a chart on which most meals ran high needs
-the reconciliation in words, and advisory meaning belongs to the analyzer. The
-block stamper chooses one sentence from a closed set in `ic.py`, keyed on three
-served facts: the block's asserted direction (raise / lower / none), whether the
-tally's ran-high count exceeds its ran-low count, and that the ledger closes at
-the chain's end. The frontend prints it verbatim. A second sentence composed on
-the client from the same counts is the two-predicate drift #273 and #465 already
-paid for, so none exists.
+the reconciliation in words, and that sentence is chosen on the server, never on
+the client. The tally it depends on is the Pattern's own credited claims, formed
+by `build_exposures` over the store, so the block stamper (which has no store)
+cannot own it; the block-evidence preparation (`prepare_ic_block_evidence`) does,
+and chooses one sentence from a closed set in `ic_block_evidence.py`, keyed on
+three served facts: the block's asserted direction (raise / lower / none),
+whether the tally's ran-high count exceeds its ran-low count, and that the
+ledger closes at the chain's end. The frontend prints it verbatim. A second
+sentence composed on the client from the same counts is the two-predicate drift
+#273 and #465 already paid for, so none exists.
 
 ## ADR 464 — The panel's balance sheet is a labelled pooled quotient beside the fit
 
@@ -53,7 +56,13 @@ these meals. The whole-chain overlay cannot answer it: 42 traces of up to twenty
 hours on one axis, anchored at each chain's first meal. So the tile opens on By
 meal — every block-hours meal on its own five-hour clock from its bolus, through
 the Pattern comparison chart the reader already knows, in ran-high / ran-low /
-in-range cohorts from the same verdicts "Highs after meals" counts (scope Q2 A).
+in-range cohorts from the same credited claims "Highs after meals" counts (scope
+Q2 A). The view is served as a comparison projection assembled exactly as the
+Finding case file assembles a meals-family comparison (`project_cohort` per
+cohort, then `name` and `anchor`, `window_min` from the window), and drawn
+through a projection-level export of the comparison chart whose case-file guard
+stays on its first caller — the seam has its second caller here, and the chart's
+closed style map gains the three outcome keys on existing tokens.
 
 The chain view's job — showing why the ledger read what it read for each run — is
 kept and rebuilt as one strip per run with its balance sheet at the edge, rather
@@ -77,18 +86,22 @@ benefit, so the row keeps its shape (`support.n`, `noun`, `run_days`) and the
 seriousness word the addendum asked for on the queue row renders on the panel,
 where the harm evidence it qualifies is.
 
-## ADR 464 — The outcome tally reuses the Pattern detectors' verdicts
+## ADR 464 — The outcome tally reuses the Pattern's credited claims
 
 **Status:** accepted, 2026-09-24 (operator, scope Q2 A).
 
 "Ran high" means one thing in this app. The tally over the block's 90-day meals
-runs the scenario engine's shared evaluation (`attributed_occurrences`) over the
-same slice the block reads and classifies each block-hours meal by the Pattern
-roster's own families — `highs_after_meals` levers → ran-high, `lows_after_meals`
-levers → ran-low. A block-owned 70/180 tally would be cheaper and would be a second
-definition beside the Patterns' that the reader will compare. The tally therefore
-inherits #461 (Late bolus counting an in-range meal as ran-high) until #461 fixes
-it in the shared verdict, which is where it belongs.
+reads the same `attributed_levers` the Pattern roster reads — stamped by
+`build_exposures(store, window_days=90)` on the meals-family occurrences and
+credited by `credited_claims` with the roster's rate levers — and classifies each
+block-hours meal: `highs_after_meals` → ran-high, `lows_after_meals` → ran-low.
+It lives in the block-evidence preparation, which holds the store the exposure
+feed needs; `attributed_occurrences`, which returns only the primary-driver map
+and has no production caller, is not the authority and is not used. A
+block-owned 70/180 tally would be cheaper and would be a second definition beside
+the Patterns' that the reader will compare. The tally therefore inherits #461
+(Late bolus counting an in-range meal as ran-high) until #461 fixes it in the
+shared claims, which is where it belongs.
 
 ## Risk contract (copied from `docs/scope/464-carb-ratio-block-evidence.md`)
 

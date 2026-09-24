@@ -16,9 +16,10 @@ import { formatStartMin } from './plan.js';
 // The held Occurrence's own "Open … in Day" control: the last control in the
 // selection's foot, which renders only for the held Occurrence or night.
 const OPEN_IN_DAY = '.occ-foot button:last-child';
-// Moving focus, or a modifier pressed on its own, is not acting on the case
-// (ADR 428 point 2).
-const NOT_AN_ACT = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta']);
+// Moving focus, or a modifier or lock key pressed on its own, is not acting on
+// the case (ADR 428 point 2).
+const NOT_AN_ACT = new Set(['Tab', 'Shift', 'Control', 'Alt', 'AltGraph', 'Meta',
+  'CapsLock', 'NumLock', 'ScrollLock']);
 
 // A case-file's unscoped WindowQuery is the reader's explicit 24 h selection.
 // Routes carry concrete coordinates because Pattern Focus requires a retained
@@ -117,22 +118,26 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // changes the case inside the same event — the lane's arrow keys, the
   // workstation's document-level Backspace, ↑/↓ and Escape, a window grip that
   // stops propagation — and caseChanged writes the case that event publishes.
-  // The restoration's own clicks are untrusted and never end it. Once the
-  // event's handlers have run, the case on screen is written even when the
-  // press changed nothing, so the entry's address never outlives it.
+  // The restoration's own clicks are untrusted and never end it. Ending it
+  // stops its walk too, so the superseded entry can never later select, focus
+  // or re-address anything. Once the event's handlers have run, the case on
+  // screen is written even when the press changed nothing, so the entry's
+  // address never outlives it.
   function readerActs(event) {
     if (!restoring || !event.isTrusted || currentDestination() !== 'diagnose') return;
     if (event.type === 'keydown' && NOT_AN_ACT.has(event.key)) return;
     restoring = false;
+    restoreObserver?.disconnect(); restoreObserver = null;
     setTimeout(() => { if (!restoring && onScreen()) writeCase(); });
   }
 
   // ADR 428 point 5: a return lands on the held Occurrence's own Open in Day
-  // control, else on its row, else on the crumb (absent while the workstation
-  // shows its own failure).
+  // control — the selection's foot renders only for the held row — else on its
+  // row, else on the crumb (absent while the workstation shows its own failure).
   function focusReturn(occurrence) {
     const row = [...root.querySelectorAll('.case-occurrence')].find(node => node.dataset.occurrenceId === occurrence);
-    ((row && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
+    const held = row?.getAttribute('aria-pressed') === 'true';
+    ((held && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
   }
 
   async function read() {
@@ -452,33 +457,36 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   }
 
   function mount(host, deps = {}) {
-    const previousEntry = entry;
     entry = deps.context || {};
 
-    // A return: the desk was seated and a navigation moved since. A changed
-    // subject/occurrence/window always re-reads; the same entry only checks
-    // whether the store moved, and the loading frame stands for either. A
-    // repeated press of Diagnose while on Diagnose is not a return: the root
-    // was never parked by leaving, and re-pressing the destination restores
-    // the shipped Findings index the way it always has (S3), by re-reading.
+    // A return: the desk was seated and a navigation moved since. An entry
+    // naming a subject/occurrence/window other than the case on screen always
+    // re-reads; one naming that case only checks whether the store moved, and
+    // the loading frame stands for either. The case on screen is the last one
+    // the workstation published, never the entry Diagnose last held: its
+    // document keys stay live while it is parked, and a late case-file answer
+    // can land then too. A repeated press of Diagnose while on Diagnose is not
+    // a return: the root was never parked by leaving, and re-pressing the
+    // destination restores the shipped Findings index the way it always has
+    // (S3), by re-reading.
     if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
       // ADR 428 point 7: a return whose context names no case (a plain press of
       // Diagnose) is a retained return whatever entry was held. It keeps the
-      // held case but not its `from` — a direct entry invents no return — and
-      // the address names that case again.
+      // case on screen but not the held `from` — a direct entry invents no
+      // return — and the address names that case.
       const plain = !namesCase(entry);
       if (parked && plain) {
-        entry = caseAddress(previousEntry);
+        entry = caseAddress(published);
         replaceAddress(entry);
       }
-      if (!parked || !sameEntry(previousEntry, entry)) {
+      if (!parked || !sameEntry(published, entry)) {
         reread();
         host.innerHTML = loadingFrame('Diagnose');
         return;
       }
-      // ADR 428 point 6: a Day return to the held case keeps the drill too, and
-      // puts focus back on the Occurrence it opened Day from.
+      // ADR 428 point 6: a Day return naming the case still on screen keeps the
+      // drill too, and puts focus back on the Occurrence it opened Day from.
       returnTo = plain ? null : entry.occurrence || null;
       checking = true;
       host.innerHTML = loadingFrame('Diagnose');

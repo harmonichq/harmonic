@@ -2972,7 +2972,11 @@ Shipped desk behavior that changes, and no story that asserted the old fact:
   drops its `#crumb-trail` focus key, which only named the default.
 - **A Day return to the held case, and a plain Diagnose press after a Day
   return, are ADR 414 retained returns**: one status read, the drill kept. S26
-  and S62 still hold on the retained path; S108 and S109 are unchanged.
+  and S62 still hold on the retained path; S108 and S109 are unchanged. The
+  return compares its entry with the case on screen — the last case the
+  workstation published — so a case that moved while Diagnose was parked (a key
+  pressed on Day, a late case-file answer) re-reads and restores the entry
+  exactly, and a plain press names the case on screen.
 
 ```
 S136 · After a Day return on a Finding case with an Occurrence held, ↓ steps to

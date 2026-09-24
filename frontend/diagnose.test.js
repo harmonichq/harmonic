@@ -53,6 +53,11 @@ function host() {
     querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
   };
 }
+// ADR 428: a return is compared with the case the workstation has on screen,
+// not the entry Diagnose last held, so a stub view standing in for a landed
+// restoration publishes that entry's case as the real workstation would.
+const landed = (callbacks, subject) => callbacks.caseChanged({ subject, occurrence: null, window: null });
+
 function source() {
   let fail = false;
   let statusFail = false;
@@ -173,11 +178,13 @@ test('an initial read failure and a current-read failure own distinct Diagnose f
 
 test('a navigation round trip to the same entry issues one status read, no more, and never restores entry', async () => {
   const served = source(); const seat = host();
-  let refreshCalls = 0; let setDataCalls = 0;
+  let refreshCalls = 0; let setDataCalls = 0; let callbacks;
   const destination = createDiagnoseDestination({ api: served.api,
-    createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+    createView: options => { callbacks = options.callbacks;
+      return { setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }; } });
   await destination.read();
   destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  landed(callbacks, 'finding:served');
   assert.ok(seat.node, 'first seat reaches the desk');
   served.requests.length = 0;
   setDataCalls = 0;
@@ -222,10 +229,13 @@ test('a same-entry return puts the reading pane scroll back where the reader lef
   root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   // Parking hides the root; an element the browser no longer lays out reads 0.
   seat.ownerDocument.body.append = node => { node.isConnected = true; node.parked = true; level.scrollTop = 0; };
+  let callbacks;
   const destination = createDiagnoseDestination({ api: served.api,
-    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+    createView: options => { callbacks = options.callbacks;
+      return { setData() {}, leaveSurface() {}, refresh() {}, setError() {} }; } });
   await destination.read();
   destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  landed(callbacks, 'finding:served');
   level.scrollTop = 54;
   let held;
   destination.mount(seat, { navigation: 0, hold: fn => { held = fn; }, context: { subject: 'finding:served' } });
@@ -378,14 +388,17 @@ test('the workstation\'s own Retry finishing off-screen is recorded, not painted
   globalThis.MutationObserver = class { constructor() { observerCount += 1; } observe() {} disconnect() {} };
 
   let rowClicks = 0;
-  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
+  // Opening the entry's row is the restoration landing: it puts the case on screen.
+  let callbacks;
+  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; landed(callbacks, 'finding:served'); } };
   const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
   const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
 
   const setDataCalls = [];
   let refreshCalls = 0;
   const destination = createDiagnoseDestination({ api: served.api,
-    createView: () => ({ setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+    createView: options => { callbacks = options.callbacks;
+      return { setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }; } });
 
   try {
     await destination.read();
@@ -449,14 +462,17 @@ test('a re-read between an off-screen Retry completion and the next return disca
   globalThis.MutationObserver = class { constructor() { observerCount += 1; } observe() {} disconnect() {} };
 
   let rowClicks = 0;
-  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
+  // Opening the entry's row is the restoration landing: it puts the case on screen.
+  let callbacks;
+  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; landed(callbacks, 'finding:served'); } };
   const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
   const seat = host(); root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
 
   const setDataCalls = [];
   let refreshCalls = 0;
   const destination = createDiagnoseDestination({ api: served.api,
-    createView: () => ({ setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
+    createView: options => { callbacks = options.callbacks;
+      return { setData: data => setDataCalls.push(data), leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }; } });
 
   try {
     await destination.read();
@@ -829,6 +845,7 @@ test('ADR 428 · a plain Diagnose press after a Day return is a retained return:
   try {
     await destination.read();
     destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null }); // the restoration landed
     park(destination, seat, 0, routed(page));
     served.requests.length = 0;
     page.history.pushState(null, '', '/diagnose'); // the topbar press: a direct entry
@@ -844,7 +861,7 @@ test('ADR 428 · a plain Diagnose press after a Day return is a retained return:
   } finally { globalThis.window = previous; }
 });
 
-test('ADR 428 · a plain return keeps the held case but not its Changes return', async () => {
+test('ADR 428 · a plain return keeps the case on screen but not its Changes return', async () => {
   const previous = globalThis.window;
   let cell = null;
   const env = desk428({
@@ -860,8 +877,8 @@ test('ADR 428 · a plain return keeps the held case but not its Changes return',
     page.history.pushState(null, '', '/diagnose');
     page.calls.length = 0; served.requests.length = 0;
     destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
-    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=setting%3Abasal_rate&window=180-210']],
-      'the address names the held case, and no longer the Changes return');
+    assert.deepEqual(page.calls, [['replace', '/diagnose?subject=basal%3A180&window=180-210']],
+      'the address names the slot on screen, and no longer the Changes return');
     await flush();
     assert.deepEqual(served.requests, ['status']);
     destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
@@ -924,6 +941,113 @@ test('ADR 428 · restoring a Finding presses the Window preset its window names'
       expected ? [expected] : [], `${subject} in ${window}`);
     destination.leave();
   }
+});
+
+// Review round 1 (F1): the parked workstation's document keys stay live, so the
+// case on screen can move while Day holds the surface. The return compares the
+// entry with that case, never with the entry Diagnose last held.
+async function heldThenMovedWhileParked() {
+  const env = desk428();
+  const { page, seat, view, destination } = env;
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {} });
+  view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+  park(destination, seat, 0, routed(page));
+  const written = page.calls.length;
+  view.publish({ subject: 'finding:late_bolus', occurrence: 'o-2', window: null }); // ↓ pressed on Day
+  assert.equal(page.calls.length, written, 'premise: a parked change is not written');
+  env.served.requests.length = 0;
+  return env;
+}
+
+test('ADR 428 · a Day return naming a case the parked desk has since moved off re-reads and restores it exactly', async () => {
+  const previous = globalThis.window;
+  try {
+    const { page, served, seat, destination } = await heldThenMovedWhileParked();
+    page.history.pushState(null, '', serializeRoute({ destination: 'diagnose', context: DAY_RETURN }));
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.ok(served.requests.includes('analysis'),
+      `the entry names o-1 while o-2 is on screen, so the return re-reads to restore it: ${served.requests}`);
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a plain return after the parked desk moved names the case on screen', async () => {
+  const previous = globalThis.window;
+  try {
+    const { page, served, seat, view, destination } = await heldThenMovedWhileParked();
+    page.history.pushState(null, '', '/diagnose');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.deepEqual(served.requests, ['status'], 'a plain return stays retained');
+    assert.equal(page.address(), '/diagnose?subject=finding%3Alate_bolus&occurrence=o-2',
+      'the address names the Occurrence on screen, not the one Diagnose last held');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.equal(view.refreshes, 1, 'premise: the retained root re-seats');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+test('ADR 428 · a retained return focuses Open in Day only when it belongs to the returning Occurrence', async () => {
+  const previous = globalThis.window;
+  let focused = null;
+  // The row is on screen but not held, so the foot's Open in Day is another's.
+  const member = { dataset: { occurrenceId: 'o-1' }, getAttribute: () => 'false', focus() { focused = 'row'; } };
+  const openDay = { focus() { focused = 'open-day'; } };
+  const { page, seat, view, destination } = desk428({ root: {
+    querySelectorAll: selector => (selector === '.case-occurrence' ? [member] : []),
+    querySelector: selector => (selector === '.occ-foot button:last-child' ? openDay : null),
+  } });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+    park(destination, seat, 0, routed(page));
+    page.history.pushState(null, '', serializeRoute({ destination: 'diagnose', context: DAY_RETURN }));
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.equal(focused, 'row', 'an Open in Day control of an unheld row is not the return target');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
+
+// Review round 1 (F2): the reader's press ends the restoration's walk too, so a
+// superseded entry can never later select, focus or re-address anything.
+test('ADR 428 · a reader press stops the superseded restoration walk', async () => {
+  const previous = globalThis.window;
+  const previousMO = globalThis.MutationObserver;
+  const observers = [];
+  globalThis.MutationObserver = class {
+    constructor(callback) { this.callback = callback; this.live = false; observers.push(this); }
+    observe() { this.live = true; } disconnect() { this.live = false; }
+  };
+  const notify = () => { for (const observer of observers.filter(o => o.live)) observer.callback(); };
+  let rows = [];
+  const row = { dataset: { id: 'finding:late_bolus' }, clicks: 0, click() { row.clicks += 1; } };
+  try {
+    const { page, view, destination } = await (async () => {
+      const env = desk428({ address: '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1',
+        root: { querySelectorAll: selector => (selector === '.qrow[data-id]' ? rows : []) } });
+      const context = routed(env.page);
+      env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+      await flush();
+      env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+      return env;
+    })();
+    assert.ok(observers.some(o => o.live), 'premise: the walk waits for its Finding row');
+    page.press('keydown', { key: 'Backspace' });
+    await afterHandlers();
+    const written = page.calls.length;
+    rows = [row]; // the reader later reopens the Finding
+    view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null });
+    notify();
+    assert.equal(row.clicks, 0, 'the superseded walk never clicks the row');
+    assert.deepEqual(page.calls.slice(written), [['replace', '/diagnose?subject=finding%3Alate_bolus']],
+      'only the reader\'s own case is written; the walk never re-addresses to o-1');
+    destination.leave();
+  } finally { globalThis.window = previous; globalThis.MutationObserver = previousMO; }
 });
 
 // Last: it seats the desk's one router on a stand-in surface for this module.

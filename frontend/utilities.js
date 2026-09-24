@@ -298,7 +298,7 @@ function generatedArticle(article) {
 }
 
 function glossaryBody() {
-  return { meta: 'v1 definitions', html: glossaryGroups.map((group) => `<section class="gf-section"><h3>${e(PRESENT[group.title] || group.title)}</h3><dl class="gf-glossary">${group.terms.map((term) => `<dt>${e(PRESENT[term.term] || term.term)}${PRESENT[term.term] || term.unit ? `<small>${PRESENT[term.term] ? `${e(term.term)} · ` : ''}${e(term.unit || '')}</small>` : ''}</dt><dd>${e(term.def)}</dd>`).join('')}</dl></section>`).join('') };
+  return { meta: 'terms used in this app', html: glossaryGroups.map((group) => `<section class="gf-section" data-glossary-group="${e(group.title)}"><h3>${e(PRESENT[group.title] || group.title)}</h3><dl class="gf-glossary">${group.terms.map((term) => `<dt>${e(PRESENT[term.term] || term.term)}${PRESENT[term.term] || term.unit ? `<small>${PRESENT[term.term] ? `${e(term.term)} · ` : ''}${e(term.unit || '')}</small>` : ''}</dt><dd>${e(term.def)}</dd>`).join('')}</dl></section>`).join('') };
 }
 
 const BODIES = { settings: settingsBody, pump: pumpBody, carbs: carbsBody, questions: questionsBody, guide: guideBody, glossary: glossaryBody };
@@ -364,12 +364,15 @@ export function seatUtility(destination) {
 /**
  * Open one utility into the reading pane's seat. `launcher` is what gets focus
  * back on Close — an element, or a selector for a control the next render will
- * have rebuilt.
+ * have rebuilt. `inView`, a selector inside the pane, is scrolled into view once
+ * the pane has rendered: an Episode Log band caption opens the Glossary at its
+ * group (ADR 423).
  */
-export function openUtility(kind, launcher) {
+export function openUtility(kind, launcher, inView = null) {
   if (seated !== kind) { opener = launcher || opener; seated = kind; }
   view.focusAfterRender = '.gf-utility-close';
   render();
+  if (inView) deskSurface().querySelector(`.gf-utility ${inView}`)?.scrollIntoView({ block: 'start' });
 }
 
 function close() {

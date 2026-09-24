@@ -19,6 +19,7 @@ Coverage:
 import unittest
 from datetime import date, datetime, timedelta
 
+from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier, SilenceReason
 from ciq_autotune.analyzers.scenario import Lever, LowPromptAnswer, assemble
 from ciq_autotune.analyzers.scenario.anchors import Anchor, AnchorKind
@@ -30,7 +31,7 @@ from ciq_autotune.analyzers.scenario.model_view import (
     assemble_model_view,
 )
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
-from ciq_autotune.events import BolusEvent, CgmReading
+from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
 from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal, suspend_run
 
@@ -430,6 +431,70 @@ class ModelViewPayloadTest(unittest.TestCase):
                                   isf=ISF)
         self.assertTrue(d17["episodes"], "spanning episode should land on its resolve day")
         self.assertTrue(d17["episodes"][0]["spans_midnight"])
+
+
+class VerdictTitleTest(unittest.TestCase):
+    """#423 (ADR 423): every retained verdict is served with its Lever's name.
+
+    The manufactured evenings are the change's generated fact 4: a flat 120 mg/dL
+    background, then on three evenings a 7 U / 50 g meal at 19:00, a 3 U
+    correction at 20:00, a Control-IQ suspension from 21:00 and a level-2 low
+    that does not rebound. The model view serves an episode on the day it ends,
+    so the first evening's episode is read on the day after it.
+    """
+
+    FIRST = date(2024, 5, 1)
+    SHAPED = (23, 24, 25)
+
+    def _evenings(self):
+        cgm = {}
+        for offset in range(30):
+            day = datetime.combine(self.FIRST + timedelta(days=offset), datetime.min.time())
+            for minute in range(0, 24 * 60, 5):
+                cgm[day + timedelta(minutes=minute)] = 120.0
+        bolus, basal = [], []
+        for offset in self.SHAPED:
+            day = datetime.combine(self.FIRST + timedelta(days=offset), datetime.min.time())
+            shape = [(18 * 60 + 40 + 5 * i, 180.0) for i in range(4)]
+            shape += [(19 * 60 + 5 * i, 180.0 - 5.0 * i / 12) for i in range(13)]
+            shape += [(20 * 60 + 5 + 5 * i, 175.0 - 5.0 * i) for i in range(24)]
+            shape += [(22 * 60 + 5 + 5 * i, 48.0) for i in range(13)]
+            for minute, bg in shape:
+                cgm[day + timedelta(minutes=minute)] = bg
+            bolus.append(BolusEvent(t=day + timedelta(hours=19), insulin=7.0, carbs=50.0,
+                                    carb_ratio=10.0, completion="Completed"))
+            bolus.append(BolusEvent(t=day + timedelta(hours=20), insulin=3.0, carbs=None,
+                                    completion="Completed"))
+            basal.extend(BasalEvent(t=day + timedelta(hours=21, minutes=5 * k),
+                                    delivery_type=CIQ_SUSPEND_TYPE, basal_rate=0.0,
+                                    profile_basal_rate=0.9) for k in range(12))
+        readings = [CgmReading(t=t, bg=bg, type="EGV") for t, bg in sorted(cgm.items())]
+        return bolus, readings, basal
+
+    def _day_after_first_evening(self):
+        bolus, cgm, basal = self._evenings()
+        return assemble_model_view(bolus, cgm, basal, target=date(2024, 5, 25), isf=ISF)
+
+    def test_a_claimed_level_2_low_serves_the_title_of_what_it_matched(self):
+        day = self._day_after_first_evening()
+        episode = next(ep for ep in day["episodes"] if ep["lever"] == "meal_over_delivery")
+        low = next(a for a in episode["anchors"] if a["kind"] == "low")
+        # Its anchors are stamped the evening before the day that serves them.
+        self.assertEqual(low["t"][:10], "2024-05-24")
+        self.assertLess(low["bg"], 54, "the claimed low is not level 2")
+        self.assertEqual(low["state"], "outranked")
+        matched = [v for v in low["verdicts"] if v["matched"]]
+        self.assertEqual([v["classifier"] for v in matched], ["correction_on_iob"])
+        self.assertEqual(matched[0]["title"], title(Lever.CORRECTION_ON_IOB))
+        self.assertEqual(episode["lever_title"], title(Lever.MEAL_OVER_DELIVERY))
+
+    def test_every_retained_verdict_on_every_anchor_serves_a_title(self):
+        day = self._day_after_first_evening()
+        verdicts = [v for ep in day["episodes"] for a in ep["anchors"] for v in a["verdicts"]]
+        self.assertTrue(verdicts, "the manufactured day retained no verdict")
+        for verdict in verdicts:
+            with self.subTest(classifier=verdict["classifier"]):
+                self.assertEqual(verdict["title"], title(Lever(verdict["classifier"])))
 
 
 if __name__ == "__main__":

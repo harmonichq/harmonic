@@ -2,7 +2,8 @@ import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildEpisodeLedger, dayStats } from './day-chart.js';
+import { ANCHOR_STATE_WORD, buildEpisodeLedger, dayStats } from './day-chart.js';
+import { glossaryGroups } from './glossary.js';
 
 // A manufactured week: the navigator's own served shape, with one day of no
 // data so the ribbon has a gap to disable (S63).
@@ -215,16 +216,19 @@ test('a retained Day frame has a visible, non-destructive loading treatment', ()
     'the retained frame reuses the desk loading primitive instead of replacing the Day context');
 });
 
+// Each Episode Log band caption: its printed text, and the Glossary control it carries.
+const captions = (markup) => [...markup.matchAll(/<div class="gf-log-cap"><span class="gf-log-title">(.*?)<\/span>(<button[^>]*>[^<]*<\/button>)<\/div>/g)]
+  .map(([, text, control]) => ({ text, control }));
+
 test('each Episode Log row renders its served state word and its kind', () => {
   const markup = dayFrame(state());
   const rows = [...markup.matchAll(/<button class="gf-row gf-log-row" data-day-row="([^"]+)" aria-pressed="(\w+)">/g)];
   assert.deepEqual(rows.map(([, t]) => t), ['2024-06-26 13:55:00']);
-  assert.match(markup, /<div class="gf-log-cap">Findings · 1<\/div>/);
+  assert.deepEqual(captions(markup).map((cap) => cap.text), ['Findings · 1', 'Quiet · 1']);
   assert.match(markup, /<span class="tier" data-state="fired">finding<\/span>/);
   assert.match(markup, / · Over-treated low<\/span><\/button>/);
   // The shipped ledger folds a silent anchor into the quiet stretch rather than
   // giving it a row of its own; the desk renders that band, not a re-derivation.
-  assert.match(markup, /<div class="gf-log-cap">Quiet · 1<\/div>/);
   assert.match(markup, /1 clean · 0 explained · 0 no data/);
   // A focused moment is the pressed row (S67).
   const focused = dayFrame(state({ focusT: '2024-06-26 13:55:00' }));
@@ -314,6 +318,112 @@ test('each attributed Episode Log row ends with its episode\'s served Lever name
   for (const row of rows) assert.doesNotMatch(row.text, /\w_\w/, `a row printed an underscore token: ${row.text}`);
   const quiet = rows.find((r) => r.t === '2024-06-26 20:00:00');
   assert.equal(quiet.text, '△ High · 210 mg/dL', 'an unattributed row named a Lever');
+});
+
+// #423: a meal over-delivery day as the model read serves it — a fired meal, a
+// clean correction, and a level-2 low that matched correction on active insulin
+// on its own while meal over-delivery owns the episode, so its state is
+// outranked. Every verdict carries its served Lever title.
+const verdict = (classifier, title, matched, reason = null) => ({ classifier, title, matched, silence_reason: reason });
+const CLAIMED = {
+  ...MODEL,
+  episodes: [{
+    id: '2024-06-26-ep2', start: '2024-06-26 19:00:00', end: '2024-06-26 23:05:00',
+    lever: 'meal_over_delivery', lever_title: 'Meal over-delivery', spans_midnight: false,
+    anchors: [
+      { t: '2024-06-26 19:00:00', kind: 'meal', bg: null, insulin: 7, carbs: 50, state: 'fired',
+        verdicts: [verdict('meal_over_delivery', 'Meal over-delivery', true)] },
+      { t: '2024-06-26 20:00:00', kind: 'correction', bg: null, insulin: 3, carbs: null, state: 'clean', verdicts: [] },
+      { t: '2024-06-26 22:05:00', kind: 'low', bg: 48, insulin: null, carbs: null, state: 'outranked',
+        verdicts: [verdict('over_treated_low', 'Over-treated low', false, 'no_trigger'),
+          verdict('correction_on_iob', 'Correction on active insulin', true)] },
+    ],
+  }],
+};
+const claimedFrame = (model) => dayFrame(state({ ledger: buildEpisodeLedger(model) }));
+
+test('#423 · a claimed low reads claimed, names what it matched, and ends with the Finding that claimed it', () => {
+  const markup = claimedFrame(CLAIMED);
+  assert.notEqual(ANCHOR_STATE_WORD.outranked, 'outranked', 'the claimed word is the engine state name');
+  assert.match(markup, new RegExp(`<span class="tier" data-state="outranked">${ANCHOR_STATE_WORD.outranked}</span>`));
+  assert.doesNotMatch(markup, />outranked</, 'an Episode Log row printed the engine state name');
+  const rows = logRows(markup);
+  const low = rows.find((r) => r.t === '2024-06-26 22:05:00');
+  assert.equal(low.text, '▽ Low · 48 mg/dL · Correction on active insulin · Meal over-delivery');
+  assert.ok(low.text.endsWith(' · Meal over-delivery'), 'the claimed row does not end with its episode\'s served name');
+  for (const row of rows) assert.doesNotMatch(row.text, /\w_\w/, `a row printed an underscore token: ${row.text}`);
+  // The fired row keeps the content #426 gives it.
+  assert.equal(rows.find((r) => r.t === '2024-06-26 19:00:00').text, '◍ Meal bolus · Meal over-delivery');
+});
+
+test('#423 · a claimed row does not repeat the claiming Finding\'s own name', () => {
+  const meal = (t, state) => ({ t, kind: 'meal', bg: null, insulin: 3, carbs: 40, state,
+    verdicts: [verdict('carb_undercount', 'Carb undercount', true)] });
+  const model = { ...MODEL, episodes: [{
+    id: '2024-06-26-ep3', start: '2024-06-26 12:00:00', end: '2024-06-26 15:00:00',
+    lever: 'carb_undercount', lever_title: 'Carb undercount', spans_midnight: false,
+    anchors: [meal('2024-06-26 12:00:00', 'fired'), meal('2024-06-26 12:40:00', 'outranked')],
+  }] };
+  const second = logRows(claimedFrame(model)).find((r) => r.t === '2024-06-26 12:40:00');
+  assert.equal(second.text, '◍ Meal bolus · Carb undercount');
+});
+
+test('#423 · the Findings caption counts Findings, and names claimed anchors apart', () => {
+  const findings = (model) => captions(claimedFrame(model)).find((cap) => cap.text.startsWith('Findings'))?.text;
+  // One Finding holding a fired and a claimed anchor.
+  assert.equal(findings(CLAIMED), 'Findings · 1 · 1 claimed');
+  // One Lever across two episodes is one Finding.
+  const again = structuredClone(CLAIMED.episodes[0]);
+  again.id = '2024-06-26-ep4';
+  again.anchors = [{ ...again.anchors[0], t: '2024-06-26 07:30:00' }];
+  const twoEpisodes = { ...MODEL, episodes: [again, { ...CLAIMED.episodes[0], anchors: [CLAIMED.episodes[0].anchors[0]] }] };
+  assert.equal(findings(twoEpisodes), 'Findings · 1');
+  // A high-carb sequence Finding has no fired anchor; its two claimed meals still count one Finding.
+  const claimedMeal = (t) => ({ t, kind: 'meal', bg: null, insulin: 4, carbs: 60, state: 'outranked',
+    verdicts: [verdict('carb_undercount', 'Carb undercount', true)] });
+  const sequence = { ...MODEL, episodes: [{
+    id: '2024-06-26-ep5', start: '2024-06-26 12:00:00', end: '2024-06-26 15:00:00',
+    lever: 'high_carb_sequence', lever_title: 'High-carb sequence', spans_midnight: false,
+    anchors: [claimedMeal('2024-06-26 12:00:00'), claimedMeal('2024-06-26 13:30:00')],
+  }] };
+  assert.equal(findings(sequence), 'Findings · 1 · 2 claimed');
+});
+
+test('#423 · each band caption carries a Glossary control named for its band', () => {
+  const nearMiss = { t: '2024-06-26 16:00:00', kind: 'high', bg: 210, insulin: null, carbs: null, state: 'near_miss',
+    verdicts: [verdict('missed_meal', 'Missed / unannounced meal', false, 'under_threshold')] };
+  const model = { ...CLAIMED, episodes: [...CLAIMED.episodes, {
+    id: '2024-06-26-ep6', start: '2024-06-26 15:30:00', end: '2024-06-26 17:00:00',
+    lever: null, lever_title: null, spans_midnight: false, anchors: [nearMiss],
+  }] };
+  const caps = captions(claimedFrame(model));
+  assert.deepEqual(caps.map((cap) => cap.text), ['Findings · 1 · 1 claimed', 'Also checked · 1', 'Quiet · 1']);
+  const controls = caps.map((cap) => ({
+    band: /data-log-glossary="([^"]+)"/.exec(cap.control)?.[1],
+    name: /aria-label="([^"]+)"/.exec(cap.control)?.[1],
+    button: /^<button type="button"/.test(cap.control),
+  }));
+  assert.deepEqual(controls, [
+    { band: 'findings', name: 'Explain Findings in the Glossary', button: true },
+    { band: 'also-checked', name: 'Explain Also checked in the Glossary', button: true },
+    { band: 'quiet', name: 'Explain Quiet in the Glossary', button: true },
+  ]);
+});
+
+test('#423 · a claimed tier word paints in the fired tier\'s colour, not the warning ink', () => {
+  const css = readFileSync(new URL('./desk.css', import.meta.url), 'utf8');
+  const rule = (state) => new RegExp(`\\.gf \\.gf-log-row \\.tier\\[data-state="${state}"\\] \\{([^}]*)\\}`).exec(css)?.[1];
+  assert.ok(rule('outranked'), 'no claimed tier rule');
+  assert.doesNotMatch(rule('outranked'), /--mk-warn/);
+  assert.equal(rule('outranked'), rule('fired'));
+});
+
+test('#423 · the Glossary explains the Episode Log bands', () => {
+  const group = glossaryGroups.find((g) => g.title === 'Episode Log');
+  assert.ok(group, 'the Glossary has no Episode Log group');
+  assert.deepEqual(group.terms.map((t) => t.term), ['Finding', 'Claimed', 'Also checked', 'Quiet']);
+  const quiet = group.terms.find((t) => t.term === 'Quiet').def;
+  for (const count of ['clean', 'explained', 'no data']) assert.match(quiet, new RegExp(count), `Quiet does not name its ${count} count`);
 });
 
 test('a utility entry is named for the utility and returns over the destination it was opened on', () => {

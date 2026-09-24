@@ -31,8 +31,9 @@ const toMs = (t) => new Date(String(t).replace(' ', 'T')).getTime();
 
 /* ================= flatten day → chronological anchor rows (the Episode Log) =================
    One row per anchor, time-sorted; it carries its episode's lever, that lever's served name
-   (`lever_title`, null when the episode carries no lever — ADR 426) + headline verdict (the
-   matched one, else the sharpest near-miss, else the first). Episode-only display context is
+   (`lever_title`, null when the episode carries no lever — ADR 426), the served names of the
+   Levers its own verdicts matched (`matchedTitles`, ADR 423) + headline verdict (the matched
+   one, else the sharpest near-miss, else the first). Episode-only display context is
    deliberately kept out of these anchor rows; buildEpisodeLedger owns that boundary. */
 export function buildRows(day) {
   const rows = [];
@@ -46,6 +47,7 @@ export function buildRows(day) {
       rows.push({
         t: a.t, kind: a.kind, bg: a.bg, insulin: a.insulin, carbs: a.carbs,
         state: a.state, verdicts, headline,
+        matchedTitles: verdicts.filter((v) => v.matched).map((v) => v.title),
         lever: ep.lever, leverTitle: ep.lever_title || null, epId: ep.id,
         day: a.t.slice(0, 10),
       });
@@ -105,6 +107,10 @@ export function buildEpisodeLedger(day, { selectedLever = null, focusT = null } 
   const alsoChecked = rows.filter((row) => row.state === 'near_miss' && !isQuietLedgerRow(row));
   const quietRows = rows.filter((row) => isQuietLedgerRow(row));
   const markedEpisodes = new Set();
+  // The caption counts Findings, not rows: one per distinct served Lever among the
+  // band's rows, so two episodes of one Lever are one Finding, and a sequence
+  // Finding with no fired row still counts (ADR 423). Claimed rows are counted apart.
+  const findingCount = new Set(findings.map((row) => row.lever).filter(Boolean)).size;
   const quietCounts = {
     clean: quietRows.filter((row) => row.state === 'clean').length,
     noData: quietRows.filter((row) => row.state === 'no_data').length,
@@ -121,7 +127,8 @@ export function buildEpisodeLedger(day, { selectedLever = null, focusT = null } 
       ...quietCounts,
     },
     total: rows.length,
-    fired: findings.filter((row) => row.state === 'fired').length,
+    findingCount,
+    claimedCount: findings.filter((row) => row.state === 'outranked').length,
   };
 }
 
@@ -203,13 +210,21 @@ export function dayStats(day) {
    from preemptedTimes. `selectedLever` (#272) dims anchors NOT on that lever so the lever's own
    markers read as isolated. Returns ECharts series to append to the lanes option. */
 // The one state→hue map both the anchor rings and the focus hairline read from,
-// so a moment's ring color and its cross-track line always agree.
+// so a moment's ring color and its cross-track line always agree. A claimed
+// (outranked) anchor belongs to the Finding that claimed it, so it takes that
+// Finding's hue; the word, not the colour, tells it from the driver (ADR 423).
 export function anchorStateColor(state, colors) {
   return ({
-    fired: colors.primary, outranked: colors.warn, near_miss: colors.accent,
+    fired: colors.primary, outranked: colors.primary, near_miss: colors.accent,
     clean: colors.muted, no_data: colors.notindata,
   }[state]) || colors.muted;
 }
+
+// The one definition of the anchor-state words, beside the one state→hue map. The
+// backend serves the state; the desk words it. `claimed` means only that the
+// anchor belongs to an episode another Finding owns: the Day row names what the
+// anchor matched separately, and Diagnose builds its label from the same word.
+export const ANCHOR_STATE_WORD = { fired: 'finding', outranked: 'claimed', near_miss: 'also checked', clean: 'clean', no_data: 'no data' };
 
 export function buildAnchorOverlay(mvDay, rows, colors, focusT, preempted, selectedLever) {
   // Anchors sit on their own strip now, so their y is a fixed row (0..1), not the
@@ -219,7 +234,7 @@ export function buildAnchorOverlay(mvDay, rows, colors, focusT, preempted, selec
   const markers = rows.map((r, i) => {
     const focused = focusT && r.t === focusT;
     const onLever = !selectedLever || r.lever === selectedLever;
-    const big = r.state === 'near_miss' || r.state === 'fired';
+    const big = r.state === 'near_miss' || r.state === 'fired' || r.state === 'outranked';
     const hue = anchorStateColor(r.state, colors);
     return {
       value: [toMs(r.t), yRow(i)],

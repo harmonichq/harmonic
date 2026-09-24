@@ -736,6 +736,33 @@ artifact, not a product distinction (every day with data is pickable). See ADR
 _Avoid_: heat-map (that was the Investigate lever-color encoding, superseded — Day
 speaks glucose), Investigate calendar (the surface it was promoted out of).
 
+**Episode Log**:
+The **Day** surface's reading pane: one row per **Anchor** of the day's served
+episodes, in time order, each worded by its anchor state and naming, by served
+title, the **Lever** of the episode it belongs to. The rows sit in three bands.
+**Findings** lists the anchors of each episode attributed to a Lever — the one that
+drove it and any it **claimed**; its caption counts distinct **Findings**, one per
+served Lever, because each attributed episode is one **Occurrence** of its Lever's
+Finding — so two episodes of one Lever count once — and counts claimed anchors
+beside it, never adding them in. **Also checked** lists anchors the engine stayed
+silent on for a reason worth reading (the near-miss). **Quiet** folds the rest into
+one counted stretch: clean, explained and no data. Each band caption opens the
+Glossary at its Episode Log group. See ADR 423.
+_Avoid_: episode cards (a row is an anchor, not an episode), rows as a count of
+Findings.
+
+**Claimed**:
+The shared word for an anchor or Occurrence that belongs to an episode another
+Finding owns — that shared fact is its whole meaning. On Day it words an anchor
+whose served state is outranked; the row names separately what the anchor matched,
+then ends with the Finding that owns its episode, in that Finding's hue. On
+Diagnose it words the row-relative verdict of an Occurrence whose own Finding's
+criterion was not met while another Lever drove the episode. The behavioral layer
+keeps those two engine meanings distinct; the word carries only what they share.
+See ADR 423.
+_Avoid_: outranked (the engine state, kept as the tier's data attribute),
+dismissed, "claimed by another factor" (factor is a synonym retired for Lever).
+
 ## Diagnose findings queue
 
 **Findings projection**:

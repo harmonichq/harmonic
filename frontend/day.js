@@ -20,7 +20,7 @@
 import { buildLanesOption, LANE_SPAN } from './chart-builders.js';
 import {
   buildEpisodeLedger, buildRows, dayStats, focusUpdate, preemptedTimes,
-  KIND_GLYPH, KIND_LABEL,
+  ANCHOR_STATE_WORD, KIND_GLYPH, KIND_LABEL,
 } from './day-chart.js';
 import { buildHeroOption, HERO } from './day-hero-chart.js';
 import {
@@ -38,7 +38,7 @@ import {
 import {
   currentDestination, hold, load, narrow, navigate, registerDestination, registerEscape, render, view,
 } from './routes.js';
-import { UTILITY_TITLE, reopenUtility } from './utilities.js';
+import { UTILITY_TITLE, openUtility, reopenUtility } from './utilities.js';
 
 // The shipped navigator's drawing boxes (index.html DN_RB / DN_CELL): the ribbon
 // and the month cell sparklines scale to their columns, strokes stay one pixel.
@@ -51,10 +51,13 @@ const CELL = { w: 100, h: 30 };
 const AXIS_RESERVE = 24;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-// The Episode Log's band words and the verdict words the ledger sorts rows by.
-// A row's Lever is named by the model read's served `lever_title`; the desk
-// keeps no Lever name table of its own (ADR 426).
-const STATE_WORD = { fired: 'finding', outranked: 'outranked', near_miss: 'also checked', clean: 'clean', no_data: 'no data' };
+// An Episode Log row's state is worded by the one anchor-state map
+// (ANCHOR_STATE_WORD, ADR 423), and every Lever it names is a served title — the
+// episode's `lever_title` and its matched verdicts' `title`s. The desk keeps no
+// Lever name table of its own (ADR 426).
+
+// The Glossary group each Episode Log band caption opens the Glossary at.
+const EPISODE_LOG_GLOSSARY = '[data-glossary-group="Episode Log"]';
 
 // The destination labels a return names. A utility origin names the utility
 // itself, because that is what the reader closed to get here (S76) — and it
@@ -253,14 +256,24 @@ function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
     : '<p class="gf-meta">No glucose recorded.</p>'}</section>`;
   const row = (entryRow) => {
     const r = entryRow.row;
-    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${r.leverTitle ? ` · ${e(r.leverTitle)}` : ''}</span></button>`;
+    // A claimed row names what its anchor matched on its own, then — as every
+    // attributed row does — the Finding that owns its episode, last (ADR 423).
+    const matched = r.state === 'outranked' ? r.matchedTitles.filter((title) => title !== r.leverTitle) : [];
+    const names = [...matched, r.leverTitle].filter(Boolean).map((name) => ` · ${e(name)}`).join('');
+    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${ANCHOR_STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${names}</span></button>`;
   };
-  const band = (title, entries) => (entries.length ? `<div class="gf-log-cap">${title} · ${entries.length}</div>${entries.map(row).join('')}` : '');
+  // Each band caption carries a control that opens the Glossary at the Episode
+  // Log group and gets focus back on Close (HV2-33).
+  const cap = (key, title, count) => `<div class="gf-log-cap"><span class="gf-log-title">${title} · ${count}</span><button type="button" class="linkbtn gf-log-help" data-log-glossary="${key}" aria-label="Explain ${title} in the Glossary">Glossary</button></div>`;
+  const band = (key, title, entries, count = entries.length) => (entries.length ? `${cap(key, title, count)}${entries.map(row).join('')}` : '');
+  // The Findings caption counts Findings — distinct served Levers — and names its
+  // claimed anchors apart, never adding them in (ADR 423).
+  const findingsTally = ledger && `${ledger.findingCount}${ledger.claimedCount ? ` · ${ledger.claimedCount} claimed` : ''}`;
   const quiet = ledger && ledger.quiet.rows.length
-    ? `<div class="gf-log-cap">Quiet · ${ledger.quiet.rows.length}</div><p class="gf-meta">${e(clock(ledger.quiet.start))}–${e(clock(ledger.quiet.end))} · ${ledger.quiet.clean} clean · ${ledger.quiet.explained} explained · ${ledger.quiet.noData} no data</p>`
+    ? `${cap('quiet', 'Quiet', ledger.quiet.rows.length)}<p class="gf-meta">${e(clock(ledger.quiet.start))}–${e(clock(ledger.quiet.end))} · ${ledger.quiet.clean} clean · ${ledger.quiet.explained} explained · ${ledger.quiet.noData} no data</p>`
     : '';
   const log = ledger && ledger.total
-    ? `${band('Findings', ledger.findings)}${band('Also checked', ledger.alsoChecked)}${quiet}`
+    ? `${band('findings', 'Findings', ledger.findings, findingsTally)}${band('also-checked', 'Also checked', ledger.alsoChecked)}${quiet}`
     : `<p class="gf-meta">No episode ${readAt ? `in the ${e(stamp(readAt))} read ` : ''}falls on this day.</p>`;
   return `${readingHeader('Episode Log', readAt ? `read ${e(stamp(readAt))}` : `viewed ${e(stamp(viewedAt))}`)}<div class="gf-pane-body">${subject}${figures}<section class="gf-section" role="group" aria-label="Episode Log">${log}</section></div>`;
 }
@@ -395,6 +408,9 @@ function bind(host) {
       view.focusAfterRender = `[data-day-row="${button.dataset.dayRow}"]`;
       render();
     };
+  }
+  for (const button of host.querySelectorAll('[data-log-glossary]')) {
+    button.onclick = () => openUtility('glossary', `[data-log-glossary="${button.dataset.logGlossary}"]`, EPISODE_LOG_GLOSSARY);
   }
   for (const button of host.querySelectorAll('[data-day]')) {
     button.onclick = () => {

@@ -9,13 +9,31 @@ paired with a shape or label so the marks read without relying on color alone.
 
 ## The Episode Log
 
-Down the right, each **episode** the engine assembled is a card in time order: an
-anchor (a meal bolus, a low, an unexplained rise), the window around it, and the
-**one lever** attributed to it. The shared evaluator compares observed impact
-when supported eating-sequence evidence competes for that episode. Other matching
-behaviors remain inspectable as evidence, never stacked as separate blame.
+Beside the chart, the **Episode Log** lists the day's anchors (a meal bolus, a
+correction, a low, a high, a suspend) one row each, in time order. A row gives the
+time, a word for what the engine made of that anchor, the anchor itself, and the
+**lever** of the episode it belongs to. Each episode gets **one lever**: the shared
+evaluator compares observed impact when supported eating-sequence evidence
+competes for it. Other matching behaviors remain inspectable as evidence, never
+stacked as separate blame.
 
-Click an episode to highlight its window on the chart above. That handoff — log
-row ↔ chart region — is how you read *why* a moment went the way it did.
+The rows sit in three bands:
+
+- **Findings** — the anchors of each episode attributed to a lever: the one that
+  drove it, marked *finding*, and any it **claimed**. The caption counts distinct
+  findings, one per lever, so two episodes of the same lever count once; claimed
+  anchors are counted beside it, never added in.
+- **Also checked** — anchors the engine stayed silent on for a reason worth
+  reading, such as falling just under a lever's bar.
+- **Quiet** — everything else, folded into one stretch and counted: clean,
+  explained, and no data.
+
+A **claimed** anchor belongs to an episode another finding owns. Its row names what
+the anchor matched on its own, then ends with the finding that claimed it, and it
+keeps that finding's colour. Each band's **Glossary** control opens these
+definitions.
+
+Press a row to ring its anchor on the chart and draw a line across every strip.
+That handoff — log row ↔ chart — is how you read *why* the day went the way it did.
 
 > **Open your [Day surface](app:day)** to replay a specific date.

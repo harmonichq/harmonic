@@ -4175,11 +4175,13 @@ S169 · A watched Trial's dock and Changes print one day count, the served
             "‹N› days" and carry "‹R› required", the progress bar at value ‹R›
             of max ‹R›, and the outcome table's first row to be the served
             target's, marked gf-target
-  status:   replay owed to the release coordinator (task 4.1). Expected: base
-            b03431d2 with this harness laid over it fails at its dock-count
-            assertion ("S169 the dock must print the served day count in
-            Changes' words") at both sizes; the branch passes at both sizes.
-            Fake-page controls in frontend/c4.replay.test.js pass on the
+  status:   replays done; renders owed at integration. Base b03431d2 with
+            this harness laid over it fails at its dock-count assertion ("S169
+            the dock must print the served day count in Changes' words"), its
+            first content assertion, at both sizes (ed1c29bd harness); branch
+            e662c080, code-identical to 2de52828, passes at both sizes
+            (1280x720 and 1440x900), as do S46, S73, S139 and S140;
+            coordinator-run 2026-09-24. Fake-page controls in frontend/c4.replay.test.js pass on the
             branch's text, reject the base's "14 of 14" at that assertion, and
             reject a TIR-first outcome table at "S169 Changes' outcomes must
             lead with the served target metric tbr" (review ruling RR1)
@@ -4197,10 +4199,12 @@ S170 · The Guide's "Reading the Diagnose surface" article names no Verify; its
             requires its ◈ Cause line as a premise, opens the Guide and the
             article, and requires the whitespace-normalised .gf-article text to
             carry no "Verify" and to carry "flow to a Focus, followed in Changes"
-  status:   replay owed to the release coordinator (task 4.1). Expected: base
-            b03431d2 with this harness laid over it fails at its no-Verify
-            assertion ("S170 the article must name no Verify") at both sizes;
-            the branch passes at both sizes. Fake-page controls in
+  status:   replays done; renders owed at integration. Base b03431d2 with
+            this harness laid over it fails at its no-Verify assertion ("S170
+            the article must name no Verify") at both sizes (ed1c29bd harness);
+            branch e662c080, code-identical to 2de52828, passes at both sizes
+            (1280x720 and 1440x900); coordinator-run 2026-09-24. Fake-page
+            controls in
             frontend/c4.replay.test.js pass on the branch's article and reject
             the base's "Focus / Verify" line at that assertion
 ```

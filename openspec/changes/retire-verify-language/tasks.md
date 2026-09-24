@@ -319,3 +319,9 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   ellipsized; Changes' Trial Watch maturity on `c3-trial`, unchanged; and the
   Guide's "Reading the Diagnose surface" article on `showcase`. Record the
   results in S169's and S170's status lines.
+  Replays done, coordinator-run 2026-09-24, both sizes: branch `e662c080`
+  (code-identical to `2de52828`) passes S169, S170, S46, S73, S139 and S140,
+  6 of 6; base `b03431d2` with the branch harness (the `ed1c29bd` run) fails
+  S169, first at its dock count, and S170 at its no-Verify assertion. The desk
+  suite and fast gate ran per the chunk results. Renders: coordinator-owned,
+  integration render phase.

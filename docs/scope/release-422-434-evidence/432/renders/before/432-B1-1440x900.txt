@@ -1,0 +1,83 @@
+SYNTHETIC — before · tree a4d374a7 · store showcase · 432-B1 · 1440x900
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: its matched meal selected: the detail block
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+MEAL BOLUS FELL SHORT
+Not ranked in this window yet.
+Showed up in 1 of 32 meals in this window.
+Full
+Keep
+Findings
+›
+Meal bolus fell short
+1 of 32 · 24 h
+Meal bolus fell short · meals
+1 of 32 meal responses in 24 h · 31 not attributed
+Meets criteria
+1
+Borderline
+0
+Does not meet
+31
+RESPONSE COMPARISON
+1 matched · 0 nearly matched · 31 comparison · 31 not comparable
+Matched · 1 occurrence
+Jun 25 · 12:00
+— · Completed carb bolus
+Nearly matched · 0 occurrences
+No occurrences in this population.
+Other completed carb-bolus meals · 31 occurrences
+Jun 1 · 08:00
+— · Completed carb bolus
+Jun 2 · 08:00
+— · Completed carb bolus
+Jun 3 · 08:00
+— · Completed carb bolus
+Jun 4 · 08:00
+— · Completed carb bolus
+Jun 5 · 08:00
+— · Completed carb bolus
+26 more
+Jun 25 · 12:00
+Matched
+— at completed carb bolus
+The canvas shows the selected glucose trace and evidence markers.
+Evidence facts
+73 glucose readings
+2 event markers
+Clear trace
+Open Jun 25 in Day
+TRIAL · WATCHING
+I:C · 12.0 → 10.0 g/U
+Ready to judge — 14 of 14 days since 06-16
+Open Verify ›
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

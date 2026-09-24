@@ -39,7 +39,7 @@ from ..classifiers.evidence import SilenceReason
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .attribute import AnchorVerdict, LowPromptAnswer, attribute
-from .levers import Lever
+from .levers import Lever, title as lever_title
 from .evaluation import evaluate, SEQUENCE_LEVERS
 from .severity import worst_bg
 
@@ -165,7 +165,12 @@ def _build_episode_view(
             "insulin": insulin,
             "carbs": carbs,
             "state": _anchor_state(_is_driver(a, attr), verdicts),
-            "verdicts": [v.to_dict() for v in verdicts],
+            # Each verdict's Lever named from the same one source as the episode's
+            # `lever_title`, so a claimed row can say what its anchor matched with
+            # no name table in the desk (ADR 423). Every retained classifier is a
+            # Lever value; one that is not fails this read rather than ship unnamed.
+            "verdicts": [{**v.to_dict(), "title": lever_title(Lever(v.classifier))}
+                         for v in verdicts],
         })
 
     first_date = ordered[0].t.date()
@@ -175,6 +180,9 @@ def _build_episode_view(
         "start": _fmt(start),
         "end": _fmt(end),
         "lever": attr.lever.value if attr.lever is not None else None,
+        # The Lever's name, served beside its key so the Day desk keeps no name
+        # table of its own (ADR 426). Null for an unattributed episode.
+        "lever_title": lever_title(attr.lever) if attr.lever is not None else None,
         "trigger": attr.trigger,
         "trigger_t": _fmt(attr.trigger_t),
         "worst_bg": worst_bg(ctx_cgm, start, end, scenario_config=scenario_config),

@@ -34,6 +34,7 @@ class BasalNightEvidence:
         required = (
             "night_roster", "roster_glucose_mean",
             "directional_support_count", "excluded_night_count",
+            "excluded_night_reasons",
         )
         missing = [key for key in required if key not in evidence]
         if missing:
@@ -59,6 +60,9 @@ class BasalNightEvidence:
             "roster_glucose_mean": evidence["roster_glucose_mean"],
             "directional_support_count": evidence.get("directional_support_count"),
             "excluded_night_count": evidence.get("excluded_night_count"),
+            # One analyzer-stamped reason per excluded night (#434); copied, never
+            # re-derived or re-summed here.
+            "excluded_night_reasons": evidence["excluded_night_reasons"],
             "nights": roster,
         }
 

@@ -65,7 +65,7 @@ from .ic_history import decode_history_id
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import (
-    _ROSTER, build_outcome_patterns, outcome_window_population,
+    _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
 )
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
@@ -228,6 +228,11 @@ class FindingsProjection:
         for row in rows:
             row["headline"] = _headline_for(row)
             row["count_sentences"] = _count_sentences_for(row)
+        for row in rows:
+            if row.get("claimed_by"):
+                row["fold_sentences"] = _fold_sentences(
+                    row, pattern_by_subject[row["claimed_by"]], pattern_exposures,
+                )
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
@@ -374,8 +379,9 @@ class FindingsProjection:
         window would let an empty scope read as "0 highs had no cause", which is the
         opposite of what happened.
 
-        Read straight off the exposures feed, which counts it episode-wise
-        (:func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
+        Read straight off the exposures feed, which counts it episode-wise and leaves
+        out every High an over-treated low's rebound owns (ADR 422,
+        :func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
         same way no row's membership is. ``text`` is ``None`` at zero so the surface
         has one thing to test and no threshold of its own — a count with nothing to
         report publishes no sentence.
@@ -1140,6 +1146,35 @@ def _count_sentences_for(row: dict) -> Optional[List[dict]]:
     return None
 
 
+def _fold_sentences(row: dict, pattern_row: dict, exposures: dict) -> List[dict]:
+    """A folded cause's count sentences as its Pattern's fold reads them (ADR 424).
+
+    Under a Pattern that serves a count, one of its rate levers leads with its
+    credited share of that count, on the Pattern's own denominator and noun (scope
+    ``pattern``); its sentences on any other family follow, outside the count. Every
+    other fold sentence is outside: a cause that is not a rate lever adds nothing to
+    the Pattern's count, and a Pattern that serves no count has no share to give.
+    ``exposures`` is the population the Pattern's own count was built from.
+    """
+    pattern = pattern_row["pattern"]
+    lever = row["lever"]
+    by_family = list(zip((appearance["family"] for appearance in row["appearances"] or ()),
+                         row["count_sentences"] or ()))
+    if (pattern_row["count_sentences"] is None
+            or f"habit:{lever}" not in pattern["rate_levers"]):
+        return [sentence | {"scope": "outside"} for _family, sentence in by_family]
+    family = pattern_rate_family(pattern).value
+    credits = credited_claims(exposures, family, [
+        subject.removeprefix("habit:") for subject in pattern["rate_levers"]
+    ])
+    share = _count_sentence(sum(claimant == lever for claimant in credits.values()),
+                            pattern["n"], _pattern_noun(pattern),
+                            _CAUSE_OUTCOME[(lever, family)])
+    return [share | {"scope": "pattern"},
+            *(sentence | {"scope": "outside"}
+              for appearance_family, sentence in by_family if appearance_family != family)]
+
+
 # Carb ratio is grams per unit, so raising it removes insulin and answers lows.
 _SETTINGS_CHIPS = {
     ("basal_rate", "raise"): ("highs",),
@@ -1195,7 +1230,7 @@ def _row(**fields) -> dict:
         "support": None, "reason": None, "annotation": None, "members": None,
         "lever": None, "appearances": None, "episodes": None,
         "evidence": None, "verdict_counts": None, "verdict_counts_by_family": None,
-        "chips": None, "window_scope": None, "count_sentences": None,
+        "chips": None, "window_scope": None, "count_sentences": None, "fold_sentences": None,
         "past_setting": None, "programmed_now": None, "regime_end": None,
         "run_ids": None, "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,

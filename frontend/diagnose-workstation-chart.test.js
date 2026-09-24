@@ -195,6 +195,68 @@ test('a backend-asserted thin basal estimate remains asserted', () => {
   assert.equal(cell.asserts, true);
 });
 
+// #433 (D6): a lower the backend serves because lows keep recurring at the hour
+// is named apart from a measured lower. The split reads the served status
+// alone, so a slot with no steady nights at all still takes it.
+const recurringLowsLower = {
+  label: '05:00', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+  safety_status: 'lower (recurring lows)', estimate: { n: 0, wide: true },
+};
+const measuredLower = {
+  label: '00:30', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+  safety_status: 'lower', estimate: { n: 30, wide: false },
+};
+
+test('a recurring-lows lower keeps the lower verdict and counts under its own key entry', () => {
+  const lane = buildSlotLane([recurringLowsLower]);
+  const [cell] = lane.cells;
+
+  assert.equal(cell.verdict, 'down');
+  assert.equal(cell.asserts, true);
+  assert.equal(cell.reason, 'recurring-lows');
+  assert.equal(cell.entry, 'down:recurring-lows');
+  assert.deepEqual(lane.counts, { 'down:recurring-lows': 1 });
+});
+
+test('a measured lower keeps the plain lower key entry', () => {
+  const lane = buildSlotLane([measuredLower]);
+  const [cell] = lane.cells;
+
+  assert.equal(cell.verdict, 'down');
+  assert.equal(cell.reason, null);
+  assert.equal(cell.entry, 'down');
+  assert.deepEqual(lane.counts, { down: 1 });
+});
+
+test('a raise held at the recurring-low gate stays a hold with no reason', () => {
+  const lane = buildSlotLane([{
+    label: '03:00', current: 0.6, recommended: null, asserts_move: false, direction: null,
+    safety_status: 'held (recurring-low gate)', estimate: { n: 30, wide: false },
+  }]);
+  const [cell] = lane.cells;
+
+  assert.equal(cell.verdict, 'hold');
+  assert.equal(cell.reason, null);
+  assert.equal(cell.entry, 'hold');
+  assert.deepEqual(lane.counts, { hold: 1 });
+});
+
+test('a lane holding both lower kinds counts each against its own cells', () => {
+  const lane = buildSlotLane([
+    measuredLower,
+    { ...recurringLowsLower, label: '01:00' },
+    { ...measuredLower, label: '01:30', safety_status: 'capped (lower)' },
+    { ...recurringLowsLower, label: '02:00', estimate: { n: 30, wide: false } },
+    { ...recurringLowsLower, label: '02:30' },
+  ]);
+
+  assert.deepEqual(lane.counts, { down: 2, 'down:recurring-lows': 3 });
+  for (const [entry, count] of Object.entries(lane.counts)) {
+    assert.equal(lane.cells.filter((cell) => cell.entry === entry).length, count);
+  }
+  assert.ok(lane.cells.every((cell) => cell.verdict === 'down' && cell.asserts));
+});
+
 test('slotAssertsMove requires a sized backend recommendation', () => {
   assert.equal(slotAssertsMove({ asserts_move: true, recommended: null }), false);
 });

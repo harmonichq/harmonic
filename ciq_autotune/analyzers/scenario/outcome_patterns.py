@@ -216,14 +216,29 @@ def _lever_identities(exposures: dict, family: str, lever: str) -> set[str]:
     }
 
 
+def credited_claims(exposures: dict, family: str,
+                    rate_levers: Iterable[str]) -> dict[str, str]:
+    """Credit each claimed Occurrence of a Pattern's family to exactly one rate lever.
+
+    The credit goes to the first lever, in ``rate_levers`` order, whose claims include
+    the Occurrence, so a meal two rate levers both claim counts once (ADR 424). The
+    Pattern's count, its case file's per-meal member and each folded cause's share of
+    that count all read this one map over the same window population.
+    """
+    credits: dict[str, str] = {}
+    for lever in rate_levers:
+        for identity in _lever_identities(exposures, family, lever):
+            credits.setdefault(identity, lever)
+    return credits
+
+
 def _rate(exposures: dict, family: str, rate_levers: Iterable[str], *,
           overnight_k: int, overnight_n: int) -> tuple[int, int, str]:
     if family == "nights":
         return overnight_k, overnight_n, "harm_band_source_nights"
     source = (exposures.get("exposures") or {}).get(family) or {}
-    identities = set().union(*(_lever_identities(exposures, family, lever)
-                               for lever in rate_levers)) if rate_levers else set()
-    return len(identities), source.get("n", 0), "exposures"
+    credits = credited_claims(exposures, family, rate_levers)
+    return len(credits), source.get("n", 0), "exposures"
 
 
 def _comparison(count: int, reason: str) -> dict:

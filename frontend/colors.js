@@ -11,8 +11,6 @@ export function deskColors(root = document.documentElement) {
     primary: v('--primary'), accent: v('--accent'), secondary: v('--secondary'),
     high: v('--high'), inRange: v('--in-range'), low: v('--low'), surface: v('--surface'),
     observed: v('--observed'), inferred: v('--inferred'), notindata: v('--notindata'),
-    basal: v('--basal'),
-    // warn is the Day anchor's outranked colour (day-chart.anchorStateColor)
-    warn: v('--warn'), manualCarb: v('--manual-carb'), manualCarbSoft: v('--manual-carb-soft'),
+    basal: v('--basal'), manualCarb: v('--manual-carb'), manualCarbSoft: v('--manual-carb-soft'),
   };
 }

@@ -54,6 +54,14 @@
       "evidence": {
         "directional_support_count": 12,
         "excluded_night_count": 0,
+        "excluded_night_reasons": {
+          "above_range": 0,
+          "before_current_setting": 0,
+          "below_range_or_suspended": 0,
+          "carb_log": 0,
+          "insulin_acting": 0,
+          "other": 0
+        },
         "harm_band_source_nights": 12,
         "night_roster": [
           {
@@ -720,6 +728,14 @@
       "evidence": {
         "directional_support_count": 12,
         "excluded_night_count": 0,
+        "excluded_night_reasons": {
+          "above_range": 0,
+          "before_current_setting": 0,
+          "below_range_or_suspended": 0,
+          "carb_log": 0,
+          "insulin_acting": 0,
+          "other": 0
+        },
         "harm_band_source_nights": 12,
         "night_roster": [
           {
@@ -2729,6 +2745,7 @@
     "estimate": null,
     "event_chart": null,
     "evidence": null,
+    "fold_sentences": null,
     "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 12 steady nights.",
     "id": "basal:180-240",
     "kind": "setting",

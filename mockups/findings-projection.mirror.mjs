@@ -176,6 +176,43 @@ function countSentencesFor(r) {
   if (r.kind === 'habit') return causeCountSentences(r);
   return null;
 }
+
+// outcome_patterns.credited_claims — each claimed Occurrence of a Pattern's family,
+// credited once, to the first rate lever in roster order whose claims include it.
+function creditedClaims(occurrences, rateLevers) {
+  const credits = new Map();
+  for (const lever of rateLevers) {
+    for (const occurrence of occurrences) {
+      if (occurrence.t != null && (occurrence.attributed_levers || []).includes(lever)
+        && !credits.has(occurrence.t)) credits.set(occurrence.t, lever);
+    }
+  }
+  return credits;
+}
+
+/* findings_projection._fold_sentences (ADR 424): under a Pattern that serves a count,
+   a rate lever leads with its credited share of that count on the Pattern's own
+   denominator and noun, then its other families outside the count; a cause that is
+   no rate lever, or any cause under a Pattern that serves no count, is all outside.
+   `occurrences(family)` is the window population the Pattern's count was built from. */
+function foldSentences(r, patternRow, occurrences) {
+  const pattern = patternRow.pattern;
+  const byFamily = (r.appearances || []).map((appearance, index) => [
+    appearance.family, r.count_sentences[index]]);
+  const outside = (sentences) => sentences.map(([, sentence]) => ({ ...sentence, scope: 'outside' }));
+  if (patternRow.count_sentences == null || !pattern.rate_levers.includes(`habit:${r.lever}`)) {
+    return outside(byFamily);
+  }
+  const family = patternRateFamily(pattern);
+  const credits = creditedClaims(occurrences(family),
+    pattern.rate_levers.map((subject) => subject.replace('habit:', '')));
+  const count = [...credits.values()].filter((lever) => lever === r.lever).length;
+  return [
+    { ...countSentence(count, pattern.n, FAMILY_NOUN[family], CAUSE_OUTCOME[`${r.lever},${family}`]),
+      scope: 'pattern' },
+    ...outside(byFamily.filter(([appearanceFamily]) => appearanceFamily !== family)),
+  ];
+}
 // analyzers.ic.BLOCK_WINDOW_DAYS
 const BLOCK_WINDOW_DAYS = 90;
 
@@ -226,7 +263,7 @@ function row(fields) {
     support: null, reason: null, annotation: null, members: null,
     lever: null, appearances: null, episodes: null,
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
-    chips: null, window_scope: null, count_sentences: null,
+    chips: null, window_scope: null, count_sentences: null, fold_sentences: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
     event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
     ...fields,
@@ -956,6 +993,16 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   for (const row of rows) {
     row.headline = headlineFor(row);
     row.count_sentences = countSentencesFor(row);
+  }
+  // The Pattern's own population: each family kept by the same outcome landing the
+  // window's finding rows use (`outcome_window_exposures`).
+  const anchors = episodeAnchors(exposures.exposures || {});
+  const patternPopulation = (family) => (exposures.exposures?.[family]?.occurrences || [])
+    .filter((occurrence) => contains(outcomeMinute(occurrence, anchors), query.pieces));
+  for (const row of rows) {
+    if (row.claimed_by) {
+      row.fold_sentences = foldSentences(row, patterns.get(row.claimed_by), patternPopulation);
+    }
   }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };

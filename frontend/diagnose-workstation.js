@@ -34,9 +34,10 @@ import {
   buildDayTrace,
   queuePreviewOption,
 } from './diagnose-workstation-chart.js';
+import { ANCHOR_STATE_WORD } from './day-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
-import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
+import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
 import {
   createCanvasLayout, descriptorsFromFindings, fieldRange,
   optionForDescriptor, pinChart, placeSeats,
@@ -246,13 +247,16 @@ const FAMILY_SHORT = {
   lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters', sequences: 'sequences',
 };
 
+/* Keyed by the lane's key entry (`buildSlotLane`): a verdict, or a verdict and
+   the served reason behind it (#433, D6). */
 const VERDICT_KEY = {
-  up: 'suggests a raise', down: 'suggests a lower', hold: 'holds at current',
-  insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
+  up: 'suggests a raise', down: 'suggests a lower',
+  'down:recurring-lows': 'suggests a lower because lows keep happening at this hour',
+  hold: 'holds at current', insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
-// short forms for the single-line lane key
+// short forms for the lane key
 const VERDICT_SHORT = {
-  up: 'raise', down: 'lower', hold: 'hold',
+  up: 'raise', down: 'lower', 'down:recurring-lows': 'lower · recurring lows', hold: 'hold',
   insufficient: 'insufficient', nodata: 'no data',
 };
 
@@ -264,6 +268,14 @@ const WINDOWS = {
   all: { label: '24 h', range: [0, 1440] },
 };
 const winText = (w) => windowSpanText(w.range);
+
+/* The Window preset whose range is exactly `<start>-<end>`, by its control's
+   label, so an entry restoration presses that same control (ADR 428 point 8).
+   A drawn or cross-midnight window matches none. */
+export function presetLabelFor(window) {
+  const [start, end] = String(window || '').split('-').map(Number);
+  return Object.values(WINDOWS).find(({ range }) => range[0] === start && range[1] === end)?.label || null;
+}
 
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
@@ -504,10 +516,11 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
     b.className = 'lane-cell';
     b.dataset.cell = String(cell.i);
     b.dataset.verdict = cell.verdict;
+    if (cell.reason) b.dataset.reason = cell.reason;
     b.dataset.staged = String(staged.has(cell.i));
     b.setAttribute('aria-pressed', String(selectedCell != null && cell.i === selectedCell.i));
-    b.title = `${cell.label} · ${VERDICT_KEY[cell.verdict]}`;
-    b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.verdict]}`);
+    b.title = `${cell.label} · ${VERDICT_KEY[cell.entry]}`;
+    b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.entry]}`);
     b.addEventListener('click', () => onPick(cell));
     host.append(b);
     if (b.dataset.cell === focusedCell) restoreFocus = b;
@@ -523,13 +536,17 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
  * The basal verdict key reconciles the 48 slots on the canvas lane. #413:
  * this is the lane's head row — it renders above `#lane`'s cells (the
  * markup is ordered that way), naming the lane ("Basal slots") and giving
- * every served verdict its short form and count.
+ * every served verdict its short form and count. #433 (D6): a recurring-lows
+ * lower is its own entry, beside a measured lower and on the same lower mark.
  */
 function renderLaneKey(lane) {
-  const order = ['up', 'down', 'hold', 'insufficient', 'nodata'];
+  const order = ['up', 'down', 'down:recurring-lows', 'hold', 'insufficient', 'nodata'];
   const group = (leadWord, counts) => `<span class="lead">${leadWord}</span>`
-    + order.filter((k) => counts[k]).map((k) => `<span title="${VERDICT_KEY[k]}">`
-      + `<i class="lane-cell" data-verdict="${k}"></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`).join('');
+    + order.filter((k) => counts[k]).map((k) => {
+      const [verdict, reason] = k.split(':');
+      return `<span title="${VERDICT_KEY[k]}"><i class="lane-cell" data-verdict="${verdict}"`
+        + `${reason ? ` data-reason="${reason}"` : ''}></i>${VERDICT_SHORT[k]} <b class="t">${counts[k]}</b></span>`;
+    }).join('');
   el('lane-key').innerHTML = group('Basal slots', lane.counts);
 }
 
@@ -589,6 +606,56 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
   host.append(box);
 }
 
+/* ADR 432: a case-file row says what its Occurrence is, from its served anchor
+   facts alone, and the selected block reads as those facts and its served reason.
+   The form follows the served fields, never a family or lever name. A meal leads
+   with its carbs, dose and served outcome, and drops the constant anchor label
+   its cohort heading and case header already name. A correction leads with its
+   dose. A glucose anchor keeps its reading. The browser derives no outcome,
+   reason or verdict of its own. */
+const wholeReading = (value) => (value == null ? '—' : String(Math.round(value)));
+const doseReading = (value) => (value == null ? '—' : `${Math.round(value * 10) / 10} U`);
+
+function anchorFigure(anchor) {
+  if (anchor.carbs != null) return `${wholeReading(anchor.carbs)} g · ${doseReading(anchor.insulin)}`;
+  if (anchor.insulin != null) return doseReading(anchor.insulin);
+  return wholeReading(anchor.bg);
+}
+
+/* One description rule for both case-file rosters: the row's value, and the
+   anchor label only where the value does not already say what the anchor is. */
+export function occurrenceDescription(row) {
+  const figure = anchorFigure(row.anchor);
+  if (row.anchor.carbs == null) return { value: figure, label: row.anchor.label };
+  return { value: row.outcome ? `${figure} · ${row.outcome.kind} ${wholeReading(row.outcome.bg)}` : figure,
+    label: null };
+}
+
+const occurrenceText = ({ value, label }) => (label ? `${value} · ${label}` : value);
+
+/* The selected Occurrence's figure and its evidence-fact lines, printed as served. */
+export function occurrenceFacts(detail) {
+  const { outcome, reason } = detail;
+  const lines = [];
+  if (outcome) {
+    lines.push({ kind: 'outcome', text: `${outcome.kind === 'peak' ? 'Peak' : 'Nadir'} `
+      + `${wholeReading(outcome.bg)} mg/dL, ${Math.round(outcome.minute)} min after the bolus` });
+  }
+  if (reason.cause) {
+    lines.push({ kind: 'cause', text: [`Attributed to ${reason.cause.title}`, reason.cause.text]
+      .filter(Boolean).join(' · ') });
+  }
+  for (const habit of reason.habits) {
+    lines.push({ kind: 'habit', text: [habit.title,
+      VERDICT_BAND_KEY[habit.verdict] || VERDICT_RESIDUE_KEY[habit.verdict], habit.detail]
+      .filter(Boolean).join(' · ') });
+  }
+  for (const dose of detail.source_corrections) {
+    lines.push({ kind: 'source-correction', text: `${dose.t.slice(11, 16)} · ${dose.insulin} U correction` });
+  }
+  return { figure: anchorFigure(detail.anchor), lines };
+}
+
 function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore, shownCount) {
   const rows = caseFile.occurrences.filter((row) => row.verdict === verdict);
   const publishedCount = caseFile.verdict_counts[verdict];
@@ -602,25 +669,41 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
       : `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
-    rows: rows.map((row) => ({
-      id: row.id,
-      html: `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
-        <span class="only">${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}
-          <span>· ${row.anchor.label}</span></span><span class="tier">${label}</span>`,
-    })),
+    rows: rows.map((row) => {
+      const description = occurrenceDescription(row);
+      return {
+        id: row.id,
+        html: `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
+          <span class="only">${description.value}${description.label
+            ? ` <span>· ${description.label}</span>` : ''}</span><span class="tier">${label}</span>`,
+      };
+    }),
     empty: '<div class="empty">No occurrences in this verdict.</div>',
     emptyBeforeHeader: true,
   }], { selectedId, shownCount, onSelect, onMore });
 }
 
 /* Event comparison is its own served population. Members remain opaque until
-   selection requests their server-owned detail and trace. */
-function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
+   selection requests their server-owned detail and trace.
+   #424 — the caption names every served cohort as its section heading does, with
+   its served count, in served order, and follows a cohort that holds a verdict-band
+   state with the band's own words once. The Occurrences outside the comparison are
+   named only when their served count is non-zero; only a cross-population
+   comparison can leave any. The band keeps "not comparable" for no data. */
+export function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
   const { cohorts = [], counts = {} } = caseFile.projection;
   const roster = new Map(caseFile.occurrences.map((row) => [row.id, row]));
+  const outside = counts.outside_comparison;
+  const terms = cohorts.map((cohort) => {
+    const band = VERDICT_BAND_KEY[cohort.band_verdict];
+    return `${counts[cohort.key]} ${cohort.name}${band ? ` (${band.toLowerCase()})` : ''}`;
+  });
+  if (outside) {
+    const noun = outside === 1 ? caseFile.summary.noun.replace(/s$/, '') : caseFile.summary.noun;
+    terms.push(`${outside} ${noun} outside the comparison`);
+  }
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Response comparison
-    <span class="meta">${counts.matched} matched · ${counts.nearly_matched} nearly matched
-      · ${counts.comparison} comparison · ${counts.not_comparable} not comparable</span></div>`);
+    <span class="meta">${terms.join(' · ')}</span></div>`);
   const groups = cohorts.map((cohort) => {
     const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
     return {
@@ -631,8 +714,7 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
       rows: rows.map((row) => {
       const when = row.anchor ? `${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}`
         : `${cohort.name} ${row.index + 1}`;
-      const detail = row.anchor
-        ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
+      const detail = row.anchor ? occurrenceText(occurrenceDescription(row))
         : 'Select to see this occurrence’s glucose trace';
         return {
           id: row.id,
@@ -701,22 +783,28 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   const verdictLabel = comparison
     ? caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)?.name
     : VERDICT_BAND_KEY[detail.verdict] || VERDICT_RESIDUE_KEY[detail.verdict] || detail.verdict;
+  const { figure, lines } = occurrenceFacts(detail);
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(detail.date)} · ${detail.anchor.t.slice(11, 16)}</span>
     <span class="tag">${verdictLabel}</span>${at >= 0 && rows.length > 1
       ? `<span class="pos">${at + 1} of ${comparison
         ? caseFile.projection.counts[detail.comparison_cohort] : caseFile.verdict_counts[detail.verdict]}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
-    <div class="occ-nums">${detail.anchor.bg == null ? '—' : Math.round(detail.anchor.bg)}
-      <span>at ${detail.anchor.label.toLowerCase()}</span></div>
-    <div class="statline">The canvas shows the selected glucose trace and evidence markers.</div>`;
+    <div class="occ-nums">${figure}
+      <span>at ${detail.anchor.label.toLowerCase()}</span></div>`;
   host.append(box);
-  const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
-  facts.innerHTML = `<div class="lab">Evidence facts</div>
-    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.glucose.length} glucose readings</div></div>
-    <div class="vd"><span class="pip" aria-hidden="true"></span><div>${detail.markers.length} event markers</div></div>
-    ${detail.source_corrections.map((dose) => `<div class="vd source-correction"><span class="pip" aria-hidden="true"></span>
-      <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
-  host.append(facts);
+  // A comparison meal with no arc reading serves no fact line at all.
+  if (lines.length) {
+    const facts = document.createElement('div'); facts.className = 'ev-detail case-facts';
+    facts.innerHTML = '<div class="lab">Evidence facts</div>';
+    for (const line of lines) {
+      const row = document.createElement('div'); row.className = `vd ${line.kind}`;
+      row.innerHTML = '<span class="pip" aria-hidden="true"></span>';
+      // Served prose, set as text: a classifier sentence is never markup.
+      const text = document.createElement('div'); text.textContent = line.text;
+      row.append(text); facts.append(row);
+    }
+    host.append(facts);
+  }
   renderOccurrenceFoot(host, detail.date, onClearTrace, () => onDay(detail));
 }
 
@@ -954,8 +1042,12 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),
   });
+  /* #434: the one excluded-night line names why, reason by reason, from the
+     served breakdown through the evidence charts' one reason table. */
   if (evidence.excluded_night_count) {
-    host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
+    const excluded = evidence.excluded_night_count;
+    const reasons = excludedNightReasons(evidence).map(({ count, words }) => `${count} ${words}`).join(', ');
+    host.insertAdjacentHTML('beforeend', `<div class="empty">${excluded} excluded night${excluded === 1 ? '' : 's'}${reasons ? `: ${reasons}` : ''}</div>`);
   }
   const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
   renderSlotNightSelection(host, selected, span,
@@ -1095,7 +1187,10 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
  * segment and instead prints on the roster's own footer line.
  */
 const VERDICT_BAND_KEY = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet' };
-const VERDICT_RESIDUE_KEY = { outranked: 'claimed by another factor', no_data: 'not comparable' };
+// The outranked label is built from the Day desk's one claimed word (ADR 423): a
+// claimed occurrence belongs to an episode another Finding owns. Here that means
+// this Finding's criterion was not met while another Lever drove the episode.
+const VERDICT_RESIDUE_KEY = { outranked: `${ANCHOR_STATE_WORD.outranked} by another finding`, no_data: 'not comparable' };
 
 /**
  * The verdict band (ADR 31 part 4, ADR 41). Drilling a segment scopes the
@@ -2073,6 +2168,34 @@ function boot(root, data, callbacks, signal) {
   let pendingFocus = null;
   let occurrenceFocusId = null;
   const top = () => stack[stack.length - 1];
+  /* THE CASE ON SCREEN (ADR 428). Only `top()` renders, so it names the case:
+     the rail row it was drilled from — a basal slot as `basal:<start>` — the
+     Occurrence or night it holds, and the window its served case file answered
+     for, or the slot's span. The Findings index names none. `paint()` publishes
+     it after every change, whatever moved it — a click, a key, a chart tile, a
+     response — and only when it differs from this boot's last publication. A
+     Finding's case also carries its served title, the name Day prints for where
+     it was opened from (ADR 426); the address never reads it. */
+  let publishedCase;
+  function publishCase() {
+    const f = top();
+    const subject = f.k === 'slot' ? `basal:${f.cell.startMin}` : f.rowId;
+    const served = f.caseFile?.window;
+    const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
+      : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
+    const current = subject ? { subject, occurrence: f.selectedId || null, window,
+      title: f.k === 'factor' ? crumbLabel(f) : null } : null;
+    const key = JSON.stringify(current);
+    if (key === publishedCase) return;
+    publishedCase = key;
+    callbacks.caseChanged?.(current);
+  }
+  /* A PARKED DIAGNOSE IS INERT (ADR 428). The page-level key handlers below
+     listen on the document, which outlives this root while Diagnose is parked
+     off-screen behind another destination. They act only while the host says
+     Diagnose is on screen, so nothing moves the case — or swallows another
+     destination's key — while it is parked. */
+  const onScreen = () => callbacks.onScreen?.() !== false;
   const push = (frame) => {
     if (top().k === 'factors') rememberQueuePosition();
     filterOpen = false;
@@ -3089,12 +3212,13 @@ function boot(root, data, callbacks, signal) {
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
      it is the pane's floor, not the level's content. The watched object's
-     precedence is the server's (Trial XOR Focus, pump wins); the Plan branch is
-     this surface's own staged draft, which is what the deleted header used to
-     report. */
+     precedence is the server's (Trial XOR Focus, pump wins). Below it sits the
+     recorded Plan awaiting the pump, as the guidance read serves it (#431), and
+     below that this surface's own staged draft, which is what the deleted
+     header used to report. */
   function paintWatch() {
     paintWatchDock(el('watch-dock'),
-      watchDockView({ watched, staged: stagedDescriptor() }),
+      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor() }),
       (to) => callbacks.go?.(to));
   }
 
@@ -3459,7 +3583,7 @@ function boot(root, data, callbacks, signal) {
         onSelect: (id) => selectNight(f, id),
         onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         onClear: () => { f.selectedId = null; paint(); },
-        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
+        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}`, cause_lever: 'basal_rate' }),
       });
       return;
     }
@@ -3948,7 +4072,7 @@ function boot(root, data, callbacks, signal) {
     el('grip-b').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('b', ev); }, { signal });
     // Esc restores the last preset
     document.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && drawn) { ev.preventDefault(); clearDrawn(); }
+      if (ev.key === 'Escape' && drawn && onScreen()) { ev.preventDefault(); clearDrawn(); }
     }, { signal });   // PORT: abortable
     window.addEventListener('resize', paintBrace, { signal });   // PORT: abortable
   }
@@ -3995,6 +4119,7 @@ function boot(root, data, callbacks, signal) {
       paintBrace();
     }
     applyPendingFocus();
+    publishCase();
   }
 
   /* Focus consumes only a reader-driven navigation request after every painter
@@ -4029,7 +4154,7 @@ function boot(root, data, callbacks, signal) {
      the ends rather than wrapping: an instrument should not silently return you
      to the first reading. */
   document.addEventListener('keydown', (ev) => {
-    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.metaKey || ev.ctrlKey || ev.altKey || !onScreen()) return;
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
@@ -4072,6 +4197,7 @@ function boot(root, data, callbacks, signal) {
   observeResize(el('chart'), () => chart);
   installDrag();
   document.addEventListener('keydown', (ev) => {
+    if (!onScreen()) return;
     if (ev.key === 'Escape' && fullscreen) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -4092,7 +4218,7 @@ function boot(root, data, callbacks, signal) {
     if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
   }, { signal });
   document.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Escape' || !filterOpen) return;
+    if (ev.key !== 'Escape' || !filterOpen || !onScreen()) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });

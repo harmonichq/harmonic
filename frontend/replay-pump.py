@@ -16,7 +16,8 @@ def capture(path, mode):
         ).fetchone()
         if not provenance or provenance[0] != 1:
             raise ValueError("Replay pump capture requires a generated synthetic store")
-        record = store.follow_up_records("plan")[-1]
+        # Plan records are served newest first: the Plan just recorded is [0].
+        record = store.follow_up_records("plan")[0]
         original = record["deliverable"]["source_profile"]
         settings = store.settings_snapshots()[-1].settings
         rows = record["deliverable"]["rows"]
@@ -35,6 +36,9 @@ def capture(path, mode):
             profile = replace(profile, idp=max(row.idp for row in settings.profiles) + 1)
             settings = replace(settings, active_idp=profile.idp, profiles=(*settings.profiles, profile))
         else:
+            # 'mismatch' and 'in-place' edit the active profile where it stands.
+            # No switch means no Trial; an in-place read that holds the Plan is
+            # confirmed by the server's pump-read reconciliation (ADR 431).
             settings = replace(settings, profiles=tuple(
                 profile if row.idp == settings.active_idp else row for row in settings.profiles))
         at = max(datetime.fromisoformat(record["applied_at"]),
@@ -48,6 +52,6 @@ def capture(path, mode):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("db")
-    parser.add_argument("mode", choices=["mismatch", "match"])
+    parser.add_argument("mode", choices=["mismatch", "match", "in-place"])
     args = parser.parse_args()
     capture(args.db, args.mode)

@@ -647,7 +647,9 @@ export function normalizeIcBlockProvenance(items) {
  * that time-of-day (the pump now delivers what the plan proposed).
  *
  * `snapshotSegments` is the /api/pump-settings active profile segments; `fetchedAt`
- * is the snapshot's capture time (shown as "✓ on pump as of <fetch>").
+ * is the snapshot's capture time, returned as `matchedAt` on a match. Changes no
+ * longer shows it: a confirmed Plan's "On pump since" names the server's
+ * confirming read (#431).
  *
  * @param {Array<row>} deliverableRows  from buildDeliverable
  * @param {Array} snapshotSegments      [{ start_min, basal_rate, isf, carb_ratio, target_bg }]

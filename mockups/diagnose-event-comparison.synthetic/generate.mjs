@@ -346,10 +346,11 @@ export function buildCapture(workstationExposures, outcomePatterns = [], scenari
         return {
           id: `o_${((familyIndex + 1) * 1000 + index + 1).toString(16).padStart(32, '0')}`,
           ep_id: row.ep_id, date: row.date, anchor_t: row.t,
-          anchor_bg: row.bg ?? null, kind: row.kind || kind, label,
+          anchor_bg: row.bg ?? null, anchor_insulin: row.insulin ?? null,
+          anchor_carbs: row.carbs ?? null, kind: row.kind || kind, label,
           attributed: Boolean(row.attributed),
           attributed_levers: structuredClone(row.attributed_levers || []),
-          cause_lever: row.cause_lever ?? null,
+          cause_lever: row.cause_lever ?? null, text: row.text ?? '',
           verdicts: structuredClone(row.verdicts || []),
           trace: structuredClone(rich?.trace || { cgm: [], boluses: [], suspends: [] }),
         };

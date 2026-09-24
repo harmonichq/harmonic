@@ -350,8 +350,9 @@ class ApiTest(unittest.TestCase):
                              f"{bad!r} should 404")
 
     def test_pump_settings_includes_fetched_at(self):
-        # #99: Confirmation-B shows "on pump as of <fetch>" — the endpoint
-        # must surface the snapshot's capture time.
+        # #99: Changes shows when the detected pump settings were captured
+        # ("Captured <fetch>") — the endpoint must surface the snapshot's
+        # capture time. "On pump since" names the server's confirming read (#431).
         r = self.client.get("/api/pump-settings")
         self.assertEqual(r.status_code, 200)
         body = r.json()
@@ -373,6 +374,23 @@ class ApiTest(unittest.TestCase):
         body = r.json()
         self.assertEqual(body["earliest_data_day"], "2026-06-01")
         self.assertEqual(body["latest_data_day"], "2026-06-05")
+
+    def test_status_counts_days_with_glucose(self):
+        # #425: _seed records glucose on 2026-06-01 through 06-05. 06-06 and
+        # 06-08 stay empty (gap days), 06-07 holds only a sensor HIGH — stored
+        # with no glucose value — and 06-09 holds glucose. Neither the gaps nor
+        # the glucose-less day is counted.
+        with Store.open(self.tmp.name) as store:
+            store.upsert_cgm([
+                {"EventDateTime": "2026-06-07T10:00:00", "Readings (CGM / BGM)": None, "Description": "EGV"},
+                {"EventDateTime": "2026-06-09T10:00:00", "Readings (CGM / BGM)": 130, "Description": "EGV"},
+            ])
+        r = self.client.get("/api/status")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["data_day_count"], 6)
+        self.assertEqual(body["earliest_data_day"], "2026-06-01")
+        self.assertEqual(body["latest_data_day"], "2026-06-09")
 
     def test_status_includes_input_revision(self):
         # #414 1.3: the status endpoint's revision must be the live store's own,

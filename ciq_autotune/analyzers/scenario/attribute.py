@@ -25,7 +25,8 @@ The taxonomy table (#70 §2), by anchor kind → shape → lever:
   runaway, drove a later low).
 * **high** → missed / unannounced meal (a meal-shaped rise with no bolus) ▸
   meal-bolus-fell-short (a rise that kept climbing past a counted meal bolus and
-  needed a correction behind it, #63).
+  needed a correction behind it, #63). A High inside a fired over-treated low's
+  guarded rebound is owned by that low and takes neither (ADR 422).
 
 An episode where nothing actionable fires gets **no lever** and does not surface
 (#70: a habit tool, not an alerts inbox).
@@ -51,6 +52,7 @@ from ..classifiers import (
     classify_missed_meal,
 )
 from ..classifiers.evidence import EvidenceTier, SilenceReason
+from ..classifiers.missed_meal import ReboundOwner
 from ..scenario_config import ScenarioConfig
 from .anchors import Anchor, AnchorKind
 from .levers import Lever
@@ -399,6 +401,12 @@ class Attribution:
       ``worst_bg`` / the window cover the whole excursion — the climb past range and the
       decline back down — not just the anchor-bounded near-low run (#124 / ADR 0010).
       ``None`` for every other lever (and when the scan found no rebound).
+    * ``fired_rebounds`` — every over-treated-low rebound this episode's walk fired,
+      driver or not, including a #155 High-moment's (ADR 422). Each owns the real
+      Highs it reaches, here and in later episodes.
+    * ``owned_highs`` — ``(high anchor, owner)`` for every real High in this episode
+      whose run begins inside a fired rebound, whatever its own classifiers returned
+      (ADR 422). An owned High is explained by its low, never uncaused.
     """
 
     lever: Optional[Lever]
@@ -411,6 +419,17 @@ class Attribution:
     driver_anchor: Optional[Anchor] = None
     matches: tuple[Attribution, ...] = ()
     anchor_verdicts: tuple[tuple[AnchorVerdict, ...], ...] = ()
+    fired_rebounds: tuple[ReboundOwner, ...] = ()
+    owned_highs: tuple[tuple[Anchor, ReboundOwner], ...] = ()
+
+
+def high_moment_rebound(anchor: Anchor) -> ReboundOwner:
+    """The rebound a #155 synthesized High-moment carries: crash nadir to terminal.
+
+    Read from the anchor itself, so the engine knows the span before its walk reaches
+    the High-moment's episode (ADR 422).
+    """
+    return ReboundOwner(anchor.rebound_nadir_t, anchor.rebound_nadir_bg, anchor.reach_end)
 
 
 # Each ``_*_lever`` helper returns ``(lever_result, silence)``: the ``(lever, step)``
@@ -512,11 +531,12 @@ def _low_lever(
        ``correction_stacking``, back-scanned from the nadir). It never preempts an
        over-treated low.
 
-    Returns ``((lever, driver_step[, rebound_end]), None)`` when one fires, else
+    Returns ``((lever, driver_step[, rebound]), None)`` when one fires, else
     ``(None, silence)``: correction-on-IOB's non-firing verdict (over-treated-low is
     inline attribution logic, not a classifier, so it carries no verdict to surface). The over-treated-low
-    result carries a third element — the guarded scan's ``terminal`` — so the engine
-    can extend the episode's scored span to the rebound's resolution (#124).
+    result carries a third element — its :class:`ReboundOwner`, whose ``terminal`` is
+    the guarded scan's — so the engine can extend the episode's scored span to the
+    rebound's resolution (#124) and hand the rebound the Highs it owns (ADR 422).
 
     Over-treated-low classification is by the observed low→rebound shape alone (#400):
     residual bolus IOB no longer moves the rebound bar. ``basal`` feeds the #150
@@ -553,7 +573,7 @@ def _low_lever(
             results.append((
                 Lever.OVER_TREATED_LOW,
                 _over_treated_step(anchor.t, nadir, rebound.peak, answer),
-                rebound.terminal,
+                ReboundOwner(anchor.t, nadir, rebound.terminal),
             ))
 
     # Correction-on-IOB (#150) follows over-treated-low in chronological precedence.
@@ -629,6 +649,7 @@ def _high_lever(
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
     verdicts: Optional[list] = None,
+    rebound_owner: Optional[ReboundOwner] = None,
 ) -> tuple[Optional[tuple], Optional[Verdict]]:
     """Attribute a high anchor to missed / unannounced meal.
 
@@ -647,6 +668,10 @@ def _high_lever(
     carb count. The two split one population at exactly one line, so at most one of
     them can ever fire on a given rise.
 
+    ``rebound_owner`` is the fired over-treated low whose guarded rebound reaches this
+    High, if any. Both classifiers read it where they would otherwise match, so an
+    owned High attributes neither (ADR 422).
+
     Returns ``((lever, driver_step), None)`` when either fires, else ``(None, mm)`` —
     the missed-meal verdict remains the high's silence reason, because it is the more
     general judgment and every unattributed high already reports it.
@@ -655,8 +680,8 @@ def _high_lever(
     ``rebound_nadir_bg``) is the exception: it is the over-correction the crash
     rebounded into, so it attributes ``over_treated_low`` — not missed-meal. The split
     gate (:func:`over_treated_rebound`) already applied the tiered bar, so this just
-    carries the decided lever, the crash → rebound text, and the guarded terminal
-    (``reach_end``) the engine scores the climb over (#124).
+    carries the decided lever, the crash → rebound text, and its rebound
+    (:func:`high_moment_rebound`, whose terminal the engine scores the climb over, #124).
     """
     if anchor.rebound_nadir_bg is not None:
         if verdicts is not None:
@@ -671,13 +696,15 @@ def _high_lever(
         return (
             Lever.OVER_TREATED_LOW,
             _over_treated_step(anchor.t, anchor.rebound_nadir_bg, anchor.bg, answer),
-            anchor.reach_end,
+            high_moment_rebound(anchor),
         ), None
 
     onset = anchor.reach_start
-    mm = classify_missed_meal(onset, cgm, bolus, basal, scenario_config=scenario_config)
+    mm = classify_missed_meal(onset, cgm, bolus, basal, scenario_config=scenario_config,
+                              rebound_owner=rebound_owner)
     mbs = classify_meal_bolus_short(
-        onset, cgm, bolus, basal, scenario_config=scenario_config
+        onset, cgm, bolus, basal, scenario_config=scenario_config,
+        rebound_owner=rebound_owner,
     )
     if verdicts is not None:
         verdicts.extend((_mv("missed_meal", mm), _mv("meal_bolus_short", mbs)))
@@ -773,6 +800,7 @@ def attribute(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
+    known_rebounds: Sequence[ReboundOwner] = (),
 ) -> Attribution:
     """Attribute one lever to ``episode``, root-cause-by-time.
 
@@ -787,6 +815,12 @@ def attribute(
     ``BolusEvent.carb_ratio``. Over-treated-low classification is shape-only (#400) —
     it reads neither ISF/I:C nor residual IOB.
 
+    ``known_rebounds`` are the fired over-treated-low rebounds the walk already
+    judged before this episode (ADR 422). Each rebound, and each one this episode
+    fires on the way, owns every later real High whose run begins inside it: that
+    High's classifiers are handed the owner, and the pair is recorded as
+    ``owned_highs``. Nothing here re-judges a low.
+
     Returns an :class:`Attribution`; ``lever is None`` means the episode resolved
     with no actionable behavior and must not surface.
     """
@@ -794,6 +828,9 @@ def attribute(
     # The guarded rebound scan's terminal for the winning driver, when it is an
     # over-treated low — threaded up so the engine scores the whole excursion (#124).
     rebound_end: Optional[datetime] = None
+    # Every over-treated-low rebound fired so far, and the Highs they own (ADR 422).
+    fired_rebounds: List[ReboundOwner] = []
+    owned_highs: List[tuple[Anchor, ReboundOwner]] = []
     correction_pair: Optional[tuple[int, int]] = None
     consequences: List[Step] = []
     matches = []
@@ -820,6 +857,7 @@ def attribute(
         # The guarded rebound terminal this anchor's result carries (over-treated low
         # only); read into ``rebound_end`` iff this anchor becomes the driver.
         this_rebound_end: Optional[datetime] = None
+        rebound_owner: Optional[ReboundOwner] = None
         # The instant the trigger anchor drove the lever. Defaults to the anchor's
         # own ``t``; a HIGH anchor drives its missed-meal lever from the rise onset
         # (``reach_start``), not the peak, so the trigger beat and its arc bound sit
@@ -840,21 +878,34 @@ def attribute(
             )
             if r is not None:
                 result = (r[0], r[1])
-                if len(r) > 2:                       # over-treated low carries its terminal
-                    this_rebound_end = r[2]
+                if len(r) > 2:                       # over-treated low carries its rebound
+                    this_rebound_end = r[2].terminal
+            # A fired over-treated low owns the Highs its rebound reaches, whether or
+            # not it drives this episode (ADR 422).
+            fired_rebounds.extend(m[2] for m in anchor_matches
+                                  if m[0] is Lever.OVER_TREATED_LOW)
         elif a.kind is AnchorKind.HIGH:
+            if a.rebound_nadir_bg is None:
+                rebound_owner = next(
+                    (o for o in (*known_rebounds, *fired_rebounds) if o.owns(a.reach_start)),
+                    None,
+                )
+                if rebound_owner is not None:
+                    owned_highs.append((a, rebound_owner))
             r, sil = _high_lever(
                 a, cgm, bolus, basal,
                 scenario_config=scenario_config,
                 low_answers=low_answers, verdicts=verdicts,
+                rebound_owner=rebound_owner,
             )
             if r is not None:
                 result = (r[0], r[1])
                 if len(r) > 2:
-                    # A rebound high-moment (#155): over-treated-low carries the guarded
-                    # terminal so the engine scores the whole climb; the trigger sits at
-                    # the peak (a.t), not the rise onset.
-                    this_rebound_end = r[2]
+                    # A rebound high-moment (#155): over-treated-low carries its rebound
+                    # so the engine scores the whole climb; the trigger sits at the peak
+                    # (a.t), not the rise onset.
+                    this_rebound_end = r[2].terminal
+                    fired_rebounds.append(r[2])
                 else:
                     # Missed-meal drives from the rise onset (reach_start), not the peak.
                     trig_t = a.reach_start
@@ -899,7 +950,7 @@ def attribute(
             matches.append(Attribution(
                 other_lever, _trigger_label(a.kind, other_lever), a.t,
                 [_cited_step(other_lever, a, other_step)], driver_anchor=a,
-                rebound_end=other[2] if len(other) > 2 else None,
+                rebound_end=other[2].terminal if len(other) > 2 else None,
             ))
         if driver is None:
             driver = (lever, driver_anchor.kind, trig_t, step, driver_anchor)
@@ -911,7 +962,8 @@ def attribute(
     if driver is None:
         return Attribution(
             lever=None, trigger="", trigger_t=episode.start, steps=[], silence=silence,
-            anchor_verdicts=tuple(retained_verdicts)
+            anchor_verdicts=tuple(retained_verdicts),
+            fired_rebounds=tuple(fired_rebounds), owned_highs=tuple(owned_highs),
         )
 
     lever, kind, trigger_t, driver_step, driver_anchor = driver
@@ -926,6 +978,8 @@ def attribute(
         driver_anchor=driver_anchor,
         matches=tuple(matches),
         anchor_verdicts=tuple(retained_verdicts),
+        fired_rebounds=tuple(fired_rebounds),
+        owned_highs=tuple(owned_highs),
     )
 
 

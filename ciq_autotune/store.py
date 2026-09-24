@@ -1057,6 +1057,18 @@ class Store:
         ).fetchone()
         return (row["earliest"], row["latest"])
 
+    def cgm_data_day_count(self) -> int:
+        """How many pump-local days carry at least one glucose value (#425).
+
+        Days are bucketed exactly as cgm_day_bounds buckets them. A reading the
+        sensor reported as HIGH or LOW is stored with no glucose value, and the
+        Day navigator shows a day holding only those as no data, so such a day is
+        not counted. 0 when the table is empty.
+        """
+        return self.conn.execute(
+            "SELECT COUNT(DISTINCT date(t)) FROM cgm_readings WHERE bg IS NOT NULL"
+        ).fetchone()[0]
+
     def iob_events(self, start=None, end=None) -> List[IobEvent]:
         """Every IOB row, all EventIDs. Use iob_series for analysis."""
         return [
@@ -1679,12 +1691,16 @@ class Store:
                     self._follow_up_availability(envelope)
             relationship = winner.get('reconciliation', {})
             if relationship.get('state') == 'available':
+                # A pump-read confirmation (ADR 431) names its Plan and no Trial;
+                # a Trial's receipt always names itself.
                 plan_id, trial_id = relationship.get('applied_at'), relationship.get('trial_id')
                 self._follow_up_identity('plan', plan_id)
-                self._follow_up_identity('trial', trial_id)
+                if trial_id is not None or kind == 'trial':
+                    self._follow_up_identity('trial', trial_id)
                 if ((kind == 'plan' and plan_id != id) or (kind == 'trial' and trial_id != id)
                         or self.follow_up_record('plan', plan_id) is None
-                        or (kind == 'plan' and self.follow_up_record('trial', trial_id) is None)):
+                        or (kind == 'plan' and trial_id is not None
+                            and self.follow_up_record('trial', trial_id) is None)):
                     raise FollowUpConflict('invalid_reconciliation_identity', self.input_data_revision())
             if (kind == 'focus' and old['status'] != 'active'
                     and 'kind' not in old['ending']

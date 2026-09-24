@@ -140,6 +140,28 @@ test('the direction-only correction-factor warning stays visible and unranked', 
   }
 });
 
+/* The deep-compare would also pass if both sides dropped a folded cause's share
+ * together. So name both fold scopes the frozen whole day holds (ADR 424): Carb
+ * undercount leads with its share of an admitted Pattern's count and sets its highs
+ * count apart, and Lows after correcting highs serves no count, so neither of its
+ * causes gets a share of it. */
+test('the mirror serves each folded cause its share of the Pattern first', () => {
+  const rows = projectFindings(fixture.inputs, null).rows;
+  const fold = (lever) => rows.find((row) => row.lever === lever).fold_sentences
+    .map(({ scope, sentence }) => [scope, sentence]);
+  assert.deepEqual(fold('carb_undercount'), [
+    ['pattern', '1 of 3 meals ran high'],
+    ['outside', '2 of 4 highs followed an undercounted meal'],
+  ]);
+  for (const lever of ['correction_on_iob', 'correction_stacking']) {
+    const row = rows.find((candidate) => candidate.lever === lever);
+    assert.equal(row.claimed_by, 'pattern:lows_after_correcting_highs', lever);
+    assert.deepEqual(fold(lever), row.count_sentences.map(({ sentence }) => ['outside', sentence]),
+      lever);
+  }
+  assert.ok(rows.filter((row) => !row.claimed_by).every((row) => row.fold_sentences === null));
+});
+
 /* The deep-compare above would still pass if BOTH sides regressed the honest
  * unexplained-highs count to zero together, and a count frozen at zero is exactly the
  * silent-drift shape #63 exists to close. So name the value: the fixture's ep6 is a

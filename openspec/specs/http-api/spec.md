@@ -134,15 +134,24 @@ For the Missed / unannounced meal Finding's event projection, the server owns tw
 separate comparison cohorts: Highs attributed to Missed / unannounced meal and
 all completed carb-bolus announced meals, regardless of outcome. It anchors the
 first at detected rise onset and the second at completed carb-bolus time, using
-the fixed `[-60, +300]` minute window, and publishes missed, announced, and
-not-comparable counts, including an explicit zero state. This comparison account
-is independent of the Finding's five-way High verdict denominator and does not
-replace the High roster or attribution account.
+the fixed `[-60, +300]` minute window, and publishes the missed and announced
+counts and the count of Highs outside the comparison, including an explicit zero
+state. This comparison account is independent of the Finding's five-way High
+verdict denominator and does not replace the High roster or attribution account.
 
 #### Scenario: Finding case files are bound to one snapshot preparation.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+#### Scenario: Missed meal publishes the Highs outside its comparison
+
+- **GIVEN** a synthetic store whose Missed / unannounced meal case file has six
+  Highs, two attributed and one near miss
+- **WHEN** its event case file is requested
+- **THEN** the response serves missed 2, nearly matched 1, the announced count, and
+  3 Highs outside the comparison
+- **AND** it serves no not-comparable count
 
 ### Requirement: Saving a Plan draft is the one deliberate exception, and a future exception must meet its standard
 
@@ -295,3 +304,28 @@ scheduled fetch invalidates through the loop's own hook, specified below.
   unrelated write or the next scheduled fetch happens to clear the cache — the surface
   presents advice derived from data the store no longer holds, with nothing in the
   response marking it stale
+
+### Requirement: The status read serves how many days carry data
+
+The status endpoint SHALL serve `data_day_count`: the number of distinct
+pump-local wall-clock days — each reading bucketed by the date of its naive local
+time, as the first and last data day are — on which at least one CGM reading
+carries a glucose value. A day whose readings all lack a glucose value (a sensor
+HIGH or LOW) SHALL NOT be counted, and a day with no reading SHALL NOT be counted.
+An empty store SHALL serve `0`. The count SHALL be read in the same store read as
+`earliest_data_day` and `latest_data_day`, and the status endpoint SHALL remain
+an uncached cheap read.
+
+#### Scenario: A gap day and a glucose-less day are not counted
+
+- **GIVEN** a store with glucose readings on three days, no reading on a day
+  between them, and only a HIGH/LOW reading on another day
+- **WHEN** the status endpoint is read
+- **THEN** `data_day_count` is 3
+- **AND** `earliest_data_day` and `latest_data_day` are unchanged by the count
+
+#### Scenario: An empty store counts no days
+
+- **GIVEN** a store with no CGM reading
+- **WHEN** the status endpoint is read
+- **THEN** `data_day_count` is 0

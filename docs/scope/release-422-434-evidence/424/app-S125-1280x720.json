@@ -1,0 +1,255 @@
+{
+  "synthetic": true,
+  "target": "app",
+  "id": "S125",
+  "viewport": "1280x720",
+  "caseName": "behavioral-missed-meal",
+  "checkpoint": "after-passing-story",
+  "sha256": "96a471e69ff259da7ca01e33fe702e68121ff9b90f8ae8c98c3e9ee6dc8b4773",
+  "url": "http://127.0.0.1:8765/diagnose",
+  "title": "Harmonic",
+  "root": {
+    "width": 1280,
+    "height": 720,
+    "viewportWidth": 1280,
+    "viewportHeight": 720
+  },
+  "interLoaded": true,
+  "currentDestination": "diagnose",
+  "stylesheets": [
+    "http://127.0.0.1:8765/assets/index-BmocfkvW.css"
+  ],
+  "elements": [
+    {
+      "selector": ".cockpit-shell",
+      "text": "Harmonic advisoryDiagnoseChangesDay＋Log carbs\n  \n    \n      Window\n      OvernightMorningAfternoonEvening24 h\n    \n    \n  \n\n  \n    \n      \n        \n          \n ",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 720
+      },
+      "scroll": {
+        "width": 1280,
+        "height": 720,
+        "clientWidth": 1280,
+        "clientHeight": 720
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "38px 658px 24px",
+        "gridTemplateColumns": "1280px",
+        "backgroundColor": "rgb(15, 13, 11)",
+        "color": "rgb(242, 237, 226)",
+        "borderLeftColor": "rgb(242, 237, 226)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": ".cockpit-topbar",
+      "text": "Harmonic advisoryDiagnoseChangesDay＋Log carbs",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 38
+      },
+      "scroll": {
+        "width": 1280,
+        "height": 38,
+        "clientWidth": 1280,
+        "clientHeight": 38
+      },
+      "style": {
+        "display": "flex",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgb(20, 18, 15)",
+        "color": "rgb(245, 241, 233)",
+        "borderLeftColor": "rgb(245, 241, 233)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": ".cockpit-footer",
+      "text": "Advisory only — review with your clinician before changing pump settings.Carb questions 0GuideSettingsGlossary",
+      "rect": {
+        "x": 0,
+        "y": 696,
+        "width": 1280,
+        "height": 24
+      },
+      "scroll": {
+        "width": 1280,
+        "height": 24,
+        "clientWidth": 1280,
+        "clientHeight": 24
+      },
+      "style": {
+        "display": "flex",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgb(20, 18, 15)",
+        "color": "rgb(245, 241, 233)",
+        "borderLeftColor": "rgb(245, 241, 233)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, sans-serif",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "tabular-nums",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      }
+    },
+    {
+      "selector": "#level",
+      "text": "\n    Missed / unannounced meal · highs\n    2 of 6\n      high episodes in 24 h\n      · 4 not attributed\n    \n      \n    \n    \n      Meets criteria2Borderline1Doe",
+      "rect": {
+        "x": 860,
+        "y": 125,
+        "width": 429,
+        "height": 473
+      },
+      "scroll": {
+        "width": 429,
+        "height": 473,
+        "clientWidth": 429,
+        "clientHeight": 473
+      },
+      "style": {
+        "display": "block",
+        "gridTemplateRows": "none",
+        "gridTemplateColumns": "none",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "auto",
+        "overflowY": "auto"
+      }
+    },
+    {
+      "selector": "#tile-focal",
+      "text": "Missed / unannounced mealRanks among this window's findings.Showed up in 2 of 6 highs in this window.FullKeep",
+      "rect": {
+        "x": 10,
+        "y": 90,
+        "width": 830,
+        "height": 358
+      },
+      "scroll": {
+        "width": 830,
+        "height": 358,
+        "clientWidth": 830,
+        "clientHeight": 358
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "358px",
+        "gridTemplateColumns": "830px",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    },
+    {
+      "selector": ".pane",
+      "text": "\n      \n        \n          \n            Glucose by time of day\n            \n          \n          \n            --:--\n            median--\n            25–75--\n   ",
+      "rect": {
+        "x": 0,
+        "y": 80,
+        "width": 850,
+        "height": 616
+      },
+      "scroll": {
+        "width": 850,
+        "height": 616,
+        "clientWidth": 850,
+        "clientHeight": 616
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "376px 30px 210px",
+        "gridTemplateColumns": "850px",
+        "backgroundColor": "rgb(30, 26, 23)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(207, 200, 189)",
+        "borderLeftWidth": "0px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "clip",
+        "overflowY": "visible"
+      }
+    },
+    {
+      "selector": ".pane",
+      "text": "\n      \n      \n        Findings›Missed / unannounced meal\n        \n        2 of 6 · 24 h\n        \n          Filter\n          SiftHighs 3Lows 3Meals 2Corrections",
+      "rect": {
+        "x": 850,
+        "y": 80,
+        "width": 430,
+        "height": 616
+      },
+      "scroll": {
+        "width": 429,
+        "height": 616,
+        "clientWidth": 429,
+        "clientHeight": 616
+      },
+      "style": {
+        "display": "grid",
+        "gridTemplateRows": "45px 473px 98px",
+        "gridTemplateColumns": "429px",
+        "backgroundColor": "rgb(30, 26, 23)",
+        "color": "rgb(207, 200, 189)",
+        "borderLeftColor": "rgb(69, 61, 53)",
+        "borderLeftWidth": "1px",
+        "fontFamily": "Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "lineHeight": "normal",
+        "letterSpacing": "normal",
+        "fontVariantNumeric": "normal",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    }
+  ]
+}

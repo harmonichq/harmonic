@@ -40,6 +40,7 @@
 //   readinessSection, comparisonTables,            the comparison renderers one
 //   evidenceFigure, figureColors,                  record read shares
 //   mountComparisonChart, dailyEvidence
+//   comparisonReasonWords                          the one reason vocabulary
 import { heroOption } from './verify-workstation-chart.js';
 import {
   fetchVerifyTrials, finishTrial, resolveFocus,
@@ -75,6 +76,31 @@ const BOUNDARY_WORD = {
   effective_ending: 'Effective ending', '90_day_cap': '90-day limit',
   missing_continuous_setting_history: 'Continuous setting history unavailable',
 };
+
+// The desk's ONE vocabulary for why a comparison is unavailable (ADR 430). The
+// KEYS are the served availability reasons; the figure, the readiness lines and
+// the record's reassessment result all print these words, never the code.
+const COMPARISON_REASON = {
+  missing_comparison_context: 'no retained comparison context was recorded with this change',
+  unsupported_retained_execution: 'the retained context was saved by a different version of the comparison',
+  missing_programmed_isf: 'no programmed correction factor is recorded for this change',
+  no_source_evidence: 'no glucose, bolus or basal data has been read',
+  change_predates_pin: 'the recorded ending falls before the Focus was pinned',
+  missing_legacy_ending: 'this earlier Focus has no recorded ending time',
+  data_not_yet_arrived: 'no data has been read since the change yet',
+  lever_unavailable: 'the behavior this Focus watched is no longer an offered lever',
+  missing_continuous_setting_history: 'continuous setting history is not available around this change',
+  no_readable_period_evidence: 'a period has no readable glucose readings yet',
+  unavailable_adherence: 'the watched behavior could not be measured in both periods',
+  not_recorded: 'not recorded',
+};
+
+/** A served comparison reason in words; a code with no words prints as served. */
+export const comparisonReasonWords = (code) => COMPARISON_REASON[code] || code;
+
+// What every part of a record says when no comparison was read for it at all:
+// not requested, which is neither unavailable nor empty.
+const NOT_READ = 'No comparison has been read for this record yet.';
 
 /** One programmed value in its own unit; a correction factor reads insulin first. */
 const settingValue = (parameter, value) => {
@@ -165,9 +191,9 @@ export function readinessArm(name, arm, { lever = null } = {}) {
 export function readinessSection(comparison, { kind = 'trial', heading = 'Evidence accrued' } = {}) {
   if (!comparison) {
     return `<section class="gf-section" data-part="readiness"><h3>${e(heading)}</h3>
-      <p class="gf-meta" data-readiness-state="not-requested">No comparison has been read for this record yet.</p></section>`;
+      <p class="gf-meta" data-readiness-state="not-requested">${NOT_READ}</p></section>`;
   }
-  const availability = comparison.availability || {};
+  const availability = availabilityOf(comparison);
   const readiness = comparison.readiness;
   const inference = comparison.assessment || {};
   // The habit's lever rides on its adherence rows, not on the comparison, and a
@@ -179,11 +205,11 @@ export function readinessSection(comparison, { kind = 'trial', heading = 'Eviden
     : null;
   const arms = readiness
     ? `${readinessArm('before', readiness.before, { lever })}${readinessArm('after', readiness.after, { lever })}`
-    : `<p class="gf-meta" data-readiness-state="unavailable">No readiness is served for this comparison: ${e(availability.reason || 'not served')}.</p>`;
+    : `<p class="gf-meta" data-readiness-state="unavailable">No readiness is served for this comparison: ${e(comparisonReasonWords(availability.reason || 'not served'))}.</p>`;
   return `<section class="gf-section" data-part="readiness"><h3>${e(heading)} <span class="meta">${e(kind === 'focus' ? 'opportunities' : 'type-specific')}</span></h3>
     <p class="gf-meta" data-availability="${e(availability.state || 'unavailable')}">${availability.state === 'available'
       ? 'This comparison is available.'
-      : `This comparison is unavailable: ${e(availability.reason || 'not served')}.`}</p>
+      : `This comparison is unavailable: ${e(comparisonReasonWords(availability.reason || 'not served'))}.`}</p>
     ${arms}
     ${inference.state ? `<dl><dt>Read of the two periods</dt><dd data-inference="${e(inference.state)}">${e(STATE_WORD[inference.state] || inference.state)}</dd></dl>${inference.reason ? `<p class="gf-meta">${e(inference.reason)}</p>` : ''}` : ''}
     <p class="gf-meta">Readiness is what has been observed, not a judgement. A period may end without a clear answer.</p>
@@ -197,7 +223,11 @@ export function readinessSection(comparison, { kind = 'trial', heading = 'Eviden
  * it; a habit's is simply After its pin. Both are the same served envelope.
  */
 export function periodsSection(comparison, kind = 'trial') {
-  const periods = (comparison || {}).periods || {};
+  if (!comparison) {
+    return `<section class="gf-section" data-part="periods"><h3>Evidence periods</h3>
+      <p class="gf-meta" data-periods="not-requested">${NOT_READ}</p></section>`;
+  }
+  const periods = comparison.periods || {};
   const word = { before: 'Before', after: kind === 'focus' ? 'After' : 'Trial' };
   if (!periods.before || !periods.after) {
     return `<section class="gf-section" data-part="periods"><h3>Evidence periods</h3>
@@ -223,7 +253,8 @@ export function periodsSection(comparison, kind = 'trial') {
  * state, which is the only place `favorable` can appear.
  */
 export function outcomesTable(comparison, kind) {
-  const outcomes = (comparison || {}).outcomes || [];
+  if (!comparison) return `<p class="gf-meta" data-outcomes="not-requested">${NOT_READ}</p>`;
+  const outcomes = comparison.outcomes || [];
   if (!outcomes.length) {
     return '<p class="gf-meta" data-outcomes="none">No glucose outcome is served for these periods.</p>';
   }
@@ -340,24 +371,53 @@ function viewSegment(mode) {
  * The selectors and the legend words are the prototype's
  * (harmonic-v2-glucose.js:545): a setting change's figure is
  * `[data-trial-chart]` and a habit's is `[data-focus-chart]`, and the ribbon
- * names the marks the figure draws or says plainly that there is nothing paired
- * to compare yet.
+ * names the marks the figure draws or says plainly why it draws none.
+ *
+ * `saved` is the caller's word that the comparison is a saved ending snapshot,
+ * which drops its clock views when it is captured.
  */
-export function evidenceFigure(comparison, kind, colors) {
+export function evidenceFigure(comparison, kind, colors, { saved = false } = {}) {
   const pairs = comparisonPairs(comparison);
+  const state = figureState(comparison, pairs, saved);
   const palette = colors || { accentSoft: 'currentColor', mutedSoft: 'currentColor' };
-  // Three states, and they are not the same thing. A paired figure names its
-  // two marks. A Before-only figure says the later period has no readings yet.
-  // And a saved ending keeps no clock envelope at all — the snapshot retains the
-  // rows and the assessment, not the curve — so it says that rather than
-  // reporting an absence of readings it cannot actually see.
-  const marks = pairs.paired.length
-    ? `<span><i style="background:${palette.accentSoft}"></i>${kind === 'focus' ? 'After above Before' : 'Trial above Before'}</span><span><i style="background:${palette.mutedSoft}"></i>${kind === 'focus' ? 'After below Before' : 'Trial below Before'}</span>`
-    : pairs.before.length
-      ? `<span>no ${kind === 'focus' ? 'later' : 'Trial'} readings to compare yet</span>`
-      : '<span>no clock envelope is retained for this record</span>';
+  const later = kind === 'focus' ? 'After' : 'Trial';
+  // Six states, and they are not the same thing. Only a paired or a Before-only
+  // figure draws a curve and counts what it read; every other state names why
+  // there is nothing to draw, and none reports an absence of readings it cannot
+  // actually see.
+  const legend = {
+    'not-requested': () => '<span>no comparison has been read for this record yet</span>',
+    paired: () => `<span><i style="background:${palette.accentSoft}"></i>${later} above Before</span><span><i style="background:${palette.mutedSoft}"></i>${later} below Before</span>`,
+    'before-only': () => `<span>no ${kind === 'focus' ? 'later' : 'Trial'} readings to compare yet</span>`,
+    saved: () => '<span>no clock envelope is retained for this record</span>',
+    unavailable: () => `<span>comparison unavailable</span><span data-figure-reason>${e(comparisonReasonWords(availabilityOf(comparison).reason || 'not_recorded'))}</span>`,
+    'no-readings': () => `<span>${pairs.after.length ? `no Before readings to compare the ${later} period against` : `no Before or ${later} readings in these periods`}</span>`,
+  }[state]();
+  const drawn = state === 'paired' || state === 'before-only';
   const attribute = kind === 'focus' ? 'data-focus-chart' : 'data-trial-chart';
-  return `<div class="gf-fig ${kind === 'focus' ? 'gf-fig-focus' : 'gf-fig-trial'}" ${attribute}="${e(kind)}"><div class="gf-chart-seat"><div class="gf-chart" role="img" aria-label="Median glucose by clock, before against after"></div></div><div class="ds-chart-legend">${marks}<span>median glucose by clock · ${e(pairs.days)}</span></div></div>`;
+  return `<div class="gf-fig ${kind === 'focus' ? 'gf-fig-focus' : 'gf-fig-trial'}" ${attribute}="${e(kind)}" data-figure-state="${state}"><div class="gf-chart-seat"><div class="gf-chart" role="img" aria-label="Median glucose by clock, before against after"></div></div><div class="ds-chart-legend">${legend}${drawn ? `<span>median glucose by clock · ${e(pairs.days)}</span>` : ''}</div></div>`;
+}
+
+/** A comparison's availability, nested as served or — on a legacy saved ending
+    assessment that carries no nested availability — at its own top level. */
+const availabilityOf = (comparison) => comparison.availability
+  || { state: comparison.state, reason: comparison.reason };
+
+/**
+ * Which of the figure's six states one comparison is in, from its clock bins
+ * first and its served availability only after them: the backend marks a
+ * comparison unavailable for unmeasured adherence, or for a period with no
+ * readable evidence, while still serving its periods and clock views, and that
+ * curve stays drawn.
+ */
+function figureState(comparison, pairs, saved) {
+  if (!comparison) return 'not-requested';
+  if (pairs.paired.length) return 'paired';
+  if (pairs.before.length) return 'before-only';
+  const periods = comparison.periods || {};
+  if (saved && periods.before && periods.after) return 'saved';
+  if (availabilityOf(comparison).state === 'unavailable' && !Object.keys(comparison.views || {}).length) return 'unavailable';
+  return 'no-readings';
 }
 
 /**
@@ -388,15 +448,18 @@ export function comparisonPairs(comparison) {
   return {
     paired,
     before: before.map((row) => [minutes(row), row.med]),
+    after: after.map((row) => [minutes(row), row.med]),
     beforeLabel: `Before · ${span(periods.before)}`,
     afterLabel: `After · ${span(periods.after)}`,
     days: `${before.length} → ${after.length} half-hours read`,
   };
 }
 
-/** Seat the hero on the rendered figure, and hand its teardown to the router. */
+/** Seat the hero on the rendered figure, and hand its teardown to the router.
+    Only a figure that has a curve to draw gets a chart; an empty one keeps the
+    words its legend already says instead of an empty chart. */
 export function mountComparisonChart(host, comparison, holdCleanup = hold) {
-  const figure = host.querySelector('[data-trial-chart], [data-focus-chart]');
+  const figure = host.querySelector('[data-figure-state="paired"], [data-figure-state="before-only"]');
   if (!figure || !globalThis.echarts) return;
   const element = figure.querySelector('.gf-chart');
   const chart = globalThis.echarts.init(element);
@@ -597,7 +660,10 @@ async function submitEnding({ retry } = {}) {
 
 /* =============================== the frames =============================== */
 
-const trialTitle = (detail) => {
+// The active change's nameplate title, which is also the name a Day entry
+// opened from it carries (ADR 426).
+const changeTitle = (detail) => {
+  if (detail.kind === 'focus') return detail.title || 'Focus';
   const changes = detail.changes || [];
   if (changes.length !== 1) return `Profile change · ${changes.length} settings`;
   const [change] = changes;
@@ -628,7 +694,7 @@ function trialFrame(state) {
     : comparisonTables(comparison, 'trial');
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({
     kicker: `Trial · <b>${e((detail.readiness || {}).label || 'Active')}</b>`,
-    title: e(trialTitle(detail)),
+    title: e(changeTitle(detail)),
     sub: `Detected ${e(stamp(detail.changed_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect nights</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -660,7 +726,7 @@ function focusFrame(state) {
   const context = (detail.original || {}).context || {};
   const stage = `<section class="pane gf-stage gf-stage-focus" aria-label="Focus evidence">${nameplate({
     kicker: 'Focus · <b>Active</b>',
-    title: e(detail.title || 'Focus'),
+    title: e(changeTitle(detail)),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -738,6 +804,7 @@ function bind(host) {
     button.onclick = () => navigate('day', {
       date: button.dataset.dayDate,
       subject: retainedEvidenceContext(memory.detail).subject,
+      title: changeTitle(memory.detail),
       lever: button.dataset.dayLever || null,
       occurrence: memory.detail.id, window: retainedEvidenceContext(memory.detail).window,
       from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
@@ -812,5 +879,5 @@ export function retainedEvidenceContext(detail) {
     ? `${retainedWindow.start_min}-${retainedWindow.end_min}`
     : start === null || start === undefined ? '' : `${start}-${span?.end_min ?? start + 30}`;
   return { subject, from: 'changes', occurrence: '', window,
-    lever: change?.parameter || detail?.lever || '', focus: '#crumb-trail' };
+    lever: change?.parameter || detail?.lever || '' };
 }

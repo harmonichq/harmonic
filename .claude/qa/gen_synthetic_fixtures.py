@@ -35,9 +35,10 @@ from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.analyzers.isf import isf_asserts_move
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, title as lever_title
-from ciq_autotune.analyzers.scenario.opportunities import Opportunity
+from ciq_autotune.analyzers.scenario.opportunities import Opportunity, build_opportunities
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.finding_case_file import Member, PreparedCases, _opaque, wrap
+from ciq_autotune.findings_projection import _occurrence_verdict
 from ciq_autotune.safety import _MIN_SUPPORTED_NIGHTS
 from ciq_autotune.store import Store
 from ciq_autotune.window_membership import WindowQuery
@@ -100,7 +101,7 @@ def verdicts(matched, tier, detail):
     return out
 
 
-def occurrence(i, minute, lever, rng, matched=True):
+def occurrence(i, minute, lever, rng, matched=True, bolus=None):
     """One attributed (or deliberately unattributed) exposure.
 
     The LEVER is the input and the title is DERIVED from it, because that is the
@@ -113,12 +114,20 @@ def occurrence(i, minute, lever, rng, matched=True):
     collapsed into a single queue row named after whichever occurrence sorted first,
     whose drill opened another finding's evidence table. Deriving the title here
     makes the invariant structural rather than something two humans keep in sync.
+
+    ``bolus`` is the anchor bolus's ``(insulin, carbs)`` on a meal or correction row.
+    Like the exposure feed, such a row serves that bolus and no anchor glucose; every
+    other row serves glucose and a null bolus. The draws stay in the same order either
+    way, so no other manufactured value moves.
     """
     date = DATES[i % len(DATES)]
     entry = round(rng.uniform(58, 78), 1)
     worst = round(entry - rng.uniform(4, 22), 1)
+    insulin, carbs = bolus or (None, None)
     return {
-        't': f'{date} {hhmm(minute)}:00', 'date': date, 'bg': entry, 'worst_bg': worst,
+        't': f'{date} {hhmm(minute)}:00', 'date': date,
+        'bg': None if bolus else entry, 'insulin': insulin, 'carbs': carbs,
+        'worst_bg': worst,
         'kind': 'low', 'label': 'Low', 'state': 'fired' if matched else 'no_data',
         'attributed': matched,
         'attributed_levers': [Lever(lever).value] if matched else [],
@@ -131,6 +140,48 @@ def occurrence(i, minute, lever, rng, matched=True):
                              f'glucose fell to {worst:.0f} mg/dL after the treatment'),
         'ep_id': f'{date}-ep{i}',
     }
+
+
+def capture_meal_bolus(position):
+    """The anchor bolus, ``(insulin, carbs)``, of the meal row at ``position``.
+
+    It is the bolus the event-comparison capture draws at minute 0 of that row's
+    trace (``mockups/diagnose-event-comparison.synthetic/generate.mjs``), computed
+    the same way, so a row never serves a dose its own trace contradicts.
+    """
+    return 3 + position * .1, 30 + position
+
+# Each hand-set Finding verdict as the recorded classifier verdict that reads as it:
+# matched, silence reason, and the gist of a synthetic sentence. Outranked also needs
+# another lever to have driven the anchor's episode.
+RECORDED = {
+    'fired': (True, None, 'met the criteria'),
+    'near_miss': (False, 'under_threshold', 'came close to the criteria'),
+    'no_data': (False, 'insufficient_data', 'had too few readings to be judged'),
+    'clean': (False, 'no_trigger', 'did not meet the criteria'),
+    'outranked': (False, 'no_trigger', 'did not meet the criteria while another habit '
+                  'drove the episode'),
+}
+
+
+def recorded_reason(lever, verdict):
+    """The Member reason carrier for one hand-verdicted row: ``(recorded, driver)``."""
+    matched, silence, gist = RECORDED[verdict]
+    recorded = ({'classifier': lever.value, 'matched': matched,
+                 'detail': f'Synthetic {lever_title(lever).lower()} judgment: this '
+                           f'Occurrence {gist}.',
+                 'evidence_tier': 'inferred' if matched else 'not_in_data',
+                 'silence_reason': silence},)
+    driver = None
+    if verdict == 'outranked':
+        driver = next((other for other in Lever if other is not lever
+                       and policy_for(other).sequence_lever is None
+                       and exposure(other) is exposure(lever)),
+                      next(other for other in Lever if other is not lever
+                           and policy_for(other).sequence_lever is None)).value
+    assert _occurrence_verdict({'verdicts': recorded, 'cause_lever': driver},
+                               lever.value) == verdict
+    return recorded, driver
 
 
 def estimate(value, lo, hi, n, wide=False):
@@ -162,9 +213,10 @@ def build_exposures():
     # the fired-meal shape; the remaining source rows are counter-examples, so
     # the unpriced correction finding stays ahead of it and Overnight stays
     # all-hidden after its Highs chip is deselected.
-    meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng)
+    meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng, bolus=capture_meal_bolus(i))
              for i, m in enumerate((455, 780))]
-    meals += [occurrence(72 + i, m, Lever.LATE_BOLUS, rng, matched=False)
+    meals += [occurrence(72 + i, m, Lever.LATE_BOLUS, rng, matched=False,
+                         bolus=capture_meal_bolus(2 + i))
               for i, m in enumerate((1150, 465, 790, 1010, 80, 365, 730, 1085,
                                      290, 560, 920, 1235, 205, 650, 990, 350,
                                      845, 1180))]
@@ -174,6 +226,9 @@ def build_exposures():
     meals[11]['ep_id'] = meals[2]['ep_id']
     meals[11]['t'] = meals[2]['t']
     meals[11]['date'] = meals[2]['date']
+    # The capture keys a meal's trace by episode and time, so the original row now
+    # reads the duplicate's trace, and serves that trace's bolus.
+    meals[2]['insulin'], meals[2]['carbs'] = meals[11]['insulin'], meals[11]['carbs']
     assert len(lows) == COMPARISON_POPULATION_SIZE
     assert len(meals) == COMPARISON_POPULATION_SIZE
     highs = [occurrence(80 + i, m, Lever.MISSED_MEAL, rng)
@@ -183,8 +238,8 @@ def build_exposures():
     # count is zero, the server publishes no sentence, and the whole surface is
     # certified by a fixture that can never show it.
     highs += [occurrence(83, 1310, Lever.MISSED_MEAL, rng, matched=False)]
-    clusters = [occurrence(90 + i, m, Lever.CORRECTION_ON_IOB, rng)
-                for i, m in enumerate((610, 900))]
+    clusters = [occurrence(90 + i, m, Lever.CORRECTION_ON_IOB, rng, bolus=(dose, None))
+                for i, (m, dose) in enumerate(((610, 2.0), (900, 1.5)))]
 
     def family(rows):
         by_cause = {}
@@ -417,7 +472,9 @@ def build_case_file_capture():
                 if family is Exposure.MEALS:
                     dose = BolusEvent(t=anchor, insulin=4.0, carbs=40, seq_num=seq,
                                       completion='Completed')
-                    row = Opportunity(family, (seq,), anchor, 'meal', 130, members=(dose,))
+                    # The real anchor path: a meal Opportunity carries its bolus and
+                    # no glucose of its own.
+                    [row] = build_opportunities((dose,), (), ())[Exposure.MEALS]
                 elif family is Exposure.LOWS:
                     row = Opportunity(family,
                         (anchor - timedelta(minutes=25), anchor + timedelta(minutes=15), anchor),
@@ -425,7 +482,7 @@ def build_case_file_capture():
                 elif family is Exposure.CORRECTION_CLUSTERS:
                     first = BolusEvent(t=anchor - timedelta(minutes=90), insulin=1.5, seq_num=seq)
                     second = BolusEvent(t=anchor, insulin=2.0, seq_num=seq + 1)
-                    row = Opportunity(family, (seq, seq + 1), anchor, 'correction', 175,
+                    row = Opportunity(family, (seq, seq + 1), anchor, 'correction',
                                       members=(first, second))
                 else:
                     row = Opportunity(family,
@@ -472,7 +529,11 @@ def build_case_file_capture():
                              if lever is Lever.OVER_TREATED_LOW else timedelta()),
             verdict,
             occurrence_id,
-        ) for item, verdict, occurrence_id in zip(roster, verdicts, occurrence_ids))
+            *recorded_reason(lever, verdict),
+            claim_text=(f'Synthetic {lever_title(lever).lower()} narrative: the episode '
+                        'that claims this Occurrence.' if index == 0 else ''),
+        ) for index, (item, verdict, occurrence_id)
+            in enumerate(zip(roster, verdicts, occurrence_ids)))
         # Meal over-delivery deliberately proves claimed < fired.
         claimed = frozenset({members[0].id})
         all_members[lever] = members
@@ -511,7 +572,7 @@ def build_case_file_capture():
         'fp_' + '7' * 32, 79, WindowQuery.whole_day(), findings, recurrence,
         all_members, associations, {lever: () for lever in Lever}, frozenset(),
         tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
-        time.monotonic() + 60,
+        time.monotonic() + 60, sequence_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
     )
     cases = {}
     for lever in all_members:
@@ -568,7 +629,7 @@ def build_case_file_capture():
         'fp_' + '8' * 32, 79, WindowQuery.clock(0, 360), overnight_findings, recurrence,
         all_members, associations, {lever: () for lever in Lever}, frozenset(),
         tuple(sorted(cgm, key=lambda row: row.t)), basal, bolus, carbs,
-        time.monotonic() + 60,
+        time.monotonic() + 60, sequence_cgm=tuple(sorted(cgm, key=lambda row: row.t)),
     )
     return {
         '_generated_by': '.claude/qa/gen_synthetic_fixtures.py',

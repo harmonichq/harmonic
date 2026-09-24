@@ -1,0 +1,80 @@
+SYNTHETIC — after · tree caaca050 · store showcase · 427-A1 · 1440x900
+URL: http://127.0.0.1:8791/day
+Element: viewport
+Note: Day header kicker and Episode Log meta; browser zone America/Denver, clock fixed at Sep 23, 2026 21:30 local (03:30 UTC Sep 24)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+DAY · VIEWED SEP 23, 2026 · 21:30
+Sun, Jun 30, 2024
+100% in range · 0 lows · 0 highs · 288 readings · 120–120 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+35 recorded days · May 20, 2024 to Jun 30, 2024
+Week of Jun 30, 2024
+Month ▾
+SUN
+30
+✓ 100%
+MON
+1
+—
+TUE
+2
+—
+WED
+3
+—
+THU
+4
+—
+FRI
+5
+—
+SAT
+6
+—
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+EPISODE LOG
+viewed Sep 23, 2026 · 21:30
+THIS DAY
+Time in range
+100%
+Lows
+0
+Highs
+0
+Readings
+288
+Range
+120–120 mg/dL
+FINDINGS · 1
+Glossary
+22:00
+FINDING
+▽ Low · 50 mg/dL · Correction on active insulin
+QUIET · 3
+Glossary
+
+19:00–08:00 · 1 clean · 0 explained · 2 no data
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

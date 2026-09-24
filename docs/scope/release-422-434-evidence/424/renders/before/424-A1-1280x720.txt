@@ -1,0 +1,71 @@
+SYNTHETIC — before · tree a4d374a7 · store behavioral-carb-undercount · 424-A1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: Highs after meals event case file: Response comparison caption (S124 state)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+hold
+2
+no data
+46
+HIGHS AFTER MEALS
+Highs after meals in 3 of 6 meals
+Full
+Keep
+Findings
+›
+Highs after meals
+3 of 6 · 24 h
+Focus unavailable
+Harmonic is not offering a Focus from this read.
+Highs after meals · meals
+3 of 6 meal responses in 24 h · 3 not attributed
+Meets criteria
+3
+Borderline
+1
+Does not meet
+1
+1 not comparable
+RESPONSE COMPARISON
+3 matched · 1 nearly matched · 2 comparison · 2 not comparable
+Matched · 3 occurrences
+May 24 · 12:05
+— · Completed carb bolus
+May 25 · 12:05
+— · Completed carb bolus
+May 26 · 12:05
+— · Completed carb bolus
+Nearly matched · 1 occurrence
+May 27 · 12:05
+— · Completed carb bolus
+Other meal opportunities · 2 occurrences
+May 28 · 12:05
+— · Completed carb bolus
+May 29 · 12:05
+— · Completed carb bolus
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

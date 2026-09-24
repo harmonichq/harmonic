@@ -6,6 +6,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { stamp } from './frame.js';
+import { comparisonReasonWords } from './follow-up.js';
 import {
   changeSection, endingSection, lateConclusionSection, originalSection, reassessmentSection,
   recordRoster, settingValue,
@@ -202,6 +204,12 @@ test('a first-observed record marks its original decision explicitly unavailable
   assert.match(html, /From the Trial record/);
 });
 
+test('a first-observed record names when Harmonic recorded it, apart from the pump\u2019s Detected time', () => {
+  const html = originalSection(FIRST_OBSERVED);
+  assert.match(html, new RegExp(`<dt>Recorded by Harmonic</dt><dd>${stamp('2026-09-08 15:15:35')}</dd>`));
+  assert.doesNotMatch(html, /First seen/);
+});
+
 test('a recorded decision reads as a decision, not as a first sighting', () => {
   const html = originalSection(DECIDED);
   assert.match(html, /Original decision/);
@@ -210,10 +218,14 @@ test('a recorded decision reads as a decision, not as a first sighting', () => {
   assert.match(html, /Missed \/ unannounced meal/);
 });
 
-test('an unavailable original context prints its served reason', () => {
+test('an unavailable original context states its served reason in words', () => {
   const html = originalSection({ context: { state: 'unavailable', reason: 'not_recorded' } });
   assert.match(html, /data-unavailable="original"/);
-  assert.match(html, /unavailable: not_recorded/);
+  assert.match(html, /unavailable: not recorded\./);
+  assert.doesNotMatch(html, /not_recorded/);
+  // A served reason with no word is printed verbatim rather than swallowed.
+  assert.match(originalSection({ context: { state: 'unavailable', reason: 'unworded_reason' } }),
+    /unavailable: unworded_reason\./);
 });
 
 test('a still-open record has no ending, and says that rather than inventing one', () => {
@@ -306,7 +318,19 @@ test('a current-policy reassessment labels its context and claims no like-for-li
   }, 'current');
   assert.match(html, /data-reassessment-context="current"/);
   assert.match(html, /not a like-for-like comparison/);
-  assert.match(html, /Unavailable · data_not_yet_arrived/);
+  // The result names a served reason in the desk's one set of words, never its code.
+  assert.match(html, new RegExp(`data-reassessment-state="unavailable">Unavailable · ${comparisonReasonWords('data_not_yet_arrived')}<`));
+  assert.doesNotMatch(html, /data_not_yet_arrived/);
+});
+
+test('the Original line points at a saved ending only when the record has one', () => {
+  const open = reassessmentSection({ reassessment: null, original: FIRST_OBSERVED }, 'original', { kind: 'trial' });
+  assert.match(open, /data-reassessment="none">Not requested\. The saved read carries no comparison until this change ends\./);
+  assert.doesNotMatch(open, /saved ending above/);
+  const openFocus = reassessmentSection({ reassessment: null, original: DECIDED }, 'original', { kind: 'focus' });
+  assert.match(openFocus, /carries no comparison until this Focus ends\./);
+  const ended = reassessmentSection({ reassessment: null, original: { ...DECIDED, ending: MANUAL_ENDING } }, 'original', { kind: 'focus' });
+  assert.match(ended, /Not requested\. The saved ending above is what this record was decided on\./);
 });
 
 /* -------------------------------------------------------- the observed change */
@@ -322,9 +346,10 @@ test('the observed change reads its own units, and says the pump was not program
 });
 
 test('a Focus changed no setting, and its record says that rather than showing a blank table', () => {
-  const html = changeSection({ kind: 'focus', lever: 'missed_meal', changes: [] });
-  assert.match(html, /No pump setting changed\./);
+  const html = changeSection({ kind: 'focus', lever: 'carb_undercount', title: 'Highs after meals', changes: [] });
+  assert.match(html, /The intended behavior: Highs after meals\. No pump setting changed\./);
   assert.doesNotMatch(html, /<table/);
+  assert.doesNotMatch(html, /_/, 'the behavior is named by its served title, never its key');
 });
 
 test('a correction factor reads insulin first on both sides', () => {

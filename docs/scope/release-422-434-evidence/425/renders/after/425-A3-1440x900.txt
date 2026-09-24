@@ -1,0 +1,129 @@
+SYNTHETIC — after · tree caaca050 · store showcase · 425-A3 · 1440x900
+URL: http://127.0.0.1:8791/day
+Element: viewport
+Note: after paging back to the arrival month
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+DAY · VIEWED SEP 23, 2026 · 19:37
+Sun, Jun 30, 2024
+100% in range · 0 lows · 0 highs · 288 readings · 120–120 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+35 recorded days · May 20, 2024 to Jun 30, 2024
+June 2024
+Week ▴
+‹
+›
+30 recorded days
+SUN
+MON
+TUE
+WED
+THU
+FRI
+SAT
+1
+✓ 100
+2
+✓ 100
+3
+✓ 100
+4
+✓ 100
+5
+✓ 100
+6
+✓ 100
+7
+✓ 100
+8
+✓ 100
+9
+✓ 100
+10
+✓ 100
+11
+✓ 100
+12
+✓ 100
+13
+✓ 100
+14
+✓ 100
+15
+✓ 100
+16
+✓ 100
+17
+✓ 100
+18
+✓ 100
+19
+✓ 100
+20
+✓ 100
+21
+✓ 100
+22
+✓ 100
+23
+✓ 100
+24
+✓ 100
+25
+✓ 90
+26
+▽1 △1 94
+27
+▽1 100
+28
+▽2 99
+29
+▽1 △1 98
+30
+✓ 100
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+EPISODE LOG
+viewed Sep 23, 2026 · 19:37
+THIS DAY
+Time in range
+100%
+Lows
+0
+Highs
+0
+Readings
+288
+Range
+120–120 mg/dL
+FINDINGS · 1
+Glossary
+22:00
+FINDING
+▽ Low · 50 mg/dL · Correction on active insulin
+QUIET · 3
+Glossary
+
+19:00–08:00 · 1 clean · 0 explained · 2 no data
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

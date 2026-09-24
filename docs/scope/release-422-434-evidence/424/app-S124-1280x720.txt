@@ -1,0 +1,69 @@
+SYNTHETIC — app, S124, 1280x720, behavioral-carb-undercount
+Endpoint after the story passed. Intermediate states require their own live inspection.
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+hold
+2
+no data
+46
+HIGHS AFTER MEALS
+Highs after meals in 3 of 6 meals
+Full
+Keep
+Findings
+›
+Highs after meals
+3 of 6 · 24 h
+Focus unavailable
+Harmonic is not offering a Focus from this read.
+Highs after meals · meals
+3 of 6 meal responses in 24 h · 3 not attributed
+Meets criteria
+3
+Borderline
+1
+Does not meet
+1
+1 not comparable
+RESPONSE COMPARISON
+3 Matched (meets criteria) · 1 Nearly matched (borderline) · 2 Other meal opportunities
+Matched · 3 occurrences
+May 24 · 12:05
+— · Completed carb bolus
+May 25 · 12:05
+— · Completed carb bolus
+May 26 · 12:05
+— · Completed carb bolus
+Nearly matched · 1 occurrence
+May 27 · 12:05
+— · Completed carb bolus
+Other meal opportunities · 2 occurrences
+May 28 · 12:05
+— · Completed carb bolus
+May 29 · 12:05
+— · Completed carb bolus
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

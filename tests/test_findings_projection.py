@@ -1160,6 +1160,142 @@ class PatternProjectionTest(unittest.TestCase):
         })
 
 
+class FoldSentenceTest(unittest.TestCase):
+    """#424: every row folded under a Pattern serves ``fold_sentences`` — its credited
+    share of the Pattern's own count first, then its count sentences on any other
+    family set apart as outside that count — from the Pattern producer's one credit
+    rule over the same window population (ADR 424)."""
+
+    @staticmethod
+    def _execution(name):
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        case = next(item for item in QA_CASES if item.name == name)
+        with Store.open(":memory:") as store:
+            materialize_case(store, case)
+            return case, execute_case(store, case)
+
+    @staticmethod
+    def _outside(row):
+        return [sentence | {"scope": "outside"} for sentence in row["count_sentences"]]
+
+    def test_a_cause_counted_in_another_family_leads_with_its_share_of_the_pattern(self):
+        case, execution = self._execution("behavioral-correction-stacking")
+        whole_day = execution.findings["whole_day"]
+        rows = {row["id"]: row for row in whole_day["rows"]}
+        pattern = rows["pattern:lows_after_correcting_highs"]
+        cause = rows["finding:correction_stacking"]
+
+        self.assertEqual(cause["claimed_by"], pattern["id"])
+        self.assertEqual([item["sentence"] for item in pattern["count_sentences"]],
+                         ["2 of 2 lows followed a correction"])
+        clusters = {"sentence": "2 of 8 correction clusters went low", "count": 2,
+                    "denominator": 8, "noun": "correction clusters", "outcome": "went low"}
+        self.assertEqual(cause.get("fold_sentences"), [
+            {"sentence": "2 of 2 lows followed stacked corrections", "count": 2,
+             "denominator": 2, "noun": "lows", "outcome": "followed stacked corrections",
+             "scope": "pattern"},
+            clusters | {"scope": "outside"},
+        ])
+        # The cause's own count, the Pattern's count and the roster stay as served.
+        self.assertEqual(cause["count_sentences"], [clusters])
+        self.assertEqual(cause["appearances"], [{
+            "family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 8,
+        }])
+        self.assertEqual(tuple(whole_day["outcome_patterns"]),
+                         case.expectation.outcome_patterns)
+
+    def test_two_causes_shares_add_up_to_their_pattern(self):
+        case, execution = self._execution("behavioral-carb-undercount")
+        whole_day = execution.findings["whole_day"]
+        pattern = next(row for row in whole_day["rows"]
+                       if row["id"] == "pattern:highs_after_meals")
+        causes = [row for row in whole_day["rows"] if row.get("claimed_by") == pattern["id"]]
+
+        self.assertEqual([row["id"] for row in causes],
+                         ["finding:carb_undercount", "finding:late_bolus"])
+        shares = [(row.get("fold_sentences") or [{}])[0] for row in causes]
+        self.assertEqual(
+            [(item.get("scope"), item.get("count"), item.get("denominator"), item.get("noun"))
+             for item in shares],
+            [("pattern", 2, 6, "meals"), ("pattern", 1, 6, "meals")],
+        )
+        self.assertEqual(sum(item["count"] for item in shares), pattern["pattern"]["k"])
+        self.assertEqual(pattern["pattern"]["k"], 3)
+        # Each cause counts only in meals, so nothing of either is outside the count.
+        self.assertEqual([len(row["fold_sentences"]) for row in causes], [1, 1])
+        self.assertEqual([[item["sentence"] for item in row["count_sentences"]]
+                          for row in causes],
+                         [["2 of 6 meals ran high"], ["1 of 6 meals ran high"]])
+        self.assertEqual(tuple(whole_day["outcome_patterns"]),
+                         case.expectation.outcome_patterns)
+
+    def test_a_two_family_rate_lever_sets_its_other_family_outside_the_count(self):
+        rows = {row["id"]: row
+                for row in gen.projection().project(WindowQuery.whole_day())["rows"]}
+        pattern = rows["pattern:highs_after_meals"]
+        cause = rows["finding:carb_undercount"]
+
+        self.assertEqual(cause["claimed_by"], pattern["id"])
+        self.assertEqual(
+            [(item["scope"], item["sentence"]) for item in cause.get("fold_sentences") or []],
+            [("pattern", "1 of 3 meals ran high"),
+             ("outside", "2 of 4 highs followed an undercounted meal")],
+        )
+        self.assertEqual([item["sentence"] for item in cause["count_sentences"]],
+                         ["2 of 4 highs followed an undercounted meal",
+                          "1 of 3 meals ran high"])
+
+    def test_a_pattern_serving_no_count_credits_no_share(self):
+        rows = {row["id"]: row
+                for row in gen.projection().project(WindowQuery.whole_day())["rows"]}
+        pattern = rows["pattern:lows_after_correcting_highs"]
+
+        self.assertEqual(pattern["pattern"]["admission_route"], "none")
+        self.assertEqual((pattern["pattern"]["k"], pattern["pattern"]["n"]), (1, 5))
+        self.assertIsNone(pattern["count_sentences"])
+        for lever in ("correction_on_iob", "correction_stacking"):
+            cause = rows[f"finding:{lever}"]
+            self.assertEqual(cause["claimed_by"], pattern["id"], lever)
+            self.assertEqual(cause.get("fold_sentences"), self._outside(cause), lever)
+
+    def test_a_pattern_whose_counts_are_under_review_credits_no_share(self):
+        source = gen.projection()
+        roster = json.loads(json.dumps(source._outcome_patterns))
+        pattern = next(row for row in roster if row["key"] == "highs_after_meals")
+        pattern.update(k=4, n=3, rate=None, wilson=None,
+                       count_status={"status": "inconsistent_counts", "k": 4, "n": 3})
+        rows = FindingsProjection(
+            _analysis=source._analysis, _exposures=source._exposures,
+            _scenarios=source._scenarios, _outcome_patterns=roster,
+        ).project(WindowQuery.whole_day())["rows"]
+        cause = next(row for row in rows if row["id"] == "finding:carb_undercount")
+
+        self.assertEqual(cause["claimed_by"], "pattern:highs_after_meals")
+        self.assertEqual(cause.get("fold_sentences"), self._outside(cause))
+
+    def test_a_folded_sequence_habit_is_outside_its_patterns_count(self):
+        _case, execution = self._execution("high-carb-sequence-covered")
+        rows = {row["id"]: row for row in execution.findings["whole_day"]["rows"]}
+        pattern = rows["pattern:highs_after_meals"]
+        cause = rows["finding:high_carb_sequence"]
+
+        # The Pattern serves a count, and the Sequence habit is not one of its rate levers.
+        self.assertIsNotNone(pattern["count_sentences"])
+        self.assertNotIn("habit:high_carb_sequence", pattern["pattern"]["rate_levers"])
+        self.assertEqual(cause["claimed_by"], pattern["id"])
+        self.assertEqual(cause.get("fold_sentences"), self._outside(cause))
+
+    def test_only_folded_rows_serve_fold_sentences(self):
+        for window, bounds in gen.WINDOWS.items():
+            query = WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds)
+            for row in gen.projection().project(query)["rows"]:
+                with self.subTest(window=window, row=row["id"]):
+                    self.assertIn("fold_sentences", row)
+                    if not row["claimed_by"]:
+                        self.assertIsNone(row["fold_sentences"])
+
+
 class WindowQueryTest(unittest.TestCase):
     def test_a_window_must_span_some_part_of_the_day(self):
         with self.assertRaises(ValueError):

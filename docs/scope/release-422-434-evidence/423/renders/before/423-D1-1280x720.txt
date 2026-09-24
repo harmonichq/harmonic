@@ -1,0 +1,68 @@
+SYNTHETIC — before · tree a4d374a7 · store behavioral-meal-over-delivery · 423-D1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: Meal over-delivery case file (finding:meal_over_delivery): the band foot's claimed count label
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+MEAL OVER-DELIVERY
+Ranks among this window's findings.
+Showed up in 2 of 6 meals in this window.
+Full
+Keep
+Findings
+›
+Meal over-delivery
+2 of 6 · 24 h
+Meal over-delivery · meals
+2 of 6 meal responses in 24 h · 4 not attributed
+Meets criteria
+2
+Borderline
+1
+Does not meet
+1
+1 claimed by another factor · 1 not comparable
+RESPONSE COMPARISON
+2 matched · 1 nearly matched · 3 comparison · 3 not comparable
+Matched · 2 occurrences
+May 24 · 12:00
+— · Completed carb bolus
+May 25 · 12:00
+— · Completed carb bolus
+Nearly matched · 1 occurrence
+May 27 · 12:00
+— · Completed carb bolus
+Other meal opportunities · 3 occurrences
+May 26 · 12:00
+— · Completed carb bolus
+May 28 · 12:00
+— · Completed carb bolus
+May 29 · 12:00
+— · Completed carb bolus
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

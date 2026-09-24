@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
-import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel, renderLane } from './diagnose-workstation.js';
+import {
+  buildIcBlocks, occurrenceDescription, occurrenceFacts, queryState, renderEventComparisonRoster, renderIsfLevel,
+  renderSlotLevel, renderLane,
+} from './diagnose-workstation.js';
+import { buildSlotLane } from './diagnose-workstation-chart.js';
+import { ANCHOR_STATE_WORD } from './day-chart.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
@@ -94,10 +99,97 @@ test('#302 · the rail mini defines every cohort ink the shared chart reads off 
     'the cell carries no colour literal where the theme already names the value');
 });
 
-test('selected detail describes its glucose trace in product language', () => {
+const servedCaseFiles = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+const servedProjection = JSON.parse(readFileSync(new URL(
+  './__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+
+test('#432 · a case row names its Occurrence from its served anchor facts', () => {
+  const { cases } = servedCaseFiles;
+  const meal = cases['finding:carb_undercount'].clock.occurrences[0];
+  const cluster = cases['finding:correction_stacking'].clock.occurrences[0];
+  const low = cases['finding:over_treated_low'].clock.occurrences[0];
+  assert.deepEqual(occurrenceDescription(meal), { value: '40 g · 4 U · peak 148', label: null });
+  assert.deepEqual(occurrenceDescription({ ...meal, outcome: null }), { value: '40 g · 4 U', label: null });
+  assert.deepEqual(occurrenceDescription({ ...meal, outcome: { ...meal.outcome, kind: 'nadir', bg: 71.4 } }),
+    { value: '40 g · 4 U · nadir 71', label: null });
+  assert.deepEqual(occurrenceDescription(cluster), { value: '2 U', label: 'Second correction' });
+  assert.deepEqual(occurrenceDescription(low), { value: '62', label: 'Low excursion' });
+  const bolusRows = Object.values(cases).flatMap((file) => [file.clock, file.event])
+    .flatMap((file) => file.occurrences)
+    .filter((row) => row.anchor.carbs != null || row.anchor.insulin != null);
+  assert.equal(bolusRows.length, 100, 'the capture serves meal and correction rows to describe');
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
-  assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);
-  assert.doesNotMatch(source, /Occurrence's server-owned trace/);
+  for (const owner of ['renderCaseRoster', 'renderEventComparisonRoster']) {
+    const body = source.slice(source.indexOf(`function ${owner}`));
+    assert.match(body.slice(0, body.indexOf('\n}\n')), /occurrenceDescription\(row\)/,
+      `${owner} describes its rows through the one served-facts rule`);
+  }
+  for (const row of bolusRows) {
+    assert.doesNotMatch(occurrenceDescription(row).value, /^—/, JSON.stringify(row.anchor));
+  }
+});
+
+test('#432 · a selected claimed meal reads as its facts, cause and habit sentence', () => {
+  const file = servedCaseFiles.cases['finding:carb_undercount'];
+  const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
+  const detail = file.selected_event[claimed].selection.detail;
+  assert.deepEqual(occurrenceFacts(detail), {
+    figure: '40 g · 4 U',
+    lines: [
+      { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
+      { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
+      { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+    ],
+  });
+  assert.ok(detail.reason.cause.text && detail.reason.habits[0].detail);
+});
+
+test('#432 · a selected Pattern Occurrence lists each served habit with its band label', () => {
+  const detail = servedProjection.pattern_clock_case.selection.detail;
+  const { figure, lines } = occurrenceFacts(detail);
+  const [bolus] = detail.markers.filter((marker) => marker.kind === 'bolus' && marker.minute === 0);
+  assert.deepEqual([bolus.carbs, bolus.insulin], [30, 3], 'the selected meal is its own minute-0 bolus');
+  assert.equal(figure, '30 g · 3 U');
+  assert.deepEqual(lines, [
+    { kind: 'cause', text: `Attributed to Late bolus · ${detail.reason.cause.text}` },
+    { kind: 'habit', text: 'Carb undercount · claimed by another finding' },
+    { kind: 'habit', text: 'Late bolus · Meets criteria' },
+  ]);
+});
+
+test('#432 · a selected correction cluster reads its dose and source corrections, never counts', () => {
+  const file = servedCaseFiles.cases['finding:correction_stacking'];
+  const row = file.clock.occurrences[0];
+  const detail = file.selected_clock[row.id].selection.detail;
+  const { figure, lines } = occurrenceFacts(detail);
+  assert.equal(figure, '2 U');
+  assert.deepEqual(lines.map((line) => line.kind),
+    ['cause', 'habit', 'source-correction', 'source-correction']);
+  assert.deepEqual(lines.slice(2).map((line) => line.text),
+    ['08:30 · 1.5 U correction', '10:00 · 2 U correction']);
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  for (const retired of [/The canvas shows the selected glucose trace/, /glucose readings</,
+    /event markers</, /Occurrence's server-owned trace/]) {
+    assert.doesNotMatch(source, retired);
+  }
+});
+
+test('#423 · Diagnose words an outranked occurrence with the Day desk\'s claimed word', () => {
+  // One definition: the verdict band's footer and the selected occurrence's tag
+  // read VERDICT_RESIDUE_KEY, whose outranked label is built from the word the
+  // Episode Log prints, never a second spelling of it.
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ ANCHOR_STATE_WORD \} from '\.\/day-chart\.js';/);
+  assert.match(source,
+    /const VERDICT_RESIDUE_KEY = \{ outranked: `\$\{ANCHOR_STATE_WORD\.outranked\} by another finding`, no_data: 'not comparable' \};/);
+  assert.equal(`${ANCHOR_STATE_WORD.outranked} by another finding`, 'claimed by another finding');
+  // "Factor" is a synonym CONTEXT.md retires for Lever; no desk source keeps it.
+  const desk = readdirSync(new URL('.', import.meta.url))
+    .filter((name) => /\.m?js$/.test(name) && !/\.test\.m?js$/.test(name));
+  for (const name of desk) {
+    assert.doesNotMatch(readFileSync(new URL(`./${name}`, import.meta.url), 'utf8'), /claimed by another factor/, name);
+  }
 });
 
 test('#404 · grouped comparison names its cohort once while case rosters keep their varying tier', () => {
@@ -335,6 +427,34 @@ test('a basal lane repaint does not reclaim focus moved to the spotlight during 
   } finally { globalThis.document = originalDocument; }
 });
 
+// #433 (D6): a recurring-lows lower names why it lowers, in its title and its
+// accessible name, while a measured lower keeps the plain phrase. Both cells
+// keep the lower paint (`data-verdict="down"`).
+test('a recurring-lows lower cell says the lower comes from recurring lows', () => {
+  const originalDocument = globalThis.document;
+  const { doc, host } = laneDocument();
+  const lane = buildSlotLane([
+    { label: '00:30', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+      safety_status: 'lower', estimate: { n: 30, wide: false } },
+    { label: '05:00', current: 0.6, recommended: 0.5, asserts_move: true, direction: 'lower',
+      safety_status: 'lower (recurring lows)', estimate: { n: 0, wide: true } },
+  ]);
+  try {
+    globalThis.document = doc;
+    renderLane(host, lane, null, new Set(), () => {});
+    const [measured, recurring] = host.children;
+    assert.equal(measured.dataset.verdict, 'down');
+    assert.equal(measured.dataset.reason, undefined);
+    assert.equal(measured.title, '00:30 · suggests a lower');
+    assert.equal(measured.getAttribute('aria-label'), '00:30 basal slot, suggests a lower');
+    assert.equal(recurring.dataset.verdict, 'down');
+    assert.equal(recurring.dataset.reason, 'recurring-lows');
+    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening at this hour');
+    assert.equal(recurring.getAttribute('aria-label'),
+      '05:00 basal slot, suggests a lower because lows keep happening at this hour');
+  } finally { globalThis.document = originalDocument; }
+});
+
 const basalCell = {
   i: 0, startMin: 0, endMin: 30, asserts: false, verdict: 'insufficient',
   slot: {
@@ -344,9 +464,17 @@ const basalCell = {
   },
 };
 
+/* A served excluded-night breakdown: all six keys, as the analyzer stamps them
+   on every basal slot (#434). */
+const excludedReasons = (counts = {}) => ({
+  before_current_setting: 0, below_range_or_suspended: 0, above_range: 0,
+  insulin_acting: 0, carb_log: 0, other: 0, ...counts,
+});
+
 const nightPayload = {
   roster_glucose_mean: 119.5,
   excluded_night_count: 2,
+  excluded_night_reasons: excludedReasons({ before_current_setting: 1, carb_log: 1 }),
   nights: [
     { date: '2026-01-01', sign: 1, delivered_rate: 0.8, programmed_rate: 0.6,
       glucose_entry: 111, glucose_exit: 121, glucose_mean: 116,
@@ -377,7 +505,9 @@ test('basal slot detail groups served nights, selects one, and preserves roster 
     assert.match(host.html.join('\n'), /Ran below.*1 night/);
     assert.match(host.html.join('\n'), /Ran as set.*1 night/);
     assert.match(host.html.join('\n'), /No programmed rate.*1 night/);
-    assert.match(host.html.join('\n'), /2 excluded nights/);
+    assert.ok(host.html.includes(
+      '<div class="empty">2 excluded nights: 1 before the current rate, 1 logged carbs</div>'),
+    'the one excluded-night line names the served total and each served reason');
     const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
     assert.equal(rows.length, 4);
     assert.equal(rows[0].getAttribute('aria-pressed'), 'true');
@@ -385,6 +515,34 @@ test('basal slot detail groups served nights, selects one, and preserves roster 
     assert.deepEqual(selected, ['2026-01-02']);
     assert.match(host.children.map((child) => child.innerHTML).join('\n'), /Jan 1/);
     assert.match(host.children.map((child) => child.innerHTML).join('\n'), /111/);
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+/* #434: the panel's one excluded-night line names every nonzero served reason,
+   in rank order, and still prints only when the served total is nonzero. */
+test('basal slot panel names each served excluded-night reason on its one line', () => {
+  const originalDocument = globalThis.document;
+  const excludedLines = (count, reasons) => {
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: { ...nightPayload, excluded_night_count: count,
+        excluded_night_reasons: excludedReasons(reasons) },
+    });
+    return host.html.filter((html) => /excluded night/.test(html));
+  };
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    assert.deepEqual(excludedLines(5, { before_current_setting: 3, below_range_or_suspended: 1, insulin_acting: 1 }),
+      ['<div class="empty">5 excluded nights: 3 before the current rate, 1 low or suspended, 1 insulin on board</div>']);
+    assert.deepEqual(excludedLines(1, { below_range_or_suspended: 1 }),
+      ['<div class="empty">1 excluded night: 1 low or suspended</div>'], 'one night, in the singular');
+    assert.deepEqual(excludedLines(1, { other: 1 }),
+      ['<div class="empty">1 excluded night: 1 other reason</div>'], 'one other night, in the singular');
+    assert.deepEqual(excludedLines(2, { other: 2 }),
+      ['<div class="empty">2 excluded nights: 2 other reasons</div>'], 'two other nights, in the plural');
+    assert.deepEqual(excludedLines(0, {}), [], 'no excluded nights, no line');
   } finally {
     globalThis.document = originalDocument;
   }
@@ -620,4 +778,55 @@ test('#395 · fixture Pattern cases retain every requested clock and event coord
     assert.equal(response.selection.requested_id, null);
     if (alignment === 'clock') assert.equal(response.projection.clock.buckets.length, 12);
   }
+});
+
+/* #424 — the Response comparison caption names every served cohort as its section
+   heading does, with its served count, links the band's own words once where a
+   cohort serves the band state it holds, and names the Occurrences outside the
+   comparison only when that served count is non-zero. It computes no count and
+   derives no link; the band keeps "not comparable" for no data. */
+function renderedCaption(caseFile) {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderEventComparisonRoster(host, caseFile, null, () => {}, () => {}, 5);
+    const [caption, ...rest] = host.html;
+    return {
+      caption: caption.match(/<span class="meta">([\s\S]*?)<\/span>/)[1].replace(/\s+/g, ' ').trim(),
+      headings: rest,
+    };
+  } finally {
+    globalThis.document = originalDocument;
+  }
+}
+
+test('#424 · a same-population caption names each cohort as its heading does and adds up', () => {
+  const captures = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+  const caseFile = captures.cases['finding:carb_undercount'].event;
+  const { cohorts, counts } = caseFile.projection;
+  const { caption, headings } = renderedCaption(caseFile);
+
+  assert.equal(caption,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities');
+  for (const cohort of cohorts) {
+    assert.ok(headings.some((html) => html.includes(`<b>${cohort.name}</b>`)
+      && html.includes(`· ${counts[cohort.key]} occurrence`)), `${cohort.name} heading matches`);
+  }
+  assert.equal(cohorts.reduce((sum, cohort) => sum + counts[cohort.key], 0),
+    caseFile.summary.denominator);
+  assert.doesNotMatch(caption, /not comparable|outside the comparison/);
+});
+
+test('#424 · a cross-population caption names its Highs outside the comparison', () => {
+  const missed = JSON.parse(readFileSync(new URL(
+    './__fixtures__/missed-meal-comparison.json', import.meta.url), 'utf8'));
+
+  assert.equal(renderedCaption(missed.payload).caption,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals'
+    + ' · 1 high outside the comparison');
+  assert.equal(renderedCaption(missed.zero_payload).caption,
+    '0 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals'
+    + ' · 3 highs outside the comparison');
 });

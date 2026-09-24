@@ -1,0 +1,79 @@
+SYNTHETIC — before · tree a4d374a7 · store showcase · 426-B1 · 1440x900
+URL: http://127.0.0.1:8791/day?date=2024-06-01&moment=2024-06-01T12%3A30%3A00&subject=basal%3A750&occurrence=2024-06-01&window=750-780&lever=basal_rate&from=diagnose&focus=.occ-foot+button%3Alast-child
+Element: viewport
+Note: Day opened from the 12:30 basal slot (no case): Opened from
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+DAY · VIEWED SEP 24, 2026 · 02:08
+Sat, Jun 1, 2024
+100% in range · 0 lows · 0 highs · 288 readings · 120–120 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+30 recorded days · May 20, 2024 to Jun 30, 2024
+Week of May 26, 2024
+Month ▾
+SUN
+26
+—
+MON
+27
+—
+TUE
+28
+—
+WED
+29
+—
+THU
+30
+—
+FRI
+31
+—
+SAT
+1
+✓ 100%
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+EPISODE LOG
+viewed Sep 24, 2026 · 02:08
+OPENED FROM
+
+basal:750
+
+Return to Diagnose
+THIS DAY
+Time in range
+100%
+Lows
+0
+Highs
+0
+Readings
+288
+Range
+120–120 mg/dL
+QUIET · 1
+
+08:00–08:00 · 0 clean · 0 explained · 1 no data
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

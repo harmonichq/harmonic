@@ -402,7 +402,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def guidance_payload():
         """Compose source guidance and the read-only lifecycle verdict at one revision."""
-        from .watched_change import active_watched_change, follow_up_admission, pending_plan
+        from .watched_change import (active_watched_change, follow_up_admission, pending_plan,
+                                     with_plan_verdicts)
         for _ in range(3):
             with Store.open_queryonly(db_path) as store:
                 revision = store.input_data_revision()
@@ -410,6 +411,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 admission = follow_up_admission(store, now=now)
                 watch = active_watched_change(store, (), (), (), now=now)
                 pending = pending_plan(store)
+                if pending is not None:
+                    pending = with_plan_verdicts(store, [pending])[0]
                 draft = store.get_plan_draft()
                 preferences = store.guidance_preferences()
             try:
@@ -1159,11 +1162,12 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             status = store.fetch_status()
             earliest_day, latest_day = store.cgm_day_bounds()
+            data_day_count = store.cgm_data_day_count()
             input_revision = store.input_data_revision()
         base = status or {"last_attempt_at": None, "last_success_at": None,
                           "last_error": None, "last_written": None}
         return {**base, "earliest_data_day": earliest_day, "latest_data_day": latest_day,
-                "input_revision": input_revision}
+                "data_day_count": data_day_count, "input_revision": input_revision}
 
     @app.get("/api/pump-settings")
     def pump_settings_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1178,8 +1182,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             return {"configured": False}
         return {
             "configured": True,
-            # #99: the capture time of this snapshot — Plan's Confirmation-B
-            # shows "✓ on pump as of <fetch>" against it.
+            # #99: the capture time of this snapshot — Changes shows it as the
+            # detected settings' "Captured <fetch>". A confirmed Plan's "On pump
+            # since" names the server's confirming read instead (#431).
             "fetched_at": (
                 latest.captured_at.isoformat()
                 if hasattr(latest.captured_at, "isoformat")
@@ -1622,9 +1627,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
+        from .watched_change import with_plan_verdicts
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
-            return {"history": store.follow_up_records("plan"), **follow_up_read(store)}
+            return {"history": with_plan_verdicts(store, store.follow_up_records("plan")),
+                    **follow_up_read(store)}
 
     @app.post("/api/plan/history/withdraw")
     def withdraw_plan_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:

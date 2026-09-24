@@ -97,7 +97,7 @@ const modelViewFor = (iso) => ({
   },
   episodes: [{
     id: `${iso}-ep1`, start: `${iso} 14:00:00`, end: `${iso} 17:00:00`,
-    lever: 'late_bolus', trigger: '', trigger_t: `${iso} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
+    lever: 'late_bolus', lever_title: 'Late bolus', trigger: '', trigger_t: `${iso} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
     anchors: [{
       t: `${iso} 14:00:00`, kind: 'meal', label: 'Meal bolus', bg: 210, insulin: 4.8, carbs: 48, state: 'fired',
       verdicts: [{ classifier: 'late_bolus', matched: true, detail: 'the dose trailed the rise', evidence_tier: 'observed', silence_reason: null }],
@@ -124,7 +124,24 @@ const PUMP = {
 };
 const STATUS = {
   last_attempt_at: null, last_success_at: null, last_error: null, last_written: null,
-  earliest_data_day: '2024-06-01', latest_data_day: '2024-06-30',
+  // Every June day but the gap day is recorded (daysFor).
+  earliest_data_day: '2024-06-01', latest_data_day: '2024-06-30', data_day_count: 29,
+};
+// #425: a two-month span — June recorded but for the gap day, July 1–23 — whose
+// navigator reads pad each month with seven days either side, exactly as
+// build_day_navigator serves them, so adjacent reads overlap by two weeks.
+const SPAN_STATUS = { ...STATUS, latest_data_day: '2024-07-23', data_day_count: 52 };
+const spanRecorded = (iso) => (iso >= '2024-06-01' && iso <= '2024-06-30' && iso !== GAP_DAY)
+  || (iso >= '2024-07-01' && iso <= '2024-07-23');
+const paddedDaysFor = (month) => {
+  const [year, index] = month.split('-').map(Number);
+  const days = [];
+  const end = new Date(Date.UTC(year, index, 7));
+  for (let d = new Date(Date.UTC(year, index - 1, 1 - 7)); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const iso = d.toISOString().slice(0, 10);
+    days.push(navDay(iso, spanRecorded(iso)));
+  }
+  return days;
 };
 
 const generated = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
@@ -514,13 +531,20 @@ test(`a failed Focus read keeps a short visible Retry beside its explanation at 
 }
 
 for (const viewport of ['1280x720', '1440x900']) {
-test(`a pending Plan keeps its reason and a compact View Plan route visible at ${viewport}`, async () => {
+test(`a pending Plan shows in the watch panel with Open Changes and leaves no note in the case-file header at ${viewport}`, async () => {
+  // #431 (ADR 431): the guidance read serves the pending Plan with the server's
+  // verdict, and the watch panel carries it in every window and case. The case
+  // file's header names no pending Plan, offers no Plan route, and Start Focus
+  // stays withheld exactly as the served admission says.
+  const plan = { id: '2024-06-14 21:14:00', applied_at: '2024-06-14 21:14:00',
+    items: [{ type: 'basal', start_min: 180, value: 0.55 }],
+    deliverable: { state: 'unavailable', reason: 'legacy_not_recorded' },
+    decision_context: { state: 'unavailable', reason: 'legacy_not_recorded' },
+    reconciliation: { state: 'unavailable' }, withdrawal: { state: 'unavailable' },
+    verdict: { state: 'pending', confirmed_at: null, on_pump: false } };
   const desk = await openDesk({ beforeNavigate: async page => {
-    // This is a renderer boundary: the API-shaped admission owns both the
-    // withholding decision and its reason. The desk only presents the existing
-    // Changes route; it does not manufacture a Plan or calculate eligibility.
     await page.route('**/api/guidance', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-      disposition: 'pending_plan', selected: null, input_revision: followUp.input_revision,
+      disposition: 'pending_plan', selected: null, input_revision: followUp.input_revision, pending_plan: plan,
       candidates: [{ subject: 'pattern:over-treated-low', kind: 'pattern', title: 'Over-treated low',
         collapse: 'remain_pattern', members: [{ subject: 'habit:over_treated_low' }] }],
     }) }));
@@ -528,27 +552,37 @@ test(`a pending Plan keeps its reason and a compact View Plan route visible at $
       focuses: followUp.focuses, pinnable: [], pinnable_patterns: [], input_revision: followUp.input_revision,
       admission: { focus_pin: { available: false, reason: 'pending_plan' } },
     }) }));
+    await page.route('**/api/plan/history', route => route.fulfill({ contentType: 'application/json',
+      body: JSON.stringify({ history: [plan] }) }));
   }, viewport });
   const { page } = desk;
   try {
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    // The panel repaints once the Focus read, which carries the guidance read,
+    // has landed; from here every header decision below has its admission.
+    const dock = page.locator('.inspector > .watch');
+    await page.locator('.inspector > .watch[data-state="recorded"]').waitFor({ state: 'visible', timeout: 30000 });
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
-    const action = page.locator('[data-focus-context]');
-    await action.waitFor({ state: 'visible' });
-    assert.equal((await action.innerText()).trim(), 'View Plan');
-    assert.equal(await action.getAttribute('title'),
-      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
-    const reason = page.locator('[data-focus-reason]');
-    assert.equal((await reason.innerText()).trim(),
-      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
-    assert.equal(await action.getAttribute('aria-describedby'), await reason.getAttribute('id'));
-    await capture(page, `focus-pending-plan-${viewport}`);
-    assert.equal(await action.evaluate(node => node.scrollWidth > node.clientWidth), false,
-      'the compact Plan action must be fully readable in the Findings header');
-    await action.click();
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    assert.deepEqual(await page.evaluate(() => ({
+      note: document.querySelectorAll('[data-focus-context], [data-focus-reason]').length,
+      startFocus: document.querySelectorAll('[data-start-focus]').length,
+      planWords: /View Plan|awaiting confirmation/.test(document.querySelector('header.crumb')?.textContent || ''),
+    })), { note: 0, startFocus: 0, planWords: false }, 'the case-file header carries no pending-Plan note');
+    assert.equal(await dock.getAttribute('data-state'), 'recorded', 'selecting a case keeps the Plan in the panel');
+    assert.deepEqual(await dock.evaluate(node => ({
+      kind: node.querySelector('.kind')?.textContent, what: node.querySelector('.what')?.textContent,
+      how: node.querySelector('.how')?.textContent, go: node.querySelector('.go')?.textContent,
+    })), { kind: 'Plan · awaiting pump', what: 'Basal · recorded 06-14',
+      how: 'Recorded — waiting for a pump read that matches', go: 'Open Changes ›' });
+    await capture(page, `watch-pending-plan-${viewport}`);
+    await dock.locator('.go').click();
     await page.waitForFunction(() => document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination === 'changes');
     assert.equal(new URL(page.url()).pathname, '/changes');
+    assert.equal(new URL(page.url()).searchParams.get('subject'), 'plan', 'Open Changes lands on the Plan, never the watched-change address');
+    await page.locator('.gf-stage .gf-kicker b').waitFor({ state: 'visible', timeout: 30000 });
+    assert.equal(await page.locator('.gf-stage .gf-kicker b').textContent(), 'Pending');
   } finally { await desk.close(); }
 });
 }
@@ -762,6 +796,37 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
   } finally { await close(); }
 });
 
+test('paging the Month calendar keeps the served recorded-day count, and each month counts its own days once', async () => {
+  const json = (body) => ({ contentType: 'application/json', body: JSON.stringify(body) });
+  const { page, close } = await openDesk({ address: '/?to=day', beforeNavigate: async (page) => {
+    await page.route('**/api/status', (route) => route.fulfill(json(SPAN_STATUS)));
+    await page.route('**/api/day-navigator*', (route) => {
+      const month = new URL(route.request().url()).searchParams.get('month');
+      return route.fulfill(json({ month, days: paddedDaysFor(month) }));
+    });
+  } });
+  const railCount = () => page.evaluate(() => document.querySelector('.gf-stage-day .instrument .meta.gf-desk-only')?.textContent || '');
+  // A paged month is a served read: its head is read once its own cells land.
+  const monthHead = async (label) => {
+    await page.locator(`.gf-nav-month[aria-label="${label}"] .gf-nav-cell[data-pick]`).first().waitFor({ timeout: 20000 });
+    return page.evaluate(() => document.querySelector('.gf-nav-month-head .meta')?.textContent || '');
+  };
+  try {
+    // The desk arrives on the span's latest day, in July.
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
+    assert.match(await railCount(), /^52 recorded days · /);
+    await press(page, '.gf-month-toggle');
+    assert.equal(await monthHead('July 2024'), '23 recorded days');
+    assert.match(await railCount(), /^52 recorded days · /);
+    await press(page, '[data-day="prev-month"]');
+    assert.equal(await monthHead('June 2024'), '29 recorded days');
+    assert.match(await railCount(), /^52 recorded days · /, 'loading June moved the rail count');
+    await press(page, '[data-day="next-month"]');
+    assert.equal(await monthHead('July 2024'), '23 recorded days', 'July counted June\'s overlapping week');
+    assert.match(await railCount(), /^52 recorded days · /, 'paging back moved the rail count');
+  } finally { await close(); }
+});
+
 for (const viewport of ['1280x720', '1440x900']) {
 test(`a retained Day frame visibly marks its own loading work without unmounting the reading context at ${viewport}`, async () => {
   const { page, close } = await openDesk({ address: '/day', viewport });
@@ -840,6 +905,78 @@ test('a canonical Day address reloads through the built shell and returns throug
     const returned = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
     assert.equal(returned.subject, 'pattern:served-pattern');
     assert.equal(returned.window, '1320-120');
+  } finally { await close(); }
+});
+
+// ADR 428: once the reader acts inside Diagnose, the address names the case on
+// screen — rewritten in place — and never again the Day hop's own keys.
+test('after a Day return, acting inside Diagnose re-addresses it in place, and its Findings address reloads with no case open', async () => {
+  const subject = 'finding:over_treated_low';
+  const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
+  const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,
+    lever: 'over_treated_low', from: 'diagnose', focus: '.occ-foot button:last-child' })}`;
+  const { page, close } = await openDesk({ address });
+  const search = () => page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+  try {
+    await press(page, '[data-day="return"]');
+    assert.equal(await currentDestination(page), 'diagnose');
+    await page.locator(`#level .case-occurrence[data-occurrence-id="${occurrence}"][aria-pressed="true"]`)
+      .waitFor({ timeout: 30000 });
+    const entries = await page.evaluate(() => history.length);
+
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    const held = await page.evaluate(() =>
+      document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+    assert.deepEqual(await search(), { subject, ...(held ? { occurrence: held } : {}), window: '0-360' },
+      'the address names the Finding, the Occurrence on screen and the Overnight window, and no date, moment, lever or focus');
+    assert.equal(await page.evaluate(() => history.length), entries, 'the window choice added no history entry');
+
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    await page.waitForFunction(() => !document.querySelector('#level .case-occurrence'), null, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => `${location.pathname}${location.search}`), '/diagnose',
+      'back at Findings the address carries no subject, occurrence or focus');
+
+    await page.reload();
+    await page.locator('#level .qrow[data-id]').first().waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    assert.equal(await countOf(page, '#level .case-occurrence'), 0, 'the reload lands on Findings with no case file open');
+    assert.equal(await page.evaluate(() => location.search), '');
+  } finally { await close(); }
+});
+
+// ADR 428, review round 2: a parked Diagnose is inert. Its workstation's
+// page-level ↓ must not step the held Occurrence while Day holds the surface,
+// so the Day return is retained on exactly the Occurrence it opened Day from.
+test('a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read', async () => {
+  const subject = 'finding:over_treated_low';
+  const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
+  const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,
+    lever: 'over_treated_low', from: 'diagnose' })}`;
+  const { page, close } = await openDesk({ address });
+  const held = () => page.evaluate(() =>
+    document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+  const settledOnHeld = () => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
+    && document.querySelector('#level .case-occurrence[aria-pressed="true"]'), null, { timeout: 30000 });
+  try {
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    assert.equal(await held(), occurrence, 'premise: the entry restored its Occurrence');
+    await press(page, '.occ-foot button:last-child');
+    await page.locator('.gf-stage-day').waitFor({ timeout: 20000 });
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(300);
+    let guidanceReads = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/analyze') guidanceReads += 1; });
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    await page.waitForTimeout(300);
+    assert.equal(await held(), occurrence, 'the return holds the Occurrence it opened Day from');
+    assert.equal(guidanceReads, 0, 'the return is retained: no guidance re-read');
+    assert.equal(await page.evaluate(() => new URLSearchParams(location.search).get('occurrence')), occurrence,
+      'the address names the Occurrence on screen');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.occ-foot button:last-child')), true,
+      'focus lands on that Occurrence\'s Open in Day control');
   } finally { await close(); }
 });
 

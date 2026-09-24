@@ -12,11 +12,18 @@ import {
   DIAGNOSE_EVIDENCE_CHARTS,
   GLUCOSE_ENVELOPE,
   GLUCOSE_STEP,
+  excludedNightReasons,
   glucoseRange,
 } from './diagnose-evidence-charts.js';
 import { fieldRange } from './diagnose-canvas-layout.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+/* A served excluded-night breakdown: the analyzer stamps all six keys on every
+   basal slot (#434), so a hand-built payload carries them all too. */
+const excludedReasons = (counts = {}) => ({
+  before_current_setting: 0, below_range_or_suspended: 0, above_range: 0,
+  insulin_acting: 0, carb_log: 0, other: 0, ...counts,
+});
 /* The comparison kind reads a served Finding case file — the same payload the
    inspector's own drill reads (#181/#135), never a second projection. */
 const caseFiles = () => fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
@@ -381,11 +388,14 @@ test('the editorial staircase counts the roster from the payload', () => {
     .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 307 }).children;
   const numerals = drawn.filter(({ style }) => style.align === 'right');
   const labels = drawn.filter(({ style }) => style.align === 'left');
+  /* The fixture serves one excluded night, under insulin on board: the total
+     keeps its own row and the served reason follows it (#434). */
   assert.deepEqual(numerals.map(({ style }) => style.text),
-    [more, less, asSet, basal.excluded_night_count].map(String));
+    [more, less, asSet, basal.excluded_night_count,
+      basal.excluded_night_reasons.insulin_acting].map(String));
   assert.deepEqual(labels.map(({ style }) => style.text),
-    ['more than programmed', 'less', 'exactly as set', 'excluded — not steady'],
-    'the exclusion reads as one statement on one line, not two data points');
+    ['more than programmed', 'less', 'exactly as set', 'excluded', 'insulin on board'],
+    'the total reads "excluded" and each served reason follows it on its own row');
   assert.ok(numerals.every(({ style }) => style.x === numerals[0].style.x),
     'one numeral column, one x');
   assert.ok(labels.every(({ style }) => style.x === numerals[0].style.x + 10),
@@ -398,8 +408,8 @@ test('the editorial staircase counts the roster from the payload', () => {
     assert.equal(numeral.style.verticalAlign, 'middle');
     assert.equal(labels[index].style.verticalAlign, 'middle');
   }
-  assert.deepEqual(numerals.map(({ style }) => style.y), [114, 138, 162, 200],
-    'one pitch down the tally, and the excluded row below its own rule');
+  assert.deepEqual(numerals.map(({ style }) => style.y), [114, 138, 162, 200, 224],
+    'one pitch down the tally, the excluded row below its own rule, and its reason one pitch on');
   assert.ok(option.graphic.every(({ style }) => !/circle/.test(style?.text ?? '')));
   assert.equal(option.series.find(({ id }) => id === 'furniture')
     .renderItem({ coordSys: { x: 28, y: 80, width: 672, height: 147 }, dataIndex: 0 }, {
@@ -512,6 +522,9 @@ test('the editorial tile takes a middle rank from the seat it is handed', () => 
   assert.match(statement, /\(0\.60–0\.92\)/, 'the interval survives the rank');
   assert.match(statement, /programmed now 0\.60/,
     'the rule loses its flag, so the line names the rate in force now');
+  /* The fixture's one excluded night is under insulin on board, not low or
+     suspended, so the tally ends on the total: a zero count never prints. */
+  assert.equal(basal.excluded_night_reasons.below_range_or_suspended, 0);
   assert.equal(tally, `${basal.nights.length} steady nights · ${more} more · 0 less`
     + ` · ${asSet} as set · ${basal.excluded_night_count} excluded`);
   assert.match(entry.option('editorial', { data: { ...data, nights: [data.nights[0]] },
@@ -576,6 +589,7 @@ test('the editorial tile honours a roster whose programmed rate moved', () => {
     schema: 'diagnose-basal-night-evidence-v1', slot: 11, current: 0.90,
     estimate: { value: .95, lo: .88, hi: 1.08 }, asserts_move: false,
     safety_status: 'insufficient evidence', excluded_night_count: 2,
+    excluded_night_reasons: excludedReasons({ above_range: 1, insulin_acting: 1 }),
     roster_count: 6, directional_support_count: 4,
     nights: [
       /* Three nights on the old 0.70 profile, then three on today's 0.90 —
@@ -597,10 +611,10 @@ test('the editorial tile honours a roster whose programmed rate moved', () => {
      as LESS — it ran under the 0.90 in force for it — even though 0.80 sits
      above the old profile's rate and would have read as "more" off the pixels. */
   const railRows = option.series.find(({ id }) => id === 'rail')
-    .renderItem({ dataIndex: 0 }, { getWidth: () => 950 }).children
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 307 }).children
     .map(({ style }) => style.text);
   assert.deepEqual(railRows, ['3', 'more than programmed', '2', 'less', '1', 'exactly as set',
-    '2', 'excluded — not steady']);
+    '2', 'excluded', '1', 'high', '1', 'insulin on board']);
   assert.match(option.aria.description, /3 more, 2 less, 1 exactly as set/);
   assert.match(option.aria.description,
     /at or above the rate programmed for that night on 4 of them/);
@@ -635,7 +649,8 @@ test('the editorial tile counts unpaired nights apart from the ties', () => {
     delivered_rate: delivered, programmed_rate: programmed, sign,
   });
   const data = {
-    slot: 11, current: 0.80, excluded_night_count: 0, roster_count: 4,
+    slot: 11, current: 0.80, excluded_night_count: 0, excluded_night_reasons: excludedReasons(),
+    roster_count: 4,
     nights: [night(1, 0.80, 0.80, null), night(2, 0.90, 0.80, 1),
       /* No programmed samples that night: `sign` is null for the same reason a
          tie is, and only the missing rate tells them apart. */
@@ -643,14 +658,14 @@ test('the editorial tile counts unpaired nights apart from the ties', () => {
   };
   const option = entry.option('editorial', { data });
   const railRows = option.series.find(({ id }) => id === 'rail')
-    .renderItem({ dataIndex: 0 }, { getWidth: () => 950 }).children
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 307 }).children
     .map(({ style }) => style.text);
 
   assert.match(option.aria.description, /1 more, 0 less, 1 exactly as set, 2 with no programmed rate on file/);
   assert.match(option.aria.description, /at or above the rate programmed for that night on 2 of them/);
   assert.deepEqual(railRows, ['1', 'more than programmed', '0', 'less', '1', 'exactly as set',
-    '2', 'no programmed rate', '0', 'excluded — not steady'],
-  'the unpaired nights get their own row rather than joining the ties');
+    '2', 'no programmed rate', '0', 'excluded'],
+  'the unpaired nights get their own row rather than joining the ties, and no zero reason prints');
   assert.ok(railRows.every((row) => !row.includes('\n')), 'every rail row still sets on one line');
   const cells = option.series.find(({ id }) => id === 'nights');
   const unpaired = cells.data.find((item) => item.name === '2026-04-03');
@@ -659,6 +674,182 @@ test('the editorial tile counts unpaired nights apart from the ties', () => {
     '2026-04-03 — delivered 0.83 U/h · no programmed rate on file');
   /* They rank at the foot of the stack, having no departure to sort by. */
   assert.deepEqual(cells.data.map(({ name }) => name).slice(-2), ['2026-04-03', '2026-04-04']);
+});
+
+/* #434 — WHY THE NIGHTS WERE LEFT OUT. The analyzer stamps one reason on every
+   excluded night; the tile reads the served breakdown through the one reason
+   table and prints each nonzero reason beside the served total, summing and
+   re-deriving nothing. */
+const reasonScenario = () => ({
+  ...fixture('./__fixtures__/basal-night-evidence.json').expected,
+  excluded_night_count: 5,
+  excluded_night_reasons: excludedReasons({ before_current_setting: 3,
+    below_range_or_suspended: 1, insulin_acting: 1 }),
+});
+/* The full-furniture basal tile's canvas, measured on the served base desk
+   (a4d374a7, the showcase's 12:30 slot, measured by the coordinator): 806x308 at
+   1280x720 and 966x482 at 1440x900, both with the tally rail. The smaller
+   height is the one a crowded rail has to fit (#434, measure-434-tile.json). */
+const FULL_TILE_CANVAS_HEIGHT = 308;
+const railBox = ({ style }) => {
+  const size = Number(/(\d+)px/.exec(style.font)[1]);
+  const lines = String(style.text).split('\n');
+  const width = Math.max(...lines.map(({ length }) => length)) * size * .52;
+  const height = lines.length * (style.lineHeight || size * 1.25);
+  return { text: style.text, width, height,
+    x: style.align === 'right' ? style.x - width : style.x,
+    y: style.verticalAlign === 'middle' ? style.y - height / 2 : style.y };
+};
+
+test('the reason table reads the served breakdown in rank order and prints no zero', () => {
+  /* Keys arrive in the reverse of rank order: the order printed is the table's. */
+  const served = { other: 1, carb_log: 2, insulin_acting: 3, above_range: 4,
+    below_range_or_suspended: 5, before_current_setting: 6 };
+  assert.deepEqual(excludedNightReasons({ excluded_night_reasons: served }), [
+    { key: 'before_current_setting', count: 6, words: 'before the current rate' },
+    { key: 'below_range_or_suspended', count: 5, words: 'low or suspended' },
+    { key: 'above_range', count: 4, words: 'high' },
+    { key: 'insulin_acting', count: 3, words: 'insulin on board' },
+    { key: 'carb_log', count: 2, words: 'logged carbs' },
+    { key: 'other', count: 1, words: 'other reason' },
+  ]);
+  assert.deepEqual(excludedNightReasons({
+    excluded_night_reasons: excludedReasons({ insulin_acting: 1, other: 2 }) }),
+  [{ key: 'insulin_acting', count: 1, words: 'insulin on board' },
+    { key: 'other', count: 2, words: 'other reasons' }]);
+  assert.deepEqual(excludedNightReasons({ excluded_night_reasons: excludedReasons() }), []);
+});
+
+test('one night left out for another reason reads in the singular, two in the plural', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  for (const [count, words] of [[1, 'other reason'], [2, 'other reasons']]) {
+    const data = { ...reasonScenario(), excluded_night_count: count,
+      excluded_night_reasons: excludedReasons({ other: count }) };
+    assert.deepEqual(excludedNightReasons(data), [{ key: 'other', count, words }]);
+    const option = entry.option('editorial', { data });
+    const texts = option.series.find(({ id }) => id === 'rail')
+      .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 482 }).children
+      .map(({ style }) => style.text);
+    assert.deepEqual(texts.slice(texts.indexOf('excluded') - 1),
+      [String(count), 'excluded', String(count), words], `the rail at ${count}`);
+    assert.ok(option.aria.description.endsWith(
+      `; ${count} night${count === 1 ? '' : 's'} excluded: ${count} ${words}`),
+    `the description at ${count}: ${option.aria.description}`);
+  }
+});
+
+test('the full rail names each served reason beneath the excluded total', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const option = entry.option('editorial', { data: reasonScenario() });
+  const drawn = option.series.find(({ id }) => id === 'rail')
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950, getHeight: () => 482 }).children;
+  const texts = drawn.map(({ style }) => style.text);
+
+  assert.deepEqual(texts.slice(6), ['5', 'excluded', '3', 'before the current rate',
+    '1', 'low or suspended', '1', 'insulin on board'],
+  'the total keeps its own row and each nonzero reason follows, in rank order');
+  assert.equal(texts.includes('excluded — not steady'), false, 'the retired label is gone');
+  /* Where the rows fit, they stand at today's pitch. */
+  assert.deepEqual(drawn.filter(({ style }) => style.align === 'right').map(({ style }) => style.y),
+    [114, 138, 162, 200, 224, 248, 272]);
+  assert.match(option.aria.description,
+    /; 5 nights excluded: 3 before the current rate, 1 low or suspended, 1 insulin on board$/);
+});
+
+test('the middle-rank tally keeps the low-or-suspended count', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const middle = entry.option('editorial', { data: reasonScenario(), surface: { clientWidth: 480 } });
+
+  assert.match(middle.graphic[1].style.text, / · 5 excluded \(1 low or suspended\)$/);
+});
+
+test('a crowded tally fits the narrowest middle rank and keeps the low count', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const night = (day, delivered, programmed, sign) => ({
+    date: `2026-05-${String(day).padStart(2, '0')}`, t: `2026-05-${String(day).padStart(2, '0')}T05:30:00`,
+    delivered_rate: delivered, programmed_rate: programmed, sign,
+  });
+  const nights = [
+    ...Array.from({ length: 10 }, (_, index) => night(index + 1, 0.9, 0.8, 1)),
+    ...Array.from({ length: 3 }, (_, index) => night(index + 11, 0.7, 0.8, -1)),
+    night(14, 0.8, 0.8, null), night(15, 0.85, null, null), night(16, 0.75, null, null),
+  ];
+  const data = { slot: 11, current: 0.8, roster_count: 16, excluded_night_count: 14,
+    excluded_night_reasons: excludedReasons({ below_range_or_suspended: 12, above_range: 1, other: 1 }),
+    nights };
+  const seat = 480;
+  const option = entry.option('editorial', { data, surface: { clientWidth: seat } });
+  const tally = option.graphic[1];
+  const lines = tally.style.text.split('\n');
+  const size = Number(/(\d+)px/.exec(tally.style.font)[1]);
+
+  assert.equal(lines.join(' '), '16 steady nights · 10 more · 3 less · 1 as set · 2 unpaired'
+    + ' · 14 excluded (12 low or suspended)', 'every token keeps its words and order');
+  assert.ok(size >= 9, `the tally is set no smaller than the design system's 9px, not ${size}px`);
+  for (const line of lines) {
+    assert.ok(tally.left >= 14 && tally.left + line.length * size * .52 <= seat - 14,
+      `"${line}" runs past the ${seat}px seat's side margins at ${size}px`);
+  }
+});
+
+test('a crowded rail stays legible at the measured full-size tile height', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const night = (day, delivered, programmed, sign) => ({
+    date: `2026-06-0${day}`, t: `2026-06-0${day}T05:30:00`,
+    delivered_rate: delivered, programmed_rate: programmed, sign,
+  });
+  const data = { slot: 11, current: 0.8, roster_count: 7, excluded_night_count: 21,
+    excluded_night_reasons: excludedReasons({ before_current_setting: 6, below_range_or_suspended: 5,
+      above_range: 4, insulin_acting: 3, carb_log: 2, other: 1 }),
+    nights: [night(1, 0.9, 0.8, 1), night(2, 0.95, 0.8, 1), night(3, 1.0, 0.8, 1),
+      night(4, 0.7, 0.8, -1), night(5, 0.65, 0.8, -1), night(6, 0.8, 0.8, null),
+      /* The night with no programmed rate adds the tally's fourth row. */
+      night(7, 0.85, null, null)],
+  };
+  const option = entry.option('editorial', { data });
+  const [width, height] = [950, FULL_TILE_CANVAS_HEIGHT];
+  const plot = { x: 28, y: option.grid.top, width: width - option.grid.left - option.grid.right,
+    height: height - option.grid.top - option.grid.bottom };
+  const api = {
+    coord: ([x, y]) => [plot.x + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * plot.width,
+      plot.y + (y / option.yAxis.max) * plot.height],
+    getWidth: () => width, getHeight: () => height,
+  };
+  const drawn = option.series.find(({ id }) => id === 'rail').renderItem({ dataIndex: 0 }, api).children;
+
+  assert.deepEqual(drawn.map(({ style }) => style.text), [
+    '3', 'more than programmed', '2', 'less', '1', 'exactly as set', '1', 'no programmed rate',
+    '21', 'excluded', '6', 'before the current rate', '5', 'low or suspended', '4', 'high',
+    '3', 'insulin on board', '2', 'logged carbs', '1', 'other reason',
+  ], 'every rail row prints');
+  /* The rail's own head blocks are rail text too: the table must clear them. */
+  const heads = option.graphic.filter(({ style }) => style?.width === 206 && style.font)
+    .map(({ top, style }) => {
+      const size = Number(/(\d+)px/.exec(style.font)[1]);
+      const textWidth = String(style.text).length * size * .52;
+      return { text: style.text, x: width - 28 - textWidth, y: top, width: textWidth, height: size * 1.25 };
+    });
+  const boxes = [...heads, ...drawn.map(railBox)];
+  for (const [index, box] of boxes.entries()) {
+    for (const other of boxes.slice(index + 1)) {
+      assert.ok(box.x >= other.x + other.width || other.x >= box.x + box.width
+        || box.y >= other.y + other.height || other.y >= box.y + box.height,
+      `"${box.text}" overlaps "${other.text}"`);
+    }
+  }
+  const furniture = option.series.find(({ id }) => id === 'furniture')
+    .renderItem({ coordSys: plot, dataIndex: 0 }, api).children;
+  const footer = furniture.find(({ type, shape }) => type === 'rect' && shape.y === height - 28);
+  assert.ok(footer, 'the footer rule is drawn at the canvas foot');
+  const railRules = furniture.filter(({ type, shape }) => type === 'rect' && shape.width === 206 && shape.height === 1);
+  assert.equal(railRules.length, 2, 'the table head rule and the rule above the excluded total');
+  for (const box of drawn.map(railBox)) {
+    assert.ok(box.y + box.height <= footer.shape.y, `"${box.text}" crosses the footer rule`);
+    for (const { shape } of railRules) {
+      assert.ok(box.y + box.height <= shape.y || box.y >= shape.y + 1,
+        `"${box.text}" is struck through by the rail rule at ${shape.y}`);
+    }
+  }
 });
 
 test('the editorial staircase tolerates an absent estimate at both ranks', () => {
@@ -847,6 +1038,8 @@ test('the editorial reading names the crossing, the tally and the exclusions', (
   assert.match(description, new RegExp(`${more} more, 0 less, ${asSet} exactly as set`));
   assert.match(description, /programmed now 0\.60 U\/h/);
   assert.match(description, new RegExp(`${basal.excluded_night_count} night excluded`));
+  /* One night, in the singular, and the served reason it was left out for. */
+  assert.match(description, /; 1 night excluded: 1 insulin on board$/);
 });
 
 test('every multi-series evidence form carries an on-chart legend', () => {

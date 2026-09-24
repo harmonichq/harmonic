@@ -145,3 +145,39 @@ test('selected singleton observations paint while dense selected traces omit mar
   assert.ok(mark.symbolSize > 0);
   assert.deepEqual(mark.data, singleton.selection.detail.glucose.map((point) => [point.minute, point.bg]));
 });
+
+test('#432 · every served meal dose and carbs equal the minute-0 bolus in the same fixture', async () => {
+  const { projectPatternCaseFile } = await import('../mockups/diagnose-event-comparison.synthetic/project.mjs');
+  const capture = JSON.parse(readFileSync(
+    new URL('../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
+  const projection = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+  const atAnchor = (doses) => doses.filter((dose) => dose.minute === 0);
+  let checked = 0;
+  for (const row of capture.pattern_populations.meals) {
+    const [bolus] = atAnchor(row.trace.boluses);
+    assert.ok(bolus, `source meal ${row.id} draws its own bolus at minute 0`);
+    assert.deepEqual([row.anchor_insulin, row.anchor_carbs], [bolus.insulin, bolus.carbs], row.id);
+    checked += 1;
+  }
+  for (const pattern of capture.outcome_patterns.filter((row) => row.collapse === 'remain_pattern'
+    && ['highs_after_meals', 'lows_after_meals'].includes(row.key))) {
+    const chart = { key: pattern.key, window: { scoped: false, start_min: null, end_min: null, label: null } };
+    let caseFile;
+    try { caseFile = projectPatternCaseFile(capture, { patternChart: chart, alignment: 'clock' }); }
+    catch { continue; } // a Pattern with no charted population serves no meal detail
+    for (const row of caseFile.occurrences) {
+      const { detail } = projectPatternCaseFile(capture, {
+        patternChart: chart, alignment: 'clock', occurrenceId: row.id }).selection;
+      const [bolus] = atAnchor(detail.markers.filter((marker) => marker.kind === 'bolus'));
+      assert.deepEqual([detail.anchor.insulin, detail.anchor.carbs], [bolus.insulin, bolus.carbs],
+        `${pattern.key} ${row.id}`);
+      checked += 1;
+    }
+  }
+  const selected = projection.pattern_clock_case.selection.detail;
+  const [bolus] = atAnchor(selected.markers.filter((marker) => marker.kind === 'bolus'));
+  assert.deepEqual([selected.anchor.insulin, selected.anchor.carbs], [bolus.insulin, bolus.carbs],
+    'pattern_clock_case');
+  assert.ok(checked >= 40, `checked ${checked} served meals`);
+});

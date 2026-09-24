@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 let answer; let failure = false;
 globalThis.fetch = async () => {
   if (failure) throw new Error('Synthetic guidance read failed');
@@ -21,6 +22,42 @@ test('Changes renders the served selection, escapes text and does not derive rea
   answer = { ...answer, disposition: 'guided_investigation', selected: { ...candidate, action: null } };
   await loadGuidance({ force: true }); mount(host);
   assert.doesNotMatch(host.innerHTML, /data-set="stage"/);
+});
+
+test('a Pattern concern names its members and its action by their served names', async () => {
+  failure = false;
+  const fixture = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+  const patterns = fixture.browser_guidance_patterns;
+  assert.ok(patterns.some((row) => row.members.length && row.action?.action_id),
+    'the fixture serves a Pattern with members and an identified action');
+  for (const pattern of patterns) {
+    const selected = { ...pattern, preference: {} };
+    answer = { disposition: 'eligible_action', selected, candidates: [selected], reasons: {} };
+    await loadGuidance({ force: true }); mount(host);
+    for (const member of pattern.members) {
+      assert.ok(host.innerHTML.includes(`<tr><td>${member.title}</td><td>${member.action_title || 'No action'}</td></tr>`),
+        `${pattern.subject} names ${member.subject} by its served title`);
+    }
+    if (pattern.action?.action_id) {
+      assert.ok(host.innerHTML.includes(`<div class="gf-figure">${pattern.action.title}<small>`),
+        `${pattern.subject} names its action by its served title`);
+    }
+    assert.doesNotMatch(host.innerHTML, /habit:|setting:/);
+  }
+});
+
+test('a habit concern names its action by the concern\'s served title, never its id', async () => {
+  failure = false;
+  // Shaped like the served behavioral-missed-meal selection: a habit concern whose
+  // identified action carries only its id, and no title of its own.
+  const habit = { subject: 'habit:missed_meal', kind: 'habit', lever: 'missed_meal',
+    title: 'Missed / unannounced meal', units: null, action: { action_id: 'habit:missed_meal' },
+    members: [], unknowns: [], preference: {} };
+  answer = { disposition: 'eligible_action', selected: habit, candidates: [habit], reasons: {} };
+  await loadGuidance({ force: true }); mount(host);
+  assert.ok(host.innerHTML.includes('<div class="gf-figure">Missed / unannounced meal<small>'),
+    'the Action figure names the concern by its served title');
+  assert.doesNotMatch(host.innerHTML, /habit:/);
 });
 
 test('unavailable retains its served reason and is distinct from quiet', async () => {

@@ -61,6 +61,7 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
 )
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns  # noqa: E402
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
+from ciq_autotune.guidance import candidates as guidance_candidates  # noqa: E402
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     build_tuning_levers,
@@ -397,13 +398,16 @@ def _verdict(classifier, *, matched, detail="", silence_reason=None):
     }
 
 
-def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text="",
-                 verdicts=None):
+def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, insulin=None,
+                carbs=None, text="", verdicts=None):
     """One exposures occurrence. A driving ``lever`` gets a matched verdict for its
     own classifier by default (so ``findings_projection`` reads it as ``fired``,
     not the ``verdicts=[]`` gap that let this row's own driver misread as
     ``outranked``); pass ``verdicts`` explicitly to exercise the other four
     row-relative categories (finding 3) instead.
+
+    A meal or correction row, like the feed's, serves its anchor bolus's ``insulin``
+    and ``carbs`` and no anchor glucose; a low or high serves its glucose and neither.
     """
     if verdicts is None:
         verdicts = ([_verdict(lever.value, matched=True, detail=text)]
@@ -411,7 +415,8 @@ def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text="",
     state = "fired" if lever is not None else "clean"
     stamp = f"{DAY.isoformat()} {at}:00"
     return {
-        "t": stamp, "date": DAY.isoformat(), "bg": bg, "worst_bg": worst_bg,
+        "t": stamp, "date": DAY.isoformat(), "bg": bg, "insulin": insulin,
+        "carbs": carbs, "worst_bg": worst_bg,
         "kind": kind, "label": kind.title(), "state": state,
         "attributed": lever is not None,
         "attributed_levers": [] if lever is None else [lever.value],
@@ -541,6 +546,9 @@ def _real_over_treated_low_occurrences():
                           if own(item)["silence_reason"] == "no_trigger"
                           and item["cause_lever"] == Lever.CORRECTION_ON_IOB.value),
     }
+    # Glucose anchors: the producer serves their anchor bolus as explicit nulls.
+    for item in selected.values():
+        item.update(insulin=None, carbs=None)
     return selected
 
 
@@ -574,7 +582,7 @@ def exposures():
         ],
         "meals": [
             _occurrence("ep2", "meal", "07:10", lever=Lever.CARB_UNDERCOUNT,
-                        bg=112.0, worst_bg=243.0,
+                        insulin=4.5, carbs=45.0, worst_bg=243.0,
                         text="Bolused 45 g at 07:10 and glucose still ran to 243."),
             # Finding 2 follow-up: `carb_undercount`'s own classifier always
             # emits an explicit verdict (matched or not, `_meal_verdicts`), so
@@ -582,13 +590,13 @@ def exposures():
             # ep8 carries the explicit calm verdict that proves it, where ep7's
             # verdicts stays empty (`no_data`: this lever never evaluated it).
             _occurrence("ep7", "meal", "12:40",
-                        bg=118.0, worst_bg=155.0,
+                        insulin=3.0, carbs=30.0, worst_bg=155.0,
                         verdicts=[_verdict(
                             "carb_undercount", matched=False,
                             detail="The dose landed within the digestion window.",
                             silence_reason=SilenceReason.UNDER_THRESHOLD)]),
             _occurrence("ep8", "meal", "18:50",
-                        bg=104.0, worst_bg=149.0,
+                        insulin=5.0, carbs=50.0, worst_bg=149.0,
                         verdicts=[_verdict(
                             "carb_undercount", matched=False,
                             detail="Bolus covered the meal; glucose stayed in range.",
@@ -596,7 +604,7 @@ def exposures():
         ],
         "correction_clusters": [
             _occurrence("ep3", "correction", "15:10", lever=Lever.CORRECTION_STACKING,
-                        bg=214.0, worst_bg=61.0,
+                        insulin=2.0, worst_bg=61.0,
                         text="Corrections stacked and carried glucose to 61."),
         ],
     }
@@ -607,6 +615,10 @@ def exposures():
     # `cause_lever` would therefore count every non-driver high, which is exactly
     # the 27-vs-20 error the honest count exists to avoid. Build the driven-episode
     # set over ALL families first, then roll each family up against it.
+    # `build_exposures` also never counts a High an over-treated low's rebound owns
+    # (ADR 422). This fixture's one owned High is the over-treated low's rebound
+    # High, which shares its low's lever-bearing Episode, so the Episode-wise rule
+    # already leaves it out.
     driven = {item["ep_id"] for occurrences in families.values()
               for item in occurrences if item["cause_lever"] is not None}
     for occurrences in families.values():
@@ -634,7 +646,10 @@ def _rollup(occurrences, driven):
     occurrence outside it is one the engine found no cause for at all. On this
     fixture ep6 is the single such high, so the highs rollup carries
     ``uncaused: 1`` — a non-zero value, because a rollup frozen at zero would let
-    the whole count regress to nothing without failing anything.
+    the whole count regress to nothing without failing anything. A High an
+    over-treated low's rebound owns is never uncaused (ADR 422); the fixture's one
+    owned High, the rebound High, shares its low's lever-bearing Episode, so it is
+    already inside ``driven``.
     """
     by_cause = {}
     for item in occurrences:
@@ -889,6 +904,13 @@ def payload() -> dict:
         "browser_outcome_patterns": build_outcome_patterns(
             browser_analysis, browser_exposures, browser_scenarios,
         ),
+        # The Pattern candidates guidance serves for those same inputs, names and
+        # all (ADR 426), so a desk test can mount Changes on the served shape.
+        "browser_guidance_patterns": [
+            row for row in guidance_candidates(
+                browser_analysis, browser_exposures, browser_scenarios,
+            ) if row["kind"] == "pattern"
+        ],
         "pattern_clock_case": pattern_clock_case(
             browser_analysis, browser_case_exposures, browser_scenarios,
         ),

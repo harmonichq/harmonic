@@ -4,7 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from .analyzers.scenario.outcome_patterns import _GATES, build_outcome_patterns
-from .analyzers.scenario.levers import Lever
+from .analyzers.scenario.levers import Lever, title as lever_title
 from .watched_change import is_pinnable
 from .window_membership import _hhmm as _clock_label
 
@@ -12,6 +12,9 @@ COMPARISON_VERSION = "383:1"
 SCHEMA = "guidance-v2"
 _SEVERITY = {None: -1, "info": 0, "low": 1, "medium": 2, "high": 3}
 _SETTING_UNITS = {"basal_rate": "U/h", "carb_ratio": "g/U", "isf": "mg/dL/U"}
+# The reader-facing name of each setting (CONTEXT.md), never the tuning lever's
+# title, which calls the correction factor "ISF" (ADR 426).
+_SETTING_TITLES = {"basal_rate": "Basal", "carb_ratio": "Carb ratio", "isf": "Correction factor"}
 _PRIORITY_FIELDS = (
     "parameter", "title", "impact", "recurrence", "priority", "impact_u_day",
     "headline_start_min", "recurrence_channel",
@@ -35,6 +38,12 @@ _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
 _PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
 _PREFERENCE_SUBJECTS = (_SETTING_SUBJECTS | _HABIT_SUBJECTS
                         | _INVESTIGATION_SUBJECTS | _PATTERN_SUBJECTS)
+# The name served beside each Pattern member subject: a habit by its Lever's
+# title, a setting by its reader-facing name (ADR 426).
+_MEMBER_TITLES = {
+    **{f"habit:{lever.value}": lever_title(lever) for lever in Lever},
+    **{f"setting:{parameter}": name for parameter, name in _SETTING_TITLES.items()},
+}
 
 
 def is_preference_subject(subject):
@@ -234,6 +243,13 @@ def _source_candidates(analysis, exposures, scenarios):
     return out
 
 
+def _named_member(member):
+    """A roster member with its served names beside its identifiers (ADR 426)."""
+    title = _MEMBER_TITLES[member["subject"]]
+    return {**deepcopy(member), "title": title,
+            **({"action_title": title} if member.get("action") is not None else {})}
+
+
 def _pattern_candidate(pattern, sources):
     """Adapt the outcome roster; its policy remains owned by its producer."""
     chosen = next((member for member in pattern["members"]
@@ -254,12 +270,14 @@ def _pattern_candidate(pattern, sources):
             # The roster's admission is authoritative.  A legacy source row may
             # have applied the retired Priority threshold and withheld this action.
             action = {"action_id": chosen["action"]}
+    if isinstance(action, dict):
+        action["title"] = _MEMBER_TITLES[chosen["subject"]]
     unavailable = any(row.get("unavailable") for row in habit_sources)
     return {
         "subject": pattern["subject"], "kind": "pattern", "pattern_key": pattern["key"],
         "title": pattern["title"], "units": None, "priority": pattern["settled_price"],
         "action": action, "seriousness": pattern.get("seriousness"),
-        "members": deepcopy(pattern["members"]),
+        "members": [_named_member(member) for member in pattern["members"]],
         "evidence": deepcopy((selected_source or {}).get("evidence") or []),
         "support": deepcopy((selected_source or {}).get("support") or {}),
         "population": deepcopy((selected_source or {}).get("population") or []),

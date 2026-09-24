@@ -355,7 +355,11 @@ lock, 2026-09-14). Every value painted below is served. No token in
 
 - **Pattern fold.** A Pattern owns its claimed causes. They fold under it on
   one spine, a rule down the title column in the rule ink, one line per cause:
-  the name, each served count, then the drill.
+  the name, its share of the Pattern's count, then the drill.
+  - The cause's other served counts sit on the line's second row in the muted
+    ink, behind the words "outside the count" (#424, Connor's "Q2 A",
+    2026-09-23). A cause under a Pattern that serves no count has no share, so
+    its line leads with those words. No outcome word prints.
   - The fold's toggle names the cause count and sits inside the Pattern's own
     list item, with a triangle caret.
   - The causes are a nested list the toggle controls.
@@ -387,6 +391,16 @@ lock, 2026-09-14). Every value painted below is served. No token in
     stage keeps a 2 px accent underline.
   - Cells release the shell's button height floor, so every cell sits inside
     the 11 px track.
+  - A lower the backend serves because lows keep recurring at that hour has
+    its own key word, "lower · recurring lows", on the lower paint and glyph.
+    Its cells are named "suggests a lower because lows keep happening at this
+    hour". The word is read from the served status alone (#433).
+  - The key stands on one line at 1280×720 and 1440×900. Near the narrowest
+    split it wraps between whole entries, taking the extra line from the chart
+    inside the fixed body, so no entry, cell or chart edge runs past the pane.
+  - On a desktop window too short for the canvas pane's row floors, the pane
+    scrolls vertically, so the lane is always within reach. At the supported
+    sizes it has no scroll range.
 - **24 h arrival.** Diagnose opens on 24 h when nothing else chooses a window.
   A contextual entry or a retained window still wins, and the workstation's
   ISF, drill, occurrence and drawn presets keep Overnight.
@@ -400,3 +414,26 @@ lock, 2026-09-14). Every value painted below is served. No token in
 - **Evidence.** A private design-evidence record — not part of the public
   tree — holds the evidence and the critique. The desk ledger's S113–S117
   hold the replays.
+
+#423 revises the Day Episode Log's claimed anchors, under the operator's
+standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
+
+- **Claimed.** An anchor whose served state is outranked reads `claimed`.
+  Diagnose's label for an outranked occurrence reads `claimed by another
+  finding`, built from the same exported word. A claimed row names what its
+  anchor matched, by served title, then ends with the episode's served Lever
+  name.
+- **Hue.** A claimed anchor takes its Finding's hue on the tier word, both rings
+  and the focus hairline, and its resting marker the fired marker's size. The
+  warning hue leaves the Episode Log. The word, not the colour, tells a claimed
+  anchor from the one that drove its episode.
+- **Count.** The Findings caption counts distinct Findings, one per served
+  Lever, and names claimed anchors beside it: `Findings · 1 · 1 claimed`.
+- **Glossary.** Each band caption ends in a small `Glossary` link button, in
+  sentence case against the uppercase caption. It opens the Glossary at its
+  Episode Log group, and Close returns focus to it. Below 700px, where the
+  Episode Log is a sheet, closing the Glossary returns to the open sheet, so the
+  same control takes focus back.
+- **Evidence.** The desk ledger's S121 and S122 hold the replays; a private
+  design-evidence record — not part of the public tree — holds the logs and
+  captures.

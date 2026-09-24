@@ -1,0 +1,74 @@
+SYNTHETIC — before · tree a4d374a7 · store c3-trial · 430-A1 · 1280x720
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Abasal_rate-03-00-20240515000000
+Element: viewport
+Note: the still-open c3-trial record, opened from the roster with no control pressed
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · STILL OPEN
+Basal 03:00 · 0.6 U/h → 0.54 U/h
+Detected May 15, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+AVAILABLE OBSERVATIONS
+recomputed now
+Pump-local time
+no clock envelope is retained for this record
+median glucose by clock · 0 → 0 half-hours read
+
+No glucose outcome is served for these periods.
+
+THIS TRIAL
+Still open
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+First seen
+May 15, 2024 · 00:00
+
+Original user decision is unavailable.
+
+From the Trial record
+
+ENDING
+
+Not recorded — this change is still open.
+
+EVIDENCE PERIODS
+
+No period is served for this comparison, so neither Before nor Trial has bounds to show.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Basal
+03:00
+	0.6 U/h	0.54 U/h
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+
+No comparison has been read for this record yet.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

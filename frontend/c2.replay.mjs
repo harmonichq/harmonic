@@ -614,9 +614,12 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       const params = new URLSearchParams({ projection_id: file.projection_id, finding_id: file.finding.id, alignment: 'event', occ: id });
       const selected = seen(await read(page, `${casePath}?${params}`));
+      const { reason } = selected.selection.detail;
       const text = seen(await page.locator('#level .case-facts').innerText());
-      check(text.includes(`${selected.selection.detail.glucose.length} glucose readings`));
-      check(text.includes(`${selected.selection.detail.markers.length} event markers`));
+      // #432 amendment: the facts are the served reason, never a count of readings or markers.
+      check(!/\d+ glucose readings|\d+ event markers/.test(text), 'S25 selected facts are served facts, never counts');
+      for (const habit of reason.habits) check(text.includes(habit.title), `S25 the facts name the served habit ${habit.title}`);
+      if (reason.cause) check(text.includes(`Attributed to ${reason.cause.title}`), 'S25 the facts name the served cause');
       check((seen(await page.locator('#level .occ-detail').innerText())).includes(file.projection.cohorts.find(c => c.key === selected.selection.detail.comparison_cohort).name));
     }, "S25");
   },
@@ -730,8 +733,9 @@ export const C2_STORIES = {
     assert.equal(new URL(seen(page.url())).searchParams.get('subject'), g.selected.subject);
   }, "S37"); await page.getByText(g.selected.title, { exact: false }).first().waitFor(); },
   S37b: async page => { const row = await openBasalLane(page); await waitForReplayAssertion(async seen => {
-    // An in-place drill retains the row on the focal tile; only a destination
-    // handoff publishes subject in the URL. Re-read the current drill each poll.
+    // An in-place drill retains the row on the focal tile. Since ADR 428 it
+    // also renames the address to the case on screen (a slot as basal:<start>),
+    // but this story's claim is the tile, so it re-reads the drill each poll.
     const id = seen(await page.evaluate(() => document.querySelector(
       '#tile-field .evidence-tile[data-drilled]',
     )?.dataset.chartId ?? null));
@@ -760,19 +764,46 @@ export const C2_STORIES = {
     }, "S42");
     await ctx.capturePump('match');
     await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
-    await page.getByText(/On pump as of/).waitFor();
-    const record = (await read(page, '/api/plan/history')).history.at(-1);
+    await page.getByText(/On pump since/).waitFor();
+    // The served history is newest first: the Plan this story recorded is [0].
+    const record = (await read(page, '/api/plan/history')).history[0];
     assert.equal(record.reconciliation.state, 'available', 'the Store, not the browser, observes the match');
   },
   S43: async page => { await openBasalLane(page); await C2_STORIES.S33(page); },
   S44: async page => { await C2_STORIES.S35(page); },
   S61: async page => {
+    // Amended under #426 (ADR 426, Q2 sanction): Day names where it was opened
+    // from by the case file's served title, never the routing subject, and each
+    // row of an attributed episode ends with that episode's served Lever name.
     const { id, file } = await selectedMember(page);
     await press(page, '.occ-foot button:last-child'); await page.locator('.gf-stage-day').waitFor();
-    await waitForReplayAssertion(async seen => {
+    const { date } = await waitForReplayAssertion(async seen => {
       const query = new URL(seen(page.url())).searchParams;
       assert.equal(query.get('subject'), file.finding.id); assert.equal(query.get('occurrence'), id);
       check(query.get('moment')); check(/opened from/i.test(seen(await page.locator('.gf-desk').innerText())));
+      return { date: query.get('date') };
+    }, "S61");
+    const model = await read(page, `/api/model-view?date=${encodeURIComponent(date)}`);
+    const episodeAt = new Map((model.episodes || []).flatMap(episode => (episode.anchors || []).map(anchor => [anchor.t, episode])));
+    check((model.episodes || []).some(episode => episode.lever), `S61 premise: the served day ${date} carries no attributed episode`);
+    await waitForReplayAssertion(async seen => {
+      const day = seen(await page.evaluate(() => {
+        const head = [...document.querySelectorAll('.gf-reading .gf-section h3')].find(h => /opened from/i.test(h.textContent));
+        return {
+          openedFrom: head ? (head.parentElement.querySelector('p')?.textContent || '').trim() : null,
+          rows: [...document.querySelectorAll('.gf-reading .gf-log-row[data-day-row]')]
+            .map(row => ({ t: row.dataset.dayRow, text: (row.querySelector('.text')?.textContent || '').trim() })),
+        };
+      }));
+      assert.equal(day.openedFrom, file.finding.title, 'Day names where it was opened from by the case file\'s served title');
+      check(!/\b(finding|pattern|basal):/.test(day.openedFrom), `Day printed a routing id as its origin: ${day.openedFrom}`);
+      check(day.rows.some(row => episodeAt.get(row.t)?.lever), 'S61 premise: the Episode Log renders no row of an attributed episode');
+      for (const row of day.rows) {
+        check(!/\w_\w/.test(row.text), `the ${row.t} Episode Log row prints an underscore token: ${row.text}`);
+        const episode = episodeAt.get(row.t);
+        if (episode?.lever) check(episode.lever_title && row.text.endsWith(episode.lever_title),
+          `the ${row.t} Episode Log row does not end with its episode's served Lever name ${JSON.stringify(episode.lever_title)}: ${row.text}`);
+      }
     }, "S61");
     await page.locator('[data-day="return"]').waitFor();
   },
@@ -784,6 +815,63 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('.occ-foot button:last-child').evaluate(node => node === document.activeElement)), true);
     }, "S62");
+  },
+  // ADR 427: the topbar's Day reopens the day last looked at, and a reload opens
+  // the latest recorded day. Diagnose reaches Day only through a selected
+  // occurrence's "Open <date> in Day", the occurrence foot's plain link S61 takes.
+  S133: async page => {
+    const pressedDay = () => page.locator('.gf-nav-col[aria-pressed="true"][data-pick]').getAttribute('data-pick');
+    const latestControl = page.locator('[data-day="latest"]');
+    await go(page, 'day'); await page.locator('.gf-stage-day').waitFor();
+    const latest = await waitForReplayAssertion(async seen => {
+      const iso = seen(await pressedDay());
+      check(iso, 'a fresh Day shows a recorded day');
+      assert.equal(seen(await latestControl.isDisabled()), true, 'a fresh Day opens on the latest recorded day');
+      return iso;
+    }, "S133 fresh Day");
+
+    // Open each occurrence's day in turn until one is not the latest recorded
+    // day. openComparisonCase goes to Diagnose and opens the case afresh every
+    // time, rather than relying on Diagnose restoring a parked case (#428).
+    let opened = null;
+    let tried = 0;
+    for (let i = 0; !opened; i += 1) {
+      await openComparisonCase(page);
+      const rows = page.locator('#level .case-occurrence');
+      if (i >= await rows.count()) break;
+      tried += 1;
+      await choose(page, rows.nth(i));
+      await page.locator('#level .occ-detail').waitFor();
+      await press(page, '.occ-foot button:last-child'); await page.locator('.gf-stage-day').waitFor();
+      const day = await waitForReplayAssertion(async seen => {
+        const iso = seen(await pressedDay());
+        assert.equal(seen(new URL(page.url()).searchParams.get('date')), iso, 'the opened day and the address agree');
+        return iso;
+      }, "S133 opened day");
+      if (day !== latest) opened = day;
+    }
+    check(opened, `no occurrence opened a recorded day other than the latest (${latest}); tried ${tried}`);
+    await waitForReplayAssertion(async seen => {
+      check(/opened from/i.test(seen(await page.locator('.gf-desk').innerText())), 'the contextual entry names where it was opened from');
+    }, "S133 contextual entry");
+
+    await go(page, 'diagnose'); await go(page, 'changes'); await go(page, 'day');
+    await page.locator('.gf-stage-day').waitFor();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await pressedDay()), opened, "the topbar's Day reopens the day last looked at");
+      assert.equal(seen(await latestControl.isDisabled()), false, 'Latest stays available on an earlier day');
+      assert.equal(seen(await page.locator('[data-day="return"]').count()), 0, 'a direct entry offers no return');
+      check(!/opened from/i.test(seen(await page.locator('.gf-desk').innerText())), 'a direct entry names no prior subject');
+      const address = new URL(seen(page.url()));
+      assert.equal(address.pathname, '/day');
+      assert.equal(address.search, '', 'the plain address carries no day (accepted by ADR 427)');
+    }, "S133 direct entry");
+
+    await page.reload(); await page.locator('.gf-stage-day').waitFor();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await pressedDay()), latest, 'a reload opens the latest recorded day');
+      assert.equal(seen(await latestControl.isDisabled()), true, 'a reload opens the latest recorded day');
+    }, "S133 reload");
   },
   S77: async page => {
     await go(page, 'changes'); await press(page, '[data-action="pump"]');

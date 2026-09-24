@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis } from './c4.replay.mjs';
+import { readFileSync } from 'node:fs';
+import {
+  historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
+  assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
+  assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
+  assertServedRowDescriptions432, assertSelectedFacts432,
+} from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
@@ -33,11 +39,17 @@ test('S106 and S107 are unique app-only C4 stories with their required manufactu
 
 test('S107 keeps a grouped comparison heading distinct from readable mixed-tier case rows', () => {
   const rect = (left, right, top = 0, bottom = 10) => ({ left, right, top, bottom });
-  const event = { comparisonCohort: 'matched',
-    description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) }, tier: null };
-  const fired = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+  const meal = { id: `o_${'1'.repeat(32)}`, verdict: 'fired',
+    anchor: { t: '2024-05-24 12:05:00', kind: 'meal', label: 'Completed carb bolus', bg: null,
+      insulin: 4, carbs: 40 },
+    outcome: { kind: 'peak', bg: 149.6, t: '2024-05-24 13:35:00', minute: 90 } };
+  const served = { occurrences: [meal] };
+  const text = '40 g · 4 U · peak 150';
+  const event = { occurrenceId: meal.id, comparisonCohort: 'matched',
+    description: { text, truncated: false, ...rect(120, 260) }, tier: null };
+  const fired = { occurrenceId: meal.id, description: { text, truncated: false, ...rect(120, 260) },
     tier: { text: 'Meets criteria', ...rect(280, 360) } };
-  const near = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+  const near = { occurrenceId: meal.id, description: { text, truncated: false, ...rect(120, 260) },
     tier: { text: 'Borderline', ...rect(280, 350) } };
   const expectedCohorts = [
     { key: 'matched', name: 'Matched' },
@@ -45,23 +57,126 @@ test('S107 keeps a grouped comparison heading distinct from readable mixed-tier 
     { key: 'comparison', name: 'Other completed carb-bolus meals' },
   ];
   assert.doesNotThrow(() => assertS107RosterGeometry({
-    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts, served,
   }));
   assert.throws(() => assertS107RosterGeometry({
-    comparison: { cohortHeadings: expectedCohorts.slice(1).map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+    comparison: { cohortHeadings: expectedCohorts.slice(1).map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts, served,
   }), /exact served cohorts once/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [{ ...event, description: { ...event.description, truncated: true } }] },
-    tierRows: [fired, near], expectedCohorts,
+    tierRows: [fired, near], expectedCohorts, served,
   }), /fully readable/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
-    tierRows: [{ ...fired, tier: { ...fired.tier, truncated: true } }, near], expectedCohorts,
+    tierRows: [{ ...fired, tier: { ...fired.tier, truncated: true } }, near], expectedCohorts, served,
   }), /fully readable/);
   assert.throws(() => assertS107RosterGeometry({
     comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
-    tierRows: [{ ...fired, tier: { ...fired.tier, ...rect(240, 360) } }, near], expectedCohorts,
+    tierRows: [{ ...fired, tier: { ...fired.tier, ...rect(240, 360) } }, near], expectedCohorts, served,
   }), /columns overlap/);
+  // #432 amendment: readability keys on the served description, so the retired
+  // constant-label row no longer counts as readable text.
+  const retired = { ...event.description, text: '— · Completed carb bolus' };
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [{ ...event, description: retired }] },
+    tierRows: [fired, near], expectedCohorts, served,
+  }), /fully readable/);
+});
+
+test('S148–S150 are unique app-only #432 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase] of [['S148', 'showcase'], ['S149', 'showcase'], ['S150', 'pattern-near-tie']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'ADR 432');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+const servedCaseFiles432 = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+const mealCase432 = () => JSON.parse(JSON.stringify(servedCaseFiles432.cases['finding:meal_bolus_short'].event));
+// The base server's shape: an anchor with no dose or carbs, and no outcome.
+const baseShaped432 = (served) => {
+  for (const row of served.occurrences) {
+    delete row.anchor.insulin; delete row.anchor.carbs; delete row.outcome;
+  }
+  return served;
+};
+
+test('S148/S150 row descriptions pass when each rendered row reads its own served meal', () => {
+  const served = mealCase432();
+  const [first] = served.occurrences;
+  assert.deepEqual([first.anchor.carbs, first.anchor.insulin, first.outcome.kind, first.outcome.bg],
+    [40, 4, 'peak', 147.5]);
+  assert.doesNotThrow(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: first.id, text: '40 g · 4 U · peak 148' }]));
+});
+
+test('S148/S150 reach their feature assertion on the base server shape, never a premise', () => {
+  const served = baseShaped432(mealCase432());
+  const [first] = served.occurrences;
+  assert.throws(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 every meal row must serve its carbs and dose/);
+  assert.throws(() => assertServedRowDescriptions432('S148', mealCase432(),
+    [{ occurrenceId: first.id, text: '— · Completed carb bolus' }]), /S148 no meal row may lead with a dash/);
+  assert.throws(() => assertServedRowDescriptions432('S150', mealCase432(),
+    [{ occurrenceId: first.id, text: '40 g · 4 U' }]), /S150 .* must read its own served carbs, dose and outcome/);
+});
+
+test('S148/S150 separate a setup error from the feature', () => {
+  const served = mealCase432();
+  assert.throws(() => assertServedRowDescriptions432('S148', served, []),
+    /S148 premise: the drilled case renders Occurrence rows/);
+  assert.throws(() => assertServedRowDescriptions432('S148', served,
+    [{ occurrenceId: `o_${'9'.repeat(32)}`, text: '40 g · 4 U' }]), /S148 premise: rendered row .* is a served Occurrence/);
+});
+
+const claimedDetail432 = () => {
+  const file = servedCaseFiles432.cases['finding:carb_undercount'];
+  const [claimed] = file.clock.projection.clock.buckets.flatMap((bucket) => bucket.occurrence_ids);
+  return JSON.parse(JSON.stringify(file.selected_event[claimed].selection.detail));
+};
+const block432 = (detail) => {
+  const lines = [
+    { kind: 'outcome', text: 'Peak 148 mg/dL, 180 min after the bolus' },
+    { kind: 'cause', text: `Attributed to Carb undercount · ${detail.reason.cause.text}` },
+    { kind: 'habit', text: `Carb undercount · Meets criteria · ${detail.reason.habits[0].detail}` },
+  ];
+  return { figure: '40 g · 4 U at completed carb bolus', lines,
+    text: ['Mar 1 · 08:00 Matched 40 g · 4 U at completed carb bolus', 'Evidence facts',
+      ...lines.map((line) => line.text)].join(' ') };
+};
+
+test('S149/S150 selected facts pass on the served detail and its rendered block', () => {
+  const detail = claimedDetail432();
+  assert.doesNotThrow(() => assertSelectedFacts432('S149', detail, block432(detail), { outcome: 'peak' }));
+});
+
+test('S149 reaches its feature assertion on the base server shape, never a premise', () => {
+  const detail = claimedDetail432();
+  delete detail.anchor.insulin; delete detail.anchor.carbs; delete detail.outcome; delete detail.reason;
+  const base = { figure: '— at completed carb bolus', text: 'The canvas shows the selected glucose trace and evidence markers.',
+    lines: [{ kind: null, text: '37 glucose readings' }, { kind: null, text: '4 event markers' }] };
+  assert.throws(() => assertSelectedFacts432('S149', detail, base, { outcome: 'peak' }),
+    /S149 the selected meal must serve its carbs and dose/);
+  assert.throws(() => assertSelectedFacts432('S149', null, base), /S149 premise/);
+});
+
+test('S149/S150 refuse a count-only line, the canvas sentence, or a reason that disagrees', () => {
+  const detail = claimedDetail432();
+  const counted = block432(detail);
+  counted.lines.push({ kind: null, text: '37 glucose readings' });
+  assert.throws(() => assertSelectedFacts432('S149', detail, counted), /no line may be only a count/);
+  const canvas = block432(detail);
+  canvas.text += ' The canvas shows the selected glucose trace and evidence markers.';
+  assert.throws(() => assertSelectedFacts432('S149', detail, canvas), /no sentence may describe the canvas/);
+  const silent = block432(detail);
+  silent.lines = silent.lines.filter((line) => line.kind !== 'habit');
+  assert.throws(() => assertSelectedFacts432('S150', detail, silent), /S150 the block must list each served habit/);
+  const noPeak = block432(detail);
+  noPeak.lines = noPeak.lines.filter((line) => line.kind !== 'outcome');
+  assert.throws(() => assertSelectedFacts432('S149', detail, noPeak, { outcome: 'peak' }),
+    /S149 the outcome line must equal the served outcome/);
 });
 
 test('S108–S114 are unique app-only C4 stories with their required manufactured cases', () => {
@@ -77,6 +192,15 @@ test('S108–S114 are unique app-only C4 stories with their required manufacture
   }
 });
 
+test('S142 and S143 are unique app-only C4 record stories with their manufactured cases', () => {
+  for (const [id, expectedCase] of [['S142', 'c3-trial'], ['S143', 'edit-chain']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-28');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
@@ -84,6 +208,40 @@ test('S115–S117 are unique app-only C4 rail stories, served from the showcase'
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
     assert.equal(storyCase(id), 'showcase');
+  }
+});
+
+test('S121 and S122 are unique app-only Day Episode Log stories on pattern-near-tie', () => {
+  for (const id of ['S121', 'S122']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-13');
+    assert.equal(storyCase(id), 'pattern-near-tie');
+  }
+});
+
+test('S127 is a unique app-only Day story, served from the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S127');
+  assert.equal(entries.length, 1, 'S127 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-13');
+  assert.equal(storyCase('S127'), 'showcase');
+});
+
+test('S139 and S140 are unique app-only C4 dock stories on their watched cases', () => {
+  for (const [id, expectedCase] of [['S139', 'c3-trial'], ['S140', 'c3-focus']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-12');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+test('S151–S153 are unique app-only C4 basal-lane stories, served from the verdict gallery', () => {
+  for (const id of ['S151', 'S152', 'S153']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-17');
+    assert.equal(storyCase(id), 'basal-verdict-gallery');
   }
 });
 
@@ -244,22 +402,31 @@ test('S111 fails on a raw disposition token, and passes on the served word', asy
     /never a raw disposition token/);
 });
 
+// Routes behave as Playwright's do: the newest matching handler takes the
+// request, `continue()` sends it on, and `unroute` removes one handler. A
+// record read that is sent on renders the open record, which (ADR 430) asks for
+// its retained comparison with no control pressed.
 function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
-  const routes = new Map();
+  let routes = [];
   const fire = (pathname, search = '') => {
     const request = { url: () => `http://synthetic.invalid${pathname}${search}` };
-    for (const [pattern, handler] of routes) {
+    const params = new URLSearchParams(search);
+    const sent = async () => {
+      if (params.has('selected') && !params.has('assessment')) fire(pathname, `${search}&assessment=retained`);
+    };
+    const route = routes.find(([pattern]) => {
       const base = pattern.replace('**', '').replace('*', '');
-      if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
-    }
+      return base && pathname.startsWith(base);
+    });
+    if (route) route[1]({ request: () => request, continue: sent });
+    else sent();
   };
   const node = selector => ({
     filter() { return this; }, first() { return this; },
     waitFor: async () => {},
     click: async () => {
       if (selector.startsWith('table.gf-table [data-record]')) fire('/api/verify/trials', `?selected=${recordSelector}`);
-      if (selector === '[data-assessment="retained"]') fire('/api/verify/trials', `?selected=${recordSelector}&assessment=retained`);
     },
     getAttribute: async () => recordSelector,
     count: async () => 1,
@@ -269,14 +436,93 @@ function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
     url: () => url,
     goto: async target => { url = target; fire('/api/verify/trials', ''); },
     locator: selector => node(selector),
-    route: async (pattern, handler) => { routes.set(pattern, handler); },
-    unroute: async pattern => { routes.delete(pattern); },
+    route: async (pattern, handler) => { routes.unshift([pattern, handler]); },
+    unroute: async (pattern, handler) => { routes = routes.filter(([p, h]) => p !== pattern || h !== handler); },
   };
 }
 
-test('S112 holds the roster, record and reassessment reads in turn and reaches its final assertion', async () => {
+test('S112 holds the roster and record reads, then the retained read the record asks for itself', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S112(qa414RecordHoldPage());
+});
+
+// #430: one still-open record on a Changes roster. Pressing its row sends the
+// record read and, when `retainedOnOpen`, the retained read the record door
+// makes with no control pressed; the rendered record is read back by selector.
+function qa430RecordPage({ retainedOnOpen = true, figureState = 'paired', periods = 1, pressed = 1, stillOpen = 1,
+  canvases = figureState === 'paired' ? 1 : 0, served = { state: 'unavailable', reason: 'missing_comparison_context' },
+  figureReason = 'no retained comparison context was recorded with this change',
+  result = 'Unavailable · no retained comparison context was recorded with this change',
+  stage = 'Setting change · Still open\ncomparison unavailable' } = {}) {
+  let url = 'http://synthetic.invalid/?to=diagnose';
+  const listeners = new Set();
+  const send = search => {
+    const request = { url: () => `http://synthetic.invalid/api/verify/trials${search}` };
+    for (const listener of listeners) listener(request);
+  };
+  const counts = {
+    'table.gf-table tr [data-record]': 1,
+    '[data-period="before"]': periods, '[data-period="after"]': periods,
+    '[data-figure-state="paired"] .gf-chart canvas': figureState === 'paired' ? canvases : 0,
+    '[data-figure-state="unavailable"]': figureState === 'unavailable' ? 1 : 0,
+    '[data-assessment="retained"][aria-pressed="true"]': pressed,
+    '[data-unavailable="ending"]': stillOpen,
+    '.gf-stage .gf-chart canvas': canvases,
+  };
+  const text = { '[data-figure-reason]': figureReason, '[data-reassessment-state]': result, '.gf-stage': stage };
+  const node = selector => ({
+    first() { return this; },
+    locator: nested => node(`${selector} ${nested}`),
+    waitFor: async () => {},
+    count: async () => counts[selector] ?? 0,
+    innerText: async () => text[selector] ?? '',
+    getAttribute: async name => (name === 'data-record' ? 'trial:open-1' : null),
+    click: async () => {
+      send('?selected=open-1&kind=trial');
+      if (retainedOnOpen) send('?selected=open-1&kind=trial&assessment=retained');
+    },
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; send(''); },
+    locator: selector => node(selector),
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    request: { get: async () => ({ status: () => 200, text: async () => '',
+      json: async () => ({ selected: { reassessment: { comparison: { availability: served } } } }) }) },
+  };
+}
+
+test('S142 opens the still-open record and finds its retained comparison with no press', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S142(qa430RecordPage());
+});
+
+test('S142 fails at its feature assertion when opening the record asks for no retained comparison', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S142(qa430RecordPage({ retainedOnOpen: false, figureState: 'not-requested', periods: 0, pressed: 0 })),
+    /S142 opening a still-open record must request its retained comparison once, with no control pressed/);
+});
+
+test('S143 reads an unavailable figure naming its reason in the result line\u2019s words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S143(qa430RecordPage({ figureState: 'unavailable', periods: 0 }));
+});
+
+test('S143 fails at its feature assertion when the record shows no unavailable figure', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'not-requested', periods: 0, figureReason: '', result: '',
+    stage: 'no clock envelope is retained for this record\n0 → 0 half-hours read',
+  }))), /S143 the figure must read as an unavailable comparison/);
+});
+
+test('S143 fails when the figure prints the served code instead of its words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S143(qa430RecordPage({
+    figureState: 'unavailable', periods: 0, figureReason: 'missing_comparison_context',
+    result: 'Unavailable · missing_comparison_context',
+  }))), /S143 the figure must name the reason in words, never its code/);
 });
 
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route
@@ -700,6 +946,11 @@ function qa413GalleryPage({
   staged = true,
   distinctSelection = true,
   marks = {},
+  // #433: the canvas pane at the run's size — how far the lane runs below its
+  // visible box, how far the pane can scroll, and whether the key wrapped
+  paneOverrun = 0,
+  paneScroll = 0,
+  keyWrapped = false,
 } = {}) {
   marks = { primary: 'rgb(224, 127, 63)', outlineStyle: 'solid', outlineColor: 'rgb(224, 127, 63)',
     fill: 'color(srgb 0.8 0.5 0.3 / 0.72)', underline: '""', underlineHeight: '2px', clipped: 0, ...marks };
@@ -708,6 +959,22 @@ function qa413GalleryPage({
   keyGlyph = keyGlyph || cellGlyph;
   keyCounts = keyCounts || verdicts;
   const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  // a key entry is its verdict, or its verdict and served reason (#433, D6)
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const lane = {
+    pane: { top: 0, bottom: 616, left: 0, right: 850, overflowY: 'auto', scrollTop: 0, scrollLeft: 0,
+      scrollHeight: 616 + paneScroll, clientHeight: 616 },
+    wrap: box(575 + paneOverrun, 616 + paneOverrun, 0, 850),
+    entries: [['Basal slots', 34, 89], ['raise 5', 100, 152], ['lower 5', 163, 218], ['hold 30', 229, 283],
+      ['insufficient 3', 294, 378], ['no data 5', 389, 460]].map(([text, left, right], i, all) => {
+      const top = 575 + (keyWrapped && i === all.length - 1 ? 16 : 0);
+      return { text, ...box(top, top + 14, left, right) };
+    }),
+  };
   const node = selector => ({
     first() { return this; },
     click: async () => {},
@@ -719,7 +986,7 @@ function qa413GalleryPage({
       if (verdict === 'down' && name === 'aria-pressed') return 'true';
       return null;
     },
-    innerText: async () => String(keyCounts[verdictOf(selector)]),
+    innerText: async () => String(keyCounts[entryOf(selector)]),
     boundingBox: async () => {
       if (selector === '#lane-wrap') return laneWrapBox;
       if (selector === '#lane-key') return keyBox;
@@ -741,6 +1008,7 @@ function qa413GalleryPage({
   return {
     evaluate: async fn => {
       const src = fn.toString();
+      if (fn.name === 'laneGeometry') return lane;
       if (src.includes('lane-wrap')) return order;
       if (src.includes('outlineStyle')) return { ...marks };
       if (src.includes('lane-cell')) return { ...verdicts };
@@ -828,6 +1096,204 @@ test('assertBasalLaneGallery fails when the staged mark is not an underline', as
     /the staged mark must be an underline, not a fill/);
 });
 
+// #433: S113's pane checks at the run's own size, and its key counts scoped
+// to verdict plus reason.
+test('assertBasalLaneGallery fails when the lane overruns the canvas pane at rest', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneOverrun: 44 })),
+    /the lane and every key entry must stand wholly inside the canvas pane at rest; #lane-wrap overruns it by 44px/));
+});
+
+test('assertBasalLaneGallery fails when the canvas pane has a scroll range at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ paneScroll: 44 })),
+    /the canvas pane must have no scroll range at this size; it scrolls 44px/));
+});
+
+test('assertBasalLaneGallery fails when the key wraps onto a second line at a supported size', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ keyWrapped: true })),
+    /the key must stand on one line at this size; no data 5 wrapped below the lead entry/));
+});
+
+test('assertBasalLaneGallery counts a recurring-lows lower apart from a measured lower', async () => {
+  const verdicts = { up: 5, down: 4, 'down:recurring-lows': 1, hold: 30, insufficient: 3, nodata: 5 };
+  await assertBasalLaneGallery(qa413GalleryPage({ verdicts }));
+  await assert.rejects(
+    assertBasalLaneGallery(qa413GalleryPage({ verdicts, keyCounts: { ...verdicts, 'down:recurring-lows': 2 } })),
+    /the key's down:recurring-lows count must equal the served lane count/);
+});
+
+// #433: a fake page for `assertBasalLaneReachable` — S151's scenario. Each size
+// names how far the lane runs below the canvas pane's visible box at rest
+// (`below`), whether the pane can scroll that far (`scrolls`), and how far the
+// last key entry, the last cell and the chart run past its right edge
+// (`past`). A wheel moves the fake pane within its scroll range, as a browser
+// would; nothing else ever moves.
+function qa433ReachPage(sizes = {}) {
+  let viewport = { width: 1280, height: 720 };
+  let offset = 0;
+  const log = [];
+  const at = () => ({ below: 0, scrolls: true, past: 0, ...sizes[`${viewport.width}x${viewport.height}`] });
+  const box = (top, bottom, left, right) => ({ top, bottom, left, right, height: bottom - top });
+  const reading = () => {
+    const { below, scrolls, past } = at();
+    const range = scrolls ? below : 0;
+    const scrollTop = Math.min(offset, range);
+    const bottom = 400 + below - scrollTop; // the lane's bottom edge; the pane's is 400
+    return {
+      viewport: { ...viewport },
+      root: { scrollTop: 0, scrollLeft: 0, scrollHeight: viewport.height, clientHeight: viewport.height,
+        scrollWidth: viewport.width, clientWidth: viewport.width },
+      pane: { top: 100, bottom: 400, left: 0, right: 400, overflowY: scrolls ? 'auto' : 'visible',
+        scrollTop, scrollLeft: 0, scrollHeight: 300 + range, clientHeight: 300 },
+      head: box(160 - scrollTop, 190 - scrollTop, 0, 400),
+      wrap: box(bottom - 41, bottom, 0, 400 + past),
+      key: box(bottom - 41, bottom - 27, 34, past ? 400 + past : 348),
+      entries: [['Basal slots', 34, 89], ['raise 1', 100, 152], ['no data 44', 163, past ? 400 + past : 348]]
+        .map(([text, left, right]) => ({ text, ...box(bottom - 41, bottom - 27, left, right) })),
+      cells: [0, 1, 2].map(i => ({ cell: String(i), verdict: 'nodata', name: `slot ${i}`,
+        ...box(bottom - 19, bottom - 8, 34 + i * 105, i === 2 && past ? 400 + past : 134 + i * 105) })),
+      chart: box(190 - scrollTop, bottom - 41, 0, 400 + past),
+      ancestors: [{ name: '.panes', scrollTop: 0, scrollLeft: 0 }],
+    };
+  };
+  return {
+    log,
+    viewportSize: () => ({ ...viewport }),
+    setViewportSize: async size => { viewport = { ...size }; log.push(`${size.width}x${size.height}`); },
+    evaluate: async fn => {
+      if (fn.name === 'laneGeometry') return reading();
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+    mouse: {
+      move: async () => {},
+      wheel: async (_x, y) => {
+        const { below, scrolls } = at();
+        offset = Math.min(scrolls ? below : 0, Math.max(0, offset + y));
+      },
+    },
+  };
+}
+
+test('assertBasalLaneReachable passes when the pane scrolls a short window\'s lane into reach', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44 }, '832x560': { below: 44 } });
+  await assertBasalLaneReachable(page);
+  assert.deepEqual(page.log, [...LANE_REACH_SIZES.map(size => `${size.width}x${size.height}`), '1280x720'],
+    'every split size is visited, then the run\'s own size restored');
+});
+
+test('assertBasalLaneReachable fails on a key entry past the canvas pane\'s right edge', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '832x560': { past: 58.75 } })),
+    /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+});
+
+test('assertBasalLaneReachable fails on a lane below a canvas pane that cannot scroll', async () => {
+  await assert.rejects(assertBasalLaneReachable(qa433ReachPage({ '1200x560': { below: 44, scrolls: false } })),
+    /1200×560 vertical: #lane-wrap overruns the canvas pane's visible box by 44px at rest, and the pane cannot scroll \(overflow-y: visible\)/);
+});
+
+test('assertBasalLaneReachable names a vertical failure at one size and a horizontal one at another, once', async () => {
+  const page = qa433ReachPage({ '1200x560': { below: 44, scrolls: false }, '832x560': { past: 58.75 } });
+  await assert.rejects(assertBasalLaneReachable(page), error => {
+    assert.match(error.message, /^S151 the basal lane must stay within reach at every split size; \d+ failures:/);
+    assert.match(error.message, /1200×560 vertical: #lane-wrap still overruns the canvas pane's visible box by 44px after wheeling the pane/);
+    assert.match(error.message, /832×560 horizontal: 1 of 3 key entries run past the canvas pane's client box, "no data 44" by 58\.75px/);
+    assert.match(error.message, /832×560 horizontal: #chart runs past the canvas pane's client box by 58\.75px/);
+    return true;
+  });
+  assert.equal(page.log.at(-1), '1280x720', 'the run\'s own size is restored even when checks failed');
+});
+
+// #433 (D6): a fake page for `assertRecurringLowsVariant` — S113's route on the
+// `basal-recurring-low-no-clean-median` store. That store's 05:00 slot serves no
+// steady night, so no `#level .case-occurrence` row ever renders: a wait on one
+// times out here, as it did in the browser. The defaults are the branch's lane;
+// the key-word knobs reproduce base, which counts the slot under plain "lower".
+function qa433RecurringLowsPage({
+  keyEntries = ['Basal slots', 'lower · recurring lows 1', 'no data 47'],
+  counts = { 'down:recurring-lows': 1, nodata: 47 },
+} = {}) {
+  const asked = [];
+  let panel = null;
+  const verdictOf = selector => (/data-verdict="([a-z]+)"/.exec(selector) || [])[1];
+  const entryOf = selector => {
+    const reason = (/data-reason="([a-z-]+)"/.exec(selector) || [])[1];
+    return reason ? `${verdictOf(selector)}:${reason}` : verdictOf(selector);
+  };
+  const recurring = selector => selector.includes('[data-reason="recurring-lows"]');
+  const node = selector => {
+    asked.push(selector);
+    const self = {
+      filter() { return self; },
+      first() { return self; },
+      waitFor: async () => {
+        if (selector.includes('case-occurrence')) {
+          throw new Error('locator.waitFor: Timeout 30000ms exceeded (this store renders no steady night)');
+        }
+      },
+      click: async () => {
+        if (recurring(selector)) {
+          panel = { time: '05:00–05:30', verdict: 'lower (recurring lows)', recommended: '0.48', stage: 1,
+            text: '05:00–05:30 lower (recurring lows) Recommended 0.48 Stage change' };
+        }
+      },
+      count: async () => (selector === '#lane > button.lane-cell' ? 48
+        : recurring(selector) ? counts['down:recurring-lows'] || 0 : 0),
+      getAttribute: async name => (name === 'aria-label' && recurring(selector)
+        ? '05:00 basal slot, suggests a lower because lows keep happening at this hour' : null),
+      evaluateAll: async () => [...keyEntries],
+      innerText: async () => String(counts[entryOf(selector)]),
+      evaluate: async fn => {
+        const src = fn.toString();
+        if (src.includes("getPropertyValue('--cell')")) return `token(${verdictOf(selector)})`;
+        if (src.includes('::before')) return verdictOf(selector) === 'down' ? '""' : 'none';
+        if (src.includes('backgroundImage')) return verdictOf(selector) === 'nodata' ? 'radial-gradient(circle, ...)' : 'none';
+        throw new Error(`unexpected evaluate on ${selector}: ${src}`);
+      },
+    };
+    return self;
+  };
+  return {
+    asked,
+    // the store's served preparation: one basal Finding, the 05:00 slot's, which
+    // the old `openBasalLane` route drills before its steady-night wait
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async () => ({ ok: () => true, status: () => 200,
+      json: async () => ({ rendered_rows: [{ id: 'basal:300-330' }] }) }) },
+    locator: node,
+    getByRole: (role, { name }) => {
+      asked.push(`${role}:${name}`);
+      return { click: async () => {} };
+    },
+    waitForFunction: async () => {},
+    evaluate: async fn => {
+      if (fn.name === 'readSlotPanel') return panel && { ...panel };
+      if (fn.toString().includes('lane-cell')) return { ...counts };
+      throw new Error(`unexpected page.evaluate: ${fn}`);
+    },
+  };
+}
+
+test('assertRecurringLowsVariant reaches the lane on a store with no steady night, never waiting for one', async () => {
+  const page = qa433RecurringLowsPage();
+  await assertRecurringLowsVariant(page);
+  assert.ok(page.asked.includes('button:24 h'), 'the route opens the 24 h rail');
+  assert.ok(page.asked.includes('#lane > button.lane-cell'), 'the route waits for the 48 basal slots');
+  assert.deepEqual(page.asked.filter(selector => selector.includes('case-occurrence')), [],
+    'the route never waits for a steady-night row, which this store never renders');
+  assert.ok(page.asked.includes('#lane > .lane-cell[data-verdict="down"][data-reason="recurring-lows"]'),
+    'the route opens the recurring-lows cell itself');
+});
+
+test('assertRecurringLowsVariant fails at the key word when the key counts the slot under plain "lower"', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertRecurringLowsVariant(qa433RecurringLowsPage({
+      keyEntries: ['Basal slots', 'lower 1', 'no data 47'], counts: { down: 1, nodata: 47 },
+    })),
+    /S113 the key must read "lower · recurring lows 1"; it reads \["Basal slots","lower 1","no data 47"\]/));
+});
+
 // #413: a fake page for `assertRankedMinis` — the scenario S116 drives after
 // opening the rail. `graphics` maps a row id to its mounted mini's graphic
 // texts; an absent id is an unmounted mini. The story's own in-page function
@@ -890,4 +1356,547 @@ test('assertRankedMinis fails when no candidate mini is mounted', async () => {
   await withReplayAssertionTimeout(10, () => assert.rejects(
     assertRankedMinis(qa413MiniPage({}), [minied]),
     /at least one ranked mini must be mounted/));
+});
+
+// #429: a fake page for S139/S140 — the served admission, the dock at the foot
+// of the Diagnose inspector, and the Changes landing its link opens.
+function qa429DockPage(kind, { label = 'Open Changes ›' } = {}) {
+  let url = 'http://synthetic.invalid/';
+  const roster = { admission: { state: 'available', active_kind: kind, active_id: kind === 'trial' ? 'basal:390' : 7 },
+    trials: [], focuses: [{ id: 7, pinned_at: '2026-08-04 09:00:00' }] };
+  const detail = kind === 'focus' ? 'Pinned 08-04 · adherence and outcome are read in Changes'
+    : 'Maturing — 6 of 14 days since 08-11';
+  const text = {
+    '.inspector > .watch': `${kind.toUpperCase()} · WATCHING\nThe watched change\n${detail}\n${label}`,
+    '.inspector > .watch .go': label,
+    '.inspector > .watch .how': detail,
+    '.gf-stage-trial .gf-title': 'Basal 06:30 · 0.85 → 1.05 U/hr',
+  };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    locator: sub => node(`${selector} ${sub}`),
+    waitFor: async () => {},
+    click: async () => { if (selector === '.inspector > .watch .go') url = 'http://synthetic.invalid/changes?subject=watch'; },
+    getAttribute: async name => (selector === '.inspector > .watch' && name === 'data-state' ? kind : null),
+    innerText: async () => text[selector] ?? '',
+  });
+  return {
+    url: () => url,
+    request: { get: async href => ({ status: () => 200, text: async () => '',
+      json: async () => (new URL(href).searchParams.has('selected')
+        ? { ...roster, selected: { changes: [{ slot: '06:30' }] } } : roster) }) },
+    locator: node,
+  };
+}
+
+test('S139 and S140 pass when the dock names Changes and its link lands on the watch', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S139(qa429DockPage('trial'));
+  await C4_STORIES.S140(qa429DockPage('focus'));
+});
+
+test('S139 and S140 fail at the label, not at a premise, when the dock still reads "Open Verify ›"', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  for (const [id, kind] of [['S139', 'trial'], ['S140', 'focus']]) {
+    await withReplayAssertionTimeout(10, () => assert.rejects(
+      C4_STORIES[id](qa429DockPage(kind, { label: 'Open Verify ›' })),
+      error => error.message.includes(`${id} the dock's link must read "Open Changes ›"`)
+        && !error.message.includes('premise')));
+  }
+});
+
+test('S154 is a unique app-only C4 story, served from the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S154');
+  assert.equal(entries.length, 1, 'S154 is registered once');
+  assert.equal(entries[0][1].deferred.term, '#434 reader words');
+  assert.equal(storyCase('S154'), 'showcase');
+});
+
+// #434: a fake page for S154. `served` answers the story's one read (the 12:30
+// night evidence); `lines` are the panel's `.empty` lines once the slot is open;
+// `label` is the focal basal tile host's aria-label. Controls pressed and reads
+// made are recorded in order, so a premise failure can be told from a feature one.
+function qa434Page({ served, lines, label }) {
+  const actions = [];
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => {},
+    click: async () => { actions.push(`click:${selector}`); },
+    allInnerTexts: async () => (selector === '#level .empty' ? lines : []),
+    getAttribute: async name => (name === 'aria-label'
+      && selector === '#tile-focal .evidence-tile[data-chart-id="basal:750"] .tile-chart' ? label : null),
+  });
+  return {
+    actions,
+    url: () => 'http://synthetic.invalid/',
+    request: { get: async url => {
+      const { pathname, search } = new URL(url);
+      actions.push(`read:${pathname}${search}`);
+      return { status: () => 200, text: async () => '', json: async () => served };
+    } },
+    locator: node,
+    getByRole: (_role, { name }) => node(String(name)),
+    waitForFunction: async () => {},
+  };
+}
+const served434 = { excluded_night_count: 3, excluded_night_reasons: {
+  before_current_setting: 0, below_range_or_suspended: 0, above_range: 0,
+  insulin_acting: 1, carb_log: 0, other: 2 } };
+const line434 = '3 excluded nights: 1 insulin on board, 2 other reasons';
+const label434 = '27 steady nights at 12:30; 3 nights excluded: 1 insulin on board, 2 other reasons';
+const slot434 = `click:${/^12:30 basal slot,/}`;
+
+test('S154 passes when the panel line and the tile description name the served reasons', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: served434, lines: [line434], label: label434 });
+  await C4_STORIES.S154(page);
+  assert.deepEqual(page.actions, ['click:nav.v2-nav [data-destination="diagnose"]', 'click:24 h',
+    'read:/api/diagnose/basal-night-evidence?slot=25', slot434]);
+});
+
+test('S154 fails at its premise, before opening the slot, when the showcase serves another total', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: { ...served434, excluded_night_count: 2 }, lines: [line434], label: label434 });
+  await assert.rejects(C4_STORIES.S154(page), /S154 premise: the showcase must serve three excluded nights at 12:30/);
+  assert.equal(page.actions.includes(slot434), false, 'the slot is never opened on a failed premise');
+});
+
+test('S154 fails at its pinned panel line on the base, before reading the served breakdown', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  // The base serves the total and no breakdown, and its panel prints the total alone.
+  const page = qa434Page({ served: { excluded_night_count: 3 }, lines: ['3 excluded nights'],
+    label: '27 steady nights at 12:30; 3 nights excluded' });
+  await assert.rejects(withReplayAssertionTimeout(10, () => C4_STORIES.S154(page)), error => {
+    assert.match(error.message, /S154 the panel line names the served reasons/);
+    assert.equal(error.cause?.code, 'ERR_ASSERTION');
+    assert.match(error.cause.message, /S154 the panel's excluded-night line must name each served reason/);
+    return true;
+  });
+  assert.equal(page.actions.at(-1), slot434, 'the feature assertion is reached with the slot open');
+});
+
+test('S154 fails when the panel prints counts the showcase did not serve', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: { ...served434, excluded_night_reasons: {
+    ...served434.excluded_night_reasons, insulin_acting: 2, other: 1 } }, lines: [line434], label: label434 });
+  await assert.rejects(C4_STORIES.S154(page), /S154 the pinned counts must be the served breakdown/);
+});
+
+test('S154 fails when the tile description does not name the served reasons', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa434Page({ served: served434, lines: [line434],
+    label: '27 steady nights at 12:30; 3 nights excluded' });
+  await assert.rejects(withReplayAssertionTimeout(10, () => C4_STORIES.S154(page)), error => {
+    assert.match(error.message, /S154 the tile description names the served reasons/);
+    assert.match(error.cause?.message ?? '', /S154 the tile's accessible description must name each served reason/);
+    return true;
+  });
+});
+
+const C4_STORIES_424 = async () => (await import('./c4.replay.mjs')).C4_STORIES;
+
+// #424 · the case-file counts revision's three stories, and the helpers they
+// read the desk through. The served inputs are generator-owned fixtures; the
+// base-shaped copies strip exactly the three fields the base does not serve.
+const fixtureJson = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+const missedMealCase = () => fixtureJson('./__fixtures__/missed-meal-comparison.json').payload;
+const samePopulationCase = () => fixtureJson(
+  '../mockups/diagnose-workstation.synthetic/finding-case-files.json').cases['finding:carb_undercount'].event;
+const BAND_LEADS_424 = { fired: 'Meets criteria', near_miss: 'Borderline', clean: 'Does not meet' };
+function baseShaped424(file) {
+  const copy = structuredClone(file);
+  const { outside_comparison: _outside, ...counts } = copy.projection.counts;
+  copy.projection.counts = { ...counts, not_comparable: copy.projection.counts.comparison };
+  for (const cohort of copy.projection.cohorts) delete cohort.band_verdict;
+  return copy;
+}
+const captionView424 = (file, caption, extra = {}) => ({
+  caption,
+  headings: file.projection.cohorts.map(cohort => ({ name: cohort.name, count: cohort.routed_count })),
+  bandLeads: BAND_LEADS_424,
+  notComparable: file.verdict_counts.no_data ? [`${file.verdict_counts.no_data} not comparable`] : [],
+  foot: file.verdict_counts.no_data ? `${file.verdict_counts.no_data} not comparable` : '',
+  denominator: file.summary.denominator,
+  ...extra,
+});
+// A fake desk for the caption stories: the rail row, the served case file and
+// the rendered comparison view, so a story's control flow runs without Chromium.
+function comparisonStoryPage(file, view) {
+  const node = () => ({
+    first() { return this; }, filter() { return this; },
+    count: async () => 1, waitFor: async () => {}, click: async () => {}, getAttribute: async () => null,
+  });
+  return {
+    url: () => 'http://synthetic.invalid/',
+    locator: node,
+    getByRole: node,
+    waitForFunction: async () => true,
+    waitForResponse: async predicate => {
+      const response = {
+        url: () => `http://synthetic.invalid/api/diagnose/finding-case-file?finding_id=${encodeURIComponent(file.finding.id)}`,
+        ok: () => true, json: async () => file,
+      };
+      assert.ok(predicate(response), 'the fake case file must answer the story\'s own request');
+      return response;
+    },
+    evaluate: async () => view,
+  };
+}
+
+test('S124–S126 are unique app-only #424 stories on their manufactured case stores', () => {
+  for (const [id, expectedCase, term] of [
+    ['S124', 'behavioral-carb-undercount', 'HV2-18'],
+    ['S125', 'behavioral-missed-meal', 'HV2-18'],
+    ['S126', 'behavioral-correction-stacking', '#413 design lock'],
+  ]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+test('#424 the served-shape check passes on the branch shape and fails on the base shape', () => {
+  assert.doesNotThrow(() => assertServedComparison424('S125', missedMealCase()));
+  assert.throws(() => assertServedComparison424('S125', baseShaped424(missedMealCase())),
+    /S125 the case file must serve its count outside the comparison and each cohort's band state/);
+});
+
+test('#424 a same-population caption passes as the branch renders it and fails as the base did', () => {
+  const file = samePopulationCase();
+  assert.doesNotThrow(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities')));
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 matched · 1 nearly matched · 3 comparison · 3 not comparable',
+    { notComparable: ['1 not comparable', '3 not comparable'] })), /S124 caption term 1 must read/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities (does not meet)')),
+  /S124 caption term 3 must read/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    { headings: [{ name: 'Matched', count: 6 }, { name: 'Nearly matched', count: 1 }, { name: 'Comparison', count: 3 }] })),
+  /S124 the caption's Other meal opportunities must match its section heading/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    { notComparable: ['1 not comparable', '3 not comparable'] })),
+  /S124 only the band's no-data count may read "not comparable"/);
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities · 0 meals outside the comparison')),
+  /S124 nothing outside the comparison may print when none is served/);
+});
+
+test('#424 a cross-population caption names its Highs outside the comparison and no band on Matched', () => {
+  const file = missedMealCase();
+  assert.doesNotThrow(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison')));
+  assert.throws(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals')),
+  /S125 the caption must name the 1 high outside the comparison/);
+  assert.throws(() => assertComparisonCaption424('S125', file, captionView424(file,
+    '2 Matched (meets criteria) · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison')),
+  /S125 caption term 1 must read "2 Matched"/);
+});
+
+test('S124 fails at its served-shape feature check on the base case file, never at a setup step', async () => {
+  const file = baseShaped424(samePopulationCase());
+  file.finding = { ...file.finding, id: 'pattern:highs_after_meals' };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES_424().then(stories => stories.S124(comparisonStoryPage(file, captionView424(file, '')))),
+    /S124 the case file must serve its count outside the comparison and each cohort's band state/));
+});
+
+test('S124 names a premise failure when the served case is not a same-population comparison', async () => {
+  const file = missedMealCase();
+  file.finding = { ...file.finding, id: 'pattern:highs_after_meals' };
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES_424().then(stories => stories.S124(comparisonStoryPage(file, captionView424(file, '')))),
+    /S124 premise:/));
+});
+
+test('S124 and S125 reach their caption assertions on a served branch case file', async () => {
+  const same = samePopulationCase();
+  same.finding = { ...same.finding, id: 'pattern:highs_after_meals' };
+  same.verdict_counts = { ...same.verdict_counts };
+  const stories = await C4_STORIES_424();
+  await withReplayAssertionTimeout(10, () => stories.S124(comparisonStoryPage(same, captionView424(same,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities'))));
+  const missed = missedMealCase();
+  missed.verdict_counts = { ...missed.verdict_counts, no_data: 1 };
+  await withReplayAssertionTimeout(10, () => stories.S125(comparisonStoryPage(missed, captionView424(missed,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals · 1 high outside the comparison'))));
+  await withReplayAssertionTimeout(10, () => assert.rejects(stories.S125(comparisonStoryPage(missed,
+    captionView424(missed, '2 matched · 0 nearly matched · 1 comparison · 1 not comparable',
+      { notComparable: ['1 not comparable', '1 not comparable'] }))), /S125 caption term 1 must read/));
+});
+
+test('#424 a folded cause line passes on its share and set-apart counts, and fails on the base line', () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows;
+  const carb = rows.find(row => row.id === 'finding:carb_undercount');
+  assert.doesNotThrow(() => assertFoldLine424('S126', carb,
+    { den: '1 of 3 meals', out: 'outside the count·2 of 4 highs' }));
+  assert.throws(() => assertFoldLine424('S126', carb, { den: '2 of 4 highs·1 of 3 meals', out: '' }),
+    /S126 finding:carb_undercount must set its other counts apart behind "outside the count"/);
+  assert.throws(() => assertFoldLine424('S126', carb,
+    { den: '1 of 3 meals ran high', out: 'outside the count·2 of 4 highs' }), /must not print an outcome word/);
+  assert.throws(() => assertFoldLine424('S126', carb,
+    { den: '', out: 'outside the count·2 of 4 highs' }), /must print its share of the Pattern beside its name/);
+  // Under a Pattern that serves no count, every sentence is outside and the line leads with the words.
+  const stacking = rows.find(row => row.id === 'finding:correction_stacking');
+  assert.doesNotThrow(() => assertFoldLine424('S115', stacking,
+    { den: '', out: 'outside the count·1 of 1 correction clusters' }));
+});
+
+test('#424 a folded cause without served fold sentences fails the served-shape check', () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows;
+  const members = rows.filter(row => row.claimed_by === 'pattern:lows_after_correcting_highs');
+  assert.doesNotThrow(() => assertServedFold424('S126', members));
+  assert.throws(() => assertServedFold424('S126', members.map(({ fold_sentences: _fold, ...row }) => row)),
+    /S126 every folded cause must serve its fold sentences/);
+  assert.throws(() => assertServedFold424('S126', []), /S126 every folded cause must serve its fold sentences/);
+});
+
+test('S126 fails at its served-shape feature check before opening the fold on the base projection', async () => {
+  const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows
+    .map(({ fold_sentences: _fold, ...row }) => row);
+  const clicked = [];
+  const node = selector => ({
+    first() { return this; }, filter() { return this; },
+    waitFor: async () => {}, click: async () => { clicked.push(selector); },
+  });
+  const page = {
+    url: () => 'http://synthetic.invalid/',
+    locator: node, getByRole: (_role, { name }) => node(name),
+    waitForFunction: async () => true,
+    request: { get: async () => ({ status: () => 200, text: async () => '',
+      json: async () => ({ rendered_rows: rows }) }) },
+    evaluate: async () => { throw new Error('S126 must not open the fold before its served-shape check'); },
+  };
+  const stories = await C4_STORIES_424();
+  await assert.rejects(stories.S126(page), /S126 every folded cause must serve its fold sentences/);
+  assert.ok(!clicked.some(selector => selector.includes('qfold')), 'no fold is opened on the base shape');
+});
+
+// #423: the served model-view day S121 reads — pattern-near-tie 2024-05-25, as
+// the branch serves it (episode 2024-05-25-ep13's anchors are stamped the day
+// before, so the Day axis clips their rings).
+const MODEL423 = { date: '2024-05-25', episodes: [
+  { id: '2024-05-25-ep13', lever: 'carb_undercount', lever_title: 'Carb undercount', anchors: [
+    { t: '2024-05-24 19:00:00', kind: 'meal', state: 'fired',
+      verdicts: [{ classifier: 'carb_undercount', title: 'Carb undercount', matched: true }] },
+    { t: '2024-05-24 20:00:00', kind: 'correction', state: 'clean', verdicts: [] },
+    { t: '2024-05-24 22:00:00', kind: 'low', state: 'outranked',
+      verdicts: [{ classifier: 'over_treated_low', title: 'Over-treated low', matched: false },
+        { classifier: 'correction_on_iob', title: 'Correction on active insulin', matched: true }] },
+  ] },
+  { id: '2024-05-25-ep14', lever: null, lever_title: null,
+    anchors: [{ t: '2024-05-25 02:30:00', kind: 'correction', state: 'clean', verdicts: [] }] },
+] };
+const INK = { primary: 'rgb(134, 173, 120)', warn: 'rgb(214, 170, 60)' };
+// The in-page reading of that day's Episode Log and overlay, as the branch renders it.
+const LOG423 = {
+  claimed: { word: 'claimed', state: 'outranked', ink: INK.primary,
+    text: '▽ Low · 54 mg/dL · Correction on active insulin · Carb undercount' },
+  firedInk: INK.primary, warnInk: INK.warn,
+  captions: ['Findings · 1 · 1 claimed', 'Quiet · 2'],
+  markers: { claimed: { size: 10, border: '#86ad78', fill: '#1f1b18' }, fired: { size: 10, border: '#86ad78', fill: '#1f1b18' } },
+  surface: '#1f1b18', accent: '#d08150',
+};
+const variant423 = (change) => {
+  const copy = structuredClone(LOG423);
+  change(copy);
+  return copy;
+};
+// A fake page for `assertClaimedEpisodeLog`: every in-page reading returns
+// `rest` until the claimed row is pressed, then the pressed marker.
+function qa423LogPage(rest = LOG423, pressed = { size: 15, border: '#d08150' }) {
+  let isPressed = false;
+  const locator = (selector) => {
+    const node = { filter: () => node, first: () => node, waitFor: async () => {},
+      click: async () => { if (selector.includes('data-day-row="2024-05-24 22:00:00"')) isPressed = true; } };
+    return node;
+  };
+  return {
+    locator,
+    evaluate: async (fn, arg) => {
+      assert.ok(fn.toString().includes('day-anchor-markers'), 'S121 reads the overlay by series id');
+      assert.deepEqual(arg, { claimed: '2024-05-24 22:00:00', fired: '2024-05-24 19:00:00' });
+      return isPressed ? { ...rest, markers: { ...rest.markers, claimed: { ...rest.markers.claimed, ...pressed } } } : rest;
+    },
+  };
+}
+// A feature failure names S121's feature sentence and the one thing that broke, never a premise.
+const feature121 = (part) => (error) => {
+  assert.match(error.message, /^S121 the claimed low must read as part of the Finding that claimed it: /);
+  assert.ok(error.message.includes(part), `${error.message} does not name: ${part}`);
+  return true;
+};
+
+test('S121 passes on the claimed low as the branch renders it', async () => {
+  await assertClaimedEpisodeLog(qa423LogPage(), MODEL423);
+});
+
+test('S121 fails at its premise when the day serves no claimed low', async () => {
+  const model = structuredClone(MODEL423);
+  model.episodes[0].anchors[2].state = 'clean';
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    /S121 premise: the day must serve a claimed low whose own verdict matched correction_on_iob/);
+});
+
+test('S121 fails at its premise when the Episode Log does not render the claimed row', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed = null; })), MODEL423),
+    /S121 premise: the Episode Log must render the claimed low's row \(2024-05-24 22:00:00\)/));
+});
+
+test('S121 fails on a warning-hued tier word', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed.ink = INK.warn; })), MODEL423),
+    feature121(`its tier word paints ${INK.warn}, not the fired tier's ${INK.primary} (it is the warning ink)`));
+});
+
+test('S121 fails on the bare engine state word', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed.word = 'outranked'; })), MODEL423),
+    feature121('its tier reads "outranked", not "claimed"'));
+});
+
+test('S121 fails when the model read serves no title on the matched verdict', async () => {
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    feature121("the model read serves no title on the low's matched correction_on_iob verdict"));
+});
+
+test('S121 fails when the row does not name what the low matched', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => {
+    log.claimed.text = '▽ Low · 54 mg/dL · Carb undercount';
+  })), MODEL423), feature121('does not name what the low matched ("Correction on active insulin")'));
+});
+
+test('S121 fails when the row does not end with the claiming Finding\'s served name', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => {
+    log.claimed.text = '▽ Low · 54 mg/dL · Carb undercount · Correction on active insulin';
+  })), MODEL423), feature121('does not end with the claiming Finding\'s served name ("Carb undercount")'));
+});
+
+test('S121 fails on a caption that counts rows', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.captions = ['Findings · 2', 'Quiet · 2']; })), MODEL423),
+    feature121('the Findings caption reads "Findings · 2", not "Findings · 1 · 1 claimed"'));
+});
+
+test('S121 fails on a claimed marker smaller than the fired one', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.markers.claimed.size = 8; })), MODEL423),
+    feature121("its resting marker is 8, not the fired marker's 10"));
+});
+
+test('S121 fails on a claimed marker hued unlike the fired one', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.markers.claimed.border = '#e2be4c'; })), MODEL423),
+    feature121("its resting ring is #e2be4c, not the fired ring's #86ad78"));
+});
+
+test('S121 fails as a feature, never a premise, when the model read serves no lever_title', async () => {
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].lever_title;
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    feature121('the model read serves no lever_title on the claiming episode'));
+});
+
+test('S121 names every changed feature at once on a desk serving neither the verdict title nor the lever_title', async () => {
+  // The desk before #426: no served name at all, the Lever named from its own table.
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  delete model.episodes[0].lever_title;
+  const base = variant423((log) => {
+    Object.assign(log.claimed, { word: 'outranked', ink: INK.warn, text: '▽ Low · 54 mg/dL · carbs undercounted' });
+    log.captions = ['Findings · 2', 'Quiet · 2'];
+    Object.assign(log.markers.claimed, { size: 8, border: '#e2be4c' });
+  });
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(base), model), (error) => {
+    for (const part of ['"outranked"', 'serves no title', 'serves no lever_title', 'the warning ink', '"Findings · 2"', 'is 8',
+      'resting ring is #e2be4c']) {
+      feature121(part)(error);
+    }
+    return true;
+  });
+});
+
+test('S121 fails with exactly the six items the ticket\'s base (e229bef3) showed', async () => {
+  // e229bef3 is the release trunk after #426: it serves the episode's
+  // lever_title, so the row already ends "· Carb undercount", but no verdict
+  // title. The inks and rings are the coordinator's 2026-09-23 base run's.
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  const base = variant423((log) => {
+    Object.assign(log, { firedInk: 'rgb(134, 173, 120)', warnInk: 'rgb(201, 138, 78)', captions: ['Findings · 2', 'Quiet · 2'] });
+    Object.assign(log.claimed, { word: 'outranked', ink: 'rgb(201, 138, 78)', text: '▽ Low · 54 mg/dL · Carb undercount' });
+    log.markers = { claimed: { size: 8, border: '#c98a4e', fill: '#1f1b18' }, fired: { size: 10, border: '#e07f3f', fill: '#1f1b18' } };
+  });
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(base), model), (error) => {
+    // Node appends the collected list's diff after the sentence; the sentence is the first line.
+    assert.equal(error.message.split('\n')[0], 'S121 the claimed low must read as part of the Finding that claimed it: '
+      + 'its tier reads "outranked", not "claimed"; '
+      + "the model read serves no title on the low's matched correction_on_iob verdict; "
+      + "its tier word paints rgb(201, 138, 78), not the fired tier's rgb(134, 173, 120) (it is the warning ink); "
+      + 'the Findings caption reads "Findings · 2", not "Findings · 1 · 1 claimed"; '
+      + "its resting marker is 8, not the fired marker's 10; "
+      + "its resting ring is #c98a4e, not the fired ring's #e07f3f");
+    return true;
+  });
+});
+
+test('S121 fails when pressing the claimed row does not pick its marker', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertClaimedEpisodeLog(qa423LogPage(LOG423, { size: 10, border: '#86ad78' }), MODEL423),
+    /S121 pressing the claimed row must ring its marker in the accent at size 15/));
+});
+
+// A fake page for `assertBandGlossary`: the Findings caption, its control, the
+// Glossary it opens from the keyboard, and where Close leaves focus.
+function qa423GlossaryPage({ caption = true, control = { band: 'findings', name: 'Explain Findings in the Glossary', tag: 'BUTTON' },
+  inView = true, returns = true } = {}) {
+  let focused = false; let open = false; let closed = false;
+  const locator = (selector) => {
+    const node = { filter: () => node, first: () => node, waitFor: async () => {},
+      focus: async () => { if (selector === '[data-log-glossary="findings"]' && control) focused = true; },
+      click: async () => { if (selector === '[data-utility-close]' && open) { open = false; closed = true; } } };
+    return node;
+  };
+  return {
+    locator,
+    keyboard: { press: async (key) => { if (key === 'Enter' && focused) { open = true; focused = false; } } },
+    evaluate: async (fn) => {
+      const source = fn.toString();
+      if (source.includes('data-glossary-group')) return { open, group: open, inView: open && inView };
+      if (source.includes('activeElement')) return closed && returns
+        ? { onControl: true, was: 'button.linkbtn.gf-log-help' } : { onControl: false, was: 'body' };
+      return { caption, control: caption ? control : null };
+    },
+  };
+}
+
+test('S122 passes when the caption control opens the Glossary at its group and Close returns to it', async () => {
+  await assertBandGlossary(qa423GlossaryPage());
+});
+
+test('S122 fails at its premise when the Episode Log shows no Findings caption', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ caption: false })),
+    /S122 premise: the held Day's Episode Log must show a Findings caption/));
+});
+
+test('S122 fails at its feature assertion when the caption carries no Glossary control', async () => {
+  await assert.rejects(assertBandGlossary(qa423GlossaryPage({ control: null })),
+    /S122 the Findings caption must carry a Glossary button named for its band/);
+});
+
+test('S122 fails when the control is not named for its band', async () => {
+  await assert.rejects(assertBandGlossary(qa423GlossaryPage({ control: { band: 'findings', name: 'Glossary', tag: 'BUTTON' } })),
+    /S122 the Findings caption must carry a Glossary button named for its band/);
+});
+
+test('S122 fails when the Glossary opens without its Episode Log group in view', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ inView: false })),
+    /S122 the caption control must open the Glossary with its Episode Log group in view/));
+});
+
+test('S122 fails when Close does not return focus to the caption control', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ returns: false })),
+    /S122 closing the Glossary must return focus to the Findings caption control; focus is on body/));
 });

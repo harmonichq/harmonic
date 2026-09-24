@@ -1,0 +1,66 @@
+SYNTHETIC — after · tree 9bf9d6e2 · store pattern-near-tie · 432-D1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose?subject=pattern%3Ahighs_after_meals
+Element: viewport
+Note: Highs after meals Pattern roster
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+1
+no data
+47
+HIGHS AFTER MEALS
+Highs after meals in 3 of 3 meals
+Full
+Keep
+Findings
+›
+Highs after meals
+3 of 3 · 24 h
+Focus unavailable
+Harmonic is not offering a Focus from this read.
+Highs after meals · meals
+3 of 3 meal responses in 24 h · 0 not attributed
+Meets criteria
+3
+Borderline
+0
+Does not meet
+0
+RESPONSE COMPARISON
+3 Matched (meets criteria) · 0 Nearly matched (borderline) · 0 Other meal opportunities
+Matched · 3 occurrences
+May 24 · 19:00
+52 g · 7.4 U · peak 238
+May 25 · 19:00
+52 g · 7.4 U · peak 238
+May 27 · 19:00
+52 g · 7.4 U · peak 238
+Nearly matched · 0 occurrences
+No occurrences in this population.
+Other meal opportunities · 0 occurrences
+No occurrences in this population.
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

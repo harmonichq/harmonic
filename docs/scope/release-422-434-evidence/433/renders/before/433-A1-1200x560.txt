@@ -1,0 +1,81 @@
+SYNTHETIC — before · tree a4d374a7 · store basal-verdict-gallery · 433-A1 · 1200x560
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: Diagnose at rest, 24 h: the canvas pane
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+raise
+1
+lower
+1
+hold
+1
+insufficient
+1
+no data
+44
+BASAL 00:00
+One cautious step up is supported at this time.
+Delivered 0.70 U/h across 30 steady nights against 0.60 programmed.
+Full
+Keep
+Findings
+7 findings · 30 days
+Filter
+1
+Next in line
+Basal 00:00 · raise
+⚙SETTING
+›
+one cautious step up is supported at this time
+now 0.6 U/hr → 0.7 U/hr
+2
+Basal 00:30 · lower
+⚙SETTING
+›
+one cautious step down is supported at this time
+now 0.6 U/hr → 0.5 U/hr
+
+Worth a look
+
+3
+Overnight lows with no insulin on board
+◇PATTERN
+›
+0 of 30 nights ran low overnight
+
+Not recurring often enough to rank yet.
+
+Highs after meals
+›
+Highs after treating lows
+›
+Lows after correcting highs
+›
+Lows after meals
+›
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

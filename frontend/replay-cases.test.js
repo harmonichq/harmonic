@@ -102,6 +102,57 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
     { start_min: 0, end_min: 1440 }, 'S56 submits the authentic selected 24 h scope before its reload assertion');
 });
 
+test('S61 requires Day to name its origin and each attributed row by the served names', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const file = { finding: { id: 'finding:over_treated_low', title: 'Over-treated low' }, projection: { alignment: 'event' } };
+  const dayUrl = 'http://127.0.0.1:8765/day?date=2024-06-26&moment=2024-06-26+13%3A55%3A00'
+    + '&subject=finding%3Aover_treated_low&title=Over-treated+low&occurrence=occ-7&from=diagnose';
+  const servedDay = {
+    date: '2024-06-26',
+    episodes: [
+      { id: 'ep1', lever: 'over_treated_low', lever_title: 'Over-treated low', anchors: [{ t: '2024-06-26 13:55:00' }] },
+      { id: 'ep2', lever: null, lever_title: null, anchors: [{ t: '2024-06-26 20:00:00' }] },
+    ],
+  };
+  const served = { openedFrom: 'Over-treated low', rows: [
+    { t: '2024-06-26 13:55:00', text: '▽ Low · 48 mg/dL · Over-treated low' },
+    { t: '2024-06-26 20:00:00', text: '△ High · 210 mg/dL' },
+  ] };
+  const pageFor = (day, model = servedDay) => ({
+    url: () => dayUrl,
+    request: { get: async url => {
+      assert.equal(new URL(url).pathname, '/api/model-view');
+      assert.equal(new URL(url).searchParams.get('date'), '2024-06-26');
+      return { ok: () => true, status: () => 200, json: async () => model };
+    } },
+    waitForFunction: async () => {},
+    waitForResponse: async predicate => {
+      const response = { url: () => `http://127.0.0.1:8765/api/diagnose/finding-case-file?finding_id=${encodeURIComponent(file.finding.id)}`,
+        ok: () => true, json: async () => file };
+      assert.ok(predicate(response), 'S61 opens the over-treated-low case file');
+      return response;
+    },
+    getByRole: () => ({ click: async () => {} }),
+    locator: () => ({
+      filter() { return this; }, first() { return this; },
+      waitFor: async () => {}, click: async () => {}, count: async () => 1,
+      getAttribute: async () => 'occ-7',
+      innerText: async () => `OPENED FROM\n${day.openedFrom}\n${day.rows.map(row => row.text).join('\n')}`,
+    }),
+    evaluate: async () => day,
+  });
+  await C2_STORIES.S61(pageFor(served));
+  for (const [day, expected] of [
+    [{ ...served, openedFrom: file.finding.id }, /served title/],
+    [{ ...served, rows: [{ ...served.rows[0], text: '▽ Low · 48 mg/dL · over_treated_low' }, served.rows[1]] }, /underscore token/],
+    [{ ...served, rows: [{ ...served.rows[0], text: '▽ Low · 48 mg/dL' }, served.rows[1]] }, /served Lever name/],
+  ]) {
+    await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S61(pageFor(day))), expected);
+  }
+  const unattributed = { ...servedDay, episodes: [servedDay.episodes[1]] };
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S61(pageFor(served, unattributed))), /S61 premise/);
+});
+
 test('one invocation selects the generated case each story needs', () => {
   assert.equal(storyCase('S7'), 'c3-trial');
   assert.equal(storyCase('S88'), 'basal-lower');

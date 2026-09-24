@@ -364,11 +364,18 @@
 
    `overflow-x: clip` is the width floor's backstop (#359): should this pane's
    furniture ever outgrow its track again, it clips inside the canvas instead of
-   painting over the inspector beside it. `clip`, not `hidden` — `hidden` on one
-   axis forces the other to `auto`, which would hand this pane a vertical
-   scrollport it does not have. It is earned by measurement, not precaution:
-   four descendants still reach 20px past the pane's right edge at 832px, the
-   narrowest viewport the split may now form at. */
+   painting over the inspector beside it. It is earned by measurement, not
+   precaution: at 832px, the narrowest viewport the split may form at, #359
+   measured furniture reaching past the pane's right edge, among it the chart
+   header's hover readout, which ADR 433 leaves clipped here as before.
+
+   #433: at split widths the pane also owns a vertical scroll (the
+   `min-width: 832px` block after `.lane-key`), so on a window too short for
+   these row floors the basal lane is reached with the pane's own scroll rather
+   than clipped out of reach. Once one axis scrolls, the backstop computes to
+   `hidden` rather than `clip`: it still clips horizontally, but a `hidden` axis
+   can be scrolled by script or by focus, so desk story S151 guards the pane's
+   `scrollLeft`. */
 .canvas-pane { grid-template-rows: minmax(260px, 1fr) auto 210px; overflow-x: clip; }
 .canvas-pane > header.canvas-head { grid-row: 2; }
 .canvas-pane > .body {
@@ -1101,16 +1108,34 @@
   background: var(--ck-accent); border-radius: 1px;
 }
 
-/* one line, always: a wrapped key would grow the canvas pane's fixed rows.
-   #413: the key is the lane's head row now, so it leads `.lane-wrap` — the
-   8px gap it used to open above the cells (`padding-top`) moves to `.lane`'s
-   own `margin-top` below, so the two rows keep the same spacing in the new
-   order instead of the key floating flush against the pane above it. */
+/* #413: the key is the lane's head row, so it leads `.lane-wrap` — the 8px
+   gap it used to open above the cells (`padding-top`) moves to `.lane`'s own
+   `margin-top` below, so the two rows keep the same spacing in that order
+   instead of the key floating flush against the pane above it.
+   #433: the key stands on one line at 1280×720 and 1440×900. It wraps (the
+   block below) only when the pane is too narrow for it, near the narrowest
+   split, and a wrapped key takes its extra line from the chart inside the
+   fixed 210px body, never from the pane's rows. */
 .lane-key {
   display: flex; flex-wrap: nowrap; gap: 11px; align-items: center; overflow: visible;
   margin-left: var(--ck-grid-left); margin-right: var(--ck-grid-right);
   font-size: var(--ck-micro); color: var(--mk-muted);
   white-space: nowrap;
+}
+/* ADR 433, scoped to the split's own range so the ≤831px and ≤480px layouts
+   stay byte-identical. It sits after the base `.lane-key` rule because a media
+   block adds no specificity: placed earlier, the base `nowrap` would win.
+   - The canvas pane scrolls vertically on a window too short for its row
+     floors (see the canvas pane rule), so the lane is always within reach.
+   - The key wraps between whole entries. Each entry is one inline-flex span
+     holding the inherited `white-space: nowrap`, so an entry never splits.
+     Wrapping also frees the body's grid column: at 832px an unbreakable key
+     had widened it past the pane, carrying the cells and the chart out with
+     it. The row gap stays inside the key's own leading, so a wrapped key reads
+     as one key on two lines, not as two rows. */
+@media (min-width: 832px) {
+  .canvas-pane { overflow-y: auto; }
+  .lane-key { flex-wrap: wrap; row-gap: 2px; }
 }
 .lane-key span { display: inline-flex; align-items: center; gap: 5px; }
 /* A swatch has to LAY THE TRACK DOWN UNDER ITSELF. The lane paints its cells on
@@ -1797,14 +1822,20 @@
 .dw button.qmember { cursor: pointer; }
 .dw button.qmember:hover { background: color-mix(in srgb, var(--mk-surface-2) 60%, transparent); }
 .dw button.qmember:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: -2px; }
-/* one line per cause: name, the served counts, then the drill */
+/* one line per cause: name, its share of the Pattern's count, then the drill */
 .dw .qmember .lab { grid-column: 1; grid-row: 1; font-size: var(--ck-data); font-weight: 500; color: var(--mk-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dw .qmember .den { grid-column: 2; grid-row: 1; font-size: var(--ck-micro); color: var(--mk-muted);
   white-space: nowrap; }
 .dw .qmember .go { grid-column: 3; grid-row: 1; color: var(--mk-muted); font-size: 12px; }
-.dw .qmember .den .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
-.dw .qmember .den .sep { margin: 0 6px; opacity: .6; }
+.dw .qmember .den .v,
+.dw .qmember .out .v { font-variant-numeric: tabular-nums; color: var(--mk-body); font-weight: 600; }
+.dw .qmember .den .sep,
+.dw .qmember .out .sep { margin: 0 6px; opacity: .6; }
+/* #424 — a cause's counts outside its Pattern's count sit on their own row
+   beneath its share, behind the words "outside the count", so the name and the
+   share keep the line's first row on the narrow rail. */
+.dw .qmember .out { grid-column: 1 / 3; grid-row: 2; font-size: var(--ck-micro); color: var(--mk-muted); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* #413 — "the rail shows served urgency": the first served tier's rows carry

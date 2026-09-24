@@ -30,7 +30,7 @@ from __future__ import annotations
 import bisect
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from .carbs import (
@@ -401,6 +401,131 @@ def data_span(basal_events: List[BasalEvent],
     return min(times).replace(second=0, microsecond=0), max(times)
 
 
+# The clean-window rules in the rank order an excluded basal night reports them
+# (#434): a minute names the first of these it fails.  A covered minute that
+# delivers nothing and a glucose reading below range share the top rank, because
+# that is the count that argues against a finding.  An uncovered minute and a
+# missing reading say nothing about basal having stopped, so both fall to "other"
+# with pump events and an untrustworthy or non-flat slope.
+CLEAN_WINDOW_FAILURES = (
+    "below_range_or_suspended", "above_range", "insulin_acting", "carb_log", "other",
+)
+
+
+class CleanWindow:
+    """The clean-window filter over one dataset, with each rule implemented once.
+
+    A minute is clean only if basal is flowing (not suspended/rail-pinned low),
+    we're clear of excluded pump events, reconstructed *bolus* IOB has decayed to
+    ``bolus_clear_u`` (so no meal/correction is still active), and glucose is in
+    range and flat.  :meth:`samples` walks every minute of the data's span, and
+    :meth:`night_failure` asks the same rules why one slot on one night produced
+    no clean minute.
+
+    ``carb_entries`` (#125/#127) are the manual unbolused-carb log. Because they
+    carry no bolus IOB, the filter above can't see them — so each entry excludes a
+    ``−back`` clock-skew buffer plus a grams-scaled forward span (static
+    forward-decay COB, ADR 0011 / #169; NULL-gram entries keep the flat window).
+    Pure exclusion: it only ever drops minutes, never adds them.
+    """
+
+    def __init__(
+        self,
+        basal_events: List[BasalEvent],
+        cgm_readings: List[CgmReading],
+        bolus_events: List[BolusEvent],
+        pump_events: List[PumpEvent],
+        config: ModelConfig = ModelConfig(),
+        *,
+        carb_entries: Optional[List[CarbEntry]] = None,
+    ):
+        cfg = self._cfg = config
+        self._timeline = _BasalTimeline(basal_events)
+        self._bolus_iob = BolusIob(bolus_events, cfg.insulin_peak_min, cfg.insulin_dia_min)
+        self._cgm = CgmSeries(
+            cgm_readings,
+            timedelta(minutes=cfg.bg_max_stale_min),
+            slope_min_points=cfg.slope_min_points,
+            slope_min_span_frac=cfg.slope_min_span_frac,
+        )
+        self._excluded = _ExcludedWindows(pump_events, cfg.excluded_events,
+                                          timedelta(minutes=cfg.event_margin_min))
+        self._carb_excluded = _CarbExclusionWindows(
+            carb_entries or [],
+            timedelta(minutes=cfg.carb_exclusion_back_min),
+            timedelta(minutes=cfg.carb_exclusion_fwd_min),
+            onset_min=cfg.carb_onset_min,
+            guard_min=cfg.carb_guard_min,
+            meal_rate=cfg.meal_carb_rate,
+            fast_rate=cfg.fast_carb_rate,
+        )
+        self._slope_window = timedelta(minutes=cfg.slope_window_min)
+        # The span the filter walks, one whole minute at a time.
+        all_times = self._timeline.starts + self._cgm.times
+        self._span = ((min(all_times).replace(second=0, microsecond=0), max(all_times))
+                      if all_times else None)
+
+    def _failure(self, t: datetime) -> Optional[str]:
+        """The highest-ranked rule minute ``t`` fails, or ``None`` when it is clean.
+
+        Rules are tested in :data:`CLEAN_WINDOW_FAILURES` order.  A minute is clean
+        only when every rule passes, so the order names the failure without
+        changing which minutes are clean."""
+        cfg = self._cfg
+        rate = self._timeline.at(t)
+        if rate is not None and not rate > 0:
+            return "below_range_or_suspended"
+        bg = self._cgm.nearest(t)
+        if bg is not None and not cfg.bg_low <= bg <= cfg.bg_high:
+            return "below_range_or_suspended" if bg < cfg.bg_low else "above_range"
+        if not self._bolus_iob.at(t) <= cfg.bolus_clear_u:
+            return "insulin_acting"
+        if self._carb_excluded.contains(t):
+            return "carb_log"
+        if rate is None or bg is None or self._excluded.contains(t):
+            return "other"
+        slope = self._cgm.slope(t, self._slope_window)
+        if slope is None or not abs(slope) <= cfg.flat_slope_per_min:
+            return "other"
+        return None
+
+    def samples(self) -> List[CleanSample]:
+        """Every clean minute of the span and the basal delivered during it."""
+        if self._span is None:
+            return []
+        span_start, span_end = self._span
+        samples: List[CleanSample] = []
+        t = span_start
+        minute = timedelta(minutes=1)
+        while t <= span_end:
+            if self._failure(t) is None:
+                samples.append(CleanSample(
+                    t, _slot_of(t, self._cfg.slot_minutes), self._timeline.at(t),
+                    self._timeline.programmed_at(t),
+                ))
+            t += minute
+        return samples
+
+    def night_failure(self, day: date, slot: int) -> str:
+        """The highest-ranked rule any of ``slot``'s minutes on ``day`` fails.
+
+        Those minutes are the filter's own: the whole minutes of that slot on that
+        day inside the span it walks.  ``"other"`` when none of them fails a rule.
+        """
+        span_start, span_end = self._span
+        slot_minutes = self._cfg.slot_minutes
+        start = datetime.combine(day, datetime.min.time()) + timedelta(
+            minutes=slot * slot_minutes)
+        rank = len(CLEAN_WINDOW_FAILURES) - 1
+        for k in range(slot_minutes):
+            t = start + timedelta(minutes=k)
+            if span_start <= t <= span_end:
+                failure = self._failure(t)
+                if failure is not None:
+                    rank = min(rank, CLEAN_WINDOW_FAILURES.index(failure))
+        return CLEAN_WINDOW_FAILURES[rank]
+
+
 def clean_samples(
     basal_events: List[BasalEvent],
     cgm_readings: List[CgmReading],
@@ -412,64 +537,11 @@ def clean_samples(
 ) -> List[CleanSample]:
     """Every clean minute and the basal delivered during it.
 
-    A minute is clean only if basal is flowing (not suspended/rail-pinned low),
-    we're clear of excluded pump events, reconstructed *bolus* IOB has decayed to
-    ``bolus_clear_u`` (so no meal/correction is still active), and glucose is in
-    range and flat. This is the shared primitive behind both the profile
-    suggestion and the backtest.
-
-    ``carb_entries`` (#125/#127) are the manual unbolused-carb log. Because they
-    carry no bolus IOB, the filter above can't see them — so each entry excludes a
-    ``−back`` clock-skew buffer plus a grams-scaled forward span (static
-    forward-decay COB, ADR 0011 / #169; NULL-gram entries keep the flat window).
-    Pure exclusion: it only ever drops minutes, never adds them.
+    The shared primitive behind both the profile suggestion and the backtest; the
+    rules and the ``carb_entries`` exclusion are :class:`CleanWindow`'s.
     """
-    cfg = config
-    timeline = _BasalTimeline(basal_events)
-    bolus_iob = BolusIob(bolus_events, cfg.insulin_peak_min, cfg.insulin_dia_min)
-    cgm = CgmSeries(
-        cgm_readings,
-        timedelta(minutes=cfg.bg_max_stale_min),
-        slope_min_points=cfg.slope_min_points,
-        slope_min_span_frac=cfg.slope_min_span_frac,
-    )
-    excluded = _ExcludedWindows(pump_events, cfg.excluded_events,
-                                timedelta(minutes=cfg.event_margin_min))
-    carb_excluded = _CarbExclusionWindows(
-        carb_entries or [],
-        timedelta(minutes=cfg.carb_exclusion_back_min),
-        timedelta(minutes=cfg.carb_exclusion_fwd_min),
-        onset_min=cfg.carb_onset_min,
-        guard_min=cfg.carb_guard_min,
-        meal_rate=cfg.meal_carb_rate,
-        fast_rate=cfg.fast_carb_rate,
-    )
-
-    all_times = timeline.starts + cgm.times
-    if not all_times:
-        return []
-    span_start = min(all_times).replace(second=0, microsecond=0)
-    span_end = max(all_times)
-    slope_window = timedelta(minutes=cfg.slope_window_min)
-
-    samples: List[CleanSample] = []
-    t = span_start
-    minute = timedelta(minutes=1)
-    while t <= span_end:
-        rate = timeline.at(t)
-        if (rate is not None and rate > 0 and not excluded.contains(t)
-                and not carb_excluded.contains(t)):
-            bg_now = cgm.nearest(t)
-            if (bg_now is not None and cfg.bg_low <= bg_now <= cfg.bg_high
-                    and bolus_iob.at(t) <= cfg.bolus_clear_u):
-                slope = cgm.slope(t, slope_window)
-                if slope is not None and abs(slope) <= cfg.flat_slope_per_min:
-                    samples.append(CleanSample(
-                        t, _slot_of(t, cfg.slot_minutes), rate,
-                        timeline.programmed_at(t),
-                    ))
-        t += minute
-    return samples
+    return CleanWindow(basal_events, cgm_readings, bolus_events, pump_events, config,
+                       carb_entries=carb_entries).samples()
 
 
 def suggest_basal_profile(

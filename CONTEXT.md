@@ -237,6 +237,23 @@ coverage; validated on basal-estimate drift, so its modest lightness versus the
 pump's own IOB is intended, not an error. Owns `ModelConfig.insulin_dia_min`
 (ADR 0013). _Avoid_: coverage DIA (overloads Coverage), the DIA.
 
+**Excluded night**:
+A source night of a basal **Slot** (a night with basal delivery in it) that is absent
+from the slot's final estimate. Each is counted once, under the first of six reasons
+that applies, in rank order: before the current setting (it predates the slot's
+basal **Setting epoch** cut, and the estimate did not pool those earlier nights back
+in); below range or suspended (any of its minutes had basal suspended or at zero, or
+glucose below range); above range; insulin acting (bolus-only **IOB** at the **Gate
+DIA** above the clear threshold); **Carb log**; and other (no delivery covering the
+minute, an excluded pump event, no recent glucose reading, or glucose not flat), so
+the reasons sum to the slot's excluded-night count. The analyzer stamps them
+(`excluded_night_reasons`); a reason explains an exclusion and never changes which
+nights count, the estimate, or whether a move stages (ADR 434). User copy says
+"excluded nights" and names the reasons before the current rate, low or suspended,
+high, insulin on board, logged carbs, and other reasons.
+_Avoid_: dropped night, discarded night, rejected night, unclean night, not steady
+(the retired rail label).
+
 **Maintenance need**:
 What the three tuning estimators measure — the insulin required to hold glucose flat
 and in range — read only from **Clean windows**. By construction this is blind to the
@@ -295,6 +312,15 @@ A solid mark is Supported and its aggregate may be read straight.
 A thin mark with a dot is Limited, so the key says the line is thin.
 A crossed mark is Withheld, so the key says there are too few events to average or nothing to draw.
 _Avoid_: confidence, reliability, evidence tier, sample quality.
+
+**Outside the comparison**:
+The Occurrences of a Finding case file that sit in none of its three event
+cohorts — Matched, Nearly matched and the served comparison cohort. A comparison
+drawn from the case file's own population partitions it and leaves none; only
+Missed / unannounced meal, compared against announced meals, can leave Highs
+outside it. The Response comparison caption names that served count after the
+population noun, and only when it is non-zero (ADR 424).
+_Avoid_: not comparable (the verdict band's word for no data), leftover, remainder.
 
 **Occurrence**:
 One concrete instance behind a Finding's evidence — a specific timestamp a user can
@@ -496,14 +522,16 @@ Why the engine withheld a Lever from an episode — the reason it stayed silent.
 closed set of six: *insufficient-data* (too little CGM to judge), *no-trigger*
 (the behavior plainly didn't happen), *under-threshold* (it happened but fell
 short of the bar — the near-miss), *upstream-cause* (an observable recent low or
-defensive suspend already explains the move — the context gate), *prior-high-
+defensive suspend already explains the move — the context gate — or the rise is
+the rebound of an over-treated low, which owns every High its rebound reaches,
+so that High is never also a missed meal or a meal bolus that fell short), *prior-high-
 baseline* (the rise was from an already-high start, not from-flat), and *horizon-
 expired* (the outcome never arrived inside the classifier's window). The negative
 complement of a **Lever**: every episode gets either one Lever or one Silence
 reason. Distinct from being **outranked** — an episode whose behavior *did* match
 but lost episode ownership to another Lever and remains retained evidence, decided at
 attribution time across anchors, not a property of any one judgment.
-_Avoid_: gate reason (the "gate" is only the upstream-cause case, not the whole
+_Avoid_: gate reason (the "gate" is only one upstream-cause source, not the whole
 set), non-finding, null lever, miss.
 
 ## Outcome summary
@@ -681,6 +709,20 @@ variable; it must not encourage batching unrelated basal / ISF / I:C / target
 changes. One variable at a time is the rule from Diagnose through Verify.
 _Avoid_: change basket, backlog, batch.
 
+A recorded Plan is **pending** until it is **confirmed** — by its matched Trial,
+or by a later pump read that holds its schedule — **withdrawn** by the user, or
+**superseded** by a newer recorded Plan. Only the newest recorded Plan can be
+pending, and while it is pending it withholds a Focus and a new decision. The
+server serves one verdict per recorded Plan (pending; mismatch, a comparable
+pending Plan the latest pump read after its decision does not hold — a Plan
+whose recorded items cannot be compared with a read stays pending; confirmed;
+withdrawn; superseded) with when it was confirmed and whether the latest read still holds
+it (on pump). A confirmed Plan stays confirmed when a later read stops holding
+it. Surfaces read the verdict; none decides it.
+_Avoid_: applied or entered (for confirmed), canceled or deleted (for
+withdrawn), stale, expired or abandoned (for superseded), verified (Verify is a
+tab, not a Plan state).
+
 **Maturing**:
 A Trial's watch phase — the change is in effect but its **outcome delta is not yet
 trustworthy** because post-change data is still accruing ("your 07-06 change is still
@@ -728,11 +770,43 @@ full month as a transient overlay (dismisses on pick / click-away) — so the ch
 and Episode Log stay above the fold on a 13" laptop. Day-switching drives one
 selected-date state from three inputs: the clickable week strip (within-week), the
 reused `daily-nav` `‹ ›` arrows (day-at-a-time, days-with-data only), and the
-expanded month (other weeks/months). Lands on the **most recent day with data**.
-The mockups' "REAL" badge marks only the captured days — a data artifact, not a
-product distinction (every day with data is pickable). See ADR 0031.
+expanded month (other weeks/months). A fresh page lands on the **most recent day
+with data**; within the page, the topbar's Day reopens the day last looked at
+(ADR 427). The mockups' "REAL" badge marks only the captured days — a data
+artifact, not a product distinction (every day with data is pickable). See ADR
+0031.
 _Avoid_: heat-map (that was the Investigate lever-color encoding, superseded — Day
 speaks glucose), Investigate calendar (the surface it was promoted out of).
+
+**Episode Log**:
+The **Day** surface's reading pane: the **Anchors** of the day's served episodes,
+in time order, in three bands. The Findings and Also checked bands list theirs one
+row each, worded by its anchor state and naming, by served title, the **Lever** of
+the episode it belongs to when that episode has one (an Also checked near-miss in
+an episode with no Lever names none); the Quiet band counts the rest rather than
+listing them.
+**Findings** lists the anchors of each episode attributed to a Lever — the one that
+drove it and any it **claimed**; its caption counts distinct **Findings**, one per
+served Lever, because each attributed episode is one **Occurrence** of its Lever's
+Finding — so two episodes of one Lever count once — and counts claimed anchors
+beside it, never adding them in. **Also checked** lists anchors the engine stayed
+silent on for a reason worth reading (the near-miss). **Quiet** folds the rest into
+one counted stretch: clean, explained and no data. Each band caption opens the
+Glossary at its Episode Log group. See ADR 423.
+_Avoid_: episode cards (a row is an anchor, not an episode), rows as a count of
+Findings.
+
+**Claimed**:
+The shared word for an anchor or Occurrence that belongs to an episode another
+Finding owns — that shared fact is its whole meaning. On Day it words an anchor
+whose served state is outranked; the row names separately what the anchor matched,
+then ends with the Finding that owns its episode, in that Finding's hue. On
+Diagnose it words the row-relative verdict of an Occurrence whose own Finding's
+criterion was not met while another Lever drove the episode. The behavioral layer
+keeps those two engine meanings distinct; the word carries only what they share.
+See ADR 423.
+_Avoid_: outranked (the engine state, kept as the tier's data attribute),
+dismissed, "claimed by another factor" (factor is a synonym retired for Lever).
 
 ## Diagnose findings queue
 
@@ -762,3 +836,14 @@ the low block itself does not show it and the window over the rebound does. Each
 lever declares the anchor kind its consequence lands on; anchoring happens at
 projection time and never moves a stored timestamp.
 _Avoid_: trigger time, occurrence time, event time.
+
+**Share** (of a Pattern):
+A folded cause's served part of its Pattern's own count. Each Occurrence the
+Pattern claims is credited once, to the first of its rate levers that claims it,
+so the shares of a Pattern's causes add up to its count. The fold prints a cause's
+share first; the cause's counts on any other population are **outside the count**
+and sit apart behind those words. A cause that is not a rate lever (a Sequence
+habit), and every cause under a Pattern that serves no count, has no share. A
+Pattern with no rate levers, counted from harm-band nights (overnight lows with no
+insulin on board), folds no cause (ADR 424).
+_Avoid_: contribution, portion, breakdown, subtotal.

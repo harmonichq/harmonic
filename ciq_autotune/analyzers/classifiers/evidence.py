@@ -57,8 +57,8 @@ class SilenceReason(str, Enum):
     * ``UNDER_THRESHOLD`` — it happened but fell short of the firing bar; the
       near-miss where a mis-tuned threshold hides (``OBSERVED``).
     * ``UPSTREAM_CAUSE`` — an observable recent low and/or defensive suspend (the
-      shared context gate) explains the move; a recovery, not the behavior
-      (``INFERRED``).
+      shared context gate) explains the move, or a fired over-treated low's guarded
+      rebound owns the rise (ADR 422); a recovery, not the behavior (``INFERRED``).
     * ``PRIOR_HIGH_BASELINE`` — the rise was from an already-high start, not
       from-flat (``OBSERVED``).
     * ``OWNED_BY_PRIOR_BOLUS`` — a completed carb bolus in the recent lookback owns

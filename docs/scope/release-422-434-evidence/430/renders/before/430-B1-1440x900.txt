@@ -1,0 +1,74 @@
+SYNTHETIC — before · tree a4d374a7 · store edit-chain · 430-B1 · 1440x900
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Abasal_rate-01-00-20240510000000
+Element: viewport
+Note: a still-open edit-chain record whose retained comparison is unavailable
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · STILL OPEN
+Basal 01:00 · 0.54 U/h → 0.56 U/h
+Detected May 10, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+AVAILABLE OBSERVATIONS
+recomputed now
+Pump-local time
+no clock envelope is retained for this record
+median glucose by clock · 0 → 0 half-hours read
+
+No glucose outcome is served for these periods.
+
+THIS TRIAL
+Still open
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Not recorded
+First seen
+Not recorded
+
+This record's original context is unavailable: not_recorded.
+
+From the Trial record
+
+ENDING
+
+Not recorded — this change is still open.
+
+EVIDENCE PERIODS
+
+No period is served for this comparison, so neither Before nor Trial has bounds to show.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Basal
+01:00
+	0.54 U/h	0.56 U/h
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+
+No comparison has been read for this record yet.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

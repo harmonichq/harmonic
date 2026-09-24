@@ -12,6 +12,7 @@
 //
 //   registerDestination({ id, title, mount })  content for one destination
 //   navigate(id, context)                      move the desk, contextually or not
+//   replaceAddress(context)                    rename where the reader already is, in place
 //   render()                                   re-draw after a destination's own state moved
 //   hold(cleanup)                              a teardown the NEXT render runs
 //   registerEscape(layer, handler)             one step of the settled Escape chain
@@ -146,6 +147,18 @@ export function navigate(next, entryContext = {}) {
   if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '#crumb-trail', '.gf-stage .gf-title'];
   view.sheetOpen = false;
   render();
+}
+
+/**
+ * Rename where the reader already is (ADR 428): the current destination's own
+ * state moved — Diagnose's case on screen — so the held context and the current
+ * history entry's address follow it, in place. Not a navigation: no new history
+ * entry, no navigation count, no render and no focus. A pushed entry per change
+ * would make Back a full re-read per step and add steps the desk never had.
+ */
+export function replaceAddress(nextContext) {
+  context = { ...nextContext };
+  writeRoute({ destination, context }, { replace: true, serialize: serializeRoute });
 }
 
 /* ---------------------------------------------------------------- render */

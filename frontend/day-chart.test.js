@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildRows, rowReason, rowForT, rowDomId, preemptedTimes, dayStats, bgAt,
-  buildAnchorOverlay, buildEpisodeLedger, evidenceFocusGraphic, focusUpdate, anchorStateColor,
+  buildAnchorOverlay, buildEpisodeLedger, evidenceFocusGraphic, focusUpdate, anchorStateColor, ANCHOR_STATE_WORD,
   REASON_REFERENCE,
 } from './day-chart.js';
 import { buildLanesOption, LANE_SPAN } from './chart-builders.js';
@@ -29,7 +29,7 @@ function makeDay() {
     },
     episodes: [
       {
-        id: '2026-06-17-ep0', lever: 'over_treated_low', spans_midnight: false,
+        id: '2026-06-17-ep0', lever: 'over_treated_low', lever_title: 'Over-treated low', spans_midnight: false,
         trigger: 'low', trigger_t: '2026-06-17 03:00:00',
         start: '2026-06-17 03:00:00', end: '2026-06-17 05:00:00',
         steps: [{ t: '2026-06-17 03:00:00', text: 'rescued past range', evidence_tier: 'observed' }],
@@ -40,7 +40,7 @@ function makeDay() {
         ],
       },
       {
-        id: '2026-06-17-ep1', lever: null, spans_midnight: false,
+        id: '2026-06-17-ep1', lever: null, lever_title: null, spans_midnight: false,
         trigger: 'meal', trigger_t: '2026-06-17 12:00:00',
         start: '2026-06-17 11:30:00', end: '2026-06-17 13:00:00', steps: [],
         anchors: [
@@ -61,6 +61,13 @@ test('buildRows: one row per anchor, chronological, carrying episode context', (
   assert.equal(rows[0].lever, 'over_treated_low');
   assert.equal(rows[0].headline.classifier, 'over_treated_low');
   assert.equal(rows[1].kind, 'meal');
+});
+
+test('buildRows carries the episode\'s served Lever name beside its key, and none for an unattributed one', () => {
+  const rows = buildRows(makeDay());
+  assert.equal(rows[0].leverTitle, 'Over-treated low');
+  assert.equal(rows[1].lever, null);
+  assert.equal(rows[1].leverTitle, null);
 });
 
 test('reason reference keeps announced-meal ownership calm and server-owned', () => {
@@ -371,4 +378,111 @@ test('buildAnchorOverlay: no selectedLever leaves every anchor full-opacity', ()
   const series = buildAnchorOverlay(day, rows, colors, null, preemptedTimes(day), null);
   const markers = series[series.length - 1].data;
   assert.ok(markers.every((m) => m.itemStyle.opacity === 1));
+});
+
+// #423 (ADR 423): a claimed anchor — served state `outranked`, its own behavior
+// matched but another Lever owns its episode — reads as part of the Finding that
+// claimed it. A meal over-delivery episode with a fired meal and a claimed
+// level-2 low, as the model read serves it (verdict titles included).
+function claimedDay() {
+  return {
+    date: '2026-06-17', midnight: '2026-06-17 00:00:00',
+    window: { start: '2026-06-17 00:00:00', end: '2026-06-17 23:59:59', cgm: [], carb_exclusion_spans: [] },
+    episodes: [{
+      id: '2026-06-17-ep0', lever: 'meal_over_delivery', lever_title: 'Meal over-delivery', spans_midnight: false,
+      start: '2026-06-17 19:00:00', end: '2026-06-17 23:05:00', steps: [],
+      anchors: [
+        { t: '2026-06-17 19:00:00', kind: 'meal', bg: null, insulin: 7, carbs: 50, state: 'fired',
+          verdicts: [{ classifier: 'meal_over_delivery', title: 'Meal over-delivery', matched: true, silence_reason: null }] },
+        { t: '2026-06-17 20:00:00', kind: 'correction', bg: null, insulin: 3, carbs: null, state: 'clean', verdicts: [] },
+        { t: '2026-06-17 22:05:00', kind: 'low', bg: 48, insulin: null, carbs: null, state: 'outranked',
+          verdicts: [
+            { classifier: 'over_treated_low', title: 'Over-treated low', matched: false, silence_reason: 'no_trigger' },
+            { classifier: 'correction_on_iob', title: 'Correction on active insulin', matched: true, silence_reason: null },
+          ] },
+      ],
+    }],
+  };
+}
+
+test('#423 · the anchor-state words are one exported map, and outranked reads claimed', () => {
+  assert.deepEqual(ANCHOR_STATE_WORD, {
+    fired: 'finding', outranked: 'claimed', near_miss: 'also checked', clean: 'clean', no_data: 'no data',
+  });
+});
+
+test('#423 · buildRows carries the served titles of what each anchor matched', () => {
+  const low = buildRows(claimedDay()).find((row) => row.kind === 'low');
+  assert.deepEqual(low.matchedTitles, ['Correction on active insulin']);
+  assert.equal(low.leverTitle, 'Meal over-delivery');
+});
+
+test('#423 · a claimed anchor takes the fired hue, never the warning hue', () => {
+  assert.equal(anchorStateColor('outranked', OVERLAY_COLORS), anchorStateColor('fired', OVERLAY_COLORS));
+  assert.notEqual(anchorStateColor('outranked', OVERLAY_COLORS), OVERLAY_COLORS.warn);
+});
+
+test('#423 · a claimed resting marker is ringed and sized as the fired one', () => {
+  const day = claimedDay();
+  const rows = buildRows(day);
+  const markers = buildAnchorOverlay(day, rows, OVERLAY_COLORS, null, preemptedTimes(day), null)
+    .find((s) => s.id === 'day-anchor-markers').data;
+  const fired = markers.find((m) => m._t === '2026-06-17 19:00:00');
+  const claimed = markers.find((m) => m._t === '2026-06-17 22:05:00');
+  assert.equal(claimed.symbolSize, fired.symbolSize);
+  assert.equal(claimed.itemStyle.borderColor, fired.itemStyle.borderColor);
+  assert.equal(claimed.itemStyle.color, OVERLAY_COLORS.surface, 'hollow at rest');
+  // Pressing the claimed row still marks it as the picked moment.
+  const pressed = buildAnchorOverlay(day, rows, OVERLAY_COLORS, '2026-06-17 22:05:00', preemptedTimes(day), null)
+    .find((s) => s.id === 'day-anchor-markers').data.find((m) => m._t === '2026-06-17 22:05:00');
+  assert.equal(pressed.symbolSize, 15);
+  assert.equal(pressed.itemStyle.borderColor, OVERLAY_COLORS.accent);
+});
+
+test('#423 · a focused claimed row draws its hairline in the fired hue', () => {
+  const day = claimedDay();
+  const rows = buildRows(day);
+  const chart = { convertToPixel: () => 120, getHeight: () => 600 };
+  const { graphic } = focusUpdate(chart, { day, rows, colors: OVERLAY_COLORS, focusT: '2026-06-17 22:05:00',
+    preempted: preemptedTimes(day), selectedLever: null, laneSpan: LANE_SPAN });
+  assert.equal(graphic.length, 1);
+  assert.equal(graphic[0].style.stroke, anchorStateColor('fired', OVERLAY_COLORS));
+  assert.notEqual(graphic[0].style.stroke, OVERLAY_COLORS.warn);
+});
+
+test('#423 · the ledger counts distinct Findings and claimed anchors, and holds the same rows', () => {
+  const ledger = buildEpisodeLedger(claimedDay());
+  assert.equal(ledger.findingCount, 1);
+  assert.equal(ledger.claimedCount, 1);
+  assert.ok(!('fired' in ledger), 'the unused fired count is still returned');
+  // Which anchors the band holds is unchanged: the fired meal and the claimed low
+  // lead, and the attributed episode's clean correction stays in Quiet.
+  assert.deepEqual(ledger.findings.map((entry) => entry.row.t), ['2026-06-17 19:00:00', '2026-06-17 22:05:00']);
+  assert.deepEqual(ledger.quiet.rows.map((entry) => entry.row.t), ['2026-06-17 20:00:00']);
+  assert.equal(ledger.quiet.clean, 1);
+});
+
+test('#423 · two episodes of one Lever are one Finding', () => {
+  const day = claimedDay();
+  const second = structuredClone(day.episodes[0]);
+  second.id = '2026-06-17-ep1';
+  second.anchors = [{ ...second.anchors[0], t: '2026-06-17 07:00:00' }];
+  day.episodes = [second, { ...day.episodes[0], anchors: [day.episodes[0].anchors[0]] }];
+  const ledger = buildEpisodeLedger(day);
+  assert.equal(ledger.findings.length, 2);
+  assert.equal(ledger.findingCount, 1);
+  assert.equal(ledger.claimedCount, 0);
+});
+
+test('#423 · a sequence Finding with no fired anchor still counts once', () => {
+  const claimedMeal = (t) => ({ t, kind: 'meal', bg: null, insulin: 4, carbs: 60, state: 'outranked',
+    verdicts: [{ classifier: 'carb_undercount', title: 'Carb undercount', matched: true, silence_reason: null }] });
+  const day = { ...claimedDay(), episodes: [{
+    id: '2026-06-17-ep3', lever: 'high_carb_sequence', lever_title: 'High-carb sequence', spans_midnight: false,
+    start: '2026-06-17 12:00:00', end: '2026-06-17 15:00:00', steps: [],
+    anchors: [claimedMeal('2026-06-17 12:00:00'), claimedMeal('2026-06-17 13:30:00')],
+  }] };
+  const ledger = buildEpisodeLedger(day);
+  assert.equal(ledger.findingCount, 1);
+  assert.equal(ledger.claimedCount, 2);
 });

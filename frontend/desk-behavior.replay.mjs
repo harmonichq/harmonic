@@ -3129,6 +3129,69 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S121
+export const S121 = appOnly('HV2-13',
+  '#423 a claimed low reads claimed, names what it matched and its Finding, in the Finding\'s hue and size, and the caption counts Findings', C4_STORIES.S121);
+// STORY:harmonic-v2-desktop:S122
+export const S122 = appOnly('HV2-13', '#423 a band caption opens the Glossary at the Episode Log group and Close returns to it', C4_STORIES.S122);
+// STORY:harmonic-v2-desktop:S127
+export const S127 = appOnly('HV2-13',
+  '#425 Day\'s recorded-day count is the served total across month paging, and each month counts its own days once', C4_STORIES.S127);
+// STORY:harmonic-v2-desktop:S133
+export const S133 = appOnly('HV2-13', '#427 the topbar\'s Day reopens the day last looked at; a reload opens the latest recorded day', C2_STORIES.S133);
+// STORY:harmonic-v2-desktop:S139
+export const S139 = appOnly('HV2-12',
+  "#429 a watched Trial's dock names Changes, and its link opens that Trial in Changes", C4_STORIES.S139);
+// STORY:harmonic-v2-desktop:S140
+export const S140 = appOnly('HV2-12',
+  "#429 a watched Focus's dock names Changes, and its link opens that Focus in Changes", C4_STORIES.S140);
+// STORY:harmonic-v2-desktop:S142
+export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained comparison with no control pressed', C4_STORIES.S142);
+// STORY:harmonic-v2-desktop:S143
+export const S143 = appOnly('HV2-28', '#430 an unavailable record figure names its reason in the result line\'s words', C4_STORIES.S143);
+// STORY:harmonic-v2-desktop:S151
+export const S151 = appOnly('HV2-17', '#433 the basal lane stays within reach on short and narrow desktop windows', C4_STORIES.S151);
+// STORY:harmonic-v2-desktop:S152
+export const S152 = appOnly('HV2-17', '#433 every raise and lower slot can be pointed at and staged on a short window', C4_STORIES.S152);
+// STORY:harmonic-v2-desktop:S153
+export const S153 = appOnly('HV2-17', '#433 every basal key verdict agrees with its slot\'s panel', C4_STORIES.S153);
+// STORY:harmonic-v2-desktop:S154
+export const S154 = appOnly('#434 reader words',
+  '#434 a basal slot names why its excluded nights were left out, in the panel and the tile description',
+  C4_STORIES.S154);
+// STORY:harmonic-v2-desktop:S136
+export const S136 = appOnly('HV2-14',
+  '#428 after a Day return, a key, a window choice and Backspace each rename the address to the case on screen', C4_STORIES.S136);
+// STORY:harmonic-v2-desktop:S137
+export const S137 = appOnly('HV2-34',
+  '#428 a Diagnose round trip after a Day return holds one status read and names the retained case', C4_STORIES.S137);
+// STORY:harmonic-v2-desktop:S138
+export const S138 = appOnly('HV2-14',
+  '#428 a case address reopens its preset window and Occurrence, and its Day hop returns to Open in Day by id', C4_STORIES.S138);
+// STORY:harmonic-v2-desktop:S145
+export const S145 = appOnly('HV2-20', '#431 the server confirms an in-place Plan and Changes names that read', C4_STORIES.S145);
+// STORY:harmonic-v2-desktop:S146
+export const S146 = appOnly('HV2-20', '#431 a draft after a confirmed Plan reads Draft saved and can be recorded', C4_STORIES.S146);
+// STORY:harmonic-v2-desktop:S147
+export const S147 = appOnly('HV2-20', '#431 the watch panel carries a pending Plan and no case-file header names it', C4_STORIES.S147);
+// STORY:harmonic-v2-desktop:S124
+export const S124 = appOnly('HV2-18',
+  '#424 a same-population caption names each cohort as its heading does and adds up', C4_STORIES.S124);
+// STORY:harmonic-v2-desktop:S125
+export const S125 = appOnly('HV2-18',
+  '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
+// STORY:harmonic-v2-desktop:S126
+export const S126 = appOnly('#413 design lock',
+  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
+// STORY:harmonic-v2-desktop:S148
+export const S148 = appOnly('ADR 432',
+  '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);
+// STORY:harmonic-v2-desktop:S149
+export const S149 = appOnly('ADR 432',
+  '#432 a selected matched meal reads as its facts and served reason', C4_STORIES.S149);
+// STORY:harmonic-v2-desktop:S150
+export const S150 = appOnly('ADR 432',
+  '#432 a Highs after meals Pattern serves the same row facts and each habit with its band', C4_STORIES.S150);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3177,6 +3240,17 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S121', S121, J()], ['S122', S122, J()],
+  ['S127', S127, J()],
+  ['S133', S133, M()],
+  ['S139', S139, J()], ['S140', S140, J()],
+  ['S142', S142, J()], ['S143', S143, J()],
+  ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
+  ['S154', S154, J()],
+  ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
+  ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
+  ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
+  ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -1,0 +1,43 @@
+SYNTHETIC — before · tree a4d374a7 · store pattern-near-tie · 426-D1 · 1440x900
+URL: http://127.0.0.1:8791/changes
+Element: viewport
+Note: Pattern concern in Changes: member table and Action figure
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+FINDINGS · READ 2024-06-08
+Highs after meals
+72 priority · eligible_action
+Set aside
+View change record
+Pump settings
+Pump settings
+MEMBERS IN THIS READ
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+MEMBER	ACTION
+habit:carb_undercount	habit:carb_undercount
+setting:carb_ratio	No action
+ACTION
+Highs after meals
+ACTION
+ELIGIBLE_ACTION
+habit:carb_undercount
+
+The surfaced Pattern passed its source Priority and existing Focus admission checks.
+
+Priority 72 leads the available admitted actions; an exact tie breaks by canonical subject.
+
+Focus is withheld: 3 opportunities, gate 12.
+
+Inspect evidence
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

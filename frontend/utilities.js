@@ -51,6 +51,10 @@ const questionKey = (prompt) => `${prompt.detector}|${prompt.anchor_t}`;
 
 let seated = null;
 let opener = null;
+// Whether the narrow reading sheet was open when the utility opened. Closing
+// returns the reader there, so a launcher inside the open sheet — an Episode
+// Log band caption (ADR 423) — is still on screen to take focus back.
+let sheetWasOpen = false;
 let glossaryGroups = [];
 
 const state = {
@@ -298,7 +302,7 @@ function generatedArticle(article) {
 }
 
 function glossaryBody() {
-  return { meta: 'v1 definitions', html: glossaryGroups.map((group) => `<section class="gf-section"><h3>${e(PRESENT[group.title] || group.title)}</h3><dl class="gf-glossary">${group.terms.map((term) => `<dt>${e(PRESENT[term.term] || term.term)}${PRESENT[term.term] || term.unit ? `<small>${PRESENT[term.term] ? `${e(term.term)} · ` : ''}${e(term.unit || '')}</small>` : ''}</dt><dd>${e(term.def)}</dd>`).join('')}</dl></section>`).join('') };
+  return { meta: 'terms used in this app', html: glossaryGroups.map((group) => `<section class="gf-section" data-glossary-group="${e(group.title)}"><h3>${e(PRESENT[group.title] || group.title)}</h3><dl class="gf-glossary">${group.terms.map((term) => `<dt>${e(PRESENT[term.term] || term.term)}${PRESENT[term.term] || term.unit ? `<small>${PRESENT[term.term] ? `${e(term.term)} · ` : ''}${e(term.unit || '')}</small>` : ''}</dt><dd>${e(term.def)}</dd>`).join('')}</dl></section>`).join('') };
 }
 
 const BODIES = { settings: settingsBody, pump: pumpBody, carbs: carbsBody, questions: questionsBody, guide: guideBody, glossary: glossaryBody };
@@ -364,19 +368,29 @@ export function seatUtility(destination) {
 /**
  * Open one utility into the reading pane's seat. `launcher` is what gets focus
  * back on Close — an element, or a selector for a control the next render will
- * have rebuilt.
+ * have rebuilt. `inView`, a selector inside the pane, is scrolled into view once
+ * the pane has rendered: an Episode Log band caption opens the Glossary at its
+ * group (ADR 423).
  */
-export function openUtility(kind, launcher) {
-  if (seated !== kind) { opener = launcher || opener; seated = kind; }
+export function openUtility(kind, launcher, inView = null) {
+  if (seated !== kind) {
+    if (!seated) sheetWasOpen = view.sheetOpen;
+    opener = launcher || opener;
+    seated = kind;
+  }
   view.focusAfterRender = '.gf-utility-close';
   render();
+  if (inView) deskSurface().querySelector(`.gf-utility ${inView}`)?.scrollIntoView({ block: 'start' });
 }
 
 function close() {
   const back = opener;
   opener = null;
   seated = null;
-  view.sheetOpen = false;
+  // Narrow only: a window widened past 700px meanwhile shows no sheet, and
+  // closing there leaves it shut exactly as it always has.
+  view.sheetOpen = narrow() && sheetWasOpen;
+  sheetWasOpen = false;
   state.flash = null;
   render();
   (typeof back === 'string' ? document.querySelector(back) : back)?.focus();
@@ -513,6 +527,7 @@ function bindPane(surface) {
     button.onclick = () => navigate('day', {
       date: button.dataset.date,
       subject: button.dataset.subject || '',
+      title: button.dataset.subject || '',
       from: `${currentDestination()}.${button.dataset.utilityFrom}`,
       focus: button.dataset.returnFocus || '',
     });
@@ -568,4 +583,5 @@ export function installUtilities({ glossary = [] } = {}) {
     put the reader back inside the utility that opened Day (S76). */
 export function reopenUtility(kind) {
   seated = kind;
+  sheetWasOpen = false;
 }

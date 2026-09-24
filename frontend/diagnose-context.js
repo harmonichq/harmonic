@@ -1,3 +1,6 @@
+import { formatStartMin } from './plan.js';
+import { SETTING_NAME } from './plan-view.js';
+
 // A request is not a drill. Only an explicit reader selection changes intent;
 // descriptor loads and failed or superseded responses cannot choose a subject.
 export function createCaseContext(delegate) {
@@ -28,15 +31,22 @@ export function createCaseContext(delegate) {
   };
 }
 
-export function evidenceDayContext({ occurrence, selected, slot, focus }) {
+/* The Diagnose-origin Day entry (ADR 428 points 4 and 5). Subject, Occurrence
+   and window are the case the workstation publishes — the same one the address
+   names — and the date, moment and lever are the Occurrence's own. The held
+   Occurrence id is also the return target, so no selector rides along. The
+   title is the Day door's name for that case (ADR 426): the served finding
+   title the workstation publishes with it, or, for a basal slot with no case,
+   the setting and its half-hour range in the wearer's words (CONTEXT.md, Slot). */
+export function evidenceDayContext({ occurrence, current }) {
   const at = occurrence.t || occurrence.anchor?.t || '';
+  const slot = /^basal:\d+$/.test(current?.subject || '') ? String(current.window).split('-').map(Number) : null;
   return {
     date: String(at).slice(0, 10), moment: at,
-    subject: selected?.subject || (slot ? `basal:${slot.start}` : ''),
-    occurrence: occurrence.id || selected?.occurrence || String(at).slice(0, 10),
-    lever: occurrence.cause_lever || (slot ? 'basal_rate' : ''),
-    window: Number.isFinite(selected?.window?.start_min) ? `${selected.window.start_min}-${selected.window.end_min}`
-      : slot ? `${slot.start}-${slot.end}` : '',
-    from: 'diagnose', focus,
+    subject: current?.subject || '', occurrence: current?.occurrence || '', window: current?.window || '',
+    title: current?.title
+      || (slot ? `${SETTING_NAME.basal_rate} · ${formatStartMin(slot[0])}–${formatStartMin(slot[1])}` : ''),
+    lever: occurrence.cause_lever || '',
+    from: 'diagnose',
   };
 }

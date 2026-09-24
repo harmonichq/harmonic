@@ -1,0 +1,278 @@
+# #445 and #444 design record
+
+## ADR 445 — Changes and carb-utility Day links carry identities, and each origin resolves its own return
+
+### Decision
+
+A Day link written by Changes or a carb utility names its return target by an
+identity its origin owns, never by a page selector. The origin that owns the
+identity resolves it to its own control on return, following ADR 428's
+Occurrence-id pattern. A carb utility's Day return is a plain return to the
+destination underneath, with the utility reopened over it.
+
+1. **The identity each origin writes.**
+   - *A Changes supporting date* — an active change's evidence
+     (`frontend/follow-up.js`) or a change record's (`frontend/history.js`) — is
+     named by the `date` the entry already carries. Nothing is added.
+   - *A Log carbs entry* is named by its served id, as the entry's routing
+     `subject`: `carb:<id>`.
+   - *A Carb questions prompt* is named by its detector and anchor time, as the
+     routing `subject`: `question:<detector>|<anchor time>`.
+
+   A utility's `title` stays the printed "Log carbs · Jun 26 13:55" or "Carb
+   questions · Jun 26 13:55", and its `date` and `from` are unchanged. The
+   identity rides `subject` because ADR 426 split the printed `title` from the
+   routing `subject`: Day reads the subject nowhere except in the context it
+   hands back, and the utility's subject was its display text, one fact written
+   twice. The `carb:` and `question:` prefixes follow the address's existing
+   `pattern:`, `basal:` and `record:` prefixes, so a utility identity cannot pass
+   for a Diagnose case. The grammar is spiked in
+   `docs/scope/445-day-link-identities.spike.mjs` against the real address owner.
+2. **The return-focus key leaves the address.** `frontend/tab-routing.js`
+   drops `focus` from its context keys, and Day's return target stops carrying
+   it. Once ADR 428 and this change have landed, nothing writes it. Kept, it would
+   pass a CSS selector read from the address to the router's `querySelector`,
+   and an address is external input. An older link that still carries `focus=`
+   is read without it. Its return lands by the identity it also carries (a
+   Diagnose Occurrence, a Changes date), or on the destination's default focus.
+3. **Day's return, by origin.**
+   - *Diagnose* is unchanged (ADR 428): Day hands back the whole entry and
+     requests the reading heading, and Diagnose resolves the Occurrence.
+   - *Changes* is unchanged in what Day hands back: the whole entry, which names
+     the change or record (`occurrence`) and the date. Day requests the reading
+     heading on the desktop and the sheet toggle on the narrow desk.
+   - *A carb utility*: Day hands the utility its identity and moves to the
+     destination the utility was opened over **with no context**, a plain return.
+     The entry names the utility's item, not the destination's case. Handing it
+     to the destination is what made Diagnose compare a display text with its
+     held case and re-read (reproduced below). A plain return into a parked
+     Diagnose is ADR 428 point 7's retained return: one status read, no guidance
+     or evidence read, the drill, window and scroll kept, and the address
+     replaced with the retained case. Into Changes it is a plain arrival. Into
+     Day, for a utility opened over Day, it is a direct entry that keeps the day
+     last looked at (ADR 427) and offers no second return. On the base, that same
+     return re-adopted the utility's entry and offered its return again.
+4. **The owner resolves its identity.**
+   - *A carb utility* keeps the identity it was handed until it is next seated
+     with its items loaded. It then matches the identity against the items it
+     serves: a Carb log entry by id, a Carb-log prompt by detector and anchor
+     time. A match requests focus on that item's own Open Day control, the
+     control the reader pressed; no match requests the utility's heading. The
+     request is made once. The identity is dropped when used, when the utility
+     closes, or when another utility opens. This applies at every width, because a
+     seated utility opens the narrow sheet itself. On the base, Log carbs came
+     back to the entry's Remove button, not the control the reader pressed (see
+     Open question 2).
+   - *Changes* resolves an arrival whose context came back from its own Day link
+     (`from=changes` with a `date`). On the first render of that arrival that
+     shows the change's content — the active change's evidence or the reopened
+     record, never a loading, failure or unavailable frame — it requests focus on
+     that date's supporting-date control, else on the reading heading. The
+     request is made once per arrival, and only on the desktop: on the narrow desk
+     the supporting dates sit in the closed reading sheet, and Day's sheet-toggle
+     focus stands. One resolver beside `readinessArm` in `frontend/follow-up.js`,
+     which renders the control, serves both mounts. This also repairs the base,
+     where an active change's supporting-date return never reached its control
+     (reproduced below).
+   - *Diagnose* is unchanged (ADR 428 point 5).
+5. **Identities from the address never become raw selector text.** An identity
+   arrives from the address, which is external input. It becomes selector text
+   only as a well-formed ISO date (`YYYY-MM-DD`), or as the identity of an item
+   the utility itself serves. Anything else resolves to the origin's heading.
+   The spike's table covers a removed entry, an answered prompt, an old link's
+   display-text subject and a crafted value.
+6. **A held Changes return is not kept across a utility's Day visit.** A plain
+   utility return drops a held `from=changes` ("Return to Trial"), exactly as ADR
+   428 point 7 does for every plain return. On the base the same return also lost
+   it, because the utility's context replaced the entry. See Open question 1.
+
+### Authority
+
+Coordinator ruling R445 under the operator's Q3 delegation — `Q3 delegation,
+Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator
+ruling R445`: "Day links from Changes and the carb utilities carry an identity (a
+date, a carb entry id, a question key), never a page selector; the origin that
+owns the identity resolves it to its control on return, following ADR 428's
+Occurrence-id pattern. A carb-utility Day return into Diagnose is a retained
+return: one status read, the drill kept, the utility reopened over it." Points 1
+to 6 are the triage worker's calls that make R445 hold, reviewed with this
+change. Points 4 (the Log carbs control) and 6 carry defaults the coordinator
+rules on.
+
+### Open questions for the coordinator
+
+1. A plain utility return drops a held `from=changes`, as any plain return does
+   under ADR 428 point 7, and as the base did. Keep it instead? Default: drop it.
+   Keeping it adds a second rule to Diagnose's retained return to tell a utility
+   return from a topbar press.
+2. On return, Log carbs lands on the entry's own Open Day control, the control
+   the reader pressed, as Carb questions and Diagnose's Open in Day already do.
+   The base lands on the entry's Remove button. Default: the Open Day control.
+   The base target places the reader's next Enter on a destructive control.
+
+### Grounding
+
+Reproduced in process on origin/main b03431d2 with scratch node tests (not
+committed), driving the shipped modules through the desk's own router:
+
+- The Log carbs Open Day writes
+  `/day?date=2024-06-26&subject=Log+carbs+·+Jun+26+13:55&title=…&from=diagnose.carbs&focus=[data-utility-remove='41']`.
+  Carb questions writes
+  `focus=[data-question-card='low|2024-06-26 13:55:00'] [data-action='day']`.
+  Both routing subjects equal their titles. `dayReturnContext` hands that whole
+  entry back, `focus` included.
+- The active change's (`frontend/follow-up.js`) and a change record's
+  (`frontend/history.js`) supporting dates write
+  `focus=[data-day-date="2024-06-11"]`. The entry already carries
+  `date=2024-06-11`, with `occurrence` naming the change or `record:<kind>:<id>`.
+- The questions utility's return context, mounted into a parked Diagnose holding
+  a drilled case, issues status, analysis, scenarios, time_of_day, exposures,
+  preparation and trend. It tears down and rebuilds (three `setData` calls, no
+  refresh), and leaves
+  `/diagnose?date=…&subject=Carb+questions+·+…&title=…&from=diagnose.questions&focus=…`
+  in the address. A plain return in the same harness issues status alone and
+  refreshes the retained root.
+- Day's `[data-day-date="2024-06-11"]` request followed by `navigate('changes', …)`,
+  through the real router and follow-up mount, focused the reading heading three
+  times and never the date control, although the rendered content contained it.
+  The loading frame's heading satisfied the request, and the router then carried
+  that heading forward.
+- `c3-trial` serves an active Trial whose retained comparison lists twelve
+  before-period contributing dates (eight render as controls), on both the active
+  change and its change record. `edit-chain`'s records serve none. Read in
+  process through the API's test client over a generated case store, with no
+  port and no fetch loop.
+- Day reads the entry's `subject` only to hand it back. `seatUtility` runs inside
+  the render, before the focus step, so a utility can place its own request on
+  the render that seats it.
+- A contributing date is the calendar day of each measured row in its period. A
+  change made mid-day can therefore list its change day in both periods, and the
+  base selector then lands on the first-listed control.
+
+### Consequences
+
+HV2-14 holds in substance: the "precise return-focus target" the lock and the
+active `harmonic-v2` delta name is carried as an identity, as ADR 428 already
+reads it for Diagnose. Neither text changes. The surfaces requirement "Day names
+the subject it was opened from by its served name" is modified: it no longer
+names a `focus` field, and a utility's routing subject is its identity. S76 holds
+unchanged, because a utility's Open Day still keeps the utility open over Day and
+its return still reopens it. S162–S165 are added. A utility return into Changes
+is a plain arrival, so #446's plain-arrival rule applies to it, as it would have
+applied to the base's context, which named no Plan either.
+
+## ADR 444 — The Log carbs header reads the reader's local clock
+
+### Decision
+
+`carbsBody()` in `frontend/utilities.js` builds its "at <date> · <HH:MM>" line
+from one local wall-clock string, `formatWallClock(new Date())` from
+`frontend/carb-log.js`, printed with the desk's `shortDate` and `clock` helpers.
+Coordinator ruling R444 adopts #444's checklist as written. `formatWallClock` is
+the existing formatter from a `Date` to the stored `YYYY-MM-DD HH:MM:SS`
+wall-clock string, built from local getters, and #427 made Day's viewed stamp use
+it. A second formatter would duplicate it.
+
+### Grounding
+
+Reproduced in process on b03431d2 under `TZ=America/Denver` with the clock at
+2024-06-30T04:45:05Z (22:45 on Jun 29 locally). The seated Log carbs pane's
+header read `at Jun 30 · 22:45`: the UTC date beside the local time.
+`shortDate` reads the first ten characters of its argument, and the base passed
+it `toISOString()`.
+
+### Consequences
+
+The logged carb's own timestamp already uses local getters (`whenToT`) and is
+unchanged. No replay story pins this header, for the reason #427 gave: no replay
+or browser context sets a `timezoneId`, so the replay browser runs in the
+runner's zone, UTC on CI, where the defect cannot show. A Node test pins its own
+zone and clock instead.
+
+## Revise lifecycle record
+
+- **Route.** UI Craft's router, run at triage on this worktree, returned
+  `{"mode":"revise","reason":"safe manufactured data source declared"}` for a
+  shipped, runnable surface with a complete declaration and a manufactured
+  source.
+- **Safe start.** `AGENTS.md`, "The data boundary": the one permitted offline
+  serve, `uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`,
+  over a copy of `mockups/qa-e2e.synthetic/harmonic.sqlite`, or of a named case
+  store emitted by `uv run python scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>`.
+  Both are generated entirely by `scripts/gen_qa_e2e_db.py` from manufactured
+  recipes. This change's stories use the showcase and `c3-trial`.
+- **Base.** origin/main `b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1`.
+- **Contract.** The frozen desk behavior ledger
+  `mockups/harmonic-v2-desktop.behavior.md` (header `★ FROZEN 2026-09-23`,
+  inventory 171 issued, 152 active, 19 retired; `acceptance.py inventory`
+  on b03431d2 read the same, with registry parity) and its replay
+  `frontend/desk-behavior.replay.mjs`. The release brief treats it as the
+  existing contract, and no sweep is re-run.
+- **Behavior changes.** Added: S162–S165, in a dated
+  `## #445 amendment — 2026-09-23, issue #445` section. Changed, with no story
+  asserting the old fact: the Changes and utility Day addresses; the Changes
+  supporting-date return focus; the utility return's reads, drill and address
+  over Diagnose; the utility-over-Day return; and the Log carbs return control
+  (Open question 2). Retired: none. Moved: none.
+- **Sanction line.** `Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out
+  yourself from here"); coordinator ruling R445` (and R444 for the header).
+- **Render matrix owed.** At 1280x720 and 1440x900, in the one shipped theme,
+  base and branch renders of four states. (a) Day opened from the active change's
+  first supporting date on `c3-trial`, then the Changes return with focus visible
+  on that date's control. (b) The same for the Trial's change record. (c) Log
+  carbs over Diagnose on the showcase: its Day, then the return with focus on the
+  entry's Open Day control. (d) Carb questions over a drilled Diagnose case on
+  the showcase: the return with the drill and the question's Open Day control
+  focused. The Log carbs header needs no render; its evidence is the zoned Node
+  test.
+
+## Risk contract
+
+- **Must prevent:**
+  - A Day address written by Changes or a carb utility that carries a CSS
+    selector or a return-focus key.
+  - Selector text built from any address value other than a well-formed ISO date
+    or the identity of an item the utility serves.
+  - A carb-utility return that re-reads a retained Diagnose, discards its drill,
+    or leaves the utility's title, origin or a selector in the Diagnose address.
+  - A Changes or utility return whose focus lands anywhere but the named control
+    while that control is present.
+  - A Log carbs header that names a date other than the reader's local date.
+  - Any analyzer, projection, served-payload, cap, floor, admission or staging
+    change.
+  - Real data in a fixture, test or evidence file.
+  - Secret exposure, irreversible loss of authoritative data, and silent
+    incorrect success.
+- **Must recover:** none beyond today. A return whose identity no longer matches
+  lands on the origin's heading.
+- **Accepted failure:**
+  - An identity no longer served lands focus on the origin's heading: a removed
+    Carb log entry, an answered prompt, or a date beyond the eight a period
+    renders.
+  - A date listed in both evidence periods lands on the first-listed control, as
+    on the base.
+  - A plain utility return drops a held "Return to Trial" (Open question 1).
+  - An older link's `focus=` is ignored.
+- **Unsupported:** a Changes return's precise focus on the narrow desk, where the
+  sheet toggle takes it as today; Back and Forward through Day visits; whether
+  Plan stays open on a plain arrival to Changes (#446).
+- **Evidence owed:**
+  - The address drops a `focus=` it is handed, and round-trips the utility
+    identities with their titles.
+  - Day's utility return moves with no context and hands the utility its
+    identity; a Changes return still hands back its whole entry.
+  - Each writer's Day address carries its identity and no selector.
+  - The utility resolves a served identity to that item's Open Day control, and
+    an unserved, display-text or crafted one to its heading, once.
+  - Changes requests the date's control on the first content render of a Day
+    return only, once per arrival, desktop only, and the heading for a malformed
+    date.
+  - The Log carbs header under a pinned Denver clock.
+  - The extended desk browser test and stories S162–S165 at both desktop sizes,
+    each failing first on the base at its feature assertion, with S7, S54b, S60,
+    S61, S62, S72b, S76, S108, S133, S136, S137, S138 and S142 still passing.
+
+Why: a Day link and its return are one round trip whose failure mode is a link
+that leaks page internals or lets a crafted address reach the page as a
+selector, or a return that silently rebuilds or loses the reader's place.
+Disposition: copied into the #445 execution lock.

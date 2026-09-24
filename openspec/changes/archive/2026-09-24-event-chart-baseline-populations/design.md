@@ -50,7 +50,7 @@ selection-bias rule).
 | Missed / unannounced meal | Completed carb-bolus meals (cross-Exposure, #178) |
 | Meal bolus fell short | Completed carb-bolus meals (cross-Exposure) |
 
-> Superseded in part by `ADR 202` (`openspec/changes/meal-bolus-denominator/design.md`).
+> Superseded in part by `ADR 202` (`openspec/changes/archive/2026-09-24-meal-bolus-denominator/design.md`).
 > The three ordinary meal levers' comparison population is now named **Other meal
 > opportunities**, because it is built from `Exposure.MEALS`, which admits any
 > carb-tagged bolus over the carb minimum — including cancelled and zero-insulin
@@ -92,7 +92,7 @@ for one the same way every other surface does.
 
 ### Consequences
 
-- Decision 6 of `openspec/changes/diagnose-finding-case-files/design.md` is
+- Decision 6 of `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md` is
   amended: event alignment no longer reprojects the roster into the five verdict
   cohorts. The five-state verdict taxonomy and the Finding attribution account
   are untouched for the verdict and accounting surfaces, which keep their own

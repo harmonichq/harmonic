@@ -113,7 +113,7 @@ decision.
   SHOWN watching row". (2) `renderFindingsQueue` is never node-tested (grep over
   `frontend/*.test.js` returns no importer) so the fast gate has no DOM —
   CONFIRMED; DOM assertions belong in the replay. Note: #83's record lives in
-  `openspec/changes/event-chart-discovery/design.md` — CONFIRMED via
+  `openspec/changes/archive/2026-09-24-event-chart-discovery/design.md` — CONFIRMED via
   `mockups/INDEX.md`. Note: "STORIES needs S72 appended (72 of 72)" — **REFUTED**:
   the array holds 89 entries (S01–S71, C41–C55, D1–D3), the ledger's "74
   executable entries" prose is itself stale, and no gate asserts a count. The new

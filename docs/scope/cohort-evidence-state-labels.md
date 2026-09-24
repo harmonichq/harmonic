@@ -47,7 +47,7 @@ aborted run's ledger was discarded and re-derived rather than trusted.
   `sparse` and `zero-fired` states with and without `another`, and all five pins
   still hold. `inline`
 - Grounded, not a decision: ADR 62's 2026-08-20 amendment
-  (`openspec/changes/by-event-window-membership/design.md:143-152`) retired the
+  (`openspec/changes/archive/2026-09-24-by-event-window-membership/design.md:143-152`) retired the
   rendered by-event caption — "Drop all that shit. It's a chart." — and DESIGN.md
   rule 5 says charts explain themselves through on-chart legend chips, not caption
   sentences. Both rule out the #93 feature vote's standing explanatory sentence;

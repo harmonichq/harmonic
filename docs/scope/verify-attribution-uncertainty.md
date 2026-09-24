@@ -2,7 +2,7 @@
 
 Ticket #136 asks two things: how Verify attributes an outcome when one change
 moved several settings at once, and what uncertainty an outcome delta carries.
-Map #133. ADR 24 (`openspec/changes/ic-trial-acceptance/design.md`) settled the
+Map #133. ADR 24 (`openspec/changes/archive/2026-09-24-ic-trial-acceptance/design.md`) settled the
 per-block judging inputs and deliberately left the response shape here.
 
 ## Settled inputs (ADR 24, not reopened)

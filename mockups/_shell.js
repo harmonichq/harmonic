@@ -1,6 +1,6 @@
 // RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
 //
-// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/archive/2026-09-24-harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
 //
 // Old (superseded): "Overview / Explore / Changes / Day"
 // New: "Diagnose / Changes / Day"

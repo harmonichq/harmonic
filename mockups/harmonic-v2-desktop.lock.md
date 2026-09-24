@@ -21,11 +21,11 @@ routing (Diagnose + Verify)** (`frontend/diagnose-workstation.js`; behavior
 registered in `mockups/finding-evidence-routing.behavior.md`, replayed by
 `frontend/diagnose-workstation-behavior.replay.mjs`). Their v1 ledger rows in
 `mockups/INDEX.md` stay `shipped`; the complete carried-job inventory is
-`openspec/changes/harmonic-v2/predecessor.md`.
+`openspec/changes/archive/2026-09-24-harmonic-v2/predecessor.md`.
 
 ## RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
 
-Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/archive/2026-09-24-harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
 
 Old (superseded): "Overview is the default destination. Overview, Explore, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
 New: "Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
@@ -132,7 +132,7 @@ Old (superseded): "1. **\"Explore\" as a destination name.** `predecessor.md`'s 
 New: "1. **Diagnose survives as the destination name.** ADR 348's four-destination adoption is historical and superseded for navigation by the September 8 sanction and ADR 397. V1 and v2 use Diagnose for the Findings/evidence destination. No new naming round opens."
 
 Old (superseded): "- Theme chooser/storage:"
-New: "- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: \"v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is\". ADR 397 records the amendment. - Theme chooser/storage:"
+New: "- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/archive/2026-09-24-harmonic-v2/design.md: \"v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is\". ADR 397 records the amendment. - Theme chooser/storage:"
 
 Old (superseded): "harmonic-v2-glucose.js: Back to Overview"
 New: "harmonic-v2-glucose.js: Back to Diagnose"
@@ -248,7 +248,7 @@ frames belong to Diagnose under HV2-11.
   mandatory anyway, because this surface takes over jobs v1 performs today.
 - UI source pin: `d8217ef4e362ebba1fff2fe5532ad3cdeaf8cd63`
 - Selected surface: `mockups/harmonic-v2-glucose.html?source=journey`
-- Adopted direction: ADR 348, `openspec/changes/harmonic-v2/design.md`
+- Adopted direction: ADR 348, `openspec/changes/archive/2026-09-24-harmonic-v2/design.md`
 - Completed repair authority, in force where earlier rounds differ:
   `mockups/harmonic-v2.exploration/BRIEF.md`, `REVIEW.md`, `FABLE-REVIEW.md`,
   `COLD-WALKTHROUGHS.md`, `OPUS-QA-REPAIRS.md`, `AUDIT.md`
@@ -474,7 +474,7 @@ arrangement and binds it to the serialized field, per precedence rule 3.
   on a closed Focus. This is legacy compatibility, not an asymmetry to design
   around.
 - **Day return-focus context is frontend-owned** route/URL state
-  (`openspec/changes/url-state-contract`), not a #387 payload. HV2-14 is a UI
+  (`openspec/changes/archive/2026-09-24-url-state-contract`), not a #387 payload. HV2-14 is a UI
   obligation, not a backend gap.
 - **Conflict codes and ending kinds are backend vocabulary** rendered verbatim:
   endings `user_finished, manual, reverted, superseded, expired_unreviewed,
@@ -765,7 +765,7 @@ intentionally absent.
 Each line is the operator ruling that sanctions its retirement. None of them
 originates in this manifest.
 
-- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is". ADR 397 records the amendment.
+- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/archive/2026-09-24-harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is". ADR 397 records the amendment.
 - Theme chooser/storage: Connor Griffin · 2026-09-01 · **"light theme retired by operator decision."**
 - Occurrence modal/hash route: Connor Griffin · 2026-08-18 · **"the dead occurrenceModal hash machinery goes with them."**
 - P20: Connor Griffin · 2026-08-25 · **"it just keeps my selector. The selection is a slicing method that lets me then dig into findings. Those findings will show up as dots on the chart anyway that I can then trace into."**

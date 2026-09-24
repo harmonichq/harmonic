@@ -76,7 +76,7 @@ injected requirements. The order was revised to:
 - assign the behavior ledger/replay to the UI revision chunk;
 - exempt the UI-only shape fixture from analyzer-backed proof;
 - state the Findings/Event-comparison precedence crosswalk;
-- name `openspec/changes/over-treated-low-verdict-band/` as ADR 90's home; and
+- name `openspec/changes/archive/2026-09-24-over-treated-low-verdict-band/` as ADR 90's home; and
 - enumerate the affected drift, browser, replay, and audit gates.
 
 ### Round 2 — fresh cold review

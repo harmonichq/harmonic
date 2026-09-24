@@ -104,7 +104,7 @@
 ## Outcome (2026-08-23)
 
 - The held-out backtest gate is rejected. Recorded as ADR 21 in
-  `openspec/changes/ic-dose-stamped-anchor/design.md` — no retrospective backtest gates or
+  `openspec/changes/archive/2026-09-24-ic-dose-stamped-anchor/design.md` — no retrospective backtest gates or
   relaxes I:C assertion, and the eight-run floor stays a mandatory condition of
   `ic_asserts_move` rather than a fallback.
 - The prototype scored nothing: 0 of 32 challenger cells were scoreable at both the 14-day
@@ -138,7 +138,7 @@
 ## Dispositions discharged (2026-08-18)
 
 - Wayfinder map filed: harmonic #19; decision tickets #20 (closed — option C, ADR 20 in
-  `openspec/changes/ic-dose-stamped-anchor/design.md`), #21 (gate spec + spec
+  `openspec/changes/archive/2026-09-24-ic-dose-stamped-anchor/design.md`), #21 (gate spec + spec
   amendments), #22 (surface lock, blocks the option C handoff), #23 (estimator ladder),
   #24 (trial length, deferred). All earlier `→ issue` dispositions now live on the map
   or its tickets; the #12 rewrite itself happens in ticket #21.

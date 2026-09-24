@@ -195,11 +195,11 @@ amendment.
 
 Current public and durable descriptions that implementation must reconcile are
 `mockups/INDEX.md`, `mockups/finding-evidence-routing.behavior.md`,
-`openspec/changes/finding-evidence-routing/design.md`,
-`openspec/changes/finding-chip-sift/design.md`,
-`openspec/changes/pane-header-single-seam/design.md`,
-`openspec/changes/by-event-window-membership/design.md`, and
-`openspec/changes/filter-unrelated-basal-findings/design.md`. Historical scope,
+`openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md`,
+`openspec/changes/archive/2026-09-24-finding-chip-sift/design.md`,
+`openspec/changes/archive/2026-09-24-pane-header-single-seam/design.md`,
+`openspec/changes/archive/2026-09-24-by-event-window-membership/design.md`, and
+`openspec/changes/archive/2026-09-24-filter-unrelated-basal-findings/design.md`. Historical scope,
 research, and exploration artifacts remain historical and are not rewritten to
 describe the new shipped state.
 

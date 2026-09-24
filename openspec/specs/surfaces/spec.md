@@ -3425,3 +3425,409 @@ axis tick, above the tick labels. These hold at every size.
 - **GIVEN** a basal slot whose programmed rate falls on an axis tick
 - **WHEN** the Spotlight draws it, at either rank
 - **THEN** the programmed rule ends at the axis tick, above that tick's label
+
+### Requirement: The basal slot panel drills into its steady nights
+
+The Diagnose basal slot panel SHALL render, beneath its numbers-and-staging
+block, a roster of the slot's steady nights through the shared occurrence-roster
+mechanism: groups keyed on the served per-night facts — ran above the
+programmed rate, ran below it, ran as set, and, only when such nights exist, no
+programmed rate on file — each header carrying its served count, the
+mechanism's row cap and show-more control honoured, one button row per night printing that night's date, delivered against
+programmed rate, and in-slot glucose mean, and one count line for the served
+excluded-night count. Excluded nights SHALL NOT render as rows, and a night
+with no served programmed rate SHALL NOT read as ran-as-set. The roster SHALL
+read the served night-evidence payload for that slot — the basal evidence
+tile's own copy when the findings publish a tile for the slot, otherwise one
+request through the same fetch the tile uses — so a slot opened from the lane
+and a slot opened from its findings row render the same roster. The panel SHALL derive no
+direction, floor, threshold or safety verdict, and the numbers-and-staging block
+SHALL render exactly as shipped. The panel SHALL NOT repeat the served headline.
+Correction factor and carb ratio panels SHALL be unchanged.
+
+#### Scenario: The roster groups nights by the served sign
+
+- **WHEN** the reader opens a basal slot whose night-evidence payload carries
+  nights with signs `1`, `-1` and `null` and a nonzero excluded-night count
+- **THEN** the panel renders three group headers whose counts equal the served
+  number of nights of each sign
+- **AND** each night row prints the served date, delivered and programmed rate,
+  and in-slot glucose mean, with a null served value printed as `—`
+- **AND** one line prints the served excluded-night count and no excluded night
+  renders as a row
+- **AND** the Current / Estimate / Recommended block, its hedges, the support
+  count and the staging control render exactly as before the roster existed
+
+#### Scenario: The roster waits for its payload and renders from either entry
+
+- **WHEN** the reader opens a basal slot from a lane cell that publishes no
+  findings tile
+- **THEN** the panel requests that slot's night evidence once through the
+  tile's own fetch and renders the same roster the findings-row entry renders
+- **WHEN** the payload has not arrived
+- **THEN** the roster area prints one line, "Loading nights…", in the
+  inspector's shipped empty-state element
+- **WHEN** the request fails or the payload is marked stale
+- **THEN** the roster area prints one line, "Night evidence unavailable.", in
+  that same element, and no roster
+
+### Requirement: Selecting a night draws its trace and its facts
+
+Selecting a night in the basal slot panel's roster SHALL press that row alone,
+push no inspector level, and move neither the breadcrumb nor the clock window.
+It SHALL paint that night's served glucose trace over the pooled envelope on
+Glucose by time of day through the same trace path a selected Finding occurrence
+uses, and SHALL render a detail block beside the roster carrying the night's
+date and slot span, delivered against programmed rate, that night's in-slot
+glucose mean against the roster's mean, entering to leaving glucose, its
+position within its group as `n of N`, a "Clear trace" control, and an
+"Open <date> in Day" control routing to that night's day. Up and Down SHALL step
+the selection within the night's group and keep focus on the newly selected
+row. "Clear trace", a lane click or chart click that swaps the slot in place,
+and leaving the slot frame SHALL release the selection and remove the trace and
+the detail block.
+
+#### Scenario: A night click selects in place
+
+- **GIVEN** the reader stands on a basal slot panel with a rendered night roster
+- **WHEN** they click one night row
+- **THEN** that row alone reports pressed state
+- **AND** the breadcrumb depth and the clock window are unchanged
+- **AND** Glucose by time of day carries one trace series whose points are that
+  night's served glucose values at their clock labels
+- **AND** the detail block prints that night's date, delivered against
+  programmed rate, its in-slot mean beside the roster mean, entering to leaving
+  glucose, and `n of N` within its group
+
+#### Scenario: Arrow keys step within the group and Clear trace releases
+
+- **GIVEN** a night is selected in a group of more than one night
+- **WHEN** the reader presses Down
+- **THEN** the next night in that group is selected, pressed and focused, and
+  the trace and detail block follow it
+- **WHEN** the reader activates "Clear trace"
+- **THEN** no row is pressed, the trace series is gone from Glucose by time of
+  day, and the detail block is gone
+
+### Requirement: A revision of the basal drill ships with its ledger amendments and evidence
+
+A revision that adds night selection to the shipped Diagnose drill rail SHALL
+amend the frozen finding-evidence-routing behavior ledger and its app-only
+replay with executable stories for every added behavior in the same change,
+SHALL record the base replay count, the fail-first replay result and the final
+replay count in that ledger entry, and SHALL store before/after renders of the
+basal drill at rest, with a night selected, and with its detail block, from the
+base and the revision served on the same synthetic database, at desktop, tablet
+(1024×768) and phone widths, with no pane overflowing at any of them.
+
+#### Scenario: The amended replay proves the revision
+
+- **WHEN** the amended replay runs against the built revision on the declared
+  no-fetch server
+- **THEN** it reports its applicable story count, zero failures and no skipped
+  story
+- **AND** every retired story prints its sanction
+
+### Requirement: High-carb response evidence is coherent with its selected population
+
+High-carb sequence case files SHALL add the versioned response described in the design's Public interface section. The selected scope, period, summary, three aggregate comparisons, eligible identities and candidate/reference assignment SHALL originate in the same existing sequence evaluation. Curves SHALL use the corresponding false-low-filtered observed CGM retained by the preparation snapshot. The standalone aggregate report, sequence construction, quintiles, eligibility, findings, ownership, priorities and setting recommendations SHALL retain their existing behavior. Repeat eating SHALL retain its current transport and chart.
+
+The full source-window eligible population SHALL supply the response cohorts, independent of the currently selected clock window. Candidate membership SHALL use the retained candidate flag, not episode ownership or current-window membership. Cohort routed counts SHALL equal their eligible membership counts. The response SHALL carry its own source-window bounds and selected scope, distinct from the window-specific occurrence summary. Missing or inconsistent source metadata SHALL produce the existing inconsistent-projection failure; it SHALL NOT trigger frontend reconstruction or a second evaluation.
+
+#### Scenario: A scoped occurrence roster does not redefine the comparison
+
+- **GIVEN** a supported high-carb finding with eligible candidate and reference sequences
+- **WHEN** a clock window selects only witnessed occurrences
+- **THEN** its occurrence roster retains current membership behavior
+- **AND** the response retains the same source comparison population and labels its source-window scope independently
+
+#### Scenario: False-low exclusion cannot change between evidence layers
+
+- **GIVEN** confirmed false-low readings in a sequence source window
+- **WHEN** its comparison metadata and response are prepared
+- **THEN** the new response uses the same filtered observations as the source evaluation
+- **AND** the existing aggregate-only report endpoint and detector verdicts retain their current contract
+
+### Requirement: Sequence response curves use an explicit observed end anchor
+
+Every response trace SHALL be aligned to the retained sequence end, meaning the final carb-bearing bolus timestamp, labeled `End of eating sequence`. Observations SHALL be confined to that sequence's retained half-open eligible interval, without padding, interpolation, carrying values across gaps or extending beyond the available source data. Point aggregation SHALL call the existing event-comparison cohort projector with its existing five-minute bins, one observation per sequence per bin, quantiles and point-support rules. Detector evidence floors and point-support grades SHALL remain separate concepts.
+
+For a selected four- or six-hour post-sequence interval, the response axis SHALL run from zero to that interval's declared horizon. The response point grid SHALL stop one existing five-minute grid step before the axis endpoint, so nearest-bin rounding cannot place an observation at the excluded endpoint. For a selected in-sequence interval, the axis SHALL extend from the earliest retained sequence-start offset rounded outward to the existing grid through five minutes after the end anchor, with the response point grid ending at zero; each sequence contributes only inside its own retained interval. The caption SHALL explicitly say `During eating`, and SHALL NOT label that response as an after-eating result. Empty bins SHALL remain unavailable; a supported aggregate SHALL NOT manufacture a supported curve point.
+
+#### Scenario: Different eating durations do not become invented trajectories
+
+- **GIVEN** eligible sequences with different start times relative to their ends
+- **WHEN** an in-sequence comparison is projected
+- **THEN** their observations align at their actual sequence ends and have no samples outside each retained interval
+- **AND** the chart identifies that it describes eating itself, with sample support allowed to vary over time
+
+#### Scenario: A missing follow-up point remains missing
+
+- **GIVEN** a cohort with insufficient observations at an aligned point
+- **WHEN** its response is rendered
+- **THEN** no median is invented for that point and the existing support/gap treatment is used
+- **AND** no value beyond the retained interval endpoint is drawn
+
+### Requirement: High-carb sequence reuses the Pattern response presentation
+
+The High-carb stage and fullscreen SHALL use the existing response renderer with observed glucose in mg/dL over event-relative time, the target range, highest-carb and reference cohort curves, existing uncertainty/support treatment and accessible pointer/keyboard readout. Cohort names SHALL read `Highest-carb fifth` and `Other sequences`, using the existing matched and comparison visual roles without implying causal matching. A compact legend SHALL state cohort sample sizes and the comparison scope. The existing chart-range contract SHALL include the new cohort glucose; only the chart drawing a selected trace may widen for that trace.
+
+The server-owned stage headline SHALL concisely name the glucose response: `Glucose after high-carb eating` for a post-sequence interval, and an equally concise during-eating title for an in-sequence interval. The full coherent comparison summary, including its percentages, comparison and sample counts, SHALL remain accessible in supporting detail. The title and summary timing SHALL agree with the curves. All three existing aggregate periods, their TIR and glucose-spread values, units, cohort counts and unavailable states SHALL remain accessible as supporting detail in the same finding; they SHALL NOT be connected into a purported glucose trace. The default presentation SHALL not require decoding Q1–Q4 or Q5. Quantile boundaries, if shown, SHALL remain user-relative descriptions rather than carb limits.
+
+The same renderer SHALL supply the All charts and Findings miniature ranks with the existing inert miniature policy. Repeat eating and the other response charts SHALL preserve their existing presentation. No duplicate chart implementation, new charting dependency or new route SHALL be introduced.
+
+#### Scenario: Opening the finding answers the reader's question
+
+- **GIVEN** a supported post-sequence comparison with different observed glucose responses
+- **WHEN** the reader opens High-carb sequence
+- **THEN** the response chart shows the magnitude and duration of the observed difference, names both groups and the end anchor, and shows the correct period and source scope
+- **AND** the summary agrees with that comparison without asserting that carbs caused the difference
+
+#### Scenario: Aggregate information survives the new primary chart
+
+- **WHEN** the reader inspects High-carb sequence supporting detail
+- **THEN** all three served aggregate periods remain available with their units, counts and unavailable states
+- **AND** a selected in-sequence comparison is explicitly distinguished from after-eating comparisons
+
+### Requirement: High-carb response retains the shipped interaction and evidence boundary
+
+Row pointer and keyboard activation, All charts entry, selected occurrence identity, Clear trace, fullscreen return/focus, clock selection and existing typed recovery SHALL survive the revision. Selecting an eligible roster occurrence SHALL expose and overlay only that occurrence's observed glucose within the same response interval and anchor. The original sequence metadata SHALL remain available. Unknown or out-of-roster selections SHALL retain the existing unavailable-selection result. Sequence detail SHALL NOT add a Day handoff.
+
+The existing frozen sequence stories SHALL be amended only for the approved High-carb visual replacement, retaining their semantic assertions and the Repeat eating branches. Every new browser behavior SHALL be attached to the existing hand-listed suite and ledger. Published fixtures and rendered evidence SHALL be generator-owned synthetic data. Validation SHALL include both shells, the prescribed viewport matrix, source/transport parity, and the repository's affected browser ledgers.
+
+#### Scenario: Fullscreen return keeps the reader's place
+
+- **GIVEN** a selected High-carb sequence occurrence and clock window
+- **WHEN** the reader opens fullscreen and closes it
+- **THEN** the same sequence, window and originating focus remain selected, with the same observed response evidence
+
+#### Scenario: A malformed response cannot masquerade as a result
+
+- **GIVEN** a missing, invalid, inconsistent or stale response
+- **WHEN** the chart attempts to display it
+- **THEN** the existing explicit unavailable/error or stale-refresh behavior runs
+- **AND** it does not draw a substitute curve or silently fall back to the retired aggregate-dot chart
+
+### Requirement: Diagnose is retained across destination changes
+
+The v2 desk SHALL keep the Diagnose workstation mounted across navigation to
+Changes and Day, parking and re-seating its root rather than tearing it down.
+Leaving to another destination SHALL park the root hidden at the end of the
+document and disconnect the
+entry-restoration observer and nothing else; the pagehide teardown is
+unchanged. A return to Diagnose SHALL show the loading frame until its one
+status read answers, SHALL issue no guidance or evidence read, and SHALL then
+retain the reader's selected window, drilled subject and reading scroll. The desk SHALL
+re-read only on Retry, on a repeated press of Diagnose while already on
+Diagnose (which is not a return: nothing parked the root), on a contextual
+entry whose subject, occurrence or window differs from the retained entry, or
+when one status read on return shows
+`/api/status.input_revision` differing from the input revision the Diagnose
+read recorded through its own status read issued before its payload reads.
+That status read SHALL be the only request a retained return issues. A
+failed re-read SHALL replace the retained desk with the existing error frame and
+SHALL NOT present the retained result as new.
+
+#### Scenario: A tab round trip makes one status read and keeps the window
+
+- **GIVEN** Diagnose is open on the 24 h window with a drilled finding
+- **WHEN** the reader opens Changes and returns to Diagnose
+- **THEN** the only request issued is one status read, and the loading frame
+  stands until it answers
+- **AND** the 24 h window, the drilled finding and the reading scroll are as left
+
+#### Scenario: A store write since the last read triggers one re-read
+
+- **GIVEN** Diagnose was read before a fetch or an in-app write (a finished
+  Trial, an applied Plan) advanced the input revision
+- **WHEN** the reader returns to Diagnose
+- **THEN** the desk issues one guidance read and shows the loading frame
+- **AND** the retained result is not shown as current meanwhile
+
+### Requirement: The trials roster read is bounded per record and serves edits
+
+The trials roster read SHALL read only the readings inside each retained
+record's own window, once per record, inclusive of a reading at exactly the
+window end, and SHALL return the same maturity and data-gap facts as an
+unbounded read. Every retained trial roster row SHALL carry
+a served `edit` key, and the roster SHALL carry an `edits` summary (key, first
+and last change instants, member count, and `parameters` as an ordered list of
+`{parameter, count}`); retained records SHALL
+chain into one edit when each change instant lies within the detector's one-day
+profile tolerance of the previous retained record in time order.
+Detected-but-unretained trial rows and Focus records SHALL carry no key. The
+status endpoint SHALL serve `input_revision`, the store's input data revision.
+
+#### Scenario: Two records one day apart share an edit; one minute past does not
+
+- **GIVEN** three retained records whose change instants are 0, 24 h and 48 h 1 min
+- **WHEN** the roster is read
+- **THEN** the first two carry one edit key and the third another
+
+### Requirement: Changes lists records by edit and names its loading
+
+Changes SHALL list one entry per served edit of two or more members with its
+member records beneath, each member keeping its exact record route, ending and
+late conclusion. The entry SHALL be titled by its member count ("<count>
+setting changes") with the served parameters rendered as setting names with
+counts as its detail and the first-to-last change span as its stamp; its Ended
+cell SHALL show the shared ending when every member agrees and "<n> ended ·
+<m> open" otherwise. A one-member edit and every row with no served key SHALL
+keep the flat row form in the same time order. The Still open cell SHALL print the status
+word table's entry for the disposition, never the token. The loading frame SHALL name the roster read and a
+reassessment while each is pending.
+
+#### Scenario: A pass of edits on the pump reads as one entry
+
+- **GIVEN** a synthetic store with a two-day chain of per-slot records and one
+  single record a week earlier
+- **WHEN** the reader opens View change record
+- **THEN** the roster shows one entry titled by its member count with its member rows beneath, and one flat row for the lone record
+- **AND** opening a member opens that exact record
+
+### Requirement: The desk renders served Pattern evidence and preserves selection
+
+The v2 desk SHALL render Pattern members as parent-owned expandable content with
+their served event labels, mini evidence and useful selected occurrence
+detail. A short event noun, if needed, SHALL be supplied by the backend. When
+selected occurrence glucose is served, the chart SHALL draw its distinct selected
+trace at the correct event-relative times and units. Selecting a roster row alone
+SHALL NOT count as rendering that trace. It SHALL render served selected markers where the selected evidence
+family supplies them, and it SHALL keep missing values visibly unavailable rather
+than synthesizing detail. It SHALL use the existing case-file route and reject a
+stale case-file, selection or window response so it cannot overwrite the newer
+reader selection. Each affected evidence family SHALL retain a public-interface
+proof of its selected handoff.
+
+#### Scenario: A later selection wins an in-flight response
+
+- **GIVEN** a selected Pattern request is in flight while the reader changes
+  occurrence or clock window
+- **WHEN** the earlier response arrives after the later request
+- **THEN** the desk retains the later selected served case file
+- **AND** it does not render stale trace, marker, count or membership detail
+
+### Requirement: The v2 desk preserves readable cross-destination evidence chrome
+
+The v2 desk SHALL keep the Diagnose reference rail width in Changes and Day,
+including loading and settings-table states. At both supported desktop widths,
+expanded rosters and full labels SHALL not collide. All charts and Close SHALL put their labels to the left of their icons. Those
+icons and chart expansion controls SHALL stay top-right, including in tall
+headers; a taller title SHALL NOT vertically center the control. Clock and
+chart controls SHALL use the existing compact density tokens while retaining
+accessible interaction. The desk SHALL retain the carried basal legend, verdict
+paint and stage-change accent; a thin basal slot SHALL open its own graph. A
+count-free skeleton SHALL appear while a destination loads, and a retained
+reassessment SHALL name its on-demand loading work.
+
+#### Scenario: Desk geometry survives dense evidence
+
+- **GIVEN** synthetic long-label expanded Pattern members, a tall chart header,
+  thin basal evidence and loading Changes/Day/settings-table states
+- **WHEN** the desk is rendered at each supported desktop width
+- **THEN** labels do not collide, the rail remains at the Diagnose reference,
+  header label precedes a top-right action icon, and compact controls remain
+  operable
+- **AND** basal legend/verdict/accent and named loading remain visible
+
+#### Scenario: Selected detail reaches the chart
+
+- **GIVEN** an ordinary event-comparison, eating-sequence or Pattern case file
+  with served selected glucose and evidence markers
+- **WHEN** the reader selects its occurrence through the roster
+- **THEN** that chart displays the selected trace and supported served markers
+- **AND** changing occurrence replaces the selected evidence rather than leaving
+  the old trace or only changing the row highlight
+- **AND** a missing anchor glucose does not suppress other available detail or
+  imply that served CGM is missing
+
+### Requirement: Diagnose and Day keep the reader's navigation context
+
+A custom Window chip SHALL show its time span without repeating the enclosing
+Window noun. Selecting a basal slot SHALL open that slot's own graph, including
+thin-evidence states, from any preceding Pattern or other chart. Returning from
+the slot SHALL restore the reader's preceding whole-day, named or drawn window.
+Choosing another Day SHALL retain the mounted stage, reading pane and navigator;
+loading SHALL be confined to the content that changes, and completed content
+SHALL correspond to the selected day without stale-response replacement.
+
+#### Scenario: A thin slot returns to the same window
+
+- **GIVEN** a Pattern chart and a whole-day, named or drawn window
+- **WHEN** the reader selects a thin basal slot and then returns
+- **THEN** the slot's own graph was shown and the preceding window is restored
+- **AND** a drawn-window chip carries the span without a duplicated Window noun
+
+#### Scenario: Day changes without rebuilding its frame
+
+- **GIVEN** a mounted Day stage, reading pane and navigator
+- **WHEN** a different recorded day is chosen and its response is pending
+- **THEN** those same nodes remain mounted while the changing content shows loading
+- **AND** the accepted response updates the selected day's content without
+  allowing an older request to overwrite a later selection
+
+### Requirement: Changes keeps completed and expired Trial records reachable
+
+A confirmed-on-pump Plan with no active watch SHALL expose View change record
+through the existing exact-record route. Changes SHALL make an expired Trial
+record prominent and reachable, preserve its original ending in the record, and
+offer the separately dated late conclusion defined by the durable-follow-up
+contract. Reloading a selected record address SHALL retain its exact kind and
+identity. Neither record access nor a late conclusion SHALL resume a watch.
+
+#### Scenario: A Plan opens its exact completed record
+
+- **GIVEN** a confirmed-on-pump Plan, its completed Trial and no active watch
+- **WHEN** the reader opens View change record and reloads that address
+- **THEN** the same Trial record and original ending remain visible
+
+#### Scenario: Expiry remains visible when concluding later
+
+- **GIVEN** an expired Trial that has not been concluded by the reader
+- **WHEN** the reader opens its surfaced Changes record and records a late conclusion
+- **THEN** the record displays the original expiry and the separately dated conclusion
+- **AND** it remains expired with the existing watch-admission behavior
+
+### Requirement: Focus withholding and v2 destinations remain discoverable
+
+Diagnose SHALL render either the backend-served Focus action or its served
+withholding reason. A nested Finding may route to one visible parent Pattern
+only when served membership identifies exactly one owner; the browser SHALL NOT
+derive readiness. V2 SHALL canonically write readable destination paths while
+accepting legacy query links.
+
+#### Scenario: A child opens its served parent context
+
+- **GIVEN** a remain-pattern child whose visible parent is withheld by backend
+  admission
+- **WHEN** the reader opens the child
+- **THEN** Diagnose states the served withholding reason and routes to that
+  parent context
+- **AND** an ambiguous membership does not invent a parent or Focus action
+
+#### Scenario: A Focus status refresh fails after a served parent read
+
+- **GIVEN** Diagnose retains a served parent Pattern and its admission state
+- **WHEN** the later Focus-status read fails
+- **THEN** Diagnose keeps that parent context visible with a plain-language
+  status and reachable Retry action
+- **AND** it does not erase the parent, expose a backend token, or infer a
+  Focus admission
+
+#### Scenario: A first Focus-status read fails for a selected Pattern
+
+- **GIVEN** Diagnose has selected a visible parent Pattern
+- **WHEN** the first Focus-status read fails
+- **THEN** Diagnose renders a reachable Retry status for that Pattern
+- **AND** it renders neither a stale Start Focus action nor an inferred
+  admission
+
+#### Scenario: A served Plan or Focus withholds another Focus
+
+- **GIVEN** backend admission withholds a visible parent Pattern for a pending
+  Plan or active Focus
+- **WHEN** Diagnose renders the parent or one unambiguous child
+- **THEN** it uses plain language and a compact route to the existing Plan or
+  Focus context
+- **AND** other unavailable patterns do not claim that readiness caused the
+  withholding

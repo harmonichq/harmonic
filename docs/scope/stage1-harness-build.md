@@ -13,7 +13,7 @@ the story set; this ledger records only what this build ticket settled on top of
   (`frontend/diagnose-workstation.js:2194`) is the single entry both families go
   through, routing the behavioural `event-comparison` kind to its finding case file and
   the three parameter kinds (basal, ISF, carb ratio) to their own evidence-detail frame.
-  → ADR (241, in `openspec/changes/adopt-frontend-build-tooling/design.md`)
+  → ADR (241, in `openspec/changes/archive/2026-09-24-adopt-frontend-build-tooling/design.md`)
 
 - **The harness mounts the real Diagnose workstation, unmodified.** No queue
   suppression, no harness-only rendering path. `createDiagnoseWorkstation({ root })`
@@ -84,7 +84,7 @@ four chart stories) are all settled above.
 ## Spawned tasks
 
 - ADR 241 is written by this ticket's own build, in
-  `openspec/changes/adopt-frontend-build-tooling/design.md`. No separate issue.
+  `openspec/changes/archive/2026-09-24-adopt-frontend-build-tooling/design.md`. No separate issue.
 
 ## Plan review
 

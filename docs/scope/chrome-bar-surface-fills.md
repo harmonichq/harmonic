@@ -31,4 +31,4 @@ Disposition: `inline`
 
 ## Remaining dispositions
 
-- None; ADR 49 is recorded in `openspec/changes/chrome-bar-surface-states/design.md`.
+- None; ADR 49 is recorded in `openspec/changes/archive/2026-09-24-chrome-bar-surface-states/design.md`.

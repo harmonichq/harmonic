@@ -156,7 +156,7 @@ records what deleting v1 breaks, as executed by triage; read it before group 1.
       layout, conventions), `README.md`, `PRODUCT.md`, `mockups/INDEX.md`,
       `mockups/SCAFFOLD.md`, and the `ui-surfaces:` line. Historical records stay
       byte-identical.
-- [x] 3.4 Amend `openspec/changes/harmonic-v2/`: rewrite its serving requirement
+- [x] 3.4 Amend `openspec/changes/archive/2026-09-24-harmonic-v2/`: rewrite its serving requirement
       to the root address with no v1, tick tasks 3.5, 4.2 and 4.3 citing ADR 416,
       and add one line to its design step 5 naming the supersession.
 - [x] 3.5 Group gate: the group 2 gate again, plus `npx --yes

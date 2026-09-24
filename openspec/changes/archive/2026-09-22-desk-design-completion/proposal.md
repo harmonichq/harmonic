@@ -10,7 +10,7 @@ app-only stories beside it and amends the stories whose behavior Connor ruled
 changed.
 
 This change supersedes the completion claim of task 3.3 in
-`openspec/changes/v2-findings-ledger/tasks.md` for parent-owned Pattern members,
+`openspec/changes/archive/2026-09-24-v2-findings-ledger/tasks.md` for parent-owned Pattern members,
 the basal legend and verdict paint, and skeleton loading. That record is left as
 written; #413's audit and this change are the correction.
 

@@ -13,9 +13,9 @@
   the preparation wrapper to preserve that projection's row policy and order,
   and explicitly withholds rather than invents a behavioral row whose attribution
   is not inspectable
-  (`openspec/changes/diagnose-finding-case-files/proposal.md@71cf4aa:17-31`;
-  `openspec/changes/diagnose-finding-case-files/design.md@71cf4aa:20-29,48-55,103-118,143-156`;
-  `openspec/changes/diagnose-finding-case-files/tasks.md@71cf4aa:15-27`). The
+  (`openspec/changes/archive/2026-09-24-diagnose-finding-case-files/proposal.md@71cf4aa:17-31`;
+  `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md@71cf4aa:20-29,48-55,103-118,143-156`;
+  `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/tasks.md@71cf4aa:15-27`). The
   implementation enforces the same boundary: a case is unavailable unless its id
   occurs in the retained authoritative rows, and the wrapper starts from those
   rows rather than adding Findings
@@ -42,13 +42,13 @@
   keeps history distinct from behavioral Findings, and says the global projection
   contains the analyzer-published active history rows without changing existing
   register or chip counts
-  (`openspec/changes/dose-stamped-information-findings/design.md@f0ce009:3-16,18-41`).
+  (`openspec/changes/archive/2026-09-24-dose-stamped-information-findings/design.md@f0ce009:3-16,18-41`).
   Its fixture generator also deliberately changed the no-fetch database from 30
   to 100 days and introduced a proved I:C setting transition
   (`scripts/gen_revise_e2e_db.py@f0ce009:38-43,97-168`). Nothing in that authority
   authorizes fabricating behavioral Patterns to preserve a prior fixture count;
   issue 79's risk contract expressly forbids changing analyzer verdicts or
-  Priority (`openspec/changes/diagnose-finding-case-files/proposal.md@71cf4aa:33-65`).
+  Priority (`openspec/changes/archive/2026-09-24-diagnose-finding-case-files/proposal.md@71cf4aa:33-65`).
 
   Coverage for the full publishable domain remains independent of whichever
   Findings happen to recur in one committed no-fetch database: the deep contract

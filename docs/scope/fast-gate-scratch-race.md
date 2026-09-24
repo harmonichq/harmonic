@@ -51,7 +51,7 @@ None.
 Command:
 
 ```sh
-git ls-files --error-unmatch frontend/browser-gates-fail-closed.test.js frontend/diagnose-evidence-row-box.test.js .github/workflows/ci.yml openspec/changes/retire-staging-entry-rule/design.md openspec/changes/retire-staging-entry-rule/tasks.md
+git ls-files --error-unmatch frontend/browser-gates-fail-closed.test.js frontend/diagnose-evidence-row-box.test.js .github/workflows/ci.yml openspec/changes/archive/2026-09-24-retire-staging-entry-rule/design.md openspec/changes/archive/2026-09-24-retire-staging-entry-rule/tasks.md
 ```
 
 Output:
@@ -60,8 +60,8 @@ Output:
 .github/workflows/ci.yml
 frontend/browser-gates-fail-closed.test.js
 frontend/diagnose-evidence-row-box.test.js
-openspec/changes/retire-staging-entry-rule/design.md
-openspec/changes/retire-staging-entry-rule/tasks.md
+openspec/changes/archive/2026-09-24-retire-staging-entry-rule/design.md
+openspec/changes/archive/2026-09-24-retire-staging-entry-rule/tasks.md
 ```
 
 ### G2 — Current collision wiring

@@ -13,7 +13,7 @@
 - [x] Chunk 4: the behavior-ledger amendment with every recorded retirement,
       the replay stories, the cockpit-gate stubs, the arrangement renders, and
       all ten browser gate legs green.
-- [ ] Coordinator: fold `docs/scope/135-behavior-retirements.md` handling,
+- [x] Coordinator: fold `docs/scope/135-behavior-retirements.md` handling,
       the surface-ledger row in `mockups/INDEX.md`, the repo-rules audit
       (including the dead dark-ground line in `diagnose-workstation.css`),
       and the whole-diff review before the pull request.

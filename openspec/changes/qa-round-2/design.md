@@ -206,3 +206,9 @@ stays as today and is out of scope: a pick of the same setting made in Changes
 and not yet saved is dropped without a warning when Diagnose stages that
 setting, because `stageEvidence` builds from the saved draft and the setting
 does not change.
+
+**Decided autonomously during AFK run (start).** S187 gathers its checks and
+fails once, so a run on task 11's commit still presses through the replacement
+and records its before renders; its first failure is the pre-press warning. S187
+joins the PR smoke slice as the only story on `basal-and-carb-ratio-lower`, as
+S177 did for its store.

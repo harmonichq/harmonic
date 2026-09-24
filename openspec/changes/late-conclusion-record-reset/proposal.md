@@ -5,15 +5,17 @@
 **Triage source for #452.** An ordinary ticket change in the #442–#457 follow-up
 release. The inherited desk revise contract
 (`mockups/harmonic-v2-desktop.behavior.md` and its replay) stays frozen. A dated
-`#452 amendment` section records the changed behavior and names its node-level
-proof. It adds, amends and retires no story, so the ledger inventory is
-unchanged. The header's inventory line and the release freeze block are the
-coordinator's.
+`#452 amendment` section records the changed behavior and adds one story, S180,
+with its replay. No story is amended or retired, and the ledger inventory moves
+to 172 issued · 153 active · 19 retired on this branch. The header's inventory
+line and the release freeze block are the coordinator's.
 
 Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
 from here"); coordinator ruling R452: "As the issue's checklist: the
 later-conclusion text, failure and request id clear in one place whenever the
-open record's identity changes."
+open record's identity changes." Coordinator rulings on this triage, same
+delegation: add the story S180 (Q1), and reopening the same record from the
+roster starts empty (Q2).
 
 ## Why
 
@@ -60,9 +62,15 @@ Opening either record by its address already starts empty.
   return from Day to the same record.
 - Node tests through the roster press, on the #430 host fake, cover opening a
   different expired Trial and reopening the same one.
-- The ledger gains a dated #452 amendment. It records the changed behavior,
-  says why no replay story reads it, and lists the later-conclusion handlers as
-  node-test-only.
+- A new replay story, S180, proves the same rule in the built app on the one
+  expired Trial the c4-isf case store serves. The reader types on it, a routed
+  save fails, the reader goes back to the roster and reopens it. The form is
+  empty, no failure is carried, and the next save sends a request id of its
+  own. Two different records stay proved at node level, because no committed
+  case store serves two expired Trials.
+- The ledger gains a dated #452 amendment carrying S180, the changed behavior
+  and a handler inventory for the later-conclusion form, which arrived in #411
+  with no ledger row.
 
 ## Not in this change
 
@@ -70,4 +78,5 @@ Opening either record by its address already starts empty.
   eligible for a later conclusion, and every saved ending.
 - ADR 430's failed-reassessment clear, which already stays with its record.
 - `history.js`'s Day links (#445) and ending section (#449/#450).
-- Any backend, Python, fixture or case-store change.
+- Any backend module, generator, fixture or case-store change. The only Python
+  edits are the acceptance harness's inventory literals.

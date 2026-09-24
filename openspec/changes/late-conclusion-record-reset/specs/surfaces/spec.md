@@ -32,11 +32,12 @@ for a later conclusion, and every saved ending SHALL be unchanged.
 
 #### Scenario: Reopening the same record from the roster starts empty
 
-- **GIVEN** an expired Trial record whose Later conclusion the reader has typed
-  but not recorded
+- **GIVEN** an expired Trial record whose Later conclusion the reader typed and
+  whose save failed
 - **WHEN** the reader presses Back to records and opens the same record from the
   roster
-- **THEN** its Later conclusion form is empty
+- **THEN** its Later conclusion form is empty and shows no failure
+- **AND** its next save sends a request identity different from the failed one
 
 #### Scenario: A failed save keeps its words and request identity on its record
 

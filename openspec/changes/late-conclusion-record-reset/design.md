@@ -97,28 +97,51 @@ so the next arrival re-reads the roster.
 
 ### Ledger
 
-No replay story reads the later-conclusion form, and none reads anything this
-change moves. The stories that open or leave a record keep their reads (S52's
-finished-change handoff; S105's and S110's roster press and reload; S112's
-loading frames; S142's and S143's roster press). They are replayed unchanged as
-regression.
+The fix leaves every existing story's reads unchanged. The stories that open or
+leave a record are replayed unchanged as regression: S52's finished-change
+handoff, S105's and S110's roster press and reload, S112's loading frames, and
+S142's and S143's roster press.
 
-A story for the carry-over itself is not reachable. It needs two expired
-Trials, and no committed case store serves more than one: an in-process roster
-read of every registry case store and the reconciled showcase found exactly one
-`expired_unreviewed` Trial each on c4-isf and c4-profile, and none elsewhere.
-Story ids S180–S181, reserved for this ticket, stay unused.
+**S180 is added** (coordinator ruling Q1 on this triage, under the Q3
+delegation). It proves the rule in the built app on c4-isf, the case store
+whose one retained Trial ended `expired_unreviewed` with no later conclusion
+saved:
 
-The ledger still records the change, because a revision that changes shipped
-behavior amends the frozen ledger. A dated `## #452 amendment — 2026-09-23`
-section states the changed behavior, names the node test as its proof, and lists
-the later-conclusion handlers as node-test-only in a handler inventory table.
-This follows the #430 amendment's `none — node test only` row. The form arrived
-in #411 with no ledger row, and this section closes that gap. The inventory
-stays at 171 issued · 152 active · 19 retired.
+1. open the expired Trial from the roster;
+2. type a later conclusion, and have the save refused by a routed synthetic
+   answer, so nothing reaches the store and the refused request id is recorded;
+3. press Back to records and reopen the same record from the roster;
+4. assert an empty form and no carried failure;
+5. record again, and assert that the save sends a request id different from
+   the refused one and records the later conclusion.
+
+On base the story fails at step 4, because the reopened form still holds the
+typed words. The carry-over into a different record is proved at node level
+(task 2.1) and not by a story: it needs two expired Trials, and no committed
+case store serves more than one. An in-process roster read of every registry
+case store and the reconciled showcase found exactly one `expired_unreviewed`
+Trial each on c4-isf and c4-profile, and none elsewhere. S181, also reserved
+for this ticket, stays unused.
+
+The story body, its fake page and its pass and fail-first tests were spiked
+before the change was pinned, in `docs/scope/452-late-conclusion-s180.spike.mjs`.
+The fake page passes against a record that clears and fails at each of the
+three feature assertions against a record that carries the typed words, the
+failure or the request id.
+
+The fixed PR smoke slice already covers c4-isf. S91's c4 part names it, and a
+smoke selection on base reports S91's case coverage as c3-trial, c4-ic, c4-isf
+and c4-profile. So `SMOKE_STORIES` and its digest do not move.
+
+The dated `## #452 amendment — 2026-09-23` section carries S180 and the changed
+behavior. It also carries a handler inventory for the later-conclusion form,
+which arrived in #411 with no ledger row. The inventory moves to 172 issued ·
+153 active · 19 retired on this branch, and the coordinator reconciles release
+totals.
 
 Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R452.
+from here"); coordinator ruling R452, and its rulings Q1 (add S180) and Q2
+(reopening the same record starts empty) on this triage.
 
 ### Consequences
 

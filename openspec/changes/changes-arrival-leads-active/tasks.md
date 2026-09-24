@@ -173,13 +173,28 @@ navigates resets it with `navigate('diagnose')` in its `finally`.
   inventory, and the same-total guard. The guard's split stays different from the
   real one. Run `python3 mockups/sweep/harmonic-v2-desktop/acceptance.py
   inventory --out <scratch dir>` and record the counts.
-- [ ] 5.4 Coordinator, port-bound. Replay `ONLY=S166,S167,S168` on the base with
+- [x] 5.4 Coordinator, port-bound. Replay `ONLY=S166,S167,S168` on the base with
   this branch's harness laid over it: each fails at a feature assertion. Replay
   the same three on the branch: each passes. Replay
   `ONLY=S38,S39,S45,S45b,S56,S57,S90,S139,S140` on the branch: all pass. Run
   every leg at 1280x720 and 1440x900, and record the results in each new story's
   status line. Capture the five before/after renders design.md lists. The
   coordinator ticks this task; the renders are not committed.
+
+  Coordinator-run 2026-09-24, at 1280x720 and 1440x900. On base b03431d2 with
+  this branch's harness laid over it, `ONLY=S166,S167,S168` reads `executed 0 ·
+  failed 3` at both sizes, each at its feature assertion. S166 fails at "Stage in
+  the Plan's own frame must keep the Plan's address" (it saw /changes). S167
+  fails at "the Trial's nameplate must offer Open Plan beside View change
+  record". S168 fails at "must offer "Return to Focus" and no "Return to Trial""
+  (it saw Return to Trial). On branch 08d3b78e, whose code is identical to the
+  head's, `ONLY=S166,S167,S168,S38,S39,S45,S45b,S56,S57,S90,S139,S140` reads
+  `executed 12 · failed 0 · selected 12` at both sizes. The three new stories'
+  status lines record the results. The tick covers the replays. The renders
+  moved to 5.5 at the coordinator's direction.
+- [ ] 5.5 Coordinator, port-bound. The five before/after renders design.md lists,
+  at 1280x720 and 1440x900. They are coordinator-owned at the release's
+  integration render batch and are not committed.
 
 ## 6. Verification
 

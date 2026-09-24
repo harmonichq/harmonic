@@ -4172,10 +4172,12 @@ S166 · Open Plan holds for one visit, before and after a Trial begins. In one
             kicker's served phase after Open Plan; waits for Diagnose's guidance
             read before the watched topbar arrival; reads the Trial's nameplate
             controls and Diagnose's return label as text
-  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
-            Base b03431d2 with this harness laid over it is expected to fail at
-            its first feature assertion ("S166 Stage in the Plan's own frame
-            must keep the Plan's address"); the branch is expected to pass
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its first
+            feature assertion at both sizes ("S166 Stage in the Plan's own frame
+            must keep the Plan's address"; it saw /changes). Branch 08d3b78e
+            passes at both sizes. Coordinator-run 2026-09-24. Renders owed at the
+            integration render batch
 ```
 
 ```
@@ -4202,10 +4204,12 @@ S167 · A watched Trial reaches its saved draft. With no Plan draft, the Trial's
             parses the address after Open Plan and compares /api/plan before
             and after it; counts the failed-record Retry and the served Plan
             history before and after Record decision
-  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
-            Base b03431d2 with this harness laid over it is expected to fail at
-            "S167 the Trial's nameplate must offer Open Plan beside View change
-            record"; the branch is expected to pass
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S167 the Trial's nameplate must offer Open
+            Plan beside View change record"). Branch 08d3b78e passes at both
+            sizes. Coordinator-run 2026-09-24. Renders owed at the integration
+            render batch
 ```
 
 ```
@@ -4226,10 +4230,13 @@ S168 · A watched Focus names its return and reaches its draft. With a Plan draf
             nameplate, so a base run records the crumb before it fails. Its base
             failure at the label, not at a premise, is pinned at node level by
             frontend/c4.replay.test.js against a page shaped like the base
-  status:   owed: coordinator replay at 1280x720 and 1440x900 (tasks.md 5.4).
-            Base b03431d2 with this harness laid over it is expected to fail at
-            "S168 Diagnose opened from the watched Focus must offer "Return to
-            Focus" and no "Return to Trial""; the branch is expected to pass
+  status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved.
+            Base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S168 Diagnose opened from the watched Focus
+            must offer "Return to Focus" and no "Return to Trial""; it saw
+            "Return to Trial"). Branch 08d3b78e passes at both sizes.
+            Coordinator-run 2026-09-24. Renders owed at the integration render
+            batch
 ```
 
 Additional handler inventory for this amendment:

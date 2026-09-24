@@ -16,6 +16,7 @@ export const STORY_CASES = Object.freeze({
   S106: 'pattern-near-tie', S107: 'showcase',
   S108: 'showcase', S109: 'showcase', S110: 'edit-chain', S111: 'edit-chain', S112: 'edit-chain',
   S113: 'basal-verdict-gallery',
+  S121: 'pattern-near-tie', S122: 'pattern-near-tie',
   S139: 'c3-trial', S140: 'c3-focus',
   S142: 'c3-trial', S143: 'edit-chain',
   S151: 'basal-verdict-gallery', S152: 'basal-verdict-gallery', S153: 'basal-verdict-gallery',

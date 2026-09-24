@@ -3371,3 +3371,130 @@ ends with the desk's own word, not the served Lever name.
 Amended S61 · 2026-09-23 · #426 / Q2 sanction: The contextual entry also carries a display title beside its canonical subject, in the address, and its Opened-from section names the subject by that served title (for a selected occurrence, the case file's served finding title), never by the routing subject; no `finding:`, `pattern:` or `basal:` text appears there. Given the Day's served model read carries at least one attributed episode and the Episode Log renders a row of one (a premise that fails loudly), each row of an attributed episode ends with that episode's served Lever name, and no row prints an underscore token. App body: frontend/c2.replay.mjs S61; fail-first proof: frontend/replay-cases.test.js, "S61 requires Day to name its origin and each attributed row by the served names". Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900 (`ONLY=S61,S62`: executed 2 · failed 0 · deferred 0 · selected 2), coordinator-run 2026-09-23; base a4d374a7 with the branch harness at 1280x720 fails it at the origin assertion (saw Opened from `finding:over_treated_low` and the 13:55 row ending `over-treated low`; executed 1 · failed 1 · selected 2). Before/after renders are owed to the coordinator's integration batch.
 
 Amended S62 · 2026-09-23 · #426 / Q2 sanction: While away, the Day desk names that subject by its served title, no longer verbatim; the return still holds and focuses the exact occurrence held when Day opened. App body: frontend/c2.replay.mjs S62, unchanged. Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900, and on base a4d374a7 with the branch harness at 1280x720, coordinator-run 2026-09-23.
+
+## #423 amendment — 2026-09-23, issue #423
+
+Sanction: Connor Griffin, 2026-09-23, in the release coordinator session,
+answered "Q1 A, Q2 A, defaults all fine, go". Q2 asked: "Can your reply here
+count as sign-off for the UI copy and tone changes? … Yes. I record your answer
+as the approval for every change these 13 checklists call for, and write the
+wording in CONTEXT.md terms." That answer is the dated sanction for this
+shipped-surface revision and for the desk behavior-ledger amendment #423's
+checklist calls for. It does not sanction anything outside #423's checklist.
+
+The Day Episode Log showed an outranked anchor four wrong ways: its tier word was
+the raw engine state, its row named only the episode's Lever, it painted in the
+warning hue whatever its severity, and the Findings caption counted rows. The
+bands themselves were explained nowhere (ADR 423 in
+`openspec/changes/episode-log-claimed-moments/design.md`).
+
+S121 and S122 are added. No inherited story is amended, weakened or retired. S67
+still reads each row's `.tier[data-state]`, which keeps the served engine state
+(`outranked`) beneath the new word. S82's label redundancy still holds: a claimed
+anchor shares the fired anchor's hue, and the word `claimed` is the non-colour
+signal that tells it from the driver. Both stories are app-opener-only, like
+S101–S117. Browser execution belongs to the coordinator at 1280x720 and
+1440x900; the ticket worker binds no port.
+
+### #423 sanctioned changes to shipped desk behavior — 2026-09-23
+
+- An anchor whose served state is outranked reads `claimed`, and Diagnose's
+  case-file label for an outranked occurrence reads `claimed by another finding`
+  (was `claimed by another factor`). Both read one exported word.
+- A claimed row names what its anchor matched on its own, by the verdict title
+  the model view now serves, then ends with the episode's served Lever name.
+- A claimed anchor's tier word, rings and focus hairline take the fired anchor's
+  hue, and its resting marker the fired anchor's size. The warning hue leaves
+  the Episode Log.
+- The Findings caption counts distinct Findings (served Levers), with claimed
+  anchors counted beside it: `Findings · <n>` plus ` · <k> claimed`.
+- Each band caption carries a Glossary control that opens the Glossary at a new
+  Episode Log group; Close returns focus to the control.
+
+No shipped behavior is retired.
+
+```
+S121 · On a Day whose Episode Log holds a claimed low, the low's row reads
+       "claimed", names what the low matched on its own and ends with the
+       Finding that claimed it, and paints its tier word in the fired row's
+       colour; its resting marker is ringed and sized as the fired marker;
+       the Findings caption counts one Finding and names one claimed anchor.
+  element:  .gf-log-row[data-day-row] .tier[data-state], .text;
+            .gf-reading .gf-log-cap .gf-log-title; the day chart's
+            day-anchor-markers series option (by series id); .gf-month-toggle,
+            [data-day="prev-month"], .gf-nav-cell[data-pick]
+  source:   frontend/day.js reading / bind; frontend/day-chart.js buildRows,
+            buildEpisodeLedger, anchorStateColor, ANCHOR_STATE_WORD,
+            buildAnchorOverlay; frontend/desk.css tier rules;
+            ciq_autotune/analyzers/scenario/model_view.py verdict `title`
+  lock:     HV2-13, HV2-19, HV2-32
+  data:     pattern-near-tie Day 2024-05-25, reached through the Month
+            calendar from the 2024-06-08 arrival. Its Episode Log shows episode
+            2024-05-25-ep13 (carb undercount): the fired 19:00 meal, a clean
+            correction, and the 22:00 low at 54.25 mg/dL, outranked with
+            correction_on_iob matched. Every one of that episode's anchors is
+            stamped 2024-05-24, so the Day axis clips both rings and a pressed
+            row's hairline lands in the left gutter; the story asserts nothing
+            about a visible ring or hairline.
+  evidence: C4_STORIES.S121 → assertClaimedEpisodeLog. It reads the day's
+            served /api/model-view first; the premises (a claimed low matched
+            to correction_on_iob in a carb undercount episode with its fired
+            anchor and lever_title, one Finding and one claimed anchor on the
+            day) fail as "S121 premise: …". Before any row is pressed it reads
+            the claimed and fired rows and each unfocused marker's
+            itemStyle.borderColor, itemStyle.color and symbolSize back from
+            the day-anchor-markers series option, then collects every feature
+            check into one assertion: the word, the kept data-state, the
+            served matched title before the served lever_title at the row's
+            end, no underscore token, the tier's computed colour equal to the
+            fired tier's, the caption "Findings · 1 · 1 claimed", the claimed
+            marker's size and ring equal to the fired marker's and its fill
+            the surface. Pressing the claimed row must then ring its marker
+            in the accent at size 15. frontend/c4.replay.test.js drives it on
+            fake pages: it fails on a warning-hued tier, the bare state word,
+            a missing served title, a row not naming what the low matched, a
+            row not ending with the lever_title, a caption counting rows, and
+            a claimed marker smaller than or hued unlike the fired one, and it
+            fails as a premise on a missing claimed low or row.
+  status:   authored on the branch; coordinator-run pending. Expected: base
+            (the ticket's base with the branch harness laid over) fails at
+            its feature assertion, naming the word "outranked", the missing
+            served title, the warning ink, "Findings · 2", the claimed
+            marker's size 8 and its warning ring; the branch passes at
+            1280x720 and 1440x900.
+
+S122 · On the same Day, the Findings caption's Glossary control, operated from
+       the keyboard, opens the Glossary with its Episode Log group in view,
+       and Close returns focus to that control.
+  element:  .gf-log-cap [data-log-glossary="findings"];
+            .gf-utility[data-utility="glossary"] [data-glossary-group="Episode Log"] h3;
+            [data-utility-close]
+  source:   frontend/day.js reading / bind; frontend/utilities.js openUtility
+            (in-view target), glossaryBody, close; frontend/glossary.js
+            Episode Log group
+  lock:     HV2-13, HV2-32, HV2-33
+  data:     pattern-near-tie Day 2024-05-25, reached as S121 reaches it
+  evidence: C4_STORIES.S122 → assertBandGlossary. The premise is a Findings
+            caption on the held day ("S122 premise: …"). The control must be
+            a button carrying data-log-glossary="findings" and the accessible
+            name "Explain Findings in the Glossary"; focused and activated with
+            Enter, the Glossary must take the reading seat with the Episode
+            Log group's heading inside the pane body's visible box; Close must
+            put focus back on the same control. frontend/c4.replay.test.js
+            drives it on fake pages: it fails on a missing or misnamed control,
+            a group out of view and focus not returned, and as a premise on a
+            missing caption.
+  status:   authored on the branch; coordinator-run pending. Expected: base
+            (with the branch harness) fails at "S122 the Findings caption must
+            carry a Glossary button named for its band"; the branch passes at
+            1280x720 and 1440x900.
+```
+
+### #423 handler inventory
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `.gf-month-toggle`, `[data-day="prev-month"]` and `.gf-nav-cell[data-pick]` click (existing) | frontend/day.js bind | S121, S122 |
+| `.gf-log-row[data-day-row]` click (existing), pressed at the claimed row | frontend/day.js bind | S121 |
+| `[data-log-glossary]` click, from the keyboard (new) | frontend/day.js bind → frontend/utilities.js openUtility(kind, launcher, inView) | S122 |
+| `[data-utility-close]` click (existing) | frontend/utilities.js bindPane → close | S122 |

@@ -11,7 +11,7 @@ Read #426's field and row markup from the trunk.
 
 ## 1. Served names, words, hue, count and explanation
 
-- [ ] 1.1 Serve a `title` beside `classifier` on every retained verdict of every
+- [x] 1.1 Serve a `title` beside `classifier` on every retained verdict of every
   anchor in `_build_episode_view` (`ciq_autotune/analyzers/scenario/model_view.py`),
   as `levers.title(Lever(classifier))` with no fallback name. Tests go in
   `tests/test_scenario_model_view.py`, through `assemble_model_view` on the
@@ -28,7 +28,7 @@ Read #426's field and row markup from the trunk.
     `--check` with no regeneration;
   - `tests/test_explore_exposures.py` and `tests/test_finding_case_file.py` pass
     unedited.
-- [ ] 1.2 Implement surfaces **The Episode Log words an outranked anchor as
+- [x] 1.2 Implement surfaces **The Episode Log words an outranked anchor as
   claimed, and Diagnose shares the word**:
   - move `STATE_WORD` out of `frontend/day.js` into `frontend/day-chart.js` as
     the export `ANCHOR_STATE_WORD`, with `outranked: 'claimed'` and the other
@@ -38,7 +38,7 @@ Read #426's field and row markup from the trunk.
     built from `ANCHOR_STATE_WORD.outranked` as `claimed by another finding`.
   No comment or copy defines `claimed` as "matched" or "did not match"; it means
   only that the anchor or occurrence belongs to an episode another Finding owns.
-- [ ] 1.3 Implement surfaces **A claimed row names what the anchor matched and
+- [x] 1.3 Implement surfaces **A claimed row names what the anchor matched and
   ends with the Finding that claimed it**, in the Episode Log row markup
   (`frontend/day.js`):
   - a claimed row first names each of the anchor's own matched verdicts by its
@@ -50,7 +50,7 @@ Read #426's field and row markup from the trunk.
   The Day desk (`frontend/day.js`, `frontend/day-chart.js`) keeps no
   Lever-key-to-name table, and this change adds none. Fired, also-checked and
   quiet rows keep the content #426 gives them.
-- [ ] 1.4 Implement surfaces **A claimed anchor keeps its Finding's hue and
+- [x] 1.4 Implement surfaces **A claimed anchor keeps its Finding's hue and
   size**:
   - `anchorStateColor` maps `outranked` to the fired hue;
   - `buildAnchorOverlay` sizes an outranked resting marker as a fired one;
@@ -59,7 +59,7 @@ Read #426's field and row markup from the trunk.
   - remove `warn` and its comment from `deskColors()` in `frontend/colors.js`
     once a whole-tree search, `frontend/index.html` included, finds no other
     reader.
-- [ ] 1.5 Implement surfaces **The Findings band counts Findings, not rows**:
+- [x] 1.5 Implement surfaces **The Findings band counts Findings, not rows**:
   - which anchors the band holds is unchanged: fired and claimed anchors, each
     of an episode attributed to a Lever;
   - `buildEpisodeLedger` returns the number of distinct served Levers among the
@@ -69,7 +69,7 @@ Read #426's field and row markup from the trunk.
   - the caption prints `Findings · <findings>`, followed by ` · <k> claimed`
     when k > 0.
   Rows keep chronological order.
-- [ ] 1.6 Implement surfaces **The Episode Log bands are explained where a reader
+- [x] 1.6 Implement surfaces **The Episode Log bands are explained where a reader
   looks**. Add an Episode Log group to `frontend/glossary.js`, in CONTEXT.md
   terms with no listed synonym:
   - *Finding*: the Findings band lists the fired and claimed anchors of
@@ -100,7 +100,7 @@ Read #426's field and row markup from the trunk.
   - regenerate `mockups/harmonic-v2.exploration/` with
     `uv run python mockups/harmonic-v2.exploration/generate.py`, so that only
     its `glossary.js` and `utilities.json` change, and keep its `--check` green.
-- [ ] 1.7 Node tests through each module's public interface, each observed
+- [x] 1.7 Node tests through each module's public interface, each observed
   failing on the base first.
   - `frontend/day.test.js`, for a meal over-delivery day with a level-2 claimed
     low:
@@ -132,7 +132,7 @@ Read #426's field and row markup from the trunk.
 
 ## 2. Ledger stories, design records and evidence
 
-- [ ] 2.1 Add S121 and S122 (ticket block S121–S123) to
+- [x] 2.1 Add S121 and S122 (ticket block S121–S123) to
   `mockups/harmonic-v2-desktop.behavior.md` in a new section headed
   `## #423 amendment — 2026-09-23`, following the #413 and #414 amendment
   pattern. The section carries:
@@ -183,7 +183,7 @@ Read #426's field and row markup from the trunk.
   Re-read S67 and S82 for intent: they read `.tier[data-state]` and label
   redundancy, which still hold. Amend neither unless the branch replay shows
   otherwise, and then only inside the #423 amendment section.
-- [ ] 2.2 Add a #423 paragraph to `DESIGN.md`'s "#404 desk revise amendment"
+- [x] 2.2 Add a #423 paragraph to `DESIGN.md`'s "#404 desk revise amendment"
   section: the claimed hue equals the Finding's, the warning hue leaves the
   Episode Log, and band captions link the Glossary. The ledger header's
   inventory line, `ACCEPTANCE.md`'s count sentence and the release freeze block

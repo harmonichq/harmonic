@@ -999,6 +999,178 @@ export async function assertRecurringLowsVariant(page) {
   await assertRecurringLowsLower(page);
 }
 
+// #423: open Day and pick `iso` from the Month calendar, paging back from the
+// arrival month (pattern-near-tie arrives on its latest recorded day, 2024-06-08).
+async function openDay423(page, id, iso) {
+  await press(page, 'nav.v2-nav [data-destination="day"]');
+  await waitForDesk(page);
+  await press(page, '.gf-month-toggle');
+  await waitForDesk(page);
+  const cell = page.locator(`.gf-nav-cell[data-pick="${iso}"]`);
+  for (let paged = 0; paged < 12 && !(await cell.count()); paged += 1) {
+    assert.equal(await page.locator('[data-day="prev-month"]').isEnabled(), true,
+      `${id} premise: ${iso} must lie in a recorded month before the arrival month`);
+    await press(page, '[data-day="prev-month"]');
+    await waitForDesk(page);
+  }
+  assert.equal(await cell.isEnabled(), true, `${id} premise: ${iso} must be a recorded day in the Month calendar`);
+  await cell.click();
+  await waitForDesk(page);
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await page.locator(`.gf-nav-col[data-pick="${iso}"]`).getAttribute('aria-pressed')), 'true',
+      `${id} premise: the Day desk must hold ${iso}`);
+  }, `${id} Day holds ${iso}`);
+}
+
+// #423: one reading of the held Day's Episode Log and its anchor overlay. It
+// runs in the page (handed to `page.evaluate`), so it closes over nothing.
+// `claimed` and `fired` are the two anchors' served times. Marker styles come
+// from the chart's own option, by series id: on pattern-near-tie both rings sit
+// before the Day axis, so the axis clips them from view.
+function readClaimedLog423({ claimed, fired }) {
+  const tierAt = (t) => document.querySelector(`.gf-log-row[data-day-row="${t}"] .tier`);
+  const probe = document.createElement('span');
+  probe.style.color = 'var(--mk-warn)';
+  document.body.append(probe);
+  const warnInk = getComputedStyle(probe).color;
+  probe.remove();
+  const host = document.querySelector('.gf-stage-day .gf-chart');
+  const chart = host && window.echarts?.getInstanceByDom(host);
+  const data = chart?.getOption().series.find((series) => series.id === 'day-anchor-markers')?.data || null;
+  const marker = (t) => {
+    const found = data?.find((item) => item._t === t);
+    return found ? { size: found.symbolSize, border: found.itemStyle?.borderColor, fill: found.itemStyle?.color } : null;
+  };
+  const tier = tierAt(claimed);
+  const firedTier = tierAt(fired);
+  const root = getComputedStyle(document.documentElement);
+  return {
+    claimed: tier ? {
+      word: tier.textContent.trim(), state: tier.dataset.state, ink: getComputedStyle(tier).color,
+      text: tier.closest('.gf-log-row').querySelector('.text')?.textContent.trim() ?? '',
+    } : null,
+    firedInk: firedTier ? getComputedStyle(firedTier).color : null,
+    warnInk,
+    captions: [...document.querySelectorAll('.gf-reading .gf-log-cap')]
+      .map((cap) => (cap.querySelector('.gf-log-title') || cap).textContent.trim()),
+    markers: data ? { claimed: marker(claimed), fired: marker(fired) } : null,
+    surface: root.getPropertyValue('--surface').trim(),
+    accent: root.getPropertyValue('--accent').trim(),
+  };
+}
+
+// #423: S121's scenario once Day holds the day, exported so a fake page can
+// drive it. `model` is the day's served /api/model-view read. The premises name
+// the store's facts; every feature check is collected, so a base run names each
+// thing the revision changes rather than only the first.
+export async function assertClaimedEpisodeLog(page, model) {
+  const anchors = (model.episodes || []).flatMap((episode) => episode.anchors.map((anchor) => ({ ...anchor, episode })));
+  const claimed = anchors.find((anchor) => anchor.state === 'outranked' && anchor.kind === 'low'
+    && anchor.verdicts.some((verdict) => verdict.matched && verdict.classifier === 'correction_on_iob'));
+  assert.ok(claimed, 'S121 premise: the day must serve a claimed low whose own verdict matched correction_on_iob');
+  assert.equal(claimed.episode.lever, 'carb_undercount', 'S121 premise: a carb undercount episode must claim the low');
+  assert.ok(claimed.episode.lever_title, "S121 premise: the claiming episode must serve its lever_title (#426)");
+  const fired = anchors.find((anchor) => anchor.episode === claimed.episode && anchor.state === 'fired');
+  assert.ok(fired, "S121 premise: the claimed low's episode must serve the anchor that drove it");
+  const levers = new Set(anchors.filter((anchor) => (anchor.state === 'fired' || anchor.state === 'outranked') && anchor.episode.lever)
+    .map((anchor) => anchor.episode.lever));
+  const claimedCount = anchors.filter((anchor) => anchor.state === 'outranked').length;
+  assert.deepEqual({ findings: levers.size, claimed: claimedCount }, { findings: 1, claimed: 1 },
+    'S121 premise: the day must serve one Finding holding one claimed anchor');
+  const title = claimed.verdicts.find((verdict) => verdict.matched && verdict.classifier === 'correction_on_iob').title;
+  const leverTitle = claimed.episode.lever_title;
+
+  // Before any row is pressed: the claimed row is rendered and the overlay
+  // carries both anchors' resting markers.
+  const rest = await waitForReplayAssertion(async seen => {
+    const snapshot = seen(await page.evaluate(readClaimedLog423, { claimed: claimed.t, fired: fired.t }));
+    assert.ok(snapshot.claimed, `S121 premise: the Episode Log must render the claimed low's row (${claimed.t})`);
+    assert.ok(snapshot.firedInk, `S121 premise: the Episode Log must render the fired anchor's row (${fired.t})`);
+    assert.ok(snapshot.markers?.claimed && snapshot.markers?.fired,
+      'S121 premise: the day-anchor-markers series must carry both anchors\' markers');
+    return snapshot;
+  }, 'S121 the claimed row and both resting markers are read');
+
+  const failures = [];
+  const row = rest.claimed;
+  if (row.word !== 'claimed') failures.push(`its tier reads "${row.word}", not "claimed"`);
+  if (row.state !== 'outranked') failures.push(`its tier carries data-state="${row.state}", not the served "outranked"`);
+  if (!title) failures.push("the model read serves no title on the low's matched correction_on_iob verdict");
+  else if (!row.text.includes(` · ${title} · `)) failures.push(`the row "${row.text}" does not name what the low matched ("${title}") before its Finding`);
+  if (!row.text.endsWith(` · ${leverTitle}`)) failures.push(`the row "${row.text}" does not end with the claiming Finding's served name ("${leverTitle}")`);
+  if (/\w_\w/.test(row.text)) failures.push(`the row "${row.text}" prints an underscore token`);
+  if (row.ink !== rest.firedInk) {
+    failures.push(`its tier word paints ${row.ink}, not the fired tier's ${rest.firedInk}${row.ink === rest.warnInk ? ' (it is the warning ink)' : ''}`);
+  }
+  const caption = rest.captions.find((text) => text.startsWith('Findings'));
+  if (caption !== 'Findings · 1 · 1 claimed') failures.push(`the Findings caption reads "${caption}", not "Findings · 1 · 1 claimed"`);
+  const { claimed: ring, fired: driver } = rest.markers;
+  if (ring.size !== driver.size) failures.push(`its resting marker is ${ring.size}, not the fired marker's ${driver.size}`);
+  if (ring.border !== driver.border) failures.push(`its resting ring is ${ring.border}, not the fired ring's ${driver.border}`);
+  if (ring.fill !== rest.surface) failures.push(`its resting fill is ${ring.fill}, not the surface ${rest.surface}`);
+  assert.deepEqual(failures, [], `S121 the claimed low must read as part of the Finding that claimed it: ${failures.join('; ')}`);
+
+  // Pressing the claimed row still picks its moment: the accent ring at size 15.
+  await press(page, `.gf-log-row[data-day-row="${claimed.t}"]`);
+  await waitForReplayAssertion(async seen => {
+    const pressed = seen(await page.evaluate(readClaimedLog423, { claimed: claimed.t, fired: fired.t })).markers?.claimed;
+    assert.deepEqual({ size: pressed?.size, border: pressed?.border }, { size: 15, border: rest.accent },
+      'S121 pressing the claimed row must ring its marker in the accent at size 15');
+  }, 'S121 the pressed claimed row picks its marker');
+}
+
+// #423: S122's readings, run in the page. The Findings caption and its
+// Glossary control; the open Glossary and whether its Episode Log group's
+// heading stands inside the pane's visible box; and where focus is.
+function readFindingsControl423() {
+  const caption = [...document.querySelectorAll('.gf-reading .gf-log-cap')]
+    .find((cap) => (cap.querySelector('.gf-log-title') || cap).textContent.trim().startsWith('Findings'));
+  const control = caption?.querySelector('[data-log-glossary]');
+  return { caption: Boolean(caption), control: control
+    ? { band: control.dataset.logGlossary, name: control.getAttribute('aria-label'), tag: control.tagName } : null };
+}
+function readGlossaryInView423() {
+  const pane = document.querySelector('.gf-utility[data-utility="glossary"]');
+  const body = pane?.querySelector('.gf-pane-body');
+  const heading = pane?.querySelector('[data-glossary-group="Episode Log"] h3');
+  if (!pane || !body || !heading) return { open: Boolean(pane), group: Boolean(heading), inView: false };
+  const box = body.getBoundingClientRect();
+  const head = heading.getBoundingClientRect();
+  return { open: true, group: true, inView: head.height > 0 && head.top >= box.top - 1 && head.bottom <= box.bottom + 1 };
+}
+function readFocus423() {
+  const active = document.activeElement;
+  return { onControl: Boolean(active?.matches('[data-log-glossary="findings"]')),
+    was: active ? `${active.tagName.toLowerCase()}${active.className ? `.${String(active.className).trim().split(/\s+/).join('.')}` : ''}` : null };
+}
+
+// #423: S122's scenario once Day holds the day, exported so a fake page can
+// drive it: the Findings caption's Glossary control, operated from the
+// keyboard, opens the Glossary with its Episode Log group in view, and Close
+// returns focus to that control.
+export async function assertBandGlossary(page) {
+  const found = await waitForReplayAssertion(async seen => {
+    const reading = seen(await page.evaluate(readFindingsControl423));
+    assert.ok(reading.caption, 'S122 premise: the held Day\'s Episode Log must show a Findings caption');
+    return reading;
+  }, 'S122 the Findings caption is rendered');
+  assert.deepEqual(found.control, { band: 'findings', name: 'Explain Findings in the Glossary', tag: 'BUTTON' },
+    'S122 the Findings caption must carry a Glossary button named for its band');
+  const control = page.locator('[data-log-glossary="findings"]');
+  await control.focus();
+  await page.keyboard.press('Enter');
+  await waitForReplayAssertion(async seen => {
+    const glossary = seen(await page.evaluate(readGlossaryInView423));
+    assert.deepEqual(glossary, { open: true, group: true, inView: true },
+      'S122 the caption control must open the Glossary with its Episode Log group in view');
+  }, 'S122 the Glossary opens at the Episode Log group');
+  await press(page, '[data-utility-close]');
+  await waitForReplayAssertion(async seen => {
+    const focus = seen(await page.evaluate(readFocus423));
+    assert.equal(focus.onControl, true, `S122 closing the Glossary must return focus to the Findings caption control; focus is on ${focus.was}`);
+  }, 'S122 Close returns focus to the caption control');
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -1497,6 +1669,19 @@ export const C4_STORIES = {
       const findings = seen(await read(page, '/api/diagnose/finding-case-file-preparation'));
       assert.equal(findings.findings?.window?.scoped, false, 'S117 the findings read must be unscoped');
     }, 'S117 a cold arrival opens on the 24 h window, unscoped');
+  },
+  // #423: on pattern-near-tie Day 2024-05-25, a claimed low reads as part of
+  // the Finding that claimed it: its word, its relationship, its hue and size,
+  // and the Findings count. `assertClaimedEpisodeLog` is the scenario.
+  async S121(page) {
+    await openDay423(page, 'S121', '2024-05-25');
+    await assertClaimedEpisodeLog(page, await read(page, '/api/model-view', { date: '2024-05-25' }));
+  },
+  // #423: the same day's Findings caption opens the Glossary at its Episode
+  // Log group, and Close returns focus to it. `assertBandGlossary` is the scenario.
+  async S122(page) {
+    await openDay423(page, 'S122', '2024-05-25');
+    await assertBandGlossary(page);
   },
   // #425: Day's recorded-day count is the served history total, whichever
   // months are loaded, and each month's head counts its own days once. Paging

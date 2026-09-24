@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
-  assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant,
+  assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
 } from './c4.replay.mjs';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
@@ -96,6 +96,15 @@ test('S115–S117 are unique app-only C4 rail stories, served from the showcase'
     assert.equal(entries.length, 1, `${id} is registered once`);
     assert.equal(entries[0][1].deferred.term, term);
     assert.equal(storyCase(id), 'showcase');
+  }
+});
+
+test('S121 and S122 are unique app-only Day Episode Log stories on pattern-near-tie', () => {
+  for (const id of ['S121', 'S122']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-13');
+    assert.equal(storyCase(id), 'pattern-near-tie');
   }
 });
 
@@ -1282,4 +1291,195 @@ test('S139 and S140 fail at the label, not at a premise, when the dock still rea
       error => error.message.includes(`${id} the dock's link must read "Open Changes ›"`)
         && !error.message.includes('premise')));
   }
+});
+
+// #423: the served model-view day S121 reads — pattern-near-tie 2024-05-25, as
+// the branch serves it (episode 2024-05-25-ep13's anchors are stamped the day
+// before, so the Day axis clips their rings).
+const MODEL423 = { date: '2024-05-25', episodes: [
+  { id: '2024-05-25-ep13', lever: 'carb_undercount', lever_title: 'Carb undercount', anchors: [
+    { t: '2024-05-24 19:00:00', kind: 'meal', state: 'fired',
+      verdicts: [{ classifier: 'carb_undercount', title: 'Carb undercount', matched: true }] },
+    { t: '2024-05-24 20:00:00', kind: 'correction', state: 'clean', verdicts: [] },
+    { t: '2024-05-24 22:00:00', kind: 'low', state: 'outranked',
+      verdicts: [{ classifier: 'over_treated_low', title: 'Over-treated low', matched: false },
+        { classifier: 'correction_on_iob', title: 'Correction on active insulin', matched: true }] },
+  ] },
+  { id: '2024-05-25-ep14', lever: null, lever_title: null,
+    anchors: [{ t: '2024-05-25 02:30:00', kind: 'correction', state: 'clean', verdicts: [] }] },
+] };
+const INK = { primary: 'rgb(134, 173, 120)', warn: 'rgb(214, 170, 60)' };
+// The in-page reading of that day's Episode Log and overlay, as the branch renders it.
+const LOG423 = {
+  claimed: { word: 'claimed', state: 'outranked', ink: INK.primary,
+    text: '▽ Low · 54 mg/dL · Correction on active insulin · Carb undercount' },
+  firedInk: INK.primary, warnInk: INK.warn,
+  captions: ['Findings · 1 · 1 claimed', 'Quiet · 2'],
+  markers: { claimed: { size: 10, border: '#86ad78', fill: '#1f1b18' }, fired: { size: 10, border: '#86ad78', fill: '#1f1b18' } },
+  surface: '#1f1b18', accent: '#d08150',
+};
+const variant423 = (change) => {
+  const copy = structuredClone(LOG423);
+  change(copy);
+  return copy;
+};
+// A fake page for `assertClaimedEpisodeLog`: every in-page reading returns
+// `rest` until the claimed row is pressed, then the pressed marker.
+function qa423LogPage(rest = LOG423, pressed = { size: 15, border: '#d08150' }) {
+  let isPressed = false;
+  const locator = (selector) => {
+    const node = { filter: () => node, first: () => node, waitFor: async () => {},
+      click: async () => { if (selector.includes('data-day-row="2024-05-24 22:00:00"')) isPressed = true; } };
+    return node;
+  };
+  return {
+    locator,
+    evaluate: async (fn, arg) => {
+      assert.ok(fn.toString().includes('day-anchor-markers'), 'S121 reads the overlay by series id');
+      assert.deepEqual(arg, { claimed: '2024-05-24 22:00:00', fired: '2024-05-24 19:00:00' });
+      return isPressed ? { ...rest, markers: { ...rest.markers, claimed: { ...rest.markers.claimed, ...pressed } } } : rest;
+    },
+  };
+}
+// A feature failure names S121's feature sentence and the one thing that broke, never a premise.
+const feature121 = (part) => (error) => {
+  assert.match(error.message, /^S121 the claimed low must read as part of the Finding that claimed it: /);
+  assert.ok(error.message.includes(part), `${error.message} does not name: ${part}`);
+  return true;
+};
+
+test('S121 passes on the claimed low as the branch renders it', async () => {
+  await assertClaimedEpisodeLog(qa423LogPage(), MODEL423);
+});
+
+test('S121 fails at its premise when the day serves no claimed low', async () => {
+  const model = structuredClone(MODEL423);
+  model.episodes[0].anchors[2].state = 'clean';
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    /S121 premise: the day must serve a claimed low whose own verdict matched correction_on_iob/);
+});
+
+test('S121 fails at its premise when the Episode Log does not render the claimed row', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed = null; })), MODEL423),
+    /S121 premise: the Episode Log must render the claimed low's row \(2024-05-24 22:00:00\)/));
+});
+
+test('S121 fails on a warning-hued tier word', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed.ink = INK.warn; })), MODEL423),
+    feature121(`its tier word paints ${INK.warn}, not the fired tier's ${INK.primary} (it is the warning ink)`));
+});
+
+test('S121 fails on the bare engine state word', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.claimed.word = 'outranked'; })), MODEL423),
+    feature121('its tier reads "outranked", not "claimed"'));
+});
+
+test('S121 fails when the model read serves no title on the matched verdict', async () => {
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(), model),
+    feature121("the model read serves no title on the low's matched correction_on_iob verdict"));
+});
+
+test('S121 fails when the row does not name what the low matched', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => {
+    log.claimed.text = '▽ Low · 54 mg/dL · Carb undercount';
+  })), MODEL423), feature121('does not name what the low matched ("Correction on active insulin")'));
+});
+
+test('S121 fails when the row does not end with the claiming Finding\'s served name', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => {
+    log.claimed.text = '▽ Low · 54 mg/dL · Carb undercount · Correction on active insulin';
+  })), MODEL423), feature121('does not end with the claiming Finding\'s served name ("Carb undercount")'));
+});
+
+test('S121 fails on a caption that counts rows', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.captions = ['Findings · 2', 'Quiet · 2']; })), MODEL423),
+    feature121('the Findings caption reads "Findings · 2", not "Findings · 1 · 1 claimed"'));
+});
+
+test('S121 fails on a claimed marker smaller than the fired one', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.markers.claimed.size = 8; })), MODEL423),
+    feature121("its resting marker is 8, not the fired marker's 10"));
+});
+
+test('S121 fails on a claimed marker hued unlike the fired one', async () => {
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(variant423((log) => { log.markers.claimed.border = '#e2be4c'; })), MODEL423),
+    feature121("its resting ring is #e2be4c, not the fired ring's #86ad78"));
+});
+
+test('S121 names every changed feature at once on a base-shaped desk', async () => {
+  const model = structuredClone(MODEL423);
+  delete model.episodes[0].anchors[2].verdicts[1].title;
+  const base = variant423((log) => {
+    Object.assign(log.claimed, { word: 'outranked', ink: INK.warn, text: '▽ Low · 54 mg/dL · Carb undercount' });
+    log.captions = ['Findings · 2', 'Quiet · 2'];
+    Object.assign(log.markers.claimed, { size: 8, border: '#e2be4c' });
+  });
+  await assert.rejects(assertClaimedEpisodeLog(qa423LogPage(base), model), (error) => {
+    for (const part of ['"outranked"', 'serves no title', 'the warning ink', '"Findings · 2"', 'is 8', 'resting ring is #e2be4c']) {
+      feature121(part)(error);
+    }
+    return true;
+  });
+});
+
+test('S121 fails when pressing the claimed row does not pick its marker', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    assertClaimedEpisodeLog(qa423LogPage(LOG423, { size: 10, border: '#86ad78' }), MODEL423),
+    /S121 pressing the claimed row must ring its marker in the accent at size 15/));
+});
+
+// A fake page for `assertBandGlossary`: the Findings caption, its control, the
+// Glossary it opens from the keyboard, and where Close leaves focus.
+function qa423GlossaryPage({ caption = true, control = { band: 'findings', name: 'Explain Findings in the Glossary', tag: 'BUTTON' },
+  inView = true, returns = true } = {}) {
+  let focused = false; let open = false; let closed = false;
+  const locator = (selector) => {
+    const node = { filter: () => node, first: () => node, waitFor: async () => {},
+      focus: async () => { if (selector === '[data-log-glossary="findings"]' && control) focused = true; },
+      click: async () => { if (selector === '[data-utility-close]' && open) { open = false; closed = true; } } };
+    return node;
+  };
+  return {
+    locator,
+    keyboard: { press: async (key) => { if (key === 'Enter' && focused) { open = true; focused = false; } } },
+    evaluate: async (fn) => {
+      const source = fn.toString();
+      if (source.includes('data-glossary-group')) return { open, group: open, inView: open && inView };
+      if (source.includes('activeElement')) return closed && returns
+        ? { onControl: true, was: 'button.linkbtn.gf-log-help' } : { onControl: false, was: 'body' };
+      return { caption, control: caption ? control : null };
+    },
+  };
+}
+
+test('S122 passes when the caption control opens the Glossary at its group and Close returns to it', async () => {
+  await assertBandGlossary(qa423GlossaryPage());
+});
+
+test('S122 fails at its premise when the Episode Log shows no Findings caption', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ caption: false })),
+    /S122 premise: the held Day's Episode Log must show a Findings caption/));
+});
+
+test('S122 fails at its feature assertion when the caption carries no Glossary control', async () => {
+  await assert.rejects(assertBandGlossary(qa423GlossaryPage({ control: null })),
+    /S122 the Findings caption must carry a Glossary button named for its band/);
+});
+
+test('S122 fails when the control is not named for its band', async () => {
+  await assert.rejects(assertBandGlossary(qa423GlossaryPage({ control: { band: 'findings', name: 'Glossary', tag: 'BUTTON' } })),
+    /S122 the Findings caption must carry a Glossary button named for its band/);
+});
+
+test('S122 fails when the Glossary opens without its Episode Log group in view', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ inView: false })),
+    /S122 the caption control must open the Glossary with its Episode Log group in view/));
+});
+
+test('S122 fails when Close does not return focus to the caption control', async () => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(assertBandGlossary(qa423GlossaryPage({ returns: false })),
+    /S122 closing the Glossary must return focus to the Findings caption control; focus is on body/));
 });

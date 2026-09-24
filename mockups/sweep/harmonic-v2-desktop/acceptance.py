@@ -490,7 +490,7 @@ def inventory(run):
               "active": sum(identity.startswith("S") for identity in entries),
               "retired": sum(identity.startswith("R") for identity in entries)}
     print(f"ledger inventory: {counts}")
-    require(counts == {"issued": 156, "active": 137, "retired": 19}
+    require(counts == {"issued": 158, "active": 139, "retired": 19}
             and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")

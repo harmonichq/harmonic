@@ -3129,6 +3129,11 @@ export const S116 = appOnly('#413 design lock',
 // STORY:harmonic-v2-desktop:S117
 export const S117 = appOnly('#413 design lock',
   '#413 a cold Diagnose arrival with no context opens on the 24 h window', C4_STORIES.S117);
+// STORY:harmonic-v2-desktop:S121
+export const S121 = appOnly('HV2-13',
+  '#423 a claimed low reads claimed, names what it matched and its Finding, in the Finding\'s hue and size, and the caption counts Findings', C4_STORIES.S121);
+// STORY:harmonic-v2-desktop:S122
+export const S122 = appOnly('HV2-13', '#423 a band caption opens the Glossary at the Episode Log group and Close returns to it', C4_STORIES.S122);
 // STORY:harmonic-v2-desktop:S127
 export const S127 = appOnly('HV2-13',
   '#425 Day\'s recorded-day count is the served total across month paging, and each month counts its own days once', C4_STORIES.S127);
@@ -3198,6 +3203,7 @@ export const REGISTRY = [
   ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S113', S113, J()], ['S114', S114, J()],
   ['S115', S115, J()], ['S116', S116, J()], ['S117', S117, J()],
+  ['S121', S121, J()], ['S122', S122, J()],
   ['S127', S127, J()],
   ['S133', S133, M()],
   ['S139', S139, J()], ['S140', S140, J()],

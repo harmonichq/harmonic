@@ -1,0 +1,66 @@
+SYNTHETIC — before · tree a4d374a7 · store behavioral-missed-meal · 424-B1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: Missed / unannounced meal event case file: Response comparison caption (S125 state)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+no data
+48
+MISSED / UNANNOUNCED MEAL
+Ranks among this window's findings.
+Showed up in 2 of 6 highs in this window.
+Full
+Keep
+Findings
+›
+Missed / unannounced meal
+2 of 6 · 24 h
+Missed / unannounced meal · highs
+2 of 6 high episodes in 24 h · 4 not attributed
+Meets criteria
+2
+Borderline
+1
+Does not meet
+1
+1 claimed by another factor · 1 not comparable
+RESPONSE COMPARISON
+2 matched · 1 nearly matched · 2 comparison · 3 not comparable
+Matched · 2 occurrences
+May 24 · 14:30
+350 · High peak
+May 25 · 14:30
+350 · High peak
+Nearly matched · 1 occurrence
+May 27 · 14:30
+350 · High peak
+Completed carb-bolus meals · 2 occurrences
+Completed carb-bolus meals 1
+Select to see this occurrence’s glucose trace
+Completed carb-bolus meals 2
+Select to see this occurrence’s glucose trace
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

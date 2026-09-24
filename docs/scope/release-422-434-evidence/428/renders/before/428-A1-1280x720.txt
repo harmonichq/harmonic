@@ -1,0 +1,82 @@
+SYNTHETIC — before · tree a4d374a7 · store showcase · 428-A1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: drilled: Over-treated low with its second Occurrence held (see URL line)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+OVER-TREATED LOW
+Ranks among this window's findings.
+Showed up in 1 of 5 lows in this window.
+Full
+Keep
+Findings
+›
+Over-treated low
+1 of 5 · 24 h
+View Trial
+A Trial is already being watched, so Harmonic is not offering a Focus from this read.
+Over-treated low · lows
+1 of 5 low episodes in 24 h · 4 not attributed
+Meets criteria
+1
+Borderline
+1
+Does not meet
+1
+1 claimed by another factor · 1 not comparable
+RESPONSE COMPARISON
+1 matched · 1 nearly matched · 3 comparison · 3 not comparable
+Matched · 1 occurrence
+Jun 26 · 13:55
+48 · Low excursion
+Nearly matched · 1 occurrence
+Jun 27 · 12:10
+60 · Low excursion
+Other low excursions · 3 occurrences
+Jun 28 · 12:10
+60 · Low excursion
+Jun 28 · 16:10
+60 · Low excursion
+Jun 29 · 22:00
+50 · Low excursion
+Jun 27 · 12:10
+Nearly matched
+60 at low excursion
+The canvas shows the selected glucose trace and evidence markers.
+Evidence facts
+37 glucose readings
+0 event markers
+Clear trace
+Open Jun 27 in Day
+TRIAL · WATCHING
+I:C · 12.0 → 10.0 g/U
+Ready to judge — 14 of 14 days since 06-16
+Open Verify ›
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

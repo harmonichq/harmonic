@@ -1,0 +1,165 @@
+SYNTHETIC — before · tree a4d374a7 · store c3-history · 430-C1 · 1440x900
+URL: http://127.0.0.1:8791/changes?subject=history&occurrence=record%3Atrial%3Abasal_rate-03-00-20240515000000
+Element: viewport
+Note: the ended (user-finished) c3-history record
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+SETTING CHANGE · FINISHED BY YOU
+Basal 03:00 · 0.6 U/h → 0.54 U/h
+Detected May 15, 2024 · 00:00
+Back to records
+Back to Diagnose
+Pump settings
+ENDING SNAPSHOT
+as saved at the ending
+Pump-local time
+no clock envelope is retained for this record
+median glucose by clock · 0 → 0 half-hours read
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL	READ
+Time in range
+observed CGM readings in eligible windows
+	100%
+78 observed CGM readings in eligible windows
+	100%
+12 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time below range
+observed CGM readings in eligible windows
+	0%
+78 observed CGM readings in eligible windows
+	0%
+12 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Time above range
+observed CGM readings in eligible windows
+	0%
+78 observed CGM readings in eligible windows
+	0%
+12 observed CGM readings in eligible windows
+	Unclear
+difference 0
+
+Rest windows with a low
+coverage-qualified Rest windows in affected hours
+	0%
+13 coverage-qualified Rest windows in affected hours
+	0%
+2 coverage-qualified Rest windows in affected hours
+	Unclear
+difference 0
+THIS TRIAL
+Finished by you
+ORIGINAL CONTEXT
+FIRST OBSERVED
+Earlier decision
+Not recorded
+Original explanation
+Observed programmed setting transition; original decision is not recorded.
+First seen
+May 15, 2024 · 00:00
+
+Original user decision is unavailable.
+
+From the Trial record
+
+SAVED ENDING
+IMMUTABLE
+How it ended
+Finished by you
+Conclusion
+Synthetic observation: no clear answer.
+Finished
+May 18, 2024 · 00:00
+Recorded
+May 18, 2024 · 00:00
+
+You recorded this ending. Harmonic did not program the pump; the change was entered by hand.
+
+Ending assessment
+Recorded · unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+An observation period may end without a clear answer. Nothing here required a favourable result.
+
+EVIDENCE PERIODS
+Before
+May 1, 2024 · 00:00 to May 15, 2024 · 00:00 Available history → Setting change
+Trial
+May 15, 2024 · 00:00 to May 18, 2024 · 00:00 Setting change → Data read through
+
+Pump-local time, half-open. Observations are limited to these periods; data was read to May 18, 2024 · 00:00.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Basal
+03:00
+	0.6 U/h	0.54 U/h
+
+Observed on the pump. Harmonic did not program it.
+
+EVIDENCE ACCRUED
+TYPE-SPECIFIC
+
+This comparison is available.
+
+12 of 14 qualifying clean nights per affected slotrequired
+
+14 days elapsed
+
+Not met — collecting.
+
+Evidence for this period is available.
+
+Contributing dates · 12
+
+May 3
+May 4
+May 5
+May 6
+May 7
+May 8
+May 9
+May 10
+0 of 14 qualifying clean nights per affected slotrequired
+
+3 days elapsed
+
+Not met — collecting.
+
+Evidence for this period is available.
+
+No contributing date has qualified in this period yet.
+
+Read of the two periods
+Unclear
+
+Read each outcome separately; an uncertain low-exposure worsening still limits favorable interpretation.
+
+Readiness is what has been observed, not a judgement. A period may end without a clear answer.
+
+Observed differences do not establish causation.
+
+REASSESSMENT
+Original
+Retained context
+Current policy
+
+Not requested. The saved ending above is what this record was decided on.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

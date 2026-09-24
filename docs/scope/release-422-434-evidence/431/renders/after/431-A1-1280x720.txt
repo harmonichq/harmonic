@@ -1,0 +1,59 @@
+SYNTHETIC — after · tree caaca050 · store basal-lower · 431-A1 · 1280x720
+URL: http://127.0.0.1:8791/changes
+Element: viewport
+Note: Changes right after Record decision: the Plan at Pending
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+PLAN · PENDING
+Basal · 03:00 to 03:30
+3 of 16 segments used · Nothing here is sent to your pump.
+Withdraw
+View change record
+Pump settings
+DELIVERABLE
+pump-ready schedule
+Pump-local time
+
+Pending — program these into your pump. After the next fetch, this reconciles automatically: "✓ on pump" on a match, or a diff of the divergent values if a value was mis-keyed.
+
+START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00 NEW BREAK	0.6 0.54	1 U : 40 mg/dL	10	110
+03:30 NEW BREAK	0.6	1 U : 40 mg/dL	10	110
+THIS CHANGE
+Pending
+DECISION
+Decision recorded
+Sep 23, 2026 · 19:41
+On pump
+Awaiting pump evidence
+WHAT WAS KNOWN
+Priority
+setting:basal_rate
+Change
+0.54 U/h
+Read at
+Sep 23, 2026 · 19:41
+
+Basal profile
+
+DETECTED PUMP SETTINGS
+CAPTURED MAY 1, 2024 · 00:00
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+
+Detected schedule. The proposed schedule is the Plan beside it.
+
+Pump settings
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

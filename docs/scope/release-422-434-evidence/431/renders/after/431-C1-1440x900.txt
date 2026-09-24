@@ -1,0 +1,60 @@
+SYNTHETIC — after · tree caaca050 · store basal-lower · 431-C1 · 1440x900
+URL: http://127.0.0.1:8791/?to=changes&subject=plan
+Element: viewport
+Note: after an in-place pump read that holds the Plan (S145 path)
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+PLAN · ON PUMP
+This change
+3 of 16 segments used · Nothing here is sent to your pump.
+View change record
+Pump settings
+DELIVERABLE
+pump-ready schedule
+Pump-local time
+
+✓ On pump since Sep 23, 2026 · 19:42 — the pump matches your plan.
+
+START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00 NEW BREAK	0.6 0.54	1 U : 40 mg/dL	10	110
+03:30 NEW BREAK	0.6	1 U : 40 mg/dL	10	110
+THIS CHANGE
+On pump
+DECISION
+Decision recorded
+Sep 23, 2026 · 19:41
+On pump
+Sep 23, 2026 · 19:42
+WHAT WAS KNOWN
+Priority
+setting:basal_rate
+Change
+0.54 U/h
+Read at
+Sep 23, 2026 · 19:41
+
+Basal profile
+
+DETECTED PUMP SETTINGS
+CAPTURED SEP 23, 2026 · 19:42
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00	0.54	1 U : 40 mg/dL	10	110
+03:30	0.6	1 U : 40 mg/dL	10	110
+
+Detected schedule. The proposed schedule is the Plan beside it.
+
+Pump settings
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

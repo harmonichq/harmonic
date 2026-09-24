@@ -1,0 +1,93 @@
+SYNTHETIC — before · tree a4d374a7 · store showcase · 434-A2 · 1440x900
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: the slot panel scrolled to its excluded-night line
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+Slot 12:30
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+Basal 12:30
+nights at or above each rate · one step per night
+Full
+Keep
+Findings
+›
+12:30 slot
+27 nights of steady data · 30 d basal run
+12:30–13:00
+holds at current
+CURRENT
+0.60
+U/hr, programmed now
+ESTIMATE
+0.60
+U/hr — the interval below brackets THIS number
+RECOMMENDED
+--
+no direction asserted, so nothing is recommended
+CI 0.60–0.60 U/hr on the estimate
+That interval reaches the rate you already run (0.60–0.60 includes 0.60), so it includes no change at all — a move is consistent with this data, not established by it.
+27 nights of steady data · 30 d basal run
+the measured rate and the set rate agree, so no change is suggested
+No direction asserted here, so there is nothing to stage; the number and its interval are shown as measured.
+NIGHTS OF STEADY DATA
+120 mg/dL mean
+Ran as set · 27 nights
+Jun 1
+0.60
+·
+0.60
+120
+Jun 2
+0.60
+·
+0.60
+120
+Jun 3
+0.60
+·
+0.60
+120
+Jun 4
+0.60
+·
+0.60
+120
+Jun 5
+0.60
+·
+0.60
+120
+22 more
+3 excluded nights
+TRIAL · WATCHING
+I:C · 12.0 → 10.0 g/U
+Ready to judge — 14 of 14 days since 06-16
+Open Verify ›
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

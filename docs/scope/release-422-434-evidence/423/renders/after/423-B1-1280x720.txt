@@ -1,0 +1,111 @@
+SYNTHETIC — after · tree caaca050 · store pattern-near-tie · 423-B1 · 1280x720
+URL: http://127.0.0.1:8791/day
+Element: .gf-reading
+Note: claimed row pressed, cropped to the reading pane (the off-axis hairline can show in the chart gutter)
+
+--- element text ---
+EPISODE LOG
+viewed Sep 23, 2026 · 19:36
+THIS DAY
+Time in range
+91%
+Lows
+1
+Highs
+1
+Readings
+288
+Range
+54–238 mg/dL
+FINDINGS · 1 · 1 CLAIMED
+Glossary
+19:00
+FINDING
+◍ Meal bolus · Carb undercount
+22:00
+CLAIMED
+▽ Low · 54 mg/dL · Correction on active insulin · Carb undercount
+QUIET · 2
+Glossary
+
+20:00–02:30 · 2 clean · 0 explained · 0 no data
+
+--- page text ---
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+DAY · VIEWED SEP 23, 2026 · 19:36
+Sat, May 25, 2024
+91% in range · 1 low · 1 high · 288 readings · 54–238 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+39 recorded days · May 1, 2024 to Jun 8, 2024
+Week of May 19, 2024
+Month ▾
+SUN
+19
+✓ 100%
+MON
+20
+✓ 100%
+TUE
+21
+✓ 100%
+WED
+22
+✓ 100%
+THU
+23
+✓ 100%
+FRI
+24
+▽1 △1 91%
+SAT
+25
+▽1 △1 91%
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+EPISODE LOG
+viewed Sep 23, 2026 · 19:36
+THIS DAY
+Time in range
+91%
+Lows
+1
+Highs
+1
+Readings
+288
+Range
+54–238 mg/dL
+FINDINGS · 1 · 1 CLAIMED
+Glossary
+19:00
+FINDING
+◍ Meal bolus · Carb undercount
+22:00
+CLAIMED
+▽ Low · 54 mg/dL · Correction on active insulin · Carb undercount
+QUIET · 2
+Glossary
+
+20:00–02:30 · 2 clean · 0 explained · 0 no data
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

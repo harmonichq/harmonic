@@ -1,0 +1,76 @@
+SYNTHETIC — before · tree a4d374a7 · store pattern-near-tie · 432-E1 · 1280x720
+URL: http://127.0.0.1:8791/diagnose
+Element: viewport
+Note: its first Occurrence selected: the detail block
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+1
+no data
+47
+HIGHS AFTER MEALS
+Highs after meals in 3 of 3 meals
+Full
+Keep
+Findings
+›
+Highs after meals
+3 of 3 · 24 h
+Focus unavailable
+Harmonic is not offering a Focus from this read.
+Highs after meals · meals
+3 of 3 meal responses in 24 h · 0 not attributed
+Meets criteria
+3
+Borderline
+0
+Does not meet
+0
+RESPONSE COMPARISON
+3 matched · 0 nearly matched · 0 comparison · 0 not comparable
+Matched · 3 occurrences
+May 24 · 19:00
+— · Completed carb bolus
+May 25 · 19:00
+— · Completed carb bolus
+May 27 · 19:00
+— · Completed carb bolus
+Nearly matched · 0 occurrences
+No occurrences in this population.
+Other meal opportunities · 0 occurrences
+No occurrences in this population.
+May 24 · 19:00
+Matched
+1 of 3↑ ↓
+— at completed carb bolus
+The canvas shows the selected glucose trace and evidence markers.
+Evidence facts
+73 glucose readings
+2 event markers
+Clear trace
+Open May 24 in Day
+NOTHING BEING WATCHED
+No change staged, no trial or focus active
+Stage a change from a finding to start one.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

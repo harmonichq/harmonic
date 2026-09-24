@@ -1,0 +1,80 @@
+SYNTHETIC — after · tree caaca050 · store showcase · 428-A2 · 1280x720
+URL: http://127.0.0.1:8791/diagnose?subject=finding%3Aover_treated_low&occurrence=o_737e4987be837f3343e0279d7c4378bb
+Element: viewport
+Note: after a reload of that address
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+WINDOW
+Overnight
+Morning
+Afternoon
+Evening
+24 h
+GLUCOSE BY TIME OF DAY
+pooled from 30 captured CGM days · ±45 min
+All charts
+Basal slots
+lower
+2
+hold
+41
+no data
+5
+OVER-TREATED LOW
+Ranks among this window's findings.
+Showed up in 1 of 5 lows in this window.
+Full
+Keep
+Findings
+›
+Over-treated low
+1 of 5 · 24 h
+View Trial
+A Trial is already being watched, so Harmonic is not offering a Focus from this read.
+Over-treated low · lows
+1 of 5 low episodes in 24 h · 4 not attributed
+Meets criteria
+1
+Borderline
+1
+Does not meet
+1
+1 claimed by another finding · 1 not comparable
+RESPONSE COMPARISON
+1 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other low excursions
+Matched · 1 occurrence
+Jun 26 · 13:55
+48 · Low excursion
+Nearly matched · 1 occurrence
+Jun 27 · 12:10
+60 · Low excursion
+Other low excursions · 3 occurrences
+Jun 28 · 12:10
+60 · Low excursion
+Jun 28 · 16:10
+60 · Low excursion
+Jun 29 · 22:00
+50 · Low excursion
+Jun 27 · 12:10
+Nearly matched
+60 at low excursion
+Evidence facts
+Over-treated low · Borderline · BG rebounded to 150 mg/dL, below the 160 mg/dL over-treated-low bar
+Clear trace
+Open Jun 27 in Day
+TRIAL · WATCHING
+I:C · 12.0 → 10.0 g/U
+Ready to judge — 14 of 14 days since 06-16
+Open Changes ›
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

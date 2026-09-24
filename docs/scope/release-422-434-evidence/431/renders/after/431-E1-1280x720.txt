@@ -1,0 +1,54 @@
+SYNTHETIC — after · tree caaca050 · store basal-lower · 431-E1 · 1280x720
+URL: http://127.0.0.1:8791/?to=changes&subject=plan
+Element: viewport
+Note: a draft saved after the in-place read (S146 path): Draft saved and the previous-Plan line; next draft PUT /api/plan → 200
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+PLAN · DRAFT SAVED
+This change
+3 of 16 segments used · Nothing here is sent to your pump.
+Save draft
+Record decision
+Pump settings
+DELIVERABLE
+pump-ready schedule
+Pump-local time
+
+Draft saved Sep 23, 2026 · 19:42. Recording the decision preserves what was known then.
+
+START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00	0.54 0.6	1 U : 40 mg/dL	10	110
+03:30	0.6	1 U : 40 mg/dL	10	110
+THIS CHANGE
+Draft saved
+DECISION
+Draft saved
+Sep 23, 2026 · 19:42
+Decision recorded
+Not recorded
+
+Previous Plan: recorded Sep 23, 2026 · 19:41, confirmed on the pump Sep 23, 2026 · 19:42.
+
+DETECTED PUMP SETTINGS
+CAPTURED SEP 23, 2026 · 19:42
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00	0.54	1 U : 40 mg/dL	10	110
+03:30	0.6	1 U : 40 mg/dL	10	110
+
+Detected schedule. The proposed schedule is the Plan beside it.
+
+Pump settings
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

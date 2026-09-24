@@ -1,0 +1,88 @@
+SYNTHETIC — before · tree a4d374a7 · store pattern-near-tie · 423-C1 · 1280x720
+URL: http://127.0.0.1:8791/day
+Element: viewport
+Note: base has no caption Glossary control; nearest equivalent: the Glossary opened from the footer
+
+Harmonic
+ADVISORY
+Diagnose
+Changes
+Day
+＋
+Log carbs
+DAY · VIEWED SEP 24, 2026 · 02:06
+Sat, May 25, 2024
+91% in range · 1 low · 1 high · 288 readings · 54–238 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+53 recorded days · May 1, 2024 to Jun 8, 2024
+Week of May 19, 2024
+Month ▾
+SUN
+19
+✓ 100%
+MON
+20
+✓ 100%
+TUE
+21
+✓ 100%
+WED
+22
+✓ 100%
+THU
+23
+✓ 100%
+FRI
+24
+▽1 △1 91%
+SAT
+25
+▽1 △1 91%
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+GLOSSARY
+v1 definitions
+Close
+BASAL
+Basal rateU/h
+The continuous background insulin Control-IQ delivers between meals and corrections.
+Programmed basalU/h
+The rate set in your pump's profile for a given time of day.
+Delivered basalU/h
+What Control-IQ actually delivered, which can differ from the programmed rate when the algorithm adjusts up, down, or suspends.
+Clean window
+A stretch of time used as evidence because it wasn't disturbed by a recent bolus, meal, or algorithm correction — so the delivered basal reflects the profile setting, not a reaction to something else.
+CORRECTION FACTOR
+Correction factorISF · mg/dL per U — Insulin Sensitivity Factor
+How much one unit of insulin is expected to lower blood glucose. A lower number means more insulin is needed to correct the same rise.
+Wide CI
+A confidence interval (see CI below) wide enough that the estimate is uncertain — flagged so you know to weight it less.
+CARB RATIO
+Carb ratioI:C · g/U — Insulin-to-Carb ratio
+How many grams of carbohydrate one unit of insulin covers. A lower number means more insulin is needed per gram of carbs.
+GENERAL
+CI
+Confidence interval — the range an estimate is likely to fall within given the data available. Narrower means more reliable.
+Epoch
+A stretch over which a pump setting appears unchanged. Basal setting epochs can narrow basal measurement windows; ISF/I:C measurements use the full requested window and keep setting epochs as caveats/settling context.
+CGM
+Continuous Glucose Monitor — the sensor providing the glucose readings shown throughout this app.
+BolusU
+A single dose of insulin given for a meal or to correct a high, as opposed to the continuous basal rate.
+IOB
+Insulin On Board — insulin already delivered that is still active in the body.
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+0
+Guide
+Settings
+Glossary

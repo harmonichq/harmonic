@@ -744,9 +744,13 @@ warming-up, incubating.
 **Edit**:
 A run of retained setting changes within a day of each other, grouped for
 reading in **Changes**. Not a Plan (it stages nothing), not a Trial identity
-(each member keeps its own record and route) — purely a reading aid over
-retained Trial history: a record joins the previous retained record's Edit
-when they landed within a day of one another, else it starts a new one.
+(each member keeps its own record and route): a record joins the previous
+retained record's Edit when they landed within a day of one another, else it
+starts a new one. The same grouping also bounds how a record ends: when a
+reconcile records an ending, a change inside the record's own Edit, as that
+reconcile reads it, never supersedes it (ADR 442). A change to this grouping or
+its one-day tolerance is therefore a change to the ending rule as well as to
+the reading.
 _Avoid_: episode, session, batch.
 
 **At most one change is active at a time — Plan, Trial, and Focus all obey one

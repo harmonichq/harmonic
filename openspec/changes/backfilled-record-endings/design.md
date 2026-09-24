@@ -256,6 +256,41 @@ worded reason.
   runs one comparison only for records whose context is bounded. This happens
   once; afterwards only records inside their window stay open.
 
+### Reconcile cost
+
+Recorded on the coordinator's ruling after code review (Q3 delegation, Connor
+Griffin, 2026-09-23; coordinator ruling R442).
+
+**The bound.** Each reconcile runs the detector's reversal check
+(`_reversal_at`) once for every retained Trial record whose ending has no kind.
+A record that has ended costs one record read and is skipped. Each check reads
+every pump read. A basal-slot record also reads every basal row and rebuilds
+every slot's regimes. A dose-detected correction-factor or carb-ratio record
+reads every bolus. So one reconcile costs one full history scan per open record.
+The first reconcile after upgrade holds every open record in the history. After
+it, the open records are those inside their watch window, plus the Edit siblings
+that wait on the first change after their Edit. The frontier-only rule it
+replaces ran at most one check per reconcile.
+
+**Measured** in process on synthetic stores, each timing from a fresh copy of a
+store built and reconciled by base b03431d2, on a machine shared with other
+work. Each figure is the median of the runs shown, for the first and then a
+second reconcile.
+
+| Store | Base | This change |
+|---|---|---|
+| `showcase` QA case, the largest QA case store with a retained record (18,754 rows, 1 record, still open) | 152 ms / 127 ms (5 runs) | 130 ms / 139 ms (5 runs) |
+| `c4-ic` QA case (17,904 rows, 2 records; this change ends the older one) | 120 ms / 126 ms (5 runs) | 120 ms / 99 ms (5 runs) |
+| A synthetic year of five-minute basal rows (105,120 rows), with eight slots raised together every 30 days (96 records, all open after base) | 1.6 s / 1.5 s (3 runs) | 77 s, ending 88 records / 7.1 s with 8 records open (3 runs) |
+
+At QA scale the difference is inside the noise. On a year of basal history,
+each open basal-slot record adds about 0.7 s to every reconcile. The fetch
+loop's hourly reconcile, startup recovery and each follow-up write all pay it.
+A scratch variant computed the three history reads once per reconcile and left
+the decision code unchanged. It recorded the same endings in 2.4 s, then 0.8 s
+at steady state. Whether this change adopts that variant is a coordinator
+decision; it is not implemented here.
+
 ### Risk contract
 
 Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md`).

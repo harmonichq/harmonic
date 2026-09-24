@@ -709,6 +709,10 @@ def _group_edits(retained_records: List[dict]) -> tuple:
     new edit, keyed off its own id. Returns ``(id -> edit key, edits summary
     list)``; ``parameters`` on each summary is ordered by first occurrence within
     the edit (sub-order 2 renders "Basal ×11 · Carb ratio" from that order).
+
+    Two callers read it: the roster, and the reconcile's ending rule, where a
+    change inside a record's own Edit never supersedes it (ADR 442). A change to
+    this grouping or its tolerance therefore changes how records end too.
     """
     ordered = sorted(retained_records, key=lambda r: datetime.fromisoformat(r["changed_at"]))
     id_to_key: Dict[str, str] = {}

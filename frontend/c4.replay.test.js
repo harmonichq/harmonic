@@ -534,8 +534,12 @@ test('S143 fails when the figure prints the served code instead of its words', a
 
 // #442: c4-ic's roster as ADR 442 serves it — the watched 06-10 carb-ratio
 // change still open, the older 06-01 one ended superseded at 06-10 09:00 — and
-// that older record as the desk renders it, read back by selector.
+// that older record as the desk renders it, read back by selector. As in
+// Playwright, a `has` locator is queried inside each outer match, and a locator
+// that matches nothing never returns its text.
 const OLDER442 = 'carb_ratio-all-20240601000000';
+const RECORD442 = `[data-record="trial:${OLDER442}"]`;
+const ROW442 = `table.gf-table tr:has(${RECORD442})`;
 function qa442RecordPage({ servedKind = 'superseded', cell = 'Superseded by a later change\nJun 10, 2024 · 09:00',
   openCells = 0, kindLine = 'Superseded by a later change',
   note = 'A later setting change was detected inside the watch window. This record keeps the period it actually observed.',
@@ -550,27 +554,28 @@ function qa442RecordPage({ servedKind = 'superseded', cell = 'Superseded by a la
   const ending = '[data-record-part="ending"]';
   const counts = {
     [`${ending} [data-ending-kind="superseded"]`]: kindLine === null ? 0 : 1,
-    'table.gf-table tr [data-record-open="true"]': openCells,
+    [`${ROW442} [data-record-open="true"]`]: openCells,
   };
   const text = {
-    'table.gf-table tr td.v': cell,
+    [`${ROW442} td.v`]: cell,
     [`${ending} [data-ending-kind="superseded"]`]: kindLine ?? '',
     [ending]: `Saved ending immutable\nHow it ended\n${kindLine}\nFinished\n${finished}\n${note}`,
     [`${ending} dt xpath=following-sibling::dd[1]`]: finished,
     '[data-part="periods"]': `Evidence periods\nBefore\n…\nTrial\n…\nPump-local time, half-open. Observations are limited to these periods; data was read to ${readTo}.`,
   };
   const node = selector => ({
+    selector,
     first() { return this; },
     locator: nested => node(`${selector} ${nested}`),
     waitFor: async () => {},
     count: async () => counts[selector] ?? 0,
-    innerText: async () => text[selector] ?? '',
-    click: async () => { assert.equal(selector, `table.gf-table [data-record="trial:${OLDER442}"]`); },
+    innerText: () => (selector in text ? Promise.resolve(text[selector]) : new Promise(() => {})),
+    click: async () => { assert.equal(selector, `${ROW442} ${RECORD442}`); },
   });
   return {
     url: () => url,
     goto: async target => { url = target; },
-    locator: selector => node(selector),
+    locator: (selector, { has } = {}) => node(has ? `${selector}:has(${has.selector})` : selector),
     request: { get: async () => ({ status: () => 200, text: async () => '', json: async () => roster }) },
   };
 }

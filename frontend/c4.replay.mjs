@@ -1920,8 +1920,10 @@ export const C4_STORIES = {
     assert.equal((older.ending || {}).kind, 'superseded',
       'S157 the older Trial row must carry its served superseded ending');
     await editChainRoster414(page);
-    const button = page.locator(`table.gf-table [data-record="trial:${older.id}"]`);
-    const row = page.locator('table.gf-table tr', { has: button });
+    // A `has` locator is queried inside each row, so it names the button alone.
+    const record = `[data-record="trial:${older.id}"]`;
+    const row = page.locator('table.gf-table tr', { has: page.locator(record) });
+    const button = row.locator(record);
     await waitForReplayAssertion(async seen => {
       const cell = seen(await row.locator('td.v').innerText()).trim();
       assert.ok(cell.startsWith('Superseded by a later change'), `S157 the roster row must read its ending: ${cell}`);

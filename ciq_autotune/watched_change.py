@@ -701,6 +701,16 @@ def _review_focus_title(record):
     return _focus_meta(record["lever"])[0] if is_pinnable(record["lever"]) else "Focus"
 
 
+def _review_lever_title(lever):
+    """The watched behavior's one served name (ADR 449): the nameplate's own title
+    source, never the Pattern title. A stored lever that is no longer a Lever or
+    the override has none, and the record still reads."""
+    try:
+        return _focus_meta(lever)[0]
+    except ValueError:
+        return None
+
+
 def _group_edits(retained_records: List[dict]) -> tuple:
     """Chain RETAINED trial records into Edits (ADR 414).
 
@@ -773,7 +783,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         if record is None:
             raise KeyError(identity)
         detail = {"id": identity, "lever": record["lever"], "status": record["status"],
-                  "title": _review_focus_title(record)}
+                  "title": _review_focus_title(record), "lever_title": _review_lever_title(record["lever"])}
     detail.update(kind=kind, admission=admission,
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),

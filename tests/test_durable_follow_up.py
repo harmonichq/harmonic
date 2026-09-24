@@ -227,6 +227,107 @@ class DurableApiTest(unittest.TestCase):
         with Store.open_readonly(self.path) as store:
             self.assertNotIn("title", store.follow_up_record("focus", focus["id"]))
 
+    def test_selected_focus_read_names_its_watched_behavior(self):
+        # ADR 449: one served name for the watched lever, from the Focus
+        # nameplate's own title source, beside the Pattern title.
+        from ciq_autotune.analyzers.scenario.levers import Lever, title
+        from ciq_autotune.outcomes_trend import OVERRIDE_LEVER, OVERRIDE_TITLE
+        from ciq_autotune.watched_change import pinnable_levers
+        pins = [(lever, None) for lever in sorted(pinnable_levers())] + [
+            ("high_carb_sequence", "highs_after_meals"), ("repeat_eating", "highs_after_meals"),
+            ("overnight_drift", None)]
+        ids = {}
+        with Store.open(self.path) as store:
+            for lever, pattern in pins:
+                with store.follow_up_transaction():
+                    focus = store.pin_focus(lever, "2024-05-05 00:00:00", pattern_key=pattern)
+                    store.save_follow_up_record({"kind": "focus", "version": "386:1", **focus})
+                    store.resolve_focus(focus["id"])
+                ids[(lever, pattern)] = focus["id"]
+        served = {}
+        for key, identity in ids.items():
+            response = self.client.get("/api/verify/trials", headers=self.headers,
+                                       params={"kind": "focus", "selected": identity})
+            self.assertEqual(response.status_code, 200, response.text)
+            served[key] = response.json()["selected"]
+        for lever in pinnable_levers():
+            with self.subTest(lever=lever):
+                expected = OVERRIDE_TITLE if lever == OVERRIDE_LEVER else title(Lever(lever))
+                self.assertEqual(served[(lever, None)]["lever_title"], expected)
+        self.assertEqual(served[("correction_stacking", None)]["lever_title"], "Correction stacking")
+        self.assertEqual(served[("missed_meal", None)]["lever_title"], "Missed / unannounced meal")
+        self.assertEqual(served[("user_override", None)]["lever_title"], "Doses above pump calculation")
+        for lever, name in (("high_carb_sequence", "High-carb sequence"), ("repeat_eating", "Repeat eating")):
+            detail = served[(lever, "highs_after_meals")]
+            self.assertEqual(detail["lever_title"], name)
+            self.assertEqual(detail["title"], "Highs after meals")
+        outside = served[("overnight_drift", None)]
+        self.assertIsNone(outside["lever_title"])
+        self.assertEqual(outside["lever"], "overnight_drift")
+        for key, detail in served.items():
+            self.assertNotIn("_", detail["lever_title"] or "", key)
+        roster = self.client.get("/api/verify/trials", headers=self.headers).json()
+        self.assertEqual(len(roster["focuses"]), len(pins))
+        for row in roster["focuses"]:
+            self.assertNotIn("lever_title", row)
+
+    def test_durable_lifecycle_refusal_names_its_reason_in_a_sentence(self):
+        from unittest.mock import patch
+        from ciq_autotune.store import FollowUpConflict
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                focus = store.pin_focus("missed_meal", "2024-05-05 00:00:00")
+                store.save_follow_up_record({"kind": "focus", "version": "386:1", **focus})
+            revision = store.input_data_revision()
+        path = f'/api/focus/{focus["id"]}/resolve'
+        stale = self.client.post(path, headers=self.headers,
+                                 json={"request_id": "stale-resolve", "input_revision": revision - 1})
+        self.assertEqual(stale.status_code, 409, stale.text)
+        detail = stale.json()["detail"]
+        self.assertEqual(detail["code"], "stale_input_revision")
+        self.assertEqual(detail["message"], "New pump or sensor data arrived since this page was read.")
+        self.assertEqual(detail["input_revision"], revision)
+        self.assertIn("state", detail["admission"])
+        # A code with no sentence of its own is served as its message, never
+        # dropped; a non-durable refusal keeps its plain string detail.
+        with patch("ciq_autotune.watched_change.reconcile_follow_up",
+                   side_effect=FollowUpConflict("synthetic_unworded_refusal", revision)):
+            unworded = self.client.post(path, headers=self.headers,
+                                        json={"request_id": "unworded-resolve", "input_revision": revision})
+            legacy = self.client.post(path, headers=self.headers)
+        self.assertEqual(unworded.status_code, 409, unworded.text)
+        self.assertEqual(unworded.json()["detail"]["code"], "synthetic_unworded_refusal")
+        self.assertEqual(unworded.json()["detail"]["message"], "synthetic_unworded_refusal")
+        self.assertEqual(legacy.status_code, 409, legacy.text)
+        self.assertEqual(legacy.json()["detail"], "synthetic_unworded_refusal")
+
+    def test_every_lifecycle_refusal_code_has_a_sentence(self):
+        # The codes are enumerated from the modules that raise them, never from a
+        # list kept here or in ADR 450: every FollowUpConflict call passes a
+        # literal code, and the handler's default covers the errors that carry none.
+        import re
+        from pathlib import Path
+        from ciq_autotune.api import _REFUSAL_MESSAGES
+        call = re.compile(r"FollowUpConflict\(")
+        literal = re.compile(r"""FollowUpConflict\(\s*(['"])([a-z_]+)\1""")
+        default = re.compile(r"""getattr\(error,\s*["']reason["'],\s*["']([a-z_]+)["']\)""")
+        codes, calls, literals = set(), 0, 0
+        for path in sorted((Path(__file__).resolve().parents[1] / "ciq_autotune").rglob("*.py")):
+            text = path.read_text()
+            calls += len(call.findall(text)) - text.count("class FollowUpConflict(")
+            found = [code for _quote, code in literal.findall(text)]
+            literals += len(found)
+            codes.update(found)
+            codes.update(default.findall(text))
+        self.assertEqual(calls, literals, "every raise must pass its refusal code as a literal")
+        self.assertIn("lifecycle_conflict", codes, "the handler's default is enumerated too")
+        self.assertIn("stale_input_revision", codes)
+        for code in sorted(codes):
+            with self.subTest(code=code):
+                message = _REFUSAL_MESSAGES.get(code)
+                self.assertTrue(message, f"{code} has no sentence")
+                self.assertNotIn("_", message)
+
     def test_generated_c3_stores_serve_follow_up_history_and_retained_readiness(self):
         import subprocess
         import sys

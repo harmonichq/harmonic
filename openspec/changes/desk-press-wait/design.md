@@ -39,6 +39,12 @@
   absent control still fails naming the selector after that bound. Test 25
   needs no bespoke wait beyond that. Every browser-suite and replay helper with
   the same count-once-then-act race is in scope under the same rule.
+- Coordinator rulings on triage's questions (same delegation, 2026-09-23):
+  tests 19, 23, 26 and 29 wait for Day's stage before their first read of Day
+  (decision 4). The post-press count checks that rely on `press`'s fixed
+  settle stay as they are, recorded as unsupported in the proposal's risk
+  contract. The PR ledger's blind spot for replay helper modules is fixed in
+  this change (the second ADR 457 record below).
 
 ### Decision
 
@@ -152,7 +158,81 @@ control.
 - The post-press count checks that rely on `press`'s 180 ms settle are
   unchanged. None has been observed failing, and they read state that the
   press's own click produces.
-- `frontend/diagnose-replay.mjs` is not a `*.replay.mjs` file, so the PR
-  ledger's affected-story selection does not see a change to it. The fixed smoke
-  slice still resolves rail rows (R8 through a closed fold, S125). The replay
-  stories that reach `railRowLocator` are named in `tasks.md`.
+- The post-press count checks are recorded as unsupported in the proposal's
+  risk contract, by the coordinator's ruling.
+- On b03431d2 the PR ledger could not see a change to
+  `frontend/diagnose-replay.mjs`. The second record below fixes that, and this
+  change's own edit to `acceptance.py` selects the complete ledger in any case.
+
+## ADR 457 — The PR ledger's story selection follows every module the replay loads
+
+### Context
+
+- `mockups/sweep/harmonic-v2-desktop/acceptance.py` `smoke_selection` builds
+  its function-level graph from `frontend/*.replay.mjs` and
+  `frontend/replay-cases.mjs` only. The graph resolves an import only when the
+  target is one of those files. At b03431d2 the replay also imports
+  `frontend/diagnose-replay.mjs`, `frontend/replay-assertions.mjs`,
+  `frontend/capture.mjs`, `frontend/plan.js`, `frontend/frame.js`,
+  `frontend/tab-routing.js`, `frontend/diagnose-workstation-chart.js` and
+  `mockups/diagnose-event-comparison.synthetic/project.mjs`. It also runs
+  `frontend/replay-pump.py` and `scripts/gen_qa_e2e_db.py` by path, and
+  requires `frontend/browser-runner.js`. Only `capture.mjs`,
+  `browser-runner.js` and `gen_qa_e2e_db.py` are in its global-file list. An
+  edit to any other one of these selects the fixed smoke slice and nothing
+  more.
+- `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` (#406 chunk 2) already
+  says imported replay helpers are followed.
+- `.github/workflows/ci.yml` has no path filters. Every job runs on every pull
+  request, and the ledger's only story selection is `acceptance.py
+  replay-plan` and `replay --base`.
+- The pinned spike `docs/scope/457-replay-selection.spike.py` shows, on
+  b03431d2, that an edit to `railRowLocator` selects no extra story today, and
+  32 once the selection follows imports. The unchanged tree still selects
+  exactly the fixed slice.
+- Coordinator ruling (Q3 delegation, Connor Griffin, 2026-09-23): the
+  selection sees every replay helper module the stories import, and any other
+  shared module the replay driver loads. An edit to a helper selects the
+  stories that use it when that mapping is derivable, and otherwise selects the
+  complete ledger: fail safe, never silently zero.
+
+### Decision
+
+1. **The graph follows the replay's static imports.** At each compared ref,
+   the selection starts from the entries it reads today, then adds every file
+   they reach, transitively, through a relative static `import` or
+   re-exporting `export … from`. It reads those declarations with the Babel
+   parser the lockfile pins. Every such module joins the function-level graph,
+   so an edit maps to the stories whose dependency closure reaches it. The
+   plan stops with an error naming the file when a relative import resolves to
+   no tracked file at that ref, or when a module in the closure uses a dynamic
+   `import()`.
+2. **Executables named by path select the complete ledger.** A tracked `.py`,
+   `.js`, `.mjs` or `.cjs` file that a module in the closure names by a string
+   literal, but does not import, is a load the graph cannot map to stories.
+   The literal may be repo-relative or relative to the naming module, and may
+   sit in a declaration or a module-level statement. A change to such a file
+   selects the complete ledger. At b03431d2 those files are
+   `frontend/browser-runner.js`, `frontend/replay-pump.py` and
+   `scripts/gen_qa_e2e_db.py`. Data files named by path are excluded: the
+   replay only checks that its exploration fixtures and Focus payload exist,
+   and the committed showcase follows its generator and recipes. The
+   exploration outputs regenerate on every Python edit, so counting them would
+   send every backend pull request to the complete ledger.
+3. **Everything else stays.** The global files and symbols, the recipe graph,
+   the fixed slice and its digest, and full-ledger escalation are unchanged.
+   `smoke.json` additionally records the replay modules and path-named
+   executables the selection used.
+4. **The spike is the reference.** `docs/scope/457-replay-selection.spike.py`
+   holds a marked copy of `smoke_selection` with decisions 1 and 2 applied.
+   `acceptance.py` ports those two changes into `smoke_selection` itself,
+   keeping `replay_graph`'s signature and output.
+
+### Consequences
+
+- An edit to a product module that a story imports now selects that story on
+  pull requests, where before it received only the fixed slice.
+- The selection runs one Babel pass per import depth at each ref. The spike's
+  real-tree runs complete in seconds.
+- A file loaded through a computed path, rather than a literal one, is not
+  seen; none exists at b03431d2.

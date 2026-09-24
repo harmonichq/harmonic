@@ -1,14 +1,14 @@
 # Tasks — desk browser helpers wait for the control they act on (#457)
 
-Decisions and the helper audit are ADR 457 in `design.md`. Test numbers are
-run-order positions on b03431d2 (43 tests).
+Decisions and the helper audit are the two ADR 457 records in `design.md`. Test
+numbers are run-order positions on b03431d2 (43 tests).
 
-## 1. Prove the races first (one commit, before any helper changes)
+## 1. Prove first (one commit, before any helper or selection change)
 
 - [ ] 1.1 In `frontend/desk.browser.test.mjs`, directly after test 25, add the
       browser test named
       `press waits for a Day return control that renders late, and names an absent or hidden control`
-      (ADR 457 decision 5). It opens
+      (first ADR 457 record, decision 5). It opens
       `/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`
       with a `beforeNavigate` route on `**/api/model-view*` that holds each
       request until released and then calls `route.fallback()`. While the read
@@ -32,61 +32,108 @@ run-order positions on b03431d2 (43 tests).
       `node --test frontend/c4.replay.test.js` against the unchanged helper and
       confirm the new test fails because the helper counted before the rail
       painted, then waited for a cause line that never rendered.
-- [ ] 1.3 Commit 1.1 and 1.2 alone, with no other change: this commit is the red
-      proof (task 4.1).
+- [ ] 1.3 In `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`
+      `SmokeSelectionTest`, add tests that drive `acceptance.smoke_selection`
+      through the class's fake Git over two in-memory trees, as the pinned
+      spike `docs/scope/457-replay-selection.spike.py` does (second ADR 457
+      record). The cases:
+      (a) a replay entry imports `./diagnose-replay.mjs`, and a helper there
+      feeds S2 only. An edit to that helper selects the fixed slice plus S2.
+      (b) An edit to `frontend/replay-pump.py`, which a replay entry names by
+      path, selects every id, and so does an edit to a module a replay entry
+      loads with a destructured `require('./…')`, named other than the
+      already-global `frontend/browser-runner.js`.
+      (c) An edit to a data fixture a replay entry names by path selects only
+      the fixed slice.
+      (d) A relative import of an untracked file, and a dynamic `import()` in
+      an imported module, each stop the selection with `RuntimeError`.
+      Run `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py SmokeSelectionTest`
+      against the unchanged `acceptance.py`, and confirm that (a), (b) and (d)
+      fail because the selection neither follows the import nor sees the
+      path-named files.
+- [ ] 1.4 Commit 1.1–1.3 alone, with the subject
+      `Red proof #457: tests before any helper or selection change`, and
+      record its full OID beside this task when ticking it. This commit is the
+      base proof for tasks 5.1 and 5.2.
 
 ## 2. Bounded helpers
 
-- [ ] 2.1 Rewrite the desk suite's `press` as ADR 457 decision 1 states:
-      `press(page, selector, timeout = 30000)`, a bounded wait for the first
-      visible match, the click, the 180 ms settle, and the two failure messages
-      that name the selector and the bound. Update its doc comment to match.
+- [ ] 2.1 Rewrite the desk suite's `press` as the first ADR 457 record's
+      decision 1 states: `press(page, selector, timeout = 30000)`, a bounded
+      wait for the first visible match, the click, the 180 ms settle, and the
+      two failure messages that name the selector and the bound. Update its doc
+      comment to match.
 - [ ] 2.2 In `frontend/diagnose-replay.mjs`, make `railRowLocator` wait for the
-      settled, painted rail first, as ADR 457 decision 2 states, failing with a
-      message that names the id when the rail never settles. Update its comment
-      to match.
+      settled, painted rail first (decision 2), failing with a message that
+      names the id when the rail never settles. Update its comment to match.
 - [ ] 2.3 Delete the desk suite's `openRailRow`. Its four callers press
       `await railRowLocator(page, id)`, and the `empty` High-carb render test's
       inline fold loop becomes `const member = await railRowLocator(page, id)`,
       importing `railRowLocator` beside the suite's other
-      `./diagnose-replay.mjs` imports (ADR 457 decision 3).
+      `./diagnose-replay.mjs` imports (decision 3).
 - [ ] 2.4 In tests 19, 23, 26 and 29, wait for
       `page.locator('.gf-stage-day')` to be visible right after `openDesk`,
-      before the first read of Day (ADR 457 decision 4). Tests 24 and 25 stay as
-      they are.
+      before the first read of Day (decision 4; coordinator ruling Q1). Tests
+      24 and 25 stay as they are, and so do the post-press count checks
+      (ruling Q2).
 - [ ] 2.5 `frontend/desk.browser.test.mjs` and `frontend/diagnose-replay.mjs`
       ship in the public tree: their new or changed comments may cite ADR 457,
       but never a `docs/scope/` or `openspec/changes/` path.
 
-## 3. Verify without a port (worker)
+## 3. The PR ledger's selection follows the replay's modules
 
-- [ ] 3.1 `node docs/scope/457-press-wait.repro.mjs` prints the after-fix rows
+- [ ] 3.1 In `mockups/sweep/harmonic-v2-desktop/acceptance.py`, port the
+      spike's two changes into `smoke_selection` (second ADR 457 record,
+      decisions 1–3). Keep `replay_graph`'s signature and output,
+      `SMOKE_STORIES` and its digest, the global files and symbols, and the
+      recipe graph. `smoke.json` gains `replay_modules` and `path_loads`.
+      Update `smoke_selection`'s docstring to match.
+- [ ] 3.2 In `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`, section "PR
+      smoke, full main/nightly runs, and backend shards (#406 chunk 2)", revise
+      the paragraph that begins "`--base <ref>` compares the merge-base". It
+      must state that the selection follows every module the replay reaches by
+      a static import, wherever it lives, and that an executable the replay
+      names by path selects the complete ledger. It must state that an import
+      the selection cannot follow stops the plan, and that product modules a
+      story imports now select that story. The paragraph that begins
+      "`smoke.json` records" names the two new records. No other text in
+      ACCEPTANCE.md changes; its count sentence is the coordinator's.
+
+## 4. Verify without a port (worker)
+
+- [ ] 4.1 `node docs/scope/457-press-wait.repro.mjs` prints the after-fix rows
       its header states: the late Return press and both `railRowLocator` rows
       `resolved`, and the absent and hidden presses `rejected` after about
       100 ms with the two bounded messages.
-- [ ] 3.2 `node --test 'frontend/**/*.test.js'` passes, including the new
+- [ ] 4.2 `node --test 'frontend/**/*.test.js'` passes, including the new
       `railRowLocator` test and R8.
-- [ ] 3.3 `npx --yes @fission-ai/openspec@1 validate --all --strict`,
+- [ ] 4.3 `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`
+      passes, including the new selection tests and
+      `test_fixed_slice_is_pinned_and_covers_every_real_replay_case` with its
+      digest unmoved.
+- [ ] 4.4 `npx --yes @fission-ai/openspec@1 validate --all --strict`,
       `python3 scripts/check_adr_numbers.py`,
       `python3 scripts/check_owned_identifiers.py`,
       `python3 scripts/check_public_allowlist.py` and AGENTS.md's public-tree
       scan (`build_public_tree.py`, then `check_public_links.py` and
       `scan_public_tree.py` over a fresh directory) pass.
 
-## 4. Verify in a browser (coordinator; serial, after `npm ci && npm run build`)
+## 5. Verify in a browser and on a port (coordinator; serial, after `npm ci && npm run build`)
 
-- [ ] 4.1 Red proof: on the task 1.3 commit,
+- [ ] 5.1 Red proof: on the task 1.4 commit,
       `node --test --test-name-pattern 'press waits for a Day return control' frontend/desk.browser.test.mjs`
       reports tests 1, fail 1, failing at the late Return press with
       `no control matched [data-day="return"]`. On the final commit it reports
       tests 1, pass 1.
-- [ ] 4.2 Repetition, on the final commit: ten consecutive runs of
+- [ ] 5.2 Repetition, on the final commit: ten consecutive runs of
       `--test-name-pattern 'a key pressed on Day leaves the parked Diagnose'`
       each report tests 1, pass 1. Ten consecutive runs of
       `--test-name-pattern 'Day owns its chronology|canonical Day address reloads|after a Day return, acting inside Diagnose|a key pressed on Day leaves|press waits for a Day return control|a utility takes the reading pane|repeated entry and exit leaves'`
       each report tests 7, pass 7.
-- [ ] 4.3 The whole desk suite, once, on the final commit: tests 44, pass 44.
-- [ ] 4.4 The replay stories that resolve rail rows, at 1280x720, on the final
+- [ ] 5.3 The whole desk suite, once, on the final commit: tests 44, pass 44.
+- [ ] 5.4 The replay stories that resolve rail rows, at 1280x720, on the final
       commit, with a fresh `CASE_STORE_DIR` and port 8765 free:
       `TARGET=app VIEWPORT=1280x720 BASE_URL=http://127.0.0.1:8765 ONLY=R8,S22,S23,S24,S124,S125 node frontend/desk-behavior.replay.mjs`
       reports `# executed 6 · failed 0 · deferred 0 · selected 6`.
+- [ ] 5.5 The complete `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`,
+      which binds a port in `ServerLifecycleTest`, passes on the final commit.

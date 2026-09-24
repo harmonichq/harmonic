@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel, renderLane } from './diagnose-workstation.js';
+import {
+  buildIcBlocks, queryState, renderEventComparisonRoster, renderIsfLevel, renderSlotLevel, renderLane,
+} from './diagnose-workstation.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
@@ -620,4 +622,55 @@ test('#395 · fixture Pattern cases retain every requested clock and event coord
     assert.equal(response.selection.requested_id, null);
     if (alignment === 'clock') assert.equal(response.projection.clock.buckets.length, 12);
   }
+});
+
+/* #424 — the Response comparison caption names every served cohort as its section
+   heading does, with its served count, links the band's own words once where a
+   cohort serves the band state it holds, and names the Occurrences outside the
+   comparison only when that served count is non-zero. It computes no count and
+   derives no link; the band keeps "not comparable" for no data. */
+function renderedCaption(caseFile) {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderEventComparisonRoster(host, caseFile, null, () => {}, () => {}, 5);
+    const [caption, ...rest] = host.html;
+    return {
+      caption: caption.match(/<span class="meta">([\s\S]*?)<\/span>/)[1].replace(/\s+/g, ' ').trim(),
+      headings: rest,
+    };
+  } finally {
+    globalThis.document = originalDocument;
+  }
+}
+
+test('#424 · a same-population caption names each cohort as its heading does and adds up', () => {
+  const captures = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+  const caseFile = captures.cases['finding:carb_undercount'].event;
+  const { cohorts, counts } = caseFile.projection;
+  const { caption, headings } = renderedCaption(caseFile);
+
+  assert.equal(caption,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities');
+  for (const cohort of cohorts) {
+    assert.ok(headings.some((html) => html.includes(`<b>${cohort.name}</b>`)
+      && html.includes(`· ${counts[cohort.key]} occurrence`)), `${cohort.name} heading matches`);
+  }
+  assert.equal(cohorts.reduce((sum, cohort) => sum + counts[cohort.key], 0),
+    caseFile.summary.denominator);
+  assert.doesNotMatch(caption, /not comparable|outside the comparison/);
+});
+
+test('#424 · a cross-population caption names its Highs outside the comparison', () => {
+  const missed = JSON.parse(readFileSync(new URL(
+    './__fixtures__/missed-meal-comparison.json', import.meta.url), 'utf8'));
+
+  assert.equal(renderedCaption(missed.payload).caption,
+    '2 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals'
+    + ' · 1 high outside the comparison');
+  assert.equal(renderedCaption(missed.zero_payload).caption,
+    '0 Matched · 0 Nearly matched (borderline) · 1 Completed carb-bolus meals'
+    + ' · 3 highs outside the comparison');
 });

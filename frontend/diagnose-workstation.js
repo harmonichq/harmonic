@@ -614,13 +614,26 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
 }
 
 /* Event comparison is its own served population. Members remain opaque until
-   selection requests their server-owned detail and trace. */
-function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
+   selection requests their server-owned detail and trace.
+   #424 — the caption names every served cohort as its section heading does, with
+   its served count, in served order, and follows a cohort that holds a verdict-band
+   state with the band's own words once. The Occurrences outside the comparison are
+   named only when their served count is non-zero; only a cross-population
+   comparison can leave any. The band keeps "not comparable" for no data. */
+export function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
   const { cohorts = [], counts = {} } = caseFile.projection;
   const roster = new Map(caseFile.occurrences.map((row) => [row.id, row]));
+  const outside = counts.outside_comparison;
+  const terms = cohorts.map((cohort) => {
+    const band = VERDICT_BAND_KEY[cohort.band_verdict];
+    return `${counts[cohort.key]} ${cohort.name}${band ? ` (${band.toLowerCase()})` : ''}`;
+  });
+  if (outside) {
+    const noun = outside === 1 ? caseFile.summary.noun.replace(/s$/, '') : caseFile.summary.noun;
+    terms.push(`${outside} ${noun} outside the comparison`);
+  }
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Response comparison
-    <span class="meta">${counts.matched} matched · ${counts.nearly_matched} nearly matched
-      · ${counts.comparison} comparison · ${counts.not_comparable} not comparable</span></div>`);
+    <span class="meta">${terms.join(' · ')}</span></div>`);
   const groups = cohorts.map((cohort) => {
     const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
     return {

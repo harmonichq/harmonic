@@ -4239,6 +4239,118 @@ S168 · A watched Focus names its return and reaches its draft. With a Plan draf
             batch
 ```
 
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| The arrival rule: Open Plan cleared on each arrival | frontend/changes.js mount | S166, S167, S168 |
+| Stage in the Plan's own frame stays on the Plan | frontend/plan-view.js bind | S166 |
+| The watched change's nameplate Open Plan | frontend/follow-up.js openPlanControl, bind | S166, S167, S168 |
+| Diagnose's return names the watched change | frontend/diagnose.js showFocusAction | S166, S168 |
+
+## #453 amendment — 2026-09-23
+
+Replay S89 now certifies the Plan decision it records (ADR 453,
+`openspec/changes/plan-cleanup-s89`). Its story text and lock term are
+unchanged. No story is added or retired, and no ★ FROZEN block or inventory
+line is edited.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R453.
+
+Amended S89 · 2026-09-23 · #453 / Q3 delegation: the story reads the decision it records as the newest Plan history record, which the served history lists first, not the last one listed. The same check proves that record is the decision just recorded: the history holds exactly one more record than before recording, and the newest record's `applied_at` names none of the records served before it. The failed-Withdraw check reads that same newest record. S89's store holds no earlier Plan, so its passes before #453 read the same row but did not show which record they certified.
+The preceding S89 wording and results are the attributed pre-amendment record.
+
+## #452 amendment — 2026-09-23, issue #452
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R452, with its triage rulings Q1 (add S180) and
+Q2 (reopening the same record from the roster starts empty). This section
+changes shipped desk behavior on that sanction only. The decision is ADR 452 in
+`openspec/changes/late-conclusion-record-reset/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over the committed synthetic `scripts/qa_e2e_cases.py` case store c4-isf,
+through `CASE_STORE_DIR`. No real data is read. The worker ran no server and no
+browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **A later conclusion belongs to its record.** An expired Trial's Later
+  conclusion text, a failed save of it and that save's request id are held for
+  the one record that is open. Opening another record, or leaving for the
+  roster with Back to records, starts the next record with an empty form, no
+  failure and a request id of its own; its first save is a first save, not a
+  retry. That includes reopening the same record from the roster, as opening it
+  by its address already did. Base carried all three into the next record a
+  roster press opened.
+- **A re-render of the same record keeps them.** A failed save followed by a
+  re-render, including a return from Day to the same record, keeps the words,
+  the failure and the request id, so Retry resends the same request id.
+- **A save in flight stays with its record** (coordinator-authorized widening,
+  2026-09-23, ADR 452 decision 7). A later-conclusion save or Retry still in
+  flight when the reader leaves writes nothing into the next record: no failure,
+  no request id, and no clear of the next record's draft. A Retry whose re-read
+  returns after the record was left is abandoned unsent. Proved at node level in
+  `frontend/follow-up-lifecycle.test.js`; no replay story times a save against a
+  roster press.
+- The conclude endpoint, the request-identity rules, which Trials offer a later
+  conclusion, and every saved ending are unchanged.
+
+S180 is a new app-opener-only story under HV2-28. No story is amended or
+retired, and S181, reserved for this issue, is unused.
+
+```
+S180 · Reopening an expired Trial from the Changes roster, after its later
+       conclusion was typed and its save failed, starts with an empty Later
+       conclusion form and no failure, and the next save sends a request id of
+       its own.
+  element:  table.gf-table [data-record], #late-conclusion-conclusion,
+            [data-form="late-conclusion"], [data-save-error="conclude"],
+            [data-record-close], [data-late-conclusion="available"]
+  source:   frontend/history.js
+  lock:     HV2-28; ADR 452 (openspec/changes/late-conclusion-record-reset/design.md)
+  data:     c4-isf; its one retained Trial ended expired_unreviewed with no
+            later conclusion saved
+  evidence: C4_STORIES.S180; opens the expired Trial by its roster press, has
+            its first save refused by a routed synthetic answer (nothing
+            reaches the store) and records that request id, presses Back to
+            records, reopens the record by its roster press, reads an empty
+            form and no failure, then records and compares the request id the
+            save sends. The carry into a different record is proved at node
+            level in frontend/follow-up-lifecycle.test.js, because no committed
+            case store serves two expired Trials
+  status:   base b03431d2 (with the branch harness) fails at its feature
+            assertion at both sizes ("S180 reopening the record from the
+            roster must start its later conclusion empty"), with the 12
+            regression stories passing beside it; branch 560098de and review
+            fix head cd392553 pass at 1280x720 and 1440x900 (13 stories:
+            executed 13 · failed 0). Coordinator-run, reported 2026-09-24
+```
+
+Regression, replayed unchanged by the coordinator: every story that opens a
+record through `openRecord` or leaves one — the finished-change handoff (S52,
+R17, S92 and S94), the retry landings after a refused save (S53 and S57), and
+the roster presses (S54b, S105, S110, S112, S142 and S143). The desk browser
+suite's expired-Trial Later conclusion test opens its record by address and is
+unchanged.
+
+Additional handler inventory for this amendment. The Later conclusion form
+arrived in #411 with no ledger row; these rows record it.
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Later conclusion text input | frontend/history.js | S180 |
+| Record later conclusion, and its Retry after a failed save | frontend/history.js | S180 |
+| Later-conclusion clear on opening or leaving a record | frontend/history.js | S180 (same record); the two-record path is node test only (frontend/follow-up-lifecycle.test.js) |
+| A later-conclusion save or Retry returning after its record was left | frontend/history.js | none — node test only (frontend/follow-up-lifecycle.test.js) |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 172 issued · 153 active · 19 retired on this branch.
+
 ## #449 amendment — 2026-09-23, issue #449 (with #450)
 
 Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
@@ -4246,13 +4358,6 @@ from here"); coordinator rulings R449 and R450. It covers the shipped-desk
 changes and the ledger additions and amendments below, and nothing else. The
 decisions are ADR 449 and ADR 450 in
 `openspec/changes/focus-served-words/design.md`.
-
-## #442 amendment — 2026-09-23, issue #442
-
-Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R442. It covers S157, the S91 amendment below
-and the superseded-note wording, and nothing outside #442's checklist. The
-decision is ADR 442 in `openspec/changes/backfilled-record-endings/design.md`.
 
 Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
 AGENTS.md's QA copy-then-serve command
@@ -4420,190 +4525,10 @@ The new stories run on c3-focus, c3-preempted and c4-history, which the fixed PR
 smoke slice already covers (S57, S58, R18), so `SMOKE_STORIES` and its digest are
 unchanged.
 
-over a committed synthetic `scripts/qa_e2e_cases.py` case store — c4-ic, c4-isf
-and c4-profile here, each through `CASE_STORE_DIR`. No real data is read. The
-worker ran no server and no browser; every replay below is the coordinator's.
-
-Changed shipped behavior:
-
-- **Every change record ends by one rule.** Each reconcile ends every retained
-  change record that has no ending, oldest first: reverted, else superseded by
-  the first later detected change outside its own Edit and inside its 28-day
-  watch window, else expired unreviewed once that window has passed. An older
-  detected change therefore reads its ending in the Changes roster and on its
-  record instead of "Still open · Not watched". A saved ending is never
-  rewritten.
-- **A saved ending reads evidence only up to its ending instant**, the live
-  watch's included. A saved assessment whose retained context came from a later
-  pump read is served unavailable (`context_after_ending`; its words belong to
-  #450).
-- **The superseded note names no setting.** It reads "A later setting change
-  was detected inside the watch window. This record keeps the period it
-  actually observed." instead of claiming the later change was to the same
-  setting, which a later change of any setting already contradicted.
-
-S157 is a new app-opener-only story under HV2-28. S91 is amended in prose
-below; no story is retired.
-
-```
-S157 · An older detected change that a later detected change superseded inside
-       its watch window reads its saved ending, never Still open: its Changes
-       roster row reads "Superseded by a later change" with its effective time
-       and carries no still-open cell; opening it shows the saved ending of kind
-       superseded in words with no underscore-token code on that line, a
-       saved-ending note that does not claim the same setting, and a periods
-       note whose data read-through time is the ending's Finished time.
-  element:  table.gf-table [data-record], td.v, [data-record-open="true"],
-            [data-record-part="ending"] [data-ending-kind], [data-part="periods"]
-  source:   ciq_autotune/watched_change.py reconcile_follow_up /
-            _end_open_records / capture_ending; frontend/history.js
-            recordRowHtml / endingSection; frontend/follow-up.js periodsSection
-  lock:     HV2-28; ADR 442 (openspec/changes/backfilled-record-endings/design.md)
-  data:     c4-ic; its one reconcile records carb-ratio changes on 06-01 and
-            06-10. The 06-10 record is the watched, open Trial; the 06-01
-            record ends superseded at 06-10 09:00, its saved assessment read to
-            that instant
-  evidence: C4_STORIES.S157; reads the served roster, picks the Trial row that
-            is not the admission's active id and requires its served
-            superseded kind, then reads its roster row, opens it by its roster
-            press and reads the kind line, the ending part and the periods
-            note. It asserts no reason line's words; the complete ledger covers
-            the Ending assessment line with #450's words
-  status:   base b03431d2 (with the branch harness) fails at its first feature
-            assertion at both sizes ("S157 the older Trial row must carry its
-            served superseded ending"); branch 782cd552 (application code
-            identical to the reviewed head 0b8e22a4) passes at 1280x720 and
-            1440x900. The first branch run failed on a story defect, a `has`
-            row locator that repeated the table prefix; it was fixed in
-            e57c91bd. Coordinator-run 2026-09-24
-```
-
-Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's. Recorded 2026-09-24 (coordinator-run, both sizes): on branch 782cd552, S91 passes as amended, with S157 and the stories above (`ONLY=S157,S49,S91,S96,S105,S110,S111,S112,S143,R18`, `# executed 10 · failed 0` at 1280x720 and 1440x900). The frozen helper's failure on c4-isf is shown in process: the saved Trial arm counts 27 and is not met, while the retained read counts 30 and is met. No replay run of the frozen helper was made.
-The preceding wording and results are the attributed pre-amendment record.
-
-Every other desk replay and test that reads these cases keeps its subject:
-
-- **S110, S111, S112 and S143** on edit-chain. Its four hand-saved records move
-  14 days later (05-15, 05-22, 05-23, 05-24) with their spacing kept, so every
-  watch window ends after the case's 06-01 23:59 data tail and the ending rule
-  leaves all four open: one titled three-member Edit, one flat row, four
-  still-open cells reading "Not watched", and an unavailable retained
-  comparison.
-- **S96 and S105** on c3-history and c3-trial, **S49** on c4-missing and **R18**
-  on c4-history. None of these records gains or changes an ending (this
-  change's premises): c3-history's finished record keeps its saved ending, and
-  every other record is its case's open frontier.
-- **The desk browser suite's hand-built expired record** is a served fixture
-  that no reconcile touches; its saved ending and Later conclusion assertions
-  are unchanged.
-
 Additional handler inventory for this amendment:
 
 | Handler / registration | Source | Story |
 |---|---|---|
-| The arrival rule: Open Plan cleared on each arrival | frontend/changes.js mount | S166, S167, S168 |
-| Stage in the Plan's own frame stays on the Plan | frontend/plan-view.js bind | S166 |
-| The watched change's nameplate Open Plan | frontend/follow-up.js openPlanControl, bind | S166, S167, S168 |
-| Diagnose's return names the watched change | frontend/diagnose.js showFocusAction | S166, S168 |
-
-## #453 amendment — 2026-09-23
-
-Replay S89 now certifies the Plan decision it records (ADR 453,
-`openspec/changes/plan-cleanup-s89`). Its story text and lock term are
-unchanged. No story is added or retired, and no ★ FROZEN block or inventory
-line is edited.
-
-Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R453.
-
-Amended S89 · 2026-09-23 · #453 / Q3 delegation: the story reads the decision it records as the newest Plan history record, which the served history lists first, not the last one listed. The same check proves that record is the decision just recorded: the history holds exactly one more record than before recording, and the newest record's `applied_at` names none of the records served before it. The failed-Withdraw check reads that same newest record. S89's store holds no earlier Plan, so its passes before #453 read the same row but did not show which record they certified.
-The preceding S89 wording and results are the attributed pre-amendment record.
-
-## #452 amendment — 2026-09-23, issue #452
-
-Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R452, with its triage rulings Q1 (add S180) and
-Q2 (reopening the same record from the roster starts empty). This section
-changes shipped desk behavior on that sanction only. The decision is ADR 452 in
-`openspec/changes/late-conclusion-record-reset/design.md`.
-
-Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
-AGENTS.md's QA copy-then-serve command
-(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
-over the committed synthetic `scripts/qa_e2e_cases.py` case store c4-isf,
-through `CASE_STORE_DIR`. No real data is read. The worker ran no server and no
-browser; every replay below is the coordinator's.
-
-Changed shipped behavior:
-
-- **A later conclusion belongs to its record.** An expired Trial's Later
-  conclusion text, a failed save of it and that save's request id are held for
-  the one record that is open. Opening another record, or leaving for the
-  roster with Back to records, starts the next record with an empty form, no
-  failure and a request id of its own; its first save is a first save, not a
-  retry. That includes reopening the same record from the roster, as opening it
-  by its address already did. Base carried all three into the next record a
-  roster press opened.
-- **A re-render of the same record keeps them.** A failed save followed by a
-  re-render, including a return from Day to the same record, keeps the words,
-  the failure and the request id, so Retry resends the same request id.
-- **A save in flight stays with its record** (coordinator-authorized widening,
-  2026-09-23, ADR 452 decision 7). A later-conclusion save or Retry still in
-  flight when the reader leaves writes nothing into the next record: no failure,
-  no request id, and no clear of the next record's draft. A Retry whose re-read
-  returns after the record was left is abandoned unsent. Proved at node level in
-  `frontend/follow-up-lifecycle.test.js`; no replay story times a save against a
-  roster press.
-- The conclude endpoint, the request-identity rules, which Trials offer a later
-  conclusion, and every saved ending are unchanged.
-
-S180 is a new app-opener-only story under HV2-28. No story is amended or
-retired, and S181, reserved for this issue, is unused.
-
-```
-S180 · Reopening an expired Trial from the Changes roster, after its later
-       conclusion was typed and its save failed, starts with an empty Later
-       conclusion form and no failure, and the next save sends a request id of
-       its own.
-  element:  table.gf-table [data-record], #late-conclusion-conclusion,
-            [data-form="late-conclusion"], [data-save-error="conclude"],
-            [data-record-close], [data-late-conclusion="available"]
-  source:   frontend/history.js
-  lock:     HV2-28; ADR 452 (openspec/changes/late-conclusion-record-reset/design.md)
-  data:     c4-isf; its one retained Trial ended expired_unreviewed with no
-            later conclusion saved
-  evidence: C4_STORIES.S180; opens the expired Trial by its roster press, has
-            its first save refused by a routed synthetic answer (nothing
-            reaches the store) and records that request id, presses Back to
-            records, reopens the record by its roster press, reads an empty
-            form and no failure, then records and compares the request id the
-            save sends. The carry into a different record is proved at node
-            level in frontend/follow-up-lifecycle.test.js, because no committed
-            case store serves two expired Trials
-  status:   base b03431d2 (with the branch harness) fails at its feature
-            assertion at both sizes ("S180 reopening the record from the
-            roster must start its later conclusion empty"), with the 12
-            regression stories passing beside it; branch 560098de and review
-            fix head cd392553 pass at 1280x720 and 1440x900 (13 stories:
-            executed 13 · failed 0). Coordinator-run, reported 2026-09-24
-```
-
-Regression, replayed unchanged by the coordinator: every story that opens a
-record through `openRecord` or leaves one — the finished-change handoff (S52,
-R17, S92 and S94), the retry landings after a refused save (S53 and S57), and
-the roster presses (S54b, S105, S110, S112, S142 and S143). The desk browser
-suite's expired-Trial Later conclusion test opens its record by address and is
-unchanged.
-
-Additional handler inventory for this amendment. The Later conclusion form
-arrived in #411 with no ledger row; these rows record it.
-
-| Handler / registration | Source | Story |
-|---|---|---|
-| Later conclusion text input | frontend/history.js | S180 |
-| Record later conclusion, and its Retry after a failed save | frontend/history.js | S180 |
-| Later-conclusion clear on opening or leaving a record | frontend/history.js | S180 (same record); the two-record path is node test only (frontend/follow-up-lifecycle.test.js) |
-| A later-conclusion save or Retry returning after its record was left | frontend/history.js | none — node test only (frontend/follow-up-lifecycle.test.js) |
-
 | Observed behavior row and "What this Focus watches" name | frontend/follow-up.js focusFrame, adherenceTable | S173 |
 | Pattern opportunity verdict and every readiness reason, in words | frontend/follow-up.js readinessArm | S173, S174, S175, S46, S91, S92, S93 |
 | Saved ending assessment reason and recorded state | frontend/history.js endingSection | S174 |
@@ -4616,8 +4541,6 @@ arrived in #411 with no ledger row; these rows record it.
 The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
 `mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
 written once on the integration branch. `acceptance.py`'s pinned inventory
-moves to 172 issued · 153 active · 19 retired on this branch.
-
 moves to 175 issued · 156 active · 19 retired on this branch.
 
 ## #455 amendment — 2026-09-23
@@ -4979,6 +4902,97 @@ S165 · Carb questions over a drilled Finding case with a window pressed: a
             plain return names
 ```
 
+## #442 amendment — 2026-09-23, issue #442
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R442. It covers S157, the S91 amendment below
+and the superseded-note wording, and nothing outside #442's checklist. The
+decision is ADR 442 in `openspec/changes/backfilled-record-endings/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over a committed synthetic `scripts/qa_e2e_cases.py` case store — c4-ic, c4-isf
+and c4-profile here, each through `CASE_STORE_DIR`. No real data is read. The
+worker ran no server and no browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **Every change record ends by one rule.** Each reconcile ends every retained
+  change record that has no ending, oldest first: reverted, else superseded by
+  the first later detected change outside its own Edit and inside its 28-day
+  watch window, else expired unreviewed once that window has passed. An older
+  detected change therefore reads its ending in the Changes roster and on its
+  record instead of "Still open · Not watched". A saved ending is never
+  rewritten.
+- **A saved ending reads evidence only up to its ending instant**, the live
+  watch's included. A saved assessment whose retained context came from a later
+  pump read is served unavailable (`context_after_ending`; its words belong to
+  #450).
+- **The superseded note names no setting.** It reads "A later setting change
+  was detected inside the watch window. This record keeps the period it
+  actually observed." instead of claiming the later change was to the same
+  setting, which a later change of any setting already contradicted.
+
+S157 is a new app-opener-only story under HV2-28. S91 is amended in prose
+below; no story is retired.
+
+```
+S157 · An older detected change that a later detected change superseded inside
+       its watch window reads its saved ending, never Still open: its Changes
+       roster row reads "Superseded by a later change" with its effective time
+       and carries no still-open cell; opening it shows the saved ending of kind
+       superseded in words with no underscore-token code on that line, a
+       saved-ending note that does not claim the same setting, and a periods
+       note whose data read-through time is the ending's Finished time.
+  element:  table.gf-table [data-record], td.v, [data-record-open="true"],
+            [data-record-part="ending"] [data-ending-kind], [data-part="periods"]
+  source:   ciq_autotune/watched_change.py reconcile_follow_up /
+            _end_open_records / capture_ending; frontend/history.js
+            recordRowHtml / endingSection; frontend/follow-up.js periodsSection
+  lock:     HV2-28; ADR 442 (openspec/changes/backfilled-record-endings/design.md)
+  data:     c4-ic; its one reconcile records carb-ratio changes on 06-01 and
+            06-10. The 06-10 record is the watched, open Trial; the 06-01
+            record ends superseded at 06-10 09:00, its saved assessment read to
+            that instant
+  evidence: C4_STORIES.S157; reads the served roster, picks the Trial row that
+            is not the admission's active id and requires its served
+            superseded kind, then reads its roster row, opens it by its roster
+            press and reads the kind line, the ending part and the periods
+            note. It asserts no reason line's words; the complete ledger covers
+            the Ending assessment line with #450's words
+  status:   base b03431d2 (with the branch harness) fails at its first feature
+            assertion at both sizes ("S157 the older Trial row must carry its
+            served superseded ending"); branch 782cd552 (application code
+            identical to the reviewed head 0b8e22a4) passes at 1280x720 and
+            1440x900. The first branch run failed on a story defect, a `has`
+            row locator that repeated the table prefix; it was fixed in
+            e57c91bd. Coordinator-run 2026-09-24
+```
+
+Amended S91 · 2026-09-23 · #442 / Q3 delegation: The story's text is unchanged. Its c4 part's readiness helper compared the page's `[data-readiness]` lines with the retained read, but for an ended record the page prints the saved ending's own assessment, and the two agreed only while an ending's data cutoff was the reconcile instant. The helper now compares the page's lines with the comparison the page shows: the served saved-ending assessment when the selected record's `original.ending.kind` is set, else the retained reassessment. S91's own assertions stay on the retained read: the unit, the required count, more than fourteen elapsed days, criterion met and `unclear`. `retained()` returns what it returned, so S49 is unchanged. c4-isf and c4-profile now save their expiry read to 06-29, where the saved Trial arm counts 27 and 28 and is not met while the retained read counts 30 and 31 and is met, so the frozen helper fails on c4-isf on this branch. The replay reads through the rendered page and imports nothing new. The amended helper is pinned by node tests in `frontend/c4.replay.test.js`; the replay run (`ONLY=S49,S91,S96,S105,S110,S111,S112,S143,R18` at one size) is the coordinator's. Recorded 2026-09-24 (coordinator-run, both sizes): on branch 782cd552, S91 passes as amended, with S157 and the stories above (`ONLY=S157,S49,S91,S96,S105,S110,S111,S112,S143,R18`, `# executed 10 · failed 0` at 1280x720 and 1440x900). The frozen helper's failure on c4-isf is shown in process: the saved Trial arm counts 27 and is not met, while the retained read counts 30 and is met. No replay run of the frozen helper was made.
+The preceding wording and results are the attributed pre-amendment record.
+
+Every other desk replay and test that reads these cases keeps its subject:
+
+- **S110, S111, S112 and S143** on edit-chain. Its four hand-saved records move
+  14 days later (05-15, 05-22, 05-23, 05-24) with their spacing kept, so every
+  watch window ends after the case's 06-01 23:59 data tail and the ending rule
+  leaves all four open: one titled three-member Edit, one flat row, four
+  still-open cells reading "Not watched", and an unavailable retained
+  comparison.
+- **S96 and S105** on c3-history and c3-trial, **S49** on c4-missing and **R18**
+  on c4-history. None of these records gains or changes an ending (this
+  change's premises): c3-history's finished record keeps its saved ending, and
+  every other record is its case's open frontier.
+- **The desk browser suite's hand-built expired record** is a served fixture
+  that no reconcile touches; its saved ending and Later conclusion assertions
+  are unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
 | Reconcile ending rule for every open change record | ciq_autotune/watched_change.py | S157, S91 |
 | Superseded saved-ending note | frontend/history.js | S157 |
 

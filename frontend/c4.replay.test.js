@@ -988,7 +988,7 @@ test('S157 fails when the periods note reads data past the saved ending', async 
 // #442: S91's c4 readiness helper over an ended record whose saved ending read
 // its evidence to the ending while the retained read runs to the data tail, as
 // c4-isf serves them. `lines` is the readiness the page prints.
-function qa442ReadinessPage(lines) {
+function qa442ReadinessPage(lines, { rawReason = false } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
   const arm = (observed, met, reason = null) => ({ unit: 'qualifying fasting Rest windows', required: 30,
     observed, criterion_met: met, reason, elapsed_days: 31 });
@@ -999,7 +999,8 @@ function qa442ReadinessPage(lines) {
   const roster = { trials: [{ id: 'isf-all-20240601000000', parameter: 'isf' }],
     admission: { active_kind: null, active_id: null } };
   const printed = lines === 'saved' ? saved : retained;
-  const criterion = side => (side.criterion_met ? 'Criterion met.' : 'Not met — still collecting evidence.');
+  const criterion = side => (side.criterion_met ? 'Criterion met.'
+    : rawReason ? `Not met — ${side.reason}.` : 'Not met — still collecting.');
   const node = selector => ({
     filter() { return this; },
     first() { return this; },
@@ -1027,6 +1028,12 @@ test('S91 readiness compares an ended record’s lines with its saved ending, an
   const comparison = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
   assert.equal(comparison.readiness.after.observed, 30);
   assert.equal(comparison.readiness.after.criterion_met, true);
+});
+
+test('S91 readiness rejects an arm that prints its served reason code instead of words', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('saved', { rawReason: true }),
+    'qualifying fasting Rest windows', 30)), /a served reason prints in words, never its code/);
 });
 
 test('S91 readiness fails when an ended record’s lines print the retained read instead', async () => {

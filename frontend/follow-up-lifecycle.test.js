@@ -340,3 +340,93 @@ test('a failed retained read stays with its record: the next record opened from 
     assert.match(seat.innerHTML, /data-figure-state="paired"/);
   } finally { refusedFor = null; served = comparison; globalThis.window = previousWindow; }
 });
+
+/* ------------------------------- a later conclusion stays with its record */
+
+// ADR 452: the later-conclusion text, a failed save and its request id belong
+// to the open record, and clear whenever another record opens or the reader
+// leaves for the roster — a roster press as much as an address.
+const { navigate } = await import('./routes.js');
+const conclusionPosts = (from = 0) => requests.slice(from).filter(row => String(row.path).endsWith('/conclusion'));
+async function onExpiredRoster(run) {
+  const was = { expired, fail, lateConclusion, window: globalThis.window };
+  kind = 'trial'; identity = 'expired-roster-synthetic';
+  expired = true; lateConclusion = { state: 'unavailable' };
+  // Back to records and a roster press write the address through the router.
+  const location = { pathname: '/', search: '', hash: '' };
+  globalThis.window = { location, history: { pushState: (_state, _title, address) => {
+    const url = new URL(address, 'http://synthetic');
+    Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+  } } };
+  try {
+    const seat = host();
+    const backToRoster = async () => {
+      seat.recordClose.onclick();
+      for (let step = 0; step < 3; step++) { mountHistory(seat, { context: {}, hold() {} }); await flush(); }
+      assert.match(seat.innerHTML, /data-record="/, 'Back to records shows the roster');
+    };
+    const press = async (id) => {
+      seat.records.find(row => row.dataset.record === `trial:${id}`).onclick();
+      await openHistoryRecord(seat, id);
+      assert.match(seat.innerHTML, /data-form="late-conclusion"/, `the expired Trial ${id} offers its Later conclusion`);
+    };
+    await run(seat, { backToRoster, press });
+  } finally {
+    navigate('diagnose');
+    ({ expired, fail, lateConclusion } = was);
+    globalThis.window = was.window;
+  }
+}
+
+test('a later conclusion typed on one expired Trial does not follow into the next record opened from the roster', async () => {
+  const [A, B] = ['expired-a-synthetic', 'expired-b-synthetic'];
+  await onExpiredRoster(async (seat, { backToRoster, press }) => {
+    seat.records.push({ dataset: { record: `trial:${A}` } }, { dataset: { record: `trial:${B}` } });
+    const route = await openHistoryRecord(seat, A);
+    assert.match(seat.innerHTML, /data-form="late-conclusion"/, 'premise: A offers its Later conclusion');
+    fail = true;
+    seat.lateField.oninput({ target: { value: 'Words typed on expired Trial A' } });
+    seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
+    mountHistory(seat, { context: route, hold() {} });
+    assert.match(seat.innerHTML, /Recording the later conclusion failed/, 'premise: A’s save failed');
+    const failedOnA = conclusionPosts().at(-1);
+    assert.match(failedOnA.path, new RegExp(`/trials/${A}/conclusion$`));
+
+    await backToRoster();
+    await press(B);
+    assert.doesNotMatch(seat.innerHTML, /Words typed on expired Trial A/, 'A’s words do not follow into B');
+    assert.doesNotMatch(seat.innerHTML, /Recording the later conclusion failed/, 'A’s failure does not follow into B');
+    assert.doesNotMatch(seat.innerHTML, /data-save-error=/);
+    assert.match(seat.innerHTML, /type="submit" disabled>Record later conclusion</, 'B’s form starts empty');
+
+    fail = false;
+    const typed = requests.length;
+    seat.lateField.oninput({ target: { value: 'Words typed on expired Trial B' } });
+    seat.lateForm.onsubmit({ preventDefault() {} }); await flush();
+    const savedOnB = conclusionPosts(typed).at(-1);
+    assert.match(savedOnB.path, new RegExp(`/trials/${B}/conclusion$`));
+    assert.notEqual(JSON.parse(savedOnB.options.body).request_id, JSON.parse(failedOnA.options.body).request_id,
+      'B’s save sends a request id of its own');
+    assert.equal(JSON.parse(savedOnB.options.body).conclusion, 'Words typed on expired Trial B');
+    const beforeSave = requests.slice(typed, requests.indexOf(savedOnB));
+    assert.equal(beforeSave.filter(row => String(row.path).includes(`selected=${B}`)).length, 0,
+      'B’s save is a first save, not a retry that re-reads B');
+  });
+});
+
+test('reopening the same expired Trial from the roster starts its later conclusion empty', async () => {
+  const A = 'expired-reopen-synthetic';
+  await onExpiredRoster(async (seat, { backToRoster, press }) => {
+    seat.records.push({ dataset: { record: `trial:${A}` } });
+    await openHistoryRecord(seat, A);
+    assert.match(seat.innerHTML, /data-form="late-conclusion"/, 'premise: A offers its Later conclusion');
+    seat.lateField.oninput({ target: { value: 'Words typed before leaving' } });
+    mountHistory(seat, { context: { occurrence: `record:trial:${A}` }, hold() {} });
+    assert.match(seat.innerHTML, /Words typed before leaving/, 'premise: a re-render of A keeps its words');
+
+    await backToRoster();
+    await press(A);
+    assert.doesNotMatch(seat.innerHTML, /Words typed before leaving/, 'the reopened record starts empty');
+    assert.match(seat.innerHTML, /type="submit" disabled>Record later conclusion</);
+  });
+});

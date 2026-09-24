@@ -14,7 +14,7 @@ excludes.
 
 ## 1. One place clears everything held for the open record (desk)
 
-- [ ] 1.1 In `frontend/history.js`, make one function the only writer of
+- [x] 1.1 In `frontend/history.js`, make one function the only writer of
   `memory.open`. Given the next identity (`{ kind, id }` or none), it:
   - sets `memory.open`;
   - clears `mode`, `record` and `error`;
@@ -43,14 +43,14 @@ excludes.
   published-interface header comment: nothing in the tree imports it.
 
   No other file changes behavior.
-- [ ] 1.2 Rewrite the page-memory comment above `memory`, and the doc comments on
+- [x] 1.2 Rewrite the page-memory comment above `memory`, and the doc comments on
   `openRecord` and `closeRecord`, to state the identity rule once. Name ADR 452
   beside ADR 430's existing note. Every other comment that describes when these
   fields clear must match the code.
 
 ## 2. Node tests through the roster press (desk)
 
-- [ ] 2.1 In `frontend/follow-up-lifecycle.test.js`, add tests on the #430 host
+- [x] 2.1 In `frontend/follow-up-lifecycle.test.js`, add tests on the #430 host
   fake (`host()`, `seat.records`, `seat.recordClose`, `openHistoryRecord`). Give
   the router a window fake, as the existing "a failed retained read stays with
   its record" test does, so Back to records and a roster press write the
@@ -88,25 +88,25 @@ The spike `docs/scope/452-late-conclusion-s180.spike.mjs`, committed with this
 change, holds the story body, its fake page and its four node tests. It runs
 with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
 
-- [ ] 3.1 Add `async S180(page)` to `C4_STORIES` in `frontend/c4.replay.mjs`,
+- [x] 3.1 Add `async S180(page)` to `C4_STORIES` in `frontend/c4.replay.mjs`,
   ported from the spike's `S180`. Use the module's own `read` helper, and keep
   the spike's steps, selectors, routed refusal and failure messages. Prefix it
   with a `// #452` comment in the style of the #430 stories. The body names no
   case store: it runs on its mapped store.
-- [ ] 3.2 Register it in `frontend/desk-behavior.replay.mjs`:
+- [x] 3.2 Register it in `frontend/desk-behavior.replay.mjs`:
   - a `// STORY:harmonic-v2-desktop:S180` tag;
   - `export const S180 = appOnly('HV2-28', '#452 a reopened record starts its later conclusion empty with a request id of its own', C4_STORIES.S180);`
   - `['S180', S180, J()]` in `REGISTRY`, after the last C4 record entry.
 
   In `frontend/replay-cases.mjs`, map `S180: 'c4-isf'` in `STORY_CASES`.
-- [ ] 3.3 In `frontend/c4.replay.test.js`:
+- [x] 3.3 In `frontend/c4.replay.test.js`:
   - port the spike's fake page and its four tests. One passes against a
     record that clears on reopen. Three fail at the feature assertions on the
     typed words, the carried failure and the reused request id.
   - add a uniqueness test in the form of "S142 and S143 are unique app-only C4
     record stories…": S180 is registered once, its `deferred.term` is `HV2-28`,
     and `storyCase('S180')` is `c4-isf`.
-- [ ] 3.4 Move the inventory literals from 171 issued · 152 active to 172 issued ·
+- [x] 3.4 Move the inventory literals from 171 issued · 152 active to 172 issued ·
   153 active, with 19 retired unchanged:
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py`: `inventory()`'s required
     counts;
@@ -121,7 +121,7 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
 
 ## 4. The ledger records the change (desk)
 
-- [ ] 4.1 Append a section headed `## #452 amendment — 2026-09-23, issue #452` to
+- [x] 4.1 Append a section headed `## #452 amendment — 2026-09-23, issue #452` to
   the end of `mockups/harmonic-v2-desktop.behavior.md`. It carries:
   - the sanction line above, quoted;
   - base `b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1`;

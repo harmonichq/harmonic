@@ -201,6 +201,13 @@ test('S142 and S143 are unique app-only C4 record stories with their manufacture
   }
 });
 
+test('S180 is a unique app-only C4 record story on the manufactured case serving one expired Trial', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S180');
+  assert.equal(entries.length, 1, 'S180 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'HV2-28');
+  assert.equal(storyCase('S180'), 'c4-isf');
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {
@@ -523,6 +530,108 @@ test('S143 fails when the figure prints the served code instead of its words', a
     figureState: 'unavailable', periods: 0, figureReason: 'missing_comparison_context',
     result: 'Unavailable · missing_comparison_context',
   }))), /S143 the figure must name the reason in words, never its code/);
+});
+
+// #452: the record destination's page with one expired Trial on its roster.
+// `carries` names what a reopen keeps, as the unfixed desk kept all three: the
+// typed text, the failed save and its request id.
+function qa452RecordPage({ carries = [] } = {}) {
+  const ID = 'expired-isf-synthetic';
+  const state = { view: 'none', text: '', failure: null, attempt: null, saved: null, url: 'http://synthetic.invalid/' };
+  const routes = []; const listeners = new Set(); let serial = 0;
+  const open = () => {
+    state.view = 'record';
+    if (!carries.includes('text')) state.text = '';
+    if (!carries.includes('failure')) state.failure = null;
+    if (!carries.includes('attempt')) state.attempt = null;
+  };
+  const present = {
+    'table.gf-table': () => state.view === 'roster',
+    [`table.gf-table [data-record="trial:${ID}"]`]: () => state.view === 'roster',
+    '[data-form="late-conclusion"]': () => state.view === 'record' && !state.saved,
+    '#late-conclusion-conclusion': () => state.view === 'record' && !state.saved,
+    '[data-form="late-conclusion"] [type="submit"]': () => state.view === 'record' && !state.saved,
+    '[data-save-error="conclude"]': () => state.view === 'record' && Boolean(state.failure),
+    '[data-save-error]': () => state.view === 'record' && Boolean(state.failure),
+    '[data-record-close]': () => state.view === 'record',
+    '[data-late-conclusion="available"]': () => state.view === 'record' && Boolean(state.saved),
+    '[data-late-conclusion-text]': () => state.view === 'record' && Boolean(state.saved),
+  };
+  async function submit() {
+    state.attempt ||= `conclude:synthetic-${++serial}`;
+    const body = { request_id: state.attempt, input_revision: 7, conclusion: state.text };
+    const request = { method: () => 'POST', url: () => `${state.url}api/verify/trials/${ID}/conclusion`,
+      postDataJSON: () => body };
+    for (const listener of listeners) listener(request);
+    const route = routes.find(([matcher]) => matcher.test(new URL(request.url()).pathname));
+    if (route) {
+      await route[1]({ request: () => request, fulfill: async ({ status }) => {
+        state.failure = { status };
+      } });
+      return;
+    }
+    state.saved = state.text; state.text = ''; state.failure = null; state.attempt = null;
+  }
+  const node = selector => {
+    const here = () => present[selector]?.() ?? false;
+    return {
+      locator: nested => node(`${selector} ${nested}`),
+      waitFor: async () => { if (!here()) throw new Error(`locator.waitFor: timeout waiting for ${selector}`); },
+      count: async () => (here() ? 1 : 0),
+      click: async () => {
+        if (!here()) throw new Error(`locator.click: no ${selector}`);
+        if (selector.includes('[data-record="')) open();
+        else if (selector === '[data-record-close]') state.view = 'roster';
+        else if (selector.endsWith('[type="submit"]')) await submit();
+      },
+      fill: async value => { if (!here()) throw new Error(`locator.fill: no ${selector}`); state.text = value; },
+      inputValue: async () => state.text,
+      innerText: async () => (selector === '[data-late-conclusion-text]' ? state.saved : ''),
+    };
+  };
+  return {
+    url: () => state.url,
+    goto: async target => { state.url = new URL('/', target).href; state.view = 'roster'; },
+    locator: node,
+    route: async (matcher, handler) => { routes.push([matcher, handler]); },
+    unroute: async (matcher, handler) => {
+      const at = routes.findIndex(([m, h]) => m === matcher && h === handler);
+      if (at >= 0) routes.splice(at, 1);
+    },
+    on: (type, listener) => { if (type === 'request') listeners.add(listener); },
+    off: (type, listener) => { if (type === 'request') listeners.delete(listener); },
+    request: { get: async href => {
+      const selected = new URL(href).searchParams.get('selected');
+      const trial = { id: ID, ending: { kind: 'expired_unreviewed' } };
+      const body = selected
+        ? { trials: [trial], selected: { id: ID, original: { ending: trial.ending, late_conclusion: { state: 'unavailable' } } } }
+        : { trials: [trial], focuses: [] };
+      return { status: () => 200, text: async () => '', json: async () => body };
+    } },
+  };
+}
+
+test('S180 passes when a reopened record starts empty with a request id of its own', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S180(qa452RecordPage());
+});
+
+test('S180 fails at its feature assertion when a reopened record keeps the typed words', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['text', 'failure', 'attempt'] })),
+    /S180 reopening the record from the roster must start its later conclusion empty/);
+});
+
+test('S180 fails when a reopened record keeps only the failed save', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['failure'] })),
+    /S180 reopening the record must carry no failed save/);
+});
+
+test('S180 fails when the next save reuses the refused request id', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(C4_STORIES.S180(qa452RecordPage({ carries: ['attempt'] })),
+    /S180 the next save must send a request id of its own/);
 });
 
 // #413: a cold Diagnose arrival. `reload()` fires the held /api/analyze route

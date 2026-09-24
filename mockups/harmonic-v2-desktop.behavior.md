@@ -4118,3 +4118,81 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #452 amendment — 2026-09-23, issue #452
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R452, with its triage rulings Q1 (add S180) and
+Q2 (reopening the same record from the roster starts empty). This section
+changes shipped desk behavior on that sanction only. The decision is ADR 452 in
+`openspec/changes/late-conclusion-record-reset/design.md`.
+
+Base b03431d2b937b46bdabbb2de1e6ba0ba6c6b57b1. Safe start is unchanged:
+AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over the committed synthetic `scripts/qa_e2e_cases.py` case store c4-isf,
+through `CASE_STORE_DIR`. No real data is read. The worker ran no server and no
+browser; every replay below is the coordinator's.
+
+Changed shipped behavior:
+
+- **A later conclusion belongs to its record.** An expired Trial's Later
+  conclusion text, a failed save of it and that save's request id are held for
+  the one record that is open. Opening another record, or leaving for the
+  roster with Back to records, starts the next record with an empty form, no
+  failure and a request id of its own; its first save is a first save, not a
+  retry. That includes reopening the same record from the roster, as opening it
+  by its address already did. Base carried all three into the next record a
+  roster press opened.
+- **A re-render of the same record keeps them.** A failed save followed by a
+  re-render, including a return from Day to the same record, keeps the words,
+  the failure and the request id, so Retry resends the same request id.
+- The conclude endpoint, the request-identity rules, which Trials offer a later
+  conclusion, and every saved ending are unchanged.
+
+S180 is a new app-opener-only story under HV2-28. No story is amended or
+retired, and S181, reserved for this issue, is unused.
+
+```
+S180 · Reopening an expired Trial from the Changes roster, after its later
+       conclusion was typed and its save failed, starts with an empty Later
+       conclusion form and no failure, and the next save sends a request id of
+       its own.
+  element:  table.gf-table [data-record], #late-conclusion-conclusion,
+            [data-form="late-conclusion"], [data-save-error="conclude"],
+            [data-record-close], [data-late-conclusion="available"]
+  source:   frontend/history.js
+  lock:     HV2-28; ADR 452 (openspec/changes/late-conclusion-record-reset/design.md)
+  data:     c4-isf; its one retained Trial ended expired_unreviewed with no
+            later conclusion saved
+  evidence: C4_STORIES.S180; opens the expired Trial by its roster press, has
+            its first save refused by a routed synthetic answer (nothing
+            reaches the store) and records that request id, presses Back to
+            records, reopens the record by its roster press, reads an empty
+            form and no failure, then records and compares the request id the
+            save sends. The carry into a different record is proved at node
+            level in frontend/follow-up-lifecycle.test.js, because no committed
+            case store serves two expired Trials
+  status:   coordinator's run, pending
+```
+
+Regression, replayed unchanged by the coordinator: every story that opens a
+record through `openRecord` or leaves one — the finished-change handoff (S52,
+R17, S92 and S94), the retry landings after a refused save (S53 and S57), and
+the roster presses (S54b, S105, S110, S112, S142 and S143). The desk browser
+suite's expired-Trial Later conclusion test opens its record by address and is
+unchanged.
+
+Additional handler inventory for this amendment. The Later conclusion form
+arrived in #411 with no ledger row; these rows record it.
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Later conclusion text input | frontend/history.js | S180 |
+| Record later conclusion, and its Retry after a failed save | frontend/history.js | S180 |
+| Later-conclusion clear on opening or leaving a record | frontend/history.js | S180 (same record); the two-record path is node test only (frontend/follow-up-lifecycle.test.js) |
+
+The ledger header's inventory line, `ACCEPTANCE.md`'s count sentence,
+`mockups/INDEX.md`'s row and the release freeze block are the coordinator's,
+written once on the integration branch. `acceptance.py`'s pinned inventory
+moves to 172 issued · 153 active · 19 retired on this branch.

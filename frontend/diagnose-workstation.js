@@ -823,7 +823,9 @@ function renderBehavioralFullscreen(host, f) {
   const previous = window.__diagnoseEventComparison;
   const caseFile = f.caseFile.finding.lever === 'high_carb_sequence'
     ? highCarbResponseCase(f.caseFile) : f.caseFile;
-  const mounted = renderEventSurface(host, caseFile, { headline: el('canvas-fullhead') });
+  const mounted = renderEventSurface(host, caseFile, {
+    headline: el('canvas-fullhead'), place: f.place,
+  });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;
@@ -2700,12 +2702,22 @@ function boot(root, data, callbacks, signal) {
        moment the drill's own case load settles behind the state — dropping the
        reader on the document body without their having navigated anywhere.
        `paintChartActions` holds the catalog's trigger across its own rebuild
-       exactly this way. ONLY THE FULLSCREEN CHART'S CONTAINER IS HELD: no
-       repaint has ever preserved focus on a resting tile or a tile control, and
-       this is not the change that widens that. */
+       exactly this way. ONLY THE FULLSCREEN CHART IS HELD — its container, and
+       the reader's place on the chart inside it: no repaint has ever preserved
+       focus on a resting tile or a tile control, and this is not the change
+       that widens that. */
     const heldFullscreenTile = fullscreen
       && document.activeElement?.classList?.contains('evidence-tile')
       ? document.activeElement.dataset.chartId : null;
+    /* THE PLACE ON THE CHART IS HELD THE SAME WAY (S100). A reader who went on
+       from the container into the chart and keyed its cursor along is on an
+       element the rebuild below replaces, with a readout the disposal empties
+       and a focus the removal drops. The drill's own case file, a settling tile
+       and the desk's Focus read all repaint here after the Full press, so the
+       mount being disposed hands its place to the one that replaces it — the
+       same chart only, never across entering or leaving fullscreen. */
+    const heldPlace = fullscreen ? tileMounts
+      .find((mount) => mount.fullscreenChartId === fullscreen.chartId)?.place() : null;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
     /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a star
@@ -3020,8 +3032,9 @@ function boot(root, data, callbacks, signal) {
             if (fullscreen && (descriptor.kind === 'event-comparison'
               || (descriptor.kind === 'eating-sequence'
                 && caseFile.finding.lever === 'high_carb_sequence'))) {
-              const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
-              tileMounts.push(installTileMount(chartHost, mounted));
+              const mounted = renderBehavioralFullscreen(chartHost, { caseFile, place: heldPlace });
+              tileMounts.push({ ...installTileMount(chartHost, mounted),
+                fullscreenChartId: descriptor.chartId });
             } else if (descriptor.kind === 'eating-sequence'
               && caseFile.finding.lever === 'high_carb_sequence' && seat.seat === 'focal') {
               const mounted = renderHighCarbStage(chartHost, caseFile, sharedGlucoseRange);

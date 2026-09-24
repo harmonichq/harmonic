@@ -467,6 +467,104 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
   } finally { await close(); }
 });
 
+/* S100 (nightly 36011270820). Every paint rebuilds the fullscreen chart, and a
+   read the reader did not ask for can land after they have keyed its cursor
+   along: here, the drill's own case file, which the catalog pick starts and
+   nothing on screen waits for. The fullscreen mount hands the reader's place to
+   the one that replaces it; these pin that handover through the desk, and
+   that it happens only across a repaint of the same fullscreen chart. */
+const S100_FINDING = 'finding:over_treated_low';
+const fullscreenReadout = (page) => page.evaluate(() => {
+  const readout = document.querySelector('#canvas-head[data-full] #canvas-fullhead #ec-readout');
+  return readout && { time: readout.querySelector('.rd-time')?.textContent ?? null,
+    values: [...readout.querySelectorAll('.rd-pair .v')].map((value) => value.textContent) };
+});
+const servedAt = (minute) => ({ time: `+${minute} min`,
+  values: caseFiles.cases[S100_FINDING].event.projection.cohorts.map((cohort) => {
+    const point = cohort.points.find((row) => row.minute === minute);
+    return !point || point.support === 'withheld' ? 'unavailable' : `${Math.round(point.median)} · n${point.n}`;
+  }) });
+
+/** The reader's own route to the fullscreen comparison: All charts, the
+    catalog pick, then Full. `beforePick` runs just before the pick. */
+async function openS100Fullscreen(page, beforePick = () => {}) {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await railRowLocator(page, S100_FINDING);
+  await openAllCharts(page);
+  const tile = page.locator(`#tile-row .evidence-tile[data-chart-id="${S100_FINDING}"]`);
+  await tile.locator('canvas').first().waitFor({ state: 'visible' });
+  beforePick();
+  await tile.click();
+  await page.locator('#tile-focal .tile-fullscreen').click();
+  const chart = page.locator('#tile-focal #ec-chart');
+  await chart.waitFor({ state: 'visible' });
+  return chart;
+}
+
+test('S100 · a background repaint keeps the fullscreen chart\'s keyboard cursor, readout and focus', async () => {
+  const hold = { armed: false, held: 0 };
+  let release;
+  const released = new Promise((resolve) => { release = resolve; });
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720',
+    beforeNavigate: (page) => page.route((url) => url.pathname === '/api/diagnose/finding-case-file',
+      async (route) => {
+        if (!hold.armed) return route.fallback();
+        hold.held += 1;
+        await released;
+        return route.fallback();
+      }) });
+  try {
+    const chart = await openS100Fullscreen(page, () => { hold.armed = true; });
+    await chart.focus();
+    for (let step = 0; step < 6; step += 1) await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30), 'premise: the keyboard cursor reads +30 min');
+    assert.ok(hold.held > 0, 'premise: the drill\'s own case file is still in flight');
+    const keyed = await chart.elementHandle();
+    release();
+    await page.waitForFunction((old) => {
+      const now = document.querySelector('#tile-focal #ec-chart');
+      return Boolean(now) && now !== old;
+    }, keyed, { timeout: 30000 });
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30),
+      'the background repaint dropped the keyboard cursor and emptied its on-screen readout');
+    assert.match(await chart.getAttribute('aria-label'), /\. \+30 min\. /,
+      'the background repaint dropped the accessible cursor label');
+    assert.equal(await page.evaluate(() =>
+      document.activeElement === document.querySelector('#tile-focal #ec-chart')), true,
+    'the background repaint took keyboard focus off the chart');
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(35), 'the next key continues from the held cursor');
+  } finally {
+    release();
+    await close();
+  }
+});
+
+test('S100 · leaving and re-entering fullscreen carries no cursor or focus into the new chart', async () => {
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720' });
+  try {
+    const chart = await openS100Fullscreen(page);
+    // Let the drill settle, so the cursor below is read on the chart it keyed.
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+    await chart.focus();
+    for (let step = 0; step < 6; step += 1) await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await fullscreenReadout(page), servedAt(30), 'premise: the keyboard cursor reads +30 min');
+    await page.keyboard.press('Escape');
+    await page.locator('#tile-field:not([data-fullscreen-tile])').waitFor();
+    assert.equal(await countOf(page, '#canvas-fullhead #ec-readout'), 0, 'leaving fullscreen left its readout behind');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    await chart.waitFor({ state: 'visible' });
+    assert.deepEqual(await fullscreenReadout(page), { time: null, values: [] },
+      're-entering fullscreen brought back the previous visit\'s cursor');
+    assert.doesNotMatch(await chart.getAttribute('aria-label'), /\+30 min/,
+      're-entering fullscreen brought back the previous visit\'s cursor label');
+    assert.equal(await page.evaluate(() => document.activeElement
+      === document.querySelector('#tile-focal .evidence-tile')), true,
+    'entering fullscreen lands on the chart\'s container, never on the chart inside it');
+  } finally { await close(); }
+});
+
 for (const viewport of ['1280x720', '1440x900']) {
 test(`a failed Focus read keeps a short visible Retry beside its explanation at ${viewport}`, async () => {
   const desk = await openDesk({ beforeNavigate: async page => {

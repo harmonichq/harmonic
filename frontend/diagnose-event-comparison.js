@@ -308,9 +308,16 @@ function markup(caseFile, bodyOnly) {
    workstation's fullscreen row is one. There the adapter draws no header of its
    own (a second title under the first is the doubling the shared-header ruling
    (#72) settled, which came back when fullscreen replaced the By-event mount it
-   was settled at) and hangs only its readout in the line the caller lends it. */
+   was settled at) and hangs only its readout in the line the caller lends it.
+
+   `place` is the reader's place on the chart this mount replaces, as that
+   mount's own `place()` reported it just before its caller disposed it: the
+   cursor minute the readout was showing, or null at rest, and whether the chart
+   held keyboard focus. A caller that rebuilds the chart on a repaint the reader
+   did not ask for hands it over, so the repaint leaves the cursor, its readout
+   and the focus where the reader put them (S100). */
 export function renderEventSurface(surface, caseFile,
-  { headerHost = null, headline = null, range = null } = {}) {
+  { headerHost = null, headline = null, range = null, place = null } = {}) {
   assertEventCaseFile(caseFile);
   const content = new AbortController();
   const selected = selection(caseFile);
@@ -346,8 +353,11 @@ export function renderEventSurface(surface, caseFile,
       median: point?.median ?? null, n: point?.n ?? 0 };
   });
   let minute = 0;
+  let shown = false;
+  const within = (at) => Math.max(windowStart, Math.min(windowEnd, at));
   const inspect = (at) => {
     minute = at;
+    shown = true;
     const readings = readingsAt(at);
     chartElement.setAttribute('aria-label', `${caseFile.finding.title} response comparison. ${axisLabel(at, caseFile.projection.anchor.label)}. ${readings.map((reading) => `${reading.name} ${reading.withheld ? 'unavailable' : rounded(reading.median)}`).join('. ')}.`);
     const readout = head?.querySelector('#ec-readout');
@@ -359,14 +369,15 @@ export function renderEventSurface(surface, caseFile,
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     inspect(event.key === 'Home' ? windowStart : event.key === 'End' ? windowEnd
-      : Math.max(windowStart, Math.min(windowEnd, minute + (event.key === 'ArrowRight' ? 5 : -5))));
+      : within(minute + (event.key === 'ArrowRight' ? 5 : -5)));
   }, { signal: content.signal });
   chartElement.addEventListener('mousemove', (event) => {
     const at = chart.convertFromPixel({ gridIndex: 0 }, [event.offsetX, event.offsetY])?.[0];
     if (!Number.isFinite(at)) return;
-    inspect(Math.max(windowStart, Math.min(windowEnd, Math.round(at / 5) * 5)));
+    inspect(within(Math.round(at / 5) * 5));
   }, { signal: content.signal });
   const rest = () => {
+    shown = false;
     if (head) head.dataset.hover = '0';
     /* A lent line has no rest copy to swap back to, so leaving the last reading
        in it would claim a cursor that is no longer on the chart. */
@@ -378,11 +389,17 @@ export function renderEventSurface(surface, caseFile,
     if (previousHeader) { headerHost.innerHTML = previousHeader.html; headerHost.dataset.hover = previousHeader.hover; }
     lentReadout?.remove();
   };
+  /* The handed-over minute belongs to the window of the case file it was read
+     on, so it is held inside this one's the way every cursor move is. */
+  if (place?.minute != null) inspect(within(place.minute));
+  if (place?.focused) chartElement.focus({ preventScroll: true });
   /* Frame geometry and resize belong to the caller. This adapter returns the
      content host and its cleanup beside the chart so every caller can install
      exactly one observer at the frame it owns. */
   const rendered = { chart, resizeHost: chartElement, cleanup: () => content.abort(),
     restoreHeader, projection: caseFile, selected,
+    place: () => ({ minute: shown ? minute : null,
+      focused: document.activeElement === chartElement }),
     cohorts: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort])),
     aggregates: Object.fromEntries(caseFile.projection.cohorts.map((cohort) => [cohort.key, cohort.points])) };
   window.__diagnoseEventComparison = rendered;

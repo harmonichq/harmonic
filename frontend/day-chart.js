@@ -18,18 +18,6 @@ export function fmtG(v) { return v == null ? null : String(Math.round(v)); }
 export const KIND_GLYPH = { meal: '◍', high: '△', low: '▽', correction: '↓', suspend: '❚❚' };
 export const KIND_LABEL = { meal: 'Meal bolus', high: 'High', low: 'Low', correction: 'Correction', suspend: 'Suspend' };
 
-export function humanize(s) {
-  if (!s) return '';
-  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-const CLS_NAME = {
-  carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
-  meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
-  correction_on_iob: 'Correction on IOB',
-  correction_stacking: 'Correction stacking', missed_meal: 'Missed meal',
-};
-export function clsName(c) { return CLS_NAME[c] || humanize(c); }
-
 /* ================= time helpers ================= */
 export function parseTs(s) { return new Date(s.replace(' ', 'T')); }
 export function clock(s) {
@@ -42,7 +30,8 @@ export function clock(s) {
 const toMs = (t) => new Date(String(t).replace(' ', 'T')).getTime();
 
 /* ================= flatten day → chronological anchor rows (the Episode Log) =================
-   One row per anchor, time-sorted; it carries its episode's lever + headline verdict (the
+   One row per anchor, time-sorted; it carries its episode's lever, that lever's served name
+   (`lever_title`, null when the episode carries no lever — ADR 426) + headline verdict (the
    matched one, else the sharpest near-miss, else the first). Episode-only display context is
    deliberately kept out of these anchor rows; buildEpisodeLedger owns that boundary. */
 export function buildRows(day) {
@@ -57,7 +46,7 @@ export function buildRows(day) {
       rows.push({
         t: a.t, kind: a.kind, bg: a.bg, insulin: a.insulin, carbs: a.carbs,
         state: a.state, verdicts, headline,
-        lever: ep.lever, epId: ep.id,
+        lever: ep.lever, leverTitle: ep.lever_title || null, epId: ep.id,
         day: a.t.slice(0, 10),
       });
     }

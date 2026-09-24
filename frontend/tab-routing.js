@@ -13,8 +13,10 @@ const DEFAULT_DESTINATION = 'diagnose';
 // A contextual Day entry carries all of these; a direct one carries none
 // (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
 // target within it — "restore the exact target" is what makes the return a
-// return rather than a second arrival.
-export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
+// return rather than a second arrival. `title` is the entry's display name
+// beside its routing `subject`, carried here so a reload or Back keeps the
+// name Day prints for where it was opened from (ADR 426).
+export const CONTEXT_KEYS = ['date', 'moment', 'subject', 'title', 'occurrence', 'window', 'lever', 'from', 'focus'];
 
 export function resolveDestination(destination) {
   return DESTINATIONS.includes(destination) ? destination : DEFAULT_DESTINATION;

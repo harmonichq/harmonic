@@ -31,7 +31,7 @@ const MODEL = {
   },
   episodes: [{
     id: '2024-06-26-ep1', start: '2024-06-26 13:00:00', end: '2024-06-26 15:00:00',
-    lever: 'over_treated_low', spans_midnight: false,
+    lever: 'over_treated_low', lever_title: 'Over-treated low', spans_midnight: false,
     anchors: [
       { t: '2024-06-26 13:55:00', kind: 'low', bg: 48, insulin: null, carbs: null, state: 'fired',
         verdicts: [{ classifier: 'over_treated_low', matched: true, silence_reason: null }] },
@@ -71,6 +71,7 @@ const unstubbed = globalThis.fetch;
 globalThis.fetch = async (address) => ({ ok: true, json: async () => served(address) });
 const { dayFrame, dayReturnTarget, installDay } = await import('./day.js');
 const { loading, navigate, render, startDesk } = await import('./routes.js');
+const { evidenceDayContext } = await import('./diagnose-context.js');
 globalThis.fetch = unstubbed;
 
 // The page the desk is seated on: a plain host, and a browser whose history
@@ -220,7 +221,7 @@ test('each Episode Log row renders its served state word and its kind', () => {
   assert.deepEqual(rows.map(([, t]) => t), ['2024-06-26 13:55:00']);
   assert.match(markup, /<div class="gf-log-cap">Findings · 1<\/div>/);
   assert.match(markup, /<span class="tier" data-state="fired">finding<\/span>/);
-  assert.match(markup, /over-treated low/);
+  assert.match(markup, / · Over-treated low<\/span><\/button>/);
   // The shipped ledger folds a silent anchor into the quiet stretch rather than
   // giving it a row of its own; the desk renders that band, not a re-derivation.
   assert.match(markup, /<div class="gf-log-cap">Quiet · 1<\/div>/);
@@ -238,20 +239,81 @@ test('direct entry invents no prior subject and offers no return', () => {
   assert.equal(dayReturnTarget({ from: 'diagnose' }), null, 'a return needs the entry that carried it');
 });
 
-test('a contextual entry names its subject verbatim and returns to what it left', () => {
-  const entry = {
-    date: '2024-06-26', subject: 'Selected occurrence · Jun 26 13:55',
-    from: 'diagnose', focus: ".gf-member-row[data-occ='occ-7']",
-  };
+// The text each rendered Episode Log row reads, keyed by its moment.
+const logRows = (markup) => [...markup.matchAll(/<button class="gf-row gf-log-row" data-day-row="([^"]+)"[^>]*>.*?<span class="text">(.*?)<\/span><\/button>/g)]
+  .map(([, t, text]) => ({ t, text: text.replace(/<[^>]+>/g, '').trim() }));
+// The "Opened from" section's printed origin.
+const openedFrom = (markup) => /<h3>Opened from<\/h3><p>(.*?)<\/p>/.exec(markup)?.[1] ?? null;
+const ID_TEXT = /\b(pattern|finding|basal):/;
+
+test('a contextual entry names the served title it was opened from and returns to what it left', () => {
+  // The entry comes from the Diagnose door itself, over a served case file.
+  const entry = evidenceDayContext({
+    occurrence: { id: 'occ-7', t: '2024-06-26 13:55:00' },
+    selected: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7',
+      finding: { id: 'pattern:highs-after-meals', title: 'Highs after meals' }, window: { start_min: 720, end_min: 1080 } },
+    focus: '.occ-foot button:last-child',
+  });
   const markup = dayFrame(state({ entry }));
-  assert.match(markup, /<h3>Opened from<\/h3><p>Selected occurrence · Jun 26 13:55<\/p>/);
+  assert.equal(openedFrom(markup), 'Highs after meals');
+  assert.doesNotMatch(markup, ID_TEXT, 'the Day desk printed a routing id');
   assert.match(markup, /data-day="return">Return to Diagnose</);
 
   const back = dayReturnTarget(entry);
   assert.deepEqual(back, {
     utility: null, destination: 'diagnose', label: 'Diagnose',
-    focus: ".gf-member-row[data-occ='occ-7']", subject: 'Selected occurrence · Jun 26 13:55',
+    focus: '.occ-foot button:last-child', title: 'Highs after meals',
   });
+});
+
+test('a basal-slot entry names the setting and its half-hour range', () => {
+  const entry = evidenceDayContext({ occurrence: { t: '2024-06-26 03:00:00' }, slot: { start: 180, end: 210 }, focus: '#crumb-trail' });
+  const markup = dayFrame(state({ entry }));
+  assert.equal(openedFrom(markup), 'Basal · 03:00–03:30');
+  assert.doesNotMatch(markup, ID_TEXT, 'the Day desk printed a routing id');
+});
+
+test('an entry whose address carries no title names the way back, never its subject', () => {
+  // An address written before titles rode it, or edited by hand.
+  const entry = { date: '2024-06-26', subject: 'pattern:served', from: 'diagnose', focus: '#crumb-trail' };
+  const markup = dayFrame(state({ entry }));
+  assert.equal(openedFrom(markup), 'Diagnose');
+  assert.doesNotMatch(markup, ID_TEXT, 'the Day desk printed a routing id');
+  const utility = dayFrame(state({ entry: { date: '2024-06-26', subject: 'pattern:served', from: 'changes.questions' } }));
+  assert.equal(openedFrom(utility), 'Carb questions');
+});
+
+test('each attributed Episode Log row ends with its episode\'s served Lever name', () => {
+  // Four Levers the desk once had no word for, each with the name the model
+  // read serves, and one unattributed episode whose row names no Lever.
+  const served = [
+    ['missed_meal', 'Missed / unannounced meal', '07:10', 'high'],
+    ['meal_bolus_short', 'Meal bolus fell short', '09:30', 'meal'],
+    ['high_carb_sequence', 'High-carb sequence', '12:15', 'meal'],
+    ['repeat_eating', 'Repeat eating', '16:40', 'meal'],
+  ];
+  const anchor = (t, kind, state, verdict) => ({ t, kind, bg: kind === 'meal' ? null : 210, insulin: null, carbs: null, state, verdicts: [verdict] });
+  const model = {
+    ...MODEL,
+    episodes: [
+      ...served.map(([lever, title, at, kind], i) => ({
+        id: `2024-06-26-ep${i}`, start: `2024-06-26 ${at}:00`, end: `2024-06-26 ${at}:00`,
+        lever, lever_title: title, spans_midnight: false,
+        anchors: [anchor(`2024-06-26 ${at}:00`, kind, 'fired', { classifier: lever, matched: true, silence_reason: null })],
+      })),
+      { id: '2024-06-26-ep9', start: '2024-06-26 20:00:00', end: '2024-06-26 20:00:00', lever: null, lever_title: null, spans_midnight: false,
+        anchors: [anchor('2024-06-26 20:00:00', 'high', 'near_miss', { classifier: 'missed_meal', matched: false, silence_reason: 'under_threshold' })] },
+    ],
+  };
+  const rows = logRows(dayFrame(state({ ledger: buildEpisodeLedger(model) })));
+  assert.equal(rows.length, 5);
+  for (const [, title, at] of served) {
+    const row = rows.find((r) => r.t === `2024-06-26 ${at}:00`);
+    assert.ok(row.text.endsWith(` · ${title}`), `the ${at} row does not end with its served name: ${row.text}`);
+  }
+  for (const row of rows) assert.doesNotMatch(row.text, /\w_\w/, `a row printed an underscore token: ${row.text}`);
+  const quiet = rows.find((r) => r.t === '2024-06-26 20:00:00');
+  assert.equal(quiet.text, '△ High · 210 mg/dL', 'an unattributed row named a Lever');
 });
 
 test('a utility entry is named for the utility and returns over the destination it was opened on', () => {

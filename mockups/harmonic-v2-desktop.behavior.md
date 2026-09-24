@@ -3354,3 +3354,20 @@ Amended S113 · 2026-09-23 · #433 / Q2 sanction (Connor Griffin · 2026-09-23 �
 | `#lane > button.lane-cell` click, pointed at its visible part on a short window | diagnose-workstation.js renderLane | S152 |
 | `#lane > button.lane-cell` click, each of the 48 slots once | diagnose-workstation.js renderLane | S153 |
 | `#lane > button.lane-cell[data-reason="recurring-lows"]` click (D6) | diagnose-workstation.js renderLane | S113 |
+
+## #426 amendment — 2026-09-23, issue #426
+
+Day stops printing internal identifiers where a served name exists (ADR 426).
+S61 and S62 are amended under Connor Griffin's sanction of 2026-09-23, release
+question Q2, answered "A": "I record your answer as the approval for every
+change these 13 checklists call for, and write the wording in CONTEXT.md
+terms." No story is added or retired, and no ★ FROZEN block, header inventory
+line or story body above this section is edited. Browser execution belongs to
+the coordinator at 1280x720 and 1440x900; the worker order prohibits serve and
+browser execution. On the base app the amended S61 fails: Opened from prints
+the routing subject `finding:over_treated_low`, and the over-treated-low row
+ends with the desk's own word, not the served Lever name.
+
+Amended S61 · 2026-09-23 · #426 / Q2 sanction: The contextual entry also carries a display title beside its canonical subject, in the address, and its Opened-from section names the subject by that served title (for a selected occurrence, the case file's served finding title), never by the routing subject; no `finding:`, `pattern:` or `basal:` text appears there. Given the Day's served model read carries at least one attributed episode and the Episode Log renders a row of one (a premise that fails loudly), each row of an attributed episode ends with that episode's served Lever name, and no row prints an underscore token. App body: frontend/c2.replay.mjs S61; fail-first proof: frontend/replay-cases.test.js, "S61 requires Day to name its origin and each attributed row by the served names". Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900 (`ONLY=S61,S62`: executed 2 · failed 0 · deferred 0 · selected 2), coordinator-run 2026-09-23; base a4d374a7 with the branch harness at 1280x720 fails it at the origin assertion (saw Opened from `finding:over_treated_low` and the 13:55 row ending `over-treated low`; executed 1 · failed 1 · selected 2). Before/after renders are owed to the coordinator's integration batch.
+
+Amended S62 · 2026-09-23 · #426 / Q2 sanction: While away, the Day desk names that subject by its served title, no longer verbatim; the return still holds and focuses the exact occurrence held when Day opened. App body: frontend/c2.replay.mjs S62, unchanged. Status: replayed-pass on branch 460ab0a2 at 1280x720 and 1440x900, and on base a4d374a7 with the branch harness at 1280x720, coordinator-run 2026-09-23.

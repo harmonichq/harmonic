@@ -52,8 +52,9 @@ const AXIS_RESERVE = 24;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // The Episode Log's band words and the verdict words the ledger sorts rows by.
+// A row's Lever is named by the model read's served `lever_title`; the desk
+// keeps no Lever name table of its own (ADR 426).
 const STATE_WORD = { fired: 'finding', outranked: 'outranked', near_miss: 'also checked', clean: 'clean', no_data: 'no data' };
-const LEVER_WORD = { over_treated_low: 'over-treated low', correction_on_iob: 'correction on IOB', correction_stacking: 'stacked corrections', carb_undercount: 'carbs undercounted', late_bolus: 'late bolus', meal_over_delivery: 'meal over-delivery' };
 
 // The destination labels a return names. A utility origin names the utility
 // itself, because that is what the reader closed to get here (S76) — and it
@@ -164,6 +165,8 @@ function adopt(context) {
  * contextual entry and `<destination>.<utility>` when a utility opened Day: a
  * utility's Day entry returns into that utility, over the destination it was
  * opened on, and is NAMED for the utility (S76, `Return to Carb questions`).
+ * `title` is the display name the door supplied for what the reader was on;
+ * the routing `subject` is never printed (ADR 426).
  * Null on a direct entry, which offers no return at all (HV2-13).
  */
 export function dayReturnTarget(entry = memory.entry) {
@@ -174,7 +177,7 @@ export function dayReturnTarget(entry = memory.entry) {
     destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
     label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Diagnose'),
     focus: entry.focus || null,
-    subject: entry.subject || '',
+    title: entry.title || '',
   };
 }
 
@@ -237,19 +240,20 @@ function monthGrid({ y, m }, rows, held, bounds, arrived = true) {
 }
 
 // The reading pane: the subject this entry came from, the day's own figures,
-// and the Episode Log.
+// and the Episode Log. An entry whose address carries no title (one written
+// before titles rode it) names the destination it returns to instead.
 function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
   const nudge = moved ? `<p class="gf-note">${e(date(moved))} is not among this read's recorded days. The nearest recorded day is shown.</p>` : '';
   const back = dayReturnTarget(entry);
   const subject = back
-    ? `<section class="gf-section"><h3>Opened from</h3><p>${e(back.subject)}</p>${nudge}<div class="gf-actions"><button class="gf-btn" data-day="return">Return to ${e(back.label)}</button></div></section>`
+    ? `<section class="gf-section"><h3>Opened from</h3><p>${e(back.title || back.label)}</p>${nudge}<div class="gf-actions"><button class="gf-btn" data-day="return">Return to ${e(back.label)}</button></div></section>`
     : nudge;
   const figures = `<section class="gf-section"><h3>This day</h3>${stats && stats.n
     ? `<dl><dt>Time in range</dt><dd>${stats.tir}%</dd><dt>Lows</dt><dd>${stats.low}</dd><dt>Highs</dt><dd>${stats.high}</dd><dt>Readings</dt><dd>${stats.n}</dd><dt>Range</dt><dd>${e(stats.min)}–${e(stats.max)} mg/dL</dd></dl>`
     : '<p class="gf-meta">No glucose recorded.</p>'}</section>`;
   const row = (entryRow) => {
     const r = entryRow.row;
-    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${r.lever ? ` · ${e(LEVER_WORD[r.lever] || r.lever)}` : ''}</span></button>`;
+    return `<button class="gf-row gf-log-row" data-day-row="${e(r.t)}" aria-pressed="${focusT === r.t}"><span class="when">${e(clock(r.t))}</span><span class="tier" data-state="${e(r.state)}">${STATE_WORD[r.state] || e(r.state)}</span><span class="text"><span class="g" aria-hidden="true">${KIND_GLYPH[r.kind] || '·'}</span> ${e(KIND_LABEL[r.kind] || r.kind)}${r.bg != null ? ` · ${e(Math.round(r.bg))} mg/dL` : ''}${r.leverTitle ? ` · ${e(r.leverTitle)}` : ''}</span></button>`;
   };
   const band = (title, entries) => (entries.length ? `<div class="gf-log-cap">${title} · ${entries.length}</div>${entries.map(row).join('')}` : '');
   const quiet = ledger && ledger.quiet.rows.length

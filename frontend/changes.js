@@ -78,13 +78,15 @@ function asideLead(candidate) {
     ${following ? `<p class="gf-meta">${e(following.title || following.subject)} leads now.</p>` : ''}</section>`;
 }
 
-/** The action this concern asks for, in the served units and direction. */
+/** The action this concern asks for, in the served units and direction. An
+    identified action reads its served title, or its concern's where it serves
+    none (a habit concern), and never its id (ADR 426). */
 function actionLead(candidate) {
   const read = guidance();
   const action = Array.isArray(candidate.action) ? candidate.action : [];
   const change = action.length
     ? `${e(action[0].direction)} to ${e(action[0].recommended)} ${e(candidate.units || '')}`
-    : candidate.action?.action_id ? e(candidate.action.action_id) : 'No action is staged from this read';
+    : candidate.action?.action_id ? e(candidate.action.title ?? candidate.title) : 'No action is staged from this read';
   const span = action.length
     ? `${formatStartMin(Math.min(...action.map((row) => row.start_min)))} to ${formatStartMin(Math.max(...action.map((row) => row.end_min)) % 1440)}`
     : '';
@@ -122,11 +124,13 @@ function actionPane(candidate) {
  * The selected concern's own members, as served: each span's direction, whether
  * the owner staged it, and the reason it is held when it is not.
  * A held or thin member keeps its numbers and cannot move (HV2-19, HV2-31).
+ * A Pattern's members and their actions print their served names; the ids stay
+ * out of the reader's text (ADR 426).
  */
 function membersTable(candidate) {
   const members = candidate.members || [];
   if (!members.length) return '<p class="gf-note">This read serves no member evidence for this concern.</p>';
-  if (candidate.kind === 'pattern') return `<table class="gf-table"><thead><tr><th>Member</th><th>Action</th></tr></thead><tbody>${members.map(member => `<tr><td>${e(member.subject)}</td><td>${e(member.action || 'No action')}</td></tr>`).join('')}</tbody></table>`;
+  if (candidate.kind === 'pattern') return `<table class="gf-table"><thead><tr><th>Member</th><th>Action</th></tr></thead><tbody>${members.map(member => `<tr><td>${e(member.title)}</td><td>${e(member.action_title || 'No action')}</td></tr>`).join('')}</tbody></table>`;
   return `<table class="gf-table gf-windows"><thead><tr><th>Span</th><th>Direction</th><th>Stages</th><th>Reason</th></tr></thead><tbody>${members.map((member) => `<tr><td>${e(formatStartMin(member.span?.start_min ?? 0))}–${e(formatStartMin((member.span?.end_min ?? 0) % 1440))}</td><td>${e(member.direction || member.safety_status || '—')}</td><td>${member.asserts_move ? 'yes' : 'no'}</td><td>${e(member.held_reason || '')}</td></tr>`).join('')}</tbody></table>`;
 }
 

@@ -767,12 +767,38 @@ export const C2_STORIES = {
   S43: async page => { await openBasalLane(page); await C2_STORIES.S33(page); },
   S44: async page => { await C2_STORIES.S35(page); },
   S61: async page => {
+    // Amended under #426 (ADR 426, Q2 sanction): Day names where it was opened
+    // from by the case file's served title, never the routing subject, and each
+    // row of an attributed episode ends with that episode's served Lever name.
     const { id, file } = await selectedMember(page);
     await press(page, '.occ-foot button:last-child'); await page.locator('.gf-stage-day').waitFor();
-    await waitForReplayAssertion(async seen => {
+    const { date } = await waitForReplayAssertion(async seen => {
       const query = new URL(seen(page.url())).searchParams;
       assert.equal(query.get('subject'), file.finding.id); assert.equal(query.get('occurrence'), id);
       check(query.get('moment')); check(/opened from/i.test(seen(await page.locator('.gf-desk').innerText())));
+      return { date: query.get('date') };
+    }, "S61");
+    const model = await read(page, `/api/model-view?date=${encodeURIComponent(date)}`);
+    const episodeAt = new Map((model.episodes || []).flatMap(episode => (episode.anchors || []).map(anchor => [anchor.t, episode])));
+    check((model.episodes || []).some(episode => episode.lever), `S61 premise: the served day ${date} carries no attributed episode`);
+    await waitForReplayAssertion(async seen => {
+      const day = seen(await page.evaluate(() => {
+        const head = [...document.querySelectorAll('.gf-reading .gf-section h3')].find(h => /opened from/i.test(h.textContent));
+        return {
+          openedFrom: head ? (head.parentElement.querySelector('p')?.textContent || '').trim() : null,
+          rows: [...document.querySelectorAll('.gf-reading .gf-log-row[data-day-row]')]
+            .map(row => ({ t: row.dataset.dayRow, text: (row.querySelector('.text')?.textContent || '').trim() })),
+        };
+      }));
+      assert.equal(day.openedFrom, file.finding.title, 'Day names where it was opened from by the case file\'s served title');
+      check(!/\b(finding|pattern|basal):/.test(day.openedFrom), `Day printed a routing id as its origin: ${day.openedFrom}`);
+      check(day.rows.some(row => episodeAt.get(row.t)?.lever), 'S61 premise: the Episode Log renders no row of an attributed episode');
+      for (const row of day.rows) {
+        check(!/\w_\w/.test(row.text), `the ${row.t} Episode Log row prints an underscore token: ${row.text}`);
+        const episode = episodeAt.get(row.t);
+        if (episode?.lever) check(episode.lever_title && row.text.endsWith(episode.lever_title),
+          `the ${row.t} Episode Log row does not end with its episode's served Lever name ${JSON.stringify(episode.lever_title)}: ${row.text}`);
+      }
     }, "S61");
     await page.locator('[data-day="return"]').waitFor();
   },

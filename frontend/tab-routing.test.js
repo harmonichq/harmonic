@@ -34,6 +34,20 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
   assert.deepEqual(parsed.context, context);
 });
 
+test('a contextual entry carries its display title in the address beside its routing subject', () => {
+  // ADR 426: a reload or Back re-parses the address, so the name Day prints
+  // for its origin has to ride it; the subject stays the routing key.
+  const context = {
+    date: '2024-06-26', moment: '2024-06-26 13:55:00', subject: 'finding:over_treated_low',
+    title: 'Over-treated low', occurrence: 'occ-7', from: 'diagnose',
+  };
+  const address = serializeRoute({ destination: 'day', context });
+  const parsed = parseRoute({ pathname: '/day', search: address.slice(address.indexOf('?')) });
+  assert.equal(parsed.context.title, 'Over-treated low');
+  assert.equal(parsed.context.subject, 'finding:over_treated_low');
+  assert.deepEqual(parsed.context, context);
+});
+
 test('the v2 address is written and subscribed through the one routing owner', () => {
   const pushes = [];
   writeRoute({ destination: 'diagnose', context: { occurrence: 'low-7' } }, {

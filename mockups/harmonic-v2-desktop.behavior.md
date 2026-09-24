@@ -5476,7 +5476,16 @@ S187 · With the carb ratio's change staged from Diagnose, the basal slot's stag
             and compares its control's words and sub-line; presses it, reads
             /api/plan and the dock; reopens the carb-ratio row and compares its
             control. The checks are gathered and the story fails once
-  status:   pending coordinator run
+  status:   task 11's commit 6c47967f with this harness (f0e807b1) laid over
+            it fails at its feature assertions at both sizes, first "S187
+            before the press, the basal control must read "Replace staged
+            change"" (it read "Stage change"), then "S187 the carb-ratio
+            control must read "Replace staged change""; branch f0e807b1 passes
+            at 1280x720 and 1440x900, as do S186, S97, S98, S99, S113, S139,
+            S140, S147, S152, S153, S169 and S178. Renders of the basal control
+            before the press and of the dock after the replacement, before on
+            6c47967f and after on f0e807b1, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
 ```
 
 Additional handler inventory for this amendment:

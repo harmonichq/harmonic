@@ -198,7 +198,7 @@ the Plan item `type` it stages as.
 - [x] 15. In `frontend/diagnose.js`, wire `replacing(item)` to answer
   `draftName({ items })` when `replacedDraftItems(item.family)` answers
   `items`, and `null` otherwise.
-- [ ] 16. Add one ledger story (the next unissued S id after task 8's) on
+- [x] 16. Add one ledger story (the next unissued S id after task 8's) on
   `basal-and-carb-ratio-lower`, in a dated `## #459 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
   decision as its sanction, with its replay function, registry entry, case
@@ -213,7 +213,7 @@ the Plan item `type` it stages as.
   that base run, which must fail at the pre-press "Replace staged change"
   assertion, and the branch run at both sizes on its status line. Raise the
   story inventory by this one story in the four places task 9 names.
-- [ ] 17. Capture before/after renders of the basal slot's stage control in the
+- [x] 17. Capture before/after renders of the basal slot's stage control in the
   replace state and of the dock after the replacement, on
   `basal-and-carb-ratio-lower` at 1280x720 and 1440x900 from the no-fetch
   serve, the before from task 11's commit. The coordinator attaches them to the

@@ -331,8 +331,9 @@ def pending_prompts(
     is measured against **wall-clock now** (``wall_now``, defaulting to
     :func:`~ciq_autotune.store.wall_clock_now`), NOT the event-time ``now`` that dates
     the window — because ``answered_at`` is real wall-clock time while ``now`` may lag
-    it by days on a catch-up/demo DB. A dropped answered prompt is filtered *out*, never resurrected as
-    pending (its response still matches it within :data:`ANCHOR_TOLERANCE`).
+    it by days on a catch-up/demo DB. A dropped answered prompt is filtered *out*,
+    never resurrected as pending (its response still matches it within
+    :data:`ANCHOR_TOLERANCE`).
 
     * ``include_answered=False`` (default) — return only the *pending* prompts,
       oldest-first, truncated to ``cap``. The pure inbox contract.

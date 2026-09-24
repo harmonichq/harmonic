@@ -2,7 +2,9 @@
 
 The live ``pull_from_tconnect`` call is untestable without real credentials
 (CLAUDE.md), so these mock it out and cover the loop's own contract instead:
-fetch on startup, record success/failure without ever raising, then wait.
+fetch on startup, record success/failure without ever raising, then wait. The
+one class that runs the real pull checks a refusal that comes before any login,
+and mocks the credential read so no host can reach one.
 """
 
 import asyncio

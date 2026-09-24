@@ -2096,6 +2096,14 @@ test('S169 fails at the outcomes lead, not at a premise, when Changes keeps TIR 
       && !error.message.includes('premise')));
 });
 
+test('S169 fails at the dock count when the values ahead of it print a second count', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('14 of 14 days · Ready to judge — 15 days since 05-15 · 14 required')),
+    error => error.message.includes('S169 the dock must print the served day count')
+      && !error.message.includes('premise')));
+});
+
 test('S169 fails at the dock count, not at a premise, when the dock clamps to "14 of 14"', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await withReplayAssertionTimeout(10, () => assert.rejects(

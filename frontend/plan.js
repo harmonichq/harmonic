@@ -507,7 +507,7 @@ function paramMatches(param, planned, actual) {
  * @param {Array} [detectedSegments]    latest /api/pump-settings active-profile
  *                                       segments [{ start_min, basal_rate, isf,
  *                                       carb_ratio, target_bg }]
- * @returns {{ groups: Array<{ start_min, label, cells: Array<{ param, label,
+ * @returns {{ groups: Array<{ start_min, label, cells: Array<{ param,
  *   planned, actual }> }> }}
  *   `groups` is empty when the two match, and when either side is empty (no
  *   deliverable, or no detected profile yet): nothing to compare draws nothing.

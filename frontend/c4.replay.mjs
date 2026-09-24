@@ -123,11 +123,13 @@ async function trialDayCount447(page) {
 
   await press(page, 'nav.v2-nav [data-destination="diagnose"]');
   const dock = page.locator('.inspector > .watch');
-  // #451: the dock's detail line leads with the Trial's values when it has them.
+  // #451: the dock's detail line leads with the Trial's values when it has them;
+  // those values carry no second day count.
   await waitForReplayAssertion(async seen => {
     const how = seen((await dock.locator('.how').innerText()).trim());
-    assert.ok(how === ready || how.endsWith(` · ${ready}`),
-      `S169 the dock must print the served day count in Changes' words: ${how}`);
+    const values = how === ready ? '' : how.endsWith(` · ${ready}`) ? how.slice(0, -` · ${ready}`.length) : null;
+    assert.ok(values !== null && !/\bdays?\b|required/.test(values),
+      `S169 the dock must print the served day count in Changes' words, once: ${how}`);
   }, 'S169 the dock prints the served count');
   await dock.locator('.go').click();
   await page.locator('.gf-stage-trial').waitFor({ state: 'visible', timeout: 30000 });

@@ -351,6 +351,103 @@ engine words or unrendered ids are deleted, for the same kind of reason:
   fetch are deleted; the workstation's `repaintDay` stays, because the event
   comparison still calls it.
 
+## ADR 451 — Desk copy carries no prose em dash
+
+**Decision.** User copy that reaches the desk joins no clauses with an em dash,
+and sets off no parenthetical with one (DESIGN.md, Voice and user-copy register,
+rule 1). This covers the served sentences the desk prints, the desk's own
+strings and the Guide's articles. Each prose dash becomes a period, a comma, a
+colon, a semicolon or parentheses, or the sentence is reworded. Meaning, every
+served number, every engine code and every payload key are unchanged.
+
+**Why.** The coordinator widened R451 at #451's whole-diff review (2026-09-24).
+#451 fixed the lines it added, and this sweep covers the lines that already
+existed, once, on the integration trunk.
+
+**What moved.** Each line below reaches the desk; a desk module prints it:
+
+- **Occurrence facts** (`occurrenceFacts` in `frontend/diagnose-workstation.js`)
+  print the case file's cause text and every judged classifier's `detail`.
+  Those come from the classifiers (carb undercount, late bolus, meal bolus fell
+  short, missed meal, correction stacking, correction on active insulin, and the
+  suspend verdict that meal over-delivery serves), from the context-gate clause
+  they embed, from the override clause, and from the over-treated-low sentences
+  in `attribute.py`.
+- **The Guide's lever list** (`utilities.js`) prints each lever's `meaning` and
+  `recommendation` from `levers._META` through `/api/catalog`.
+- **The desk's own strings.** These are Diagnose's setting-panel lines (the
+  Estimate gloss, the two interval hedges, the span scope line, the thin-support
+  and carb-ratio footnotes, the midnight-wrap line, the demonstration note), a
+  record's open ending, its current-policy context and its "What a record keeps"
+  aside, the Plan's confirmed, mismatch and pending lines and its re-key message,
+  the persistent advisory line, the dock's staged sentence, and the Glossary's
+  definitions.
+- **The four Guide articles** in `docs/kb/`, served raw by `/api/kb/<slug>`.
+
+**Kept: separators, not prose.** A dash after a short label, followed by a value
+or a verbless fragment, is a label separator. These dashes stay:
+
+- the "—" empty-value glyph;
+- "Ready to judge — …" and "Maturing — …";
+- "Not met — …";
+- the dock's "On the pump — awaiting confirmation" and "Recorded — waiting for a
+  pump read that matches";
+- term 14's held-row prefix "no direction asserted — <served reason>";
+- "INSUFFICIENT SAMPLE — …";
+- the "<weekday> — <summary>" and "<weekday> — no data" aria-labels;
+- "Label — value" tooltips;
+- a case-file group header "<Finding> — <verdict>";
+- the evidence strip's aria-label, "Evidence charts — scrolls vertically";
+- the Glossary's unit labels.
+
+HTML comments inside desk templates never render, and they stay.
+
+**Unchanged: the desk prints none of these.**
+
+- The analysis `notes`, including the basal pooling and one-sided notes. No
+  desk module reads `notes`, `evidence.pooling` or `evidence.onesided`.
+- The analysis and outcome disclaimers. No desk module prints `disclaimer`.
+- The narrated nadir beat (`narrate.py`). It is never an episode's first step,
+  and the first step is the only one the desk prints: the case file's cause text
+  and the exposures `text`.
+- Fetch and store error text. The desk never prints `/api/status`'s
+  `last_error`.
+- CLI, report, backtest and outcomes-trend output.
+- The synthetic browser fixtures' invented sentences
+  (`.claude/qa/gen_synthetic_fixtures.py`). They are test inputs, not app copy.
+
+**The advisory line supersedes a locked verbatim string.** The lock's "Verbatim
+strings" section names the footer's advisory line,
+`Advisory only — review with your clinician before changing pump settings.`
+That line is a whole sentence, the one every surface carries. It now reads:
+`Advisory only. Review with your clinician before changing pump settings.`
+
+This record supersedes that verbatim string, and the lock carries a dated
+amendment line saying so. Behavior-ledger story S4 asserts the line, so it is
+amended in the ledger's #451 amendment section. The desk browser suite's chrome
+assertion moves with it.
+
+**A frozen projection input is re-captured.** The findings-projection
+generator never calls a production builder, so it does not refresh its frozen
+over-treated-low exposure slice
+(`frontend/__fixtures__/findings-projection.json`, `inputs.exposures`).
+`test_cross_family_episode_pair_is_emitted_by_the_real_producer` holds that
+slice equal to the live producer. The three sentences that moved there were
+re-captured, and that test now passes against the producer.
+
+**Guards**, each through the interface that serves the copy:
+
+- the whole `/api/catalog` payload, in `tests/test_guide_catalog.py`;
+- the exposure producer's occurrence sentences and verdict details over the
+  generator's over-treated population, in `tests/test_findings_projection.py`;
+- every Glossary definition, in `frontend/utilities.test.js`;
+- every Guide article, in `frontend/kb.test.js`.
+
+Each guard failed on the base text, for the dash it names.
+
+**Sanction.** Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It is applied under R451 as widened at #451's whole-diff review (2026-09-24).
+
 ## Revise preparation
 
 - **Lifecycle:** `revise`, routed by UI Craft on 2026-09-23 (`shipped`,

@@ -206,7 +206,7 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`.
   The fast gate includes task 2.1's two new tests and task 3.3's five. The
   worker runs no server, browser suite or replay.
-- [ ] 5.2 Coordinator-run, port-bound, one leg at a time. Each replay runs on the
+- [x] 5.2 Coordinator-run, port-bound, one leg at a time. Each replay runs on the
   built app at 1280x720 and then 1440x900:
   `PLAYWRIGHT_MODULE=<module> TARGET=app VIEWPORT=<size> BASE_URL=http://127.0.0.1:8765 ONLY=<stories> CASE_STORE_DIR=<scratch> node frontend/desk-behavior.replay.mjs`.
   - S180 on base `b03431d2`, with the branch harness laid over it, must fail at
@@ -221,8 +221,24 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
   - The complete ledger runs once at integration.
 
   The coordinator records S180's results in its `status` line.
+
+  Coordinator results, reported 2026-09-24. They were copied in by the worker
+  and are also in S180's `status` line.
+  - **Base.** Base `b03431d2` with the branch harness, run as
+    `ONLY=S180,S52,S53,S54b,S57,S92,S94,R17,S105,S110,S112,S142,S143` at both
+    sizes. S180 fails at "S180 reopening the record from the roster must start
+    its later conclusion empty", and the 12 regression stories pass. The
+    reported count is executed 12 · failed 1 · selected 13.
+  - **Branch.** On `560098de`, and again on `cd392553` after the review-round-1
+    fix, the same 13 stories give executed 13 · failed 0 · selected 13 at
+    1280x720 and at 1440x900.
+  - **Desk browser test.** "an expired Trial distinguishes its Later conclusion
+    input from the immutable ending" passes at both sizes (2/2).
+  - **Complete ledger.** It runs once at integration.
 - [ ] 5.3 Coordinator-run revision evidence, into the release's private
   design-evidence record (not part of the public tree). On c4-isf, open the
   expired Trial from the roster, type a later conclusion, press Back to records
   and reopen it. Render the result at 1280x720 and 1440x900 on base and on the
   branch. Base shows the typed words; the branch shows an empty form.
+  Left unticked on the ticket branch. The renders belong to the coordinator's
+  integration render batch, which ticks this task with its evidence.

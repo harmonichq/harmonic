@@ -4180,7 +4180,12 @@ S180 · Reopening an expired Trial from the Changes roster, after its later
             save sends. The carry into a different record is proved at node
             level in frontend/follow-up-lifecycle.test.js, because no committed
             case store serves two expired Trials
-  status:   coordinator's run, pending
+  status:   base b03431d2 (with the branch harness) fails at its feature
+            assertion at both sizes ("S180 reopening the record from the
+            roster must start its later conclusion empty"), with the 12
+            regression stories passing beside it; branch 560098de and review
+            fix head cd392553 pass at 1280x720 and 1440x900 (13 stories:
+            executed 13 · failed 0). Coordinator-run, reported 2026-09-24
 ```
 
 Regression, replayed unchanged by the coordinator: every story that opens a

@@ -5,8 +5,10 @@ the Settings audit evidence pane prints them verbatim, and the CLI and the Markd
 report print them too. So they are bound by `DESIGN.md`'s voice and user-copy
 register just like any string the surface owns.
 
-The carb-ratio analyzer's block and history annotations and its Findings' text reach
-the desk the same way, so they are bound by the same register.
+The carb-ratio analyzer's block and history annotations reach the desk the same way.
+Its Findings do not: their summaries print only in the CLI and the Markdown report.
+Those summaries and their occurrence details are still user copy, so they are bound
+by the same register.
 
 The catalogs below ask the real analyzers for every sentence they can emit, so a
 copy regression in any analyzer fails here rather than hiding behind a literal.

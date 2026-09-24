@@ -827,10 +827,12 @@ export const C4_STORIES = {
     await page.goto(new URL('/?to=changes&subject=plan', page.url()).href);
     await page.locator('.gf-plan').waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
-      const kicker = seen(await page.locator('.gf-stage .gf-kicker').innerText());
+      // The kicker is set in capitals by CSS, so innerText reads "PLAN · DRAFT
+      // SAVED"; the phase word is the served-state text inside its <b>.
+      const phase = seen(await page.locator('.gf-stage .gf-kicker b').textContent());
       const desk = seen(await page.locator('.gf-desk').innerText());
-      assert.match(kicker, /Draft saved/, 'S146 a draft after a confirmed Plan reads Draft saved');
-      assert.ok(!/doesn't match your plan|keying error/.test(desk), 'S146 a next draft is not read as a keying error');
+      assert.equal(phase, 'Draft saved', 'S146 a draft after a confirmed Plan reads Draft saved');
+      assert.ok(!/doesn't match your plan|keying error/i.test(desk), 'S146 a next draft is not read as a keying error');
       assert.equal(seen(await page.locator('[data-set="record"]').filter({ visible: true }).count()), 1,
         'S146 offers Record decision');
       assert.equal(seen(await page.locator('[data-set="save-draft"]').filter({ visible: true }).count()), 1,

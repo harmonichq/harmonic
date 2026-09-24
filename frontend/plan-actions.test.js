@@ -253,13 +253,18 @@ test('a differing draft after a confirmed Plan reads Draft saved and can be reco
     draft: { items: [{ type: 'basal', start_min: 0, value: 0.6 }], updated_at: '2024-06-04 10:15:00', input_revision: 9 },
     pump: { profile: held, fetched_at: '2024-06-04 09:00:00' } });
   assert.equal(plan.phase(), 'Draft saved');
-  assert.match(surface.innerHTML, /Plan · <b>Draft saved<\/b>/);
-  assert.doesNotMatch(surface.innerHTML, /doesn't match your plan|keying error|gf-diff/);
-  assert.match(surface.innerHTML, /data-set="save-draft"/);
-  assert.match(surface.innerHTML, /data-set="record"/);
-  assert.equal(field(surface.innerHTML, 'Decision recorded'), 'Not recorded');
-  assert.match(surface.innerHTML, new RegExp(
-    `Previous Plan: recorded ${stamp('2024-06-02 00:00:00')}, confirmed on the pump ${stamp('2024-06-03 08:05:00')}\\.`));
+  // The shape S146 reads: the kicker's phase word (CSS capitalises the kicker,
+  // so the story reads this <b>'s own text), the head's two writes, the draft's
+  // Decision fields, and the confirmed Plan on a line of its own.
+  assert.equal(/<div class="gf-kicker">Plan · <b>([^<]*)<\/b><\/div>/.exec(surface.innerHTML)?.[1], 'Draft saved');
+  assert.doesNotMatch(surface.innerHTML, /doesn't match your plan|keying error|gf-diff/i);
+  const end = /<div class="gf-end">(.*?)<\/div><\/header>/.exec(surface.innerHTML)[1];
+  assert.deepEqual([...end.matchAll(/data-set="([^"]+)"/g)].map(match => match[1]), ['save-draft', 'record']);
+  const decision = /<h3>Decision<\/h3>([\s\S]*?)<\/section>/.exec(surface.innerHTML)[1];
+  assert.deepEqual([...decision.matchAll(/<dt>([^<]*)<\/dt><dd>([^<]*)<\/dd>/g)].map(match => [match[1], match[2]]),
+    [['Draft saved', stamp('2024-06-04 10:15:00')], ['Decision recorded', 'Not recorded']]);
+  assert.match(decision, new RegExp(
+    `<p class="gf-meta">Previous Plan: recorded ${stamp('2024-06-02 00:00:00')}, confirmed on the pump ${stamp('2024-06-03 08:05:00')}\\.</p>`));
 });
 
 test('with two served records the Decision block names the newest', async () => {

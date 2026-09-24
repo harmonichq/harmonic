@@ -331,3 +331,34 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                          {"status": "inconsistent_counts", "k": 2, "n": 1})
         self.assertIsNone(pattern["rate"])
         self.assertIsNone(pattern["wilson"])
+
+    def test_one_credit_rule_gives_a_shared_meal_to_its_first_rate_lever(self):
+        """ADR 424: each claimed Occurrence is credited to exactly one rate lever, the
+        first in roster order whose claims include it, and the rate counts those
+        credits — so a meal two rate levers claim adds one to the Pattern's count."""
+        from ciq_autotune.analyzers.scenario.outcome_patterns import credited_claims
+
+        exposures = {"exposures": {"meals": {"n": 4, "occurrences": [
+            {"t": "2026-08-01 08:00:00", "cause_lever": "late_bolus",
+             "attributed_levers": ["late_bolus", "carb_undercount"]},
+            {"t": "2026-08-01 12:00:00", "cause_lever": "late_bolus",
+             "attributed_levers": ["late_bolus"]},
+            {"t": "2026-08-01 16:00:00", "cause_lever": None,
+             "attributed_levers": ["meal_bolus_short"]},
+            {"t": "2026-08-01 20:00:00", "cause_lever": None,
+             "attributed_levers": []},
+        ]}}}
+        high = build_outcome_patterns(
+            {}, exposures, {"patterns": [], "low_confidence": []},
+        )[0]
+        rate_levers = [subject.removeprefix("habit:") for subject in high["rate_levers"]]
+
+        credits = credited_claims(exposures, "meals", rate_levers)
+
+        # The rate-lever order decides, not the order a meal lists its claimants in.
+        self.assertEqual(credits, {
+            "2026-08-01 08:00:00": "carb_undercount",
+            "2026-08-01 12:00:00": "late_bolus",
+            "2026-08-01 16:00:00": "meal_bolus_short",
+        })
+        self.assertEqual((high["k"], high["n"]), (len(credits), 4))

@@ -672,6 +672,99 @@ def test_same_population_cohorts_name_the_band_state_they_hold():
                       "outside_comparison": 0}
 
 
+def _meal_row(stamp, cause, claimants, matched):
+    """One synthetic meal Occurrence judged by both meal rate levers."""
+    return {
+        "ep_id": f"ep-{stamp[11:13]}", "t": stamp, "date": stamp[:10], "kind": "meal",
+        "bg": 120, "attributed": cause is not None, "attributed_levers": list(claimants),
+        "cause_lever": cause,
+        "cause_title": cause,
+        "verdicts": [{"classifier": lever, "matched": lever in matched,
+                      "silence_reason": None if lever in matched else "no_trigger"}
+                     for lever in ("carb_undercount", "late_bolus")],
+    }
+
+
+def test_a_meal_two_rate_levers_claim_is_credited_once_to_the_first():
+    """ADR 424: the Pattern's count, its case file's per-meal member and each folded
+    cause's share come from one credit rule over one population, so a meal two rate
+    levers claim is counted once, for the first in rate-lever order."""
+    stamps = [(datetime(2026, 8, 1, 8) + timedelta(hours=4 * index))
+              .strftime("%Y-%m-%d %H:%M:%S") for index in range(3)]
+    exposures = {"window": {}, "exposures": {"meals": {"n": 3, "occurrences": [
+        # Late bolus drove this meal and lists itself first, but Carb undercount comes
+        # first in the Pattern's rate levers, so the meal is credited to it.
+        _meal_row(stamps[0], "late_bolus", ("late_bolus", "carb_undercount"),
+                  {"late_bolus", "carb_undercount"}),
+        _meal_row(stamps[1], "late_bolus", ("late_bolus",), {"late_bolus"}),
+        _meal_row(stamps[2], "carb_undercount", ("carb_undercount",), {"carb_undercount"}),
+    ]}}}
+    scenarios = {"patterns": [
+        {"lever": lever, "priority": price,
+         "confidence": {"k": 2, "n": 3, "lo": .2, "hi": .9},
+         "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
+        for lever, price in (("carb_undercount", 40), ("late_bolus", 30))
+    ], "low_confidence": []}
+    findings = findings_projection.prepare_findings_projection(
+        analysis={"window_days": 30}, exposures=exposures, scenarios=scenarios,
+    ).project(WindowQuery.whole_day())
+    rows = {row["id"]: row for row in findings["rows"]}
+    pattern = rows["pattern:highs_after_meals"]["pattern"]
+
+    case = _prepared(Lever.CARB_UNDERCOUNT, findings=findings, exposures=exposures).case(
+        "pattern:highs_after_meals", "event", None,
+    )
+
+    assert (pattern["k"], pattern["n"]) == (3, 3)
+    assert case["summary"]["claimed"] == pattern["k"]
+    assert [row["member"] for row in case["occurrences"]] == [
+        "habit:carb_undercount", "habit:late_bolus", "habit:carb_undercount",
+    ]
+    shares = {lever: (rows[f"finding:{lever}"].get("fold_sentences") or [{}])[0]
+              for lever in ("carb_undercount", "late_bolus")}
+    assert {lever: (share.get("scope"), share.get("count"), share.get("denominator"))
+            for lever, share in shares.items()} == {
+        "carb_undercount": ("pattern", 2, 3), "late_bolus": ("pattern", 1, 3),
+    }
+    assert sum(share["count"] for share in shares.values()) == pattern["k"]
+    # Each cause keeps its own count; only the Pattern's share is credited once.
+    assert [rows[f"finding:{lever}"]["appearances"][0]["n"]
+            for lever in ("carb_undercount", "late_bolus")] == [1, 2]
+
+
+def test_outranked_meals_stay_outside_the_patterns_claimed_count():
+    """ADR 424: a meal a member habit matched without a rate lever's claim, or whose
+    episode another lever drove, reads outranked and is not attributed to the
+    Pattern, so the header's not-attributed count is right as served."""
+    stamps = [(datetime(2026, 8, 1, 12, 30) + timedelta(hours=3 * index))
+              .strftime("%Y-%m-%d %H:%M:%S") for index in range(3)]
+    occurrences = [
+        # Carb undercount claims this meal.
+        _meal_row(stamps[0], "carb_undercount", ("carb_undercount",), {"carb_undercount"}),
+        # Late bolus matched, but this meal did not drive its episode.
+        _meal_row(stamps[1], None, (), {"late_bolus"}),
+        # Meal over-delivery drove this meal's episode.
+        _meal_row(stamps[2], "meal_over_delivery", ("meal_over_delivery",), set()),
+    ]
+    findings = _pattern_findings(
+        "highs_after_meals", (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS), k=1, n=3,
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS, Lever.MEAL_BOLUS_SHORT),
+    )
+    case = _prepared(
+        Lever.CARB_UNDERCOUNT, findings=findings,
+        exposures={"exposures": {"meals": {"n": 3, "occurrences": occurrences}}},
+    ).case("pattern:highs_after_meals", "event", None)
+    summary, counts = case["summary"], case["verdict_counts"]
+
+    assert [(row["verdict"], row["member"]) for row in case["occurrences"]] == [
+        ("fired", "habit:carb_undercount"), ("outranked", "clean"), ("outranked", "clean"),
+    ]
+    assert summary["claimed"] == counts["fired"] == 1
+    assert summary["denominator"] - summary["claimed"] == (
+        counts["outranked"] + counts["near_miss"] + counts["no_data"] + counts["clean"]
+    ) == 2
+
+
 def test_circular_pattern_projection_and_case_share_explicit_population():
     def meal(ep_id, stamp, outcome_minute, lever=None):
         return {

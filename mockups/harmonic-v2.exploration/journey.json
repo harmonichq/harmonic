@@ -89191,6 +89191,16 @@
                 "verdict": "fired"
               }
             ],
+            "fold_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "scope": "outside",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
             "id": "finding:correction_on_iob",
             "kind": "habit",
@@ -91250,6 +91260,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
               "id": "basal:180-240",
               "kind": "setting",
@@ -91338,6 +91349,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
               "id": "pattern:overnight_lows_no_iob",
               "kind": "pattern",
@@ -91513,6 +91525,7 @@
                   "verdict": "outranked"
                 }
               ],
+              "fold_sentences": null,
               "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
               "id": "finding:over_treated_low",
               "kind": "habit",
@@ -91569,6 +91582,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Highs after meals",
               "id": "pattern:highs_after_meals",
               "kind": "pattern",
@@ -91706,6 +91720,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Lows after correcting highs",
               "id": "pattern:lows_after_correcting_highs",
               "kind": "pattern",
@@ -91899,6 +91914,16 @@
                   "verdict": "fired"
                 }
               ],
+              "fold_sentences": [
+                {
+                  "count": 1,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "followed a correction on active insulin",
+                  "scope": "outside",
+                  "sentence": "1 of 6 lows followed a correction on active insulin"
+                }
+              ],
               "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
               "id": "finding:correction_on_iob",
               "kind": "habit",
@@ -91955,6 +91980,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Lows after meals",
               "id": "pattern:lows_after_meals",
               "kind": "pattern",
@@ -92143,6 +92169,7 @@
             "verdict": "outranked"
           }
         ],
+        "fold_sentences": null,
         "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
         "id": "finding:over_treated_low",
         "kind": "habit",
@@ -94202,6 +94229,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
           "id": "basal:180-240",
           "kind": "setting",
@@ -94290,6 +94318,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
           "id": "pattern:overnight_lows_no_iob",
           "kind": "pattern",
@@ -94465,6 +94494,7 @@
               "verdict": "outranked"
             }
           ],
+          "fold_sentences": null,
           "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
           "id": "finding:over_treated_low",
           "kind": "habit",
@@ -94521,6 +94551,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Highs after meals",
           "id": "pattern:highs_after_meals",
           "kind": "pattern",
@@ -94658,6 +94689,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Lows after correcting highs",
           "id": "pattern:lows_after_correcting_highs",
           "kind": "pattern",
@@ -94851,6 +94883,16 @@
               "verdict": "fired"
             }
           ],
+          "fold_sentences": [
+            {
+              "count": 1,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "followed a correction on active insulin",
+              "scope": "outside",
+              "sentence": "1 of 6 lows followed a correction on active insulin"
+            }
+          ],
           "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
           "id": "finding:correction_on_iob",
           "kind": "habit",
@@ -94907,6 +94949,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Lows after meals",
           "id": "pattern:lows_after_meals",
           "kind": "pattern",
@@ -103383,6 +103426,7 @@
             "verdict": "outranked"
           }
         ],
+        "fold_sentences": null,
         "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
         "id": "finding:over_treated_low",
         "kind": "habit",
@@ -105495,7 +105539,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "cafb2b65991752c38338e62d756f629c3b4d106b7d12b84891e5bb982a93129b",
+              "code_version": "4a0b4b04a66b4e9d89ca41e22a7be23eb503569735fffa9fc9074b9267accda4",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105587,7 +105631,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "2699630e0c1deb186e7da96a718ec717fdba5b7cc514cb316b6037d272c84308",
+              "id": "c3a1cf4ebf1e92a26c73da9964d8cb9109c7702ebd14dd7cd0e979e1ffa22355",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105675,7 +105719,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "cafb2b65991752c38338e62d756f629c3b4d106b7d12b84891e5bb982a93129b",
+                  "code_version": "4a0b4b04a66b4e9d89ca41e22a7be23eb503569735fffa9fc9074b9267accda4",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105767,7 +105811,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "2699630e0c1deb186e7da96a718ec717fdba5b7cc514cb316b6037d272c84308",
+                  "id": "c3a1cf4ebf1e92a26c73da9964d8cb9109c7702ebd14dd7cd0e979e1ffa22355",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -117063,6 +117107,7 @@
             "estimate": null,
             "event_chart": null,
             "evidence": null,
+            "fold_sentences": null,
             "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
             "id": "basal:180-240",
             "kind": "setting",
@@ -117151,6 +117196,7 @@
             "estimate": null,
             "event_chart": null,
             "evidence": null,
+            "fold_sentences": null,
             "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
             "id": "pattern:overnight_lows_no_iob",
             "kind": "pattern",
@@ -117326,6 +117372,7 @@
                 "verdict": "outranked"
               }
             ],
+            "fold_sentences": null,
             "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
             "id": "finding:over_treated_low",
             "kind": "habit",
@@ -117382,6 +117429,7 @@
             "estimate": null,
             "event_chart": null,
             "evidence": null,
+            "fold_sentences": null,
             "headline": "Highs after meals",
             "id": "pattern:highs_after_meals",
             "kind": "pattern",
@@ -117519,6 +117567,7 @@
             "estimate": null,
             "event_chart": null,
             "evidence": null,
+            "fold_sentences": null,
             "headline": "Lows after correcting highs",
             "id": "pattern:lows_after_correcting_highs",
             "kind": "pattern",
@@ -117712,6 +117761,16 @@
                 "verdict": "fired"
               }
             ],
+            "fold_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "scope": "outside",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
             "id": "finding:correction_on_iob",
             "kind": "habit",
@@ -117768,6 +117827,7 @@
             "estimate": null,
             "event_chart": null,
             "evidence": null,
+            "fold_sentences": null,
             "headline": "Lows after meals",
             "id": "pattern:lows_after_meals",
             "kind": "pattern",
@@ -133365,6 +133425,7 @@
             "verdict": "outranked"
           }
         ],
+        "fold_sentences": null,
         "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
         "id": "finding:over_treated_low",
         "kind": "habit",
@@ -135426,6 +135487,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
           "id": "basal:180-240",
           "kind": "setting",
@@ -142213,6 +142275,7 @@
               "verdict": "outranked"
             }
           ],
+          "fold_sentences": null,
           "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
           "id": "finding:over_treated_low",
           "kind": "habit",
@@ -178276,6 +178339,7 @@
         "estimate": null,
         "event_chart": null,
         "evidence": null,
+        "fold_sentences": null,
         "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
         "id": "basal:180-240",
         "kind": "setting",
@@ -178364,6 +178428,7 @@
         "estimate": null,
         "event_chart": null,
         "evidence": null,
+        "fold_sentences": null,
         "headline": "Overnight lows with no insulin on board in 0 of 30 nights",
         "id": "pattern:overnight_lows_no_iob",
         "kind": "pattern",
@@ -178539,6 +178604,7 @@
             "verdict": "outranked"
           }
         ],
+        "fold_sentences": null,
         "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
         "id": "finding:over_treated_low",
         "kind": "habit",
@@ -178595,6 +178661,7 @@
         "estimate": null,
         "event_chart": null,
         "evidence": null,
+        "fold_sentences": null,
         "headline": "Highs after meals",
         "id": "pattern:highs_after_meals",
         "kind": "pattern",
@@ -178732,6 +178799,7 @@
         "estimate": null,
         "event_chart": null,
         "evidence": null,
+        "fold_sentences": null,
         "headline": "Lows after correcting highs",
         "id": "pattern:lows_after_correcting_highs",
         "kind": "pattern",
@@ -178925,6 +178993,16 @@
             "verdict": "fired"
           }
         ],
+        "fold_sentences": [
+          {
+            "count": 1,
+            "denominator": 6,
+            "noun": "lows",
+            "outcome": "followed a correction on active insulin",
+            "scope": "outside",
+            "sentence": "1 of 6 lows followed a correction on active insulin"
+          }
+        ],
         "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
         "id": "finding:correction_on_iob",
         "kind": "habit",
@@ -178981,6 +179059,7 @@
         "estimate": null,
         "event_chart": null,
         "evidence": null,
+        "fold_sentences": null,
         "headline": "Lows after meals",
         "id": "pattern:lows_after_meals",
         "kind": "pattern",
@@ -202869,6 +202948,16 @@
                 "verdict": "fired"
               }
             ],
+            "fold_sentences": [
+              {
+                "count": 1,
+                "denominator": 6,
+                "noun": "lows",
+                "outcome": "followed a correction on active insulin",
+                "scope": "outside",
+                "sentence": "1 of 6 lows followed a correction on active insulin"
+              }
+            ],
             "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
             "id": "finding:correction_on_iob",
             "kind": "habit",
@@ -205000,6 +205089,7 @@
                   "verdict": "outranked"
                 }
               ],
+              "fold_sentences": null,
               "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
               "id": "finding:over_treated_low",
               "kind": "habit",
@@ -205056,6 +205146,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Highs after meals",
               "id": "pattern:highs_after_meals",
               "kind": "pattern",
@@ -205193,6 +205284,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Lows after correcting highs",
               "id": "pattern:lows_after_correcting_highs",
               "kind": "pattern",
@@ -205386,6 +205478,16 @@
                   "verdict": "fired"
                 }
               ],
+              "fold_sentences": [
+                {
+                  "count": 1,
+                  "denominator": 6,
+                  "noun": "lows",
+                  "outcome": "followed a correction on active insulin",
+                  "scope": "outside",
+                  "sentence": "1 of 6 lows followed a correction on active insulin"
+                }
+              ],
               "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
               "id": "finding:correction_on_iob",
               "kind": "habit",
@@ -205442,6 +205544,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Lows after meals",
               "id": "pattern:lows_after_meals",
               "kind": "pattern",
@@ -205555,6 +205658,7 @@
               "estimate": null,
               "event_chart": null,
               "evidence": null,
+              "fold_sentences": null,
               "headline": "Overnight lows with no insulin on board",
               "id": "pattern:overnight_lows_no_iob",
               "kind": "pattern",
@@ -205733,6 +205837,7 @@
             "verdict": "outranked"
           }
         ],
+        "fold_sentences": null,
         "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
         "id": "finding:over_treated_low",
         "kind": "habit",
@@ -207865,6 +207970,7 @@
               "verdict": "outranked"
             }
           ],
+          "fold_sentences": null,
           "headline": "Ranks among this window's findings. Showed up in 2 of 6 lows in this window.",
           "id": "finding:over_treated_low",
           "kind": "habit",
@@ -207921,6 +208027,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Highs after meals",
           "id": "pattern:highs_after_meals",
           "kind": "pattern",
@@ -208058,6 +208165,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Lows after correcting highs",
           "id": "pattern:lows_after_correcting_highs",
           "kind": "pattern",
@@ -208251,6 +208359,16 @@
               "verdict": "fired"
             }
           ],
+          "fold_sentences": [
+            {
+              "count": 1,
+              "denominator": 6,
+              "noun": "lows",
+              "outcome": "followed a correction on active insulin",
+              "scope": "outside",
+              "sentence": "1 of 6 lows followed a correction on active insulin"
+            }
+          ],
           "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
           "id": "finding:correction_on_iob",
           "kind": "habit",
@@ -208307,6 +208425,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Lows after meals",
           "id": "pattern:lows_after_meals",
           "kind": "pattern",
@@ -208420,6 +208539,7 @@
           "estimate": null,
           "event_chart": null,
           "evidence": null,
+          "fold_sentences": null,
           "headline": "Overnight lows with no insulin on board",
           "id": "pattern:overnight_lows_no_iob",
           "kind": "pattern",
@@ -295594,6 +295714,7 @@
       "estimate": null,
       "event_chart": null,
       "evidence": null,
+      "fold_sentences": null,
       "headline": "One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.",
       "id": "basal:180-240",
       "kind": "setting",

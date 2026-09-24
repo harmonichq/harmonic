@@ -13,7 +13,7 @@ from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.scenario.anchors import Anchor, AnchorKind
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
-from .analyzers.scenario.outcome_patterns import _lever_identities, outcome_window_population
+from .analyzers.scenario.outcome_patterns import credited_claims, outcome_window_population
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.model_view import _build_episode_view
@@ -356,12 +356,9 @@ class PreparedCases:
             for subject in pattern["rate_levers"]
             if exposure(Lever(subject.removeprefix("habit:"))) is family
         )
-        claims_by_identity = {}
-        for lever in rate_levers:
-            for identity in _lever_identities(
-                self.pattern_exposures or self.exposures or {}, family.value, lever,
-            ):
-                claims_by_identity.setdefault(identity, lever)
+        claims_by_identity = credited_claims(
+            self.pattern_exposures or self.exposures or {}, family.value, rate_levers,
+        )
         claimed_identities = set(claims_by_identity)
         claimed_by_id = {}
         member_associations = {}

@@ -4154,10 +4154,11 @@ S182 · Selecting a claimed Occurrence in the Highs after meals Pattern case fil
             premise failure; a line other than the cause line that contains the
             served sentence, or a claimant line that reads more than its title
             and band label, is the feature failure
-  status:   owed, coordinator-run at both sizes: base b03431d2 with this harness
-            laid over it fails at its feature assertion ("a claimed Occurrence
-            prints its sentence once": the claimant's habit line repeats the
-            sentence), not at setup; the branch passes
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes ("S182 the cause's sentence must print once;
+            it repeats on: Carb undercount · Meets criteria · …"), not at setup;
+            branch b847be7e passes at both sizes (ONLY=S25,S149,S150,S182:
+            executed 4 · failed 0). Coordinator-run 2026-09-24
 ```
 
 Additional handler inventory for this amendment:

@@ -365,7 +365,12 @@ Moved artifacts: `explore-exposures.capture.json`, `payload.json` and
 sentence as cause text, served once), before sub-order 3's two added keys;
 `capture.json`'s `pattern_populations` rows and `views` lows factors, before
 `pattern_families` is replaced; the exploration's `focus.json`, `journey.json` and
-`workstation.json`, by claimant sentences that became null.
+`workstation.json`, by claimant sentences that became null. Measured on sub-order
+1's commit: 23 claimant sentences became null (5 in `focus.json`, 10 in
+`journey.json`, 8 in `workstation.json`), and 8 hash values also moved: each
+comparison context's `code_version` and the `id` derived from it, twice in each of
+`focus.json` and `journey.json`. `follow_up_comparison` hashes every
+`ciq_autotune` source file, so any Python edit moves them.
 
 In a scratch tree, 1008 of 1014 node fast-gate tests passed with all three widened
 changes applied. The six failures are exactly the tests task 2.5 and task 1.5 amend:

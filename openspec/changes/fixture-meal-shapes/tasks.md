@@ -2,31 +2,31 @@
 
 ## 1. A claimed Occurrence's sentence is served once (sub-order 1)
 
-- [ ] 1.1 Implement behavioral-layer (MODIFIED) **A selected case-file Occurrence
+- [x] 1.1 Implement behavioral-layer (MODIFIED) **A selected case-file Occurrence
   serves why it was judged** in `ciq_autotune/finding_case_file.py`: one rule that
   `_habit_reason` and `_pattern_reason` both pass their reason through, so on a
   claimed row the claimant's entry serves a null sentence when its sentence equals
   the cause's text. No other entry, cause, verdict, count or claim changes.
-- [ ] 1.2 In `tests/test_finding_case_file.py`, amend
+- [x] 1.2 In `tests/test_finding_case_file.py`, amend
   `test_every_selected_reason_agrees_with_its_row`'s expected sentence to the rule,
   and assert over every selected Occurrence of the `meal_facts` and
   `correction_stacking` analyzer stores, and of a `pattern-near-tie` store
   materialized from `scripts/qa_e2e_cases.py` (single-habit and Highs after meals
   case files), that no habit entry's sentence equals the cause's text while each
   cause keeps its text. Show it failing on the base for its feature reason.
-- [ ] 1.3 Apply the same rule in the fixture-only mirror
+- [x] 1.3 Apply the same rule in the fixture-only mirror
   (`mockups/diagnose-event-comparison.synthetic/project.mjs` `patternReason`), and
   test it through `projectPatternCaseFile` in
   `frontend/diagnose-event-comparison.test.js` on a cloned capture whose claimed
   row's claimant sentence equals the row's text; show it failing on the base
   mirror.
-- [ ] 1.4 Regenerate `mockups/harmonic-v2.exploration` (`generate.py`); confirm
+- [x] 1.4 Regenerate `mockups/harmonic-v2.exploration` (`generate.py`); confirm
   that only `focus.json`, `journey.json` and `workstation.json` move, and only by
   claimant sentences that became null.
-- [ ] 1.5 In `frontend/c4.replay.test.js`, compose `block432`'s habit line as the
+- [x] 1.5 In `frontend/c4.replay.test.js`, compose `block432`'s habit line as the
   renderer does (a null sentence is omitted), so the S149/S150 helper tests read a
   served null sentence the way the desk prints it.
-- [ ] 1.6 Add ledger story S182 for surfaces (MODIFIED) **A selected Occurrence
+- [x] 1.6 Add ledger story S182 for surfaces (MODIFIED) **A selected Occurrence
   reads as its facts and served reason**, scenario "A claimed Occurrence prints its
   sentence once": a dated `## #454 amendment — 2026-09-23` section in
   `mockups/harmonic-v2-desktop.behavior.md` with the sanction line; `C4_STORIES.S182`
@@ -42,6 +42,13 @@
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` and `acceptance.test.py`; run
   `acceptance.py inventory` and the port-free classes. `SMOKE_STORIES` does not
   change: the smoke slice already covers pattern-near-tie.
+
+Evidence (sub-order 1, commit 57231076): the tasks 1.2, 1.3 and 1.6 tests failed on
+the base for their feature reason; every Done-when line passed. Coordinator legs on
+b847be7e, each on a fresh case store at 1280x720 and 1440x900: the branch's
+`ONLY=S25,S149,S150,S182` executed 4 · failed 0; with the branch harness over base
+b03431d2, S182 fails at "S182 the cause's sentence must print once; it repeats on:
+Carb undercount · Meets criteria · …", not at setup.
 
 ## 2. Manufactured rows take their producer's shapes (sub-order 2)
 

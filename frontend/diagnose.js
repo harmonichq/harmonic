@@ -96,7 +96,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let parkedUnmatched = false;
   let returning = null;
   // The promise the workstation's last stage press returned, while its save is
-  // pending (ADR 460 point 7): a retained return's Plan re-read waits it out.
+  // pending (ADR 460 point 7): a retained return skips its Plan re-read while
+  // it is set.
   let staging = null;
 
   // Context names a served identity or an explicit slot; the window is the

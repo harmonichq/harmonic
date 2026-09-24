@@ -82,8 +82,9 @@ coordinator ruling R442.
     context.
 
   No hand-set endings or `asserts_move` flags. `premises.py`'s
-  `multi_slot_store`, `pump_read_pair_store` and `dose_pair_store` build the
-  stores for (k), (b) and (l). Assert on the records reconcile saved:
+  `multi_slot_store`, `pump_read_pair_store`, `dose_pair_store` and
+  `late_settling_bridge` build the stores for (k), (b), (l) and (m). Assert on
+  the records reconcile saved:
   - (a) the issue's failing-first case: four correction-factor changes, each
     more than 28 days after the previous, reconciled once. Every record ends
     `expired_unreviewed` at its change plus 28 days, and none is left without an
@@ -130,10 +131,20 @@ coordinator ruling R442.
     recorded by one reconcile after both windows passed. The older record ends
     `superseded` at the later change's time. Its saved `periods.after` ends at
     that time with `boundary_reasons.end == "data_tail"`, pinned so this
-    consequence cannot drift silently.
+    consequence cannot drift silently;
+  - (m) the late-settling bridge, pinned as accepted behavior. A
+    correction-factor profile switch lands 05-11 20:00. A carb-ratio edit is
+    known only from doses stamped from 05-12. A target profile switch lands
+    05-13 06:00. Reconciles run at 05-13 07:00 and 05-13 19:00:
+    - after the first, the correction-factor record ends `superseded` at 05-13
+      06:00;
+    - after the second, the carb-ratio record exists, and the roster's served
+      `edits` show one Edit holding all three records;
+    - the correction-factor ending is byte-identical to the one the first
+      reconcile saved.
 
-  Show (a), (b), (c), (g), (h), (k) and (l) failing on base b03431d2 before they
-  pass.
+  Show (a), (b), (c), (g), (h), (k), (l) and (m) failing on base b03431d2
+  before they pass.
   In `tests/test_follow_up_comparison.py`, add one test that the exported
   envelope with a reason equals `compare_follow_up`'s early unavailable return
   for that reason on the same context. Keep every existing test passing
@@ -244,6 +255,7 @@ the whole replay at module link.
   Leave these to the coordinator:
   - the ledger header's inventory line;
   - `ACCEPTANCE.md`'s count sentence;
+  - `AGENTS.md`'s registry count sentence;
   - `mockups/INDEX.md`;
   - the release freeze block.
 
@@ -275,8 +287,8 @@ the whole replay at module link.
     report a saved cutoff of 2024-06-29 00:00:00. `pump-read-pair`'s older
     record reports a saved After end of `next_relevant_setting_change`.
     `dose-pair`'s older record, `c4-ic`'s 06-01 record and the frontiers of
-    `pump-read-pair` and `dose-pair` report `data_tail`. The "label" lines are unchanged from the
-    pinned output.
+    `pump-read-pair` and `dose-pair` report `data_tail`. The "label" and
+    `late-settling-bridge` lines are unchanged from the pinned output.
 - [ ] 5.3 The coordinator owns every port-bound leg and ticks this task with its
   evidence; the implementer runs none.
   1. On base b03431d2, served from a second worktree with this branch's replay

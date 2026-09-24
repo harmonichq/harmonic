@@ -16,8 +16,9 @@ record the first of these that applies:
   reconcile's data instant has reached it.
 
 An Edit is the existing grouping of retained records that landed within a day
-of each other; the rule SHALL read it from that one grouping and SHALL NOT add
-another. A record meeting none of these SHALL stay open. The rule SHALL NOT replace a
+of each other, as read over the retained records of the reconcile that records
+the ending. The rule SHALL read it from that one grouping and SHALL NOT add
+another. A later regrouping SHALL NOT change a saved ending. A record meeting none of these SHALL stay open. The rule SHALL NOT replace a
 saved ending, reopen an ended record, promote a record to the watch, move the
 admission frontier, change a Focus preemption, or change a recorded Plan's
 receipt or verdict. It SHALL NOT add an ending kind or an open state. An ending's
@@ -58,6 +59,17 @@ recorded time SHALL be the reconcile's time.
 - **THEN** the 01:00 and 03:00 records both end `superseded`, effective at the
   05:00 change's detected time
 - **AND** neither ends at the other's detected time
+
+#### Scenario: A change that settles later does not reopen an ending
+
+- **GIVEN** a correction-factor profile switch on 05-11 at 20:00, a carb-ratio
+  edit known only from doses stamped from 05-12, and a target profile switch on
+  05-13 at 06:00
+- **WHEN** reconciles run at 05-13 07:00 and 05-13 19:00
+- **THEN** the first ends the correction-factor record `superseded`, effective
+  05-13 06:00, when the two switches sit in separate Edits
+- **AND** after the second, the carb-ratio change has settled and the three
+  records read as one Edit, and the correction-factor ending is unchanged
 
 #### Scenario: A reversal comes before supersession
 

@@ -54,6 +54,11 @@ coordinator, never to the operator.
   recorded as a consequence and in the risk contract, applies to live frontier
   endings too, and is pinned by a test. `premises.py`'s label lines run the real
   `_setting_period`, unpatched and patched. → ADR (ADR 442)
+- **The Edit exclusion reads the Edit of the recording reconcile; the
+  late-settling bridge is accepted.** Coordinator ruling after the second cold
+  panel, option (a). A dose-stamped change that settles after an ending can chain
+  the record and its superseder into one Edit; the ending stands. Pinned by
+  task 1.4 case (m). → ADR (ADR 442)
 - **The unavailable assessment reuses the engine's exported envelope.**
   Coordinator ruling after round 1: the second and last touch in
   `follow_up_comparison.py`. → ADR (ADR 442)
@@ -84,7 +89,7 @@ coordinator, never to the operator.
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
   (silent incorrect success); a record superseded by a change inside its own
-  ADR 414 Edit; any change to a Plan receipt, the admission frontier, a Focus
+  ADR 414 Edit, as read by the reconcile that records the ending; any change to a Plan receipt, the admission frontier, a Focus
   preemption, a staging predicate, cap or floor; any change to a comparison's
   periods or values; real data in any fixture, test or log; a retained Trial
   record other than one inside its watch window left open after a reconcile,
@@ -99,6 +104,12 @@ coordinator, never to the operator.
   of its own setting saves "Data read through <the change>" (`data_tail`),
   because the successor's regime is not settled at the cut. Its ending still
   reads "Superseded by a later change", and live frontier endings do the same.
+  A dose-stamped change that settles after an ending was saved can chain the
+  record and its superseder into one Edit (the late-settling bridge). The
+  ending stands: it was recorded against a separately detected change and was
+  correct when written, ADR 414's Edit is a display grouping, and holding every
+  supersession back for the settle window would add machinery and delay every
+  live ending.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
 - **Evidence owed:** reconcile-path backend tests. They cover the issue's
@@ -106,7 +117,8 @@ coordinator, never to the operator.
   saved end reason `next_relevant_setting_change`, same-setting supersession by
   a dose-detected change with its saved end reason pinned as `data_tail`,
   cross-setting supersession, a detected
-  multi-slot Edit whose siblings never supersede each other, reversal
+  multi-slot Edit whose siblings never supersede each other, the late-settling
+  bridge pinned as accepted (ending unchanged, one later Edit), reversal
   precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
   `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
   envelope byte-identical to `compare_follow_up`'s early return; the superseded
@@ -134,3 +146,4 @@ handed to the coordinator.
 |---|---|---|---|---|
 | 1 | 3 | 3 | 0 | Multi-slot Edit self-supersession; same-setting ending loses its period-end reason; edit-chain's moved record missing from the premises expectation. Notes: name the unavailable-envelope route; point the words evidence at #449/#450. |
 | 2 | 1 | 0 | 1 | Round 1's label fix claimed next_relevant_setting_change for dose-detected successors (c4-ic, the dose-only pair), which are not settled at the cut; the label table printed hand-typed strings. |
+| 3 (cold panel 2) | 1 | 0 | 1 | Round 1's Edit exclusion was unscoped against a later regrouping (the late-settling bridge). Note: Decision 1's same-ending claim ignored Edit siblings. |

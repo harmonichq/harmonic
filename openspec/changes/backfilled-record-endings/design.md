@@ -73,24 +73,42 @@ triage questions settle the rest:
 
    The frontier record is evaluated by the same rule. With one new detected
    change per reconcile, as in live use, the rule records the same ending kind
-   and effective time the frontier branch records today; only the saved
-   assessment's cutoff moves (Decision 3). When several later changes arrive in one
+   and effective time the frontier branch records today, except when that change
+   is in the frontier's own Edit. Then the frontier is not superseded (see the
+   Edit rule below and Consequences). In both cases the saved assessment's
+   cutoff moves (Decision 3). When several later changes arrive in one
    reconcile, the frontier now ends at the first of them, not the newest. The
    frontier's advance, the admission verdict and Focus preemption are
    unchanged. A record that ends is never promoted to the watch. The superseding
    change is read from this reconcile's detected changes, as the frontier's is,
    never from other retained records.
 
-   **A change in the record's own Edit never supersedes it.** An Edit is ADR
-   414's run of retained records within a day of each other. The pass reads it
-   through the existing `_group_edits`, the one grouping the roster already
-   serves, and adds no second grouping rule. A multi-slot basal edit is
+   **A change in the record's own Edit, as the recording reconcile reads it,
+   never supersedes it.** An Edit is ADR 414's run of retained records within a
+   day of each other. The pass reads it through the existing `_group_edits`,
+   over the retained records of the reconcile that records the ending. That is
+   the one grouping the roster already serves; no second grouping rule is
+   added. A multi-slot basal edit is
    detected as one record per 30-minute slot, each at that slot's first
    observation on the day, so siblings land minutes or hours apart. Without the
    exclusion the first slot's record would be superseded by its own sibling
    (premises: `multi-slot-edit`). With it, an Edit's records end by the rule
    applied to the first detected change after that Edit, or expire at their own
    windows.
+
+   A later reconcile can regroup. A change known only from dose-stamped boluses
+   settles `_MIN_EPOCH_DAYS` observed days after it lands. It can then land
+   between a record and the change that already superseded it, and chain the
+   two into one Edit (premises: `late-settling-bridge`). The saved ending
+   stands, because:
+   - it was recorded against a separately detected change and was correct when
+     written, and endings are first-wins;
+   - ADR 414's Edit is a display grouping, not a lifecycle fact;
+   - holding every supersession back for the settle window would add machinery
+     and delay every live ending.
+
+   This is an accepted failure in the risk contract, and task 1.4 case (m) pins
+   it.
 2. **First-wins and immutable.** A record whose ending has a kind is skipped.
    `capture_ending` already returns such a record unchanged, and Store refuses to
    replace a saved ending. No new ending kind, open state or "recorded
@@ -211,6 +229,9 @@ worded reason.
   backfilled endings save an unavailable assessment (`context_after_ending`).
   The record still opens on its saved ending, and the labelled Retained context
   and Current policy reassessments stay available.
+- A record can read as superseded by a change the roster later shows in its
+  own Edit. This is the late-settling bridge above: the ending stays as
+  recorded.
 - A multi-slot Edit's sibling records stay open, not watched, alongside the
   watched record until the first detected change after the Edit or their own
   windows. The live watch is no longer superseded by a slot of its own Edit that
@@ -242,7 +263,7 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
   (silent incorrect success); a record superseded by a change inside its own
-  ADR 414 Edit; any change to a Plan receipt, the admission frontier, a Focus
+  ADR 414 Edit, as read by the reconcile that records the ending; any change to a Plan receipt, the admission frontier, a Focus
   preemption, a staging predicate, cap or floor; any change to a comparison's
   periods or values; real data in any fixture, test or log; a retained Trial
   record other than one inside its watch window left open after a reconcile,
@@ -257,6 +278,12 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
   of its own setting saves "Data read through <the change>" (`data_tail`),
   because the successor's regime is not settled at the cut. Its ending still
   reads "Superseded by a later change", and live frontier endings do the same.
+  A dose-stamped change that settles after an ending was saved can chain the
+  record and its superseder into one Edit (the late-settling bridge). The
+  ending stands: it was recorded against a separately detected change and was
+  correct when written, ADR 414's Edit is a display grouping, and holding every
+  supersession back for the settle window would add machinery and delay every
+  live ending.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
 - **Evidence owed:** reconcile-path backend tests. They cover the issue's
@@ -264,7 +291,8 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
   saved end reason `next_relevant_setting_change`, same-setting supersession by
   a dose-detected change with its saved end reason pinned as `data_tail`,
   cross-setting supersession, a detected
-  multi-slot Edit whose siblings never supersede each other, reversal
+  multi-slot Edit whose siblings never supersede each other, the late-settling
+  bridge pinned as accepted (ending unchanged, one later Edit), reversal
   precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
   `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
   envelope byte-identical to `compare_follow_up`'s early return; the superseded
@@ -322,6 +350,13 @@ issue-store+later-read: data tail 2026-10-18 00:00:00, 4 retained, frontier isf-
   2026-06-20 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-07-18 08:00:00; context context_after_ending
   2026-07-30 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-08-27 08:00:00; context context_after_ending
   2026-09-08 08:00:00 frontier ended expired_unreviewed at 2026-10-06 08:00:00; saved cutoff 2026-10-18 00:00:00 (ADR 442 cutoff 2026-10-06 08:00:00); saved After end data_tail; context context_after_ending
+late-settling-bridge after the reconcile at 2026-05-13 07:00:00: 2 Edit(s) [1, 1]
+  2026-05-11 20:00:00 isf: superseded at 2026-05-13 06:00:00
+  2026-05-13 06:00:00 target_bg: open
+late-settling-bridge after the reconcile at 2026-05-13 19:00:00: 1 Edit(s) [3]
+  2026-05-11 20:00:00 isf: superseded at 2026-05-13 06:00:00
+  2026-05-12 08:00:00 carb_ratio: open
+  2026-05-13 06:00:00 target_bg: open
 live-cross-setting: data tail 2026-05-26 00:00:00, 2 retained, frontier carb_ratio-all-20260521080000, 2 detected
   2026-05-11 08:00:00 history ended superseded at 2026-05-21 08:00:00; saved cutoff 2026-05-26 00:00:00 (ADR 442 cutoff 2026-05-21 08:00:00); saved After end None; context unavailable (missing_programmed_isf)
   2026-05-21 08:00:00 frontier OPEN today -> ADR 442: stays open
@@ -356,7 +391,10 @@ edit-chain with its four records 14 days later: 05-15 window ends 06-12, 05-22 w
 by today's code across two reconciles. Every other "ended" line was recorded by
 today's code. Every "ADR 442:" line is `premises.py`'s read-only `rule()`,
 the spike of Decisions 1 and 3. A "without the Edit exclusion" suffix is what
-the round-1 rule would have recorded. Each "label" line runs
+the round-1 rule would have recorded. `late-settling-bridge` records ADR 442's
+endings on its in-memory store through `capture_ending` (`apply_rule()`) after
+each of its two reconciles. It then prints the Edits the roster would serve.
+Each "label" line runs
 `follow_up_comparison._setting_period` on that store at the record's ADR 442
 cut, twice: once with the label line as at base, and once as patched. The
 "saved assessment" previews run the pinned, unpatched engine.

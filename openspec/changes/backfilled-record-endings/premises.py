@@ -17,8 +17,10 @@ label line as it stands at base and as patched, on real stores, at each
 record's ADR 442 cut. It also
 reports whether the record's retained comparison context came from a pump read
 at or before that ending instant ("bounded") or after it
-(``context_after_ending``). Nothing here writes to a committed store. Synthetic
-stores only; the output is dates and codes, no record-level values.
+(``context_after_ending``). ``apply_rule()`` records those endings through
+``capture_ending`` on the in-memory ``late_settling_bridge`` store only. Nothing
+here writes to a committed store. Synthetic stores only; the output is dates and
+codes, no record-level values.
 """
 import inspect
 import tempfile
@@ -222,6 +224,74 @@ def pump_read_pair_store():
     return store, day(60)
 
 
+def profile3(idp, isf, carb_ratio, target):
+    segment = ProfileSegment(start_min=0, basal_rate=0.6, isf=isf, carb_ratio=carb_ratio,
+                             target_bg=target)
+    return ProfileSettings(idp=idp, name=str(idp), dia_min=300, carb_entry=True, max_bolus=15.0,
+                           segments=(segment,))
+
+
+def apply_rule(store, now):
+    """Record ADR 442's endings on this in-memory store, as the implementation
+    will, through capture_ending: oldest first, data cut at each ending."""
+    trials = wc._reviewable_trials(store, now, horizon_start=datetime.min)
+    starts = sorted((datetime.fromisoformat(t.view.changed_at), wc._review_id(t.view, t.block))
+                    for t in trials)
+    records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+    edit_of, _ = wc._group_edits(records)
+    with store.follow_up_transaction():
+        for record in records:
+            if "kind" in record["ending"]:
+                continue
+            kind, at = rule(store, record, now, starts, edit_of)
+            if kind:
+                wc.capture_ending(store, store.follow_up_record("trial", record["id"]), kind=kind,
+                                  effective_at=at, recorded_at=now, data_cutoff=at)
+
+
+def late_settling_bridge():
+    """Cold pass 2's reproduction: an ISF switch 05-11 20:00, a carb-ratio edit
+    known only from doses stamped from 05-12, a target switch 05-13 06:00;
+    reconciles at 05-13 07:00 and 19:00. The first reconcile ends the ISF
+    record against the target switch in another Edit; the carb-ratio change
+    settles only by the second and then chains all three into one Edit."""
+    at = lambda day, hour: datetime(2026, 5, day, hour)
+    store = Store.open(":memory:")
+    reads = ((at(1, 6), 1, (profile3(1, 40, 7.0, 110),)),
+             (at(11, 20), 2, (profile3(1, 40, 7.0, 110), profile3(2, 36, 7.0, 110))),
+             (at(13, 6), 3, (profile3(1, 40, 7.0, 110), profile3(2, 36, 8.0, 110),
+                             profile3(3, 36, 8.0, 120))))
+    for captured, active, profiles in reads:
+        store.upsert_settings_snapshot(captured.strftime(FMT),
+                                       PumpSettings(active_idp=active, profiles=profiles))
+
+    def doses(last_day):
+        rows = []
+        for n in range(1, last_day + 1):
+            t = at(n, 8).strftime(FMT)
+            isf, ic, target = (40, 7.0, 110) if n <= 11 else (36, 8.0, 110 if n < 13 else 120)
+            rows.append({"seq_num": n, "request_time": t, "completion_time": t,
+                         "description": "Bolus", "completion": "Completed", "insulin": 5.0,
+                         "isf": isf, "carb_ratio": ic, "target_bg": target, "carbs": 40})
+        return rows
+
+    for last_day, now in ((12, at(13, 7)), (13, at(13, 19))):
+        store.upsert_bolus(doses(last_day))
+        with store.follow_up_transaction():
+            wc.reconcile_follow_up(store, now=now, recorded_at=now)
+        apply_rule(store, now)
+        records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+        _, edits = wc._group_edits(records)
+        print(f"late-settling-bridge after the reconcile at {now.strftime(FMT)}: "
+              f"{len(edits)} Edit(s) {[e['count'] for e in edits]}")
+        for record in records:
+            ending = record["ending"]
+            state = (f"{ending['kind']} at {ending['effective_at']}" if "kind" in ending
+                     else "open")
+            print(f"  {record['changed_at']} {record['parameter']}: {state}")
+    store.close()
+
+
 BASE_LABEL = '"next_relevant_setting_change" if following < cutoff else "data_tail")'
 PATCHED_LABEL = '"next_relevant_setting_change" if index + 1 < len(runs) else "data_tail")'
 
@@ -281,6 +351,7 @@ def main():
         store, now = issue_store(with_read)
         report(label, store, now)
         store.close()
+    late_settling_bridge()
     store, now = cross_setting_store()
     report("live-cross-setting", store, now)
     store.close()

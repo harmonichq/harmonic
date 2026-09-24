@@ -4185,10 +4185,12 @@ S173 · The active Focus names the behavior it watches by its served name — in
   evidence: C4_STORIES.S173; reads the admitted Focus's served lever_title and
             the retained comparison's verdicts, then the behavior row, the
             intent section and every opportunity line
-  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base
-            b03431d2 with this harness laid over it fails at its feature
-            assertion ("S173 the Observed behavior row must name the served
-            behavior"; the base serves no lever_title); the branch passes
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (it saw the behavior row "Late bolus\nthe
+            intended behavior · meals" with no served lever_title); branch
+            b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs are kept in a private design-evidence record,
+            not part of the public tree
 ```
 
 ```
@@ -4207,10 +4209,10 @@ S174 · A Focus ended by hand whose saved ending is served unavailable names tha
   evidence: C4_STORIES.S174; reads the saved assessment's reason and every code
             its adherence and readiness serve, opens the record by address and
             reads the ending line and every harm, criterion and opportunity line
-  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
-            this harness fails at its feature assertion ("S174 the saved ending
-            must name its reason in words, never its served code"; the base
-            prints Unavailable · unavailable_adherence); the branch passes
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (it saw "Unavailable · unavailable_adherence"); branch
+            b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs as S173's
 ```
 
 ```
@@ -4227,10 +4229,10 @@ S175 · A preempted Focus record whose saved behavior arm could not be measured
   evidence: C4_STORIES.S175; reads the saved adherence and readiness arms, opens
             the record by address and reads the unmeasured cell and the
             collecting arm's criterion line
-  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
-            this harness fails at its feature assertion ("S175 the Observed
-            behavior cell must name its reason in words, never its served
-            code"); the branch passes
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (it saw "insufficient_measurement · 0 of 4 measured");
+            branch b0ad8a6c passes at 1280x720 and 1440x900; coordinator-run
+            2026-09-24. Raw logs as S173's
 ```
 
 ```
@@ -4248,23 +4250,29 @@ S176 · Each Focus record's "What changed" names the behavior it watched by its
   evidence: C4_STORIES.S176; for each record, Pattern records first, reads the
             served title and lever_title, opens the record by address and reads
             the nameplate and "What changed"
-  status:   owed — coordinator-run at 1280x720 and 1440x900. Expected: base with
-            this harness fails at its feature assertion ("S176 What changed
-            must name the served behavior"; the base names the Pattern title);
-            the branch passes
+  status:   base b03431d2 with this harness fails at its feature assertion at
+            both sizes (its "What changed" check); branch b0ad8a6c passes at
+            1280x720 and 1440x900; coordinator-run 2026-09-24. Raw logs as
+            S173's
 ```
 
-Amended S46 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. The c3 `readiness()` helper it runs no longer requires the served `arm.reason` to appear in the arm, because that reason now prints in words: each arm's `[data-criterion]` line must be non-empty and must not read `Not met — <served reason>.`, and a Pattern arm's `[data-opportunity-verdict]` text must not be the bare served verdict (its data attribute still equals it). The replay reads the served arms from the API and imports nothing new. Owed, coordinator-run at both sizes: base b03431d2 with this harness fails at "a served reason prints in words, never its code" (it prints `Not met — collecting.`); the branch passes.
+Amended S46 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. The c3 `readiness()` helper it runs no longer requires the served `arm.reason` to appear in the arm, because that reason now prints in words: each arm's `[data-criterion]` line must be non-empty and must not read `Not met — <served reason>.`, and a Pattern arm's `[data-opportunity-verdict]` text must not be the bare served verdict (its data attribute still equals it). The replay reads the served arms from the API and imports nothing new. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
 The preceding wording and results are the attributed pre-amendment record.
 
-Amended S91 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. Its c3 part runs the amended c3 `readiness()` helper above, and its c4 cases (c4-ic, c4-isf, c4-profile) run the c4 `readiness()` helper, amended the same way for setting arms. The injected prose reason "Synthetic served hold" is not a code the vocabulary knows, so it still prints as served and its assertion is unchanged. Owed, coordinator-run at both sizes: the branch passes; base with this harness fails at the amended criterion assertion wherever a served arm carries a code.
+Amended S91 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. Its c3 part runs the amended c3 `readiness()` helper above, and its c4 cases (c4-ic, c4-isf, c4-profile) run the c4 `readiness()` helper, amended the same way for setting arms. The injected prose reason "Synthetic served hold" is not a code the vocabulary knows, so it still prints as served and its assertion is unchanged. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
 The preceding wording and results are the attributed pre-amendment record.
 
-Amended S92 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper; its ending assertion (`/unclear|no clear answer/i`) still holds, since a recorded state now prints as its word ("Unclear"). Owed, coordinator-run at both sizes: base with this harness fails at the amended criterion assertion; the branch passes.
+Amended S92 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper; its ending assertion (`/unclear|no clear answer/i`) still holds, since a recorded state now prints as its word ("Unclear"). Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
 The preceding wording and results are the attributed pre-amendment record.
 
-Amended S93 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper on c3-focus's two Pattern arms, both served ready, so each opportunity line must read the word ("Ready"), not the served value. Owed, coordinator-run at both sizes: base with this harness fails at "a Pattern arm names its opportunity verdict in words, never its served value" (it prints `ready`); the branch passes.
+Amended S93 · 2026-09-23 · #449 / Q3 delegation, coordinator rulings R449 and R450: The story's text is unchanged. It runs the amended c3 `readiness()` helper on c3-focus's two Pattern arms, both served ready, so each opportunity line must read the word ("Ready"), not the served value. Recorded 2026-09-24 (coordinator-run, both sizes): base b03431d2 with this harness fails at its readiness check; branch b0ad8a6c passes at 1280x720 and 1440x900.
 The preceding wording and results are the attributed pre-amendment record.
+
+The coordinator also ran the follow-up browser suite (✔ "Trial and Pattern Focus
+journeys" at 1280x720 and 1440x900) and the whole desk browser suite (43 of 43)
+on b0ad8a6c, 2026-09-24. The complete ledger, the full
+`mockups/sweep/harmonic-v2-desktop/acceptance.test.py` and the renders belong to
+the release integration.
 
 Every other desk replay and browser test that reads these lines was re-read for
 intent, and each keeps its subject:

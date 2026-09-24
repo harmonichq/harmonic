@@ -215,7 +215,19 @@ tasks 1.2 and 3.5 follow the Q3 default and task 2.3 the Q1 default.
   `# executed 8 · failed 0 · deferred 0` on the branch, and with the branch
   harness laid over the base fails each of S173–S176 at its feature assertion; the follow-up and desk browser suites; the full
   ledger and the full `acceptance.test.py` once before the push.
+  - [x] Story replay, coordinator-run 2026-09-24: branch b0ad8a6c
+    `ONLY=S46,S91,S92,S93,S173,S174,S175,S176` prints executed 8 · failed 0 ·
+    selected 8 at 1280x720 and 1440x900; base b03431d2 with the branch harness
+    laid over it fails all eight at their feature assertions at both sizes
+    (S173–S176 at their name and word checks, S46 and S91–S93 at their
+    readiness checks).
+  - [x] Browser suites, coordinator-run 2026-09-24 on b0ad8a6c: the follow-up
+    suite prints ✔ "Trial and Pattern Focus journeys at 1280x720" and "… at
+    1440x900"; the desk suite passes 43 of 43.
+  - [ ] The complete ledger and the full `acceptance.test.py`: owed once at the
+    release integration, before the push (coordinator).
 - [ ] 5.3 Coordinator: before/after renders of c3-focus's active Focus,
   c3-preempted's manual-ended and `overnight_drift` records and c4-history's
   Focus record at both sizes, kept in a private design-evidence record that is
-  not part of the public tree.
+  not part of the public tree. Owed at the release integration render batch
+  (coordinator, 2026-09-24).

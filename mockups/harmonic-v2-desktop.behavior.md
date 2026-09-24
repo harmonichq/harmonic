@@ -4175,6 +4175,11 @@ Shipped desk behavior that changes, and no story that asserted the old fact:
 - **A Diagnose rebuild under a seated utility sets no crumb focus.** The
   inspector that holds the crumb is inert under the utility, so the default
   landed nowhere and displaced the utility's focus.
+- **A Day address naming a utility the desk does not have returns plainly**
+  (coordinator-authorized widening, 2026-09-23, ADR 445 point 8). It offers the
+  return named for its destination and reopens nothing. The base offered
+  "Return to" that name, and pressing it stopped the desk drawing. A Node test
+  pins it (`frontend/day.test.js`).
 
 The Log carbs header (ADR 444) has no story: no replay or browser context sets
 a `timezoneId`, so the replay browser runs in the runner's zone, UTC on CI,

@@ -159,6 +159,18 @@ Coordinator rulings, 2026-09-23, under the Q3 delegation, at plan review round 1
 - **r1-2.** Day's utility return into a utility opened over Day is pinned by a
   Node test.
 
+Coordinator ruling, 2026-09-23, under the Q3 delegation, after start (a
+coordinator-authorized widening of this change):
+
+- **Point 8. Day returns only into a utility the desk has.** The `from` of a Day
+  address is external input. `dayReturnTarget` reads `<destination>.<x>` as a
+  utility return only when `<x>` is a utility the desk has (an own key of
+  `UTILITY_TITLE`); any other `<x>` is a plain return to that destination, named
+  for it. On the base, a crafted `from=diagnose.bogus` offered "Return to bogus",
+  and pressing it reopened a utility with no pane, so the next render threw and
+  the desk stopped drawing. Recorded as a finding at start and fixed here (task
+  1.4), not filed.
+
 ### Grounding
 
 Reproduced in process on origin/main b03431d2 with scratch node tests (not

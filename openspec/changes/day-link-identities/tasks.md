@@ -44,6 +44,15 @@ alone.
   - a Changes entry's Return still hands back its date, occurrence and `from`;
   - `dayReturnTarget`'s expected object loses `focus`, and every fixture drops
     its `focus` and uses a utility identity subject.
+- [x] 1.4 Coordinator-authorized widening, 2026-09-23 (Q3 delegation; ADR 445
+  point 8). `dayReturnTarget` in `frontend/day.js` reads `from=<destination>.<x>`
+  as a utility return only when `UTILITY_TITLE` has `<x>` as its own key; any
+  other `<x>` is a plain return to that destination, so no unknown utility is
+  reopened for the seat layer to draw. In `frontend/day.test.js`, a crafted
+  `from=diagnose.bogus` entry offers "Return to Diagnose", not "Return to
+  bogus"; pressing it seats no utility, and the next seat step draws no pane and
+  does not throw. This fails first: the base offers "Return to bogus", and its
+  next render throws `BODIES[kind] is not a function`.
 
 ## 2. The carb utilities and the desk they return to
 

@@ -168,14 +168,19 @@ function adopt(context) {
  * `title` is the display name the door supplied for what the reader was on;
  * the routing `subject` is never printed (ADR 426).
  * Null on a direct entry, which offers no return at all (HV2-13).
+ *
+ * The address is external input, so a `from` naming a utility this desk does
+ * not have is a plain return to its destination: no utility is reopened for the
+ * seat layer to draw (ADR 445).
  */
 export function dayReturnTarget(entry = memory.entry) {
   if (!entry?.date || !entry.from) return null;
-  const [destination, utility = null] = String(entry.from).split('.');
+  const [destination, named = null] = String(entry.from).split('.');
+  const utility = named && Object.hasOwn(UTILITY_TITLE, named) ? named : null;
   return {
     utility,
     destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
-    label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Diagnose'),
+    label: utility ? UTILITY_TITLE[utility] : (DESTINATION_LABEL[destination] || 'Diagnose'),
     title: entry.title || '',
   };
 }

@@ -560,8 +560,36 @@ test('the viewed stamp is the reader\'s local clock, and a read in the same minu
 // ADR 445 point 3. A utility's Day return hands the utility its item's
 // identity and moves to the destination underneath with no context: the entry
 // names the utility's item, not that destination's case.
-const { seatedUtility } = await import('./utilities.js');
+const { seatUtility, seatedUtility } = await import('./utilities.js');
 const returned = () => `${location.pathname}${location.search}`;
+
+// An address is external input: one naming a utility the desk does not have
+// offers the plain return to its destination, and reopens no utility for the
+// seat layer to draw.
+test('a Day address naming an unknown utility offers no utility return, and the next seat draws nothing', async () => {
+  await onPage(async () => {
+    try {
+      navigate('day', { date: '2024-06-26', subject: 'crafted', from: 'diagnose.bogus' });
+      await arrived();
+      assert.doesNotMatch(seat.innerHTML, /Return to bogus/, 'Day offered a return into a utility the desk does not have');
+      assert.match(seat.innerHTML, /data-day="return">Return to Diagnose</);
+      returnControl.onclick();
+      await arrived();
+      assert.equal(seatedUtility(), null, 'the return reopened a utility the desk does not have');
+      // The seat layer the next render runs, over a desk with a reading pane.
+      let drawn = null;
+      const { querySelector } = seat;
+      seat.insertAdjacentHTML = () => {};
+      seat.querySelector = (selector) => (selector === '.gf-desk > .gf-reading' ? { set outerHTML(markup) { drawn = markup; } }
+        : selector === '.gf-utility-strip' ? { toggleAttribute() {} } : null);
+      globalThis.document.querySelector = () => null;
+      try {
+        assert.doesNotThrow(() => seatUtility('diagnose'));
+        assert.equal(drawn, null, 'the seat layer drew a utility pane');
+      } finally { seat.querySelector = querySelector; delete seat.insertAdjacentHTML; }
+    } finally { navigate('diagnose'); }
+  });
+});
 
 test('a utility entry\'s Return reopens the utility and returns plainly, naming nothing of the entry in the address', async () => {
   await onPage(async () => {

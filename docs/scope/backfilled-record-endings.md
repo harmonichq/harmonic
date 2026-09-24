@@ -38,6 +38,19 @@ coordinator, never to the operator.
   #449/#450 change owns `comparisonReasonWords` and adds words for
   `context_after_ending`, the one reason code this change introduces. It
   integrates before this one. S157 asserts no reason-line words. → ADR (ADR 442)
+- **A change inside the record's own ADR 414 Edit never supersedes it.**
+  Coordinator ruling after plan review round 1, 2026-09-23 (R442 amended). It
+  reuses the existing `_group_edits` grouping; the Edit's records end by the
+  rule applied to the first change after that Edit, or expire at their own
+  windows. → ADR (ADR 442)
+- **The period-end label reads a next relevant run at the cutoff.** Coordinator
+  ruling after round 1: one line in `follow_up_comparison.py`. Implemented as
+  "a next relevant run exists" (`index + 1 < len(runs)`), because the literal
+  `following <= cutoff` mislabels every period with no next run (`following`
+  defaults to the cutoff); `premises.py` tabulates it. → ADR (ADR 442)
+- **The unavailable assessment reuses the engine's exported envelope.**
+  Coordinator ruling after round 1: the second and last touch in
+  `follow_up_comparison.py`. → ADR (ADR 442)
 - **Grounded default: supersession is read from this reconcile's detected
   changes, not from retained records.** The frontier rule reads its successor
   from the detected candidates. A hand-saved or vanished record never
@@ -64,10 +77,12 @@ coordinator, never to the operator.
 
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
-  (silent incorrect success); any change to a Plan receipt, the admission
-  frontier, a Focus preemption, a staging predicate, cap or floor; real data in
-  any fixture, test or log; a retained Trial record other than one inside its
-  watch window left open after a reconcile.
+  (silent incorrect success); a record superseded by a change inside its own
+  ADR 414 Edit; any change to a Plan receipt, the admission frontier, a Focus
+  preemption, a staging predicate, cap or floor; any change to a comparison's
+  periods or values; real data in any fixture, test or log; a retained Trial
+  record other than one inside its watch window left open after a reconcile,
+  except an Edit sibling waiting on the first change after its Edit.
 - **Must recover:** nothing new. A reconcile that fails mid-pass commits no
   ending, as today (one follow-up transaction).
 - **Accepted failure:** the first reconcile after upgrade on a long history runs
@@ -77,11 +92,16 @@ coordinator, never to the operator.
   has the labelled reassessment.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
-- **Evidence owed:** reconcile-path backend tests (the issue's failing-first
-  case, supersession, cross-setting supersession, reversal precedence, expiry,
-  first-wins across a second reconcile, bounded cutoff, `context_after_ending`,
-  unchanged Plan receipt); the desk note and reason words through the public
-  renderers; S157 and amended S91 in the replay.
+- **Evidence owed:** reconcile-path backend tests. They cover the issue's
+  failing-first case, same-setting supersession with its saved end reason
+  `next_relevant_setting_change`, cross-setting supersession, a detected
+  multi-slot Edit whose siblings never supersede each other, reversal
+  precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
+  `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
+  envelope byte-identical to `compare_follow_up`'s early return; the superseded
+  note through the public renderer; S157 and amended S91 in the replay. The
+  words for `context_after_ending` are evidenced by the #449/#450 change's
+  `frontend/history.test.js` case for that code, not by this change.
 - Why: endings are durable, first-wins and read as advisory history about
   dosing changes, so a wrong ending cannot be corrected later.
 - Disposition: copied unchanged into the change's design.md (ADR 442).
@@ -101,3 +121,4 @@ handed to the coordinator.
 
 | Round | Blockers | Authoring | Injected | Notes |
 |---|---|---|---|---|
+| 1 | 3 | 3 | 0 | Multi-slot Edit self-supersession; same-setting ending loses its period-end reason; edit-chain's moved record missing from the premises expectation. Notes: name the unavailable-envelope route; point the words evidence at #449/#450. |

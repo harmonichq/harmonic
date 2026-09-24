@@ -14,9 +14,16 @@ coordinator ruling R442.
   Re-read each record from the store just before deciding it. For each record:
   1. `_reversal_at(store, record)` not `None`: end `reverted` at it.
   2. Otherwise take the earliest `changed_at` among this reconcile's detected
-     candidates (the `trials` list the function already builds) that is strictly
-     later than the record's `changed_at` and earlier than `changed_at +
-     _WATCH_HORIZON`. If one exists, end `superseded` at it.
+     candidates (the `trials` list the function already builds) that:
+     - is strictly later than the record's `changed_at`;
+     - is not in the record's own Edit;
+     - is earlier than `changed_at + _WATCH_HORIZON`.
+
+     If one exists, end `superseded` at it. Read Edits with the existing
+     `_group_edits`, called once per pass over `store.follow_up_records("trial")`
+     after record creation. Every candidate has a retained record by then. A
+     candidate is in the record's Edit when its `_review_id(view, block)` maps to
+     the record's Edit key. Add no second grouping rule.
   3. Otherwise, when `now >= changed_at + _WATCH_HORIZON`, end
      `expired_unreviewed` at `changed_at + _WATCH_HORIZON`.
   4. Otherwise leave the record open.
@@ -33,33 +40,58 @@ coordinator ruling R442.
   - `follow_up_admission`, `_reconcile_plan`, `_confirm_from_read`,
     `with_plan_verdicts`, and every Focus ending.
 
-  `rule()` in this change's `premises.py` is the spike of this decision. The
-  implementation must reproduce its "ADR 442:" lines on the same stores.
-- [ ] 1.2 In `capture_ending`, before computing the comparison, check the
+  `rule()` in this change's `premises.py` is the spike of this decision,
+  including the Edit exclusion. The implementation must reproduce its
+  "ADR 442:" lines on the same stores.
+- [ ] 1.2 In `ciq_autotune/follow_up_comparison.py`, make exactly these two
+  touches and no other:
+  1. Export the envelope `compare_follow_up` starts from and returns when it
+     cannot compare, as one public function taking a comparison context, a
+     context mode and an optional unavailable reason. It returns
+     `{"comparison_context": …, "comparison": {…}}` with blank periods, views,
+     outcomes and denominators, the context mode, the standing limitation, and
+     the availability. `compare_follow_up` builds its result from it after
+     resolving its context. Its existing `unavailable(reason)` closure keeps
+     mutating that same envelope, so every existing return is byte-identical,
+     including a current-policy return that has already appended its
+     limitation.
+  2. In `_setting_period`, change the one line that labels the After end: label
+     it `next_relevant_setting_change` when a next relevant run exists
+     (`index + 1 < len(runs)`), else `data_tail`. Do not use `following <= cutoff`
+     alone: `following` defaults to the cutoff when no next run exists (see
+     `premises.py`'s label table). Periods and values do not move.
+- [ ] 1.3 In `capture_ending`, before computing the comparison, check the
   record's retained `comparison_context`. When its `state` is `available` and its
   `source_snapshot` is missing or was captured later than `data_cutoff`, save the
-  ending with an unavailable assessment and compute no comparison. The
-  assessment carries:
-  - `state: "unavailable"` and `reason: "context_after_ending"`;
-  - `version`, `comparison_context` (the record's own), `input_revision` and
-    `data_cutoff`, as every saved assessment does;
-  - empty `periods` and `outcomes`, and the `limitations` list, the shape
-    `compare_follow_up`'s own early unavailable return produces.
-
+  ending with an unavailable assessment and compute no comparison. Build it by
+  calling task 1.2's exported envelope with the record's own context, context
+  mode `retained` and reason `context_after_ending`. Assemble the saved
+  assessment from that envelope exactly as `capture_ending` assembles it from
+  any comparison, so it carries `version`, `input_revision` and `data_cutoff`.
   It must pass Store's assessment validator and render as any other unavailable
-  saved assessment. Change nothing in `ciq_autotune/follow_up_comparison.py`.
-- [ ] 1.3 Backend tests through the public reconcile path, in
+  saved assessment.
+- [ ] 1.4 Backend tests through the public reconcile path, in
   `tests/test_watched_change.py`, on synthetic in-memory stores built the way
-  `OneActiveInvariantTest.reconcile` builds them: dose-stamped boluses through
-  `upsert_bolus`, and pump reads through `upsert_settings_snapshot` where a case
-  needs a retained context. No hand-set endings or `asserts_move` flags. Assert
-  on the records reconcile saved:
+  `OneActiveInvariantTest.reconcile` builds them:
+  - dose-stamped boluses through `upsert_bolus`;
+  - programmed basal rows through `upsert_basal`, for (k);
+  - pump reads through `upsert_settings_snapshot`, where a case needs a retained
+    context.
+
+  No hand-set endings or `asserts_move` flags. `premises.py`'s
+  `multi_slot_store` and `same_setting_pair_store` build the stores for (k) and
+  (b). Assert on the records reconcile saved:
   - (a) the issue's failing-first case: four correction-factor changes, each
     more than 28 days after the previous, reconciled once. Every record ends
     `expired_unreviewed` at its change plus 28 days, and none is left without an
     ending kind;
-  - (b) two carb-ratio changes nine days apart, recorded by one reconcile after
-    both windows passed: the older ends `superseded` at the later change's time;
+  - (b) two carb-ratio changes nine days apart, one pump read before both,
+    recorded by one reconcile after both windows passed:
+    - the older record ends `superseded` at the later change's time;
+    - its saved `periods.after` ends at that time, with
+      `boundary_reasons.end == "next_relevant_setting_change"`;
+    - the later record's saved `periods.after` keeps
+      `boundary_reasons.end == "data_tail"`;
   - (c) a correction-factor change and a carb-ratio change ten days later,
     recorded by one reconcile: the correction-factor record ends `superseded` at
     the carb-ratio change's time;
@@ -82,12 +114,24 @@ coordinator ruling R442.
     `data_cutoff` is the superseding change's time;
   - (j) Plan receipt unchanged: a recorded Plan reconciled to an older record
     that the pass then ends keeps the byte-identical receipt on the Plan and on
-    the record.
+    the record;
+  - (k) a detected multi-slot Edit, built from programmed basal rows, not
+    hand-saved records. The 01:00 and 03:00 slots move on one day, and the
+    05:00 slot moves ten days later. After one reconcile past every window:
+    - both the 01:00 and 03:00 records end `superseded` at the 05:00 change;
+    - neither ends at the other's detected time;
+    - dropping the 05:00 change, both expire at their own window ends instead.
 
-  Show (a), (c), (g) and (h) failing on base b03431d2 before they pass. Keep
-  every existing test in `tests/test_watched_change.py`,
-  `tests/test_durable_follow_up.py`, `tests/test_follow_up_store.py` and
-  `tests/test_plan_verdict.py` passing unchanged.
+  Show (a), (b), (c), (g), (h) and (k) failing on base b03431d2 before they pass.
+  In `tests/test_follow_up_comparison.py`, add one test that the exported
+  envelope with a reason equals `compare_follow_up`'s early unavailable return
+  for that reason on the same context. Keep every existing test passing
+  unchanged in:
+  - `tests/test_watched_change.py`;
+  - `tests/test_durable_follow_up.py`;
+  - `tests/test_follow_up_store.py`;
+  - `tests/test_plan_verdict.py`;
+  - `tests/test_follow_up_comparison.py`.
 
 ## 2. The edit-chain case keeps four open records (QA recipe)
 
@@ -213,9 +257,14 @@ the whole replay at module link.
     `python3 scripts/check_public_allowlist.py`;
   - `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py ReplayPlanTest InventoryProofTest SmokeSelectionTest`;
   - `PYTHONPATH=. uv run python openspec/changes/backfilled-record-endings/premises.py`.
-    Every record it listed as "OPEN today -> ADR 442: <kind>" now reports as
-    ended with that kind and instant. `c4-isf` and `c4-profile` report a saved
-    cutoff of 2024-06-29 00:00:00.
+    Every record it listed at the pinned commit as "OPEN today -> ADR 442:
+    <kind> at <instant>" now reports as ended with that kind at that instant.
+    The one exception is `edit-chain`'s 2024-05-01 record: task 2.1 moves it,
+    and all four of that case's records stay open. `c4-isf` and `c4-profile`
+    report a saved cutoff of 2024-06-29 00:00:00. The superseded records of
+    `c4-ic` (06-01) and `same-setting-pair` (older) report a saved After end of
+    `next_relevant_setting_change`. `same-setting-pair`'s frontier keeps
+    `data_tail`.
 - [ ] 5.3 The coordinator owns every port-bound leg and ticks this task with its
   evidence; the implementer runs none.
   1. On base b03431d2, served from a second worktree with this branch's replay

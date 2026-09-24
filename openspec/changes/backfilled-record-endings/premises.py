@@ -8,8 +8,11 @@ Run from the repository root (in process, no server, no port, scratch copies onl
 ``rule()`` is the spike of ADR 442's decision, read-only. For every retained
 Trial record without an ending, oldest first, it returns ``reverted`` at the
 detector's reversal, else ``superseded`` at the earliest detected change later
-than the record and inside its watch window, else ``expired_unreviewed`` at
-the window's end once the reconcile instant has reached it, else open. It also
+than the record, outside the record's own ADR 414 Edit (read through the
+existing ``_group_edits``) and inside its watch window, else
+``expired_unreviewed`` at the window's end once the reconcile instant has
+reached it, else open. ``label_table()`` is the spike of the one-line
+period-end label fix in ``follow_up_comparison._setting_period``. It also
 reports whether the record's retained comparison context came from a pump read
 at or before that ending instant ("bounded") or after it
 (``context_after_ending``). Nothing here writes to a committed store. Synthetic
@@ -36,14 +39,19 @@ def data_tail(store):
     return max(times)
 
 
-def rule(store, record, now, starts):
-    """ADR 442's decision for one open record; (kind, effective instant) or (None, None)."""
+def rule(store, record, now, starts, edit_of):
+    """ADR 442's decision for one open record; (kind, effective instant) or (None, None).
+
+    ``starts`` is this reconcile's detected changes as sorted (instant, id)
+    pairs; ``edit_of`` maps a retained record id to its ADR 414 Edit key, or is
+    None for the triage-round-1 rule, which had no Edit exclusion."""
     changed = datetime.fromisoformat(record["changed_at"])
     expiry = changed + wc._WATCH_HORIZON
     reversal = wc._reversal_at(store, record)
     if reversal is not None:
         return "reverted", reversal
-    successor = next((start for start in starts if start > changed), None)
+    successor = next((start for start, identity in starts if start > changed
+                      and (edit_of is None or edit_of.get(identity) != edit_of.get(record["id"]))), None)
     if successor is not None and successor < expiry:
         return "superseded", successor
     if now >= expiry:
@@ -65,21 +73,28 @@ def report(label, store, now=None):
     now = now or data_tail(store)
     frontier = store.follow_up_frontier() or {}
     trials = wc._reviewable_trials(store, now, horizon_start=datetime.min)
-    starts = sorted({datetime.fromisoformat(t.view.changed_at) for t in trials})
+    starts = sorted((datetime.fromisoformat(t.view.changed_at), wc._review_id(t.view, t.block))
+                    for t in trials)
     records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+    edit_of, _ = wc._group_edits(records)
     print(f"{label}: data tail {now.strftime(FMT)}, {len(records)} retained, frontier "
           f"{frontier.get('trial_id')}, {len(trials)} detected")
     for record in records:
         ending = record["ending"]
         role = "frontier" if record["id"] == frontier.get("trial_id") else "history"
         if "kind" in ending:
-            cutoff = (ending.get("assessment") or {}).get("data_cutoff")
+            assessment = ending.get("assessment") or {}
+            after = (assessment.get("periods") or {}).get("after") or {}
             print(f"  {record['changed_at']} {role} ended {ending['kind']} at {ending['effective_at']}; "
-                  f"saved cutoff {cutoff} (ADR 442 cutoff {ending['effective_at']}); "
+                  f"saved cutoff {assessment.get('data_cutoff')} (ADR 442 cutoff {ending['effective_at']}); "
+                  f"saved After end {(after.get('boundary_reasons') or {}).get('end')}; "
                   f"context {bound(record, datetime.fromisoformat(ending['effective_at']))}")
             continue
-        kind, at = rule(store, record, now, starts)
+        kind, at = rule(store, record, now, starts, edit_of)
         decided = f"{kind} at {at.strftime(FMT)}; context {bound(record, at)}" if kind else "stays open"
+        r1_kind, r1_at = rule(store, record, now, starts, None)
+        if (r1_kind, r1_at) != (kind, at):
+            decided += f"; without the Edit exclusion: {r1_kind} at {r1_at.strftime(FMT)}"
         if kind and bound(record, at) == "bounded":
             decided += "; saved assessment " + saved(store, record, kind, at)
         print(f"  {record['changed_at']} {role} OPEN today -> ADR 442: {decided}")
@@ -147,7 +162,60 @@ def cross_setting_store():
     return store, day(25)
 
 
+def multi_slot_store():
+    """A detected multi-slot basal edit: the 01:00 and 03:00 slots both move on
+    day 10 (one ADR 414 Edit, two records two hours apart), the 05:00 slot moves
+    on day 20 (the next Edit). Reconciled once on day 60."""
+    base = datetime(2026, 5, 1)
+    day = lambda n: base + timedelta(days=n)
+    store = Store.open(":memory:")
+    rows, seq = [], 0
+    for n in range(1, 61):
+        for hour, moved_on in ((1, 10), (3, 10), (5, 20)):
+            seq += 1
+            rate = 0.7 if n >= moved_on else 0.6
+            rows.append({"seq_num": seq, "time": (day(n) + timedelta(hours=hour)).strftime(FMT),
+                         "delivery_type": "Profile", "duration_mins": 30,
+                         "basal_rate": rate, "profile_basal_rate": rate})
+    store.upsert_basal(rows)
+    with store.follow_up_transaction():
+        wc.reconcile_follow_up(store, now=day(60), recorded_at=day(60))
+    return store, day(60)
+
+
+def same_setting_pair_store():
+    """Task 1.3 (b): two carb-ratio changes nine days apart, one pump read before
+    both (so the retained context is bounded), reconciled once after both windows."""
+    base = datetime(2026, 5, 1)
+    day = lambda n: base + timedelta(days=n)
+    store = Store.open(":memory:")
+    store.upsert_settings_snapshot(day(0).strftime(FMT), settings(40))
+    store.upsert_bolus(bolus_rows([(40, 7.0, 1, 9), (40, 8.0, 10, 18), (40, 9.0, 19, 60)], day))
+    with store.follow_up_transaction():
+        wc.reconcile_follow_up(store, now=day(60), recorded_at=day(60))
+    return store, day(60)
+
+
+def label_table():
+    """The After period's end label, as a table over the only reachable inputs.
+    A next run always starts at or before the cutoff (runs are read up to it);
+    with no next run, ``following`` defaults to the cutoff itself."""
+    print("period-end label: (next run?, following vs cutoff) -> base `following < cutoff` | "
+          "literal `following <= cutoff` | ADR 442 `index + 1 < len(runs)`")
+    for has_next, relation in ((True, "<"), (True, "=="), (False, "== (default)")):
+        base = "next_relevant_setting_change" if has_next and relation == "<" else "data_tail"
+        literal = "next_relevant_setting_change"
+        adr = "next_relevant_setting_change" if has_next else "data_tail"
+        print(f"  next run {has_next}, following {relation} cutoff -> {base} | {literal} | {adr}")
+
+
 def main():
+    label_table()
+    for label, build in (("multi-slot-edit", multi_slot_store),
+                         ("same-setting-pair", same_setting_pair_store)):
+        store, now = build()
+        report(label, store, now)
+        store.close()
     for label, with_read in (("issue-store", False), ("issue-store+later-read", True)):
         store, now = issue_store(with_read)
         report(label, store, now)

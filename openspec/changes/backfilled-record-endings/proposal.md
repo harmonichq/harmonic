@@ -36,8 +36,9 @@ change, and is still open.
 - **One ending rule for every open record.** At every reconcile, each retained
   Trial record with no ending is evaluated, oldest change first, by the rule the
   frontier already uses. It ends `reverted` at the detector's reversal of its
-  change. Otherwise it ends `superseded` at the earliest later detected change
-  that lands before its watch window closes. Otherwise, once the window has
+  change. Otherwise it ends `superseded` at the earliest later detected change,
+  outside its own Edit, that lands before its watch window closes. A multi-slot
+  edit's records therefore never supersede each other. Otherwise, once the window has
   passed, it ends `expired_unreviewed` at the window's end. A record that meets
   none of these stays open. Endings stay first-wins and immutable. No new ending
   kind or open state is added.
@@ -48,7 +49,10 @@ change, and is still open.
   was first recorded. When that context comes from a pump read after the ending,
   the saved assessment is unavailable, with reason `context_after_ending`. Its
   words come from the desk's one word table, which the #449/#450 change owns and
-  extends; that change integrates before this one.
+  extends; that change integrates before this one. The unavailable assessment is
+  built by the comparison's own exported envelope. The comparison's period-end
+  label now says a period ends at the next relevant setting change even when
+  that change is the ending instant. Periods and values do not move.
 - **The superseded note stops naming "the same setting".** A later change of
   any setting ends a watch; the old note was already false for the live watch.
   The desk's note for a superseded ending no longer says the later change was to
@@ -63,7 +67,9 @@ change, and is still open.
   printing a saved ending's unavailable reason through the desk's word table.
   The #449/#450 change owns that table and its routing; this change adds no
   table entry.
-- The comparison engine, evidence periods, readiness criteria, caps, floors,
-  staging predicates, admission, the admission frontier, Focus endings and Plan
-  receipts.
+- The comparison's periods, values and readiness criteria. The comparison
+  module's only touches are the exported unavailable envelope and the one
+  period-end label line.
+- Caps, floors, staging predicates, admission, the admission frontier, Focus
+  endings and Plan receipts.
 - Pump writes, real-data reads and vendor fetches.

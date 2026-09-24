@@ -10,12 +10,14 @@ record the first of these that applies:
 
 - `reverted`, effective at the detector's reversal of the record's change;
 - `superseded`, effective at the earliest change the reconcile detects that is
-  strictly later than the record's change and earlier than the end of its watch
-  window, which is the change plus 28 days;
+  strictly later than the record's change, is not in the record's own Edit, and
+  is earlier than the end of its watch window, which is the change plus 28 days;
 - `expired_unreviewed`, effective at the end of the watch window, once the
   reconcile's data instant has reached it.
 
-A record meeting none of these SHALL stay open. The rule SHALL NOT replace a
+An Edit is the existing grouping of retained records that landed within a day
+of each other; the rule SHALL read it from that one grouping and SHALL NOT add
+another. A record meeting none of these SHALL stay open. The rule SHALL NOT replace a
 saved ending, reopen an ended record, promote a record to the watch, move the
 admission frontier, change a Focus preemption, or change a recorded Plan's
 receipt or verdict. It SHALL NOT add an ending kind or an open state. An ending's
@@ -46,6 +48,16 @@ recorded time SHALL be the reconcile's time.
 - **WHEN** the reconcile runs
 - **THEN** the correction-factor record ends `superseded`, effective at the
   carb-ratio change's detected time, as the live watch does
+
+#### Scenario: A multi-slot edit's records never supersede each other
+
+- **GIVEN** a detected basal edit that moves the 01:00 and 03:00 slots on one
+  day, and a detected change to the 05:00 slot ten days later, all first
+  recorded by one reconcile after every window has passed
+- **WHEN** the reconcile runs
+- **THEN** the 01:00 and 03:00 records both end `superseded`, effective at the
+  05:00 change's detected time
+- **AND** neither ends at the other's detected time
 
 #### Scenario: A reversal comes before supersession
 
@@ -84,9 +96,14 @@ ending's effective instant. When the record's retained comparison context is
 available and its source pump read was captured after that instant, the saved
 assessment SHALL be unavailable with reason `context_after_ending`. No
 comparison SHALL be computed for it. A context whose source pump read was
-captured at or before the instant SHALL be used as it is. The comparison
-engine, its evidence periods, readiness criteria and the record's retained
-context SHALL NOT change.
+captured at or before the instant SHALL be used as it is. The unavailable
+assessment SHALL be built by the comparison's own unavailable envelope, with
+the record's retained context and that reason. A saved After period that ends
+at the record's next relevant setting change SHALL carry the end reason
+`next_relevant_setting_change`, including when that change falls exactly at
+the cutoff. A period with no next relevant change SHALL keep `data_tail`. The
+comparison's periods, values and readiness criteria, and the record's retained
+context, SHALL NOT change.
 
 #### Scenario: An expiry recorded after the fact reads data to its own instant
 
@@ -104,6 +121,16 @@ context SHALL NOT change.
 - **WHEN** the reconcile records its ending
 - **THEN** the saved assessment is unavailable with reason `context_after_ending`
 - **AND** its data cutoff is the ending instant
+
+#### Scenario: A same-setting supersession says its period ends at that change
+
+- **GIVEN** two detected carb-ratio changes nine days apart, one pump read before
+  both, and one reconcile after both windows have passed
+- **WHEN** the reconcile records the older record's `superseded` ending and the
+  later record's `expired_unreviewed` ending
+- **THEN** the older record's saved After period ends at the later change's time
+  with end reason `next_relevant_setting_change`
+- **AND** the later record's saved After period ends with end reason `data_tail`
 
 #### Scenario: A context read before the ending is used
 

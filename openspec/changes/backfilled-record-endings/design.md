@@ -50,7 +50,11 @@ triage questions settle the rest:
 - any later detected change supersedes, whatever its setting, which is the
   frontier's actual rule. R442's earlier "same setting" wording was an error;
 - one cut rule applies to every reconcile ending, the live frontier included;
-- the superseded note is reworded, in this change.
+- the superseded note is reworded, in this change;
+- after plan review round 1: a change inside the record's own ADR 414 Edit never
+  supersedes it, and `follow_up_comparison.py` gets exactly two touches, the
+  period-end label and an exported unavailable envelope. Its periods and values
+  are otherwise unchanged.
 
 1. **One rule for every open record.** After a reconcile has recorded its newly
    detected changes, reconciled Plan receipts and confirmed a pending Plan, it
@@ -58,8 +62,8 @@ triage questions settle the rest:
    first, by detected change time, then record id. For each record:
    - `reverted` at the detector's reversal of the record's change, when one exists;
    - otherwise `superseded` at the earliest change this reconcile detects that is
-     strictly later than the record's change and earlier than the end of its
-     watch window (the change plus 28 days);
+     strictly later than the record's change, outside the record's own Edit, and
+     earlier than the end of its watch window (the change plus 28 days);
    - otherwise `expired_unreviewed` at the end of the watch window, once the
      reconcile's data instant has reached it;
    - otherwise the record stays open.
@@ -73,6 +77,17 @@ triage questions settle the rest:
    unchanged. A record that ends is never promoted to the watch. The superseding
    change is read from this reconcile's detected changes, as the frontier's is,
    never from other retained records.
+
+   **A change in the record's own Edit never supersedes it.** An Edit is ADR
+   414's run of retained records within a day of each other. The pass reads it
+   through the existing `_group_edits`, the one grouping the roster already
+   serves, and adds no second grouping rule. A multi-slot basal edit is
+   detected as one record per 30-minute slot, each at that slot's first
+   observation on the day, so siblings land minutes or hours apart. Without the
+   exclusion the first slot's record would be superseded by its own sibling
+   (premises: `multi-slot-edit`). With it, an Edit's records end by the rule
+   applied to the first detected change after that Edit, or expire at their own
+   windows.
 2. **First-wins and immutable.** A record whose ending has a kind is skipped.
    `capture_ending` already returns such a record unchanged, and Store refuses to
    replace a saved ending. No new ending kind, open state or "recorded
@@ -98,6 +113,32 @@ triage questions settle the rest:
    `capture_ending`, not in the comparison engine. A manual finish or a Focus
    ending passes the reconcile instant as its cutoff, so the check never fires
    for them.
+
+   The unavailable assessment is built by the engine's own envelope builder, not
+   a second copy of its shape. `follow_up_comparison.py` exports the envelope
+   `compare_follow_up` starts from and returns when it cannot compare: context,
+   blank periods, views, rows and denominators, context mode, the standing
+   limitation, and an availability reason. `compare_follow_up` builds its result
+   from it, byte-identically to today. `capture_ending` calls it with the
+   record's own retained context and `context_after_ending`, then assembles the
+   saved assessment exactly as for any other comparison.
+
+   **The period-end label says when a period ends at the next relevant change.**
+   With the cut at the ending instant, a record superseded by a later change of
+   its own setting has its next relevant setting change exactly at the cutoff.
+   `_setting_period` labels the After end `next_relevant_setting_change` only
+   when `following < cutoff`, so that period read "data_tail". This is a label
+   accuracy fix, not an engine change. The After period's bounds come from
+   `min(cutoff, following)` and do not move. No value moves. The label differs
+   from today only when a next relevant run starts exactly at the cutoff. The
+   one changed line labels the end `next_relevant_setting_change` when a next
+   relevant run exists (`index + 1 < len(runs)`). Every such run starts at or
+   before the cutoff, because runs are read only up to it. The ruling's literal
+   `following <= cutoff` cannot be used on its own: with no next run,
+   `following` defaults to the cutoff itself, and every data-tail period would
+   read as ending at a change (premises: the label table, and
+   `same-setting-pair`'s frontier, which has no next change). These are the only
+   two touches in `follow_up_comparison.py`.
 4. **The desk says it in words.** The words for `context_after_ending` belong
    to the desk's one word table for comparison reasons. The #449/#450 change owns
    that table and adds them; it integrates before this one. This change adds no
@@ -160,6 +201,13 @@ worded reason.
   backfilled endings save an unavailable assessment (`context_after_ending`).
   The record still opens on its saved ending, and the labelled Retained context
   and Current policy reassessments stay available.
+- A multi-slot Edit's sibling records stay open, not watched, alongside the
+  watched record until the first detected change after the Edit or their own
+  windows. The live watch is no longer superseded by a slot of its own Edit that
+  a later reconcile happens to detect.
+- A record superseded by a later change of its own setting saves its After
+  period with end reason `next_relevant_setting_change`. `c4-ic`'s 06-01 record
+  and `same-setting-pair` show it.
 - A live frontier ending now saves an assessment cut at its own instant, not
   at the reconcile that noticed it. The days between the two are lost to the
   saved assessment: up to an hour of fetch interval for an expiry, and the
@@ -176,10 +224,12 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
 
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
-  (silent incorrect success); any change to a Plan receipt, the admission
-  frontier, a Focus preemption, a staging predicate, cap or floor; real data in
-  any fixture, test or log; a retained Trial record other than one inside its
-  watch window left open after a reconcile.
+  (silent incorrect success); a record superseded by a change inside its own
+  ADR 414 Edit; any change to a Plan receipt, the admission frontier, a Focus
+  preemption, a staging predicate, cap or floor; any change to a comparison's
+  periods or values; real data in any fixture, test or log; a retained Trial
+  record other than one inside its watch window left open after a reconcile,
+  except an Edit sibling waiting on the first change after its Edit.
 - **Must recover:** nothing new. A reconcile that fails mid-pass commits no
   ending, as today (one follow-up transaction).
 - **Accepted failure:** the first reconcile after upgrade on a long history runs
@@ -189,11 +239,16 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
   has the labelled reassessment.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
-- **Evidence owed:** reconcile-path backend tests (the issue's failing-first
-  case, supersession, cross-setting supersession, reversal precedence, expiry,
-  first-wins across a second reconcile, bounded cutoff, `context_after_ending`,
-  unchanged Plan receipt); the desk note and reason words through the public
-  renderers; S157 and amended S91 in the replay.
+- **Evidence owed:** reconcile-path backend tests. They cover the issue's
+  failing-first case, same-setting supersession with its saved end reason
+  `next_relevant_setting_change`, cross-setting supersession, a detected
+  multi-slot Edit whose siblings never supersede each other, reversal
+  precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
+  `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
+  envelope byte-identical to `compare_follow_up`'s early return; the superseded
+  note through the public renderer; S157 and amended S91 in the replay. The
+  words for `context_after_ending` are evidenced by the #449/#450 change's
+  `frontend/history.test.js` case for that code, not by this change.
 - Why: endings are durable, first-wins and read as advisory history about
   dosing changes, so a wrong ending cannot be corrected later.
 - Disposition: copied unchanged into this design record.
@@ -221,23 +276,34 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
 on base b03431d2 (in process, scratch copies, no server):
 
 ```
+period-end label: (next run?, following vs cutoff) -> base `following < cutoff` | literal `following <= cutoff` | ADR 442 `index + 1 < len(runs)`
+  next run True, following < cutoff -> next_relevant_setting_change | next_relevant_setting_change | next_relevant_setting_change
+  next run True, following == cutoff -> data_tail | next_relevant_setting_change | next_relevant_setting_change
+  next run False, following == (default) cutoff -> data_tail | next_relevant_setting_change | data_tail
+multi-slot-edit: data tail 2026-06-30 00:00:00, 3 retained, frontier basal_rate-05-00-20260521050000, 3 detected
+  2026-05-11 01:00:00 history OPEN today -> ADR 442: superseded at 2026-05-21 05:00:00; context unavailable (missing_programmed_isf); without the Edit exclusion: superseded at 2026-05-11 03:00:00
+  2026-05-11 03:00:00 history OPEN today -> ADR 442: superseded at 2026-05-21 05:00:00; context unavailable (missing_programmed_isf)
+  2026-05-21 05:00:00 frontier ended expired_unreviewed at 2026-06-18 05:00:00; saved cutoff 2026-06-30 00:00:00 (ADR 442 cutoff 2026-06-18 05:00:00); saved After end None; context unavailable (missing_programmed_isf)
+same-setting-pair: data tail 2026-06-30 00:00:00, 2 retained, frontier carb_ratio-all-20260520080000, 2 detected
+  2026-05-11 08:00:00 history OPEN today -> ADR 442: superseded at 2026-05-20 08:00:00; context bounded; saved assessment unavailable/no_readable_period_evidence, After ends 2026-05-20 08:00:00 (data_tail), read to 2026-05-20 08:00:00
+  2026-05-20 08:00:00 frontier ended expired_unreviewed at 2026-06-17 08:00:00; saved cutoff 2026-06-30 00:00:00 (ADR 442 cutoff 2026-06-17 08:00:00); saved After end data_tail; context bounded
 issue-store: data tail 2026-10-18 00:00:00, 4 retained, frontier isf-all-20260908080000, 4 detected
   2026-05-11 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-06-08 08:00:00; context unavailable (missing_programmed_isf)
   2026-06-20 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-07-18 08:00:00; context unavailable (missing_programmed_isf)
   2026-07-30 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-08-27 08:00:00; context unavailable (missing_programmed_isf)
-  2026-09-08 08:00:00 frontier ended expired_unreviewed at 2026-10-06 08:00:00; saved cutoff 2026-10-18 00:00:00 (ADR 442 cutoff 2026-10-06 08:00:00); context unavailable (missing_programmed_isf)
+  2026-09-08 08:00:00 frontier ended expired_unreviewed at 2026-10-06 08:00:00; saved cutoff 2026-10-18 00:00:00 (ADR 442 cutoff 2026-10-06 08:00:00); saved After end None; context unavailable (missing_programmed_isf)
 issue-store+later-read: data tail 2026-10-18 00:00:00, 4 retained, frontier isf-all-20260908080000, 4 detected
   2026-05-11 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-06-08 08:00:00; context context_after_ending
   2026-06-20 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-07-18 08:00:00; context context_after_ending
   2026-07-30 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-08-27 08:00:00; context context_after_ending
-  2026-09-08 08:00:00 frontier ended expired_unreviewed at 2026-10-06 08:00:00; saved cutoff 2026-10-18 00:00:00 (ADR 442 cutoff 2026-10-06 08:00:00); context context_after_ending
+  2026-09-08 08:00:00 frontier ended expired_unreviewed at 2026-10-06 08:00:00; saved cutoff 2026-10-18 00:00:00 (ADR 442 cutoff 2026-10-06 08:00:00); saved After end data_tail; context context_after_ending
 live-cross-setting: data tail 2026-05-26 00:00:00, 2 retained, frontier carb_ratio-all-20260521080000, 2 detected
-  2026-05-11 08:00:00 history ended superseded at 2026-05-21 08:00:00; saved cutoff 2026-05-26 00:00:00 (ADR 442 cutoff 2026-05-21 08:00:00); context unavailable (missing_programmed_isf)
+  2026-05-11 08:00:00 history ended superseded at 2026-05-21 08:00:00; saved cutoff 2026-05-26 00:00:00 (ADR 442 cutoff 2026-05-21 08:00:00); saved After end None; context unavailable (missing_programmed_isf)
   2026-05-21 08:00:00 frontier OPEN today -> ADR 442: stays open
 c3-trial: data tail 2024-06-01 23:59:00, 1 retained, frontier basal_rate-03-00-20240515000000, 1 detected
   2024-05-15 00:00:00 frontier OPEN today -> ADR 442: stays open
 c3-history: data tail 2024-06-01 23:59:00, 2 retained, frontier basal_rate-03-00-20240520000000, 2 detected
-  2024-05-15 00:00:00 history ended user_finished at 2024-05-18 00:00:00; saved cutoff 2024-05-18 00:00:00 (ADR 442 cutoff 2024-05-18 00:00:00); context bounded
+  2024-05-15 00:00:00 history ended user_finished at 2024-05-18 00:00:00; saved cutoff 2024-05-18 00:00:00 (ADR 442 cutoff 2024-05-18 00:00:00); saved After end data_tail; context bounded
   2024-05-20 00:00:00 frontier OPEN today -> ADR 442: stays open
 c3-preempted: data tail 2024-06-01 23:59:00, 1 retained, frontier basal_rate-03-00-20240515000000, 1 detected
   2024-05-15 00:00:00 frontier OPEN today -> ADR 442: stays open
@@ -249,9 +315,9 @@ c4-ic: data tail 2024-07-01 23:55:00, 2 retained, frontier carb_ratio-all-202406
   2024-06-01 00:00:00 history OPEN today -> ADR 442: superseded at 2024-06-10 09:00:00; context bounded; saved assessment unavailable/no_readable_period_evidence, After ends 2024-06-10 09:00:00 (data_tail), read to 2024-06-10 09:00:00
   2024-06-10 09:00:00 frontier OPEN today -> ADR 442: stays open
 c4-isf: data tail 2024-07-01 23:55:00, 1 retained, frontier isf-all-20240601000000, 1 detected
-  2024-06-01 00:00:00 frontier ended expired_unreviewed at 2024-06-29 00:00:00; saved cutoff 2024-07-01 23:55:00 (ADR 442 cutoff 2024-06-29 00:00:00); context bounded
+  2024-06-01 00:00:00 frontier ended expired_unreviewed at 2024-06-29 00:00:00; saved cutoff 2024-07-01 23:55:00 (ADR 442 cutoff 2024-06-29 00:00:00); saved After end data_tail; context bounded
 c4-profile: data tail 2024-07-01 23:55:00, 1 retained, frontier profile-all-20240601000000, 1 detected
-  2024-06-01 00:00:00 frontier ended expired_unreviewed at 2024-06-29 00:00:00; saved cutoff 2024-07-01 23:55:00 (ADR 442 cutoff 2024-06-29 00:00:00); context bounded
+  2024-06-01 00:00:00 frontier ended expired_unreviewed at 2024-06-29 00:00:00; saved cutoff 2024-07-01 23:55:00 (ADR 442 cutoff 2024-06-29 00:00:00); saved After end data_tail; context bounded
 edit-chain: data tail 2024-06-01 23:59:00, 4 retained, frontier None, 0 detected
   2024-05-01 00:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2024-05-29 00:00:00; context unavailable (not_recorded)
   2024-05-08 00:00:00 history OPEN today -> ADR 442: stays open
@@ -263,4 +329,8 @@ edit-chain with its four records 14 days later: 05-15 window ends 06-12, 05-22 w
 `live-cross-setting` is the frontier's own cross-setting supersession, recorded
 by today's code across two reconciles. Every other "ended" line was recorded by
 today's code. Every "ADR 442:" line is `premises.py`'s read-only `rule()`,
-the spike of Decision 1 and 3.
+the spike of Decisions 1 and 3. A "without the Edit exclusion" suffix is what
+the round-1 rule would have recorded. The label table is the spike of the
+period-end label fix. `same-setting-pair`'s older record shows the "data_tail"
+label that fix corrects. Its frontier, with no next change, shows the label the
+fix must keep.

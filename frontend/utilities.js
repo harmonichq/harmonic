@@ -51,6 +51,10 @@ const questionKey = (prompt) => `${prompt.detector}|${prompt.anchor_t}`;
 
 let seated = null;
 let opener = null;
+// Whether the narrow reading sheet was open when the utility opened. Closing
+// returns the reader there, so a launcher inside the open sheet — an Episode
+// Log band caption (ADR 423) — is still on screen to take focus back.
+let sheetWasOpen = false;
 let glossaryGroups = [];
 
 const state = {
@@ -369,7 +373,11 @@ export function seatUtility(destination) {
  * group (ADR 423).
  */
 export function openUtility(kind, launcher, inView = null) {
-  if (seated !== kind) { opener = launcher || opener; seated = kind; }
+  if (seated !== kind) {
+    if (!seated) sheetWasOpen = view.sheetOpen;
+    opener = launcher || opener;
+    seated = kind;
+  }
   view.focusAfterRender = '.gf-utility-close';
   render();
   if (inView) deskSurface().querySelector(`.gf-utility ${inView}`)?.scrollIntoView({ block: 'start' });
@@ -379,7 +387,10 @@ function close() {
   const back = opener;
   opener = null;
   seated = null;
-  view.sheetOpen = false;
+  // Narrow only: a window widened past 700px meanwhile shows no sheet, and
+  // closing there leaves it shut exactly as it always has.
+  view.sheetOpen = narrow() && sheetWasOpen;
+  sheetWasOpen = false;
   state.flash = null;
   render();
   (typeof back === 'string' ? document.querySelector(back) : back)?.focus();
@@ -572,4 +583,5 @@ export function installUtilities({ glossary = [] } = {}) {
     put the reader back inside the utility that opened Day (S76). */
 export function reopenUtility(kind) {
   seated = kind;
+  sheetWasOpen = false;
 }

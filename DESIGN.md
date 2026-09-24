@@ -427,6 +427,8 @@ standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
   Lever, and names claimed anchors beside it: `Findings · 1 · 1 claimed`.
 - **Glossary.** Each band caption ends in a small `Glossary` link button, in
   sentence case against the uppercase caption. It opens the Glossary at its
-  Episode Log group, and Close returns focus to it.
+  Episode Log group, and Close returns focus to it. Below 700px, where the
+  Episode Log is a sheet, closing the Glossary returns to the open sheet, so the
+  same control takes focus back.
 - **Evidence.** The desk ledger's S121 and S122 hold the replays;
   `docs/scope/release-422-434-evidence/423/` holds the logs and captures.

@@ -73,7 +73,7 @@
   C4_STORIES.S127)`, and `['S127', S127, J()]` in `REGISTRY`), and add a
   `frontend/c4.replay.test.js` case that S127 is registered once, carries term
   `HV2-13`, and runs on the `showcase` case.
-- [ ] 4.2 `mockups/harmonic-v2-desktop.behavior.md`: add a dated
+- [x] 4.2 `mockups/harmonic-v2-desktop.behavior.md`: add a dated
   `## #425 amendment — 2026-09-23, issue #425` section holding story S127
   (element, source, lock, data, evidence, status) and the operator's sanction
   line quoted from the release brief; add S127 to the completeness table's
@@ -81,7 +81,7 @@
   148 issued · 129 active · 19 retired. S127's status records the coordinator's
   fail-first run on base `a4d374a7` and its pass on the branch, at both sizes;
   until the coordinator runs them it reads `pending coordinator run`.
-- [ ] 4.3 Move the ledger inventory literal with it:
+- [x] 4.3 Move the ledger inventory literal with it:
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` `inventory()` to
   `{"issued": 148, "active": 129, "retired": 19}`;
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`'s full-plan count and

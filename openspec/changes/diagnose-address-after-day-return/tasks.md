@@ -137,7 +137,7 @@ on the base is labelled as one.
   registry length to 150, the stated-inventory case to S1–S131 with R1–R19, and
   the same-total case to 132 active and 18 retired. `ACCEPTANCE.md`'s count
   sentence is not edited here; it is written once on the integration branch.
-- [ ] 3.4 Browser legs, each run once and serially by whoever can bind a port:
+- [x] 3.4 Browser legs, each run once and serially by whoever can bind a port:
   the new desk test by its name pattern (branch: tests 1, pass 1; base: tests 1,
   fail 1), then the whole desk suite (branch: every test passes);
   `ONLY=S136,S137,S138,S24,S26,S33,S35,S36,S37,S54b,S61,S62,S108,S109` on the bare

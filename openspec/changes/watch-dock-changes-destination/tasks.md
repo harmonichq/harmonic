@@ -90,7 +90,7 @@ none reads real data, and nothing here starts a server.
   assertions to 149: the full replay-plan count, the stated active/retired
   inventory, and the same-total guard. The guard's split stays different from
   the real one.
-- [ ] 3.4 Coordinator, port-bound: replay `ONLY=S139,S140` on the base with this
+- [x] 3.4 Coordinator, port-bound: replay `ONLY=S139,S140` on the base with this
   harness laid over it, where both fail at the label assertion. Replay the same
   two on the branch, where both pass, at 1280x720 and 1440x900. Replay
   `ONLY=S45,S45b,S56,S57` on the branch at both sizes to show the Changes

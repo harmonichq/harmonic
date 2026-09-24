@@ -188,7 +188,7 @@ Read #426's field and row markup from the trunk.
   Episode Log, and band captions link the Glossary. The ledger header's
   inventory line, `ACCEPTANCE.md`'s count sentence and the release freeze block
   belong to the release coordinator. This change edits none of them.
-- [ ] 2.3 Hand every port-bound leg to the release coordinator, serially, with
+- [x] 2.3 Hand every port-bound leg to the release coordinator, serially, with
   exact commands, and fold what those runs expose back into this branch:
   - S121 and S122 fail on the ticket's base for their feature reason and pass on
     the branch at 1280x720 and 1440x900;
@@ -206,7 +206,7 @@ Read #426's field and row markup from the trunk.
   axis and are proven by task 1.7 and S121's option readback. Keep the raw logs
   and captures in `docs/scope/release-422-434-evidence/423/`, with a README that
   maps each requirement to its story, test, log and captures.
-- [ ] 2.4 On the commit that will be integrated, run once: the AGENTS.md
+- [x] 2.4 On the commit that will be integrated, run once: the AGENTS.md
   pull-request gate, every drift check,
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, and
   OpenSpec strict validation. The release coordinator runs the complete desk

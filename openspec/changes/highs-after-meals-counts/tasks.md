@@ -6,7 +6,7 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
 
 ## 1. Case-file comparison counts
 
-- [ ] 1.1 Implement behavioral-layer **One canonical opportunity population owns
+- [x] 1.1 Implement behavioral-layer **One canonical opportunity population owns
   every Finding case file.** in `finding_case_file._event`: serve
   `outside_comparison` (roster Occurrences in none of the three cohorts; zero for a
   same-population comparison) and retire the `not_comparable` count key. Fail
@@ -20,11 +20,11 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   the new count, and add the Missed / unannounced meal case (its Highs outside the
   comparison equal roster − matched − nearly matched) per http-api **Finding case
   files are bound to one snapshot preparation.**
-- [ ] 1.2 Implement behavioral-layer **Each event cohort names the verdict-band
+- [x] 1.2 Implement behavioral-layer **Each event cohort names the verdict-band
   state it holds**: serve `band_verdict` on every cohort. Tests for a
   same-population case file (`fired`, `near_miss`, none) and for Missed /
   unannounced meal (none on its attributed Matched cohort).
-- [ ] 1.3 Update `frontend/finding-case-file-validation.js` to the new totals
+- [x] 1.3 Update `frontend/finding-case-file-validation.js` to the new totals
   (same population: matched + nearly matched + comparison + outside equals the
   denominator and outside is zero; cross population: matched + nearly matched +
   outside equals the denominator), to check each served `band_verdict` against its
@@ -32,7 +32,7 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   serves the retired leftover key. Node tests in
   `frontend/finding-case-file-validation.test.js`, including a case file whose
   outside count repeats its comparison cohort, which is rejected.
-- [ ] 1.4 Carry the new counts and `band_verdict` into the fixture-only Pattern
+- [x] 1.4 Carry the new counts and `band_verdict` into the fixture-only Pattern
   case-file projector `mockups/diagnose-event-comparison.synthetic/project.mjs`,
   and regenerate every drift-checked artifact that serializes case files through
   its own generator (`scripts/gen_missed_meal_comparison_fixtures.py`,
@@ -45,14 +45,14 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
 
 ## 2. A folded cause's count on its Pattern
 
-- [ ] 2.1 Implement the Pattern-owned credit rule of behavioral-layer **A folded
+- [x] 2.1 Implement the Pattern-owned credit rule of behavioral-layer **A folded
   cause serves its count on its Pattern's population** as one function in
   `ciq_autotune/analyzers/scenario/outcome_patterns.py`; `_rate` counts its result
   and `finding_case_file._pattern_case` names each claimed meal's member from it.
   The roster `build_outcome_patterns` returns stays byte-identical, so every QA
   case expectation, `scripts/gen_qa_e2e_db.py --check` and the catalog-generated
   case tests stay green without edits.
-- [ ] 2.2 Serve `fold_sentences` on every row the findings projection folds under
+- [x] 2.2 Serve `fold_sentences` on every row the findings projection folds under
   a Pattern, reading the credit rule over the same window population the Pattern
   producer used. Fail first in `tests/test_findings_projection.py` on the
   manufactured QA cases: `behavioral-correction-stacking` (Correction stacking
@@ -68,12 +68,12 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   sentence of Correction on active insulin and Correction stacking is outside and
   none is in the Pattern's scope. Assert that the rows' `count_sentences` and
   `appearances` and the published roster are unchanged.
-- [ ] 2.3 Implement behavioral-layer **A Pattern case file's outranked meals stay
+- [x] 2.3 Implement behavioral-layer **A Pattern case file's outranked meals stay
   outside its claimed count** as a test on the Pattern case file's verdict counts
   in `tests/test_finding_case_file.py`, built with a claimed meal, a meal where
   Late bolus matched although it did not drive its episode, and a meal Meal
   over-delivery drove. No production change: the check found the header right.
-- [ ] 2.4 Transcribe `fold_sentences` into the fixture-only findings mirror
+- [x] 2.4 Transcribe `fold_sentences` into the fixture-only findings mirror
   `mockups/findings-projection.mirror.mjs` over its own outcome-window filter, and
   regenerate `scripts/gen_findings_projection_fixtures.py`,
   `scripts/gen_eating_sequence_fixtures.py` and
@@ -83,7 +83,7 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
 
 ## 3. The caption and the fold in the desk
 
-- [ ] 3.1 Implement surfaces **The Response comparison caption reconciles with
+- [x] 3.1 Implement surfaces **The Response comparison caption reconciles with
   its cohorts and the band** and the Missed-meal display of surfaces **Diagnose
   renders Finding case files without browser-owned policy.** in
   `renderEventComparisonRoster` (`frontend/diagnose-workstation.js`): served
@@ -91,20 +91,20 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   the band's own words (`VERDICT_BAND_KEY`), and "outside the comparison" after
   the served population noun only when the served count is non-zero. The verdict
   band and its residue line are untouched (#423 owns the claimed word).
-- [ ] 3.2 Implement surfaces **A folded cause's count reads on its Pattern's
+- [x] 3.2 Implement surfaces **A folded cause's count reads on its Pattern's
   population**: `queueRows` gives each folded member its served `fold_sentences` and
   scope (`frontend/diagnose-findings-queue.js`), and the member line prints the
   Pattern's-scope sentence first and sets the outside ones apart behind "outside
   the count", printing no outcome word. Node tests in
   `frontend/diagnose-findings-queue.test.js`.
-- [ ] 3.3 Amend `DESIGN.md`'s Pattern fold bullet to the share-first line, and
+- [x] 3.3 Amend `DESIGN.md`'s Pattern fold bullet to the share-first line, and
   add `CONTEXT.md` terms for "outside the comparison" (avoid: not comparable,
   leftover) and a folded cause's share of its Pattern ("outside the count" for the
   rest), in the ubiquitous language's existing format.
 
 ## 4. Ledger amendments and replay stories
 
-- [ ] 4.1 Implement surfaces **The case-file counts revision ships with its ledger
+- [x] 4.1 Implement surfaces **The case-file counts revision ships with its ledger
   amendments**: add S124 (`behavioral-carb-undercount`: the Highs after meals
   caption names Matched, Nearly matched and Other meal opportunities with their
   served counts, each matching its section heading, links Meets criteria and
@@ -124,12 +124,12 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   `frontend/replay-cases.mjs`, and node regression tests in
   `frontend/c4.replay.test.js` that tell a feature assertion from a setup error.
   No story asserts the claimed-state words (#423).
-- [ ] 4.2 Amend S115 with a line written `Amended S115 · 2026-09-23 · #424 / Q2
+- [x] 4.2 Amend S115 with a line written `Amended S115 · 2026-09-23 · #424 / Q2
   sanction: …` in that same section, never a line beginning `S115 ·`, quoting the
   sanction in `proposal.md`: a folded member line is read from the served
   `fold_sentences`, the outside ones set apart. S115's original text stays as
   frozen.
-- [ ] 4.3 Move the pinned counts in
+- [x] 4.3 Move the pinned counts in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` (`inventory()`) and
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` from 147 issued / 128
   active to 150 issued / 131 active, retired unchanged at 19, so the driver's own

@@ -2,14 +2,14 @@
 
 ## Analyzer, payload and generated artifacts
 
-- [ ] Give each clean-window rule one implementation in `ciq_autotune/model.py`,
+- [x] Give each clean-window rule one implementation in `ciq_autotune/model.py`,
   used by both `clean_samples` and the reason pass, that can name the
   highest-ranked rule a minute fails (design, first ADR 434). `clean_samples`
   keeps its signature and returns identical samples for every caller
   (`ciq_autotune/analyzers/basal.py`, `ciq_autotune/report.py`,
   `ciq_autotune/backtest.py`, `ciq_autotune/trial_evidence.py`); no existing
   assertion in `tests/` is edited to make this pass.
-- [ ] Stamp `excluded_night_reasons` in `analyze_basal` per parameter-analysis
+- [x] Stamp `excluded_night_reasons` in `analyze_basal` per parameter-analysis
   **The basal analyzer names one reason for every excluded night**. The reason
   pass runs after the estimate's nights are known, evaluates only excluded
   nights' minutes, and changes nothing else in the slot row. Write the
@@ -18,12 +18,12 @@
   synthetic analyzer inputs over N nights (the spike's nights restated in the
   test, never imported), asserting literal counts and never hand-setting one.
   The spike itself runs against the base only; it is not a gate after the change.
-- [ ] Copy `excluded_night_reasons` verbatim in
+- [x] Copy `excluded_night_reasons` verbatim in
   `ciq_autotune/basal_night_evidence.py` and add it to the projection's required
   facts. Test through the endpoint and the projection that the served breakdown
   equals the analyzer row's, and that a payload without it raises
   `IncompleteBasalNightEvidence`.
-- [ ] Regenerate exactly the artifacts the new field moves, each with its own
+- [x] Regenerate exactly the artifacts the new field moves, each with its own
   generator: `frontend/__fixtures__/basal-night-evidence.json`
   (`scripts/gen_basal_night_evidence_fixtures.py`),
   `frontend/__fixtures__/analysis.json` (`scripts/gen_chart_builder_fixtures.py`),
@@ -38,17 +38,17 @@
   and every `comparison_context.code_version` and `comparison_context.id` in
   `journey.json` and `focus.json`, and show they are equal. Commit no comparison
   script.
-- [ ] Define **Excluded night** in `CONTEXT.md`: a source night of a basal slot
+- [x] Define **Excluded night** in `CONTEXT.md`: a source night of a basal slot
   absent from that slot's final estimate, with its six reasons in rank order,
   each night counted once, and the synonyms to avoid.
 
 ## Desk surface and behavior ledger
 
-- [ ] Export one reason table from `frontend/diagnose-evidence-charts.js`: served
+- [x] Export one reason table from `frontend/diagnose-evidence-charts.js`: served
   key to reader words, in rank order, omitting zero counts (design, second
   ADR 434). The basal evidence tile and the basal slot panel both read it; neither
   sums, derives nor reclassifies a count.
-- [ ] Implement surfaces **The basal evidence names why its nights were
+- [x] Implement surfaces **The basal evidence names why its nights were
   excluded** on the tile: the full-size rail's total and reason rows, the
   middle-rank tally and the accessible description, and delete
   "excluded — not steady". In `frontend/diagnose-evidence-charts.test.js`, move
@@ -58,11 +58,11 @@
   night with no programmed rate, at the full-size tile canvas height the
   coordinator measured on the served desk (a named constant citing that
   measurement), and the worst-case middle-rank tally in a 480px seat.
-- [ ] Implement the panel's excluded-night line in `frontend/diagnose-workstation.js`
+- [x] Implement the panel's excluded-night line in `frontend/diagnose-workstation.js`
   `renderSlotLevel`, moving the `2 excluded nights` assertion in
   `frontend/diagnose-workstation.test.js` and covering the requirement's panel
   scenario.
-- [ ] Add story S154 to `mockups/harmonic-v2-desktop.behavior.md` for the
+- [x] Add story S154 to `mockups/harmonic-v2-desktop.behavior.md` for the
   requirement's served-desk scenario, in a new `## #434 amendment — 2026-09-23`
   section that quotes the sanction in design (second ADR 434). Leave every
   existing frozen block, the header's inventory line and

@@ -169,7 +169,7 @@
   that cannot run is reported as not run, with its reason; it is never counted
   as a pass or waved off as noise. The whole `acceptance.test.py` runs in 5.2,
   because its `ServerLifecycleTest` binds a socket.
-- [ ] 5.2 Port-bound. Whoever can launch a browser runs this, never a
+- [x] 5.2 Port-bound. Whoever can launch a browser runs this, never a
   sandboxed worker. Run the whole
   `uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py`.
   Replay `ONLY=S60,S133` at 1280×720 and 1440×900 against the

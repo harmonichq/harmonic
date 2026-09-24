@@ -104,7 +104,7 @@
   values, including `uncaused_highs`. Add its name to `EXPECTED_CASE_NAMES` in
   `tests/test_qa_e2e_cases.py` and to the case map in `tests/test_pattern_replay.py`.
   Run `test_case_behavioral_over_treated_rebound_ownership`.
-- [ ] 3.2 Re-measure the five QA budgets without raising a limit, and record the
+- [x] 3.2 Re-measure the five QA budgets without raising a limit, and record the
   literal output in this change's `design.md` under a `### Budgets` heading.
 
 ## 4. Record, generated artifacts and gates

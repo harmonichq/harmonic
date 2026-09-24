@@ -275,7 +275,7 @@ page instead.
   3. Then the desk and follow-up browser suites once, the full
      `acceptance.test.py` once (its `ServerLifecycleTest` binds a port), and
      the complete ledger once on the pushed commit.
-- [ ] 5.3 The coordinator owns the synthetic before and after renders, and
+- [x] 5.3 The coordinator owns the synthetic before and after renders, and
   ticks this task with them. Render both sizes of:
   - the open c3-trial record;
   - the unavailable edit-chain record;

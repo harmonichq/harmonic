@@ -57,7 +57,7 @@ const ENDING_NOTE = {
   trial_preempted: 'A setting change took the active-change seat. This Focus was dropped and does not resume; a later attempt is a new Focus with its own identity.',
   lever_unavailable: 'The behavior this Focus watched is no longer an offered lever, so the watch ended. Nothing resumes it.',
   manual: 'You ended this Focus. Its periods and its observations are fixed at the ending.',
-  superseded: 'A later change to the same setting took over. This record keeps the period it actually observed.',
+  superseded: 'A later setting change was detected inside the watch window. This record keeps the period it actually observed.',
   reverted: 'The setting went back to its previous value on the pump, which ended the observation period.',
   expired_unreviewed: 'The watch reached the end of its lifecycle window without being reviewed. Its observations are still here.',
   user_finished: 'You recorded this ending. Harmonic did not program the pump; the change was entered by hand.',

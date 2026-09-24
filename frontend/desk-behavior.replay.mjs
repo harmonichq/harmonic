@@ -3151,6 +3151,8 @@ export const S142 = appOnly('HV2-28', '#430 an open record opens on its retained
 export const S143 = appOnly('HV2-28', '#430 an unavailable record figure names its reason in the result line\'s words', C4_STORIES.S143);
 // STORY:harmonic-v2-desktop:S180
 export const S180 = appOnly('HV2-28', '#452 a reopened record starts its later conclusion empty with a request id of its own', C4_STORIES.S180);
+// STORY:harmonic-v2-desktop:S157
+export const S157 = appOnly('HV2-28', '#442 an older superseded change record reads its saved ending, never Still open', C4_STORIES.S157);
 // STORY:harmonic-v2-desktop:S151
 export const S151 = appOnly('HV2-17', '#433 the basal lane stays within reach on short and narrow desktop windows', C4_STORIES.S151);
 // STORY:harmonic-v2-desktop:S152
@@ -3290,7 +3292,7 @@ export const REGISTRY = [
   ['S127', S127, J()],
   ['S133', S133, M()],
   ['S139', S139, J()], ['S140', S140, J()],
-  ['S142', S142, J()], ['S143', S143, J()],
+  ['S142', S142, J()], ['S143', S143, J()], ['S157', S157, J()],
   ['S180', S180, J()],
   ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S154', S154, J()],

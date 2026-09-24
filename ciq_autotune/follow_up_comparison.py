@@ -149,7 +149,7 @@ def _setting_period(store, record, cutoff, earliest):
     before_reason = ("90_day_cap" if before == changed - timedelta(days=90)
                      else "available_history" if before == earliest else "previous_relevant_setting_change")
     return before, changed, max(changed, after), before_reason, (
-        "next_relevant_setting_change" if following < cutoff else "data_tail")
+        "next_relevant_setting_change" if index + 1 < len(runs) else "data_tail")
 
 
 def _period(start, end, start_reason, end_reason, cutoff, revision):
@@ -234,6 +234,16 @@ def _mapped_focus_direction_ready(readiness, *, pattern_key):
                for arm in readiness.values())
 
 
+def comparison_envelope(context, context_mode, reason=None):
+    """The ``{comparison_context, comparison}`` envelope every comparison starts
+    from: blank periods, views, outcomes and denominators, the standing
+    limitation, and its availability. With a reason it is the whole answer."""
+    return {"comparison_context": context,
+            "comparison": {"periods": {}, "views": {}, "outcomes": [], "denominators": {},
+                           "availability": _availability(reason), "context_mode": context_mode,
+                           "limitations": ["Observed differences do not establish causation."]}}
+
+
 def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mode="retained"):
     """Return ``{comparison_context, comparison}`` without changing Store or record."""
     if context_mode not in ("retained", "current"):
@@ -243,12 +253,10 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
     cutoff = _time(data_cutoff)
     context = (capture_comparison_context(store, at=cutoff, input_revision=input_revision)
                if context_mode == "current" else deepcopy(record.get("comparison_context")))
-    comparison = {"periods": {}, "views": {}, "outcomes": [], "denominators": {},
-                  "availability": _availability(), "context_mode": context_mode,
-                  "limitations": ["Observed differences do not establish causation."]}
     if context is None:
         context = {"version": _VERSION, **_availability("not_recorded")}
-    result = {"comparison_context": context, "comparison": comparison}
+    result = comparison_envelope(context, context_mode)
+    comparison = result["comparison"]
 
     def unavailable(reason):
         comparison["availability"] = _availability(reason)

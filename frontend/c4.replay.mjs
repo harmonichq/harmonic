@@ -28,6 +28,11 @@ async function capture(page, ctx, id, caseName) {
   });
 }
 async function retained(page) {
+  return (await openRetained(page)).reassessment.comparison;
+}
+// The case's watched (else first) Trial record, opened with its retained
+// reassessment shown; the served selected detail comes back whole.
+async function openRetained(page) {
   const roster = await read(page, '/api/verify/trials');
   assert.ok(roster.trials.length, 'manufactured case must retain a Trial');
   const id = roster.admission.active_kind === 'trial' ? roster.admission.active_id : roster.trials[0].id;
@@ -38,7 +43,7 @@ async function retained(page) {
   await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
   await press(page, '[data-assessment="retained"]');
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
-  return detail.reassessment.comparison;
+  return detail;
 }
 // #413: land on the rail at 24 h without drilling into any row — S113/S114's
 // `openBasalLane`/`heldRequest414` both open something specific; this story
@@ -99,20 +104,30 @@ async function watchDock429(page, id, kind) {
       `${id} the Trial's own view must be titled for the admitted Trial's slot ${slot}`);
   }, `${id} Changes shows the admitted Trial`);
 }
-async function readiness(page, unit, required) {
-  const comparison = await retained(page);
+// #442: the page's readiness lines print the comparison the page shows, which
+// is an ended record's saved ending assessment, else the retained reassessment.
+// The returned comparison, and every S91 assertion on it, stays the retained read.
+export async function readiness(page, unit, required) {
+  const detail = await openRetained(page);
+  const comparison = detail.reassessment.comparison;
+  const ending = detail.original.ending;
+  const shown = ending.kind ? ending.assessment : comparison;
   await waitForReplayAssertion(async seen => {
     for (const side of ['before', 'after']) {
       const arm = comparison.readiness[side];
       assert.equal(arm.unit, unit); assert.equal(arm.required, required);
+      const printed = shown.readiness[side];
       const node = page.locator(`[data-readiness="${side}"]`);
-      assert.equal(seen(await node.getAttribute('data-criterion-met')), String(arm.criterion_met));
+      assert.equal(seen(await node.getAttribute('data-criterion-met')), String(printed.criterion_met),
+        `the ${side} readiness line must print the criterion of the comparison the page shows`);
       const copy = seen(await node.innerText());
-      assert.ok(copy.includes(unit)); assert.ok(copy.includes(String(arm.observed)));
+      assert.ok(copy.includes(unit));
+      assert.ok(copy.includes(String(printed.observed)),
+        `the ${side} readiness line must print the count of the comparison the page shows`);
       // #449 amendment (ADR 450): a served reason prints in words, never its code.
       const criterion = seen(await node.locator('[data-criterion]').innerText()).trim();
       assert.ok(criterion, 'each arm states its criterion');
-      if (arm.reason) assert.notEqual(criterion, `Not met — ${arm.reason}.`, 'a served reason prints in words, never its code');
+      if (printed.reason) assert.notEqual(criterion, `Not met — ${printed.reason}.`, 'a served reason prints in words, never its code');
     }
   }, "readiness");
   return comparison;
@@ -2689,6 +2704,46 @@ export const C4_STORIES = {
       'S180 the next save must send a request id of its own');
     assert.equal(await page.locator('[data-late-conclusion-text]').innerText(),
       'Synthetic observation recorded after reopening', 'S180 the next save must record the later conclusion');
+  },
+  // #442 (ADR 442): an older detected change that a later one superseded reads
+  // its saved ending in the roster and on its record, never "Still open". The
+  // words of every reason line belong to the full ledger, not to this story.
+  async S157(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.ok(roster.trials.length >= 2, 'S157 premise: the case serves two or more Trial rows');
+    assert.equal(roster.admission.active_kind, 'trial', 'S157 premise: the case serves an active Trial');
+    const older = roster.trials.find(trial => trial.id !== roster.admission.active_id);
+    assert.equal((older.ending || {}).kind, 'superseded',
+      'S157 the older Trial row must carry its served superseded ending');
+    await editChainRoster414(page);
+    // A `has` locator is queried inside each row, so it names the button alone.
+    const record = `[data-record="trial:${older.id}"]`;
+    const row = page.locator('table.gf-table tr', { has: page.locator(record) });
+    const button = row.locator(record);
+    await waitForReplayAssertion(async seen => {
+      const cell = seen(await row.locator('td.v').innerText()).trim();
+      assert.ok(cell.startsWith('Superseded by a later change'), `S157 the roster row must read its ending: ${cell}`);
+      assert.ok(!cell.includes('Still open'), `S157 an ended record's roster row must not read Still open: ${cell}`);
+      assert.equal(seen(await row.locator('[data-record-open="true"]').count()), 0,
+        'S157 an ended record must carry no still-open cell');
+    }, 'S157 the roster row reads its ending');
+    await button.click();
+    await page.locator('[data-record-part="ending"] [data-ending-kind]').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const kind = page.locator('[data-record-part="ending"] [data-ending-kind="superseded"]');
+      assert.equal(seen(await kind.count()), 1, 'S157 the opened record must show its saved superseded ending');
+      const words = seen(await kind.innerText()).trim();
+      assert.equal(words, 'Superseded by a later change',
+        `S157 the ending kind line must read its words, never an underscore-token code: ${words}`);
+      const ending = seen(await page.locator('[data-record-part="ending"]').innerText());
+      assert.ok(!ending.includes('same setting'), 'S157 the saved-ending note must not claim the same setting');
+      const finished = seen(await page.locator('[data-record-part="ending"] dt', { hasText: 'Finished' })
+        .locator('xpath=following-sibling::dd[1]').innerText()).trim();
+      const note = seen(await page.locator('[data-part="periods"]').innerText());
+      const readTo = (/data was read to (.+?)\.\s*$/.exec(note.trim()) || [])[1];
+      assert.ok(finished, 'S157 the saved ending must name its Finished time');
+      assert.equal(readTo, finished, 'S157 the periods note must read data to the saved ending\'s Finished time');
+    }, 'S157 the opened record reads its saved superseded ending');
   },
   // #413: the lane's head row, key and verdict paint. `openBasalLane` opens
   // whichever basal slot the CASE_STORE_DIR case ranks first; the

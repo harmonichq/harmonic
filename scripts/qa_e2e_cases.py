@@ -9378,16 +9378,18 @@ def _materialize_c4_history(store):
 def _materialize_edit_chain(store):
     """Four retained per-slot basal Trial records (#414 ADR): three within a day
     of each other (one pair at exactly one day) chain into one Edit, and a fourth
-    a week before the first stays its own Edit. No endings on any of them —
-    this recipe exhibits the Edit-chaining read, not a resolved watch."""
+    a week before the first stays its own Edit. Every record sits inside its
+    watch window at the case's data tail (06-01 23:59), so the ending rule
+    (ADR 442) leaves all four open — this recipe exhibits the Edit-chaining
+    read, not a resolved watch."""
     from ciq_autotune.watched_change import reconcile_ingested_follow_up
     _materialize_basal_coverage(store, clean_rate=0.48, informative_nights=30, include_settings=False)
     with store.follow_up_transaction():
         for changed_at, before, after in (
-            ('2024-05-08 00:00:00', 0.5, 0.52),
-            ('2024-05-09 00:00:00', 0.52, 0.54),  # exactly one day after the first
-            ('2024-05-10 00:00:00', 0.54, 0.56),  # exactly one day after the second
-            ('2024-05-01 00:00:00', 0.48, 0.5),   # a week before the chain: its own Edit
+            ('2024-05-22 00:00:00', 0.5, 0.52),
+            ('2024-05-23 00:00:00', 0.52, 0.54),  # exactly one day after the first
+            ('2024-05-24 00:00:00', 0.54, 0.56),  # exactly one day after the second
+            ('2024-05-15 00:00:00', 0.48, 0.5),   # a week before the chain: its own Edit
         ):
             stamp = datetime.fromisoformat(changed_at).strftime('%Y%m%d%H%M%S')
             store.save_follow_up_record({

@@ -33,6 +33,24 @@ the archive commit touched only `mockups/` path repoints). Worktree
 - Q4 A — the analyzer serves the reconciling sentence from a closed set chosen on
   served facts; the panel prints it verbatim. Why: advisory meaning stays in the
   analyzer. `→ ADR` (operator, 2026-09-24)
+- Q5 — By meal (each block-hours meal on its own five-hour clock from its bolus,
+  through the Pattern comparison chart builder) is the block's default view. The
+  chain-trace Event view is REBUILT in this ticket as per-run strips: one row per
+  run sorted by measured ratio, pooled first and excluded dimmed with their served
+  reason; each row a CGM strip from the block's meal in hours with filled
+  block-hours meal marker, open later-chain markers, lows/highs and correction
+  ticks; the run's balance sheet (bolus, corrections, basal withheld, glucose
+  travel → ratio against programmed) at the row's edge; roster-row and strip
+  selection are one selection and both open Day. By clock keeps each run's ratio
+  against programmed and the estimate band. Why: operator, 2026-09-24 ("handle it
+  all in this ticket"). `→ ADR`
+- Every new served fact rides the block-evidence payload
+  (`/api/diagnose/carb-ratio-block-evidence`), never the findings row. Why: the
+  findings row is mirrored in fixture-only JS for the browser gates and frozen by
+  the findings-projection fixture; widening it would drag the mirror, its
+  generator and every frozen answer into this change for no reader benefit — the
+  panel is where the facts are read. The addendum's "queue row's seriousness"
+  item is therefore scoped to the panel. `inline`
 
 ### Risk contract
 
@@ -64,7 +82,7 @@ the archive commit touched only `mockups/` path repoints). Worktree
 
 ## Open questions
 
-Round 1 settled 2026-09-24 (Q1–Q4 above). Round 2 asked: Q5 meal-anchored view placement.
+Rounds 1–2 settled 2026-09-24 (Q1–Q5 above). Frontier empty.
 
 ## Spawned tasks
 

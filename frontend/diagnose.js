@@ -79,14 +79,19 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // written or not. `restoring` is an entry restoration still pending: open
   // from mount's decision to apply a contextual entry until the restoration has
   // done its own work or the reader acts. `rebuilding` is a setData rebuild in
-  // progress, whose Findings root is never written. `parkedOn` is the case on
-  // screen when Diagnose parked, and `returning` the retained return in hand
-  // (plain or not, and the Occurrence it puts focus back on); the re-seat reads
-  // both.
+  // progress, whose Findings root is never written. `unwritten` is a reader's
+  // press that ended a restoration whose write of the case on screen has not
+  // run yet. `parkedOn` is the case on screen when Diagnose parked,
+  // `parkedUnmatched` whether its held entry had yet to name that case (a
+  // restoration still pending, or `unwritten`), and `returning` the retained
+  // return in hand (plain or not, and the Occurrence it puts focus back on);
+  // the re-seat reads all three.
   let published = null;
   let restoring = false;
   let rebuilding = false;
+  let unwritten = false;
   let parkedOn = null;
+  let parkedUnmatched = false;
   let returning = null;
 
   // Context names a served identity or an explicit slot; the window is the
@@ -103,6 +108,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function writeCase() {
     entry = caseAddress(published, entry.from);
     replaceAddress(entry);
+    unwritten = false;
   }
 
   // The workstation's one published case (ADR 428 points 2 and 4). A change is
@@ -130,6 +136,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!restoring || !event.isTrusted || currentDestination() !== 'diagnose') return;
     if (event.type === 'keydown' && NOT_AN_ACT.has(event.key)) return;
     restoring = false;
+    unwritten = true;
     restoreObserver?.disconnect(); restoreObserver = null;
     setTimeout(() => { if (!restoring && onScreen()) writeCase(); });
   }
@@ -184,9 +191,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // Every apply site rebuilds the workstation from the payload and then restores
   // the entry: mount deciding to apply it is where its restoration turns
   // pending (ADR 428 point 2), and the rebuild's own Findings root is never
-  // written over it.
+  // written over it. The rebuild derives the screen from the entry afresh, so
+  // an earlier press's unwritten case is superseded.
   function apply() {
     restoring = Boolean(entry.subject);
+    unwritten = false;
     rebuilding = true;
     workstation.setData(payload);
     rebuilding = false;
@@ -452,8 +461,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // throw. The park is the end of the body, so an on-screen element that
   // shared an id would win a lookup (S83).
   function detach() {
-    // A pending restoration ends with the walk it was tracking: nothing re-runs
-    // it on a retained return.
+    // A restoration still pending, or ended by a press whose write never ran,
+    // leaves the held entry naming a case that may not be on screen; the
+    // re-seat treats that park as moved. A pending restoration ends with the
+    // walk it was tracking: nothing re-runs it on a retained return.
+    parkedUnmatched = restoring || unwritten;
     restoreObserver?.disconnect(); restoreObserver = null; restoring = false;
     // Only ever called after ensureView() has run (seated implies root is set).
     levelScroll = root.querySelector('#level')?.scrollTop ?? null;
@@ -471,9 +483,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // subject/occurrence/window always re-reads; the same entry only checks
     // whether the store moved, and the loading frame stands for either. Input
     // cannot move a parked case — the workstation takes no key until Diagnose
-    // is on screen — so the held entry names the case Diagnose parked on; a
-    // case-file answer already in flight when it parked can still move it, and
-    // the re-seat below reconciles that. A repeated press of Diagnose while on
+    // is on screen — but the held entry can still disagree with the screen: a
+    // restoration unfinished when Diagnose parked (or ended by a press whose
+    // write never ran) never made it name the case on screen, and a case-file
+    // answer already in flight can land while Diagnose is parked. The re-seat
+    // below reconciles both. A repeated press of Diagnose while on
     // Diagnose is not a return: the root was never parked by leaving, and
     // re-pressing the destination restores the shipped Findings index the way
     // it always has (S3), by re-reading.
@@ -563,13 +577,15 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // Never restoreEntry() here: the drill and scroll retention preserves are
     // exactly what restoreEntry()'s row/occurrence clicks would disturb.
     } else if (wasParked) {
-      // An answer already in flight when Diagnose parked may have moved the case
-      // since (input cannot). Compared by the workstation's own publications, so
-      // an entry's spelling never counts as a move. A Day return then restores
-      // its entry exactly; a plain return names the case on screen.
+      // The held entry may not name the case on screen: it never did if
+      // Diagnose parked unmatched, and an answer already in flight may have
+      // moved the case since (input cannot). The move is judged by the
+      // workstation's own publications, so an entry's spelling never counts as
+      // one. A Day return then restores its entry exactly; a plain return names
+      // the case on screen.
       const back = returning;
       returning = null;
-      const moved = !sameEntry(published, parkedOn);
+      const moved = parkedUnmatched || !sameEntry(published, parkedOn);
       if (moved && !back.plain) {
         reread();
         host.innerHTML = loadingFrame('Diagnose');

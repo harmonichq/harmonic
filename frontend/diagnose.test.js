@@ -171,8 +171,17 @@ test('an initial read failure and a current-read failure own distinct Diagnose f
   destination.leave();
 });
 
+// ADR 428: a retained return needs the entry's restoration to have finished
+// before Diagnose parked, so a test standing for a restored entry serves the
+// Finding row that restoration opens.
+const restores = subject => ({
+  querySelectorAll: selector => (selector === '.qrow[data-id]' ? [{ dataset: { id: subject }, click() {} }] : []),
+});
+
 test('a navigation round trip to the same entry issues one status read, no more, and never restores entry', async () => {
   const served = source(); const seat = host();
+  const root = makeRoot(restores('finding:served'));
+  root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   let refreshCalls = 0; let setDataCalls = 0;
   const destination = createDiagnoseDestination({ api: served.api,
     createView: () => ({ setData() { setDataCalls += 1; }, leaveSurface() {}, refresh() { refreshCalls += 1; }, setError() {} }) });
@@ -218,7 +227,7 @@ test('a same-entry return puts the reading pane scroll back where the reader lef
   // A real pane: the browser resets scrollTop to 0 when the node is removed
   // and re-inserted, which is what the detach/re-seat cycle does.
   const level = { scrollTop: 0 };
-  const root = makeRoot({ querySelector: selector => (selector === '#level' ? level : null) });
+  const root = makeRoot({ ...restores('finding:served'), querySelector: selector => (selector === '#level' ? level : null) });
   root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   // Parking hides the root; an element the browser no longer lays out reads 0.
   seat.ownerDocument.body.append = node => { node.isConnected = true; node.parked = true; level.scrollTop = 0; };
@@ -1090,6 +1099,67 @@ for (const when of ['parked', 'checking']) {
     } finally { globalThis.window = previous; globalThis.MutationObserver = previousMO; }
   });
 }
+
+// Review round 4: a restoration that has not finished when Diagnose parks — or
+// was ended by a press whose write never ran — never made the held entry name
+// the case on screen, so the park counts as moved and the re-seat reconciles.
+// A case address whose case file is still loading: `opened` says whether its
+// Finding row has opened yet; its Occurrence is never held.
+async function pendingCase({ opened }) {
+  const env = desk428({ address: '/diagnose?subject=finding%3Alate_bolus&occurrence=o-1', root: {
+    querySelectorAll: selector => (selector === '.qrow[data-id]' && opened ? [row] : []),
+  } });
+  const row = { dataset: { id: 'finding:late_bolus' },
+    click() { env.view.publish({ subject: 'finding:late_bolus', occurrence: null, window: null }); } };
+  const context = routed(env.page);
+  env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+  await flush();
+  env.destination.mount(env.seat, { navigation: 0, hold() {}, context });
+  return { ...env, context };
+}
+
+for (const opened of [true, false]) {
+  test(`ADR 428 · Back and Forward while a case address is still restoring (${opened ? 'its Finding open' : 'still at Findings'}) re-read it on return`, async () => {
+    const previous = globalThis.window;
+    try {
+      const { page, served, seat, destination, context } = await pendingCase({ opened });
+      // Browser Back: the router renders the previous destination, which parks
+      // Diagnose; no page event reaches Diagnose's reader-input listener.
+      park(destination, seat, 0, context);
+      page.history.pushState(null, '', serializeRoute({ destination: 'diagnose', context })); // Forward
+      served.requests.length = 0;
+      destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+      await flush();
+      destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+      await flush();
+      assert.ok(served.requests.includes('analysis'),
+        `the address names o-1, which was never held, so the return re-reads to restore it: ${served.requests}`);
+      destination.leave();
+    } finally { globalThis.window = previous; }
+  });
+}
+
+test('ADR 428 · Enter on a topbar button while a restoration is pending leaves a plain return naming the case on screen', async () => {
+  const previous = globalThis.window;
+  try {
+    const { page, served, seat, view, destination, context } = await pendingCase({ opened: true });
+    // Enter ends the restoration and, in the same keystroke, the button's click
+    // navigates away before the deferred write can run.
+    page.press('keydown', { key: 'Enter' });
+    park(destination, seat, 0, context);
+    await afterHandlers();
+    page.history.pushState(null, '', '/diagnose'); // a plain press of Diagnose
+    served.requests.length = 0;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.deepEqual(served.requests, ['status'], 'a plain return stays retained');
+    assert.equal(view.refreshes, 1, 'premise: the retained root re-seated');
+    assert.equal(page.address(), '/diagnose?subject=finding%3Alate_bolus',
+      'the address names the Finding on screen, not the Occurrence that was never held');
+    destination.leave();
+  } finally { globalThis.window = previous; }
+});
 
 // Review round 1, kept: the return focus and the superseded walk.
 

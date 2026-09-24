@@ -2977,8 +2977,9 @@ Shipped desk behavior that changes, and no story that asserted the old fact:
   page-level keys (Backspace, ↑/↓, Escape) act only while Diagnose is on screen
   — so input cannot move the case while another destination holds the surface
   and a return compares its entry with the held entry, as ADR 414 does, while a
-  case-file answer already in flight when Diagnose parked can still move it and
-  is reconciled when the root re-seats: a Day return then re-reads and restores
+  restoration unfinished when Diagnose parks, or a case-file answer already in
+  flight, can still leave the held entry disagreeing with the screen and is
+  reconciled when the root re-seats: a Day return then re-reads and restores
   its entry, and a plain return names the case on screen.
 
 ```

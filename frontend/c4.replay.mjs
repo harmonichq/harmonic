@@ -1415,6 +1415,79 @@ export async function assertBandGlossary(page) {
   }, 'S122 Close returns focus to the caption control');
 }
 
+// #446 · 2026-09-23. The served active change leads every plain arrival to
+// Changes, and Open Plan holds for one visit (ADR 446). Every read inside a
+// retried assertion is a count or a text list, which never waits, so a failure
+// names the frame that took the seat. The premises come from the production
+// routes first, so a case serving the wrong state fails there, never at a label.
+const url446 = (page, path) => new URL(path, page.url()).href;
+async function seat446(page) {
+  const count = selector => page.locator(selector).count();
+  return {
+    changes: await count('nav.v2-nav [aria-current="page"][data-destination="changes"]'),
+    trial: await count('.gf-stage-trial'), focus: await count('.gf-stage-focus'), plan: await count('.gf-plan'),
+  };
+}
+async function admitted446(page, id, kind) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', `${id} premise: the case must publish available follow-up admission`);
+  assert.equal(roster.admission.active_kind, kind, `${id} premise: the server must admit ${kind ? `an active ${kind}` : 'no watched change'}`);
+}
+/** The served concern's basal action, as the Plan items staging it would save. */
+function basalItems446(guidance, id) {
+  const action = guidance.selected?.action || [];
+  assert.ok(action.length && action.every(row => row.parameter === 'basal_rate'),
+    `${id} premise: the served concern must carry a basal action to stage`);
+  return action.flatMap(row => (row.member_start_mins || [row.start_min])
+    .map(start => ({ type: 'basal', start_min: start, value: row.recommended })));
+}
+/** Save a draft while the change is watched and require the guidance read to serve
+    it beside the active change. The items restore the recorded Plan's source value
+    at each slot, as S146 saves them: values the store already held. */
+async function draftWhileWatched446(page, id, items = null) {
+  if (!items) {
+    const [recorded] = (await read(page, '/api/plan/history')).history;
+    const source = recorded?.deliverable?.source_profile?.segments;
+    assert.ok(source?.length, `${id} premise: the recorded Plan must serve its source profile`);
+    const at = minute => [...source].reverse().find(row => row.start_min <= minute).basal_rate;
+    items = recorded.items.map(item => ({ type: item.type, start_min: item.start_min, value: at(item.start_min) }));
+  }
+  const saved = await page.request.put(url446(page, '/api/plan'), { data: { items } });
+  assert.equal(saved.status(), 200, `${id} premise: a Plan draft saves while the change is watched: ${await saved.text()}`);
+  const guidance = await read(page, '/api/guidance');
+  assert.equal(guidance.disposition, 'active_change', `${id} premise: the server still serves the active change`);
+  assert.ok((guidance.draft?.items || []).length > 0, `${id} premise: the guidance read serves the saved draft`);
+  return read(page, '/api/plan');
+}
+async function topbar446(page, destination) {
+  await press(page, `nav.v2-nav [data-destination="${destination}"]`);
+  await page.waitForFunction(id => document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === id,
+    destination, { timeout: 30000 });
+}
+/** Changes shows the watched Trial or Focus, and not the Plan. */
+async function watched446(page, id, kind, step) {
+  await waitForReplayAssertion(async seen => {
+    const shown = seen(await seat446(page));
+    assert.equal(shown.plan, 0, `${id} ${step} must not show the Plan in the watched ${kind}'s seat`);
+    assert.ok(shown.changes === 1 && shown[kind] === 1, `${id} ${step} must show the watched ${kind}'s own view`);
+  }, `${id} ${step} lands on the watched ${kind}`);
+}
+/** The Plan at its explicit address, showing a saved draft. */
+async function planDraft446(page, id, step) {
+  await waitForReplayAssertion(async seen => {
+    const route = parseRoute(new URL(seen(page.url())));
+    assert.deepEqual([route.destination, route.context.subject], ['changes', 'plan'],
+      `${id} ${step} must land at /changes?subject=plan`);
+    assert.equal(seen((await seat446(page)).plan), 1, `${id} ${step} must show the Plan`);
+    // The kicker is set in capitals by CSS; its <b> carries the served phase.
+    assert.deepEqual(seen(await page.locator('.gf-stage .gf-kicker b').allTextContents()), ['Draft saved'],
+      `${id} ${step} must show the saved draft`);
+  }, `${id} ${step} opens the saved draft`);
+}
+/** The nameplate's controls, in order, for a watched Trial's or Focus's view. */
+const nameplate446 = (page, kind) => page.locator(`.gf-stage-${kind} .gf-end button`)
+  .evaluateAll(buttons => buttons.map(button => button.dataset.action || (button.hasAttribute('data-follow-up-inspect') ? 'inspect' : '')));
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -1679,6 +1752,154 @@ export const C4_STORIES = {
     const address = new URL(page.url());
     assert.equal(address.pathname, '/changes', 'S147 Open Changes lands on Changes');
     assert.equal(address.searchParams.get('subject'), 'plan', 'S147 Open Changes opens the Plan, never the watched-change address');
+  },
+  // #446 · 2026-09-23. Open Plan holds for one visit, before and after a Trial
+  // begins. The page loads once, at the Plan's address, and is never reloaded:
+  // a reload discards the remembered state this story is about.
+  async S166(page, ctx) {
+    assert.ok(ctx.capturePump, 'S166 requires CASE_STORE_DIR for a synthetic pump capture');
+    basalItems446(await read(page, '/api/guidance'), 'S166');
+    await admitted446(page, 'S166', null);
+    await page.goto(url446(page, '/?to=changes&subject=plan'));
+    // 1. Stage in the Plan's own frame keeps the Plan, with Save draft in hand.
+    await press(page, '[data-set="stage"]');
+    await waitForReplayAssertion(async seen => {
+      const route = parseRoute(new URL(seen(page.url())));
+      assert.deepEqual([route.destination, route.context.subject], ['changes', 'plan'],
+        "S166 Stage in the Plan's own frame must keep the Plan's address");
+      assert.equal(seen((await seat446(page)).plan), 1, "S166 Stage in the Plan's own frame must keep the Plan");
+      assert.equal(seen(await page.evaluate(() => document.activeElement?.dataset?.set || null)), 'save-draft',
+        'S166 Save draft must take focus');
+    }, "S166 the Plan's own Stage keeps the Plan");
+    // 2. A plain arrival shows the staged concern, and so does a return after Open Plan.
+    const stagedConcern = step => waitForReplayAssertion(async seen => {
+      assert.equal(seen((await seat446(page)).plan), 0, `S166 ${step} must not reopen the Plan`);
+      const end = seen(await page.locator('.gf-stage .gf-end').allTextContents()).join(' ');
+      const controls = seen({ undo: await page.locator('.gf-stage [data-set="unstage"]').count(),
+        openPlan: await page.locator('.gf-stage [data-set="open-plan"]').count() });
+      assert.ok(/Staged/.test(end) && controls.undo === 1 && controls.openPlan === 1,
+        `S166 ${step} must show the staged concern with Staged, Undo and Open Plan`);
+    }, `S166 ${step} shows the staged concern`);
+    await topbar446(page, 'changes');
+    await stagedConcern("the topbar's Changes");
+    await press(page, '[data-set="open-plan"]');
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
+    await topbar446(page, 'day');
+    await topbar446(page, 'changes');
+    await stagedConcern('a return from Day by the topbar');
+    // 3. Open Plan reopens the Plan with the staged change; record the decision.
+    await press(page, '[data-set="open-plan"]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('.gf-stage .gf-kicker b').allTextContents()), ['Staged'],
+        'S166 Open Plan must reopen the Plan with the staged change');
+    }, 'S166 Open Plan reopens the staged change');
+    await press(page, '[data-set="record"]');
+    await page.locator('[data-set="withdraw"]').waitFor({ timeout: 30000 });
+    // 4. A synthetic `match` pump read starts a Trial; a draft is saved while it runs.
+    await ctx.capturePump('match');
+    await admitted446(page, 'S166', 'trial');
+    await draftWhileWatched446(page, 'S166');
+    // 5. Diagnose's first read in this page refreshes guidance and the Plan state;
+    //    then the topbar's Changes lands on the Trial, which offers the draft.
+    const refreshed = page.waitForResponse(response =>
+      new URL(response.url()).pathname === '/api/guidance' && response.ok(), { timeout: 60000 });
+    await topbar446(page, 'diagnose');
+    await refreshed;
+    await settled(page);
+    await topbar446(page, 'changes');
+    await watched446(page, 'S166', 'trial', "the topbar's Changes after an earlier Open Plan");
+    await waitForReplayAssertion(async seen => {
+      assert.ok(seen(await nameplate446(page, 'trial')).includes('open-plan'),
+        "S166 the watched Trial's nameplate must offer Open Plan while a draft is saved");
+    }, 'S166 the Trial offers its draft');
+    // 6. Diagnose's return from the Trial's nights lands on the Trial.
+    await press(page, '.gf-stage-trial [data-follow-up-inspect]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('[data-action="watch"]').allTextContents()).map(text => text.trim()),
+        ['Return to Trial'], 'S166 Diagnose opened from the watched Trial must offer "Return to Trial"');
+    }, 'S166 Diagnose offers the return to the Trial');
+    await press(page, '[data-action="watch"]');
+    await watched446(page, 'S166', 'trial', '"Return to Trial"');
+  },
+  // #446 · 2026-09-23. A watched Trial reaches the draft saved beside it, and the
+  // server, not the desk, refuses to record it. The page reloads after every
+  // write the story makes through its own requests, so it reads the store.
+  async S167(page, ctx) {
+    assert.ok(ctx.capturePump, 'S167 requires CASE_STORE_DIR for a synthetic pump capture');
+    const items = basalItems446(await read(page, '/api/guidance'), 'S167');
+    const drafted = await page.request.put(url446(page, '/api/plan'), { data: { items } });
+    assert.equal(drafted.status(), 200, 'S167 premise: the Plan draft saves');
+    const applied = await page.request.post(url446(page, '/api/plan/apply'), { data: {} });
+    assert.equal(applied.status(), 200, `S167 premise: the Plan decision records: ${await applied.text()}`);
+    await ctx.capturePump('match');
+    await admitted446(page, 'S167', 'trial');
+    const watching = await read(page, '/api/guidance');
+    assert.equal(watching.disposition, 'active_change', 'S167 premise: the server serves the active Trial');
+    assert.equal((watching.draft?.items || []).length, 0, 'S167 premise: no draft is served before the story saves one');
+    // 1. With no draft, the Trial's nameplate offers no Open Plan.
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S167', 'trial', 'an arrival with no draft');
+    assert.ok(!(await nameplate446(page, 'trial')).includes('open-plan'),
+      "S167 with no draft, the Trial's nameplate must offer no Open Plan");
+    // 2. With a draft saved while it runs, it offers Open Plan beside View change
+    //    record, and the Revert to Plan section keeps its own control.
+    const saved = await draftWhileWatched446(page, 'S167');
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S167', 'trial', 'an arrival with a saved draft');
+    await waitForReplayAssertion(async seen => {
+      const end = seen(await nameplate446(page, 'trial'));
+      assert.equal(end[end.indexOf('history') + 1], 'open-plan',
+        "S167 the Trial's nameplate must offer Open Plan beside View change record");
+      assert.equal(seen(await page.locator('[data-part="plan-route"] [data-action="plan-route"]').count()), 1,
+        'S167 the Revert to Plan section must keep its own control');
+    }, 'S167 the Trial offers its draft');
+    // 3. The nameplate's Open Plan: the explicit Plan arrival, the draft unchanged.
+    await press(page, '.gf-stage-trial [data-action="open-plan"]');
+    await planDraft446(page, 'S167', "the Trial's Open Plan");
+    const after = await read(page, '/api/plan');
+    assert.deepEqual([after.items, after.updated_at], [saved.items, saved.updated_at],
+      "S167 the Trial's Open Plan must leave the saved draft unchanged");
+    // 4. Record decision is refused by the server while the Trial is watched.
+    const recorded = (await read(page, '/api/plan/history')).history.length;
+    await press(page, '[data-set="record"]');
+    await waitForReplayAssertion(async seen => {
+      const desk = seen(await page.locator('.gf-desk').allTextContents()).join(' ');
+      assert.ok(/Recording the decision failed/.test(desk) && seen(await page.locator('[data-set="retry-save"]').count()) === 1,
+        'S167 Record decision must fail visibly while the Trial is watched');
+      assert.equal(seen((await read(page, '/api/plan/history')).history.length), recorded,
+        'S167 a refused record must add no Plan history record');
+    }, 'S167 the server refuses the record');
+    // 5. The next topbar Changes lands on the Trial.
+    await topbar446(page, 'changes');
+    await watched446(page, 'S167', 'trial', "the next topbar Changes");
+  },
+  // #446 · 2026-09-23. A watched Focus names its return and reaches its draft.
+  // Diagnose's return label is read before the nameplate, so a base run
+  // captures the crumb before it fails.
+  async S168(page) {
+    await admitted446(page, 'S168', 'focus');
+    const [segment] = (await read(page, '/api/pump-settings')).profile?.segments || [];
+    assert.ok(segment, 'S168 premise: the case must serve a pump profile');
+    await draftWhileWatched446(page, 'S168', [{ type: 'basal', start_min: segment.start_min, value: segment.basal_rate }]);
+    // 1. Changes shows the Focus's own view.
+    await page.goto(url446(page, '/?to=changes'));
+    await watched446(page, 'S168', 'focus', 'an arrival with a saved draft');
+    // 2. Diagnose, opened from the Focus's Inspect evidence, names the Focus.
+    await press(page, '.gf-stage-focus [data-follow-up-inspect]');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await page.locator('[data-action="watch"]').allTextContents()).map(text => text.trim()),
+        ['Return to Focus'], 'S168 Diagnose opened from the watched Focus must offer "Return to Focus" and no "Return to Trial"');
+    }, 'S168 Diagnose names the Focus in its return');
+    // 3. It lands on the Focus.
+    await press(page, '[data-action="watch"]');
+    await watched446(page, 'S168', 'focus', '"Return to Focus"');
+    // 4. The Focus's nameplate Open Plan opens the draft at the Plan's address.
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.gf-stage-focus .gf-end [data-action="open-plan"]').count()), 1,
+        "S168 the watched Focus's nameplate must offer Open Plan while a draft is saved");
+    }, 'S168 the Focus offers its draft');
+    await press(page, '.gf-stage-focus [data-action="open-plan"]');
+    await planDraft446(page, 'S168', "the Focus's Open Plan");
   },
   async S107(page) {
     await fullDayDiagnose(page);

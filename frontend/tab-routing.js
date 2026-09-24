@@ -26,7 +26,8 @@ export function resolveDestination(destination) {
 /**
  * The address Diagnose writes for the case on screen (ADR 428): exactly the keys
  * its entry restoration reads, plus a `from` that names another destination,
- * because Diagnose itself renders that return (Changes' "Return to Trial").
+ * because Diagnose itself renders that return (Changes' "Return to Trial" or
+ * "Return to Focus", named for the watched change).
  * No Day-entry key and no return-focus selector survives, and the Findings
  * index — no case — is no context at all.
  */

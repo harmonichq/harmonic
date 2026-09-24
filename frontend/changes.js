@@ -35,6 +35,8 @@ configureFollowUp({ openRecord });
 // half-typed reason live here rather than on the desk's shared view.
 const aside = { open: false, reason: '', subject: null };
 let planOpen = false;
+let planArrival = null;
+let arrivalRead = null;
 let focusArrival = null;
 
 function inspectSelected() {
@@ -192,6 +194,9 @@ function unselectedFrame(state) {
     '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>');
 }
 
+/** Guidance has not answered yet: nothing is claimed until it does. */
+const readingFrame = () => emptyFrame('Changes', 'Reading', 'Asking what needs attention.', '');
+
 /**
  * The read failed and none has answered before it. Distinct from quiet: this
  * says the evidence could not load, and offers the retry (S19).
@@ -283,18 +288,34 @@ function bind(host) {
  * unavailable, and an active change is neither (HV2-31, S18, S19).
  */
 export function mount(host, deps = {}) {
+  // Every arrival forgets the last visit's Open Plan and re-reads guidance once,
+  // here and nowhere else; a re-render within the visit does neither. So a plain
+  // arrival — the topbar, Diagnose's return, the Focus-pin landing, a history
+  // step, the dock — leads with the disposition the server serves now: while a
+  // change is watched that is the watched Trial or Focus, never a Plan opened on
+  // an earlier visit and never a Plan an earlier read still names, as when the
+  // hourly fetch starts a Trial behind the page (ADR 446, HV2-15).
+  if (planArrival !== deps.navigation) {
+    planArrival = deps.navigation; planOpen = false;
+    const read = { answered: false, held: false };
+    arrivalRead = read;
+    loadGuidance({ force: true }).then(() => { read.answered = true; if (read.held) render(); });
+  }
   if (deps.context?.occurrence?.startsWith('record:') || deps.context?.subject === 'history') {
     mountHistory(host, deps); return;
   }
-  // The watch dock's arrival names the watched record: while the server serves
-  // an active change, a Plan this page opened earlier does not take its seat
-  // (ADR 429). Every other arrival keeps the open-Plan precedence.
-  const watchArrival = deps.context?.subject === 'watch' && disposition() === 'active_change';
-  if ((planOpen && planUnderway() && !watchArrival) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
+  if ((planOpen && planUnderway()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
+  // A served draft or pending Plan seats the Plan only once this arrival's read
+  // has answered. Every other frame draws from the read in hand and redraws when
+  // the new one lands, as it always has.
+  if (['draft', 'pending_plan'].includes(disposition())) {
+    if (!arrivalRead.answered) { arrivalRead.held = true; host.innerHTML = readingFrame(); return; }
+    mountPlan(host, deps); return;
+  }
   if (guidanceError()) { host.innerHTML = failedFrame(); bind(host); return; }
   if (!guidanceSettled()) {
     loadGuidance();
-    host.innerHTML = emptyFrame('Changes', 'Reading', 'Asking what needs attention.', '');
+    host.innerHTML = readingFrame();
     return;
   }
   if (!guidance()) { host.innerHTML = failedFrame(); bind(host); return; }

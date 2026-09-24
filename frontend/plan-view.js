@@ -500,7 +500,8 @@ function bind(host) {
     button.onclick = () => {
       const action = button.dataset.set;
       if (action === 'stage') {
-        if (stage(selectedConcern())) { view.focusAfterRender = '[data-set="save-draft"]'; navigate('changes'); }
+        // The reader is already on the Plan: stay on it, in place (ADR 446).
+        if (stage(selectedConcern())) { view.focusAfterRender = '[data-set="save-draft"]'; render(); }
       } else if (action === 'unstage') {
         unstage(); view.focusAfterRender = '[data-set="stage"]'; render();
       } else if (action === 'save-draft') {

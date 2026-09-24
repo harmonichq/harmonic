@@ -236,6 +236,72 @@ test('S139 and S140 are unique app-only C4 dock stories on their watched cases',
   }
 });
 
+test('S166–S168 are unique app-only #446 arrival stories on their watched cases', () => {
+  for (const [id, expectedCase] of [['S166', 'basal-lower'], ['S167', 'basal-lower'], ['S168', 'c3-focus']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'HV2-15');
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
+// #446: a c3-focus page whose server serves an active Focus and saves a draft
+// beside it. `returnLabel` and `nameplateOpenPlan` shape it like the base (no
+// nameplate Open Plan, "Return to Trial") or like the branch.
+function focusDraftPage446({ returnLabel, nameplateOpenPlan }) {
+  let url = 'http://synthetic.invalid/';
+  let at = 'diagnose';
+  const writes = [];
+  const shown = {
+    changes: { 'nav.v2-nav [aria-current="page"][data-destination="changes"]': 1, '.gf-stage-focus': 1,
+      '.gf-stage-focus [data-follow-up-inspect]': 1,
+      '.gf-stage-focus .gf-end [data-action="open-plan"]': nameplateOpenPlan ? 1 : 0,
+      '.gf-stage-focus [data-action="open-plan"]': nameplateOpenPlan ? 1 : 0 },
+    diagnose: { '[data-action="watch"]': 1 },
+    plan: { 'nav.v2-nav [aria-current="page"][data-destination="changes"]': 1, '.gf-plan': 1 },
+  };
+  const texts = { diagnose: { '[data-action="watch"]': [returnLabel] }, plan: { '.gf-stage .gf-kicker b': ['Draft saved'] } };
+  const presses = { '.gf-stage-focus [data-follow-up-inspect]': ['diagnose', '/diagnose?from=changes'],
+    '[data-action="watch"]': ['changes', '/changes'], '.gf-stage-focus [data-action="open-plan"]': ['plan', '/changes?subject=plan'] };
+  const served = {
+    '/api/verify/trials': { admission: { state: 'available', active_kind: 'focus', active_id: 1 }, trials: [], focuses: [{ id: 1 }] },
+    '/api/pump-settings': { profile: { segments: [{ start_min: 0, basal_rate: 0.8 }] } },
+    '/api/guidance': { disposition: 'active_change', draft: { items: [{ type: 'basal', start_min: 0, value: 0.8 }] } },
+    '/api/plan': { items: [{ type: 'basal', start_min: 0, value: 0.8 }], updated_at: '2026-01-02 04:00:00' },
+  };
+  const answer = body => ({ status: () => 200, text: async () => '', json: async () => body });
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => { if (!shown[at][selector]) throw new Error(`synthetic page: ${selector} is not on ${at}`); },
+    click: async () => { const [next, path] = presses[selector]; at = next; url = new URL(path, url).href; },
+    count: async () => shown[at][selector] ?? 0,
+    allTextContents: async () => texts[at]?.[selector] ?? [],
+  });
+  return {
+    writes, url: () => url, locator: node,
+    goto: async target => { url = target; at = new URL(target).searchParams.get('subject') === 'plan' ? 'plan' : 'changes'; },
+    request: {
+      get: async target => answer(served[new URL(target).pathname]),
+      put: async (target, { data }) => { writes.push([new URL(target).pathname, data]); return answer({}); },
+    },
+  };
+}
+
+test('S168 names the Focus in its return and opens its draft on a branch-shaped page', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = focusDraftPage446({ returnLabel: 'Return to Focus', nameplateOpenPlan: true });
+  await C4_STORIES.S168(page);
+  assert.deepEqual(page.writes, [['/api/plan', { items: [{ type: 'basal', start_min: 0, value: 0.8 }] }]],
+    'S168 saves one draft beside the Focus, from the served pump profile');
+});
+
+test('S168 reaches its feature assertion on the base shape, never a premise', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await assert.rejects(withReplayAssertionTimeout(100, () => C4_STORIES.S168(
+    focusDraftPage446({ returnLabel: 'Return to Trial', nameplateOpenPlan: false }))),
+  /S168 Diagnose opened from the watched Focus must offer "Return to Focus" and no "Return to Trial"/);
+});
+
 test('S151–S153 are unique app-only C4 basal-lane stories, served from the verdict gallery', () => {
   for (const id of ['S151', 'S152', 'S153']) {
     const entries = REGISTRY.filter(([entry]) => entry === id);

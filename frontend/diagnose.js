@@ -390,7 +390,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!seated) return;
     if (entry.from === 'changes' && payload?.watched) {
       const back = root.ownerDocument.createElement('button');
-      back.className = 'gf-btn'; back.dataset.action = 'watch'; back.textContent = 'Return to Trial';
+      // Named for the served watched change it returns to (ADR 446).
+      back.className = 'gf-btn'; back.dataset.action = 'watch';
+      back.textContent = payload.watched.kind === 'focus' ? 'Return to Focus' : 'Return to Trial';
       back.onclick = () => navigate('changes');
       root.querySelector('header.crumb')?.append(back);
     }

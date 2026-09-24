@@ -52,6 +52,7 @@ EXPECTED_CASE_NAMES = (
     "behavioral-meal-over-delivery",
     "behavioral-correction-stacking",
     "behavioral-over-treated-low",
+    "behavioral-over-treated-rebound-ownership",
     "behavioral-correction-on-iob",
     "behavioral-missed-meal", "behavioral-meal-bolus-short",
     "behavioral-carb-log-fasting-exclusion",

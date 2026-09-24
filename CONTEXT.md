@@ -513,14 +513,16 @@ Why the engine withheld a Lever from an episode — the reason it stayed silent.
 closed set of six: *insufficient-data* (too little CGM to judge), *no-trigger*
 (the behavior plainly didn't happen), *under-threshold* (it happened but fell
 short of the bar — the near-miss), *upstream-cause* (an observable recent low or
-defensive suspend already explains the move — the context gate), *prior-high-
+defensive suspend already explains the move — the context gate — or the rise is
+the rebound of an over-treated low, which owns every High its rebound reaches,
+so that High is never also a missed meal or a meal bolus that fell short), *prior-high-
 baseline* (the rise was from an already-high start, not from-flat), and *horizon-
 expired* (the outcome never arrived inside the classifier's window). The negative
 complement of a **Lever**: every episode gets either one Lever or one Silence
 reason. Distinct from being **outranked** — an episode whose behavior *did* match
 but lost episode ownership to another Lever and remains retained evidence, decided at
 attribution time across anchors, not a property of any one judgment.
-_Avoid_: gate reason (the "gate" is only the upstream-cause case, not the whole
+_Avoid_: gate reason (the "gate" is only one upstream-cause source, not the whole
 set), non-finding, null lever, miss.
 
 ## Outcome summary

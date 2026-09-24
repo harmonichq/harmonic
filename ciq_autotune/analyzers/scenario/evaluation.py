@@ -16,7 +16,13 @@ from ..eating_sequence_config import EatingSequenceConfig
 from ..scenario_config import ScenarioConfig
 from ..classifiers.evidence import EvidenceTier
 from .anchors import collect_anchors
-from .attribute import Attribution, attribute, split_caused_over_treatments
+from .attribute import (
+    Attribution,
+    _next_meal_bolus_t,
+    attribute,
+    high_moment_rebound,
+    split_caused_over_treatments,
+)
 from .evidence_population import policy_for
 from .levers import Lever, Exposure
 from .payload import Step, event_ref, window_ref
@@ -162,15 +168,20 @@ class Evaluation:
     attributed: tuple[AttributedOccurrence, ...]
 
 def bounded_episode(index, group, attr, cgm, *, next_start=None,
-                    next_lever_start=None, scenario_config=ScenarioConfig()):
-    """Resolve geometry before comparing owners, including leverless groups."""
+                    next_lever_start=None, owned_end=None, scenario_config=ScenarioConfig()):
+    """Resolve geometry before comparing owners, including leverless groups.
+
+    ``owned_end`` is where the last High run an over-treated low owns stops counting
+    on the low (ADR 422); its scored span reaches the later of that and the guarded
+    terminal, still clamped at the next lever-bearing episode.
+    """
     start, end = group.start, group.end
     if next_start is not None:
         end = min(end, next_start)
     ctx = _slice(cgm, start - timedelta(minutes=scenario_config.engine_context_pad_min),
                  end + timedelta(minutes=scenario_config.engine_context_pad_min))
     if attr.lever is Lever.OVER_TREATED_LOW and attr.rebound_end is not None:
-        terminal = attr.rebound_end
+        terminal = attr.rebound_end if owned_end is None else max(attr.rebound_end, owned_end)
         if next_lever_start is not None:
             terminal = min(terminal, next_lever_start)
         end = max(end, terminal)
@@ -223,6 +234,13 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
     sequences = evaluate_sequences(bolus, cgm, carb_entries, window_start=start,
                                    window_end=end, config=EatingSequenceConfig())
     groups, families = _context(bolus, cgm, basal, isf, scenario_config, low_answers)
+    # A fired over-treated low owns every real High its guarded rebound reaches, in
+    # its own episode or a later one (ADR 422). Episodes are walked in order and a
+    # rebounding low heads its own, so its rebound is known before any High it can
+    # own. A #155 High-moment carries its rebound on its anchor: that one is known
+    # before the walk, because its real High can sit in the earlier low-moment.
+    known = [high_moment_rebound(a) for group in groups for a in group.anchors
+             if a.rebound_nadir_bg is not None]
     attrs = []
     for index, group in enumerate(groups):
         lo = group.start - timedelta(minutes=scenario_config.engine_context_pad_min)
@@ -230,9 +248,13 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
         if bound_classifier_context and index + 1 < len(groups):
             context_end = min(context_end, groups[index + 1].start)
         hi = context_end + timedelta(minutes=scenario_config.engine_context_pad_min)
-        attrs.append(attribute(group, _slice(cgm, lo, hi), _slice(bolus, lo, hi),
-                               _slice(basal, lo, hi), isf=isf,
-                               scenario_config=scenario_config, low_answers=low_answers))
+        attr = attribute(group, _slice(cgm, lo, hi), _slice(bolus, lo, hi),
+                         _slice(basal, lo, hi), isf=isf,
+                         scenario_config=scenario_config, low_answers=low_answers,
+                         known_rebounds=tuple(known))
+        attrs.append(attr)
+        known.extend(owner for owner in attr.fired_rebounds if owner not in known)
+    owned_end = _owned_ends(attrs, bolus, scenario_config)
     # Ordinary bounds establish whether a formerly leverless group can own a
     # sequence. It then clamps an earlier rebound in the same pre-pass.
     bearing = [a.lever is not None for a in attrs]
@@ -248,7 +270,7 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
         ep = bounded_episode(i, group, attr, cgm,
             next_start=groups[i + 1].start if i + 1 < len(groups) else None,
             next_lever_start=next((g.start for j, g in enumerate(groups) if j > i and bearing[j]), None),
-            scenario_config=scenario_config)
+            owned_end=owned_end.get(i), scenario_config=scenario_config)
         candidates = [Candidate(match, policy_for(match.lever).occurrence_for_episode(
             ep.id, bolus, match.trigger_t, scenario_config=scenario_config))
             for match in attr.matches]
@@ -284,6 +306,25 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
     recurrences = tuple(_recurrence(ep, families, bolus, scenario_config) for ep in owned
                         if ep.attribution.lever is not None)
     return Evaluation(tuple(owned), families, sequences, counts, prices, recurrences)
+
+def _owned_ends(attrs, bolus, scenario_config):
+    """Per owning episode index, where its owned High runs stop counting (ADR 422).
+
+    Each owned High run counts on the episode that fired its owner until the run
+    ends, but never past the guarded scan's meal-bolus stop: what follows the next
+    substantial meal bolus after the nadir belongs to the meal.
+    """
+    owner_episode = {owner: i for i, attr in enumerate(attrs)
+                     for owner in attr.fired_rebounds}
+    ends = {}
+    for attr in attrs:
+        for high, owner in attr.owned_highs:
+            stop = _next_meal_bolus_t(bolus, owner.nadir_t, scenario_config=scenario_config)
+            run_end = high.reach_end if stop is None else min(high.reach_end, stop)
+            i = owner_episode[owner]
+            ends[i] = max(ends.get(i, run_end), run_end)
+    return ends
+
 
 def _recurrence(ep, families, bolus, scenario_config):
     attr = ep.attribution

@@ -21,6 +21,10 @@ classifier picks the rise up and asks whether the announcement was *enough*. The
 window and the meal floor MUST therefore match missed-meal's — see the
 ``meal_bolus_short_*`` fields on :class:`~..scenario_config.ScenarioConfig`.
 
+The same fired over-treated-low rebound that owns a rise for missed meal owns it here
+(ADR 422): the two classifiers split one rise population, so a rebound High claimed
+by neither can never be claimed by the other.
+
 The rise and the correction are **observed** (a slope and a bolus row are hard feed
 facts), but "the dose fell short" is a judgment laid over them, so a positive verdict
 is ``INFERRED``. Measured on a 30-day window: of the 10 rising digestion-window highs
@@ -40,6 +44,7 @@ from ...model import CgmSeries
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
+from .missed_meal import ReboundOwner
 
 
 @dataclass(frozen=True)
@@ -131,6 +136,7 @@ def classify_meal_bolus_short(
     basal_events: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
+    rebound_owner: Optional[ReboundOwner] = None,
 ) -> MealBolusShortVerdict:
     """Did the meal dose behind the rise at ``anchor`` fall short of the outcome?
 
@@ -140,9 +146,10 @@ def classify_meal_bolus_short(
        (``NOT_IN_DATA`` / ``INSUFFICIENT_DATA``).
     2. Slope at/under ``rise_slope`` → BG is ~flat; nothing ran away from the dose →
        **not matched** (``OBSERVED`` / ``NO_TRIGGER``).
-    3. The shared **context gate** finds a recent low or defensive suspend → the rise
-       is a recovery, not a dose that fell short → **not matched** (``INFERRED`` /
-       ``UPSTREAM_CAUSE``). This is what keeps a defensive-suspend rebound out (#63 D1).
+    3. The shared **context gate**, judged under ``scenario_config``, finds a recent
+       low or defensive suspend → the rise is a recovery, not a dose that fell short →
+       **not matched** (``INFERRED`` / ``UPSTREAM_CAUSE``). This is what keeps a
+       defensive-suspend rebound out (#63 D1).
     4. **No** counted meal bolus in the digestion window → there was no meal dose to
        fall short; that rise is missed-meal's to judge → **not matched** (``OBSERVED``
        / ``NO_TRIGGER``).
@@ -150,8 +157,12 @@ def classify_meal_bolus_short(
        ``correction_horizon_min`` past the anchor → the shortfall was never
        corroborated, so it is not claimed → **not matched** (``OBSERVED`` /
        ``HORIZON_EXPIRED``).
-    6. All four hold → **matched** (``INFERRED``): the dose did not cover what
-       followed, evidenced by the correction that was needed.
+    6. All four hold, but ``rebound_owner`` names the fired over-treated low whose
+       rebound reaches this rise → the low owns it → **not matched** (``INFERRED`` /
+       ``UPSTREAM_CAUSE``, ADR 422). Consulted only here, so every earlier exit keeps
+       its own reason and detail.
+    7. All four hold and no rebound owns the rise → **matched** (``INFERRED``): the
+       dose did not cover what followed, evidenced by the correction that was needed.
 
     Returns a :class:`MealBolusShortVerdict`.
     """
@@ -188,7 +199,7 @@ def classify_meal_bolus_short(
             rise_slope=slope,
         )
 
-    gate = upstream_cause(anchor, cgm_readings, basal_events)
+    gate = upstream_cause(anchor, cgm_readings, basal_events, scenario_config=scenario_config)
     if gate.explained:
         return MealBolusShortVerdict(
             matched=False,
@@ -247,6 +258,22 @@ def classify_meal_bolus_short(
         )
 
     correction_min = round((correction.t - meal.t).total_seconds() / 60.0)
+    if rebound_owner is not None:
+        return MealBolusShortVerdict(
+            matched=False,
+            detail=(
+                f"glucose kept rising {slope:.1f} mg/dL/min after a meal bolus "
+                f"{meal_min_ago} min earlier, but {rebound_owner.detail} — the rise "
+                "belongs to that low, not a meal dose that fell short"
+            ),
+            evidence_tier=EvidenceTier.INFERRED,
+            silence_reason=SilenceReason.UPSTREAM_CAUSE,
+            rise_slope=slope,
+            gate=gate,
+            meal_t=meal.t,
+            correction_t=correction.t,
+            digestion_window_start=digestion_window_start,
+        )
     return MealBolusShortVerdict(
         matched=True,
         detail=(

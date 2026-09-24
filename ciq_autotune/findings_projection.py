@@ -374,8 +374,9 @@ class FindingsProjection:
         window would let an empty scope read as "0 highs had no cause", which is the
         opposite of what happened.
 
-        Read straight off the exposures feed, which counts it episode-wise
-        (:func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
+        Read straight off the exposures feed, which counts it episode-wise and leaves
+        out every High an over-treated low's rebound owns (ADR 422,
+        :func:`~.explore_exposures.build_exposures`); nothing is re-derived here, the
         same way no row's membership is. ``text`` is ``None`` at zero so the surface
         has one thing to test and no threshold of its own — a count with nothing to
         report publishes no sentence.

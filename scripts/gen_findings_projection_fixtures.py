@@ -608,6 +608,10 @@ def exposures():
     # `cause_lever` would therefore count every non-driver high, which is exactly
     # the 27-vs-20 error the honest count exists to avoid. Build the driven-episode
     # set over ALL families first, then roll each family up against it.
+    # `build_exposures` also never counts a High an over-treated low's rebound owns
+    # (ADR 422). This fixture's one owned High is the over-treated low's rebound
+    # High, which shares its low's lever-bearing Episode, so the Episode-wise rule
+    # already leaves it out.
     driven = {item["ep_id"] for occurrences in families.values()
               for item in occurrences if item["cause_lever"] is not None}
     for occurrences in families.values():
@@ -635,7 +639,10 @@ def _rollup(occurrences, driven):
     occurrence outside it is one the engine found no cause for at all. On this
     fixture ep6 is the single such high, so the highs rollup carries
     ``uncaused: 1`` — a non-zero value, because a rollup frozen at zero would let
-    the whole count regress to nothing without failing anything.
+    the whole count regress to nothing without failing anything. A High an
+    over-treated low's rebound owns is never uncaused (ADR 422); the fixture's one
+    owned High, the rebound High, shares its low's lever-bearing Episode, so it is
+    already inside ``driven``.
     """
     by_cause = {}
     for item in occurrences:

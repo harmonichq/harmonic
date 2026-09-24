@@ -72668,67 +72668,85 @@
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-22 13:55:00"
             },
             "date": "2024-06-22",
             "id": "o_1c7ab8541bea7ff1e68acbe283889b48",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-23 13:55:00"
             },
             "date": "2024-06-23",
             "id": "o_b77597483c828236130a88374464ca68",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-24 12:10:00"
             },
             "date": "2024-06-24",
             "id": "o_f4e56d3e19cc977b7f7656634693ccd7",
+            "outcome": null,
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-25 12:10:00"
             },
             "date": "2024-06-25",
             "id": "o_5531ef9d26ca5c41b1fd3640751a0e7a",
+            "outcome": null,
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-26 16:10:00"
             },
             "date": "2024-06-26",
             "id": "o_4aea0184b71465cf6fcaca9305e03bf0",
+            "outcome": null,
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-27 22:00:00"
             },
             "date": "2024-06-27",
             "id": "o_0d9c9210025df65d6afe39adf68dd8e3",
+            "outcome": null,
             "verdict": "outranked"
           }
         ],
@@ -80891,67 +80909,85 @@
               {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-22 13:55:00"
                 },
                 "date": "2024-06-22",
                 "id": "o_1c7ab8541bea7ff1e68acbe283889b48",
+                "outcome": null,
                 "verdict": "outranked"
               },
               {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-23 13:55:00"
                 },
                 "date": "2024-06-23",
                 "id": "o_b77597483c828236130a88374464ca68",
+                "outcome": null,
                 "verdict": "outranked"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-24 12:10:00"
                 },
                 "date": "2024-06-24",
                 "id": "o_f4e56d3e19cc977b7f7656634693ccd7",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-25 12:10:00"
                 },
                 "date": "2024-06-25",
                 "id": "o_5531ef9d26ca5c41b1fd3640751a0e7a",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-26 16:10:00"
                 },
                 "date": "2024-06-26",
                 "id": "o_4aea0184b71465cf6fcaca9305e03bf0",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 54.25,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-27 22:00:00"
                 },
                 "date": "2024-06-27",
                 "id": "o_0d9c9210025df65d6afe39adf68dd8e3",
+                "outcome": null,
                 "verdict": "fired"
               }
             ],
@@ -89983,6 +90019,8 @@
               "detail": {
                 "anchor": {
                   "bg": 54.25,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-27 22:00:00"
@@ -90181,6 +90219,22 @@
                 ],
                 "id": "o_0d9c9210025df65d6afe39adf68dd8e3",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": {
+                    "lever": "correction_on_iob",
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                    "title": "Correction on active insulin"
+                  },
+                  "habits": [
+                    {
+                      "detail": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "fired"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "fired"
               },
@@ -90191,6 +90245,8 @@
               "detail": {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-22 13:55:00"
@@ -90389,6 +90445,18 @@
                 ],
                 "id": "o_1c7ab8541bea7ff1e68acbe283889b48",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "outranked"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "outranked"
               },
@@ -90399,6 +90467,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-26 16:10:00"
@@ -90597,6 +90667,18 @@
                 ],
                 "id": "o_4aea0184b71465cf6fcaca9305e03bf0",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -90607,6 +90689,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-25 12:10:00"
@@ -90805,6 +90889,18 @@
                 ],
                 "id": "o_5531ef9d26ca5c41b1fd3640751a0e7a",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -90815,6 +90911,8 @@
               "detail": {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-23 13:55:00"
@@ -91013,6 +91111,18 @@
                 ],
                 "id": "o_b77597483c828236130a88374464ca68",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "outranked"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "outranked"
               },
@@ -91023,6 +91133,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-06-24 12:10:00"
@@ -91221,6 +91333,18 @@
                 ],
                 "id": "o_f4e56d3e19cc977b7f7656634693ccd7",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -92935,6 +93059,8 @@
           "detail": {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-27 22:00:00"
@@ -93133,6 +93259,18 @@
             ],
             "id": "o_0d9c9210025df65d6afe39adf68dd8e3",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 60 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -93143,6 +93281,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-22 13:55:00"
@@ -93341,6 +93481,22 @@
             ],
             "id": "o_1c7ab8541bea7ff1e68acbe283889b48",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -93351,6 +93507,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-26 16:10:00"
@@ -93549,6 +93707,18 @@
             ],
             "id": "o_4aea0184b71465cf6fcaca9305e03bf0",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "no CGM rebound reading was available to judge this low",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -93559,6 +93729,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-25 12:10:00"
@@ -93757,6 +93929,18 @@
             ],
             "id": "o_5531ef9d26ca5c41b1fd3640751a0e7a",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 104 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -93767,6 +93951,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-23 13:55:00"
@@ -93965,6 +94151,22 @@
             ],
             "id": "o_b77597483c828236130a88374464ca68",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -93975,6 +94177,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-06-24 12:10:00"
@@ -94173,6 +94377,18 @@
             ],
             "id": "o_f4e56d3e19cc977b7f7656634693ccd7",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded to 150 mg/dL, below the 160 mg/dL over-treated-low bar",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -95078,67 +95294,85 @@
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
             },
             "date": "2024-05-23",
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
             },
             "date": "2024-05-24",
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
             },
             "date": "2024-05-25",
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
+            "outcome": null,
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
             },
             "date": "2024-05-26",
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
+            "outcome": null,
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
             },
             "date": "2024-05-27",
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
+            "outcome": null,
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
             },
             "date": "2024-05-28",
             "id": "o_7693e91669018a82bb3c0a6530581479",
+            "outcome": null,
             "verdict": "outranked"
           }
         ],
@@ -104172,6 +104406,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
@@ -104370,6 +104606,22 @@
             ],
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -104380,6 +104632,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
@@ -104578,6 +104832,18 @@
             ],
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 104 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -104588,6 +104854,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
@@ -104786,6 +105054,18 @@
             ],
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "no CGM rebound reading was available to judge this low",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -104796,6 +105076,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
@@ -104994,6 +105276,18 @@
             ],
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded to 150 mg/dL, below the 160 mg/dL over-treated-low bar",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -105004,6 +105298,8 @@
           "detail": {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
@@ -105202,6 +105498,18 @@
             ],
             "id": "o_7693e91669018a82bb3c0a6530581479",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 60 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -105212,6 +105520,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
@@ -105410,6 +105720,22 @@
             ],
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -105486,7 +105812,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+              "code_version": "d84a518921b6cfd6ec1e156771e1a9c3d9d60bbf15457211ce8a81de357cf9c2",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105578,7 +105904,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+              "id": "defbc9b632e21587497108c34c881f15ee89a3914acc19be0fb79aa17c21ba8e",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105666,7 +105992,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "648302dfc1a50c2d9731f42c029c0c1ef3574a3384216c3166b8af2e1b80aace",
+                  "code_version": "d84a518921b6cfd6ec1e156771e1a9c3d9d60bbf15457211ce8a81de357cf9c2",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105758,7 +106084,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "5257860df1354aecafdc14c351ea9c4fdfee1129385f920603b25801ce52bf16",
+                  "id": "defbc9b632e21587497108c34c881f15ee89a3914acc19be0fb79aa17c21ba8e",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -125057,67 +125383,85 @@
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
             },
             "date": "2024-05-23",
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
             },
             "date": "2024-05-24",
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
             },
             "date": "2024-05-25",
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
+            "outcome": null,
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
             },
             "date": "2024-05-26",
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
+            "outcome": null,
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
             },
             "date": "2024-05-27",
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
+            "outcome": null,
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
             },
             "date": "2024-05-28",
             "id": "o_7693e91669018a82bb3c0a6530581479",
+            "outcome": null,
             "verdict": "outranked"
           }
         ],
@@ -134151,6 +134495,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
@@ -134349,6 +134695,22 @@
             ],
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -134359,6 +134721,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
@@ -134557,6 +134921,18 @@
             ],
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 104 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -134567,6 +134943,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
@@ -134765,6 +135143,18 @@
             ],
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "no CGM rebound reading was available to judge this low",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -134775,6 +135165,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
@@ -134973,6 +135365,18 @@
             ],
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded to 150 mg/dL, below the 160 mg/dL over-treated-low bar",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -134983,6 +135387,8 @@
           "detail": {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
@@ -135181,6 +135587,18 @@
             ],
             "id": "o_7693e91669018a82bb3c0a6530581479",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 60 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -135191,6 +135609,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
@@ -135389,6 +135809,22 @@
             ],
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -186334,67 +186770,85 @@
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
             },
             "date": "2024-05-23",
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
             },
             "date": "2024-05-24",
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
+            "outcome": null,
             "verdict": "fired"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
             },
             "date": "2024-05-25",
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
+            "outcome": null,
             "verdict": "near_miss"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
             },
             "date": "2024-05-26",
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
+            "outcome": null,
             "verdict": "clean"
           },
           {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
             },
             "date": "2024-05-27",
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
+            "outcome": null,
             "verdict": "no_data"
           },
           {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
             },
             "date": "2024-05-28",
             "id": "o_7693e91669018a82bb3c0a6530581479",
+            "outcome": null,
             "verdict": "outranked"
           }
         ],
@@ -194557,67 +195011,85 @@
               {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-23 13:55:00"
                 },
                 "date": "2024-05-23",
                 "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
+                "outcome": null,
                 "verdict": "outranked"
               },
               {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-24 13:55:00"
                 },
                 "date": "2024-05-24",
                 "id": "o_7aa87ba93366d765cc0a86c27d922409",
+                "outcome": null,
                 "verdict": "outranked"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-25 12:10:00"
                 },
                 "date": "2024-05-25",
                 "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-26 12:10:00"
                 },
                 "date": "2024-05-26",
                 "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-27 16:10:00"
                 },
                 "date": "2024-05-27",
                 "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
+                "outcome": null,
                 "verdict": "clean"
               },
               {
                 "anchor": {
                   "bg": 54.25,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-28 22:00:00"
                 },
                 "date": "2024-05-28",
                 "id": "o_7693e91669018a82bb3c0a6530581479",
+                "outcome": null,
                 "verdict": "fired"
               }
             ],
@@ -203649,6 +204121,8 @@
               "detail": {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-23 13:55:00"
@@ -203847,6 +204321,18 @@
                 ],
                 "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "outranked"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "outranked"
               },
@@ -203857,6 +204343,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-26 12:10:00"
@@ -204055,6 +204543,18 @@
                 ],
                 "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -204065,6 +204565,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-27 16:10:00"
@@ -204263,6 +204765,18 @@
                 ],
                 "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -204273,6 +204787,8 @@
               "detail": {
                 "anchor": {
                   "bg": 60.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-25 12:10:00"
@@ -204471,6 +204987,18 @@
                 ],
                 "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "clean"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "clean"
               },
@@ -204481,6 +205009,8 @@
               "detail": {
                 "anchor": {
                   "bg": 54.25,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-28 22:00:00"
@@ -204679,6 +205209,22 @@
                 ],
                 "id": "o_7693e91669018a82bb3c0a6530581479",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": {
+                    "lever": "correction_on_iob",
+                    "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                    "title": "Correction on active insulin"
+                  },
+                  "habits": [
+                    {
+                      "detail": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "fired"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "fired"
               },
@@ -204689,6 +205235,8 @@
               "detail": {
                 "anchor": {
                   "bg": 48.0,
+                  "carbs": null,
+                  "insulin": null,
                   "kind": "low",
                   "label": "Low excursion",
                   "t": "2024-05-24 13:55:00"
@@ -204887,6 +205435,18 @@
                 ],
                 "id": "o_7aa87ba93366d765cc0a86c27d922409",
                 "markers": [],
+                "outcome": null,
+                "reason": {
+                  "cause": null,
+                  "habits": [
+                    {
+                      "detail": "no user correction (>= 1 U) landed in the 5 h before the low",
+                      "lever": "correction_on_iob",
+                      "title": "Correction on active insulin",
+                      "verdict": "outranked"
+                    }
+                  ]
+                },
                 "source_corrections": [],
                 "verdict": "outranked"
               },
@@ -206514,6 +207074,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-23 13:55:00"
@@ -206712,6 +207274,22 @@
             ],
             "id": "o_42eb16f3af5506d632da9ddbfc120d1a",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },
@@ -206722,6 +207300,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-26 12:10:00"
@@ -206920,6 +207500,18 @@
             ],
             "id": "o_48c9e60ffc5f93c2c47a63088be55fe4",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 104 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "clean"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "clean"
           },
@@ -206930,6 +207522,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-27 16:10:00"
@@ -207128,6 +207722,18 @@
             ],
             "id": "o_5d7dbd4078486fbd355e3ba5d99a5764",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "no CGM rebound reading was available to judge this low",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "no_data"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "no_data"
           },
@@ -207138,6 +207744,8 @@
           "detail": {
             "anchor": {
               "bg": 60.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-25 12:10:00"
@@ -207336,6 +207944,18 @@
             ],
             "id": "o_68a3d5a41951bdaa55aa4f4c8e67bc12",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded to 150 mg/dL, below the 160 mg/dL over-treated-low bar",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "near_miss"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "near_miss"
           },
@@ -207346,6 +207966,8 @@
           "detail": {
             "anchor": {
               "bg": 54.25,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-28 22:00:00"
@@ -207544,6 +208166,18 @@
             ],
             "id": "o_7693e91669018a82bb3c0a6530581479",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": null,
+              "habits": [
+                {
+                  "detail": "BG rebounded only to 60 mg/dL, below the 140 mg/dL near floor",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "outranked"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "outranked"
           },
@@ -207554,6 +208188,8 @@
           "detail": {
             "anchor": {
               "bg": 48.0,
+              "carbs": null,
+              "insulin": null,
               "kind": "low",
               "label": "Low excursion",
               "t": "2024-05-24 13:55:00"
@@ -207752,6 +208388,22 @@
             ],
             "id": "o_7aa87ba93366d765cc0a86c27d922409",
             "markers": [],
+            "outcome": null,
+            "reason": {
+              "cause": {
+                "lever": "over_treated_low",
+                "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                "title": "Over-treated low"
+              },
+              "habits": [
+                {
+                  "detail": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs",
+                  "lever": "over_treated_low",
+                  "title": "Over-treated low",
+                  "verdict": "fired"
+                }
+              ]
+            },
             "source_corrections": [],
             "verdict": "fired"
           },

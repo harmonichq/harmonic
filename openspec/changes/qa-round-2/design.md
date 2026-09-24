@@ -219,3 +219,12 @@ fails once, so a run on task 11's commit still presses through the replacement
 and records its before renders; its first failure is the pre-press warning. S187
 joins the PR smoke slice as the only story on `basal-and-carb-ratio-lower`, as
 S177 did for its store.
+
+**Budget-record location (coordinator ruling on Q1, 2026-09-24; decided
+autonomously during AFK run).** Task 11's QA budget measurements are recorded in
+this change's own `coverage-appendix.md`, against the limits of record in
+`openspec/changes/harmonic-v2/coverage-appendix.md`, and the harmonic-v2 file is
+left unchanged. Appending them there made the round's diff touch two active
+OpenSpec changes, which the outbound OpenSpec preflight refuses. The limits, the
+measurements and the no-raise rule are unchanged; only where the record lives
+moved. #459's lock 2 supersedes lock 1 for this location only.

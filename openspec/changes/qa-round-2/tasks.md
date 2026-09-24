@@ -152,8 +152,10 @@ the Plan item `type` it stages as.
   `openspec/changes/harmonic-v2/coverage-appendix.md` (showcase ≤25 MiB,
   showcase drift ≤30 s, focused QA suite ≤90 s, slowest generated case ≤15 s,
   whole pytest ≤400 s on the operator's 160 s re-baseline of 2026-09-09),
-  without raising any. Record the measurements as a dated `#459` section
-  appended to that appendix. Add the name to `tests/test_qa_e2e_cases.py`'s
+  without raising any. Record the measurements as a dated `#459` section in
+  this change's own `openspec/changes/qa-round-2/coverage-appendix.md`, against
+  those limits of record (ADR 459, coordinator ruling on the budget-record
+  location). Add the name to `tests/test_qa_e2e_cases.py`'s
   expected case names and to `tests/test_pattern_replay.py`'s case map. Commit
   this task on its own: that commit is the base for task 16's failing-first
   run.

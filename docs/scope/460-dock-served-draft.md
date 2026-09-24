@@ -36,3 +36,4 @@ served draft, and the dock given the served one-item draft reads idle.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial flat draft pinned 961de781 | Blocker (`authoring`): Undo on the only staged change left the dock reading "Plan · staged" over the pre-press served draft, because nothing repainted after the save settled. Notes (`authoring`): task 4's re-ask clause was unobservable through a fake view, and the in-flight rule had no test; ACCEPTANCE.md and AGENTS.md state the story count outside the allowlist. Fixed: the post-save re-seed and repaint moved into task 6, the dock skips the draft fallback while a save is in flight (ADR 460 points 2 and 4), task 7 gained an Undo guard and an in-flight test, task 4 narrowed to the served-draft callback, and task 9 and the allowlist took both documents. | BLOCKED (1 block, 2 note) |

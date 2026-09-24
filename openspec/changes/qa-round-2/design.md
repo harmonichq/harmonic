@@ -33,9 +33,13 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
    - when this surface's marks name a staged change, the dock names it exactly
      as it does today, with the served direction and the values that the
      surface's own descriptor carries;
-   - otherwise, when the served draft holds items, the dock reports the draft,
-     named from its own items.
-3. The draft's own name is the setting in the wearer's words and the span its
+   - otherwise, when the served draft holds items and no stage save this
+     surface issued is in flight, the dock reports the draft, named from its
+     own items. While a save is in flight the surface's own optimistic state
+     stands alone: the served draft is the one read before the press, so an
+     Undo would otherwise read "Plan · staged" over a draft being emptied.
+3. The draft's own name, `draftName(draft)` exported from the dock's module,
+   is the setting in the wearer's words and the span its
    items cover, spelled as the surface spells the same change: a basal draft
    as "Basal <start>" for one item, else "Basal <first start> to <last start
    plus 30 minutes>"; a carb-ratio draft as "Carb ratio <block span>" from the
@@ -47,9 +51,13 @@ rather than from the result cache, and `frontend/guidance.js` exposes it as
    current and a proposed value and all items carry the same pair, in the
    wearer's form (a correction factor insulin first). Otherwise no values print.
 4. The workstation's three sets of marks come from one seeding function over
-   `callbacks.isStaged`. It runs at boot and again on every `refresh()`, except
-   while a stage save is in flight, so the optimistic paint a press makes is
-   never undone by a repaint that lands mid-save.
+   `callbacks.isStaged`. It runs at boot; on every `refresh()`, except while a
+   stage save is in flight, so the optimistic paint a press makes is never
+   undone by a repaint that lands mid-save; and after every accepted stage save
+   settles, followed by a repaint. The last is needed because the guidance
+   read the save refreshes lands after the press's own paint, and a seated,
+   unparked Diagnose does not refresh its workstation on that render. A refused
+   save keeps #358's replay of the toggle.
 5. Nothing on the server changes. The guidance read already reads the draft
    fresh, so the draft save keeps its no-bump exception and no second exception
    is added.
@@ -106,14 +114,16 @@ replaces exactly as today.
    "replaces <the draft's own name>", the name ADR 460 point 3 defines. A
    control whose item is already staged keeps "Staged · Undo". Any other
    control keeps "Stage change" and "staged for Plan".
-2. Which rows a stage drops is one fact with one implementation. The Plan
-   surface exports the predicate that says whether staging an item replaces a
-   draft, and `stageEvidence`'s keep-only-this-setting filter uses that same
-   predicate.
-3. After an accepted stage save settles, the workstation re-seeds its marks
-   from the draft (ADR 460 point 4) and repaints. The replaced setting's mark
-   clears, and its control reads the replace state naming the change now
-   staged. A refused save keeps #358's replay of the toggle.
+2. Which rows a stage drops is one fact with one implementation.
+   `replacesDraft` says whether staging an item of one setting replaces the
+   draft's rows, and `stageEvidence`'s keep-only-this-setting filter uses it.
+3. The re-seed after an accepted stage save (ADR 460 point 4) clears the
+   replaced setting's mark, so its control reads the replace state naming the
+   change now staged. The interfaces are `replacesDraft(type, draftItems) →
+   boolean` exported from the Plan surface, a workstation callback
+   `replacing(item) → string | null` answering `draftName` of the served draft
+   when that draft would be replaced, and a stage-panel option `replaces`
+   carrying that answer to the shared stage control.
 4. The Plan spec's one-setting requirement keeps its text and gains real
    scenarios for the replacement and its notice. Its placeholder scenario stays
    beside them: OpenSpec's strict validation refuses a MODIFIED requirement that

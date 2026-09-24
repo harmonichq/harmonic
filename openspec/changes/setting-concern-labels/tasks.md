@@ -203,7 +203,7 @@
   "Carb ratio" with "g/U". Touch only `PARAM_LABEL` and its readers: #453,
   already on the release trunk, reduced `reconcileDeliverable` in the same
   file. A node test through the mismatch rows' public reader fails first on the
-  base.
+  base. The coordinator ruled that this authorization needs no newer lock.
 
 ## 4. The watch dock's title names the change; its values wrap below
 

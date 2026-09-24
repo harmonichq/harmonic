@@ -160,8 +160,8 @@
   - no disposition code appears in any frame's text.
 - [x] 3.4 Changes' set-aside rows print each row's served name. A row with no
   name prints "A concern no longer in this read", never the subject. Add a
-  **Concern** entry to `CONTEXT.md`: one candidate Changes can lead with (a
-  setting, a habit, a Pattern or an investigation) as guidance serves it; avoid
+  **Concern** entry to `CONTEXT.md`: one thing guidance serves to Changes (a
+  setting, a habit, a Pattern or an investigation; a setting never leads); avoid
   "candidate" and "subject" in user copy. Node test in
   `frontend/changes.test.js`, failing first on the base: named rows print their
   names, an unnamed row prints the phrase, and no `setting:`, `habit:` or
@@ -209,9 +209,18 @@
     every template).
   - The capture production that only these deleted writes read, in
     `frontend/diagnose-workstation-data.js`: `exposureCapture` (read only by the
-    scope writes) and the explore-day capture's `isf` and `programmed_ic` (read
-    only by the status line), with the test lines that exist only to read them.
-    A whole-tree grep finds no other reader.
+    scope writes and the status-clock write) and the explore-day capture's `isf`
+    and `programmed_ic` (read only by the status line), with the test lines that
+    exist only to read them. A whole-tree grep finds no other reader.
+  - After sub-order 3's chunk review: the explore-day capture itself (`day`,
+    `dayMap`, and `loadDay`/`onDayLoaded` with their fetch in
+    `frontend/diagnose.js`). Nothing reads `day.days`, and the fetch is not in
+    the input-data age check.
+  - Also after that review: a set-aside concern on screen prints no status words;
+    a change staged in the Plan draft reads Staged (the pane's own state, passed
+    in); the status-word rows no concern frame can print are dropped; the
+    breadcrumb leaf and the peak-hour block link gain node tests; CONTEXT.md's
+    **Concern** says a setting never leads.
 
 ## 4. The watch dock's title names the change; its values wrap below
 

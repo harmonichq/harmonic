@@ -194,24 +194,22 @@ its identifier.
 
 Changes SHALL print the served guidance disposition in words, never the code,
 on its nameplate and its Action heading. The words SHALL say what the reader
-can actually do. Under `eligible_action` they depend on the served action's
-shape and, for an identified action, on the served Focus offer and the served
-readiness verdict:
+can actually do. A change already staged in the Plan draft reads Staged, the
+same staged state the pane shows. Otherwise, under `eligible_action` the words
+depend on the served action's shape and, for an identified action, on the
+served Focus offer and the served readiness verdict:
 
 | Code, action | Words |
 |---|---|
+| any, with the change staged in the Plan draft | Staged |
 | `eligible_action`, the action carries setting instructions | Ready to stage |
 | `eligible_action`, an identified action with a served Focus offer | Ready to start a Focus |
 | `eligible_action`, an identified action on a Pattern whose served readiness verdict is `withheld` | Focus withheld |
 | `eligible_action`, any other identified action | Action identified |
 | `guided_investigation` | Evidence to inspect |
-| `active_change` | A change is being watched |
-| `quiet` | No priority needs action |
-| `unavailable` | No action from this read |
-| `draft` | Plan draft saved |
-| `pending_plan` | Plan awaiting the pump |
 
-A code outside that set SHALL print no words there.
+Any other code SHALL print no words there. A set-aside concern on screen is not
+the concern the read leads with, so its nameplate SHALL print no status words.
 
 #### Scenario: A setting-led concern reads Ready to stage
 
@@ -242,6 +240,19 @@ A code outside that set SHALL print no words there.
 - **GIVEN** a served `guided_investigation` read
 - **WHEN** Changes renders its selected concern
 - **THEN** the frame reads "Evidence to inspect" and contains no disposition code
+
+#### Scenario: A staged change reads Staged
+
+- **GIVEN** a served `eligible_action` read whose selected concern carries setting instructions
+- **WHEN** the wearer stages it
+- **THEN** the nameplate and the Action heading read "Staged" beside the pane's Staged state, and not "Ready to stage"
+- **AND** after Undo they read "Ready to stage" again
+
+#### Scenario: A set-aside concern on screen carries no status words
+
+- **GIVEN** the wearer set a concern aside and a re-read selects another concern
+- **WHEN** Changes keeps the set-aside concern on screen
+- **THEN** its nameplate reads "Set aside" and no status words for the concern that leads next
 
 ### Requirement: Diagnose names the correction factor and carb ratio in the wearer's words
 

@@ -42,14 +42,12 @@ export function envelopeFromPooled(pooled) {
    restated, so the two can't drift. */
 
 /**
- * Build the mock's three captures from one API payload.
+ * Build the mock's audit and params captures from one API payload.
  *
  * `payload` is `{analyze, scenarios, evidence, exposures}` — the app's
  * `/api/analyze`, `/api/scenarios`, `/api/explore/time-of-day` and `/api/explore/exposures`.
- * `loadDay(date)` is optional; when supplied, the occurrence level's real CGM
- * trace is fetched on demand (see `dayMap`).
  */
-export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, state = null } = {}) {
+export function toCaptures(payload = {}, { state = null } = {}) {
   const analyze = payload.analyze || {};
   const evidence = payload.evidence || {};
   // Keep the asserting replay on the payload's matching I:C evidence (#654).
@@ -59,10 +57,6 @@ export function toCaptures(payload = {}, { loadDay = null, onDayLoaded = null, s
     ({ ...slot, __planKey: `basal:${slot.slot}` }));
 
   return {
-    /* The mock's explore-day capture; the ported surface reads only its `days`. */
-    day: {
-      days: dayMap(loadDay, onDayLoaded),
-    },
     /* The mock's settings-audit capture carries several named states and binds
        `trial`; the API returns one analysis, so it fills that slot. */
     audit: {
@@ -114,35 +108,4 @@ export function isfVerdict(row) {
     canStage: row.asserts_move === true,
     nights: (evidence.night_fits || []).length,
   };
-}
-
-/**
- * `day.days` — a lazily-filled map of date → that day's timeline record.
- *
- * The mock has all 30 days in memory because its capture holds them. The app
- * does not ship raw CGM, so the one place a day is needed (the occurrence
- * level's real trace, lock term 19) fetches it. A Proxy is used so the ported
- * code keeps reading `day.days[date]` synchronously: a miss returns undefined,
- * which is exactly the branch term 19 already specifies ("No trace captured for
- * this day"), and the repaint that follows the fetch replaces it with the trace.
- * A fabricated trace is never substituted — that is the term's other half.
- */
-function dayMap(loadDay, onDayLoaded) {
-  const cache = {};
-  const pending = new Set();
-  if (!loadDay) return cache;
-  return new Proxy(cache, {
-    get(target, key) {
-      if (typeof key !== 'string' || key in target) return target[key];
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || pending.has(key)) return undefined;
-      pending.add(key);
-      Promise.resolve(loadDay(key)).then((record) => {
-        pending.delete(key);
-        if (!record) return;
-        target[key] = record;
-        onDayLoaded?.(key);
-      }).catch(() => { pending.delete(key); });
-      return undefined;
-    },
-  });
 }

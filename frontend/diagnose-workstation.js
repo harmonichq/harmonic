@@ -563,7 +563,7 @@ function renderCaseClock(host, clock) {
   host.append(box);
 }
 
-function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegment) {
+export function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegment) {
   const { finding, family, summary, projection } = caseFile;
   const box = document.createElement('div');
   box.className = 'inner';
@@ -594,6 +594,19 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
     box.append(link);
   }
   host.append(box);
+}
+
+/** One breadcrumb label for a pushed frame (D7/term 34: the root is the queue's own
+    noun, at every depth). `chartTitle(chartId)` names a chart tile. */
+export function crumbLabel(frame, chartTitle) {
+  if (frame.k === 'factors') return 'Findings';
+  if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
+  if (frame.k === 'slot') return `${frame.cell.label} slot`;
+  if (frame.k === 'block') return `${frame.cell.label} block`;
+  if (frame.k === 'chart') return chartTitle(frame.chartId) || 'Chart';
+  // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
+  // crumb level, so no frame ever reaches an `occ` branch here.
+  return 'Correction factor';
 }
 
 /* ADR 432: a case-file row says what its Occurrence is, from its served anchor
@@ -1246,7 +1259,7 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
    surface can be re-mounted (the mock never re-mounts; it reloads the page).
    `signal` aborts the document/window listeners the ported code registers. */
 function boot(root, data, callbacks, signal) {
-  const { day, audit, params, icMissing } = data;
+  const { audit, params, icMissing } = data;
   const { envelope: envelopeIn } = data;
   /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
      `findings` opens on the preparation's GLOBAL projection; a pressed preset
@@ -2164,7 +2177,7 @@ function boot(root, data, callbacks, signal) {
     const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
       : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
     const current = subject ? { subject, occurrence: f.selectedId || null, window,
-      title: f.k === 'factor' ? crumbLabel(f) : null } : null;
+      title: f.k === 'factor' ? crumb(f) : null } : null;
     const key = JSON.stringify(current);
     if (key === publishedCase) return;
     publishedCase = key;
@@ -3345,17 +3358,10 @@ function boot(root, data, callbacks, signal) {
     };
   }
 
-  /** Breadcrumb: every ancestor is a click, the leaf is plain text. */
-  function crumbLabel(frame) {
-    // D7/term 34 — the crumb root is the queue's own noun, at every depth
-    if (frame.k === 'factors') return 'Findings';
-    if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
-    if (frame.k === 'slot') return `${frame.cell.label} slot`;
-    if (frame.k === 'block') return `${frame.cell.label} block`;
-    if (frame.k === 'chart') return chartDescriptor(frame.chartId)?.title || 'Chart';
-    // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
-    // crumb level, so no frame ever reaches an `occ` branch here.
-    return 'Correction factor';
+  /** Breadcrumb: every ancestor is a click, the leaf is plain text. The chart
+      title is looked up only for a chart frame, as the tiles exist by then. */
+  function crumb(frame) {
+    return crumbLabel(frame, (chartId) => chartDescriptor(chartId)?.title);
   }
 
   /** Draw one path. Ancestors pop; the current item is inert; separators are decor. */
@@ -3387,7 +3393,7 @@ function boot(root, data, callbacks, signal) {
   function paintCrumb() {
     const trail = el('crumb-trail');
     const items = stack.map((frame, i) => ({
-      label: crumbLabel(frame), index: i, last: i === stack.length - 1,
+      label: crumb(frame), index: i, last: i === stack.length - 1,
     }));
     drawTrail(items);
     /* If the path would run into the meta's reserve the MIDDLE gives way —

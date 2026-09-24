@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 import {
-  buildIcBlocks, occurrenceDescription, occurrenceFacts, queryState, renderEventComparisonRoster, renderIsfLevel,
+  buildIcBlocks, crumbLabel, occurrenceDescription, occurrenceFacts, queryState, renderCaseHead,
+  renderEventComparisonRoster, renderIsfLevel,
   renderSlotLevel, renderLane,
 } from './diagnose-workstation.js';
 import { buildSlotLane } from './diagnose-workstation-chart.js';
@@ -317,6 +318,36 @@ test('the correction-factor panel names its setting and prints each value insuli
     const host = element();
     renderIsfLevel(host, stageable, false, () => {});
     assert.match(rendered(host), /<b>1 U : 32\.00 mg\/dL<\/b>/, 'the recommended value reads insulin first');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('the breadcrumb names the correction-factor level in the wearer\'s words (#451)', () => {
+  const chartTitle = (chartId) => (chartId === 'glucose' ? 'Glucose' : null);
+  assert.equal(crumbLabel({ k: 'isf' }, chartTitle), 'Correction factor');
+  assert.equal(crumbLabel({ k: 'factors' }, chartTitle), 'Findings');
+  assert.equal(crumbLabel({ k: 'slot', cell: { label: '03:00' } }, chartTitle), '03:00 slot');
+  assert.equal(crumbLabel({ k: 'block', cell: { label: 'Evening' } }, chartTitle), 'Evening block');
+  assert.equal(crumbLabel({ k: 'chart', chartId: 'glucose' }, chartTitle), 'Glucose');
+  assert.equal(crumbLabel({ k: 'chart', chartId: 'other' }, chartTitle), 'Chart');
+});
+
+test('a case head names the peak hour\'s carb ratio block in the wearer\'s words (#451)', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tag) => new RosterElement(tag) };
+    const host = new RosterElement();
+    const clock = { buckets: [{ start_min: 1080, end_min: 1200, n: 3 }], peak_bucket_index: 0, total: 3 };
+    renderCaseHead(host, {
+      finding: { title: 'Highs after meals', lever: 'missed_meal' }, family: 'highs',
+      summary: { claimed: 3, denominator: 5 }, projection: { alignment: 'clock', clock }, window: { label: '24 h' },
+    }, { cells: [{ startMin: 0, endMin: 1440, label: '00:00', verdict: 'hold' }] }, () => {},
+    [{ label: 'Evening', span: '17:00 to 22:00', spans: [[1020, 1320]], verdict: 'hold' }], () => {});
+    const link = host.children[0].children.find((child) => child.className === 'slotlink');
+    const words = link.html.join(' ');
+    assert.match(words, /and in the Evening carb ratio block,/);
+    assert.doesNotMatch(words, /I:C/);
   } finally {
     globalThis.document = originalDocument;
   }

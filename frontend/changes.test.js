@@ -107,14 +107,35 @@ const habitLead = { subject: 'habit:missed_meal', kind: 'habit', lever: 'missed_
   title: 'Missed / unannounced meal', units: null, action: { action_id: 'habit:missed_meal' },
   members: [], unknowns: [], preference: {} };
 
-async function served(read) {
+async function served(read, seat = host) {
   failure = false;
   answer = { reasons: {}, ...read };
   await loadGuidance({ force: true });
   await readFocusOptions();
-  mount(host);
-  return host.innerHTML;
+  mount(seat);
+  return seat.innerHTML;
 }
+
+/** A host whose controls bind like the page's: each query answers the buttons the
+    current markup declares, and the last bound one of each can be pressed. */
+function clickable() {
+  const pressed = new Map();
+  const button = (key, dataset) => { const node = { dataset }; pressed.set(key, node); return node; };
+  const seat = {
+    innerHTML: '',
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      const set = selector.match(/^\[data-set="([^"]+)"\]$/);
+      if (set) return seat.innerHTML.includes(`data-set="${set[1]}"`) ? [button(`set:${set[1]}`, { set: set[1] })] : [];
+      if (selector !== '[data-action]') return [];
+      return [...seat.innerHTML.matchAll(/data-action="([^"]+)"/g)]
+        .map(([, action]) => button(`action:${action}`, { action }));
+    },
+    press(key) { pressed.get(key).onclick(); mount(seat); return seat.innerHTML; },
+  };
+  return seat;
+}
+const sub = (html) => html.match(/<div class="gf-sub">([\s\S]*?)<\/div>/)?.[1] || '';
 
 test('an Action figure prints each setting instruction in the wearer\'s form', async () => {
   const isf = carried(instruction('isf', 'strengthen', 32, 'mg/dL/U'));
@@ -170,6 +191,38 @@ test('a set-aside row prints its served name, and an unnamed one says so', async
     assert.match(words, /A concern no longer in this read/, read.disposition);
     assert.doesNotMatch(words, /setting:|habit:|pattern:/, read.disposition);
   }
+});
+
+test('a set-aside concern on screen prints no words for the concern that leads next', async () => {
+  const seat = clickable();
+  await served({ disposition: 'eligible_action', selected: habitLead, candidates: [habitLead] }, seat);
+  seat.press('action:aside');
+  seat.press('action:cancel-aside');
+  const held = { ...habitLead, preference: { set_aside: true, return_reason: null }, decision: { reason: null } };
+  const next = carried(instruction('isf', 'strengthen', 32, 'mg/dL/U'));
+  for (const read of [{ disposition: 'eligible_action', selected: next },
+    { disposition: 'guided_investigation', selected: { ...withheldPattern, action: null } }]) {
+    const html = await served({ ...read, candidates: [read.selected, held] }, seat);
+    assert.match(html, /<h2 class="gf-title" tabindex="-1">Missed \/ unannounced meal<\/h2>/, read.disposition);
+    assert.equal(sub(html), '<b>— priority</b> · Set aside', read.disposition);
+  }
+});
+
+test('a staged change reads Staged, as the pane does, until it is undone', async () => {
+  const seat = clickable();
+  const basal = carried(instruction('basal_rate', 'lower', 0.54, 'U/h'));
+  let html = await served({ disposition: 'eligible_action', selected: basal, candidates: [basal] }, seat);
+  assert.equal(sub(html), '<b>— priority</b> · Ready to stage');
+  try {
+    html = seat.press('set:stage');
+    assert.match(html, /<span role="status">Staged · /, 'the pane says the change is staged');
+    assert.equal(sub(html), '<b>— priority</b> · Staged');
+    assert.ok(html.includes('<h3>Action <span class="meta">Staged</span></h3>'));
+    assert.doesNotMatch(html, /Ready to stage/);
+  } finally {
+    html = seat.press('set:unstage');
+  }
+  assert.equal(sub(html), '<b>— priority</b> · Ready to stage');
 });
 
 test('set-aside Escape follows the frozen order without opening a sheet', async () => {

@@ -63,7 +63,9 @@ Names never enter `_state`, a baseline or a stored record.
 outside today's closed set. It is served with `title: null`. Changes lists such
 a row as "A concern no longer in this read" and never prints its identifier.
 `CONTEXT.md` gains a **Concern** entry, the desk's existing user word for one
-candidate Changes can lead with, so the phrase is in the glossary's terms.
+thing guidance serves to Changes, so the phrase is in the glossary's terms.
+Changes leads with a habit, a Pattern or an investigation; guidance never
+selects a setting to lead.
 
 ## ADR 451 — The carb-ratio analyzer's sentences pass the user-copy register
 
@@ -260,19 +262,21 @@ its Action heading print the words, never the code:
 
 | Code, action | Words | Drawn from |
 |---|---|---|
+| any, with the change staged in the Plan draft | Staged | the pane's own Staged state (`phase()`) |
 | `eligible_action`, setting instruction rows | Ready to stage | the concern's Stage change |
 | `eligible_action`, an identified action with a served Focus offer | Ready to start a Focus | Changes' Start Focus and the Focus entry's "ready to start a Focus" |
 | `eligible_action`, an identified action on a Pattern whose served readiness verdict is `withheld` | Focus withheld | the served "Focus is withheld: …" reason the pane prints |
 | `eligible_action`, any other identified action (no offer, e.g. a legacy habit lead) | Action identified | the Action figure, which names the identified action |
 | `guided_investigation` | Evidence to inspect | its Inspect route |
-| `active_change` | A change is being watched | DESIGN.md's refusal line |
-| `quiet` | No priority needs action | the quiet frame |
-| `unavailable` | No action from this read | the unavailable frame |
-| `draft` | Plan draft saved | the Plan |
-| `pending_plan` | Plan awaiting the pump | the watch dock's Plan kind |
 
-A code outside the set prints no words, and the rest of the frame still
-renders. The unselected frame's honesty line, which quotes an unknown code,
+Any other code prints no words, and the rest of the frame still renders. The
+other served codes never reach this frame: Changes routes `active_change`,
+`draft` and `pending_plan` to their own frames, and `quiet` and `unavailable`
+select no concern, so the only frame they can seat is a set-aside concern, which
+prints no status words because it is not the concern the read leads with. The
+Staged row reads the staged state Changes and the pane already share, passed in
+like the Focus offer. These rows were settled after sub-order 3's chunk review
+(Q3 delegation, Connor Griffin, 2026-09-23; coordinator ruling R451). The unselected frame's honesty line, which quotes an unknown code,
 stays. The words read served fields only (the action's shape, the served offer, the
 served readiness verdict). They decide no eligibility and re-derive no gate.
 
@@ -328,9 +332,16 @@ engine words or unrendered ids are deleted, for the same kind of reason:
   "I:C (g/U)" never rendered. A node test through the mismatch reader pins that
   every cell it emits has a name. This replaces relabelling the table.
 - **The capture fields only those writes read.** The workstation's data adapter
-  stops producing `exposureCapture`, which only the scope writes read, and the
-  explore-day capture's `isf` and `programmed_ic`, which only the status line
-  read. A whole-tree grep finds no other reader.
+  stops producing `exposureCapture`, which only the scope writes and the
+  status-clock write read, and the explore-day capture's `isf` and
+  `programmed_ic`, which only the status line read. A whole-tree grep finds no
+  other reader.
+- **The explore-day capture itself.** Nothing on the desk reads `day.days`, on
+  this branch or on b03431d2, so its lazy per-day timeline fetch
+  (`loadDay`/`onDayLoaded`) never fires, and that fetch is not one of the five
+  reads the Diagnose input-data age check covers. The capture, its map and its
+  fetch are deleted; the workstation's `repaintDay` stays, because the event
+  comparison still calls it.
 
 ## Revise preparation
 

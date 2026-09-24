@@ -356,13 +356,6 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         // root nothing is published, so there is no Day to open.
         if (context.subject) navigate('day', context);
       },
-      loadDay: async (date) => {
-        try {
-          const window = await api.fetchTimeline({ start: `${date} 00:00:00`, end: `${date} 23:59:59` });
-          return window?.cgm?.length ? { date, midnight: `${date} 00:00:00`, window } : null;
-        } catch { return null; }
-      },
-      onDayLoaded: () => { if (seated) workstation.repaintDay(); },
       loadBasalEvidence: api.fetchDiagnoseBasalNightEvidence,
       loadIsfEvidence: api.fetchDiagnoseIsfRestWindowEvidence,
       loadCarbRatioEvidence: api.fetchDiagnoseCarbRatioBlockEvidence,

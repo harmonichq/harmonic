@@ -19,7 +19,7 @@ test('envelopeFromPooled renames the server bins onto chart arrays', () => {
   });
 });
 
-test('toCaptures builds the three mock capture shapes with shared Plan keys', () => {
+test('toCaptures builds the audit and params capture shapes with shared Plan keys', () => {
   const block = { block_id: 425, current_values: [7], start_min: 425, end_min: 610 };
   const payload = {
     analyze: { generated_at: '2026-08-10T12:00:00Z', window_days: 30, basal_support_floor: 11,
@@ -29,25 +29,11 @@ test('toCaptures builds the three mock capture shapes with shared Plan keys', ()
 
   const captures = toCaptures(payload);
   assert.deepEqual(Object.keys(captures).filter((key) =>
-    ['day', 'audit', 'params'].includes(key)),
-  ['day', 'audit', 'params']);
+    ['audit', 'params'].includes(key)),
+  ['audit', 'params']);
   assert.equal(captures.audit.states.trial.as_of, '2026-08-10');
   assert.equal(captures.audit.states.trial.analysis.basal_support_floor, 11);
   assert.equal(captures.params.ic_blocks[0].__planKey, blockKey(block));
-});
-
-test('day.days leaves an unfetched day empty and requests it once', async () => {
-  let calls = 0;
-  let resolveLoad;
-  const loaded = new Promise((resolve) => { resolveLoad = resolve; });
-  const captures = toCaptures({}, { loadDay: () => { calls += 1; return loaded; } });
-
-  assert.equal(captures.day.days['2026-08-10'], undefined);
-  assert.equal(captures.day.days['2026-08-10'], undefined);
-  assert.equal(calls, 1);
-  resolveLoad({ date: '2026-08-10', window: { cgm: [] } });
-  await Promise.resolve();
-  assert.deepEqual(captures.day.days['2026-08-10'], { date: '2026-08-10', window: { cgm: [] } });
 });
 
 test('isfVerdict answers direction and stageability separately', () => {

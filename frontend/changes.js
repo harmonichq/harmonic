@@ -53,9 +53,13 @@ const nounFor = (candidate) => INSPECT_NOUN[candidate?.parameter] || 'evidence';
 const inspectRoute = (candidate) =>
   `<div class="gf-actions"><button class="gf-btn primary" data-action="explore">Inspect ${e(nounFor(candidate))}</button></div>`;
 
-/** Why the read's concern leads, in words: the served offer is Changes' own
-    Start Focus, passed in so guidance.js never imports focus-entry.js. */
-const leadWords = () => statusWords(Boolean(focusOffer(selectedConcern()?.subject)));
+/** Why the read's concern leads, in words. The served offer is Changes' own Start
+    Focus and the staged state is the one the pane reads, both passed in so
+    guidance.js imports neither focus-entry.js nor plan-view.js. */
+const leadWords = () => statusWords({
+  focusOffered: Boolean(focusOffer(selectedConcern()?.subject)),
+  staged: phase() === 'Staged',
+});
 
 /** A set-aside row the backend serves no name for (ADR 451). */
 const UNNAMED = 'A concern no longer in this read';
@@ -153,8 +157,10 @@ function concernFrame(candidate) {
   const head = nameplate({
     kicker: `${e(family)} · read ${e(read?.window?.end || '')}`,
     title: e(candidate.title || candidate.subject),
-    sub: [`<b>${e(candidate.priority ?? '—')} priority</b>`, e(leadWords()),
-      candidate.preference?.set_aside ? 'Set aside' : ''].filter(Boolean).join(' · '),
+    // A set-aside concern on screen is not the one the read leads with, so the
+    // words, which say why that one leads, are not printed over it.
+    sub: [`<b>${e(candidate.priority ?? '—')} priority</b>`,
+      candidate.preference?.set_aside ? 'Set aside' : e(leadWords())].filter(Boolean).join(' · '),
     end: end + '<button class="gf-btn" data-action="history">View change record</button>' + (focusOffer(candidate.subject) ? '<button class="gf-btn primary" data-start-focus>Start Focus</button>' : '') + '<button class="gf-btn" data-action="pump">Pump settings</button>',
   });
   const wrote = writeFailed

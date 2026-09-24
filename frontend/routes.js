@@ -130,8 +130,8 @@ export function registerEscape(layer, handler) {
 /* -------------------------------------------------------------- navigate */
 
 /**
- * Move the desk. A contextual entry carries `{date, subject, occurrence,
- * window, lever, from, focus}`; a direct one carries nothing, and invents
+ * Move the desk. A contextual entry carries `{date, moment, subject, title,
+ * occurrence, window, lever, from}`; a direct one carries nothing, and invents
  * neither a prior subject nor a return (HV2-13).
  *
  * A caller that already named its focus target set it before navigating, and

@@ -3181,6 +3181,18 @@ export const S137 = appOnly('HV2-34',
 // STORY:harmonic-v2-desktop:S138
 export const S138 = appOnly('HV2-14',
   '#428 a case address reopens its preset window and Occurrence, and its Day hop returns to Open in Day by id', C4_STORIES.S138);
+// STORY:harmonic-v2-desktop:S162
+export const S162 = appOnly('HV2-14',
+  '#445 an active Trial\'s supporting date opens Day by its date and returns to that date\'s control', C4_STORIES.S162);
+// STORY:harmonic-v2-desktop:S163
+export const S163 = appOnly('HV2-14',
+  '#445 a change record\'s supporting date opens Day by its date and returns to that record on that date\'s control', C4_STORIES.S163);
+// STORY:harmonic-v2-desktop:S164
+export const S164 = appOnly('HV2-14',
+  '#445 a Log carbs entry opens Day by its id, and its return over a drilled case lands on its Open Day, re-read or retained', C4_STORIES.S164);
+// STORY:harmonic-v2-desktop:S165
+export const S165 = appOnly('HV2-34',
+  '#445 a Carb questions Day return over a drilled case holds one status read and lands on the prompt\'s Open Day', C4_STORIES.S165);
 // STORY:harmonic-v2-desktop:S145
 export const S145 = appOnly('HV2-20', '#431 the server confirms an in-place Plan and Changes names that read', C4_STORIES.S145);
 // STORY:harmonic-v2-desktop:S146
@@ -3284,6 +3296,7 @@ export const REGISTRY = [
   ['S154', S154, J()],
   ['S183', S183, J()], ['S184', S184, J()], ['S185', S185, J()],
   ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
+  ['S162', S162, J()], ['S163', S163, J()], ['S164', S164, J()], ['S165', S165, J()],
   ['S145', S145, J()], ['S146', S146, J()], ['S147', S147, J()],
   ['S124', S124, J()], ['S125', S125, J()], ['S126', S126, J()],
   ['S148', S148, J()], ['S149', S149, J()], ['S150', S150, J()],

@@ -86,7 +86,7 @@ globalThis.document = { documentElement: {} };
 globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#222222' });
 const { mount, configureFollowUp, retainedEvidenceContext } = await import('./follow-up.js');
 const { mount: mountHistory } = await import('./history.js');
-const { navigate } = await import('./routes.js');
+const { navigate, view } = await import('./routes.js');
 const flush = async () => { for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve)); };
 function host() {
   const field = { value: '' }; const form = {};
@@ -97,9 +97,14 @@ function host() {
     .map(mode => [mode, { dataset: { assessment: mode } }]));
   // The roster's record rows a test names, and the record's Back to records.
   const records = []; const recordClose = {};
-  return { innerHTML: '', field, form, lateField, lateForm, assessment, retryReassessment, records, recordClose,
+  return { innerHTML: '', field, form, lateField, lateForm, assessment, retryReassessment, records, recordClose, days: [],
     querySelectorAll(selector) {
       if (selector === '[data-record]') return this.innerHTML.includes('data-record="') ? records : [];
+      // The supporting-date controls the render drew, for a test to press.
+      if (selector === '[data-day-date]') {
+        this.days = [...this.innerHTML.matchAll(/data-day-date="([^"]+)"/g)].map(([, dayDate]) => ({ dataset: { dayDate } }));
+        return this.days;
+      }
       return selector === '[data-assessment]' && this.innerHTML.includes('data-assessment=')
         ? Object.values(assessment) : [];
     },
@@ -608,4 +613,113 @@ test('a first save that succeeds after the reader left keeps the next record’s
     assert.equal(JSON.parse(sentFor(A).at(-1).options.body).conclusion, 'Words typed on expired Trial A',
       'premise: A’s save carried A’s own words');
   });
+});
+
+/* ------------------------------ ADR 445: a supporting date's Day round trip */
+
+// A retained comparison that lists contributing dates in both evidence periods.
+const DATED = { ...PAIRED, readiness: {
+  before: { observed: 2, required: 14, criterion_met: false, unit: 'nights', contributing_dates: ['2024-06-03', '2024-06-04'] },
+  after: { observed: 1, required: 14, criterion_met: false, unit: 'nights', contributing_dates: ['2024-06-17'] },
+} };
+const HEADING = '.gf-reading > header h2';
+const dayReturn = (date, occurrence) => ({ date, subject: 'setting:basal_rate', title: 'Basal 03:00 · 0.6 U/h → 0.54 U/h',
+  occurrence, lever: 'basal_rate', from: 'changes' });
+
+// One arrival, rendered until its content has drawn and once more. After each
+// render the desk's focus request is read and cleared, as the router's own
+// render does, and the render is marked content or not.
+async function renders(mountOnce, seat, deps, steps, content) {
+  const seen = [];
+  for (let step = 0; step < steps; step++) {
+    mountOnce(seat, deps);
+    seen.push({ content: content.test(seat.innerHTML), asked: view.focusAfterRender ?? null });
+    view.focusAfterRender = null;
+    await flush();
+  }
+  return seen;
+}
+// Only the first content render asks, and it asks for `expected`.
+function askedOnFirstContent(seen, expected) {
+  const first = seen.findIndex(render => render.content);
+  assert.ok(first > 0, 'premise: a loading render comes before the content');
+  assert.ok(seen.slice(first + 1).some(render => render.content), 'premise: the content renders a second time');
+  assert.deepEqual(seen.map(render => render.asked), seen.map((_, index) => (index === first ? expected : null)));
+}
+// A browser whose history moves its address, for the mounts' own navigation.
+// No router is seated here, so no render takes a request an earlier test left.
+async function onChanges(run) {
+  view.focusAfterRender = null;
+  const previousWindow = globalThis.window;
+  const location = { pathname: '/changes', search: '', hash: '' };
+  globalThis.window = { location, history: { pushState: (_state, _title, address) => {
+    const url = new URL(address, 'http://synthetic');
+    Object.assign(location, { pathname: url.pathname, search: url.search, hash: url.hash });
+  } } };
+  try { await run(location); }
+  finally { navigate('diagnose'); view.focusAfterRender = null; globalThis.window = previousWindow; }
+}
+
+test('a Day return to the active change asks for its date\'s control, then the heading, on its first content render only', async () => {
+  kind = 'trial'; identity = 'day-return-active-synthetic'; served = DATED;
+  try {
+    await onChanges(async () => {
+      const seat = host();
+      const seen = await renders(mount, seat, { navigation: 'day-return-active', context: dayReturn('2024-06-04', identity), hold() {} },
+        4, /data-form="finish"/);
+      assert.match(seat.innerHTML, /data-day-date="2024-06-04"/, 'premise: the date is a supporting-date control');
+      askedOnFirstContent(seen, ['[data-day-date="2024-06-04"]', HEADING]);
+    });
+  } finally { served = comparison; }
+});
+
+test('a Day return to a change record asks for its date\'s control, then the heading, on its first content render only', async () => {
+  kind = 'trial'; identity = 'day-return-record-synthetic'; served = DATED;
+  try {
+    await onChanges(async () => {
+      const seat = host();
+      const context = dayReturn('2024-06-17', `record:trial:${identity}`);
+      const seen = await renders(mountHistory, seat, { navigation: 'day-return-record', context, hold() {} },
+        5, /data-record-part=/);
+      assert.match(seat.innerHTML, /data-day-date="2024-06-17"/, 'premise: the date is a supporting-date control');
+      askedOnFirstContent(seen, ['[data-day-date="2024-06-17"]', HEADING]);
+    });
+  } finally { served = comparison; }
+});
+
+test('an arrival that is not a Day return asks for nothing, and a malformed date only for the heading', async () => {
+  kind = 'trial'; identity = 'day-return-plain-synthetic'; served = DATED;
+  try {
+    await onChanges(async () => {
+      const plain = await renders(mount, host(), { navigation: 'plain-arrival', context: {}, hold() {} }, 4, /data-form="finish"/);
+      assert.deepEqual(plain.map(render => render.asked), [null, null, null, null]);
+      const malformed = await renders(mount, host(),
+        { navigation: 'malformed-return', context: dayReturn('2024-06-04"] , body [x="', identity), hold() {} }, 4, /data-form="finish"/);
+      askedOnFirstContent(malformed, HEADING);
+    });
+  } finally { served = comparison; }
+});
+
+test('a supporting date in either Changes view opens Day with that date and no return-focus key', async () => {
+  kind = 'trial'; identity = 'day-link-synthetic'; served = DATED;
+  try {
+    await onChanges(async (location) => {
+      for (const [mountOnce, context, content] of [
+        [mount, {}, /data-form="finish"/],
+        [mountHistory, { occurrence: `record:trial:${identity}` }, /data-record-part=/],
+      ]) {
+        const seat = host();
+        await renders(mountOnce, seat, { navigation: `day-link-${content.source}`, context, hold() {} }, 5, content);
+        const control = seat.days.find(day => day.dataset.dayDate === '2024-06-04');
+        assert.ok(control, 'premise: the date is a supporting-date control');
+        control.onclick();
+        assert.equal(location.pathname, '/day');
+        const address = new URLSearchParams(location.search);
+        assert.equal(address.get('date'), '2024-06-04');
+        assert.equal(address.get('from'), 'changes');
+        assert.equal(address.has('focus'), false, 'the Day address carries a return-focus key');
+        assert.doesNotMatch(location.search, /%5B|\[/, 'the Day address carries a selector bracket');
+      }
+    });
+  } finally { served = comparison; }
 });

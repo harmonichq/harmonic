@@ -22,11 +22,11 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
   assert.equal(serializeRoute(direct), '/day');
 
   // HV2-14: date, moment, canonical subject, occurrence, affected window,
-  // applicable lever, source destination and precise return-focus target.
+  // applicable lever and source destination. The precise return target rides
+  // as an identity its origin owns — here a Carb questions prompt's (ADR 445).
   const context = {
-    date: '2024-06-26', subject: 'Questions · Jun 26 13:55', occurrence: 'occ-7',
-    window: '0-120', lever: 'over_treated_low', from: 'diagnose.questions',
-    focus: "[data-question-card='q-7'] [data-action='day']",
+    date: '2024-06-26', subject: 'question:low|2024-06-26 13:55:00', title: 'Carb questions · 13:55',
+    occurrence: 'occ-7', window: '0-120', lever: 'over_treated_low', from: 'diagnose.questions',
   };
   const address = serializeRoute({ destination: 'day', context });
   const parsed = parseRoute({ pathname: '/day', search: address.slice(address.indexOf('?')) });
@@ -46,6 +46,18 @@ test('a contextual entry carries its display title in the address beside its rou
   assert.equal(parsed.context.title, 'Over-treated low');
   assert.equal(parsed.context.subject, 'finding:over_treated_low');
   assert.deepEqual(parsed.context, context);
+});
+
+// ADR 445: an address is external input, so it never hands the page a
+// selector. An older link that still carries a return-focus key is read
+// without it, and no entry writes one.
+test('an address that still carries a return-focus key is read and written without it', () => {
+  const selector = '[data-day-date="2024-06-11"]';
+  const parsed = parseRoute({ pathname: '/day',
+    search: `?date=2024-06-11&from=changes&focus=${encodeURIComponent(selector)}` });
+  assert.deepEqual(parsed, { destination: 'day', context: { date: '2024-06-11', from: 'changes' } });
+  assert.equal(serializeRoute({ destination: 'day', context: { date: '2024-06-11', from: 'changes', focus: selector } }),
+    '/day?date=2024-06-11&from=changes');
 });
 
 test('the v2 address is written and subscribed through the one routing owner', () => {

@@ -1042,16 +1042,33 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     assert.match(address, /^\/day/);
     assert.match(address, /date=2024-06-26/);
     assert.match(address, /from=diagnose\.questions/);
+    // ADR 445: the entry names the prompt by its identity and carries no selector.
+    const day = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+    assert.ok(day.subject?.startsWith('question:'), `the Day address names no prompt identity: ${JSON.stringify(day)}`);
+    assert.equal(Object.hasOwn(day, 'focus'), false, 'the Day address carries a return-focus key');
 
     // Closing it reveals the Day desk's own return, named for that utility.
     await press(page, '[data-utility-close]');
     assert.equal(await countOf(page, '[data-day="return"]'), 1);
     const label = await page.locator('[data-day="return"]').innerText();
     assert.equal(label.trim(), 'Return to Carb questions');
+    let guidanceReads = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/analyze') guidanceReads += 1; });
     await press(page, '[data-day="return"]');
     assert.equal(await currentDestination(page), 'diagnose');
     assert.equal(await countOf(page, '.gf-utility[data-utility="questions"]'), 1,
       'the return did not reopen the utility it was named for');
+    // A plain return into the Diagnose it was opened over: no guidance re-read,
+    // and focus back on the prompt's own Open Day control.
+    const onOpenDay = (subject) => document.activeElement
+      === document.querySelector(`.gf-utility [data-action="day"][data-subject="${subject}"]`);
+    await page.waitForFunction(onOpenDay, day.subject, { timeout: 10000 }).catch(() => null);
+    assert.equal(await page.evaluate(onOpenDay, day.subject), true, 'focus did not land on the prompt\'s Open Day control');
+    assert.equal(guidanceReads, 0, 'the return re-read Diagnose');
+    const returned = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+    for (const key of ['title', 'from', 'focus']) {
+      assert.equal(Object.hasOwn(returned, key), false, `the Diagnose address carries ${key}: ${JSON.stringify(returned)}`);
+    }
   } finally { await close(); }
 });
 

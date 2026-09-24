@@ -33112,8 +33112,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 30,
+     "insulin": 3.0,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 07:35:00"
@@ -33127,8 +33127,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 31,
+     "insulin": 3.1,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 13:00:00"
@@ -33142,8 +33142,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 41,
+     "insulin": 4.1,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 19:10:00"
@@ -33157,8 +33157,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 33,
+     "insulin": 3.3,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 07:45:00"
@@ -33172,8 +33172,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 34,
+     "insulin": 3.4,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 13:10:00"
@@ -33187,8 +33187,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 35,
+     "insulin": 3.5,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 16:50:00"
@@ -33202,8 +33202,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 36,
+     "insulin": 3.6,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 01:20:00"
@@ -33217,8 +33217,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 37,
+     "insulin": 3.7,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 06:05:00"
@@ -33233,7 +33233,7 @@
     "anchor": {
      "bg": null,
      "carbs": 38,
-     "insulin": 6.8,
+     "insulin": 3.8,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 12:10:00"
@@ -33247,8 +33247,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 39,
+     "insulin": 3.9,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 18:05:00"
@@ -33262,8 +33262,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 40,
+     "insulin": 4.0,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 04:50:00"
@@ -33277,8 +33277,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 41,
+     "insulin": 4.1,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 19:10:00"
@@ -33292,8 +33292,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 42,
+     "insulin": 4.2,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 15:20:00"
@@ -33307,8 +33307,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 43,
+     "insulin": 4.3,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 20:35:00"
@@ -33322,8 +33322,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 44,
+     "insulin": 4.4,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 03:25:00"
@@ -33337,8 +33337,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 45,
+     "insulin": 4.5,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 10:50:00"
@@ -33352,8 +33352,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 46,
+     "insulin": 4.6,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 16:30:00"
@@ -33367,8 +33367,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 47,
+     "insulin": 4.7,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-01 05:50:00"
@@ -33382,8 +33382,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 51,
-     "insulin": 9.1,
+     "carbs": 48,
+     "insulin": 4.8,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 14:05:00"
@@ -33397,8 +33397,8 @@
    {
     "anchor": {
      "bg": null,
-     "carbs": 44,
-     "insulin": 7.9,
+     "carbs": 49,
+     "insulin": 4.9,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-03 19:40:00"
@@ -33506,8 +33506,8 @@
    "detail": {
     "anchor": {
      "bg": null,
-     "carbs": 38,
-     "insulin": 6.8,
+     "carbs": 30,
+     "insulin": 3.0,
      "kind": "low",
      "label": "Completed carb bolus",
      "t": "2020-03-02 07:35:00"

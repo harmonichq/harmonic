@@ -142,9 +142,14 @@ def occurrence(i, minute, lever, rng, matched=True, bolus=None):
     }
 
 
-# A manufactured meal row's anchor bolus, ``(insulin, carbs)``, at the day record's
-# carb ratio.
-MEAL_BOLUSES = ((6.8, 38), (9.1, 51), (7.9, 44))
+def capture_meal_bolus(position):
+    """The anchor bolus, ``(insulin, carbs)``, of the meal row at ``position``.
+
+    It is the bolus the event-comparison capture draws at minute 0 of that row's
+    trace (``mockups/diagnose-event-comparison.synthetic/generate.mjs``), computed
+    the same way, so a row never serves a dose its own trace contradicts.
+    """
+    return 3 + position * .1, 30 + position
 
 # Each hand-set Finding verdict as the recorded classifier verdict that reads as it:
 # matched, silence reason, and the gist of a synthetic sentence. Outranked also needs
@@ -208,10 +213,10 @@ def build_exposures():
     # the fired-meal shape; the remaining source rows are counter-examples, so
     # the unpriced correction finding stays ahead of it and Overnight stays
     # all-hidden after its Highs chip is deselected.
-    meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng, bolus=MEAL_BOLUSES[i % 3])
+    meals = [occurrence(70 + i, m, Lever.LATE_BOLUS, rng, bolus=capture_meal_bolus(i))
              for i, m in enumerate((455, 780))]
     meals += [occurrence(72 + i, m, Lever.LATE_BOLUS, rng, matched=False,
-                         bolus=MEAL_BOLUSES[i % 3])
+                         bolus=capture_meal_bolus(2 + i))
               for i, m in enumerate((1150, 465, 790, 1010, 80, 365, 730, 1085,
                                      290, 560, 920, 1235, 205, 650, 990, 350,
                                      845, 1180))]
@@ -221,6 +226,9 @@ def build_exposures():
     meals[11]['ep_id'] = meals[2]['ep_id']
     meals[11]['t'] = meals[2]['t']
     meals[11]['date'] = meals[2]['date']
+    # The capture keys a meal's trace by episode and time, so the original row now
+    # reads the duplicate's trace, and serves that trace's bolus.
+    meals[2]['insulin'], meals[2]['carbs'] = meals[11]['insulin'], meals[11]['carbs']
     assert len(lows) == COMPARISON_POPULATION_SIZE
     assert len(meals) == COMPARISON_POPULATION_SIZE
     highs = [occurrence(80 + i, m, Lever.MISSED_MEAL, rng)

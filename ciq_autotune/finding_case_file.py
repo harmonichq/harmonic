@@ -1091,8 +1091,10 @@ def _announced_detail(row, outcome, cgm, bolus):
         policy_for(Lever.MISSED_MEAL).comparison_window,
     )["trace"]["cgm"]
     return {"id": _opaque("m_", row.seq_num), "date": anchor.date().isoformat(),
+            # A meal anchor serves its bolus and no glucose: the pump's own
+            # calculator reading is not one the analyzer computed for the meal.
             "anchor": {"t": anchor.strftime(FMT), "kind": "completed_carb_bolus",
-                       "label": "Completed carb bolus", "bg": row.bg,
+                       "label": "Completed carb bolus", "bg": None,
                        "insulin": row.insulin, "carbs": row.carbs},
             "verdict": "comparison", "outcome": outcome, "glucose": trace,
             "markers": [{"kind": "bolus", "t": dose.t.strftime(FMT),

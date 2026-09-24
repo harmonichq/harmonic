@@ -1650,3 +1650,25 @@ def test_a_pattern_cause_carries_only_its_claimants_own_narrative():
         [{**entry, "verdict": "outranked", "detail": "Synthetic sentence at 18:30."}],
         [{**entry, "verdict": "outranked", "detail": "Synthetic sentence at 12:30."}],
     ]
+
+
+def test_an_announced_meal_serves_its_bolus_and_no_glucose_the_analyzer_did_not_compute():
+    first = _opportunity(Lever.MISSED_MEAL)
+    member = Member(first, first.anchor_t, "fired")
+    prepared = _prepared(Lever.MISSED_MEAL, (member,), frozenset({member.id}))
+    # The pump calculator recorded a glucose on the bolus itself.
+    announced = BolusEvent(t=first.anchor_t - timedelta(hours=1), insulin=4, carbs=40, bg=183,
+                           completion="Completed", seq_num=99)
+    prepared.bolus = (announced,)
+    prepared.cgm = tuple(
+        CgmReading(t, 100, "EGV")
+        for anchor in (first.reach_start, announced.t)
+        for t in (anchor - timedelta(minutes=60), anchor, anchor + timedelta(minutes=300))
+    )
+    baseline = prepared.case("finding:missed_meal", "event", None)["projection"]["cohorts"][2]
+    detail = prepared.case("finding:missed_meal", "event",
+                           baseline["occurrence_ids"][0])["selection"]["detail"]
+
+    assert detail["verdict"] == "comparison"
+    assert {key: detail["anchor"][key] for key in ("kind", "bg", "insulin", "carbs")} == {
+        "kind": "completed_carb_bolus", "bg": None, "insulin": 4, "carbs": 40}

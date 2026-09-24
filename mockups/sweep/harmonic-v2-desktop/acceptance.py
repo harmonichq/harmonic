@@ -1081,7 +1081,7 @@ def smoke_selection(run, base, ids):
         "import {storyCase} from './frontend/replay-cases.mjs';"
         "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
     defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
-    require(len(SMOKE_STORIES) == 25 and len(set(SMOKE_STORIES)) == 25
+    require(len(SMOKE_STORIES) == 26 and len(set(SMOKE_STORIES)) == 26
             and set(SMOKE_STORIES) <= set(ids), "smoke inventory differs from the frozen registry")
     case_names = {key.removeprefix("case:") for graph in recipes for key in graph if key.startswith("case:")}
     selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}

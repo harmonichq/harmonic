@@ -5439,7 +5439,7 @@ before a stage press on Diagnose replaces the change staged for a different
 setting, the stage control says so and names the change it will replace. It is
 app-opener-only and runs on the manufactured `basal-and-carb-ratio-lower` case
 store (`CASE_STORE_DIR`), where a basal slot and the carb ratio both assert a
-move. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+move. S187 joins the PR smoke slice, as the only story on that store. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
 existing story is amended or retired. No `★ FROZEN` block and no header
 inventory line is edited here; the release coordinator reconciles them.
 

@@ -1662,10 +1662,22 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
+        from .guidance import subject_title
         from .watched_change import with_plan_verdicts
+
+        def named(record):
+            # Each recorded subject's served name, computed on read and never
+            # stored (ADR 451). Only an available context records subjects.
+            context = record["decision_context"]
+            if context["state"] != "available":
+                return record
+            titles = [subject_title(subject) for subject in context["subjects"]]
+            return {**record, "decision_context": {**context, "subject_titles": titles}}
+
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
-            return {"history": with_plan_verdicts(store, store.follow_up_records("plan")),
+            return {"history": [named(record) for record in
+                                with_plan_verdicts(store, store.follow_up_records("plan"))],
                     **follow_up_read(store)}
 
     @app.post("/api/plan/history/withdraw")

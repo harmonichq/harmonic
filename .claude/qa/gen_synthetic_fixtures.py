@@ -671,10 +671,10 @@ def build_case_file_capture():
         {'id': 'basal:210-240', 'register': 'held', 'kind': 'setting', 'title': 'Basal 03:30',
          'tier': 'noted', 'priority': None, 'parameter': 'basal_rate', 'reason': 'thin support',
          'chips': ['lows'], 'window_scope': 'window'},
-        {'id': 'ic:660', 'register': 'held', 'kind': 'setting', 'title': 'I:C Evening',
+        {'id': 'ic:660', 'register': 'held', 'kind': 'setting', 'title': 'Carb ratio Evening',
          'tier': 'noted', 'priority': None, 'parameter': 'carb_ratio', 'reason': 'harm gate',
          'chips': ['meals'], 'window_scope': 'window'},
-        {'id': 'isf', 'register': 'held', 'kind': 'setting', 'title': 'ISF',
+        {'id': 'isf', 'register': 'held', 'kind': 'setting', 'title': 'Correction factor',
          'tier': 'noted', 'priority': None, 'parameter': 'isf', 'reason': 'insufficient evidence',
          'chips': ['highs'], 'window_scope': 'whole_day'},
     ]

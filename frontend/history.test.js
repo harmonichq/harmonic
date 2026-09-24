@@ -10,7 +10,7 @@ import { stamp } from './frame.js';
 import { comparisonReasonWords } from './follow-up.js';
 import {
   changeSection, endingSection, lateConclusionSection, originalSection, reassessmentSection,
-  recordRoster, settingValue,
+  recordRoster,
 } from './history.js';
 
 /* ---------------------------------------------------------------- payloads */
@@ -398,8 +398,3 @@ test('a Focus whose behavior is no longer a lever says so, naming neither its ke
   assert.doesNotMatch(html, /overnight_drift|intended behavior: Focus/);
 });
 
-test('a correction factor reads insulin first on both sides', () => {
-  assert.equal(settingValue('isf', 40), '1 U : 40 mg/dL');
-  assert.equal(settingValue('basal_rate', 0.6), '0.6 U/h');
-  assert.equal(settingValue('carb_ratio', null), 'not recorded');
-});

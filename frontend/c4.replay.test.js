@@ -6,10 +6,11 @@ import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
   assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
-  assertServedRowDescriptions432, assertSelectedFacts432, assertSentenceOnce454,
+  assertServedRowDescriptions432, assertSelectedFacts432, assertSentenceOnce454, queueNumbers451,
   OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
   canvasHeadFailures, assertCanvasHead, readSettled,
 } from './c4.replay.mjs';
+import { queueRows, scopeNote } from './diagnose-findings-queue.js';
 import { C2_STORIES } from './c2.replay.mjs';
 import { REGISTRY } from './desk-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
@@ -92,6 +93,30 @@ test('S148–S150 are unique app-only #432 stories with their required manufactu
     assert.equal(entries[0][1].deferred.term, 'ADR 432');
     assert.equal(storyCase(id), expectedCase);
   }
+});
+
+test('S177–S179 are unique app-only #451 stories on the isf-strengthen store', () => {
+  for (const id of ['S177', 'S178', 'S179']) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, 'ADR 451');
+    assert.equal(storyCase(id), 'isf-strengthen');
+  }
+});
+
+test('S178 expects the numbers line the queue prints, served scope note included', () => {
+  const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
+    .windows.low_block;
+  // Shaped like isf-strengthen's served row: asserting, whole-day, 40 → 32.
+  const served = { ...projection.rows.find(row => row.parameter === 'isf'), register: 'assert',
+    direction: 'strengthen', asserts_move: true, current: 40, recommended: 32, window_scope: 'whole_day' };
+  const [row] = queueRows({ ...projection, rows: [served] });
+  const printed = `${row.detail.now}${row.detail.then}${scopeNote(served)}`;
+  assert.equal(queueNumbers451(served), printed);
+  assert.equal(printed, 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL · Whole day');
+  assert.doesNotMatch(printed, /mg\/dL\/U/);
+  assert.equal(queueNumbers451({ ...served, window_scope: 'window' }), 'now 1 U : 40.0 mg/dL → 1 U : 32.0 mg/dL',
+    'a windowed row carries no scope note');
 });
 
 const servedCaseFiles432 = JSON.parse(readFileSync(new URL(
@@ -2015,6 +2040,8 @@ function qa447CountPage(dock, lead = { 'data-outcome': 'tbr', class: 'gf-target'
 test('S169 passes when the dock prints the served count in Changes\' words', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required'));
+  // #451: the same count after the Trial's values, which lead the detail line.
+  await C4_STORIES.S169(qa447CountPage('0.85 → 1.05 U/hr · Ready to judge — 15 days since 05-15 · 14 required'));
 });
 
 test('S169 fails at the outcomes lead, not at a premise, when Changes keeps TIR first', async () => {

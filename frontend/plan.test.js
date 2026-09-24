@@ -20,6 +20,7 @@ import {
   planItemFamily,
   reconcileDeliverable,
   roundToPrecision,
+  settingValue,
 } from './plan.js';
 
 // --- fixtures --------------------------------------------------------------
@@ -302,6 +303,12 @@ test('reconcile flags a mis-key that survives rounding, only for the bad cell', 
   assert.equal(res.groups[0].cells[0].param, 'isf');
   assert.equal(res.groups[0].cells[0].planned, 55);
   assert.equal(res.groups[0].cells[0].actual, 60);
+});
+
+test('a correction factor reads insulin first on both sides', () => {
+  assert.equal(settingValue('isf', 40), '1 U : 40 mg/dL');
+  assert.equal(settingValue('basal_rate', 0.6), '0.6 U/h');
+  assert.equal(settingValue('carb_ratio', null), 'not recorded');
 });
 
 test('reconcile per-param rounding: a basal difference below 0.001 is not a mis-key but above it is', () => {

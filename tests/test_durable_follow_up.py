@@ -514,6 +514,30 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(retry.status_code, 200, retry.text)
         self.assertEqual(retry.json(), applied)  # tokens, withdrawal and cleared draft are not identity
 
+    def test_plan_history_names_each_recorded_subject_at_read_time(self):
+        # ADR 451: the history read serves each recorded subject's name beside its
+        # identifier. The name is computed on read and never stored; the recorded
+        # explanation is the served concern title at the moment of apply.
+        source = self.seed_case("isf-strengthen")
+        concern = next(row for row in source["candidates"] if row["subject"] == "setting:isf")
+        action = concern["action"][0]
+        items = [{"type": "isf", "start_min": action["start_min"], "value": action["recommended"]}]
+        draft = self.client.put("/api/plan", headers=self.headers, json={"items": items}).json()
+        response = self.client.post("/api/plan/apply", headers=self.headers, json={
+            "request_id": "apply", "input_revision": source["input_revision"],
+            "subject": "setting:isf", "analysis_generation": source["analysis_generation"],
+            "draft_updated_at": draft["updated_at"]})
+        self.assertEqual(response.status_code, 200, response.text)
+        read = self.client.get("/api/plan/history", headers=self.headers).json()
+        context = read["history"][0]["decision_context"]
+        self.assertEqual(context["subjects"], ["setting:isf"])
+        self.assertEqual(context["subject_titles"], ["Correction factor"])
+        self.assertEqual(context["explanation"], "Correction factor")
+        with Store.open_readonly(self.path) as store:
+            stored = store.follow_up_record("plan", response.json()["applied_at"])
+        self.assertNotIn("subject_titles", stored["decision_context"])
+        self.assertEqual(stored["decision_context"]["subjects"], ["setting:isf"])
+
     def test_focus_pin_retry_and_unavailable_atomic_manual_assessment(self):
         from datetime import datetime
         from unittest.mock import patch

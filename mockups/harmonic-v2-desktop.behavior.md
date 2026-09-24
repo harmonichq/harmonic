@@ -5035,7 +5035,8 @@ or a named `scripts/qa_e2e_cases.py` case store.
 ```
 S169 · A watched Trial's dock and Changes print one day count, the served
        days_elapsed. On a complete Trial past its requirement the dock reads
-       "Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required", and Changes'
+       "Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required" (after the
+       Trial's values, which lead the detail line since #451), and Changes'
        Watch maturity figure reads "‹N› days" with "‹R› required". Neither the
        dock's detail nor the Watch maturity figure prints "‹N› of ‹R›" past its
        requirement; only Changes' progress bar clamps. Changes' outcome table
@@ -5148,3 +5149,118 @@ Additional handler inventory for this amendment:
 | Handler / registration | Source | Story |
 |---|---|---|
 | Selected Occurrence cause and claimant habit lines, each sentence once | frontend/diagnose-workstation.js occurrenceFacts, over the served reason | S182 |
+
+## #451 amendment — 2026-09-23
+
+S177–S179 are the fail-first obligations of ADR 451
+(`openspec/changes/setting-concern-labels/design.md`): the desk names the
+correction factor and the carb ratio in the wearer's words, prints a correction
+factor insulin first, says why its concern leads in words, names a recorded
+concern by its served name, and lets the watch dock's title name the change
+while its values wrap below. They are app-opener-only, like S101–S117, and run on
+the manufactured `isf-strengthen` case store, each story on a fresh copy
+(`CASE_STORE_DIR`). S177 joins the PR smoke slice, as the only story on that
+store. Browser execution belongs to the release coordinator at 1280x720 and
+1440x900. No story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator writes the one release
+freeze block and reconciles the count line.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451.
+It covers S177–S179, under R451 as corrected, the coordinator's widening of #451
+and its plan-review and chunk-review rulings, and nothing outside #451.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case isf-strengthen` emits.
+
+```
+S177 · On a plain arrival at Changes, the Action figure reads the served
+       selection's first instruction as "<direction> to 1 U : <recommended>
+       mg/dL"; the nameplate and the Action heading say "Ready to stage", then
+       "Staged" once the change is staged and "Ready to stage" again after Undo;
+       a concern set aside and still on screen reads "Set aside" with no status
+       words; the Changes desk prints no mg/dL/U, no ISF and no disposition code.
+  element:  .gf-reading .gf-figure; .gf-stage .gf-head .gf-sub;
+            .gf-reading .gf-section h3 .meta; .gf-desk
+  source:   frontend/changes.js actionLead, concernFrame, leadWords;
+            frontend/guidance.js statusWords; frontend/plan.js settingValue
+  lock:     none (revise; ADR 451 in openspec/changes/setting-concern-labels/design.md)
+  data:     isf-strengthen; guidance selects pattern:lows_after_correcting_highs,
+            eligible_action, carrying the correction factor's served
+            "strengthen" instruction
+  evidence: C4_STORIES.S177; reads /api/guidance for the served disposition and
+            first instruction, compares the figure's text and the two word
+            slots, stages and undoes through [data-set="stage"] and
+            [data-set="unstage"], then sets the concern aside through the form
+            and reads the held seat against the re-read's served set-aside row
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the figure reads "strengthen to 32 " with no
+            unit), not at setup; branch 995126ad passes at both sizes.
+            Coordinator-run 2026-09-24
+```
+
+```
+S178 · On Diagnose, the correction-factor queue row is titled "Correction factor
+       · <served direction>" and its numbers line reads "now 1 U : <current> mg/dL
+       → 1 U : <recommended> mg/dL" followed by the row's served scope suffix
+       (" · Whole day" for a whole-day row); its panel's heading says
+       "Correction factor" and its values read "1 U : <value> mg/dL"; staging
+       the value seats the dock's staged title "Correction factor · <served
+       direction>" with no
+       truncation, and its detail line leads with "1 U : <current> mg/dL → 1 U :
+       <recommended> mg/dL", fully visible; the Diagnose desk prints neither
+       mg/dL/U nor ISF.
+  element:  #level .qrow[data-id="isf"] .lab, .den.nums; #level .slot-head .time;
+            #level .numrow b; .inspector > .watch .what, .how; .dw[data-state]
+  source:   ciq_autotune/findings_projection.py (title);
+            frontend/diagnose-findings-queue.js assertDetail, scopeNote;
+            frontend/diagnose-workstation.js renderIsfLevel, renderParamLevel,
+            stagedDescriptor; frontend/watched-change-dock.js watchDockView
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; the whole-day correction-factor row asserts
+            "strengthen" and stages
+  evidence: C4_STORIES.S178; reads the served row from
+            /api/diagnose/finding-case-file-preparation, compares the row's
+            title, and its numbers line at the queue's rounding followed by the
+            served scope suffix from the row's window_scope (" · Whole day"
+            here, as the served row is whole-day), with no mg/dL/U; compares the
+            panel's heading and values at the panel's rounding, stages through
+            the panel, and measures the dock: the title's scrollWidth <=
+            clientWidth, and the detail line's box within the dock and the dock
+            within the viewport
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the row is titled "ISF · strengthen"), not
+            at setup; branch 995126ad passes at both sizes, its dock geometry
+            included. Coordinator-run 2026-09-24
+```
+
+```
+S179 · After staging the correction factor and recording the Plan, Changes' "What
+       was known" names the recorded concern "Correction factor" with no
+       setting: identifier, prints the recorded change as "1 U : <value> mg/dL",
+       and prints the recorded explanation, "Correction factor", as recorded.
+  element:  .gf-reading .gf-section (What was known) dd, p
+  source:   frontend/plan-view.js knownSection; ciq_autotune/api.py
+            /api/plan/history subject_titles; ciq_autotune/guidance.py
+            subject_title and the setting concern's title
+  lock:     none (revise; ADR 451)
+  data:     isf-strengthen; Changes stages the served correction-factor
+            instruction and records it
+  evidence: C4_STORIES.S179; stages and records through the Plan, reads the
+            newest record's decision_context from /api/plan/history, and
+            compares the section's concern name, change value and explanation
+  status:   base b03431d2 with this harness laid over it fails at its feature
+            assertion at both sizes (the section prints "setting:isf"), not at
+            setup; branch 995126ad passes at both sizes. Coordinator-run
+            2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Changes Action figure, nameplate and Action heading words | frontend/changes.js actionLead, concernFrame; frontend/guidance.js statusWords | S177 |
+| Stage and Undo on Changes | frontend/changes.js bind ([data-set="stage"], [data-set="unstage"]) | S177 |
+| Set aside on Changes | frontend/changes.js bind (form[data-form="aside"]) | S177 |
+| Correction-factor queue row and its panel | frontend/diagnose-findings-queue.js assertDetail; frontend/diagnose-workstation.js renderIsfLevel | S178 |
+| Staged dock title and values | frontend/diagnose-workstation.js stagedDescriptor; frontend/watched-change-dock.js watchDockView, paintWatchDock | S178 |
+| Plan "What was known" | frontend/plan-view.js knownSection | S179 |

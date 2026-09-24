@@ -500,7 +500,7 @@ class FindingsProjection:
                 register=register,
                 kind="setting",
                 parameter="carb_ratio",
-                title=_title(f"I:C {label}", register, direction),
+                title=_title(f"Carb ratio {label}", register, direction),
                 label=block.get("label"),
                 priority=(self._lever_priority("carb_ratio") if asserts else None),
                 span={"start_min": start_min, "end_min": end_min, "label": label},
@@ -544,7 +544,7 @@ class FindingsProjection:
                 register=register,
                 kind="setting",
                 parameter="isf",
-                title=_title("ISF", register, direction),
+                title=_title("Correction factor", register, direction),
                 label=row.get("label"),
                 priority=(self._lever_priority("isf")
                           if row.get("asserts_move") is True else None),

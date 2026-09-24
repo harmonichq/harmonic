@@ -22,7 +22,7 @@ import { QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, formatWallClock, is
 import { answerToSource, answerLabel, detectorKicker, sortOldestFirst, buildSparklineOption } from './prompt-queue.js';
 import { AUTHORED, GENERATED, CATEGORIES, renderMarkdown, articleBySlug } from './kb.js';
 import { guideGroups, guideTierLabel, guideMd, guideWorkedRows } from './guide.js';
-import { PLAN_PARAMS, formatStartMin } from './plan.js';
+import { PLAN_PARAMS, formatStartMin, settingValue } from './plan.js';
 import {
   answerPrompt, clearPrompt, createCarb, deleteCarb, fetchCarbs, fetchCatalog, fetchCredentials,
   fetchKbArticle, fetchPrompts, fetchPumpSettings, saveCredentials,
@@ -45,7 +45,7 @@ const PRESENT = { ISF: 'Correction factor', 'I:C': 'Carb ratio' };
 // Deliverable heads in PLAN_PARAMS order, in the approved user copy (DESIGN.md).
 const PLAN_HEAD = { basal_rate: 'Basal (U/h)', isf: 'Correction factor', carb_ratio: 'Carb ratio (g/U)', target_bg: 'Target (mg/dL)' };
 // A correction factor reads insulin first (CONTEXT.md); the number is the served one.
-const userValue = (param, value) => (value == null || value === '' ? '' : param === 'isf' ? `1 U : ${value} mg/dL` : String(value));
+const userValue = (param, value) => (value == null || value === '' ? '' : param === 'isf' ? settingValue(param, value) : String(value));
 
 const questionKey = (prompt) => `${prompt.detector}|${prompt.anchor_t}`;
 

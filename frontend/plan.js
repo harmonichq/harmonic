@@ -70,6 +70,19 @@ export function formatStartMin(min) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
+
+/**
+ * One programmed value in its own unit; a correction factor reads insulin first
+ * (CONTEXT.md). The desk's one setting-value formatter (ADR 451): it lives here,
+ * the import-free leaf, so every surface can reach it without a cycle.
+ */
+export function settingValue(parameter, value) {
+  if (value == null) return 'not recorded';
+  if (parameter === 'isf') return `1 U : ${value} mg/dL`;
+  return `${value} ${UNIT[parameter] || ''}`.trim();
+}
+
 /** The active-profile segment covering `startMin` (last start_min <= it). */
 export function segmentAt(segments, startMin) {
   let result = segments && segments.length ? segments[0] : null;
@@ -480,14 +493,6 @@ function paramMatches(param, planned, actual) {
   return p === a;
 }
 
-/** Human-readable label per deliverable parameter (for the mismatch diff). */
-export const PARAM_LABEL = {
-  basal_rate: 'Basal (U/h)',
-  isf: 'ISF (mg/dL/U)',
-  carb_ratio: 'I:C (g/U)',
-  target_bg: 'Target (mg/dL)',
-};
-
 /**
  * The cells where the detected (active) pump profile differs from the planned
  * deliverable, as planned→actual, grouped by start time so Changes renders one
@@ -529,7 +534,6 @@ export function reconcileDeliverable(deliverableRows, detectedSegments) {
       if (!paramMatches(param, p, a)) {
         cells.push({
           param,
-          label: PARAM_LABEL[param],
           planned: roundToPrecision(p, PARAM_PRECISION[param]),
           actual: roundToPrecision(a, PARAM_PRECISION[param]),
         });

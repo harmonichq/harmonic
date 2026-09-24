@@ -3249,6 +3249,15 @@ export const S176 = appOnly('HV2-28',
 // STORY:harmonic-v2-desktop:S182
 export const S182 = appOnly('ADR 454',
   '#454 a claimed Pattern Occurrence prints its sentence once, on its cause line', C4_STORIES.S182);
+// STORY:harmonic-v2-desktop:S177
+export const S177 = appOnly('ADR 451',
+  '#451 Changes reads the correction factor insulin first and says why its concern leads in words', C4_STORIES.S177);
+// STORY:harmonic-v2-desktop:S178
+export const S178 = appOnly('ADR 451',
+  '#451 Diagnose names the correction factor, and the staged dock title fits with its values below', C4_STORIES.S178);
+// STORY:harmonic-v2-desktop:S179
+export const S179 = appOnly('ADR 451',
+  '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3315,6 +3324,7 @@ export const REGISTRY = [
   ['S166', S166, J()], ['S167', S167, J()], ['S168', S168, J()],
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
+  ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -132,6 +132,40 @@ export const selectedConcern = () => memory.read?.selected || null;
 /** The one word for what this read found, rendered verbatim. */
 export const disposition = () => memory.read?.disposition || null;
 
+// What the reader can do about the concern that leads, in words (ADR 451). Only
+// the two dispositions that select a concern have words: the others route Changes
+// to another frame, or select nothing, so none of their words could print.
+const STATUS_WORDS = {
+  staged: 'Staged',
+  stage: 'Ready to stage',
+  focus: 'Ready to start a Focus',
+  withheld: 'Focus withheld',
+  identified: 'Action identified',
+  inspect: 'Evidence to inspect',
+};
+
+/**
+ * The served disposition in words. A change already staged in the Plan draft is
+ * Staged, the state the Plan owns and the pane shows beside it. Under
+ * `eligible_action` the words follow the selected concern's served action:
+ * setting instruction rows are ready to stage; an identified action is ready to
+ * start a Focus when Changes passes the served Focus offer, is a withheld Focus
+ * on a Pattern whose served readiness is withheld, and is otherwise an identified
+ * action. Any other code prints no words. Every input is served or owned
+ * elsewhere; nothing here decides eligibility.
+ */
+export function statusWords({ focusOffered, staged }) {
+  if (staged) return STATUS_WORDS.staged;
+  const state = disposition();
+  if (state === 'guided_investigation') return STATUS_WORDS.inspect;
+  if (state !== 'eligible_action') return '';
+  const concern = selectedConcern();
+  if (Array.isArray(concern?.action)) return STATUS_WORDS.stage;
+  if (focusOffered) return STATUS_WORDS.focus;
+  if (concern?.kind === 'pattern' && concern.readiness?.verdict === 'withheld') return STATUS_WORDS.withheld;
+  return STATUS_WORDS.identified;
+}
+
 /**
  * The lifecycle verdict this read was composed at.
  *

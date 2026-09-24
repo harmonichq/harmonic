@@ -15,7 +15,7 @@ export const glossaryGroups = [
           ] },
           { title: 'General', terms: [
             { term: 'CI', def: 'Confidence interval — the range an estimate is likely to fall within given the data available. Narrower means more reliable.' },
-            { term: 'Epoch', def: 'A stretch over which a pump setting appears unchanged. Basal setting epochs can narrow basal measurement windows; ISF/I:C measurements use the full requested window and keep setting epochs as caveats/settling context.' },
+            { term: 'Epoch', def: 'A stretch over which a pump setting appears unchanged. Basal setting epochs can narrow basal measurement windows; correction factor and carb ratio measurements use the full requested window and keep setting epochs as caveats/settling context.' },
             { term: 'CGM', def: 'Continuous Glucose Monitor — the sensor providing the glucose readings shown throughout this app.' },
             { term: 'Bolus', unit: 'U', def: 'A single dose of insulin given for a meal or to correct a high, as opposed to the continuous basal rate.' },
             { term: 'IOB', def: 'Insulin On Board — insulin already delivered that is still active in the body.' },

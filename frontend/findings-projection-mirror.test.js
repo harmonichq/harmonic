@@ -106,7 +106,7 @@ test('the mirror publishes outcome chips, chip counts, and correction-factor sco
   const row = (title) => afternoon.rows.find((candidate) => candidate.title === title);
   assert.deepEqual(row('Over-treated low').chips, ['highs']);
   assert.deepEqual(row('Correction stacking').chips, ['lows', 'corrections']);
-  assert.equal(row('ISF').window_scope, 'whole_day');
+  assert.equal(row('Correction factor').window_scope, 'whole_day');
   assert.deepEqual(afternoon.chip_counts, fixture.windows.afternoon.chip_counts);
 });
 

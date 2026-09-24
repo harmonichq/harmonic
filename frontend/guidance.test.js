@@ -20,7 +20,7 @@ function guidancePayload({ generation = 'guidance:abc:0:r8', aside = false, reas
     subject: 'setting:basal_rate',
     kind: 'setting',
     parameter: 'basal_rate',
-    title: 'Basal profile',
+    title: 'Basal',
     units: 'U/h',
     priority: 55,
     action: [{ kind: 'setting_instruction', parameter: 'basal_rate', start_min: 180, end_min: 210, direction: 'lower', units: 'U/h', recommended: 0.48 }],

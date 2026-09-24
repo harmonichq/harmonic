@@ -261,7 +261,7 @@ class PriorMealIdentifiabilityFacadeTest(unittest.TestCase):
         self.assertEqual(prior["additional_supported_meals_needed"], 1)
         self.assertEqual(prior["hold_reason"], "insufficient_supported_meals")
         self.assertFalse(row.asserts_move)
-        self.assertIn("I:C direction needs more identifiable meals", row.annotation)
+        self.assertIn("Carb ratio direction needs more identifiable meals", row.annotation)
         self.assertIn("1 more needed", row.annotation)
         self.assertEqual(result.consolidated_basal.segments[0].carb_ratio, 6.0)
 
@@ -299,7 +299,7 @@ class PriorMealIdentifiabilityFacadeTest(unittest.TestCase):
         self.assertGreaterEqual(row.estimate.hi, row.current)
         self.assertFalse(row.asserts_move)
         self.assertEqual(result.consolidated_basal.segments[0].carb_ratio, 6.0)
-        self.assertIn("3 clean-start/correction-only meals", row.annotation)
+        self.assertIn("3 identifiable meals", row.annotation)
         self.assertIn("band still includes", row.annotation)
 
     def test_supported_sensitivity_bracket_cannot_straddle_programmed(self):
@@ -1250,7 +1250,7 @@ class AnalyzeIcTest(unittest.TestCase):
         self.assertEqual(seg.estimate.n, 2)
         self.assertIsNotNone(seg.estimate.value)   # estimate stays visible
         self.assertIsNone(seg.recommended)          # but no recommendation
-        self.assertIn("2 clean-start/correction-only meals", seg.annotation)
+        self.assertIn("2 identifiable meals", seg.annotation)
         self.assertIn("1 more needed", seg.annotation)
 
     def test_at_min_meals_boundary_recommendation_fires(self):
@@ -1750,7 +1750,7 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertEqual(
             retired.annotation,
             "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U "
-            "(CI 6–6). Past setting. No change suggested.",
+            "(range 6–6). Past setting. No change suggested.",
         )
         self.assertEqual(
             {run.first_member_at for run in retired.runs},
@@ -1927,7 +1927,7 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         self.assertEqual(
             catalog[0].annotation,
             "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U "
-            "(CI 6–6). Past setting. No change suggested.",
+            "(range 6–6). Past setting. No change suggested.",
         )
 
     def test_catalog_distinguishes_active_aged_out_unavailable_and_never_publishable(self):

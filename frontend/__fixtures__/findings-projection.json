@@ -15000,7 +15000,7 @@
       "run_days": 90
      },
      "tier": "noted",
-     "title": "I:C 11:00 to 07:00",
+     "title": "Carb ratio 11:00 to 07:00",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -15052,7 +15052,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -16076,7 +16076,7 @@
       "run_days": 90
      },
      "tier": "noted",
-     "title": "I:C 11:00 to 07:00",
+     "title": "Carb ratio 11:00 to 07:00",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -16128,7 +16128,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -17565,7 +17565,7 @@
       "run_days": 90
      },
      "tier": "noted",
-     "title": "I:C 11:00 to 07:00",
+     "title": "Carb ratio 11:00 to 07:00",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -17761,7 +17761,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -19814,7 +19814,7 @@
  },
  "density_history": [
   {
-   "annotation": "When Carb ratio was 6 g/U, 4 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 6 g/U, 4 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
    "block_end_min": 180,
    "block_start_min": 0,
    "estimate": {
@@ -19882,7 +19882,7 @@
    "support": 4
   },
   {
-   "annotation": "When Carb ratio was 6.2 g/U, 5 meal runs measured 6.2 g/U (CI 6.2–6.2). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 6.2 g/U, 5 meal runs measured 6.2 g/U (range 6.2–6.2). Past setting. No change suggested.",
    "block_end_min": 360,
    "block_start_min": 180,
    "estimate": {
@@ -19961,7 +19961,7 @@
    "support": 5
   },
   {
-   "annotation": "When Carb ratio was 6.4 g/U, 5 meal runs measured 6.4 g/U (CI 6.4–6.4). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 6.4 g/U, 5 meal runs measured 6.4 g/U (range 6.4–6.4). Past setting. No change suggested.",
    "block_end_min": 540,
    "block_start_min": 360,
    "estimate": {
@@ -20040,7 +20040,7 @@
    "support": 5
   },
   {
-   "annotation": "When Carb ratio was 6.6 g/U, 5 meal runs measured 6.5999 g/U (CI 6.5999–6.5999). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 6.6 g/U, 5 meal runs measured 6.5999 g/U (range 6.5999–6.5999). Past setting. No change suggested.",
    "block_end_min": 720,
    "block_start_min": 540,
    "estimate": {
@@ -20119,7 +20119,7 @@
    "support": 5
   },
   {
-   "annotation": "When Carb ratio was 6.8 g/U, 5 meal runs measured 6.7999 g/U (CI 6.7999–6.7999). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 6.8 g/U, 5 meal runs measured 6.7999 g/U (range 6.7999–6.7999). Past setting. No change suggested.",
    "block_end_min": 900,
    "block_start_min": 720,
    "estimate": {
@@ -20198,7 +20198,7 @@
    "support": 5
   },
   {
-   "annotation": "When Carb ratio was 7 g/U, 5 meal runs measured 7 g/U (CI 7–7). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 7 g/U, 5 meal runs measured 7 g/U (range 7–7). Past setting. No change suggested.",
    "block_end_min": 1080,
    "block_start_min": 900,
    "estimate": {
@@ -20277,7 +20277,7 @@
    "support": 5
   },
   {
-   "annotation": "When Carb ratio was 7.2 g/U, 5 meal runs measured 7.1999 g/U (CI 7.1999–7.1999). Past setting. No change suggested.",
+   "annotation": "When Carb ratio was 7.2 g/U, 5 meal runs measured 7.1999 g/U (range 7.1999–7.1999). Past setting. No change suggested.",
    "block_end_min": 1440,
    "block_start_min": 1080,
    "estimate": {
@@ -26926,7 +26926,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -27824,7 +27824,7 @@
    ],
    "ic_history": [
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "block_end_min": 720,
      "block_start_min": 0,
      "estimate": {
@@ -32988,7 +32988,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -33012,7 +33012,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -33041,7 +33041,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -33447,7 +33447,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -33976,7 +33976,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -34000,7 +34000,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -34029,7 +34029,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -34931,7 +34931,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -35293,7 +35293,7 @@
      "window_scope": "window"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -35779,7 +35779,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -35803,7 +35803,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -35832,7 +35832,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -36053,7 +36053,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -36693,7 +36693,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -36771,7 +36771,7 @@
      "window_scope": "window"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -37251,7 +37251,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -37275,7 +37275,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -37304,7 +37304,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -37528,13 +37528,13 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -38057,13 +38057,13 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -38543,7 +38543,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -38567,7 +38567,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -38596,7 +38596,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -38828,7 +38828,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF · weaken",
+     "title": "Correction factor · weaken",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -45430,7 +45430,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -46328,7 +46328,7 @@
    ],
    "ic_history": [
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "block_end_min": 720,
      "block_start_min": 0,
      "estimate": {
@@ -55868,7 +55868,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -55892,7 +55892,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -55921,7 +55921,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -57551,7 +57551,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -57575,7 +57575,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -57604,7 +57604,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -58020,7 +58020,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -58453,7 +58453,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -58477,7 +58477,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -58506,7 +58506,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -59709,7 +59709,7 @@
      "window_scope": "window"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -60193,7 +60193,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -60217,7 +60217,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -60246,7 +60246,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -68037,7 +68037,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -75634,7 +75634,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -76532,7 +76532,7 @@
    ],
    "ic_history": [
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "block_end_min": 720,
      "block_start_min": 0,
      "estimate": {
@@ -83277,7 +83277,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -84175,7 +84175,7 @@
    ],
    "ic_history": [
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "block_end_min": 720,
      "block_start_min": 0,
      "estimate": {
@@ -90920,7 +90920,7 @@
      "state": "numeric"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "asserts_move": true,
      "block_id": 720,
      "current_values": [
@@ -91818,7 +91818,7 @@
    ],
    "ic_history": [
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "block_end_min": 720,
      "block_start_min": 0,
      "estimate": {
@@ -93771,7 +93771,7 @@
     "recommended",
     "start_min"
    ],
-   "meals look slightly over-covered relative to programmed I:C",
+   "meals look slightly over-covered relative to the programmed carb ratio",
    "bootstrap-pooled-ratio",
    [
     "block_id",
@@ -99134,7 +99134,7 @@
      277,
      [
       "carb_undercount",
-      "missing carbs, dose, or ISF/I:C settings — can't judge carb count",
+      "missing carbs, dose, correction factor or carb ratio, so the carb count can't be judged",
       "not_in_data",
       false,
       [
@@ -214836,7 +214836,7 @@
    ],
    "rows": [
     {
-     "annotation": "meals look slightly over-covered relative to programmed I:C",
+     "annotation": "meals look slightly over-covered relative to the programmed carb ratio",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -214860,7 +214860,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Meals look slightly over-covered relative to programmed I:C. Measured 6 g/U across 24 meal runs against 5 programmed.",
+     "headline": "Meals look slightly over-covered relative to the programmed carb ratio. Measured 6 g/U across 24 meal runs against 5 programmed.",
      "id": "ic:0",
      "kind": "setting",
      "label": "Morning",
@@ -214889,13 +214889,13 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 00:00 to 12:00 · raise",
+     "title": "Carb ratio 00:00 to 12:00 · raise",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
     },
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -214919,7 +214919,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -214948,7 +214948,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -216151,7 +216151,7 @@
      "window_scope": "window"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -216633,7 +216633,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -216657,7 +216657,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -216686,7 +216686,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -217089,7 +217089,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -217612,7 +217612,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -217636,7 +217636,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -217665,7 +217665,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -218081,7 +218081,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -218510,7 +218510,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -218534,7 +218534,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -218563,7 +218563,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -219766,7 +219766,7 @@
      "window_scope": "window"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -220246,7 +220246,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -220270,7 +220270,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -220299,7 +220299,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -220611,7 +220611,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
@@ -221220,13 +221220,13 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -221700,7 +221700,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -221724,7 +221724,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -221753,7 +221753,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -221974,13 +221974,13 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -222494,13 +222494,13 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
     },
     {
-     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
+     "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
      "chips": [],
@@ -222974,7 +222974,7 @@
    ],
    "rows": [
     {
-     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "annotation": "post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb",
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -222998,7 +222998,7 @@
      "event_chart": null,
      "evidence": null,
      "fold_sentences": null,
-     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "headline": "Post-meal corrections imply meals are under-covered, so a tighter (smaller) carb ratio would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -223027,7 +223027,7 @@
       "run_days": 90
      },
      "tier": "next_in_line",
-     "title": "I:C 12:00 to 24:00 · lower",
+     "title": "Carb ratio 12:00 to 24:00 · lower",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "window"
@@ -223256,7 +223256,7 @@
       "run_days": 30
      },
      "tier": "noted",
-     "title": "ISF",
+     "title": "Correction factor",
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"

@@ -112104,7 +112104,7 @@
  ],
  "ic": [
   {
-   "annotation": "Read with the Overnight stretch — the meals can't tell these hours apart. I:C direction needs more identifiable meals — 0 clean-start/correction-only meals are available; 3 more needed before direction can be tested. Held at the programmed I:C.",
+   "annotation": "Read with the Overnight stretch: the meals can't tell these hours apart. Carb ratio direction needs more identifiable meals: 0 identifiable meals are available; 3 more needed before direction can be tested. Held at the programmed carb ratio.",
    "asserts_move": false,
    "block_id": 1080,
    "current": 5.0,
@@ -112148,7 +112148,7 @@
    "start_min": 0
   },
   {
-   "annotation": "I:C direction needs more identifiable meals — 0 clean-start/correction-only meals are available; 3 more needed before direction can be tested. Held at the programmed I:C.",
+   "annotation": "Carb ratio direction needs more identifiable meals: 0 identifiable meals are available; 3 more needed before direction can be tested. Held at the programmed carb ratio.",
    "asserts_move": false,
    "block_id": 360,
    "current": 4.5,
@@ -112192,7 +112192,7 @@
    "start_min": 360
   },
   {
-   "annotation": "Prior-meal insulin cannot be separated from this meal — 30 clean-start/correction-only meals are available, but their prior-action sensitivity bracket includes the programmed I:C. Held at the programmed I:C.",
+   "annotation": "Prior-meal insulin cannot be separated from this meal: 30 identifiable meals are available, but their prior-action sensitivity bracket includes the programmed carb ratio. Held at the programmed carb ratio.",
    "asserts_move": false,
    "block_id": 720,
    "current": 5.5,
@@ -112717,7 +112717,7 @@
    "start_min": 720
   },
   {
-   "annotation": "Read with the Overnight stretch — the meals can't tell these hours apart. Prior-meal insulin cannot be separated from this meal — 30 clean-start/correction-only meals are available, but their band still includes the programmed I:C. Held at the programmed I:C.",
+   "annotation": "Read with the Overnight stretch: the meals can't tell these hours apart. Prior-meal insulin cannot be separated from this meal: 30 identifiable meals are available, but their band still includes the programmed carb ratio. Held at the programmed carb ratio.",
    "asserts_move": false,
    "block_id": 1080,
    "current": 5.0,

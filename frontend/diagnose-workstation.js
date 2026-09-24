@@ -63,6 +63,7 @@ import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 // #372: the Plan draft's own staging predicate, so this surface's staged
 // tally is built from it rather than from a second copy of the same rule.
 import { stageItemsFor } from './diagnose-workspaces.js';
+import { settingValue } from './plan.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
@@ -375,13 +376,11 @@ const chartColors = (root) => {
 
 const fmtDate = (iso) => new Date(`${iso}T00:00:00`)
   .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const daysBetween = (a, b) =>
-  Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000) + 1;
 const u = (v) => (v == null ? '--' : v.toFixed(2));
 
 /* ------------------------------ chrome -------------------------------- */
 
-function renderInstruments(winKey, capture, onPreset) {
+function renderInstruments(winKey, onPreset) {
   const seg = el('seg-window');
   seg.innerHTML = '';
   for (const [key, spec] of Object.entries(WINDOWS)) {
@@ -393,15 +392,6 @@ function renderInstruments(winKey, capture, onPreset) {
     b.addEventListener('click', () => onPreset(key));
     seg.append(b);
   }
-  /* PORT DEVIATION (#654): the mock owns its whole top bar and writes the scope
-     readout itself. In the app that readout belongs to the shell, is bound to
-     `cockpitScope`, and is shared by every tab — the ported surface must not
-     reach up and overwrite it. Guarded rather than deleted, so the same code
-     still fills them in wherever the ids do exist. */
-  const range = el('scope-range');
-  if (range) range.textContent = `${fmtDate(capture.window.start)} – ${fmtDate(capture.window.end)}`;
-  const days = el('scope-days');
-  if (days) days.textContent = `${daysBetween(capture.window.start, capture.window.end)} d`;
 }
 
 /** ALIGN (ADR 31 part 3): a switch over already-selected data, never a
@@ -573,7 +563,7 @@ function renderCaseClock(host, clock) {
   host.append(box);
 }
 
-function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegment) {
+export function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegment) {
   const { finding, family, summary, projection } = caseFile;
   const box = document.createElement('div');
   box.className = 'inner';
@@ -596,7 +586,7 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
     const slot = document.createElement('button');
     slot.type = 'button'; slot.className = 'linkbtn'; slot.textContent = 'View slot';
     slot.addEventListener('click', () => onViewSlot(cell)); link.append(slot);
-    link.insertAdjacentHTML('beforeend', `<span>and in the ${block.label} I:C block,
+    link.insertAdjacentHTML('beforeend', `<span>and in the ${block.label} carb ratio block,
       ${block.span} (${VERDICT_KEY[block.verdict]})</span>`);
     const segment = document.createElement('button');
     segment.type = 'button'; segment.className = 'linkbtn'; segment.textContent = 'View segment';
@@ -604,6 +594,19 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
     box.append(link);
   }
   host.append(box);
+}
+
+/** One breadcrumb label for a pushed frame (D7/term 34: the root is the queue's own
+    noun, at every depth). `chartTitle(chartId)` names a chart tile. */
+export function crumbLabel(frame, chartTitle) {
+  if (frame.k === 'factors') return 'Findings';
+  if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
+  if (frame.k === 'slot') return `${frame.cell.label} slot`;
+  if (frame.k === 'block') return `${frame.cell.label} block`;
+  if (frame.k === 'chart') return chartTitle(frame.chartId) || 'Chart';
+  // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
+  // crumb level, so no frame ever reaches an `occ` branch here.
+  return 'Correction factor';
 }
 
 /* ADR 432: a case-file row says what its Occurrence is, from its served anchor
@@ -851,12 +854,18 @@ function renderHighCarbStage(host, caseFile, range) {
  * apart, and a reader who has learned where the CI sits on a slot must find it
  * in the same place on a block.
  *
- * spec: { head, headQual, verdict, unit, current, estimate, recommended,
+ * spec: { head, headQual, verdict, unit, value, current, estimate, recommended,
  *         recommendedQual, scopeSay, currentNoun, moveWord, support, sentence,
  *         canStage, isStaged, footNote, onStage }
+ *
+ * `value` spells one number; it defaults to the panel's own rounding. A setting
+ * whose value carries its unit (the correction factor, ADR 451) passes its own
+ * and no `unit`, so no qualifier repeats a unit.
  */
 function renderParamLevel(host, spec) {
   const e = spec.estimate;
+  const value = spec.value || u;
+  const unitThen = (sep) => (spec.unit ? `${spec.unit}${sep}` : '');
   /* Does the interval reach the figure already in the pump? Then the data is
      compatible with changing nothing, and that has to be said in words — two
      numbers side by side leave the reader to notice it. */
@@ -880,21 +889,21 @@ function renderParamLevel(host, spec) {
     </div>
     ${spec.scopeSay ? `<div class="slot-say">${spec.scopeSay}</div>` : ''}
     <div class="numrows">
-      <div class="numrow"><span class="k">Current</span><b>${u(spec.current)}</b>
-        <span class="qual">${spec.unit}, programmed now</span></div>
-      <div class="numrow"><span class="k">Estimate</span><b>${u(e.value)}</b>
-        <span class="qual">${spec.unit} — the interval below brackets THIS number</span></div>
-      <div class="numrow"><span class="k">Recommended</span><b>${u(spec.recommended)}</b>
+      <div class="numrow"><span class="k">Current</span><b>${value(spec.current)}</b>
+        <span class="qual">${unitThen(', ')}programmed now</span></div>
+      <div class="numrow"><span class="k">Estimate</span><b>${value(e.value)}</b>
+        <span class="qual">${unitThen(' — ')}the interval below brackets THIS number</span></div>
+      <div class="numrow"><span class="k">Recommended</span><b>${value(spec.recommended)}</b>
         <span class="qual">${spec.recommendedQual}</span></div>
     </div>
-    <div class="slot-stats">CI ${u(e.lo)}–${u(e.hi)} ${spec.unit} on the estimate
+    <div class="slot-stats">CI ${value(e.lo)}–${value(e.hi)} ${unitThen(' ')}on the estimate
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
-      already run (${u(e.lo)}–${u(e.hi)} includes ${u(spec.current)}), so <b>it includes no
+      already run (${value(e.lo)}–${value(e.hi)} includes ${value(spec.current)}), so <b>it includes no
       change at all</b> — a ${spec.moveWord} is consistent with this data, not established
       by it.</div>` : ''}
-    ${between ? '' : `<div class="hedge">The recommended ${u(spec.recommended)} does not sit
-      between the ${u(spec.current)} you run now and the ${u(e.value)} the data estimates, so
+    ${between ? '' : `<div class="hedge">The recommended ${value(spec.recommended)} does not sit
+      between the ${value(spec.current)} you run now and the ${value(e.value)} the data estimates, so
       <b>something outside the estimate set it</b> — ${spec.sentence}</div>`}
     <div class="slot-stats">${spec.support}</div>
     <div class="slot-say">${spec.sentence}</div>`;
@@ -1121,8 +1130,8 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
  * scope sentence that says where the number comes from and what it cannot
  * separate. Term 31: say the scope in words, draw nothing.
  */
-const ISF_SCOPE = 'Measured in the overnight fasting window. Daytime ISF is not separately '
-  + 'identifiable, so this one value stands for the whole day.';
+const ISF_SCOPE = 'Measured in the overnight fasting window. A daytime Correction factor is not '
+  + 'separately identifiable, so this one value stands for the whole day.';
 
 export function renderIsfLevel(host, isf, isfStaged, onStage) {
   const e = isf.estimate;
@@ -1133,19 +1142,20 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
   const roundedNoop = !canStage && direction === 'strengthen'
     && isf.current != null && isf.recommended === isf.current;
   renderParamLevel(host, {
-    head: 'ISF',
+    head: 'Correction factor',
     verdict: canStage ? 'suggests a change'
       : roundedNoop ? 'conservative step rounds to the current Correction factor'
         : direction === 'weaken' ? 'corrections look stronger than needed'
           : direction === 'strengthen' ? 'corrections look weaker than needed'
         : 'no direction asserted',
     scopeSay: ISF_SCOPE,
-    unit: 'mg/dL/U',
+    // Each value carries its unit, insulin first (ADR 451), keeping the panel rounding.
+    value: (v) => (v == null ? u(v) : settingValue('isf', u(v))),
     current: isf.current,
     estimate: e,
     recommended: canStage ? isf.recommended : null,
     recommendedQual: canStage
-      ? 'mg/dL/U, one conservative step'
+      ? 'one conservative step'
       : roundedNoop ? 'the conservative step rounds to the current Correction factor'
         : direction ? 'no new number is suggested'
         : 'no direction asserted, so nothing is recommended',
@@ -1249,7 +1259,7 @@ function renderVerdictBand(host, row, family, activeVerdict, onPick = null) {
    surface can be re-mounted (the mock never re-mounts; it reloads the page).
    `signal` aborts the document/window listeners the ported code registers. */
 function boot(root, data, callbacks, signal) {
-  const { day, exposureCapture, audit, params, icMissing } = data;
+  const { audit, params, icMissing } = data;
   const { envelope: envelopeIn } = data;
   /* #735 / ADR 79 — the queue's rows and the dock's object are server-owned.
      `findings` opens on the preparation's GLOBAL projection; a pressed preset
@@ -1334,28 +1344,11 @@ function boot(root, data, callbacks, signal) {
   /* ---- mock 2014-2716 — VERBATIM except the edits marked `PORT:` below ---- */
   const colors = chartColors(root);
 
-  renderInstruments(CFG.win, exposureCapture, (key) => {
+  renderInstruments(CFG.win, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
     invalidateSlotReturn();
     presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
   });
-  /* PORT DEVIATION (#654), same reason as the scope readout above: the status
-     strip is the app shell's footer, shared by every tab and already carrying
-     these identity figures via `cockpitProfileFacts` (lock term 3). The ported
-     writes are guarded so this surface never reaches into chrome it does not
-     own, and still fill them in wherever the ids exist. */
-  const src = el('status-src');
-  if (src) {
-    src.textContent =
-      `CGM + pump history · ISF ${day.isf.toFixed(1)} mg/dL/U · I:C ${day.programmed_ic} g/U`;
-  }
-  // kept short so the status row can never wrap: it is a fixed-height chrome row
-  const clock = el('status-clock');
-  if (clock) {
-    clock.textContent =
-      `exposures ${fmtDate(exposureCapture.window.start)}–${fmtDate(exposureCapture.window.end)} · `
-      + `basal ${auditState.analysis.window_days} d to ${fmtDate(auditState.as_of)}`;
-  }
   /* The pooling methodology used to ride the level-1 caveat line's hover. Term 43
      retires that banner (the hedge belongs to the habit detail panel, where it has
      one subject), so the string goes with it rather than being re-homed on a
@@ -2191,7 +2184,7 @@ function boot(root, data, callbacks, signal) {
     const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
       : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
     const current = subject ? { subject, occurrence: f.selectedId || null, window,
-      title: f.k === 'factor' ? crumbLabel(f) : null } : null;
+      title: f.k === 'factor' ? crumb(f) : null } : null;
     const key = JSON.stringify(current);
     if (key === publishedCase) return;
     publishedCase = key;
@@ -3119,8 +3112,8 @@ function boot(root, data, callbacks, signal) {
      basal's alone. */
   const stagedTotal = () => staged.size + icStaged.size + (isfStaged ? 1 : 0);
 
-  /* PORT DEVIATION (#654), same reason as the scope/status guards above: the
-     Plan step and its badge are the shell's `<nav class="cockpit-flow">`
+  /* PORT DEVIATION (#654): the Plan step and its badge are the shell's
+     `<nav class="cockpit-flow">`
      (`frontend/index.html`), Vue-bound to the real Plan draft via
      `step.count` — not this surface's chrome to paint. The mock's
      `#step-plan`/`#plan-badge` ids don't exist in the app (this null
@@ -3156,6 +3149,9 @@ function boot(root, data, callbacks, signal) {
   }
 
   /** What this surface has staged, named the way the dock prints it (term 49). */
+  /* The dock's one-line title names the change, and its values lead the wrapping
+     detail (ADR 451), each in the wearer's words. A direction prints only where
+     one is served: a carb-ratio block serves none, and the dock derives none. */
   function stagedDescriptor() {
     const cells = lane.cells.filter((c) => staged.has(c.i));
     if (cells.length) {
@@ -3166,25 +3162,28 @@ function boot(root, data, callbacks, signal) {
          rate, so two staged half hours can carry different numbers. The span is
          named either way; the pair prints only where every staged half hour
          carries it, which is the same refusal the merged queue row already
-         makes. */
+         makes, and the served direction only where every half hour serves it. */
       const agreed = cells.every((c) => c.slot.current === head.current
         && c.slot.recommended === head.recommended);
+      const direction = cells.every((c) => c.slot.direction && c.slot.direction === head.direction)
+        ? ` · ${head.direction}` : '';
       // the SAME rounded numbers the item's own detail panel prints — a dock that
       // spells 1.131 beside a panel reading 1.13 is two numbers for one fact
-      const numbers = head.recommended == null || !agreed ? ''
-        : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
-      return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
+      const values = head.recommended == null || !agreed ? ''
+        : `${u(head.current)} → ${u(head.recommended)} U/hr`;
+      return { count: stagedTotal(), title: `Basal ${span}${direction}`, values };
     }
     const block = icBlocks.find((c) => icStaged.has(c.id));
     if (block) {
-      return { count: stagedTotal(),
-        title: `I:C ${block.span} · ${u(block.current)} → ${u(block.block.recommended)} g/U` };
+      return { count: stagedTotal(), title: `Carb ratio ${block.span}`,
+        values: `${u(block.current)} → ${u(block.block.recommended)} g/U` };
     }
     if (isfStaged) {
-      return { count: stagedTotal(),
-        title: `ISF · ${u(isf.current)} → ${u(isf.recommended)} mg/dL/U` };
+      const { direction } = isfVerdict(isf);
+      return { count: stagedTotal(), title: `Correction factor${direction ? ` · ${direction}` : ''}`,
+        values: `${settingValue('isf', u(isf.current))} → ${settingValue('isf', u(isf.recommended))}` };
     }
-    return { count: 0, title: '' };
+    return { count: 0, title: '', values: '' };
   }
 
   /* #358 — ONE treatment for the three stage handlers below (basal slot, I:C
@@ -3372,17 +3371,10 @@ function boot(root, data, callbacks, signal) {
     };
   }
 
-  /** Breadcrumb: every ancestor is a click, the leaf is plain text. */
-  function crumbLabel(frame) {
-    // D7/term 34 — the crumb root is the queue's own noun, at every depth
-    if (frame.k === 'factors') return 'Findings';
-    if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
-    if (frame.k === 'slot') return `${frame.cell.label} slot`;
-    if (frame.k === 'block') return `${frame.cell.label} block`;
-    if (frame.k === 'chart') return chartDescriptor(frame.chartId)?.title || 'Chart';
-    // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
-    // crumb level, so no frame ever reaches an `occ` branch here.
-    return 'ISF';
+  /** Breadcrumb: every ancestor is a click, the leaf is plain text. The chart
+      title is looked up only for a chart frame, as the tiles exist by then. */
+  function crumb(frame) {
+    return crumbLabel(frame, (chartId) => chartDescriptor(chartId)?.title);
   }
 
   /** Draw one path. Ancestors pop; the current item is inert; separators are decor. */
@@ -3414,7 +3406,7 @@ function boot(root, data, callbacks, signal) {
   function paintCrumb() {
     const trail = el('crumb-trail');
     const items = stack.map((frame, i) => ({
-      label: crumbLabel(frame), index: i, last: i === stack.length - 1,
+      label: crumb(frame), index: i, last: i === stack.length - 1,
     }));
     drawTrail(items);
     /* If the path would run into the meta's reserve the MIDDLE gives way —

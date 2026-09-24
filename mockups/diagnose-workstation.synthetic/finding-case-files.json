@@ -266657,7 +266657,7 @@
        "reason": "harm gate",
        "register": "held",
        "tier": "noted",
-       "title": "I:C Evening",
+       "title": "Carb ratio Evening",
        "window_scope": "window"
       },
       {
@@ -266671,7 +266671,7 @@
        "reason": "insufficient evidence",
        "register": "held",
        "tier": "noted",
-       "title": "ISF",
+       "title": "Correction factor",
        "window_scope": "whole_day"
       }
      ],
@@ -266728,7 +266728,7 @@
       "reason": "harm gate",
       "register": "held",
       "tier": "noted",
-      "title": "I:C Evening",
+      "title": "Carb ratio Evening",
       "window_scope": "window"
      },
      {
@@ -266742,7 +266742,7 @@
       "reason": "insufficient evidence",
       "register": "held",
       "tier": "noted",
-      "title": "ISF",
+      "title": "Correction factor",
       "window_scope": "whole_day"
      }
     ],

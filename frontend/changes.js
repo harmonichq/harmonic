@@ -16,12 +16,12 @@
 //
 // It does NOT duplicate Diagnose's findings roster: it shows the selected
 // concern's own members and one named route across (HV2-10, S14).
-import { formatStartMin } from './plan.js';
+import { formatStartMin, settingValue } from './plan.js';
 import { desk, e, emptyFrame, nameplate, readingHeader, sheetToggle, stamp } from './frame.js';
 import {
   asideRows, candidateFor, clearGuidanceWriteError, disposition, guidance, guidanceError,
   guidanceSettled, guidanceWriteError, hasAction, loadGuidance, restore,
-  selectedConcern, setAside, unavailableReason,
+  selectedConcern, setAside, statusWords, unavailableReason,
 } from './guidance.js';
 import { navigate, registerDestination, registerEscape, render, view } from './routes.js';
 import { SETTING_NAME, stage as stagePlan, unstage, phase, planUnderway, mount as mountPlan, installPlan } from './plan-view.js';
@@ -55,6 +55,17 @@ const nounFor = (candidate) => INSPECT_NOUN[candidate?.parameter] || 'evidence';
 const inspectRoute = (candidate) =>
   `<div class="gf-actions"><button class="gf-btn primary" data-action="explore">Inspect ${e(nounFor(candidate))}</button></div>`;
 
+/** Why the read's concern leads, in words. The served offer is Changes' own Start
+    Focus and the staged state is the one the pane reads, both passed in so
+    guidance.js imports neither focus-entry.js nor plan-view.js. */
+const leadWords = () => statusWords({
+  focusOffered: Boolean(focusOffer(selectedConcern()?.subject)),
+  staged: phase() === 'Staged',
+});
+
+/** A set-aside row the backend serves no name for (ADR 451). */
+const UNNAMED = 'A concern no longer in this read';
+
 /* --------------------------------------------------------------- the frames */
 
 /**
@@ -80,19 +91,21 @@ function asideLead(candidate) {
     ${following ? `<p class="gf-meta">${e(following.title || following.subject)} leads now.</p>` : ''}</section>`;
 }
 
-/** The action this concern asks for, in the served units and direction. An
-    identified action reads its served title, or its concern's where it serves
-    none (a habit concern), and never its id (ADR 426). */
+/** The action this concern asks for: the served direction, and the value in the
+    wearer's form for the instruction's own setting (ADR 451). An identified action
+    reads its served title, or its concern's where it serves none (a habit
+    concern), and never its id (ADR 426). */
 function actionLead(candidate) {
   const read = guidance();
+  const words = leadWords();
   const action = Array.isArray(candidate.action) ? candidate.action : [];
   const change = action.length
-    ? `${e(action[0].direction)} to ${e(action[0].recommended)} ${e(candidate.units || '')}`
+    ? `${e(action[0].direction)} to ${e(settingValue(action[0].parameter, action[0].recommended))}`
     : candidate.action?.action_id ? e(candidate.action.title ?? candidate.title) : 'No action is staged from this read';
   const span = action.length
     ? `${formatStartMin(Math.min(...action.map((row) => row.start_min)))} to ${formatStartMin(Math.max(...action.map((row) => row.end_min)) % 1440)}`
     : '';
-  return `<section class="gf-section"><h3>Action <span class="meta">${e(disposition() || '')}</span></h3>
+  return `<section class="gf-section"><h3>Action${words ? ` <span class="meta">${e(words)}</span>` : ''}</h3>
     <div class="gf-figure">${change}<small>${e(span)}</small></div>
     ${read?.reasons?.admission ? `<p>${e(read.reasons.admission)}</p>` : ''}
     ${read?.reasons?.ordering ? `<p class="gf-meta">${e(read.reasons.ordering)}</p>` : ''}
@@ -103,9 +116,9 @@ function actionLead(candidate) {
 function setAsideList(inline = false) {
   const rows = asideRows();
   if (!rows.length) return '';
-  if (inline) return rows.map(row => `<span>${e(row.title || row.subject)} · Set aside <button class="gf-btn" data-restore="${e(row.subject)}">Restore</button></span>`).join(' ');
+  if (inline) return rows.map(row => `<span>${e(row.title || UNNAMED)} · Set aside <button class="gf-btn" data-restore="${e(row.subject)}">Restore</button></span>`).join(' ');
   return `<section class="gf-section"><h3>Set aside</h3>${rows.map(row =>
-    `<p>${e(row.title || row.subject)}${row.decision?.reason ? ` · ${e(row.decision.reason)}` : ''} <button class="gf-btn" data-restore="${e(row.subject)}">Restore</button></p>`).join('')}</section>`;
+    `<p>${e(row.title || UNNAMED)}${row.decision?.reason ? ` · ${e(row.decision.reason)}` : ''} <button class="gf-btn" data-restore="${e(row.subject)}">Restore</button></p>`).join('')}</section>`;
 }
 
 /**
@@ -146,7 +159,10 @@ function concernFrame(candidate) {
   const head = nameplate({
     kicker: `${e(family)} · read ${e(read?.window?.end || '')}`,
     title: e(candidate.title || candidate.subject),
-    sub: `<b>${e(candidate.priority ?? '—')} priority</b> · ${e(disposition() || '')}${candidate.preference?.set_aside ? ' · Set aside' : ''}`,
+    // A set-aside concern on screen is not the one the read leads with, so the
+    // words, which say why that one leads, are not printed over it.
+    sub: [`<b>${e(candidate.priority ?? '—')} priority</b>`,
+      candidate.preference?.set_aside ? 'Set aside' : e(leadWords())].filter(Boolean).join(' · '),
     end: end + '<button class="gf-btn" data-action="history">View change record</button>' + (focusOffer(candidate.subject) ? '<button class="gf-btn primary" data-start-focus>Start Focus</button>' : '') + '<button class="gf-btn" data-action="pump">Pump settings</button>',
   });
   const wrote = writeFailed

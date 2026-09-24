@@ -8,7 +8,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PLAN_HEAD, SETTING_NAME, phase, planUnderway, profileTable, stage, userValue } from './plan-view.js';
+import { buildDeliverable, reconcileDeliverable } from './plan.js';
+
+// The one transport, installed before anything imports frontend/data.js, which
+// binds its default fetch when it is first evaluated. Each read answers its path.
+const served = {};
+globalThis.fetch = async (url) => ({ ok: true, status: 200, statusText: 'OK',
+  json: async () => served[new URL(url, 'http://desk.invalid').pathname] ?? {} });
+const {
+  PLAN_HEAD, SETTING_NAME, loadPlanState, mount, phase, planUnderway, profileTable, stage, userValue,
+} = await import('./plan-view.js');
+const { loadGuidance } = await import('./guidance.js');
 
 const basalCandidate = {
   subject: 'setting:basal_rate',
@@ -91,3 +101,43 @@ test('the four settings are named as the wearer names them', () => {
   assert.equal(SETTING_NAME.carb_ratio, 'Carb ratio');
   assert.equal(SETTING_NAME.target_bg, 'Target');
 });
+
+test('every setting a mismatch diff can list is named in the wearer\'s words (#451)', () => {
+  // The diff prints SETTING_NAME[cell.param] with no fallback, so every parameter
+  // the mismatch reader can emit must have a name: here all four are mis-keyed.
+  const activeProfile = { segments: [{ start_min: 0, basal_rate: 0.8, isf: 50, carb_ratio: 10, target_bg: 110 }] };
+  const rows = buildDeliverable({ activeProfile, acceptedItems: [{ type: 'isf', start_min: 0, value: 55, recommended: 55 }] });
+  const detected = [{ start_min: 0, basal_rate: 0.9, isf: 60, carb_ratio: 12, target_bg: 120 }];
+  const cells = reconcileDeliverable(rows, detected).groups.flatMap((group) => group.cells);
+  assert.deepEqual(cells.map((cell) => cell.param).sort(), ['basal_rate', 'carb_ratio', 'isf', 'target_bg']);
+  for (const cell of cells) assert.ok(SETTING_NAME[cell.param], `${cell.param} has a name`);
+});
+
+test('What was known names the recorded concern and its value in the wearer\'s words (#451)', async () => {
+  const profile = { segments: [{ start_min: 0, basal_rate: 0.6, isf: 30, carb_ratio: 10, target_bg: 110 }] };
+  served['/api/guidance'] = { disposition: 'pending_plan', selected: null, candidates: [], reasons: {} };
+  served['/api/plan'] = { items: [], updated_at: null };
+  served['/api/pump-settings'] = { profile, fetched_at: '2024-06-30 08:00:00' };
+  served['/api/plan/history'] = { history: [{
+    applied_at: '2024-06-30 09:00:00', items: [{ type: 'isf', start_min: 0, value: 32, recommended: 32 }],
+    verdict: { state: 'pending', on_pump: false }, deliverable: { source_profile: profile, rows: [] },
+    decision_context: {
+      state: 'available', captured_at: '2024-06-30 09:00:00', explanation: 'Correction factor',
+      subjects: ['setting:isf'], subject_titles: ['Correction factor'],
+      action: [{ parameter: 'isf', start_min: 0, end_min: 1440, direction: 'strengthen',
+        units: 'mg/dL/U', recommended: 32 }],
+      settings: [{ value: 32, unit: 'mg/dL/U' }], unknowns: [],
+    },
+  }] };
+  await loadGuidance({ force: true });
+  await loadPlanState();
+  const host = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
+  mount(host);
+  const known = host.innerHTML.match(/<h3>What was known<\/h3>[\s\S]*?<\/section>/)?.[0] || '';
+  assert.ok(known, 'the recorded Plan shows what was known');
+  assert.match(known, /<dd>Correction factor<\/dd>/);
+  assert.match(known, /<dd>1 U : 32 mg\/dL<\/dd>/);
+  assert.match(known, /<p>Correction factor<\/p>/, 'the recorded explanation prints as recorded');
+  assert.doesNotMatch(known, /setting:|mg\/dL\/U/);
+});
+

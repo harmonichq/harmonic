@@ -472,7 +472,7 @@ test('the queue consumes the server tier and never reclassifies a row', () => {
 });
 
 test('term 14/38 · a held row is words-first and offers no stage affordance', () => {
-  const isf = queueRows(W.low_block).find((r) => r.title === 'ISF');
+  const isf = queueRows(W.low_block).find((r) => r.title === 'Correction factor');
   assert.equal(isf.register, 'held');
   assert.equal(isf.stageable, false);
   assert.deepEqual(isf.detail, {
@@ -538,6 +538,17 @@ test('ISF actionability requires the exact carried backend verdict', () => {
     'the exact-true row retains both action values without locking unit copy here');
 });
 
+test('an asserting correction-factor row prints its numbers insulin first (#451)', () => {
+  const raw = {
+    ...W.low_block.rows.find((row) => row.parameter === 'isf'),
+    register: 'assert', direction: 'strengthen', priority: 73, tier: 'next_in_line',
+    asserts_move: true, current: 30, recommended: 32,
+  };
+  const [row] = queueRows({ ...W.low_block, rows: [raw] });
+  assert.deepEqual(row.detail, { kind: 'nums', now: 'now 1 U : 30.0 mg/dL → ', then: '1 U : 32.0 mg/dL' });
+  assert.doesNotMatch(`${row.detail.now}${row.detail.then}`, /mg\/dL\/U/);
+});
+
 test('term 16 · a merged span prints its OWN support denominator, never an invented average', () => {
   const merged = queueRows(W.global).find((r) => r.title === 'Basal 00:30 to 01:30 · raise');
   assert.equal(merged.raw.current, null, 'the server left the span\u2019s numbers on its members');
@@ -548,7 +559,7 @@ test('term 16 · a merged span prints its OWN support denominator, never an inve
 test('a single asserting item prints the number pair the mock shows', () => {
   const slot = queueRows(W.global).find((r) => r.title === 'Basal 05:30 · raise');
   assert.deepEqual(slot.detail, { kind: 'nums', now: 'now 0.8 U/hr → ', then: '0.96 U/hr' });
-  const ic = queueRows(W.global).find((r) => r.title.startsWith('I:C'));
+  const ic = queueRows(W.global).find((r) => r.title.startsWith('Carb ratio'));
   assert.deepEqual(ic.detail, { kind: 'nums', now: 'now 5.7 g/U → ', then: '5.0 g/U' });
 });
 

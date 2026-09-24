@@ -173,6 +173,20 @@ class NotInDataTest(unittest.TestCase):
         self.assertFalse(v.matched)
         self.assertEqual(v.evidence_tier, EvidenceTier.NOT_IN_DATA)
 
+    def test_missing_settings_sentence_names_the_settings_in_the_wearers_words(self):
+        # #451: the desk prints this served sentence in a case's facts, so it names
+        # the correction factor and carb ratio, never the engine's ISF or I:C.
+        cgm = cgm_arc(15, 12, 0, [145, 220, 320, 360])
+        for verdict in (
+            classify_carb_undercount(meal(15, 12, 5, carbs=30.0, dose=6.0), cgm, isf=None),
+            classify_carb_undercount(meal(15, 12, 5, carbs=30.0, dose=6.0, carb_ratio=None), cgm, isf=ISF),
+        ):
+            with self.subTest(detail=verdict.detail):
+                self.assertEqual(verdict.evidence_tier, EvidenceTier.NOT_IN_DATA)
+                self.assertIn("correction factor", verdict.detail)
+                self.assertIn("carb ratio", verdict.detail)
+                self.assertNotRegex(verdict.detail, r"\bISF\b|I:C|—")
+
     def test_no_cgm_cannot_be_judged(self):
         m = meal(15, 12, 5, carbs=30.0, dose=6.0)
         v = classify(m, [])

@@ -112,6 +112,9 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   `447-retire-verify-language` rather than on a per-chunk branch.
 - F-d: S170 cites HV2-12 (Changes owns Focus progress, the article's corrected
   claim), with HV2-33 second for the Guide utility; tasks 2.6 and 2.7 name it.
+- Sub-order 2's review: `verify-workstation-chart.js`'s header says it is
+  byte-identical to the mock bar its opening comment, which #416 and #447
+  re-pointed.
 
 ## 2. Shipped surfaces (sub-order 2)
 
@@ -234,7 +237,7 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 
 ## 3. Language and records (sub-order 3)
 
-- [ ] 3.1 Rewrite `CONTEXT.md` as the inventory and the Q4 ruling say.
+- [x] 3.1 Rewrite `CONTEXT.md` as the inventory and the Q4 ruling say.
   - Delete the **Digest** entry; nothing serves a Digest.
   - Keep **Localized outcome**, **Confound triage**, **Tracked candidate** and
     **Candidate sweep**. The backend still serves the sweep at
@@ -247,17 +250,17 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   Keep every edit below line 501, so the scan pins at 77, 99 and 501 do not
   move. Afterwards `git grep -n -w -E "Verify|Digest" -- CONTEXT.md` prints
   nothing.
-- [ ] 3.2 Re-ground `README.md`: the "Web UI" paragraph, and the line-119 route
+- [x] 3.2 Re-ground `README.md`: the "Web UI" paragraph, and the line-119 route
   sample ("the Trial roster (`/api/verify/trials`), outcomes, the watched
   change"). Re-point `PRODUCT.md` lines 13 and 62. Rewrite `DESIGN.md` lines 280
   (the Navigation bullet, on `frontend/chrome.css` `.v2-nav`) and 302 (the
   left-tab clause). Leave `DESIGN.md:117` alone.
-- [ ] 3.3 Edit two Purpose paragraphs in place. `openspec/specs/http-api/spec.md`
+- [x] 3.3 Edit two Purpose paragraphs in place. `openspec/specs/http-api/spec.md`
   reads "the analyzers, the Plan, Diagnose, Changes, and the store".
   `openspec/specs/surfaces/spec.md` names three destinations (Diagnose, Changes
   and Day, ADR 397) in place of "four distinct surfaces". No requirement in any
   `openspec/specs/` file is edited; the deltas carry those.
-- [ ] 3.4 In `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s "Fast-gates
+- [x] 3.4 In `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`'s "Fast-gates
   measurements and ceilings (#406)" table, delete the nine rows for legs #416
   deleted: Day lifecycle, Diagnose workstation, Diagnose canvas composition,
   Cockpit shell, First-plan reconcile, Diagnose workstation behaviour ledger,
@@ -267,12 +270,12 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
   lifecycle, Desk, Trial and Pattern Focus, and the desk ledger's full-shard and
   PR-smoke rows. Add
   and change no number. The table's prose and the shard table stay as they are.
-- [ ] 3.5 Run the residue command from design.md over the whole change, and
+- [x] 3.5 Run the residue command from design.md over the whole change, and
   classify every printed line in the execution receipt. Only these are
   permitted: the keep lines, the delta-superseded spec lines, at most the two
   `verify-workstation-chart.js` retirement-pointer lines, and this change's new
   negative-assertion lines.
-- [ ] 3.6 After `uv sync --frozen --extra api --extra sync` and
+- [x] 3.6 After `uv sync --frozen --extra api --extra sync` and
   `npm ci && npm run build`, every one of these exits 0, on the committed head:
   - `node --test 'frontend/**/*.test.js'`;
   - the whole backend `uv run python -m pytest`, run once, with its wall time

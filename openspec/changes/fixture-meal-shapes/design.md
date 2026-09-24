@@ -284,17 +284,16 @@ counts, folds and Pattern rows do not move.
 The `#395` mini-host test projects its own inputs directly, and its answer is
 unchanged.
 
-**The public-tree dose/ratio baseline (measured in scratch).** Of the files this
-change touches, only `frontend/__fixtures__/findings-projection.json` carries
-acknowledged entries (86 of the baseline). The generator writes it with sorted keys,
-so every new top-level key that sorts before `inputs` shifts those entries' line
-numbers. After sub-orders 1 and 2 the set is unchanged (86 entries, none added or
-removed). Sub-order 3's `habit_rate_families` alone shifts 49 of them, and the
-sub-order 4 and 5 keys shift all 86. So sub-orders 3, 4 and 5 each re-record the
-baseline. Each of those workers reviews every added entry (all synthetic), lists
-them in its result, and runs
-`uv run python scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`.
-The coordinator reviews those lists at integration under Q3.
+**The public-tree dose/ratio baseline.** Of the files this change touches, only
+`frontend/__fixtures__/findings-projection.json` carries acknowledged entries (86 of
+the baseline). The scan keys each acknowledged entry on its path and matched text,
+never its line number (`scan_public_tree.digest_key`), so a new top-level key that
+only shifts those entries' lines leaves the set unchanged. A sub-order re-records the
+baseline only when it adds or removes matched text: its worker reviews every added
+entry (all synthetic), lists them in its result, and runs
+`uv run python scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`, and
+the coordinator reviews those lists at integration under Q3. Measured: through
+sub-order 3 the set is unchanged (227 entries, the same digest).
 
 **Desk browser tests and replay stories, read for position or order.** None
 encodes the old order:
@@ -403,7 +402,7 @@ One ordered pass reaches the fixed point (the chain reads in a cycle:
 | `mockups/diagnose-event-comparison.synthetic/capture.json` | `pattern_populations`, `views`, `pattern_families`; adds `pattern_cases_by_window` | `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` (also `acceptance.py`'s `event-drift`) |
 | `mockups/harmonic-v2.exploration/focus.json`, `journey.json`, `workstation.json` | claimant sentences → null | `uv run python mockups/harmonic-v2.exploration/generate.py --check` |
 
-| `scripts/public_scan_config.txt` (dose/ratio baseline block) | re-recorded by sub-orders 3, 4 and 5 | the public-tree line: `python3 scripts/build_public_tree.py "$t"`, `check_public_links.py`, `scan_public_tree.py` |
+| `scripts/public_scan_config.txt` | the dose/ratio baseline block only if a sub-order adds or removes matched text (none through sub-order 3); sub-order 3 removes the event-comparison capture's pin, which suppressed nothing | the public-tree line: `python3 scripts/build_public_tree.py "$t"`, `check_public_links.py`, `scan_public_tree.py` |
 
 Unmoved and still checked: the workstation's other four generator files, the three
 externally generated workstation captures, and every other `--check` generator.

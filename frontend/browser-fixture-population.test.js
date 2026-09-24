@@ -326,13 +326,63 @@ test('the Afternoon fixture retains all four published behavioral Findings', () 
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
 
-  assert.deepEqual(shown.map(({ id }) => id), [
-    'finding:over_treated_low',
-    'finding:correction_stacking',
-    'finding:late_bolus',
+  // The server's shown set: both Patterns fold their causes here (ADR 454). The
+  // order follows once the test desk projects the server's own inputs.
+  assert.deepEqual(shown.map(({ id }) => id).sort(), [
     'finding:missed_meal',
+    'finding:over_treated_low',
+    'pattern:highs_after_meals',
+    'pattern:lows_after_correcting_highs',
   ]);
   assert.equal(queueMeta(projection, selected, true), '4 in this window');
+});
+
+const narrowedWindows = Object.keys(findingsFixture.browser_window_queues);
+const browserProjection = (bounds) => projectFindings(populateFindingsProjectionInput({
+  analysis: payload.analyze,
+  exposures: payload.exposures,
+  scenarios: payload.scenarios,
+}), bounds);
+
+test('#454 · each narrowed browser window serves the server\'s Patterns, folds and counts', () => {
+  assert.deepEqual(narrowedWindows, ['0-360', '135-285', '720-1080']);
+  const asSet = (rows) => rows.map(([id, claimedBy]) => `${id} < ${claimedBy ?? ''}`).sort();
+  for (const key of narrowedWindows) {
+    const [start_min, end_min] = key.split('-').map(Number);
+    const served = findingsFixture.browser_window_queues[key];
+    const projection = browserProjection({ start_min, end_min });
+    assert.deepEqual(asSet(projection.rows.map((row) => [row.id, row.claimed_by])), asSet(served.rows), key);
+    assert.deepEqual(projection.counts, served.counts, key);
+    assert.deepEqual(projection.chip_counts, served.chip_counts, key);
+
+    const preparation = structuredClone(caseFiles.preparation);
+    preparation.coordinates.window = projection.window;
+    populateFindingCasePreparation(preparation, projection, capture);
+    const charted = preparation.rendered_rows.filter((row) => row.kind === 'pattern' && row.pattern_chart);
+    const cases = findingsFixture.browser_pattern_cases_by_window[key];
+    assert.deepEqual(charted.map((row) => row.pattern.key).sort(), Object.keys(cases).sort(), key);
+    for (const row of charted) {
+      const { summary, verdict_counts } = cases[row.pattern.key].event;
+      assert.deepEqual([row.case_header.summary, row.case_header.verdict_counts], [summary, verdict_counts],
+        `${key} ${row.id} header`);
+    }
+  }
+});
+
+test('#454 · a narrowed window or Pattern case the server never answered fails by name', () => {
+  assert.throws(() => browserProjection({ start_min: 360, end_min: 720 }),
+    /no frozen Pattern roster for window 360-720/);
+  const frozen = findingsFixture.browser_pattern_cases_by_window['0-360'].highs_after_meals;
+  const served = { key: 'highs_after_meals', window: frozen.event.window };
+  const answered = projectPatternCaseFile(capture, {
+    patternChart: served, projectionId: `fp_${'5'.repeat(32)}`, alignment: 'event' });
+  assert.deepEqual(answered, { ...frozen.event, projection_id: `fp_${'5'.repeat(32)}` });
+  const other = { key: 'highs_after_meals', window: { ...frozen.event.window, start_min: 360, end_min: 720 } };
+  assert.throws(() => projectPatternCaseFile(capture, { patternChart: other, alignment: 'clock' }),
+    /no frozen narrowed Pattern case: highs_after_meals 360-720 clock/);
+  assert.throws(() => projectPatternCaseFile(capture, {
+    patternChart: served, alignment: 'clock', occurrenceId: frozen.clock.occurrences[0].id }),
+  /serves no selection in a narrowed Pattern case: highs_after_meals 0-360 clock/);
 });
 
 test('comparison keeps plan-local outcomes and verdicts when workstation attribution changes', () => {

@@ -396,6 +396,18 @@ export function projectPatternCaseFile(capture, {
 } = {}) {
   if (!patternChart) return null;
   const { key } = patternChart;
+  if (patternChart.window?.scoped) {
+    // A narrowed window's Pattern case is the server's own, frozen for exactly the
+    // windows the browser checks request (ADR 454); anything else fails by name.
+    const coordinate = `${key} ${patternChart.window.start_min}-${patternChart.window.end_min} ${alignment}`;
+    if (occurrenceId) {
+      throw new Error(`fixture mirror serves no selection in a narrowed Pattern case: ${coordinate} ${occurrenceId}`);
+    }
+    const frozen = capture.pattern_cases_by_window?.[
+      `${patternChart.window.start_min}-${patternChart.window.end_min}`]?.[key]?.[alignment];
+    if (!frozen) throw new Error(`fixture mirror has no frozen narrowed Pattern case: ${coordinate}`);
+    return { ...structuredClone(frozen), projection_id: projectionId };
+  }
   const pattern = capture.outcome_patterns.find((row) => row.key === key);
   if (!pattern || pattern.collapse !== 'remain_pattern') {
     throw new Error(`served Pattern coordinate has no roster entry: ${key}`);

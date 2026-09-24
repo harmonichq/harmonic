@@ -320,8 +320,12 @@ function sourceRows(workstationExposures, family) {
 // `habitRateFamilies` is the Python producer's frozen lever-to-rate-family table
 // (`habit_rate_families` in the findings-projection fixture), published as the
 // capture's `pattern_families`; the Pattern mirror judges habit members by it.
+// `patternCasesByWindow` is the Python producer's Pattern case files for each
+// narrowed window the browser checks request (`browser_pattern_cases_by_window`),
+// published as `pattern_cases_by_window`; the mirror answers a narrowed Pattern
+// coordinate only from it.
 export function buildCapture(workstationExposures, outcomePatterns = [], scenarios = {},
-  habitRateFamilies = {}) {
+  habitRateFamilies = {}, patternCasesByWindow = {}) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
   const views = {
@@ -385,6 +389,7 @@ export function buildCapture(workstationExposures, outcomePatterns = [], scenari
     source_window: structuredClone(workstationExposures.window),
     outcome_patterns: structuredClone(outcomePatterns),
     pattern_families: structuredClone(habitRateFamilies),
+    pattern_cases_by_window: structuredClone(patternCasesByWindow),
     pattern_populations: patternPopulations,
     pattern_attribution: patternAttribution,
     views,
@@ -398,7 +403,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const projection = JSON.parse(readFileSync(
     new URL('../../frontend/__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
   const capture = buildCapture(workstationExposures, projection.browser_outcome_patterns,
-    workstationPayload.scenarios, projection.habit_rate_families);
+    workstationPayload.scenarios, projection.habit_rate_families,
+    projection.browser_pattern_cases_by_window);
   const serialized = JSON.stringify(capture, null, 2) + '\n';
   const target = new URL('./capture.json', import.meta.url);
   if (process.argv.includes('--check')) {

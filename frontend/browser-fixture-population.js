@@ -15,11 +15,15 @@ const findingsFixture = JSON.parse(readFileSync(new URL(
 const defaultPatternCapture = JSON.parse(readFileSync(new URL(
   '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
 
-/** Add the server-prepared Pattern roster to every browser-gate mirror input. */
+/** Add the server-prepared Pattern rosters to every browser-gate mirror input: the
+ * whole day's, and each narrowed window's the browser checks request (ADR 454),
+ * unless the caller brings its own per-window map. */
 export function populateFindingsProjectionInput(input) {
   return {
     ...input,
     outcome_patterns: structuredClone(findingsFixture.browser_outcome_patterns),
+    outcome_patterns_by_window: structuredClone(input.outcome_patterns_by_window
+      ?? findingsFixture.browser_outcome_patterns_by_window),
   };
 }
 

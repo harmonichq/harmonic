@@ -60,7 +60,10 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     ScenarioReport,
 )
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for  # noqa: E402
-from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns  # noqa: E402
+from ciq_autotune.analyzers.scenario.outcome_patterns import (  # noqa: E402
+    build_outcome_patterns,
+    outcome_window_population,
+)
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
 from ciq_autotune.guidance import candidates as guidance_candidates  # noqa: E402
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
@@ -107,6 +110,10 @@ ANALYSIS_GENERATION = "findings-fixture-process:0"
 # The windows frozen here: the global queue, the two D34 anchoring windows, the
 # grounded morning and afternoon reads, a window that wraps midnight, and a stretch
 # where nothing speaks.
+# The narrowed windows the browser checks request of the fixture mirror (ADR 454):
+# the desk suite's one scoped preparation and the two fast-gate scopes. The mirror
+# refuses any other narrowed window by name.
+BROWSER_WINDOWS = ((0, 360), (135, 285), (720, 1080))
 WINDOWS = {
     "global": None,
     "morning": (4 * 60 + 30, 8 * 60),
@@ -742,7 +749,7 @@ def empty_projection() -> FindingsProjection:
     )
 
 
-def _pattern_cases(query, findings, exposures, *, cgm=(), bolus=()):
+def _pattern_cases(query, findings, exposures, *, cgm=(), bolus=(), pattern_exposures=None):
     """The Python case producer over one projected answer and its exposures."""
     return PreparedCases(
         projection_id="fp_" + "2" * 32, version=0, query=query, findings=findings,
@@ -750,7 +757,69 @@ def _pattern_cases(query, findings, exposures, *, cgm=(), bolus=()):
         associations={lever: frozenset() for lever in Lever},
         attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
         cgm=cgm, basal=(), bolus=bolus, carbs=(), lease_until=0, exposures=exposures,
+        pattern_exposures=pattern_exposures,
     )
+
+
+def _pattern_capture():
+    return json.loads((
+        pathlib.Path(__file__).resolve().parents[1]
+        / "mockups" / "diagnose-event-comparison.synthetic" / "capture.json"
+    ).read_text())
+
+
+def _trace_series(rows):
+    """Glucose and boluses rebuilt from the event-comparison capture's per-row traces:
+    each reading and dose at its row's anchor plus its minute. Rows overlap in time, so
+    the first row to reach an instant keeps it, one reading per instant as a store
+    holds; a dose shared by two rows is kept once."""
+    cgm, bolus = {}, {}
+    for source in rows:
+        anchor = datetime.strptime(source["anchor_t"], "%Y-%m-%d %H:%M:%S")
+        for point in source["trace"]["cgm"]:
+            cgm.setdefault(anchor + timedelta(minutes=point["minute"]), point["bg"])
+        for dose in source["trace"]["boluses"]:
+            bolus.setdefault(dose.get("seq_num"), BolusEvent(
+                anchor + timedelta(minutes=dose["minute"]), completion=dose.get("completion"),
+                insulin=dose.get("insulin"), carbs=dose.get("carbs"), seq_num=dose.get("seq_num"),
+            ))
+    return (tuple(CgmReading(t, bg, "EGV") for t, bg in sorted(cgm.items())),
+            tuple(sorted(bolus.values(), key=lambda dose: dose.t)))
+
+
+def browser_windows(browser_analysis, browser_exposures, browser_scenarios):
+    """The server's answer for each narrowed window the browser checks request
+    (ADR 454): its scoped Pattern roster, its queue shape (each row with the Pattern
+    that claims it, the counts and the chip counts), and each charted Pattern's clock
+    and event case files with no selection, from that window's outcome-window
+    population as `finding_case_file.prepare` builds it."""
+    projection = prepare_findings_projection(
+        analysis=browser_analysis, exposures=browser_exposures, scenarios=browser_scenarios,
+    )
+    populations = _pattern_capture()["pattern_populations"]
+    rosters, queues, cases = {}, {}, {}
+    for bounds in BROWSER_WINDOWS:
+        key = f"{bounds[0]}-{bounds[1]}"
+        query = WindowQuery.clock(*bounds)
+        findings = projection.project(query, analysis_generation=ANALYSIS_GENERATION)
+        rosters[key] = findings["outcome_patterns"]
+        queues[key] = {"rows": [[row["id"], row.get("claimed_by")] for row in findings["rows"]],
+                       "counts": findings["counts"], "chip_counts": findings["chip_counts"]}
+        pattern_exposures, _roster = outcome_window_population(
+            browser_analysis, browser_exposures, browser_scenarios, query,
+        )
+        cases[key] = {}
+        for row in findings["rows"]:
+            if row.get("kind") != "pattern" or not row.get("pattern_chart"):
+                continue
+            cgm, bolus = _trace_series(populations[pattern_rate_family(row["pattern"]).value])
+            prepared = _pattern_cases(query, findings, browser_exposures, cgm=cgm, bolus=bolus,
+                                      pattern_exposures=pattern_exposures)
+            cases[key][row["pattern"]["key"]] = {
+                alignment: prepared.case(row["id"], alignment, None)
+                for alignment in ("clock", "event")
+            }
+    return rosters, queues, cases
 
 
 def habit_rate_families():
@@ -805,19 +874,7 @@ def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
         analysis=browser_analysis, exposures=browser_exposures,
         scenarios=browser_scenarios,
     ).project(query, analysis_generation=ANALYSIS_GENERATION)
-    capture = json.loads((
-        pathlib.Path(__file__).resolve().parents[1]
-        / "mockups" / "diagnose-event-comparison.synthetic" / "capture.json"
-    ).read_text())
-    source = capture["pattern_populations"]["meals"][0]
-    anchor = datetime.strptime(source["anchor_t"], "%Y-%m-%d %H:%M:%S")
-    cgm = tuple(CgmReading(
-        anchor + timedelta(minutes=point["minute"]), point["bg"], "EGV",
-    ) for point in source["trace"]["cgm"])
-    bolus = tuple(BolusEvent(
-        anchor + timedelta(minutes=dose["minute"]), completion=dose.get("completion"),
-        insulin=dose.get("insulin"), carbs=dose.get("carbs"), seq_num=dose.get("seq_num"),
-    ) for dose in source["trace"]["boluses"])
+    cgm, bolus = _trace_series(_pattern_capture()["pattern_populations"]["meals"][:1])
     prepared = _pattern_cases(query, findings, browser_exposures, cgm=cgm, bolus=bolus)
     finding_id = "pattern:highs_after_meals"
     case = prepared.case(finding_id, "clock", None)
@@ -912,6 +969,10 @@ def payload() -> dict:
                 hero_episode="ep90", occurrences=["ep90"]).to_dict(),
     ])
 
+    scoped_rosters, scoped_queues, scoped_cases = browser_windows(
+        browser_analysis, browser_exposures, browser_scenarios,
+    )
+
     def with_catalog(catalog):
         analysis_payload = dict(prepared._analysis)
         analysis_payload["ic_history"] = [row.to_dict() for row in catalog]
@@ -955,6 +1016,11 @@ def payload() -> dict:
         "browser_outcome_patterns": build_outcome_patterns(
             browser_analysis, browser_exposures, browser_scenarios,
         ),
+        # The same inputs' scoped rosters, queue shapes and Pattern case files for
+        # each narrowed window the browser checks request (ADR 454).
+        "browser_outcome_patterns_by_window": scoped_rosters,
+        "browser_window_queues": scoped_queues,
+        "browser_pattern_cases_by_window": scoped_cases,
         # The Pattern candidates guidance serves for those same inputs, names and
         # all (ADR 426), so a desk test can mount Changes on the served shape.
         "browser_guidance_patterns": [

@@ -11,7 +11,7 @@ This list is the "touched stories" below.
 
 ## #460 — The watch dock reads the served Plan draft
 
-- [ ] 1. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 1. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay the touched
   stories against the unchanged base at 1280x720 and 1440x900 through
   `frontend/desk-behavior.replay.mjs`, re-inventory the dock's five states and
@@ -42,7 +42,7 @@ This list is the "touched stories" below.
   return (a plain top-nav press with the input revision unchanged), the
   destination re-reads Plan state and guidance and then calls the view's
   `refresh()` (ADR 460 point 7).
-- [ ] 5. In `frontend/diagnose.js`, pass `planDraft` from `frontend/guidance.js`
+- [x] 5. In `frontend/diagnose.js`, pass `planDraft` from `frontend/guidance.js`
   through Diagnose's callbacks beside `pendingPlan`, and on a retained return
   re-read Plan state and guidance, the same pair a cold read starts, then
   refresh the workstation while it is still seated and on screen (ADR 460
@@ -50,7 +50,7 @@ This list is the "touched stories" below.
   re-read while it is pending. In
   `frontend/diagnose-workstation.js`, hand the dock's paint `planDraft()` as
   `draft` and the workstation's in-flight flag as `saving`.
-- [ ] 6. In `frontend/diagnose-workstation.js`:
+- [x] 6. In `frontend/diagnose-workstation.js`:
   - raise the in-flight flag in `stageAndSettle` before the press's toggle and
     paint, keeping the re-entrancy guard (ADR 460 point 4);
   - move the boot-time seeding of the three sets of marks into one seeding
@@ -63,7 +63,7 @@ This list is the "touched stories" below.
     (ADR 460 point 6);
   - update the ADR 354 comment above the seeding, the #358 comment above
     `stageAndSettle` and the comment above the dock's paint.
-- [ ] 7. Desk-suite tests in `frontend/desk.browser.test.mjs`, over a stateful
+- [x] 7. Desk-suite tests in `frontend/desk.browser.test.mjs`, over a stateful
   `/api/plan` stub (GET answers the saved draft, PUT saves it) and a guidance
   stub that serves the same draft, on the frozen browser analysis's stageable
   07:00 slot:
@@ -92,7 +92,7 @@ This list is the "touched stories" below.
     such read, so its failing-first proof is a deliberately broken variant:
     seen to fail on a build of tasks 2–6 whose retained return re-reads
     without the pending-save check, then pass on the real build.
-- [ ] 8. Add one ledger story (the next unissued S id at implementation time) on
+- [x] 8. Add one ledger story (the next unissued S id at implementation time) on
   the `basal-lower` case, in a dated `## #460 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md`, with its replay function in
   `frontend/c4.replay.mjs`, its registry entry in
@@ -121,13 +121,13 @@ This list is the "touched stories" below.
   Lay the story's harness over e4862000 and record that base run (legs 1, 3
   and 4 failing at their mark or dock assertion, leg 2 passing) and the branch
   run at both sizes on the story's status line.
-- [ ] 9. Raise the frozen story inventory by the one story task 8 adds,
+- [x] 9. Raise the frozen story inventory by the one story task 8 adds,
   everywhere it is stated: the literals in
   `mockups/sweep/harmonic-v2-desktop/acceptance.py` and
   `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, the issued and active
   counts in `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`, and the story
   count in `AGENTS.md`'s ledger-replay paragraph.
-- [ ] 10. Capture before/after renders of the dock on a fresh Diagnose seat with
+- [x] 10. Capture before/after renders of the dock on a fresh Diagnose seat with
   a saved basal draft (task 8's leg 3), on `basal-lower` at 1280x720 and
   1440x900 from the no-fetch serve. The coordinator attaches them to the pull
   request; they are not committed.

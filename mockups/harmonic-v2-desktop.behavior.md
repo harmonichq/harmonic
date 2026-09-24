@@ -5413,7 +5413,15 @@ S186 · The watch dock and Diagnose's staged marks follow the Plan draft. Leg 1:
             Diagnose press until the desk has settled. Leg 4 reads /api/analyze
             for a basal slot that does not assert. The story runs every leg and
             fails once, naming each failed leg
-  status:   pending coordinator run
+  status:   base e4862000 with this harness (be5f6abc) laid over it fails
+            legs 1, 3 and 4 at their dock or mark assertion ("S186 leg 1: the
+            staged dock", "S186 leg 3: the staged dock", "S186 leg 4: the
+            replaced run's lane cells must drop their staged mark") and passes
+            leg 2, at both sizes; branch be5f6abc passes all four legs at
+            1280x720 and 1440x900, as do S97, S98, S99, S113, S139, S140, S147,
+            S152, S153, S169 and S178. Renders of leg 3's endpoint, before on
+            e4862000 and after on be5f6abc, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
 ```
 
 Additional handler inventory for this amendment:

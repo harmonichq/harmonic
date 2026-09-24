@@ -115,6 +115,11 @@ Each was taken as the simplest option consistent with the settled decisions:
   under the focus a Day return had just put on its Occurrence's Open in Day
   control, and the desk suite's Day-return check caught it (decided
   autonomously during AFK run, start verification round 1).
+- S186 opens the change records in place, as a history step: a saved draft
+  seats Changes on the Plan, and a draft-only Plan offers no change-record door.
+  Its four legs run in turn and the story fails once, naming each failed leg,
+  so a base run records every leg's own verdict (decided autonomously during
+  AFK run).
 
 **Consequences.** A partially admitted draft (some items the analysis still
 admits, some it no longer does) is named by the admitted part, because the

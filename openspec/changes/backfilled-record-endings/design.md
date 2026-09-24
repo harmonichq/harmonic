@@ -252,48 +252,60 @@ worded reason.
   detector's settling days for a dose-detected supersession or reversal. That
   data stays in the store, and a Retained context or Current policy
   reassessment still reads it, labelled as a reassessment.
-- The first reconcile after upgrade runs one reversal scan per open record. It
-  runs one comparison only for records whose context is bounded. This happens
-  once; afterwards only records inside their window stay open.
+- Each reconcile reads the detector's history (pump reads, basal rows,
+  boluses) once and shares it across every open record's reversal check. It runs
+  one comparison for each record it ends whose context is bounded. The first
+  reconcile after upgrade ends every backfilled record in one pass; afterwards
+  only records inside their window, and Edit siblings waiting on the first
+  change after their Edit, stay open (Reconcile cost below).
 
 ### Reconcile cost
 
-Recorded on the coordinator's ruling after code review (Q3 delegation, Connor
+Recorded on the coordinator's rulings after code review (Q3 delegation, Connor
 Griffin, 2026-09-23; coordinator ruling R442).
 
 **The bound.** Each reconcile runs the detector's reversal check
-(`_reversal_at`) once for every retained Trial record whose ending has no kind.
-A record that has ended costs one record read and is skipped. Each check reads
-every pump read. A basal-slot record also reads every basal row and rebuilds
-every slot's regimes. A dose-detected correction-factor or carb-ratio record
-reads every bolus. So one reconcile costs one full history scan per open record.
-The first reconcile after upgrade holds every open record in the history. After
-it, the open records are those inside their watch window, plus the Edit siblings
-that wait on the first change after their Edit. The frontier-only rule it
-replaces ran at most one check per reconcile.
+(`_reversal_at`) for every retained Trial record whose ending has no kind. A
+record that has ended costs one record read and is skipped. The check reads the
+pump reads, and a basal-slot record reads the basal rows (every slot's regimes);
+a dose-detected correction-factor or carb-ratio record reads the boluses. The
+pass reads each of those histories at most once and shares it across every open
+record (`_ReversalHistory`). One reconcile therefore costs at most one scan of
+each history, however many records are open. The frontier-only rule it replaces
+also ran at most one check per reconcile. Reading the history afresh for each
+open record, as this change first did, cost one full scan per open record.
+
+**Same endings.** Sharing the reads changes no saved row. A reconcile with the
+shared history saves follow-up rows byte-identical to one that reads the
+history afresh for each record. This holds on every store `premises.py` covers:
+its seven in-memory stores, its nine QA case stores, and the synthetic year
+below, 17 stores in all, compared in one process. A backend test pins the
+same equivalence through the public reconcile path on five stores. It also
+pins one basal read for three open basal-slot records.
 
 **Measured** in process on synthetic stores, each timing from a fresh copy of a
-store built and reconciled by base b03431d2, on a machine shared with other
-work. Each figure is the median of the runs shown, for the first and then a
+store built and reconciled by base b03431d2, one version after another in one
+session. Each figure is the median of the runs shown, for the first and then a
 second reconcile.
 
-| Store | Base | This change |
-|---|---|---|
-| `showcase` QA case, the largest QA case store with a retained record (18,754 rows, 1 record, still open) | 152 ms / 127 ms (5 runs) | 130 ms / 139 ms (5 runs) |
-| `c4-ic` QA case (17,904 rows, 2 records; this change ends the older one) | 120 ms / 126 ms (5 runs) | 120 ms / 99 ms (5 runs) |
-| A synthetic year of five-minute basal rows (105,120 rows), with eight slots raised together every 30 days (96 records, all open after base) | 1.6 s / 1.5 s (3 runs) | 77 s, ending 88 records / 7.1 s with 8 records open (3 runs) |
+| Store | Base | Read per record | Shared read (this change) |
+|---|---|---|---|
+| `showcase` QA case, the largest QA case store with a retained record (18,754 rows, 1 record, still open) | 49 ms / 49 ms (5 runs) | 51 ms / 52 ms (5 runs) | 48 ms / 51 ms (5 runs) |
+| `c4-ic` QA case (17,904 rows, 2 records; this change ends the older one) | 42 ms / 41 ms (5 runs) | 45 ms / 41 ms (5 runs) | 46 ms / 41 ms (5 runs) |
+| A synthetic year of five-minute basal rows (105,120 rows), with eight slots raised together every 30 days: 96 records, all open after base; the first reconcile ends 88 and leaves 8 open | 0.70 s / 0.71 s (3 runs) | 54 s / 6.6 s (3 runs) | 1.09 s / 1.11 s (3 runs) |
 
-At QA scale the difference is inside the noise. On a year of basal history,
-each open basal-slot record adds about 0.7 s to every reconcile. The fetch
-loop's hourly reconcile, startup recovery and each follow-up write all pay it.
-A scratch variant computed the three history reads once per reconcile and left
-the decision code unchanged. It recorded the same endings in 2.4 s, then 0.8 s
-at steady state. Whether this change adopts that variant is a coordinator
-decision; it is not implemented here.
+At QA scale the three are inside the noise. On a year of basal history the
+shared read keeps the steady-state reconcile, with eight records open, at about
+1.1 s against base's 0.7 s. It keeps the first reconcile after upgrade, which ends
+88 records, at about 1.1 s. Read per record, the same store took 6.6 s and
+54 s. The fetch loop's hourly reconcile, startup recovery and each follow-up
+write pay the steady-state figure.
 
 ### Risk contract
 
-Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md`).
+Copied from the scope ledger (`docs/scope/backfilled-record-endings.md`). Its
+accepted failure on reconcile cost is amended here on the coordinator's ruling
+after code review (Reconcile cost above); the ledger keeps its triage wording.
 
 - **Must prevent:** rewriting a saved ending or reopening an ended record; a
   saved ending assessment that reads evidence after its ending instant
@@ -305,9 +317,13 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
   except an Edit sibling waiting on the first change after its Edit.
 - **Must recover:** nothing new. A reconcile that fails mid-pass commits no
   ending, as today (one follow-up transaction).
-- **Accepted failure:** the first reconcile after upgrade on a long history runs
-  one reversal scan per open record inside the reconcile transaction. It is
-  slower once and loses nothing. A backfilled record whose retained context
+- **Accepted failure:** each reconcile reads the detector's pump reads, basal
+  rows and boluses once, shared by every open record, inside the reconcile
+  transaction. Its steady-state cost does not grow with the number of open
+  records. On a synthetic year of basal history with eight records open it is
+  about 1.1 s against base's 0.7 s. The first reconcile after upgrade ends every
+  backfilled record in that same single read, and also computes one comparison
+  for each ended record whose context is bounded. It loses nothing. A backfilled record whose retained context
   came from a later pump read saves an unavailable assessment; the reader still
   has the labelled reassessment. A record superseded by a dose-detected change
   of its own setting saves "Data read through <the change>" (`data_tail`),

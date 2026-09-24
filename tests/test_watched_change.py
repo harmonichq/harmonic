@@ -7,9 +7,12 @@ param→existing-series target mapping, the Maturing gate, the revert-vs-third-v
 rule, the Focus view derivation, and the one-active invariant in both directions.
 """
 
+import json
 import unittest
+from contextlib import nullcontext
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 from ciq_autotune.guidance import plan_deliverable
@@ -731,6 +734,11 @@ def _stamps(pairs):
 _FOUR_OLD_CHANGES = _stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 49), (35, 7.0, 50, 89),
                              (50, 7.0, 90, 129), (40, 7.0, 130, 169)])
 
+# A correction-factor change on 05-11, reconciled on 05-13; then the pump goes
+# back to 30 on 05-15 and the carb ratio changes on 05-21, reconciled on 05-26.
+_BEFORE_REVERSAL = _stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 12)])
+_AFTER_REVERSAL = _stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 13), (30, 7.0, 14, 19), (30, 9.0, 20, 25)])
+
 
 class EveryRecordEndsTest(unittest.TestCase):
     """ADR 442: at each reconcile every retained Trial record without an ending
@@ -813,12 +821,10 @@ class EveryRecordEndsTest(unittest.TestCase):
         self.assertEnded(isf, "superseded", _at(20))
 
     def test_d_a_reversal_comes_before_supersession(self):
-        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 12)])))
+        self.store.upsert_bolus(_dose_rows(_BEFORE_REVERSAL))
         self.reconcile(_day(12))
         self.assertNotIn("kind", self.records()[_at(10)]["ending"])
-        # The pump goes back to 30 on 05-15, then the carb ratio changes on 05-21.
-        self.store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 13),
-                                                    (30, 7.0, 14, 19), (30, 9.0, 20, 25)])))
+        self.store.upsert_bolus(_dose_rows(_AFTER_REVERSAL))
         self.reconcile(_day(25))
         self.assertEnded(self.records()[_at(10)], "reverted", _at(14))
 
@@ -947,6 +953,56 @@ class EveryRecordEndsTest(unittest.TestCase):
         edits = wc.review_trials(self.store, now=_day(12) + timedelta(hours=19))["edits"]
         self.assertEqual([edit["count"] for edit in edits], [3])
         self.assertEqual(records[_at(10, 20)]["ending"], first)
+
+    def test_one_history_read_per_reconcile_saves_what_a_read_per_record_saves(self):
+        """ADR 442's reconcile cost: a pass reads the detector's history once and
+        shares it across every open record. Each store is reconciled twice, once
+        that way and once reading the history afresh for each record, and the
+        follow-up rows each saves are byte-identical."""
+        per_record = wc._reversal_at
+
+        def reversal():
+            self.store.upsert_bolus(_dose_rows(_BEFORE_REVERSAL))
+            self.reconcile(_day(12))
+            self.store.upsert_bolus(_dose_rows(_AFTER_REVERSAL))
+            self.reconcile(_day(25))
+
+        def later_read():
+            self.store.upsert_bolus(_dose_rows(_FOUR_OLD_CHANGES))
+            self.pump_read(_day(169), 1, [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)])])
+            self.reconcile(_day(170))
+
+        def dose_pair():
+            self.pump_read(_day(0), 1, [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)])])
+            self.store.upsert_bolus(_dose_rows(_stamps([(40, 7.0, 1, 9), (40, 8.0, 10, 18), (40, 9.0, 19, 60)])))
+            self.reconcile(_day(60))
+
+        scenarios = {
+            "pump-read pair": lambda: (self.pump_read_pair(), self.reconcile(_day(60))),
+            "multi-slot Edit": lambda: (self.basal_edit({1: 10, 3: 10, 5: 20}), self.reconcile(_day(60))),
+            "dose pair": dose_pair, "reversal": reversal, "later pump read": later_read,
+        }
+        for name, build in scenarios.items():
+            saved, slot_reads = {}, {}
+            for mode in ("shared", "per record"):
+                self.store.close()
+                self.store = Store.open(":memory:")
+                reads = []
+                counted = lambda events, real=wc.basal_slot_regimes: reads.append(1) or real(events)
+                fresh = (patch.object(wc, "_reversal_at", lambda store, record, history=None:
+                                      per_record(store, record))
+                         if mode == "per record" else nullcontext())
+                with fresh, patch.object(wc, "basal_slot_regimes", counted):
+                    build()
+                saved[mode] = json.dumps({kind: self.store.follow_up_records(kind) for kind in ("trial", "plan")}
+                                         | {"frontier": self.store.follow_up_frontier()}, sort_keys=True)
+                slot_reads[mode] = len(reads)
+            with self.subTest(store=name):
+                self.assertEqual(saved["shared"], saved["per record"])
+                self.assertIn('"kind": "', saved["shared"])
+            if name == "multi-slot Edit":
+                # Three open basal-slot records: one read of the basal history, not three.
+                self.assertEqual(slot_reads["per record"] - slot_reads["shared"], 2)
 
 
 if __name__ == "__main__":

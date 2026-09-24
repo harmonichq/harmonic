@@ -25,6 +25,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from functools import cached_property
 from typing import Dict, List, Optional, Union
 
 from .epochs import _DOSE_ATTR, _MIN_EPOCH_DAYS, _settled_days
@@ -1577,9 +1578,36 @@ def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutof
     return store.save_follow_up_record(proposed)
 
 
-def _reversal_at(store, record):
+class _ReversalHistory:
+    """The detector's history the reversal check reads, each part read once.
+
+    One reconcile shares one instance across every open record it evaluates
+    (ADR 442), so a pass costs one scan of each history rather than one per
+    record. The pass writes only follow-up records, never these inputs.
+    """
+
+    def __init__(self, store):
+        self._store = store
+        self._doses = {}
+
+    @cached_property
+    def switches(self):
+        return _profile_switches(self._store.settings_snapshots())
+
+    @cached_property
+    def slots(self):
+        return basal_slot_regimes(self._store.basal_events())
+
+    def doses(self, parameter):
+        if parameter not in self._doses:
+            self._doses[parameter] = dose_regimes(self._store.bolus_events(), parameter)
+        return self._doses[parameter]
+
+
+def _reversal_at(store, record, history=None):
+    history = _ReversalHistory(store) if history is None else history
     start = datetime.fromisoformat(record["changed_at"])
-    switches = _profile_switches(store.settings_snapshots())
+    switches = history.switches
     for previous, current in zip(switches, switches[1:]):
         if previous.at == start and _switch_reverts(previous, current, _MATURE_WINDOW):
             return current.at
@@ -1587,9 +1615,9 @@ def _reversal_at(store, record):
         return None
     if record["parameter"] == "basal_rate":
         hour, minute = map(int, record["slot"].split(":"))
-        regimes = basal_slot_regimes(store.basal_events()).get((hour * 60 + minute) // 30, [])
+        regimes = history.slots.get((hour * 60 + minute) // 30, [])
     else:
-        regimes = dose_regimes(store.bolus_events(), record["parameter"])
+        regimes = history.doses(record["parameter"])
     for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
         if changed.start == start and _is_revert([previous, changed, returned], _MATURE_WINDOW):
             return returned.start
@@ -1604,9 +1632,11 @@ def _end_open_records(store, trials, *, now, recorded_at):
     inside its watch window; else ``expired_unreviewed`` once that window has
     passed. Each saved assessment reads evidence only up to its ending instant.
     Every detected change has a retained record by now, so each has an Edit.
+    The detector's history is read once for the whole pass.
     """
     records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
     edit_of, _ = _group_edits(records)
+    history = _ReversalHistory(store)
     starts = sorted((datetime.fromisoformat(t.view.changed_at), edit_of[_review_id(t.view, t.block)])
                     for t in trials)
     for retained in records:
@@ -1615,7 +1645,7 @@ def _end_open_records(store, trials, *, now, recorded_at):
             continue
         changed = datetime.fromisoformat(record["changed_at"])
         expiry = changed + _WATCH_HORIZON
-        reversal = _reversal_at(store, record)
+        reversal = _reversal_at(store, record, history)
         successor = next((start for start, edit in starts
                           if changed < start < expiry and edit != edit_of[record["id"]]), None)
         if reversal is not None:

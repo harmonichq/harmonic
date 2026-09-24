@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
+import { BROWSER_INPUTS, populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { expandSequenceFixture } from './eating-sequence-fixture.js';
 
@@ -185,8 +185,8 @@ function caseFile(url) {
 }
 
 const JSON_STUBS = [
-  [/^\/api\/analyze$/, () => evidence.analyze],
-  [/^\/api\/scenarios$/, () => evidence.scenarios],
+  [/^\/api\/analyze$/, () => BROWSER_INPUTS.analysis],
+  [/^\/api\/scenarios$/, () => BROWSER_INPUTS.scenarios],
   [/^\/api\/explore\/time-of-day$/, () => evidence.evidence],
   [/^\/api\/explore\/exposures$/, () => evidence.exposures],
   [/^\/api\/outcomes\/trend$/, () => ({ points: [] })],

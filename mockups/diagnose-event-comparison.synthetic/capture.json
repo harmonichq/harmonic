@@ -139,7 +139,7 @@
           "status": "comparable"
         }
       ],
-      "k": 1,
+      "k": 0,
       "key": "lows_after_meals",
       "member_set_fingerprint": "13141e472c40a768",
       "members": [
@@ -180,7 +180,7 @@
           "status": "not_comparable"
         }
       },
-      "rate": 0.05,
+      "rate": 0,
       "rate_levers": [
         "habit:meal_over_delivery"
       ],
@@ -195,8 +195,8 @@
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
       "wilson": {
-        "hi": 0.1532,
-        "lo": 0.0151
+        "hi": 0.0759,
+        "lo": 0
       }
     },
     {

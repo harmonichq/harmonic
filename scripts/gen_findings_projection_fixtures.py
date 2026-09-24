@@ -787,24 +787,25 @@ def _trace_series(rows):
             tuple(sorted(bolus.values(), key=lambda dose: dose.t)))
 
 
-def browser_windows(browser_analysis, browser_exposures, browser_scenarios):
-    """The server's answer for each narrowed window the browser checks request
-    (ADR 454): its scoped Pattern roster, its queue shape (each row with the Pattern
-    that claims it, the counts and the chip counts), and each charted Pattern's clock
-    and event case files with no selection, from that window's outcome-window
-    population as `finding_case_file.prepare` builds it."""
+def browser_window_answers(browser_analysis, browser_exposures, browser_scenarios):
+    """The server's answers over the browser inputs (ADR 454): its full projection for
+    the whole day and each narrowed window the browser checks request, each narrowed
+    window's scoped Pattern roster, and each charted Pattern's clock and event case
+    files there with no selection, from that window's outcome-window population as
+    `finding_case_file.prepare` builds it."""
     projection = prepare_findings_projection(
         analysis=browser_analysis, exposures=browser_exposures, scenarios=browser_scenarios,
     )
     populations = _pattern_capture()["pattern_populations"]
-    rosters, queues, cases = {}, {}, {}
+    windows = {"whole_day": projection.project(
+        WindowQuery.whole_day(), analysis_generation=ANALYSIS_GENERATION)}
+    rosters, cases = {}, {}
     for bounds in BROWSER_WINDOWS:
         key = f"{bounds[0]}-{bounds[1]}"
         query = WindowQuery.clock(*bounds)
         findings = projection.project(query, analysis_generation=ANALYSIS_GENERATION)
+        windows[key] = findings
         rosters[key] = findings["outcome_patterns"]
-        queues[key] = {"rows": [[row["id"], row.get("claimed_by")] for row in findings["rows"]],
-                       "counts": findings["counts"], "chip_counts": findings["chip_counts"]}
         pattern_exposures, _roster = outcome_window_population(
             browser_analysis, browser_exposures, browser_scenarios, query,
         )
@@ -819,7 +820,7 @@ def browser_windows(browser_analysis, browser_exposures, browser_scenarios):
                 alignment: prepared.case(row["id"], alignment, None)
                 for alignment in ("clock", "event")
             }
-    return rosters, queues, cases
+    return windows, rosters, cases
 
 
 def habit_rate_families():
@@ -946,17 +947,8 @@ def payload() -> dict:
         **browser_payload["analyze"],
         "tuning_levers": prepared._analysis["tuning_levers"],
     }
+    # Every browser roster, window and case reads the payload's exposures unaltered.
     browser_exposures = json.loads(json.dumps(browser_payload["exposures"]))
-    browser_case_exposures = json.loads(json.dumps(browser_exposures))
-    memberless_low = next(
-        row for row in browser_exposures["exposures"]["meals"]["occurrences"]
-        if not row.get("attributed")
-    )
-    memberless_low.update(
-        attributed=True,
-        attributed_levers=[Lever.MEAL_OVER_DELIVERY.value],
-        cause_lever=Lever.MEAL_OVER_DELIVERY.value,
-    )
     browser_scenarios = json.loads(json.dumps(prepared._scenarios))
     browser_scenarios["patterns"].extend([
         Pattern(lever=Lever.LATE_BOLUS,
@@ -969,7 +961,7 @@ def payload() -> dict:
                 hero_episode="ep90", occurrences=["ep90"]).to_dict(),
     ])
 
-    scoped_rosters, scoped_queues, scoped_cases = browser_windows(
+    browser_windows, scoped_rosters, scoped_cases = browser_window_answers(
         browser_analysis, browser_exposures, browser_scenarios,
     )
 
@@ -1016,10 +1008,18 @@ def payload() -> dict:
         "browser_outcome_patterns": build_outcome_patterns(
             browser_analysis, browser_exposures, browser_scenarios,
         ),
-        # The same inputs' scoped rosters, queue shapes and Pattern case files for
-        # each narrowed window the browser checks request (ADR 454).
+        # The analysis, scenarios and generation every browser roster, window and
+        # case is built from: the test desk serves these, so its whole queue is the
+        # server's own (ADR 454).
+        "browser_inputs": {
+            "analysis": browser_analysis, "scenarios": browser_scenarios,
+            "analysis_generation": ANALYSIS_GENERATION,
+        },
+        # The server's full projection of those inputs for the whole day and each
+        # narrowed window the browser checks request, the fixture mirror's frozen
+        # answers; then each narrowed window's scoped roster and Pattern case files.
+        "browser_windows": browser_windows,
         "browser_outcome_patterns_by_window": scoped_rosters,
-        "browser_window_queues": scoped_queues,
         "browser_pattern_cases_by_window": scoped_cases,
         # The Pattern candidates guidance serves for those same inputs, names and
         # all (ADR 426), so a desk test can mount Changes on the served shape.
@@ -1029,14 +1029,14 @@ def payload() -> dict:
             ) if row["kind"] == "pattern"
         ],
         "pattern_clock_case": pattern_clock_case(
-            browser_analysis, browser_case_exposures, browser_scenarios,
+            browser_analysis, browser_exposures, browser_scenarios,
         ),
         # The lever-to-rate-family table the Pattern case producer filters habit
         # members by, and its answers for two rosters that carry a member outside
         # the family, which the fixture Pattern mirror is held to (ADR 454).
         "habit_rate_families": habit_rate_families(),
         "pattern_family_cases": pattern_family_cases(
-            browser_analysis, browser_case_exposures, browser_scenarios,
+            browser_analysis, browser_exposures, browser_scenarios,
         ),
         "direction_only_inputs": {
             "analysis": direction_only._analysis,

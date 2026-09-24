@@ -303,7 +303,7 @@ test('browser preparation mirrors the wrapped row: both families, case file firs
     { family: 'highs', noun: 'highs', n: 1, m: 4 },
   ], 'the case file\'s family leads at the case file\'s counts and the other family keeps the projection\'s');
   assert.equal(row.headline,
-    'Not ranked in this window yet. Showed up in 1 of 10 lows in this window.',
+    'Ranks among this window\'s findings. Showed up in 1 of 10 lows in this window.',
     'the served sentence is composed from the leading appearance the row publishes');
 });
 
@@ -326,34 +326,31 @@ test('the Afternoon fixture retains all four published behavioral Findings', () 
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);
 
-  // The server's shown set: both Patterns fold their causes here (ADR 454). The
-  // order follows once the test desk projects the server's own inputs.
-  assert.deepEqual(shown.map(({ id }) => id).sort(), [
-    'finding:missed_meal',
+  // The server's shown rows, in its order: both Patterns fold their causes here, and
+  // the priced Over-treated low leads (ADR 454).
+  assert.deepEqual(shown.map(({ id }) => id), [
     'finding:over_treated_low',
     'pattern:highs_after_meals',
     'pattern:lows_after_correcting_highs',
+    'finding:missed_meal',
   ]);
   assert.equal(queueMeta(projection, selected, true), '4 in this window');
 });
 
-const narrowedWindows = Object.keys(findingsFixture.browser_window_queues);
-const browserProjection = (bounds) => projectFindings(populateFindingsProjectionInput({
-  analysis: payload.analyze,
-  exposures: payload.exposures,
-  scenarios: payload.scenarios,
-}), bounds);
+const browserProjection = (bounds) => projectFindings(
+  populateFindingsProjectionInput({ exposures: payload.exposures }), bounds);
 
-test('#454 · each narrowed browser window serves the server\'s Patterns, folds and counts', () => {
-  assert.deepEqual(narrowedWindows, ['0-360', '135-285', '720-1080']);
-  const asSet = (rows) => rows.map(([id, claimedBy]) => `${id} < ${claimedBy ?? ''}`).sort();
-  for (const key of narrowedWindows) {
-    const [start_min, end_min] = key.split('-').map(Number);
-    const served = findingsFixture.browser_window_queues[key];
-    const projection = browserProjection({ start_min, end_min });
-    assert.deepEqual(asSet(projection.rows.map((row) => [row.id, row.claimed_by])), asSet(served.rows), key);
-    assert.deepEqual(projection.counts, served.counts, key);
-    assert.deepEqual(projection.chip_counts, served.chip_counts, key);
+test('#454 · the test desk serves the server\'s own answer, in its order, in each browser window', () => {
+  assert.deepEqual(Object.keys(findingsFixture.browser_windows),
+    ['0-360', '135-285', '720-1080', 'whole_day']);
+  for (const [key, served] of Object.entries(findingsFixture.browser_windows)) {
+    const bounds = key === 'whole_day' ? null
+      : Object.fromEntries(key.split('-').map(Number).map((minute, index) =>
+        [index ? 'end_min' : 'start_min', minute]));
+    const projection = browserProjection(bounds);
+    assert.deepEqual(projection.rows.map(({ id }) => id), served.rows.map(({ id }) => id), `${key} row order`);
+    assert.deepEqual(projection, served, `${key} is the server's projection, byte for byte`);
+    if (!bounds) continue;
 
     const preparation = structuredClone(caseFiles.preparation);
     preparation.coordinates.window = projection.window;

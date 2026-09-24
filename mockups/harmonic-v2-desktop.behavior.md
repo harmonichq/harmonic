@@ -2990,7 +2990,14 @@ S154 · Opening a basal slot with excluded nights in Diagnose names why they
             holds the served breakdown to those pinned counts, then requires
             the focal basal:750 tile's aria-label to carry "3 nights
             excluded: 1 insulin on board, 2 other reasons"
-  status:   owed by the coordinator — expected to fail on the base app at its
-            pinned panel line and to pass on the branch at 1280x720 and
-            1440x900; no browser result recorded
+  status:   base a4d374a7 with the 4895f80b harness fails at its feature
+            assertion at 1280x720 ("S154 the panel's excluded-night line must
+            name each served reason", saw ["3 excluded nights"]); the base run
+            at 1440x900 timed out loading the page under machine load before
+            the story began, and the coordinator re-runs it at integration;
+            branch 4895f80b passes at 1280x720 and 1440x900; the desk browser
+            suite passed 40 of 40 and the full acceptance.test.py passed;
+            coordinator-run 2026-09-23. Raw logs and the before-and-after
+            renders are owed to docs/scope/release-422-434-evidence/434/ at
+            integration
 ```

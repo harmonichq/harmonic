@@ -102,11 +102,16 @@ class PinnedZones(unittest.TestCase):
 class UnsetZone(unittest.TestCase):
     def test_refused_fetch_is_recorded_without_raising(self):
         # The real pull refuses before any network call when TIMEZONE_NAME is unset.
-        env = {k: v for k, v in os.environ.items() if k != "TIMEZONE_NAME"}
-        with tempfile.NamedTemporaryFile(suffix=".db") as tmp, mock.patch.dict(os.environ, env, clear=True):
-            run_fetch_once(tmp.name)
-            with Store.open(tmp.name) as store:
+        # The credential read is mocked all the same, so no host can reach a login.
+        env = {k: v for k, v in os.environ.items()
+               if k != "TIMEZONE_NAME" and not k.startswith("TCONNECT_")}
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.dict(os.environ, env, clear=True), \
+                mock.patch("ciq_autotune.credentials.load_credentials", return_value=None) as creds:
+            run_fetch_once(directory + "/synthetic.sqlite", key_path=directory + "/secret.key")
+            with Store.open(directory + "/synthetic.sqlite") as store:
                 status = store.fetch_status()
+        creds.assert_not_called()
         self.assertIsNone(status["last_success_at"])
         self.assertIsNotNone(status["last_attempt_at"])
         self.assertIn("TIMEZONE_NAME", status["last_error"])

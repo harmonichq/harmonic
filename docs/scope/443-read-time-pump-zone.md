@@ -131,3 +131,15 @@ None. No follow-up issue is filed by this release.
     `injected`, by the round-1 renumbering.
   - Injected blockers are now 3 in round 1 and 1 in round 2, so they are not
     climbing.
+- Cold pass (panel 2), 2026-09-24: blocked, 3 blockers. The coordinator's
+  rulings were applied in one commit.
+  - Task 1.2's fetch-loop half relied on the environment to keep a base run from
+    a login; it now mocks `load_credentials` and asserts it is never called on
+    the fixed code: `authoring`. The data-boundary guarantee was never stated in
+    the draft.
+  - Done-when implied the worker ticks port-bound task 3.2: `injected`, by the
+    widening, which added 3.2.
+  - ACCEPTANCE.md's c3-history sentence names `watched_change.datetime` and was
+    missing from the inventory and the diff: `injected`, by the widening, which
+    moved that patch.
+  - Count: 1 authoring, 2 injected.

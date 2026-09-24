@@ -194,7 +194,9 @@ that module's `wall_clock_now` instead:
 
 A patched name stands in for the whole function, floor included, so those tests
 keep their fixed times. The case-cache check keeps its `datetime` patch as well,
-for the data-time anchor at `watched_change.py:1710`.
+for the data-time anchor at `watched_change.py:1710`. `ACCEPTANCE.md`'s sentence
+on that check says it freezes `watched_change.datetime`. That sentence is
+amended to name both freezes, and nothing else in the file changes.
 
 ### Clock sites after the change (generated)
 
@@ -288,11 +290,18 @@ Under those defaults the old and new stamps agree.
 ### Document inventory
 
 The repository was searched for the stamps' names, "read stamp", "served read",
-"process zone" and `TIMEZONE_NAME`'s described role. The only prose that states
-a stamp's zone is #427's archived design, which is frozen and stays as written.
-README, `docker-compose.yml`, `.env.example`, AGENTS.md and CONTEXT.md describe
-`TIMEZONE_NAME` as the wall clock records are bucketed by, and that stays true.
-No live document needs amending.
+"process zone", `TIMEZONE_NAME`'s described role, and the frozen clock names
+(`watched_change.datetime`, `api.datetime`, `analyze.datetime`). The results:
+- **Amended:** one live sentence in
+  `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` (lines 331–334 on base) says
+  the c3-history comparison freezes `watched_change.datetime`. It is amended by
+  Decision 6.
+- **Frozen, unchanged:** #427's archived design, the only prose that states a
+  stamp's zone.
+- **Still true:** README, `docker-compose.yml`, `.env.example`, AGENTS.md and
+  CONTEXT.md describe `TIMEZONE_NAME` as the wall clock records are bucketed by.
+- **Moved by Decision 6, not prose:** the remaining hits are the seven patches
+  themselves.
 
 ### Risk contract
 
@@ -307,7 +316,9 @@ No live document needs amending.
     valid;
   - a window that ends before the pump's current date or the UTC date;
   - any change to an analyzer, classifier, staging predicate, cap or floor;
-  - real data in a test, fixture or log.
+  - real data in a test, fixture or log;
+  - a test that can resolve real credentials or contact the vendor. Every test
+    that runs the real pull patches `ciq_autotune.credentials.load_credentials`.
 - **Must recover:** none. The next write replaces a single-row stamp, and the
   seam converges on its own.
 - **Accepted failure:**

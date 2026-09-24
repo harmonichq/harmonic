@@ -21,6 +21,13 @@ value, or removed) with `time.tzset()` again. Set `TIMEZONE_NAME` with
 - **Runner-independent:** no test may depend on the runner's zone or on
   `tests/conftest.py`'s `UTC` default.
 
+**No test in this change can resolve real credentials or contact the vendor.**
+Every test that calls the real `sync.pull_from_tconnect` (only task 1.2's
+fetch-loop half) patches `ciq_autotune.credentials.load_credentials` with a mock
+returning `None`. The pull imports that name at call time, so the patch reaches
+it, and the pull then refuses before any login on every host. Every other fetch
+test patches `ciq_autotune.sync.pull_from_tconnect` itself.
+
 Seed stores only from committed synthetic sources:
 - `scripts/qa_e2e_cases.materialize_case`, as `tests/test_api.py`
   `_guidance_client` and `tests/test_durable_follow_up.py` `seed_case` do;
@@ -50,10 +57,13 @@ fail-first evidence is its broken-variant run, not a base run.
     and a `start` of `end` minus `FETCH_WINDOW_DAYS`. Run it both apart and
     swapped.
 - [ ] 1.2 `tests/test_fetch_loop.py`, zones the fetch cannot use. Do **not** mock
-  the pull, and call `run_fetch_once` with a temporary `key_path`. Build the
-  environment with `mock.patch.dict(os.environ, env, clear=True)`, leaving out
-  every `TCONNECT_*` variable. A base run then refuses at the credential check,
-  before any login. Run from the ticket worktree, which has no `.env`.
+  the pull. Do patch `ciq_autotune.credentials.load_credentials` with a mock
+  returning `None`, and assert it is never called: on the fixed code the zone
+  refusal comes before the credential read. Call `run_fetch_once` with a
+  temporary `key_path`. Build the environment with
+  `mock.patch.dict(os.environ, env, clear=True)`, leaving out every `TCONNECT_*`
+  variable. A base run reaches the mocked credential check, which returns `None`,
+  and the pull refuses there. Base therefore fails first without any login.
   - **Unset.** With `TIMEZONE_NAME` also left out, `run_fetch_once` returns
     without raising and records `last_error` naming `TIMEZONE_NAME`,
     `last_attempt_at` set, and `last_success_at` unset.
@@ -197,6 +207,14 @@ fail-first evidence is its broken-variant run, not a base run.
   - `mockups/sweep/harmonic-v2-desktop/acceptance.py`: the case-cache check keeps
     its `patch.object(watched_change, 'datetime', Clock)` and adds
     `patch.object(watched_change, 'wall_clock_now', lambda after=None: clock)`.
+
+  Amend the one sentence in `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md`
+  that describes that freeze (lines 331–334 on base, beginning "`c3-history`
+  generation stamps observation metadata"). It should say the comparison freezes
+  `watched_change.wall_clock_now` for the observation stamp and
+  `watched_change.datetime` for the data-time anchor, for both generations,
+  instead of dropping fields. Touch nothing else in ACCEPTANCE.md: other tickets
+  in this release edit its other paragraphs.
 - [ ] 2.6 Regenerate the design exploration with
   `uv run python mockups/harmonic-v2.exploration/generate.py`. A triage spike
   moved only the `code_version` hashes and the ids derived from them in

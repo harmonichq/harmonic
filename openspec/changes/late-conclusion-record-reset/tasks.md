@@ -162,7 +162,7 @@ with `node --test docs/scope/452-late-conclusion-s180.spike.mjs`.
 
 ## 5. Verification
 
-- [ ] 5.1 Worker-run, in the ticket worktree, each exiting 0:
+- [x] 5.1 Worker-run, in the ticket worktree, each exiting 0:
   `npm ci && npm run build`, `uv run python -m pytest` (once, at the end, with
   its wall time), `node --test 'frontend/**/*.test.js'`,
   `npx --yes @fission-ai/openspec@1 validate --all --strict`,

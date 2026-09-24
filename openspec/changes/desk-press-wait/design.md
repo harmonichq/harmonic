@@ -341,7 +341,7 @@ general rule. It folds into the task 3.3 commit (task 3.5).
 
    On the real tree the product-side modules are `plan.js`, `frame.js`,
    `tab-routing.js` and `diagnose-workstation-chart.js`. An edit to the
-   unreached `deliverableHasChanges` in `plan.js` leaves the fixed slice. An
+   unreached `isStageableIsf` in `plan.js` leaves the fixed slice. An
    edit to `segmentCapacity`, which S90 calls, selects S90.
 
    These replay-side modules have the most keys that plan the full ledger:

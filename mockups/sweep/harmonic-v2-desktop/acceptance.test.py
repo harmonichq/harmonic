@@ -601,8 +601,8 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
     def test_a_product_function_no_story_calls_leaves_the_fixed_slice(self):
         # ADR 457: the app's entry reaches plan.js, so it is product code; the
         # stories reach it through the browser, under the fixed PR slice.
-        _, selected = self.select_real('frontend/plan.js', '  if (!rows || !rows.length) return false;\n  return rows.some(',
-                                       '  if (!rows || rows.length === 0) return false;\n  return rows.some(')
+        _, selected = self.select_real('frontend/plan.js', '  return !!item && item.asserts_move === true;',
+                                       '  return Boolean(item) && item.asserts_move === true;')
         self.assertEqual(set(selected), set(acceptance.SMOKE_STORIES))
         self.assertIn('frontend/plan.js', self.report['product_modules'])
 

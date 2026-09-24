@@ -1,0 +1,141 @@
+# #443 base fail-first (tasks.md section 1). Code at d94e7cb9 (origin/main b03431d2 plus triage documents only); the new tests only, before task 2.1.
+# Command, from the worktree root:
+# uv run python -m pytest -p no:cacheprovider --tb=short -q <1.1 success, failed attempt, window with the process a day behind> <1.2 fetch-loop unloadable zone> <1.3> tests/test_wall_clock.py::StampsOnThePumpClockTest
+# Exit code: 1. Raw output follows.
+
+FFF.FFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+__________ FetchOnThePumpClockTest.test_success_stamps_the_pump_clock __________
+tests/test_fetch_loop.py:173: in test_success_stamps_the_pump_clock
+    assert_near(self, status["last_success_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=932901) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:50:57 is not within two minutes of 2026-09-23 20:50:57
+______ FetchOnThePumpClockTest.test_failed_attempt_stamps_the_pump_clock _______
+tests/test_fetch_loop.py:182: in test_failed_attempt_stamps_the_pump_clock
+    assert_near(self, status["last_attempt_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=851542) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:50:57 is not within two minutes of 2026-09-23 20:50:57
+------------------------------ Captured log call -------------------------------
+WARNING  ciq_autotune.fetch_loop:fetch_loop.py:74 Hourly fetch failed: synthetic network failure
+______ FetchOnThePumpClockTest.test_window_with_the_process_a_day_behind _______
+tests/test_fetch_loop.py:198: in test_window_with_the_process_a_day_behind
+    self._assert_window(PROCESS_ZONE)
+tests/test_fetch_loop.py:189: in _assert_window
+    assert_window_end(self, end, pump)
+tests/test_wall_clock.py:73: in assert_window_end
+    test.assertEqual(end, max(pump_today, datetime.now(timezone.utc).date()))
+E   AssertionError: datetime.date(2026, 9, 23) != datetime.date(2026, 9, 24)
+_ FetchRefusesUnusableZoneTest.test_unloadable_zone_is_recorded_on_the_process_clock (TIMEZONE_NAME='Not/AZone') _
+tests/test_fetch_loop.py:228: in test_unloadable_zone_is_recorded_on_the_process_clock
+    status = self._status_after_fetch(TIMEZONE_NAME=name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_fetch_loop.py:215: in _status_after_fetch
+    credentials.assert_not_called()
+../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py:910: in assert_not_called
+    raise AssertionError(msg)
+E   AssertionError: Expected 'load_credentials' to not have been called. Called 1 times.
+E   Calls: [call(<ciq_autotune.store.Store object at 0x108a5c9e0>, key_path='/var/folders/gt/90sngsj52js71wmfhqhrr0mw0000gn/T/tmpxlzrdqy0/secret.key')].
+_ FetchRefusesUnusableZoneTest.test_unloadable_zone_is_recorded_on_the_process_clock (TIMEZONE_NAME='America') _
+tests/test_fetch_loop.py:228: in test_unloadable_zone_is_recorded_on_the_process_clock
+    status = self._status_after_fetch(TIMEZONE_NAME=name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_fetch_loop.py:215: in _status_after_fetch
+    credentials.assert_not_called()
+../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py:910: in assert_not_called
+    raise AssertionError(msg)
+E   AssertionError: Expected 'load_credentials' to not have been called. Called 1 times.
+E   Calls: [call(<ciq_autotune.store.Store object at 0x1090eeb70>, key_path='/var/folders/gt/90sngsj52js71wmfhqhrr0mw0000gn/T/tmpdf1sm2xq/secret.key')].
+______ FetchWindowTest.test_days_window_ends_no_earlier_than_the_pump_day ______
+tests/test_cli.py:142: in test_days_window_ends_no_earlier_than_the_pump_day
+    assert_window_end(self, end, PROCESS_ZONE)
+tests/test_wall_clock.py:73: in assert_window_end
+    test.assertEqual(end, max(pump_today, datetime.now(timezone.utc).date()))
+E   AssertionError: datetime.date(2026, 9, 23) != datetime.date(2026, 9, 24)
+____________________ StampsOnThePumpClockTest.test_analysis ____________________
+tests/test_wall_clock.py:191: in test_analysis
+    assert_near(self, analysis.json()["generated_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=462725) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:50:58 is not within two minutes of 2026-09-23 20:50:58
+_________________ StampsOnThePumpClockTest.test_carb_log_entry _________________
+tests/test_wall_clock.py:177: in test_carb_log_entry
+    assert_near(self, created.json()["created_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=398241) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:50:58 is not within two minutes of 2026-09-23 20:50:58
+___________________ StampsOnThePumpClockTest.test_focus_pin ____________________
+tests/test_wall_clock.py:149: in test_focus_pin
+    assert_near(self, pinned["pinned_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3598, microseconds=968574) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:50:59 is not within two minutes of 2026-09-23 20:51:00
+_______________ StampsOnThePumpClockTest.test_guidance_set_aside _______________
+tests/test_wall_clock.py:172: in test_guidance_set_aside
+    assert_near(self, row["decision"]["decided_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3598, microseconds=266934) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:51:01 is not within two minutes of 2026-09-23 20:51:02
+_________________ StampsOnThePumpClockTest.test_plan_and_draft _________________
+tests/test_wall_clock.py:156: in test_plan_and_draft
+    assert_near(self, draft["updated_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=996231) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:51:03.121442 is not within two minutes of 2026-09-23 20:51:03
+_________________ StampsOnThePumpClockTest.test_prompt_answer __________________
+tests/test_wall_clock.py:185: in test_prompt_answer
+    assert_near(self, response["answered_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=803094) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:51:03 is not within two minutes of 2026-09-23 20:51:03
+_______________ StampsOnThePumpClockTest.test_pump_read_capture ________________
+tests/test_wall_clock.py:145: in test_pump_read_capture
+    assert_near(self, served["fetched_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=688512) not less than datetime.timedelta(seconds=120) : 2026-09-24T21:51:03 is not within two minutes of 2026-09-23 20:51:03
+__________________ StampsOnThePumpClockTest.test_reassessment __________________
+tests/test_wall_clock.py:205: in test_reassessment
+    assert_near(self, read.json()["selected"]["reassessment"]["computed_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=435780) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:51:04 is not within two minutes of 2026-09-23 20:51:04
+___________ StampsOnThePumpClockTest.test_reconcile_observes_a_trial ___________
+tests/test_wall_clock.py:196: in test_reconcile_observes_a_trial
+    assert_near(self, trial["first_observed_at"], pump_now())
+tests/test_wall_clock.py:66: in assert_near
+    test.assertLess(abs(value - clock_now), timedelta(minutes=2),
+E   AssertionError: datetime.timedelta(days=1, seconds=3599, microseconds=256560) not less than datetime.timedelta(seconds=120) : 2026-09-24 21:51:05 is not within two minutes of 2026-09-23 20:51:05
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/connor/worktrees/harmonic/443/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+  /Users/connor/worktrees/harmonic/443/ciq_autotune/store.py:966: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    return self.conn.execute(sql, params).fetchall()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_fetch_loop.py::FetchOnThePumpClockTest::test_success_stamps_the_pump_clock
+FAILED tests/test_fetch_loop.py::FetchOnThePumpClockTest::test_failed_attempt_stamps_the_pump_clock
+FAILED tests/test_fetch_loop.py::FetchOnThePumpClockTest::test_window_with_the_process_a_day_behind
+SUBFAILED(TIMEZONE_NAME='Not/AZone') tests/test_fetch_loop.py::FetchRefusesUnusableZoneTest::test_unloadable_zone_is_recorded_on_the_process_clock
+SUBFAILED(TIMEZONE_NAME='America') tests/test_fetch_loop.py::FetchRefusesUnusableZoneTest::test_unloadable_zone_is_recorded_on_the_process_clock
+FAILED tests/test_cli.py::FetchWindowTest::test_days_window_ends_no_earlier_than_the_pump_day
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_analysis - As...
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_carb_log_entry
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_focus_pin - A...
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_guidance_set_aside
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_plan_and_draft
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_prompt_answer
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_pump_read_capture
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reassessment
+FAILED tests/test_wall_clock.py::StampsOnThePumpClockTest::test_reconcile_observes_a_trial
+15 failed, 1 passed, 7 warnings in 9.25s

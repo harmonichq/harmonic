@@ -43,6 +43,7 @@ from .analyzers.classifiers import classify_missed_meal
 from .analyzers.scenario import LowPromptAnswer, evaluate, low_prompt_answers
 from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario_config import ScenarioConfig
+from .store import wall_clock_now
 
 # The queue only asks about the last week: past that, recall is gone and a guessed
 # label pollutes the label flywheel more than a missing one does.
@@ -344,10 +345,11 @@ def pending_prompts(
     An answered candidate only lingers as a faded ✓ for ``answered_grace_hours`` after
     its ``answered_at``; past that it drops out of the queue entirely (#165). The grace
     is measured against **wall-clock now** (``wall_now``, defaulting to
-    :func:`datetime.now`), NOT the event-time ``now`` that dates the window — because
-    ``answered_at`` is real wall-clock time while ``now`` may lag it by days on a
-    catch-up/demo DB. A dropped answered prompt is filtered *out*, never resurrected as
-    pending (its response still matches it within :data:`ANCHOR_TOLERANCE`).
+    :func:`~ciq_autotune.store.wall_clock_now`), NOT the event-time ``now`` that dates
+    the window — because ``answered_at`` is real wall-clock time while ``now`` may lag
+    it by days on a catch-up/demo DB. A dropped answered prompt is filtered *out*,
+    never resurrected as pending (its response still matches it within
+    :data:`ANCHOR_TOLERANCE`).
 
     * ``include_answered=False`` (default) — return only the *pending* prompts,
       oldest-first, truncated to ``cap``. The pure inbox contract.
@@ -361,7 +363,7 @@ def pending_prompts(
     """
     cutoff = now - timedelta(days=window_days)
     grace = timedelta(hours=answered_grace_hours)
-    wall_now = wall_now or datetime.now()
+    wall_now = wall_now or wall_clock_now()
     index = _answered_index(responses)
     manual_carb_times = _manual_carb_times(carb_entries)
 
@@ -417,8 +419,9 @@ def build_pending_prompts(
     user can revise/clear a prior answer across reloads; the frontend derives the
     open count from each prompt's ``answer`` field.
 
-    The post-answer grace (:data:`ANSWERED_GRACE_HOURS`, #165) is measured against real
-    wall-clock ``datetime.now()`` inside :func:`pending_prompts`, never this ``now``:
+    The post-answer grace (:data:`ANSWERED_GRACE_HOURS`, #165) is measured against the
+    real wall clock, :func:`~ciq_autotune.store.wall_clock_now`, inside
+    :func:`pending_prompts`, never this ``now``:
     ``now`` is the latest *event* time, which lags real time on a catch-up/demo DB,
     whereas ``answered_at`` is real wall-clock — the two must be compared on the same
     clock.

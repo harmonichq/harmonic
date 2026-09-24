@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, Iterator, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
 from .credentials import DEFAULT_KEY_PATH
-from .store import Store
+from .store import Store, pump_zone, wall_clock_now
 
 # t:connect rejects a pump-event request whose window spans more than 31 days, so
 # anything longer is fetched as a sequence of <=31-day windows and merged.
@@ -69,6 +69,17 @@ def _as_date(value: _DateLike) -> date:
     if isinstance(value, date):
         return value
     return date.fromisoformat(value)
+
+
+def window_end(pump_now: datetime) -> date:
+    """The last day a fetch asks for: the later of the pump's current date
+    (``pump_now``, a :func:`~ciq_autotune.store.wall_clock_now` reading) and the
+    current UTC date (ADR 443).
+
+    The vendor request labels its end as a UTC day, and nothing records which day
+    the vendor reads it as. The later of the two covers either reading, so a
+    process in another zone never stops short of the pump's today."""
+    return max(pump_now.date(), datetime.now(timezone.utc).date())
 
 
 def _date_windows(start: _DateLike, end: _DateLike) -> Iterator[Tuple[date, date]]:
@@ -131,6 +142,15 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
             "timestamp would be stored off the pump's local wall clock (#198). "
             "Set TIMEZONE_NAME to the pump's timezone in .env (e.g. "
             "TIMEZONE_NAME=America/Phoenix) or the environment, then retry.")
+    # A name no time zone loads from (an unknown key, a malformed one, or a region
+    # such as "America") is refused the same way, before the login: every record
+    # would fail to convert, and the store's clock has fallen back to the
+    # process's (ADR 443).
+    if pump_zone() is None:
+        raise RuntimeError(
+            f"TIMEZONE_NAME={tz_name!r} names no time zone — refusing to fetch. "
+            "Set TIMEZONE_NAME to the pump's timezone (e.g. "
+            "TIMEZONE_NAME=America/Phoenix), then retry.")
     logger.info("Fetching %s -> %s with TIMEZONE_NAME=%s", start, end, tz_name)
 
     try:
@@ -252,8 +272,6 @@ def _capture_settings_snapshot(store: Store, device: dict) -> int:
     ``pump_metadata()`` used to pre-unwrap ``details``; 3.0.0's ``choose()`` no
     longer does.) A pump that has never uploaded carries no usable blob here.
     """
-    from datetime import datetime
-
     from .settings import parse_pump_settings
 
     envelope = device.get("settings")
@@ -268,5 +286,5 @@ def _capture_settings_snapshot(store: Store, device: dict) -> int:
             "Check that the BFF response includes timeDependentSegments.",
             active.idp, active.name,
         )
-    captured_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    captured_at = wall_clock_now(after=store.latest_server_stamp()).strftime("%Y-%m-%d %H:%M:%S")
     return store.upsert_settings_snapshot(captured_at, pump_settings)

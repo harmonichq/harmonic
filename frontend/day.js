@@ -107,7 +107,7 @@ async function loadBounds() {
     // The read this desk shows: when the store last took data. A store that was
     // never fetched — the offline synthetic one, for instance — has none, and
     // the desk says what it is viewed at instead of inventing a read.
-    readAt: status.last_success_at || status.last_written || null,
+    readAt: status.last_success_at || null,
   };
 }
 

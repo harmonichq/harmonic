@@ -521,8 +521,7 @@ class DurableApiTest(unittest.TestCase):
         source = self.seed_case("behavioral-missed-meal")
         body = {"request_id": "pin", "input_revision": source["input_revision"], "lever": "missed_meal",
                 "subject": "habit:missed_meal", "analysis_generation": source["analysis_generation"]}
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2024, 5, 30, 23, 59)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2024, 5, 30, 23, 59)):
             response = self.client.post("/api/focus", headers=self.headers, json=body)
         self.assertEqual(response.status_code, 200, response.text)
         pinned = response.json()
@@ -532,8 +531,7 @@ class DurableApiTest(unittest.TestCase):
             store.upsert_cgm([{"EventDateTime": str(row.t.replace(year=2024, month=6)),
                                "Readings (CGM / BGM)": row.bg, "Description": "EGV"} for row in rows])
             revision = store.input_data_revision()
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2024, 6, 12)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2024, 6, 12)):
             response = self.client.post(f'/api/focus/{pinned["id"]}/resolve', headers=self.headers,
                 json={"request_id": "resolve", "input_revision": revision, "conclusion": "Recorded"})
         self.assertEqual(response.status_code, 200, response.text)
@@ -563,8 +561,7 @@ class DurableApiTest(unittest.TestCase):
                     "comparison_context": capture_comparison_context(store, at=datetime(2026, 6, 11),
                                                                      input_revision=store.input_data_revision())})
             revision = store.input_data_revision()
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2026, 6, 12)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2026, 6, 12)):
             response = self.client.post(f'/api/focus/{focus["id"]}/resolve', headers=self.headers,
                                        json={"request_id": "end", "input_revision": revision})
         self.assertEqual(response.status_code, 200, response.text)
@@ -622,8 +619,7 @@ class DurableApiTest(unittest.TestCase):
         with Store.open_readonly(self.path) as store:
             self.assertEqual(store.follow_up_record("focus", focus["id"]), record)
             self.assertEqual(store.input_data_revision(), revision)
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2024, 5, 9)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2024, 5, 9)):
             ended = self.client.post(f'/api/focus/{focus["id"]}/resolve', headers=self.headers,
                 json={"request_id": "pattern-end", "input_revision": revision,
                       "conclusion": "Synthetic observation"})

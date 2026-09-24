@@ -74,7 +74,7 @@ from .derived_artifacts import (
     rebuild_findings, rebuild_ic_history,
     rebuild_ic_block_evidence,
 )
-from .store import Store
+from .store import Store, wall_clock_now
 from .guidance import baseline_for, is_preference_subject
 
 logger = logging.getLogger(__name__)
@@ -890,7 +890,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         with Store.open(db_path) as store:
             try:
                 store.save_guidance_preference(
-                    subject, decided_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    subject, decided_at=wall_clock_now().strftime("%Y-%m-%d %H:%M:%S"),
                     reason=reason, expected_revision=current["input_revision"], **baseline)
             except ValueError as error:
                 raise HTTPException(status_code=409, detail=str(error)) from error
@@ -1543,7 +1543,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                         if source is not None and source["input_revision"] != store.input_data_revision():
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = _latest_instant(store) or datetime.now()
-                        recorded_at = datetime.now()
+                        recorded_at = wall_clock_now(after=store.latest_server_stamp())
                         admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
                                      if reconcile else None)
                         record = mutate(store, admission, source, now, recorded_at)
@@ -1608,7 +1608,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.put("/api/plan")
     def put_plan_endpoint(items: list = Body(..., embed=True), _: None = Depends(require_token)) -> dict:
-        updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        updated_at = wall_clock_now().strftime("%Y-%m-%d %H:%M:%S.%f")
         with Store.open(db_path) as store:
             try:
                 store.save_plan_draft(items, updated_at)

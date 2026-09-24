@@ -2,19 +2,26 @@
 
 The live ``pull_from_tconnect`` call is untestable without real credentials
 (CLAUDE.md), so these mock it out and cover the loop's own contract instead:
-fetch on startup, record success/failure without ever raising, then wait.
+fetch on startup, record success/failure without ever raising, then wait. The
+one class that runs the real pull checks a refusal that comes before any login,
+and mocks the credential read so no host can reach one.
 """
 
 import asyncio
 import contextlib
+import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from ciq_autotune.fetch_loop import run_fetch_loop, run_fetch_once
+from ciq_autotune.fetch_loop import FETCH_WINDOW_DAYS, run_fetch_loop, run_fetch_once
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 from ciq_autotune.store import Store
 from ciq_autotune.sync import PartialFetchError
+from tests.test_wall_clock import (
+    PROCESS_ZONE, PUMP_ZONE, assert_near, assert_window_end, pin_process_zone, pin_pump_zone, pump_now,
+)
 
 # Whether an attempt committed anything is read off the store's own durable
 # revision (#146), so a mock that merely raises proves nothing — it leaves the
@@ -147,6 +154,83 @@ class RunFetchOnceTest(unittest.TestCase):
         with Store.open(self.tmp.name) as store:
             status = store.fetch_status()
         self.assertEqual(status["last_error"], "boom")
+
+
+class FetchOnThePumpClockTest(unittest.TestCase):
+    """ADR 443: an attempt's stamps and window follow ``TIMEZONE_NAME``'s wall
+    clock, not the process's. The zones are pinned 25 h apart."""
+
+    def setUp(self):
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
+        self.addCleanup(self.tmp.close)
+        pin_process_zone(self, PROCESS_ZONE)
+        pin_pump_zone(self, PUMP_ZONE)
+
+    @patch("ciq_autotune.sync.pull_from_tconnect")
+    def test_success_stamps_the_pump_clock(self, pull):
+        pull.return_value = {"cgm_readings": 1}
+        run_fetch_once(self.tmp.name)
+        with Store.open(self.tmp.name) as store:
+            status = store.fetch_status()
+        assert_near(self, status["last_success_at"], pump_now())
+        assert_near(self, status["last_attempt_at"], pump_now())
+
+    @patch("ciq_autotune.sync.pull_from_tconnect")
+    def test_failed_attempt_stamps_the_pump_clock(self, pull):
+        pull.side_effect = RuntimeError("synthetic network failure")
+        run_fetch_once(self.tmp.name)
+        with Store.open(self.tmp.name) as store:
+            status = store.fetch_status()
+        assert_near(self, status["last_attempt_at"], pump_now())
+        self.assertIsNone(status["last_success_at"])
+
+    def _assert_window(self, pump):
+        with patch("ciq_autotune.sync.pull_from_tconnect", return_value={}) as pull:
+            run_fetch_once(self.tmp.name)
+        end = pull.call_args.kwargs["end"]
+        assert_window_end(self, end, pump)
+        self.assertEqual(pull.call_args.kwargs["start"], end - timedelta(days=FETCH_WINDOW_DAYS))
+
+    def test_window_with_the_process_a_day_ahead(self):
+        self._assert_window(PUMP_ZONE)
+
+    def test_window_with_the_process_a_day_behind(self):
+        pin_process_zone(self, PUMP_ZONE)
+        pin_pump_zone(self, PROCESS_ZONE)
+        self._assert_window(PROCESS_ZONE)
+
+
+class FetchRefusesUnusableZoneTest(unittest.TestCase):
+    """The real pull runs here, so the credential read is mocked to ``None``: no
+    host can reach a login. The zone refusal comes before that read, so the mock
+    is never called."""
+
+    def _status_after_fetch(self, **zone):
+        env = {key: value for key, value in os.environ.items()
+               if key != "TIMEZONE_NAME" and not key.startswith("TCONNECT_")}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {**env, **zone}, clear=True), \
+                patch("ciq_autotune.credentials.load_credentials", return_value=None) as credentials:
+            run_fetch_once(directory + "/synthetic.sqlite", key_path=directory + "/secret.key")
+            with Store.open(directory + "/synthetic.sqlite") as store:
+                status = store.fetch_status()
+        credentials.assert_not_called()
+        return status
+
+    def test_unset_zone_is_recorded_not_raised(self):
+        status = self._status_after_fetch()
+        self.assertIn("TIMEZONE_NAME", status["last_error"])
+        self.assertIsNotNone(status["last_attempt_at"])
+        self.assertIsNone(status["last_success_at"])
+
+    def test_unloadable_zone_is_recorded_on_the_process_clock(self):
+        pin_process_zone(self, "UTC")
+        for name in ("Not/AZone", "America"):
+            with self.subTest(TIMEZONE_NAME=name):
+                status = self._status_after_fetch(TIMEZONE_NAME=name)
+                self.assertIn("TIMEZONE_NAME", status["last_error"])
+                assert_near(self, status["last_attempt_at"], datetime.now())
+                self.assertIsNone(status["last_success_at"])
 
 
 class RunFetchLoopTest(unittest.IsolatedAsyncioTestCase):

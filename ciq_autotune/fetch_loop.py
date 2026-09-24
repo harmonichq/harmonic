@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 from typing import Callable, Optional
 
 from .credentials import DEFAULT_KEY_PATH
-from .store import Store
+from .store import Store, wall_clock_now
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,12 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
     that committed nothing returns ``None``."""
     from . import sync as sync_mod
 
-    end = date.today()
+    # One reading on the pump's wall clock stamps the attempt and ends its window
+    # (ADR 443), whatever zone this process runs in.
+    reading = wall_clock_now()
+    end = sync_mod.window_end(reading)
     start = end - timedelta(days=days)
-    attempted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    attempted_at = reading.strftime("%Y-%m-%d %H:%M:%S")
     with Store.open(db_path) as store:
         # The store's durable revision advances inside every upsert's own
         # transaction, so comparing it against this baseline says whether the

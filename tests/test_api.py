@@ -589,8 +589,7 @@ class ApiTest(unittest.TestCase):
     def test_applying_twice_in_the_same_second_returns_409_not_500(self):
         self.client = _guidance_client(self, "basal-raise")
         items = _source_plan_items(self.client, "basal_rate")
-        with patch("ciq_autotune.api.datetime") as clock:
-            clock.now.return_value = datetime(2026, 1, 1)
+        with patch("ciq_autotune.api.wall_clock_now", return_value=datetime(2026, 1, 1)):
             self.client.put("/api/plan", json={"items": items})
             self.assertEqual(self.client.post("/api/plan/apply").status_code, 200)
             self.client.put("/api/plan", json={"items": items})
@@ -1937,10 +1936,9 @@ class CachePreWarmTest(unittest.TestCase):
         builds = []
         # Both fresh builds carry a wall-clock ``generated_at``. Freeze that input so
         # this remains a byte-for-byte adapter test rather than a scheduler-speed test.
-        with patch("ciq_autotune.analyze.datetime") as analysis_datetime, \
+        with patch("ciq_autotune.analyze.wall_clock_now", return_value=datetime(2026, 6, 30, 12, 0)), \
              patch.object(api_mod, "analyze", side_effect=lambda *args, **kwargs:
                           builds.append(1) or real(*args, **kwargs)):
-            analysis_datetime.now.return_value = datetime(2026, 6, 30, 12, 0)
             with TestClient(self.app) as client:
                 direct = client.get("/api/analyze", params={"window": 30, "pool": True})
                 self.assertEqual(direct.status_code, 200)

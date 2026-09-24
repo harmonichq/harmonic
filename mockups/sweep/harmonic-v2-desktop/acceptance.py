@@ -544,7 +544,7 @@ class Clock(datetime):
     @classmethod
     def now(cls, tz=None):
         return clock if tz is None else clock.astimezone(tz)
-with patch.object(watched_change, 'datetime', Clock):
+with patch.object(watched_change, 'datetime', Clock), patch.object(watched_change, 'wall_clock_now', lambda after=None: clock):
     generate(Path(out), case)
     reference = Path(out).with_suffix('.reference.sqlite')
     generate(reference, case)

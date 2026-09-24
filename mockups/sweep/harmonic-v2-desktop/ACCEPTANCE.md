@@ -330,8 +330,9 @@ is shared across commands, shards or commits.
 For each non-showcase registry case it generates two stores and compares
 logical SQLite dumps using the existing generator's dump rule. `c3-history`
 generation stamps observation metadata with the wall clock; the comparison
-freezes `watched_change.datetime` for both generations instead of dropping
-fields. Normal replay generation uses its existing clock. The check also
+freezes `watched_change.wall_clock_now` for the observation stamp and
+`watched_change.datetime` for the data-time anchor, for both generations,
+instead of dropping fields. Normal replay generation uses its existing clock. The check also
 mutates each story copy and its derived file, then requires the next copy to
 match the prepared template byte-for-byte with no derived file. CI runs this
 browser-free check without running the removed copy-then-reconcile benchmark.

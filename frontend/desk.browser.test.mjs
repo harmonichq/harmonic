@@ -664,6 +664,178 @@ test(`a pending Plan shows in the watch panel with Open Changes and leaves no no
 });
 }
 
+/* #460 — the watch dock and the staged marks follow the Plan draft (ADR 460).
+   A stateful Plan: GET answers the saved draft as it stood when the request was
+   issued, PUT saves it, and the guidance read serves the same draft, as the
+   server does. `holdPut` and `holdGets` park requests until released, so a test
+   can read the desk mid-save or while a Plan read is late. The frozen browser
+   analysis stages exactly one basal slot, 07:00. */
+const SLOT_0700 = { type: 'basal', key: 14, start_min: 420, label: '07:00', current: 1.041, recommended: 1.131, value: 1.131 };
+function statefulPlan(items = []) {
+  const saved = { items, updated_at: items.length ? '2024-06-16 09:00:00.000000' : null };
+  const draft = () => structuredClone(saved);
+  const gates = { put: null, gets: null };
+  let inflight = 0;
+  let saves = 0;
+  const park = () => { let release; const promise = new Promise((resolve) => { release = resolve; }); return { promise, release }; };
+  const answer = (route, body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  return {
+    saves: () => saves,
+    quiet: () => inflight === 0,
+    holdPut() { gates.put = park(); return gates.put.release; },
+    holdGets() { const gate = park(); gates.gets = gate; return () => { gates.gets = null; gate.release(); }; },
+    async install(page) {
+      await page.route('**/api/plan', async (route) => {
+        inflight += 1;
+        try {
+          if (route.request().method() === 'PUT') {
+            const { items: next } = route.request().postDataJSON();
+            const gate = gates.put; gates.put = null;
+            if (gate) await gate.promise;
+            saves += 1;
+            Object.assign(saved, { items: next, updated_at: `2024-06-16 09:${String(saves).padStart(2, '0')}:00.000000` });
+            return await answer(route, draft());
+          }
+          const body = draft();
+          if (gates.gets) await gates.gets.promise;
+          return await answer(route, body);
+        } finally { inflight -= 1; }
+      });
+      await page.route('**/api/guidance', (route) => answer(route, {
+        disposition: saved.items.length ? 'draft' : 'quiet', selected: null, candidates: [],
+        input_revision: followUp.input_revision, draft: draft(),
+      }));
+    },
+  };
+}
+const CELL_0700 = '#lane > button.lane-cell[aria-label^="07:00 basal slot,"]';
+/** The stage control's own words, without its "staged for Plan" sub-line. */
+const stageLabel = (page) => page.locator('#level .stagebtn').evaluate((button) => {
+  const words = button.cloneNode(true);
+  words.querySelector('.sub')?.remove();
+  return words.textContent.trim();
+});
+const dockKind = (page) => page.locator('.inspector > .watch .kind').innerText();
+// The loading frame first: while a return checks the store, the parked desk is
+// still in the document with its settled #level.
+const deskSettled = (page) => page.waitForFunction(() => !document.querySelector('.gf-loading')
+  && document.querySelector('#level')?.dataset.loading === 'false'
+  && document.querySelectorAll('#lane > button.lane-cell').length === 48, null, { timeout: 30000 });
+async function open0700(page) {
+  await page.locator(CELL_0700).click();
+  await page.locator('#level .stagebtn').waitFor({ timeout: 30000 });
+}
+/** Every Plan read and write the stub holds has answered, and stayed answered. */
+async function planQuiet(page, plan) {
+  for (let calm = 0; calm < 4;) {
+    await page.waitForTimeout(150);
+    calm = plan.quiet() ? calm + 1 : 0;
+  }
+}
+
+test('#460 · a fresh Diagnose seat whose Plan read lands last marks the saved draft staged', async () => {
+  const plan = statefulPlan([SLOT_0700]);
+  let releasePlan;
+  const desk = await openDesk({ beforeNavigate: async (page) => {
+    await plan.install(page);
+    releasePlan = plan.holdGets();
+  } });
+  const { page } = desk;
+  try {
+    await deskSettled(page);
+    releasePlan();
+    await planQuiet(page, plan);
+    await page.locator(`${CELL_0700}[data-staged="true"]`).waitFor({ timeout: 5000 }).catch(() => {});
+    assert.equal(await page.locator(CELL_0700).getAttribute('data-staged'), 'true',
+      'the 07:00 lane cell is marked staged once the late Plan read lands');
+    await open0700(page);
+    assert.equal(await stageLabel(page), 'Staged · Undo');
+    assert.equal(await dockKind(page), 'Plan · staged');
+  } finally { await desk.close(); }
+});
+
+test('#460 · an Undo whose save is in flight does not read "Plan · staged"', async () => {
+  const plan = statefulPlan([SLOT_0700]);
+  const desk = await openDesk({ beforeNavigate: (page) => plan.install(page) });
+  const { page } = desk;
+  try {
+    await deskSettled(page);
+    await open0700(page);
+    await page.locator('#level .stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+    assert.equal(await dockKind(page), 'Plan · staged', 'premise: the saved 07:00 change reads staged');
+    const releasePut = plan.holdPut();
+    await page.locator('#level .stagebtn').click();
+    await page.waitForTimeout(300);
+    assert.notEqual(await dockKind(page), 'Plan · staged', 'mid-Undo the dock does not report the pre-press draft');
+    releasePut();
+    await planQuiet(page, plan);
+  } finally { await desk.close(); }
+});
+
+test('#460 guard · undoing the only staged change leaves nothing watched', async () => {
+  const plan = statefulPlan();
+  const desk = await openDesk({ beforeNavigate: (page) => plan.install(page) });
+  const { page } = desk;
+  try {
+    await deskSettled(page);
+    await open0700(page);
+    await page.locator('#level .stagebtn[data-staged="false"]').click();
+    await page.locator('#level .stagebtn[data-staged="true"]').waitFor({ timeout: 30000 });
+    await planQuiet(page, plan);
+    await page.locator('#level .stagebtn[data-staged="true"]').click();
+    await page.locator('#level .stagebtn[data-staged="false"]').waitFor({ timeout: 30000 });
+    await planQuiet(page, plan);
+    assert.equal(plan.saves(), 2, 'premise: both saves settled');
+    assert.equal(await dockKind(page), 'Nothing being watched');
+    assert.equal(await stageLabel(page), 'Stage change');
+  } finally { await desk.close(); }
+});
+
+test('#460 guard · a retained return while a stage save is held keeps the pressed mark', async () => {
+  const plan = statefulPlan();
+  const desk = await openDesk({ beforeNavigate: (page) => plan.install(page) });
+  const { page } = desk;
+  try {
+    await deskSettled(page);
+    await open0700(page);
+    const releasePut = plan.holdPut();
+    await page.locator('#level .stagebtn[data-staged="false"]').click();
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+    await deskSettled(page);
+    assert.equal(plan.saves(), 0, 'premise: the stage save is still held');
+    assert.equal(await page.locator(CELL_0700).getAttribute('data-staged'), 'true',
+      'a refresh mid-save does not undo the press\'s mark');
+    assert.equal(await stageLabel(page), 'Staged · Undo');
+    releasePut();
+    await planQuiet(page, plan);
+  } finally { await desk.close(); }
+});
+
+test('#460 · a retained return during a stage save never lets a pre-press Plan read unmark the change', async () => {
+  const plan = statefulPlan();
+  const desk = await openDesk({ beforeNavigate: (page) => plan.install(page) });
+  const { page } = desk;
+  try {
+    await deskSettled(page);
+    await open0700(page);
+    const releasePut = plan.holdPut();
+    await page.locator('#level .stagebtn[data-staged="false"]').click();
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    const releaseGets = plan.holdGets();
+    await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+    await deskSettled(page);
+    releasePut();
+    for (let wait = 0; plan.saves() === 0 && wait < 100; wait += 1) await page.waitForTimeout(50);
+    assert.equal(plan.saves(), 1, 'premise: the stage save settled');
+    await page.waitForTimeout(300);
+    releaseGets();
+    await planQuiet(page, plan);
+    assert.equal(await page.locator(CELL_0700).getAttribute('data-staged'), 'true',
+      'the saved 07:00 change stays marked staged');
+  } finally { await desk.close(); }
+});
+
 for (const viewport of ['1280x720', '1440x900']) {
   test(`Filter matches Window while resting, expanded, and Findings-loading at ${viewport}`, async () => {
     const desk = await openDesk({ viewport });

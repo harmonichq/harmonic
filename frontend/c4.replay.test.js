@@ -105,6 +105,13 @@ test('S177–S179 are unique app-only #451 stories on the isf-strengthen store',
   }
 });
 
+test('S186 is a unique app-only #460 story on the basal-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S186');
+  assert.equal(entries.length, 1, 'S186 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 460');
+  assert.equal(storyCase('S186'), 'basal-lower');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

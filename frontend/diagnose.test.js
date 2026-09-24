@@ -1377,6 +1377,71 @@ test('ADR 428 · a reader press stops the superseded restoration walk', async ()
   } finally { globalThis.window = previous; globalThis.MutationObserver = previousMO; }
 });
 
+/* ------------------------------------------------------------------ #460 */
+
+// A transport whose Plan and guidance reads serve one saved draft; `gate`
+// holds the Plan read, and `log` records each read's path as it is issued.
+function draftTransport(draft, { gate = null, log = [] } = {}) {
+  return async (url) => {
+    const path = new URL(url, 'http://desk.invalid').pathname;
+    log.push(path);
+    const ok = body => ({ ok: true, status: 200, json: async () => body });
+    if (path === '/api/plan') { await gate; return ok(draft); }
+    if (path === '/api/guidance') return ok({ disposition: 'draft', selected: null, candidates: [], draft });
+    return ok({ items: [], history: [] });
+  };
+}
+const DRAFT_460 = { items: [{ type: 'basal', start_min: 420, key: 14, label: '07:00', current: 0.9, value: 0.8 }], updated_at: 't460' };
+
+test('#460 · a cold seat whose Plan read lands after the payload hands the view the served draft', async () => {
+  const previousFetch = fetchReply;
+  let releasePlan;
+  fetchReply = draftTransport(DRAFT_460, { gate: new Promise(resolve => { releasePlan = resolve; }) });
+  try {
+    let callbacks;
+    const destination = createDiagnoseDestination({ api: source().api,
+      createView(options) { callbacks = options.callbacks; return { setData() {}, leaveSurface() {}, refresh() {}, setError() {} }; } });
+    const seat = host();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    assert.ok(seat.node, 'premise: the payload settled and seated the desk before the Plan read answered');
+    releasePlan();
+    await flush();
+    assert.deepEqual(callbacks.planDraft?.(), DRAFT_460, 'the callbacks answer the served draft');
+    destination.leave();
+  } finally { fetchReply = previousFetch; }
+});
+
+test('#460 · a retained return re-reads Plan state and guidance, then refreshes the view', async () => {
+  const previous = globalThis.window;
+  const previousFetch = fetchReply;
+  const events = [];
+  fetchReply = draftTransport(DRAFT_460, { log: events });
+  const page = browser();
+  globalThis.window = page;
+  const served = source(); const seat = host(); seat.ownerDocument.defaultView = page;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() { events.push('refresh'); }, setError() {} }) });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {}, context: routed(page) });
+    await flush();
+    park(destination, seat, 0, routed(page));
+    events.length = 0; served.requests.length = 0;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.deepEqual(served.requests, ['status'], 'premise: the input revision is unchanged, so no payload read');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await afterHandlers();
+    const lastRead = Math.max(events.lastIndexOf('/api/plan'), events.lastIndexOf('/api/guidance'));
+    assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
+      `the return re-reads Plan state and guidance: ${events.join(', ')}`);
+    assert.ok(events.lastIndexOf('refresh') > lastRead, `the view refreshes after both reads: ${events.join(', ')}`);
+    destination.leave();
+  } finally { globalThis.window = previous; fetchReply = previousFetch; }
+});
+
 // Last: it seats the desk's one router on a stand-in surface for this module.
 test('ADR 428 · the in-place write renames the current entry with no navigation, push, render or focus, and the next render hands Diagnose that context', async () => {
   const { startDesk, registerDestination, render, view: desk } = await import('./routes.js');

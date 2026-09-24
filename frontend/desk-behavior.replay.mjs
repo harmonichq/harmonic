@@ -3258,6 +3258,10 @@ export const S178 = appOnly('ADR 451',
 // STORY:harmonic-v2-desktop:S179
 export const S179 = appOnly('ADR 451',
   '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
+// STORY:harmonic-v2-desktop:S186
+export const S186 = appOnly('ADR 460',
+  '#460 the watch dock and the staged marks follow the Plan draft after a return, a reload and a draft replaced elsewhere',
+  C4_STORIES.S186);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3325,6 +3329,7 @@ export const REGISTRY = [
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
+  ['S186', S186, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -1371,14 +1371,24 @@ function boot(root, data, callbacks, signal) {
      in the same three descriptor shapes. This surface still decides nothing
      about what MAY be staged — that stays with the analysis (term 14), and a
      held slot yields no Plan item, so it can never seed. No callback, no
-     marks. */
-  for (const cell of lane.cells) {
-    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+     marks. ADR 460 point 5: every seed starts from nothing, so a mark the draft
+     no longer holds drops. It runs at boot, on every `refresh()` while no stage
+     save is in flight, and once an accepted save settles — the draft can change
+     after boot (a Plan read landing late, a save in Changes, a draft replaced
+     elsewhere), and the verdict is only worth what it is asked again. */
+  function seedMarks() {
+    staged.clear();
+    icStaged.clear();
+    isfStaged = false;
+    for (const cell of lane.cells) {
+      if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+    }
+    for (const cell of icBlocks) {
+      if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
+    }
+    if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
   }
-  for (const cell of icBlocks) {
-    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
-  }
-  if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
+  seedMarks();
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the gate edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
@@ -3215,29 +3225,39 @@ function boot(root, data, callbacks, signal) {
      surface painted itself unstaged. Dropping the re-entrant click is what keeps
      every restore point settled with respect to Diagnose's own staging. The
      optimistic paint is untouched — the
-     guard is released on the answer, not on the paint. */
+     guard is released on the answer, not on the paint. ADR 460 point 4: the
+     flag rises BEFORE the toggle and its paint, so that paint already tells the
+     dock a save is in flight and it never reads the served draft from before
+     the press. ADR 460 point 5: once an accepted save settles, the marks are
+     asked again and repainted, because a seated Diagnose is not refreshed by
+     the guidance render the save triggers; this is also what drops the mark of
+     a setting the save replaced. */
   let saveInFlight = false;
   async function stageAndSettle(toggle, item, isStaged) {
     if (saveInFlight) return;
-    toggle();
-    // PORT: reach the app's Plan draft as well as the local tally
-    const answer = callbacks.stage?.(item, isStaged());
-    paint();
     saveInFlight = true;
+    let accepted = false;
     try {
-      if (await answer === false) { toggle(); paint(); }
+      toggle();
+      // PORT: reach the app's Plan draft as well as the local tally
+      const answer = callbacks.stage?.(item, isStaged());
+      paint();
+      if (await answer === false) { toggle(); paint(); } else accepted = true;
     } finally { saveInFlight = false; }
+    if (accepted) { seedMarks(); paint(); }
   }
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
      it is the pane's floor, not the level's content. The watched object's
      precedence is the server's (Trial XOR Focus, pump wins). Below it sits the
      recorded Plan awaiting the pump, as the guidance read serves it (#431), and
-     below that this surface's own staged draft, which is what the deleted
-     header used to report. */
+     below that the staged Plan, which is what the deleted header used to
+     report: this surface's own marks when they name a change, else the served
+     Plan draft (ADR 460), which the dock skips while a stage save is in flight. */
   function paintWatch() {
     paintWatchDock(el('watch-dock'),
-      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor() }),
+      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor(),
+        draft: callbacks.planDraft?.(), saving: saveInFlight }),
       (to) => callbacks.go?.(to));
   }
 
@@ -4272,7 +4292,15 @@ function boot(root, data, callbacks, signal) {
     paintTiles();
   }
 
-  return { destroy() { chart = null; disposeTiles(); }, repaint: paint, leaveSurface };
+  /* The app's `refresh()`: the served state may have moved under the marks, so
+     they are asked again first — never mid-save, where the press's own mark is
+     the truth until the answer lands (ADR 460 point 5). */
+  function refresh() {
+    if (!saveInFlight) seedMarks();
+    paint();
+  }
+
+  return { destroy() { chart = null; disposeTiles(); }, repaint: paint, refresh, leaveSurface };
 }
 
 /* ---------------------------------------------------------------------------
@@ -4283,8 +4311,9 @@ function boot(root, data, callbacks, signal) {
 /**
  * Mount the ported workstation into `root`.
  *
- * Interface: `setData` re-renders from a fresh API payload, `refresh` repaints
- * the mounted workspace in place (the theme watcher uses it, because the ported
+ * Interface: `setData` re-renders from a fresh API payload, `refresh` asks the
+ * staged marks again (unless a stage save is in flight) and repaints the mounted
+ * workspace in place (the theme watcher uses it, because the ported
  * chartColors() samples the live stylesheet), `setError` replaces the surface
  * with a message. The behaviour behind it is the locked mock's, unedited.
  */
@@ -4293,6 +4322,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   let captures = null;
   let teardown = null;
   let repaint = null;
+  let refreshMounted = null;
   let leaveSurface = null;
   let aborter = null;
 
@@ -4311,6 +4341,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaint = null;
+    refreshMounted = null;
     leaveSurface = null;
     root.className = 'dw dw-error';
     root.textContent = '';
@@ -4358,6 +4389,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   function render() {
     if (teardown) { teardown(); teardown = null; }
     repaint = null;
+    refreshMounted = null;
     leaveSurface = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
@@ -4396,6 +4428,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
     repaint = booted.repaint;
+    refreshMounted = booted.refresh;
     leaveSurface = booted.leaveSurface;
   }
 
@@ -4414,7 +4447,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   return {
     setData(nextPayload) { payload = nextPayload; render(); },
     setError(message) { showError(message); },
-    refresh() { repaint?.(); },
+    refresh() { refreshMounted?.(); },
     /* A day's real trace resolved: repaint in place off the live boot instance,
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */

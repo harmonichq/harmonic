@@ -11,7 +11,7 @@ import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
-import { pendingPlan } from './guidance.js';
+import { pendingPlan, planDraft } from './guidance.js';
 import { formatStartMin } from './plan.js';
 
 // The held Occurrence's own "Open … in Day" control: the last control in the
@@ -94,6 +94,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let parkedOn = null;
   let parkedUnmatched = false;
   let returning = null;
+  // The promise the workstation's last stage press returned, while its save is
+  // pending (ADR 460 point 7): a retained return's Plan re-read waits it out.
+  let staging = null;
 
   // Context names a served identity or an explicit slot; the window is the
   // route's own string coordinate. Equal on all three means "the same return".
@@ -151,16 +154,20 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     ((held && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
   }
 
-  async function read() {
-    if (pending) return pending;
-    error = null;
-    // The one in-place repaint waits for the Plan state and for the Focus read,
-    // which carries the guidance read whose served pending Plan the watch panel
-    // paints (#431). Both reads start now, side by side.
+  // The one in-place repaint waits for the Plan state and for the Focus read,
+  // which carries the guidance read whose served pending Plan and Plan draft the
+  // watch panel paints (#431, ADR 460). Both reads start side by side.
+  function readPlan() {
     Promise.all([
       readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); }),
       loadPlanState(),
     ]).then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
+  }
+
+  async function read() {
+    if (pending) return pending;
+    error = null;
+    readPlan();
     // The one status read this call owns: answered before the payload reads
     // are issued, so the recorded revision is at or before every payload
     // snapshot and a write landing during them always moves the revision the
@@ -344,10 +351,16 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       readingScroll = null;
     });
     workstation = createView({ root, callbacks: {
-      stage: (item, desired) => stageEvidence(item, desired, payload?.analyze),
+      stage: (item, desired) => {
+        const answer = stageEvidence(item, desired, payload?.analyze);
+        staging = answer;
+        answer.finally(() => { if (staging === answer) staging = null; });
+        return answer;
+      },
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),
       retry: read,
       pendingPlan,
+      planDraft,
       settings: () => openUtility('settings'),
       caseChanged,
       // A parked Diagnose is inert: the workstation's page-level keys act only
@@ -606,6 +619,12 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         return;
       }
       workstation.refresh(); showFocusAction();
+      // ADR 460 point 7: a draft save does not move the input revision, so a
+      // draft written while Diagnose was parked is read here, and the refresh
+      // it ends with re-seeds the staged marks. Never while a stage save is
+      // pending: a read issued before it commits could land after it and hand
+      // back the pre-press draft; the save's own settle re-seeds instead.
+      if (!staging) readPlan();
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;
       if (moved) writeCase();

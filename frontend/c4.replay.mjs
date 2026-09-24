@@ -2148,6 +2148,142 @@ const changesWords451 = page => page.evaluate(() => {
   };
 });
 
+/* ---- #460: the watch dock and the staged marks follow the Plan draft (S186) ----
+   ADR 460. Four legs on one basal-lower store, each from an empty draft on a
+   fresh load, run in turn; the story fails once, naming every leg that failed,
+   so a base run records each leg's own verdict on its status line. */
+const DOCK460 = '.inspector > .watch';
+/** Diagnose on screen with its desk read: no loading frame (a return's status
+    check stands one over the parked desk), the rail read and the lane drawn. */
+const diagnoseSeated460 = page => page.waitForFunction(() => !document.querySelector('.gf .gf-loading')
+  && document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'diagnose'
+  && document.querySelector('#level')?.dataset.loading === 'false'
+  && document.querySelectorAll('#lane > button.lane-cell').length > 0, null, { timeout: 30000 });
+async function fresh460(page) {
+  const cleared = await page.request.put(new URL('/api/plan', page.url()).href, { data: { items: [] } });
+  assert.equal(cleared.status(), 200, 'S186 premise: the draft clears before each leg');
+  await page.goto(new URL('/', page.url()).href, { waitUntil: 'domcontentloaded' });
+  await diagnoseSeated460(page);
+}
+const dock460 = page => page.locator(DOCK460).evaluate(node => ({
+  kind: node.querySelector('.kind')?.textContent, what: node.querySelector('.what')?.textContent }));
+async function dockStaged460(page, leg) {
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await dock460(page)).kind, 'Plan · staged', `S186 ${leg}: the dock must read "Plan · staged"`);
+  }, `S186 ${leg}: the staged dock`);
+}
+/** The open panel's stage control, in its own words without the sub-line. */
+const stageWords460 = page => page.locator('#level .stagebtn').evaluate(button => {
+  const words = button.cloneNode(true);
+  words.querySelector('.sub')?.remove();
+  return words.textContent.trim();
+});
+/** Stage the served lower run from Diagnose's lane, and return its staged cells
+    once the save and the guidance read it ends with have both answered. */
+async function stageRun460(page, ctx) {
+  const guided = () => ctx.requests.filter(request => request.path === '/api/guidance').length;
+  const before = guided();
+  await page.locator('#lane > .lane-cell[data-verdict="down"]').first().click();
+  await press(page, '#level .stagebtn[data-staged="false"]');
+  await waitForReplayAssertion(async seen => {
+    assert.ok(seen((await read(page, '/api/plan')).items.length) > 0, 'S186 premise: the stage save lands');
+    assert.ok(seen(guided()) > before, "S186 premise: the save's guidance read answers");
+    assert.equal(seen(await page.locator('#level .stagebtn').getAttribute('data-staged')), 'true',
+      'S186 premise: the press stages the run');
+  }, 'S186 the stage from Diagnose settles');
+  return page.locator('#lane > .lane-cell[data-staged="true"]').evaluateAll(cells => cells.map(cell => cell.dataset.cell));
+}
+async function toChanges460(page) {
+  await press(page, 'nav.v2-nav [data-destination="changes"]');
+  await page.waitForFunction(() => document.querySelector('nav.v2-nav [aria-current="page"]')?.dataset.destination === 'changes'
+    && !document.querySelector('.gf .gf-loading') && document.querySelector('.gf-stage'), null, { timeout: 30000 });
+}
+/** The change records, opened in place as a history step: a saved draft seats
+    Changes on the Plan, whose draft offers no change-record door of its own. */
+async function toRecords460(page) {
+  await page.evaluate(() => { history.pushState(null, '', '/changes?subject=history'); dispatchEvent(new PopStateEvent('popstate')); });
+  await page.locator('[aria-label="Change records"]').waitFor({ timeout: 30000 });
+}
+async function toDiagnose460(page) {
+  await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+  await diagnoseSeated460(page);
+}
+const LEGS460 = [
+  ['leg 1, a draft saved in Changes', async (page) => {
+    await C2_STORIES.stageIntoPlan(page);
+    await press(page, '[data-set="save-draft"]');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.gf-stage .gf-kicker b').textContent()), 'Draft saved',
+        'S186 leg 1 premise: the draft saves');
+    }, 'S186 leg 1 the draft saves');
+    await toRecords460(page);
+    await toDiagnose460(page);
+    await dockStaged460(page, 'leg 1');
+    await page.locator(`${DOCK460} .go`).click();
+    await waitForReplayAssertion(async seen => {
+      const route = parseRoute(new URL(seen(page.url())));
+      assert.equal(route.destination, 'changes', 'S186 leg 1: "Open Changes ›" must land on Changes');
+      assert.equal(route.context.subject, 'plan', 'S186 leg 1: "Open Changes ›" must land on the Plan');
+    }, 'S186 leg 1 the dock opens the Plan');
+    await page.locator('.gf-plan').waitFor({ timeout: 30000 });
+  }],
+  ['leg 2, a return after staging on Diagnose', async (page, ctx) => {
+    await stageRun460(page, ctx);
+    await toChanges460(page);
+    await toRecords460(page);
+    await toDiagnose460(page);
+    await dockStaged460(page, 'leg 2');
+  }],
+  ['leg 3, a reload before the return, its Plan read landing last', async (page, ctx) => {
+    await stageRun460(page, ctx);
+    await toChanges460(page);
+    await toRecords460(page);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('[aria-label="Change records"]').waitFor({ timeout: 30000 });
+    const held = [];
+    const hold = route => (route.request().method() === 'GET' ? held.push(route) : route.fallback());
+    await page.route('**/api/plan', hold);
+    try {
+      await toDiagnose460(page);
+      assert.ok(held.length > 0, 'S186 leg 3 premise: the Plan read is held until the payload has settled');
+    } finally {
+      await page.unroute('**/api/plan', hold);
+      for (const route of held.splice(0)) await route.continue();
+    }
+    let failure = null;
+    try { await dockStaged460(page, 'leg 3'); } catch (error) { failure = error; }
+    // Task 10's render is this leg's endpoint, base and branch alike.
+    await capture(page, ctx, 'S186-leg3', 'basal-lower');
+    if (failure) throw failure;
+  }],
+  ['leg 4, a draft replaced through the Plan route', async (page, ctx) => {
+    const run = await stageRun460(page, ctx);
+    assert.ok(run.length, 'S186 leg 4 premise: the staged run marks its lane cells');
+    const analysis = await read(page, '/api/analyze', { window: 30, pool: 1 });
+    const other = analysis.basal.find(slot => slot.asserts_move !== true && slot.current != null);
+    assert.ok(other, 'S186 leg 4 premise: the analysis serves a basal slot it does not let stage');
+    await toChanges460(page);
+    const replaced = await page.request.put(new URL('/api/plan', page.url()).href,
+      { data: { items: [{ type: 'basal', start_min: other.slot * 30, value: other.current }] } });
+    assert.equal(replaced.status(), 200, 'S186 leg 4 premise: the Plan route replaces the draft');
+    await toDiagnose460(page);
+    const title = `Basal ${hhmm(other.slot * 30)}`;
+    await waitForReplayAssertion(async seen => {
+      const marks = seen(await page.locator('#lane > .lane-cell').evaluateAll((cells, ids) =>
+        cells.filter(cell => ids.includes(cell.dataset.cell)).map(cell => cell.dataset.staged), run));
+      assert.ok(marks.length === run.length && marks.every(mark => mark === 'false'),
+        "S186 leg 4: the replaced run's lane cells must drop their staged mark");
+      const dock = seen(await dock460(page));
+      assert.equal(dock.kind, 'Plan · staged', 'S186 leg 4: the dock must read "Plan · staged"');
+      assert.equal(dock.what, title, `S186 leg 4: the dock must name the new row, ${title}`);
+    }, 'S186 leg 4 the marks and the dock follow the replaced draft');
+    await page.locator(`#lane > .lane-cell[data-cell="${run[0]}"]`).click();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await stageWords460(page)), 'Stage change', "S186 leg 4: the run's control must read \"Stage change\"");
+    }, "S186 leg 4 the run's control");
+  }],
+];
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -3952,6 +4088,21 @@ export const C4_STORIES = {
         }
       }, `S176 Focus record ${row.id} names its behavior`);
     }
+  },
+  async S186(page, ctx) {
+    const failures = [];
+    for (const [leg, run] of LEGS460) {
+      try {
+        await fresh460(page);
+        await run(page, ctx);
+        process.stdout.write(`# S186 ${leg}: pass\n`);
+      } catch (error) {
+        const reason = String(error?.message || error).split('\n')[0];
+        failures.push(`${leg}: ${reason}`);
+        process.stdout.write(`# S186 ${leg}: fail — ${reason}\n`);
+      }
+    }
+    failOnce('S186', 'the watch dock and the staged marks must follow the Plan draft', failures);
   },
 };
 

@@ -17,7 +17,7 @@ This list is the "touched stories" below.
   `frontend/desk-behavior.replay.mjs`, re-inventory the dock's five states and
   the stage control's two labels in the served app, and record any observed
   behavior with no story before designing.
-- [ ] 2. Node tests in `frontend/watched-change-dock.test.js`. Failing-first, each
+- [x] 2. Node tests in `frontend/watched-change-dock.test.js`. Failing-first, each
   seen to fail on the unchanged dock:
   - a served draft with items, with no watch, no recorded Plan, no marks and
     `saving` false, reads "Plan · staged", named by `draftName` (ADR 460
@@ -31,11 +31,11 @@ This list is the "touched stories" below.
   own marks, when they name a change, keep today's title, direction and values;
   a watched Trial, a watched Focus and a recorded Plan each outrank a served
   draft.
-- [ ] 3. In `frontend/watched-change-dock.js`, give `watchDockView` the inputs
+- [x] 3. In `frontend/watched-change-dock.js`, give `watchDockView` the inputs
   `draft` and `saving` and export `draftName(draft) → string` (ADR 460 points 2
   and 3). #459's stage control reuses `draftName`. Update the module's header
   comment so it names the served draft as the staged state's fallback source.
-- [ ] 4. Failing-first tests in `frontend/diagnose.test.js`, each seen to fail on
+- [x] 4. Failing-first tests in `frontend/diagnose.test.js`, each seen to fail on
   the unchanged destination: on a cold seat whose `/api/plan` answer lands after
   the payload reads, once both settle, the callbacks the destination hands the
   view carry a `planDraft` that answers the served draft; and on a retained

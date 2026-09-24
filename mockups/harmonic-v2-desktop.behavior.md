@@ -5355,3 +5355,70 @@ Additional handler inventory for this amendment:
 Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself from here"); coordinator ruling R451, as widened at #451's whole-diff review (2026-09-24): user copy that reaches the desk joins no clauses with an em dash (ADR 451, "Desk copy carries no prose em dash", `openspec/changes/archive/2026-09-24-setting-concern-labels/design.md`). The persistent advisory line S4 asserts now reads "Advisory only. Review with your clinician before changing pump settings." It replaces the lock's verbatim "Advisory only — review with your clinician before changing pump settings.", which ADR 451 supersedes; the lock carries a dated amendment line under that string. Replay fn S4 compares the new line exactly. Identity, destinations, Log carbs and utilities keep their assertions. This amends one story under the widening; the section's opening "No story is amended or retired" held for S177–S179. Base b03431d2 with this branch's harness laid over it fails S4 at "the advisory line drifted" at both sizes, and branch 678fb544 passes it at 1280x720 and 1440x900; coordinator-run 2026-09-24. S4 runs again on the trunk in the complete ledger, on the commit that is pushed.
 
 No other story's asserted text moved under this widening. S42 reads "Re-key the flagged values on your pump" and "rechecks on the next fetch", and both remain. S142 counts the open ending's `[data-unavailable="ending"]` element, not its words. S153 reads "no direction asserted" in the basal panel, which remains. The findings queue's held-row prefix now reads "no direction asserted: <served reason>"; no story, replay or browser suite reads a held row's reason line. S178 reads only the values that lead the dock's detail line; the staged sentence after them now reads "Staged, not applied: nothing has changed on the pump", one character shorter.
+
+## #460 amendment — 2026-09-24, issue #460
+
+S186 is the fail-first obligation of ADR 460 (`openspec/changes/qa-round-2/design.md`):
+the Diagnose watch dock reads the guidance read's served Plan draft when the
+surface marks nothing as staged, and the surface's staged marks follow the Plan
+draft after a return, a reload and a draft replaced elsewhere. It is
+app-opener-only, like S177–S179, and runs on the manufactured `basal-lower` case
+store (`CASE_STORE_DIR`). Browser execution belongs to the coordinator at
+1280x720 and 1440x900. No existing story is amended or retired. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+writes the one release freeze block and reconciles the count line.
+
+Sanction: the AFK run's delegation (2026-09-24), recorded in ADR 460 ("decided
+autonomously during AFK run") rather than a quoted operator sentence. It covers
+S186 and nothing outside #460. The dock's precedence, its five kind labels, its
+"Open Changes ›" route and the staged title, direction and values S178 reads are
+unchanged.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 194 issued · 175
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-lower` emits.
+
+```
+S186 · The watch dock and Diagnose's staged marks follow the Plan draft. Leg 1:
+       after Diagnose is opened, the leading concern's action is staged and
+       saved in Changes, the change records are opened, and Diagnose is pressed
+       in the top nav; the dock reads "Plan · staged" and "Open Changes ›" lands
+       on the Plan. Leg 2: the basal run staged from Diagnose still reads
+       "Plan · staged" after the same round trip. Leg 3: as leg 2 with a reload
+       on the change records and the Plan read held until the Diagnose payload
+       has settled; the dock reads "Plan · staged". Leg 4: the staged run's
+       draft is replaced through the Plan route by one basal row at a slot the
+       analysis does not let stage; on return the run's lane cells carry
+       data-staged="false", its control reads "Stage change", and the dock
+       reads "Plan · staged" named "Basal ‹that slot›".
+  element:  .inspector > .watch .kind, .what, .go; #lane > .lane-cell[data-staged];
+            #level .stagebtn
+  source:   frontend/watched-change-dock.js watchDockView, draftName;
+            frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh;
+            frontend/diagnose.js readPlan, the retained return;
+            frontend/guidance.js planDraft
+  lock:     none (revise; ADR 460 in openspec/changes/qa-round-2/design.md)
+  data:     basal-lower; guidance leads with the lower basal run, which the
+            analysis lets stage, beside basal slots it does not
+  evidence: C4_STORIES.S186 → LEGS460; each leg clears the draft through
+            PUT /api/plan and reloads before it starts. Leg 1 stages through
+            [data-set="stage"], [data-set="open-plan"] and [data-set="save-draft"];
+            legs 2–4 stage through the lane's lower cell and its .stagebtn,
+            waiting for the save and its guidance read; the change records open
+            in place as a history step (a saved draft seats Changes on the Plan,
+            whose draft has no record door). Leg 3 holds GET /api/plan from the
+            Diagnose press until the desk has settled. Leg 4 reads /api/analyze
+            for a basal slot that does not assert. The story runs every leg and
+            fails once, naming each failed leg
+  status:   pending coordinator run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Watch dock staged line from the served draft | frontend/watched-change-dock.js watchDockView, draftName | S186 |
+| Staged marks asked again on refresh and after a settled save | frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh | S186 |
+| Retained return re-reads Plan state and guidance | frontend/diagnose.js readPlan, mount | S186 |

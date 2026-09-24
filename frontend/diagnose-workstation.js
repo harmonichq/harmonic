@@ -3142,6 +3142,9 @@ function boot(root, data, callbacks, signal) {
   }
 
   /** What this surface has staged, named the way the dock prints it (term 49). */
+  /* The dock's one-line title names the change, and its values lead the wrapping
+     detail (ADR 451), each in the wearer's words. A direction prints only where
+     one is served: a carb-ratio block serves none, and the dock derives none. */
   function stagedDescriptor() {
     const cells = lane.cells.filter((c) => staged.has(c.i));
     if (cells.length) {
@@ -3152,25 +3155,28 @@ function boot(root, data, callbacks, signal) {
          rate, so two staged half hours can carry different numbers. The span is
          named either way; the pair prints only where every staged half hour
          carries it, which is the same refusal the merged queue row already
-         makes. */
+         makes, and the served direction only where every half hour serves it. */
       const agreed = cells.every((c) => c.slot.current === head.current
         && c.slot.recommended === head.recommended);
+      const direction = cells.every((c) => c.slot.direction && c.slot.direction === head.direction)
+        ? ` · ${head.direction}` : '';
       // the SAME rounded numbers the item's own detail panel prints — a dock that
       // spells 1.131 beside a panel reading 1.13 is two numbers for one fact
-      const numbers = head.recommended == null || !agreed ? ''
-        : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
-      return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
+      const values = head.recommended == null || !agreed ? ''
+        : `${u(head.current)} → ${u(head.recommended)} U/hr`;
+      return { count: stagedTotal(), title: `Basal ${span}${direction}`, values };
     }
     const block = icBlocks.find((c) => icStaged.has(c.id));
     if (block) {
-      return { count: stagedTotal(),
-        title: `I:C ${block.span} · ${u(block.current)} → ${u(block.block.recommended)} g/U` };
+      return { count: stagedTotal(), title: `Carb ratio ${block.span}`,
+        values: `${u(block.current)} → ${u(block.block.recommended)} g/U` };
     }
     if (isfStaged) {
-      return { count: stagedTotal(),
-        title: `ISF · ${u(isf.current)} → ${u(isf.recommended)} mg/dL/U` };
+      const { direction } = isfVerdict(isf);
+      return { count: stagedTotal(), title: `Correction factor${direction ? ` · ${direction}` : ''}`,
+        values: `${settingValue('isf', u(isf.current))} → ${settingValue('isf', u(isf.recommended))}` };
     }
-    return { count: 0, title: '' };
+    return { count: 0, title: '', values: '' };
   }
 
   /* #358 — ONE treatment for the three stage handlers below (basal slot, I:C

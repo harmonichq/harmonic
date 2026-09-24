@@ -12,7 +12,7 @@ const FOCUS = {
   kind: 'focus', lever: 'late_bolus', title: 'Pre-bolus more before dinner',
   pinned_at: '2026-08-04 09:00:00', status: 'active', target_metric: 'arc',
 };
-const STAGED = { count: 2, title: 'Basal 06:30 to 08:00 · 0.85 → 1.05 U/hr' };
+const STAGED = { count: 2, title: 'Basal 06:30 to 08:00 · raise', values: '0.85 → 1.05 U/hr' };
 /** The guidance read's served pending Plan, verdict and all (ADR 431). */
 const planRecord = (verdict, type = 'basal') => ({
   id: '2026-09-20 21:14:00', applied_at: '2026-09-20 21:14:00',
@@ -37,8 +37,8 @@ test('term 47 · a Trial takes the slot, and takes it from a staged Plan too', (
   const view = watchDockView({ watched: TRIAL, staged: STAGED });
   assert.equal(view.state, 'trial');
   assert.equal(view.kind, KIND.trial);
-  assert.equal(view.title, 'Basal 06:30 · 0.85 → 1.05 U/hr');
-  assert.equal(flat(view), 'Maturing — 6 of 14 days since 08-11');
+  assert.equal(view.title, 'Basal 06:30');
+  assert.equal(flat(view), '0.85 → 1.05 U/hr · Maturing — 6 of 14 days since 08-11');
   assert.deepEqual(view.route, { label: 'Open Changes', to: 'changes' });
 });
 
@@ -46,7 +46,7 @@ test('term 47 · a matured Trial keeps the slot and says it is readable', () => 
   const view = watchDockView({
     watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 14, days_required: 14 } },
   });
-  assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
+  assert.equal(flat(view), '0.85 → 1.05 U/hr · Ready to judge — 14 of 14 days since 08-11');
 });
 
 test('term 47 · the day count clamps to the requirement, as Changes\' progress bar does', () => {
@@ -56,7 +56,7 @@ test('term 47 · the day count clamps to the requirement, as Changes\' progress 
   const view = watchDockView({
     watched: { ...TRIAL, maturing: { is_maturing: false, days_elapsed: 15, days_required: 14 } },
   });
-  assert.equal(flat(view), 'Ready to judge — 14 of 14 days since 08-11');
+  assert.equal(flat(view), '0.85 → 1.05 U/hr · Ready to judge — 14 of 14 days since 08-11');
 });
 
 test('term 47 · a Focus takes the slot when no Trial does', () => {
@@ -72,8 +72,10 @@ test('term 47 · with nothing watched, a staged Plan fills the slot', () => {
   assert.equal(view.state, 'plan');
   assert.equal(view.kind, 'Plan · staged');
   assert.equal(view.title, STAGED.title);
-  assert.equal(flat(view), PLAN_DETAIL);
-  assert.equal(flat(view), 'Staged, not applied — nothing has changed on the pump');
+  assert.equal(flat(view), `${STAGED.values} · ${PLAN_DETAIL}`);
+  assert.equal(PLAN_DETAIL, 'Staged, not applied — nothing has changed on the pump');
+  // A staged run whose half hours disagree serves no values; the sentence stands alone.
+  assert.equal(flat(watchDockView({ staged: { ...STAGED, values: '' } })), PLAN_DETAIL);
   assert.deepEqual(view.route, { label: 'Open Changes', to: 'plan' });
 });
 
@@ -158,4 +160,18 @@ test('a whole-profile Trial names itself without inventing a number', () => {
     watched: { ...TRIAL, parameter: 'profile', slot: null, before: null, after: null },
   });
   assert.equal(view.title, 'Profile');
+  assert.equal(flat(view), 'Maturing — 6 of 14 days since 08-11');
+});
+
+test('#451 · a Trial is named by its setting, and its values lead the wrapping line', () => {
+  const cases = [
+    [{ parameter: 'isf', before: 30, after: 32 }, 'Correction factor', '1 U : 30.0 mg/dL → 1 U : 32.0 mg/dL'],
+    [{ parameter: 'carb_ratio', before: 5, after: 4.8 }, 'Carb ratio', '5.0 → 4.8 g/U'],
+  ];
+  for (const [change, title, values] of cases) {
+    const view = watchDockView({ watched: { ...TRIAL, slot: null, ...change } });
+    assert.equal(view.title, title, change.parameter);
+    assert.equal(flat(view), `${values} · Maturing — 6 of 14 days since 08-11`, change.parameter);
+    assert.doesNotMatch(`${view.title} ${flat(view)}`, /ISF|I:C|mg\/dL\/U/, change.parameter);
+  }
 });

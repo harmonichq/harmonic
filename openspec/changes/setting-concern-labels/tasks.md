@@ -224,7 +224,7 @@
 
 ## 4. The watch dock's title names the change; its values wrap below
 
-- [ ] 4.1 `watchDockView` (`frontend/watched-change-dock.js`) builds the Trial
+- [x] 4.1 `watchDockView` (`frontend/watched-change-dock.js`) builds the Trial
   title from the setting's name, through the desk's `SETTING_NAME` (a whole
   profile keeps its own word), plus its slot. A Trial serves no direction, and
   the dock derives none. The from→to values in their user form, through
@@ -236,7 +236,7 @@
   - a carb-ratio Trial's title is "Carb ratio" and its detail carries "5.0 →
     4.8 g/U";
   - neither title nor detail contains "ISF", "I:C" or "mg/dL/U".
-- [ ] 4.2 Diagnose's staged descriptor (`stagedDescriptor`) serves the dock a
+- [x] 4.2 Diagnose's staged descriptor (`stagedDescriptor`) serves the dock a
   title and a separate values part, and the dock's staged detail leads with the
   values before its existing sentence.
   - Titles:

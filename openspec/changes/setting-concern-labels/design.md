@@ -250,14 +250,18 @@ desk's guidance module (`frontend/guidance.js`), which already turns served
 codes into words, gains the status words, which say what the reader can actually
 do. It chooses them from:
 
+- the desk's own staged state: whether the change is staged in the Plan draft
+  (`phase()` in `frontend/plan-view.js`, the state the pane's "Staged · Undo"
+  reads), checked first;
 - the disposition;
 - under `eligible_action`, the served action's shape;
 - for an identified action, whether a served Focus offer exists (the same
   `focusOffer(subject)` over the served `pinnable_patterns` that draws Changes'
   Start Focus) and the Pattern's served readiness verdict.
 
-`focus-entry.js` imports `guidance.js`, so the words function takes the offer
-as an argument from Changes rather than importing it. Changes' nameplate and
+`focus-entry.js` and `plan-view.js` both import `guidance.js`, so the words
+function takes the offer and the staged state as arguments from Changes rather
+than importing either. Changes' nameplate and
 its Action heading print the words, never the code:
 
 | Code, action | Words | Drawn from |
@@ -276,9 +280,11 @@ select no concern, so the only frame they can seat is a set-aside concern, which
 prints no status words because it is not the concern the read leads with. The
 Staged row reads the staged state Changes and the pane already share, passed in
 like the Focus offer. These rows were settled after sub-order 3's chunk review
-(Q3 delegation, Connor Griffin, 2026-09-23; coordinator ruling R451). The unselected frame's honesty line, which quotes an unknown code,
-stays. The words read served fields only (the action's shape, the served offer, the
-served readiness verdict). They decide no eligibility and re-derive no gate.
+(Q3 delegation, Connor Griffin, 2026-09-23; coordinator ruling R451). The
+unselected frame's honesty line, which quotes an unknown code, stays. The words
+read served fields (the action's shape, the served offer, the served readiness
+verdict) and one state the desk itself owns, the Plan draft's staged state
+(`phase()`). They decide no eligibility and re-derive no gate.
 
 ## ADR 451 — The watch dock's title names the change; its values wrap below
 

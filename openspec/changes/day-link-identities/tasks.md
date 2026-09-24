@@ -219,15 +219,28 @@ alone.
   Run the port-free `acceptance.py inventory` and the port-free test classes
   (`ReplayPlanTest InventoryProofTest SmokeSelectionTest`).
 - [ ] 4.5 Browser legs, each run once and serially by whoever can bind a port:
-  - the extended desk test by its name pattern (branch: tests 1, pass 1; base:
-    tests 1, fail 1), then the whole desk suite (branch: every test passes);
-  - `ONLY=S162,S163,S164,S165,S7,S54b,S60,S61,S62,S72b,S76,S108,S133,S136,S137,S138,S142`
+  - [x] the extended desk test by its name pattern (branch: tests 1, pass 1;
+    base: tests 1, fail 1), then the whole desk suite (branch: every test
+    passes). Coordinator-run on 0a43c77b (`frontend/desk.browser.test.mjs` is
+    unchanged since): ✔ "a utility's own Day entry keeps the utility open and
+    returns into it" on the branch; ✖ on the base, at "the Day address names
+    no prompt identity"; the whole desk suite 43/43.
+  - [x] `ONLY=S162,S163,S164,S165,S7,S54b,S60,S61,S62,S72b,S76,S108,S133,S136,S137,S138,S142`
     on the bare replay at both sizes, first on a base worktree with the new
     stories laid over it (17 selected: 13 pass, 4 fail — S162, S163, S164 and
     S165, each at its feature assertion), then on the branch (17 selected, 17
-    pass, 0 fail);
-  - the complete ledger through `acceptance.py replay` at both sizes, on the
-    commit to be integrated (0 failed, S162–S165 among those executed).
+    pass, 0 fail). Coordinator-run:
+    - branch e68bf5b3: executed 17 · failed 0 at 1280x720 and 1440x900;
+    - base b03431d2 with the e68bf5b3 harness laid over it, at both sizes: the
+      other 13 pass (reported as "executed 13 · failed 4"), and the four fail
+      at their feature assertions. S162 and S163 fail at "the Day address must
+      carry no return-focus key", S164 at "the Day address must name the entry
+      by its id", and S165 at "the Carb questions return must issue no request
+      besides the held status check".
+  - [ ] the complete ledger through `acceptance.py replay` at both sizes, on the
+    commit to be integrated (0 failed, S162–S165 among those executed). Runs at
+    integration, on the release branch, with the full `acceptance.test.py` and
+    the render matrix in `design.md`.
 - [x] 4.6 Coordinator-authorized, 2026-09-23 (Q3 delegation; the first branch
   replay and code review round 2). Story-only changes to S164 and S165 in
   `frontend/c4.replay.mjs`, each pinned on the `qa445Page` fake page in

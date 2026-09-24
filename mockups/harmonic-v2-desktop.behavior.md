@@ -4209,10 +4209,11 @@ S162 · On the active Trial, a contributing date opens Day with an address that
             contributing dates, eight of a period rendered as controls
   evidence: C4_STORIES.S162; reads the Day address, presses Return to Changes
             and checks document.activeElement
-  status:   pending the coordinator's runs. Expected: base b03431d2 with this
-            harness laid over it fails at its feature assertion, "S162 the Day
-            address must carry no return-focus key"; the branch passes at
-            1280x720 and 1440x900
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S162 the Day address must carry no return-focus key";
+            coordinator-run. The complete ledger runs at integration
 ```
 
 ```
@@ -4231,10 +4232,11 @@ S163 · From the active Trial's change record, opened from the Changes roster
   evidence: C4_STORIES.S163 (openStillOpenRecord430); reads the Day address,
             presses the return, then checks the record address, its evidence
             and document.activeElement
-  status:   pending the coordinator's runs. Expected: base b03431d2 with this
-            harness laid over it fails at its feature assertion, "S163 the Day
-            address must carry no return-focus key"; the branch passes at
-            1280x720 and 1440x900
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S163 the Day address must carry no return-focus key";
+            coordinator-run. The complete ledger runs at integration
 ```
 
 ```
@@ -4270,13 +4272,15 @@ S164 · Log carbs over a drilled Finding case with an Occurrence held: an entry
             the status answer counts too. Then the held Occurrence, the crumb,
             the address and document.activeElement. The story's control flow is
             pinned on a fake page in frontend/c4.replay.test.js
-  status:   pending the coordinator's runs. Expected: base b03431d2 with this
-            harness laid over it fails at its feature assertion, "S164 the Day
-            address must name the entry by its id"; the branch passes at
-            1280x720 and 1440x900. A first branch run failed at the story's own
-            re-read check: heldStatusReturn stops recording at the status
-            answer, before the re-read's guidance read. The server log showed
-            that read, and the story now watches from the press
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S164 the Day address must name the entry by its id";
+            coordinator-run. The complete ledger runs at integration. A first
+            branch run, on 0a43c77b, failed at the story's own re-read check:
+            heldStatusReturn stops recording at the status answer, before the
+            re-read's guidance read. The server log showed that read, and the
+            story now watches from the press
 ```
 
 ```
@@ -4302,11 +4306,13 @@ S165 · Carb questions over a drilled Finding case with a window pressed: a
             address with the retained case as S137 names it (subject and
             Occurrence). The story's control flow is pinned on a fake page in
             frontend/c4.replay.test.js
-  status:   pending the coordinator's runs. Expected: base b03431d2 with this
-            harness laid over it fails at its feature assertion, "S165 the Carb
-            questions return must issue no request besides the held status
-            check"; the branch passes at 1280x720 and 1440x900. A first branch
-            run failed at the address: the story compared against the address
+  status:   branch e68bf5b3 passes at 1280x720 and 1440x900 (the 17-story
+            selection: executed 17 · failed 0); base b03431d2 with the
+            e68bf5b3 harness laid over it fails at its feature assertion at
+            both sizes, "S165 the Carb questions return must issue no request
+            besides the held status check"; coordinator-run. The complete
+            ledger runs at integration. A first branch run, on 0a43c77b,
+            failed at the address: the story compared against the address
             read right after the Diagnose Day return, which still carried that
             entry's date, moment, title and from (ADR 428), not the case the
             plain return names

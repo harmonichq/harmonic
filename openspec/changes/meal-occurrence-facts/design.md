@@ -165,6 +165,12 @@ unannounced meal `comparison_anchor`, and every detail `anchor`) carries
 - a low, a high, and a Missed / unannounced meal rise-onset anchor
   (`_rise_onset_anchor`): both null.
 
+A meal anchor serves no glucose. That includes the Missed / unannounced meal
+comparison's announced-meal detail anchor (`_announced_detail`), even when its
+bolus recorded a calculator glucose: that reading is not one the analyzer computed
+for the meal. Coordinator ruling, 2026-09-23, under the risk contract's must-prevent
+on a glucose the analyzer did not compute.
+
 The Pattern path reads them from the exposure Occurrence's new `insulin` and
 `carbs`, never by matching a bolus on time. Eating-sequence case files are
 unchanged.

@@ -2979,9 +2979,11 @@ S148 · Every row of the Meal bolus short response comparison names its own
             renders only for a clock-aligned case file, which no chartable
             finding's drill reaches; it prints through the same description
             function, pinned by frontend/diagnose-workstation.test.js
-  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
-            its feature assertion ("S148 every meal row must serve its carbs and
-            dose"), at both sizes; passes on the branch. Coordinator-run
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("every Meal bolus short row names its own
+            meal"), not at setup; branch 03ff4579 passes at both sizes. The first
+            branch run timed out under load (load average about 18); low-load
+            re-runs passed at 1280x720 and 1440x900. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -3002,9 +3004,10 @@ S149 · Selecting the matched meal of the Meal bolus short case shows that meal:
             for the selected Occurrence and the rendered block, and compares the
             figure, the outcome, cause and habit lines, and the absence of
             count-only lines and the canvas sentence
-  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
-            its feature assertion ("S149 the selected meal must serve its carbs
-            and dose"), at both sizes; passes on the branch. Coordinator-run
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("the selected matched meal reads as its
+            facts and served reason"), not at setup; branch 03ff4579 passes at
+            both sizes, first time. Coordinator-run 2026-09-23
 ```
 
 ```
@@ -3018,14 +3021,19 @@ S150 · A Highs after meals Pattern case file carries the same facts: every row
             (three meals, each serving its dose, carbs and Arc peak)
   evidence: C4_STORIES.S150; assertServedRowDescriptions432 over every rendered
             row, then assertSelectedFacts432 over the first row's selection
-  status:   owed. Expected on a4d374a7 with this harness laid over it: fails at
-            its feature assertion ("S150 every meal row must serve its carbs and
-            dose"), at both sizes; passes on the branch. Coordinator-run
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion at both sizes ("every Highs after meals row names its own
+            meal"), not at setup; branch 03ff4579 passes at both sizes, first
+            time. Coordinator-run 2026-09-23
 ```
 
-Amended S25 · 2026-09-23 · #432 / Q2 sanction: A selected Occurrence's evidence facts are its served facts — each served habit, and the served cause when the case file claims it — and never a count of glucose readings or event markers; the fixed sentence about what the canvas shows is retired. The replay reads the served detail and requires no count-only line. As frozen, S25 fails on this branch's build at its count-line assertion.
+Amended S25 · 2026-09-23 · #432 / Q2 sanction: A selected Occurrence's evidence facts are its served facts — each served habit, and the served cause when the case file claims it — and never a count of glucose readings or event markers; the fixed sentence about what the canvas shows is retired. The replay reads the served detail and requires no count-only line. As frozen, S25 fails on this branch's build at its count-line assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S25 at its count-line assertion; as amended, S25 passes on branch 03ff4579 at both sizes (1280x720 on a low-load re-run after a load timeout; 1440x900 first time).
 
-Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion.
+Amended S107 · 2026-09-23 · #432 / Q2 sanction: Row readability keys on each row's served description — for a meal, its carbs, dose and outcome — instead of the constant anchor label, which a meal row no longer prints. Every other S107 observation is unchanged. As frozen, S107 fails on this branch's build at its "Completed carb bolus" assertion. Evidence, coordinator-run 2026-09-23: the a4d374a7 harness over the branch app fails S107 at the old "Completed carb bolus" readability check at 1440x900, while the 1280x720 run hit a load timeout; as amended, S107 passes on branch 03ff4579 at both sizes on low-load re-runs after load timeouts.
+
+The coordinator also ran the whole desk browser suite on 03ff4579 (40 of 40) and
+the full `mockups/sweep/harmonic-v2-desktop/acceptance.test.py` (OK), 2026-09-23. The
+render matrix and the complete-ledger replay belong to the release integration.
 
 Additional handler inventory for this amendment:
 

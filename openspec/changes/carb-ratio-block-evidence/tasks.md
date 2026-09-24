@@ -33,25 +33,41 @@ implemented and verified, never attempted; the coordinator ticks.
   sheet). Pytest on analyzer output from N synthetic runs: each served run's
   `true_ic` equals its served `carbs / effective_insulin` to 1e-6, and the block's
   `pooled_ratio` equals the weighted quotient of the served per-run terms.
-- [ ] 3. **Serve the outcome tally and the reconciling sentence.** On
-  `evidence.outcomes`: for the block's `points` (meals dosed in its hours over the
-  90-day span), run the scenario engine's shared evaluation
-  (`attributed_occurrences`, `ciq_autotune/analyzers/scenario/engine.py`) over the
-  same 90-day bolus/CGM/basal slice the block reads, with the block's
-  `isf_effective` and the eligible carb entries, and stamp each point `outcome`
-  from the Pattern roster's own families: `ran-high` when the meal exposure is
-  attributed to any `highs_after_meals` lever, `ran-low` when attributed to any
-  `lows_after_meals` lever, `in-range` when it is a meal exposure attributed to
-  neither, `unread` when it is not a meal exposure (no readable window). Serve
-  `counts` (`ran_high`, `ran_low`, `in_range`, `unread`, `n`), `low_minutes_median`
-  (minutes from bolus to the attributed low's nadir over the ran-low meals, null
-  when none), and `sentence`, one string chosen from the closed set in
-  `ic.py` keyed on the block's asserted direction, whether ran-high exceeds ran-low,
-  and that the ledger closes at the chain's end (design.md, ADR 464 — sentence).
-  The frontend prints `sentence` verbatim and never composes one. Failing-first
-  pytest: a manufactured block whose pooled chain spikes above 180 then prints a
-  low serves `counts.ran_high ≥ 1`, `counts.ran_low ≥ 1` and a sentence naming the
-  chain-end read; on main `evidence.outcomes` is absent.
+- [ ] 3. **Serve the outcome tally and the reconciling sentence — by the Pattern's own
+  credited claims.** "Ran high" for "Highs after meals" is decided by
+  `credited_claims(exposures, "meals", rate_levers)` over the `attributed_levers`
+  that `build_exposures(store, window_days=…)` (`ciq_autotune/explore_exposures.py`)
+  stamps on each meals-family occurrence — a store-level evaluation with the
+  false-low drop, the low-prompt answers and the window bounds — not
+  `attributed_occurrences`, which has no production caller and returns only the
+  primary-driver map. The block stamper has no store, so the tally lives in the
+  evidence preparation (`prepare_ic_block_evidence(store, analysis)`,
+  `ciq_autotune/ic_block_evidence.py`), which does: it calls
+  `build_exposures(store, window_days=BLOCK_WINDOW_DAYS)` once per preparation
+  (its `now` is the latest basal/CGM instant, the same clock `analyze()` defaults
+  to, so the span is the block's own 90 days) and, for each of the block's
+  `points` meals, finds the `meals` occurrence whose `t` names the same instant as
+  the meal's bolus (parse both: the exposure feed prints the engine's `_FMT`, the
+  analyzer prints `isoformat()`), then stamps `outcome`: `ran-high` when
+  `credited_claims(exposures, "meals", <highs_after_meals rate levers from
+  outcome_patterns._ROSTER>)` credits it, `ran-low` when the `lows_after_meals`
+  rate levers credit it, `in-range` when a meals occurrence exists and neither
+  credits it, `unread` when no meals occurrence exists. On `evidence.outcomes`
+  (a preparation-owned key, beside the analyzer's): `counts` (`ran_high`,
+  `ran_low`, `in_range`, `unread`, `n`), `low_minutes_median` — the median of
+  minutes from `dominant_bolus_t` to `t` over the block's served `harm.lows`,
+  null when none — and `sentence`, one string from a closed set in
+  `ic_block_evidence.py` keyed on the block's asserted direction (`raise` /
+  `lower` / none), whether `ran_high > ran_low`, and the chain-end read
+  (design.md, ADR 464 — sentence). The frontend prints `sentence` verbatim and
+  composes none. Measure the preparation's wall time on the committed showcase
+  store before and after (the endpoint answers from the result cache's fixed
+  snapshot, so this is a warm-up cost, not a per-request one) and report both in
+  the handback. Failing-first pytest: a manufactured store whose pooled chain
+  spikes above range then prints a low attributed to its meal serves
+  `counts.ran_high ≥ 1`, `counts.ran_low ≥ 1` and a sentence naming the chain-end
+  read; a second test pins that a meal the Pattern credits to `late_bolus` is
+  `ran-high` here too (one definition); on main `outcomes` is absent.
 - [ ] 4. **Serve the harm evidence.** On `evidence.harm_evidence`: the block's
   `harm` dict (`arm`, `gated`, `nudged`, `arm_days`, `row_days`, `lows` — each low
   with `t`, `bg`, `dominant_bolus_t`, `attribution_reason`) and the guidance
@@ -62,15 +78,25 @@ implemented and verified, never attempted; the coordinator ticks.
   copy through: `block.current`, `block.estimate` (`value`, `lo`, `hi`, `wide`),
   `block.side` (`side_k`, `side_n` from `recurrence_channels`), `block.support_detail`
   (`whole_runs`, `fractional_run_ownership`, `effective_run_count`), `ledger`,
-  `outcomes`, `harm_evidence`, each run row's new fields, and `meal_series`: one
-  entry per `points` meal with `t`, `run_id`, `outcome`, and CGM `points`
-  (`minute`, `bg`) from −10 to +315 minutes read over the same store call the run
-  series use. `SCHEMA` becomes `diagnose-carb-ratio-block-evidence-v2`; the
-  projection raises `InconsistentIcBlockEvidence` when any new analyzer fact is
-  absent. Extend `scripts/gen_ic_block_evidence_fixtures.py` with one case
-  carrying chained runs shared across two blocks, a run with no outcome read, a
-  run dosed under an earlier ratio, a pooled chain that spikes then prints a low,
-  and two attributed harm lows on separate days; regenerate
+  `outcomes` (task 3), `harm_evidence`, each run row's new fields, and
+  `meal_comparison`: one comparison **projection** for the block's `points`
+  meals in exactly the shape the Finding case file publishes for a meals-family
+  comparison — `alignment: "event"`, `anchor` (the meals catalog's own anchor
+  label), `window_min`, and `cohorts` keyed `ran-high` / `ran-low` / `in-range`
+  (an `unread` meal is counted, not drawn) each with its pooled `points`
+  (`minute`, `bg`, `support`) and `support`, under schema
+  `diagnose-carb-ratio-meal-comparison-v1` — built by the cohort and pooling
+  functions `ciq_autotune/event_comparison.py` already uses for the meals family,
+  promoted to one named module-level seam if they are private (this is their
+  second caller), never re-implemented. `SCHEMA` becomes
+  `diagnose-carb-ratio-block-evidence-v2`; the projection raises
+  `InconsistentIcBlockEvidence` when any new analyzer fact is absent. Extend
+  `scripts/gen_ic_block_evidence_fixtures.py` with one case carrying chained
+  runs shared across two blocks, a run with no outcome read, a run dosed under
+  an earlier ratio, a pooled chain that spikes then prints a low, and two
+  attributed harm lows on separate days; **keep every existing case key**
+  (`frontend/desk.browser.test.mjs:154` reads `cases.cross_midnight` and serves it
+  as the endpoint); regenerate
   `mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json`; `--check`
   green; `tests/test_synthetic_fixture_shapes.py` and `tests/test_ic_block_evidence.py`
   cover the v2 shape through `TestClient` on the endpoint.
@@ -89,14 +115,19 @@ implemented and verified, never attempted; the coordinator ticks.
 - [ ] 8. **By meal is the tile's default view.** In
   `frontend/diagnose-evidence-charts.js` the carb-ratio entry's `modes` become
   `['meal', 'runs', 'clock']` (`diagnose-canvas-layout.js` reads `modes[0]` as the
-  default). The `meal` option builds cohorts from served `meal_series` — `Ran high`,
-  `Ran low`, `In range` (served `outcome`; `unread` meals are not drawn and are
-  counted in the key) — anchored at each meal's bolus on a five-hour axis in hours,
-  rendered through `eventComparisonChartOption`'s option builder with the same
-  glucose range injection, target rails, key and readout the Pattern comparison
-  charts use. The key carries the served counts. Failing-first node test through
-  the registry: `option('meal')` on the v2 fixture yields three named series with
-  point counts equal to the served cohort sizes; on main the mode does not exist.
+  default). The `meal` option draws the served `meal_comparison` projection
+  through a new named export of `frontend/diagnose-event-comparison.js`,
+  `comparisonProjectionOption(projection, range, surface, mini, selected = null)`,
+  extracted from the module's private `option()` (which reads only
+  `caseFile.projection`); `eventComparisonChartOption` keeps `assertEventCaseFile`
+  and delegates to it, so the case-file path and its tests are unchanged and the
+  guard's fate is: untouched. The tile mounts the ECharts option in its own
+  element as every other kind does; `renderEventSurface`'s `ec-*` ids are not
+  involved. The key carries the served cohort counts and the served `unread`
+  count. Failing-first node test through the registry: `option('meal')` on the v2
+  fixture yields the served cohorts as named series with point counts equal to
+  the served cohort sizes, and `eventComparisonChartOption` still throws on a
+  non-case-file input; on main the mode does not exist.
 - [ ] 9. **Runs replaces the chain overlay.** New module `frontend/diagnose-run-strips.js`
   (+ `.test.js`, + `frontend/diagnose-run-strips.css` imported where the
   comparison chart's stylesheet is) renders the `runs` option: one row per served
@@ -160,11 +191,23 @@ implemented and verified, never attempted; the coordinator ticks.
   the Day callback also navigates when the block was opened from the case head's
   "View segment" (`frontend/diagnose.js` navigates only on a published subject).
   Node tests on `renderIcBlockLevel` and on the frame's subject.
-- [ ] 15. **Define meal run for the reader.** `frontend/glossary.js` I:C group gains
-  Meal run (what it is, why several meals form one), Support (whole runs plus
-  carb-share credit toward the eight-run floor), Directional-only, and Chain-end
-  read; `CONTEXT.md` "Other tunable parameters" gains a **Meal run** entry with
-  its _Avoid_ line. Node test that the glossary names each term.
+- [ ] 15. **Define meal run for the reader, and keep the two guards that read
+  these files green.** `frontend/glossary.js` I:C group gains Meal run (what it
+  is, why several meals form one), Support (whole runs plus carb-share credit
+  toward the eight-run floor), Directional-only, and Chain-end read; `CONTEXT.md`
+  "Other tunable parameters" gains a **Meal run** entry with its `_Avoid_` line.
+  The design exploration's generator lifts the glossary literal verbatim
+  (`mockups/harmonic-v2.exploration/generate.py`, `DESK_GLOSSARY`) into
+  `mockups/harmonic-v2.exploration/glossary.js` and records its `start_line` in
+  `utilities.json`, and CI runs its `--check`: regenerate both with
+  `uv run python mockups/harmonic-v2.exploration/generate.py` and confirm
+  `--check` prints no drift. The contamination scan pins dose-ratio
+  acknowledgements by line (`scripts/public_scan_config.txt`, `CONTEXT.md:515`,
+  `:77`, `:99`), and a digest refuses a hand edit: after the CONTEXT.md insertion,
+  run the public-tree scan, read the printed delta (line moves only — no new
+  entry), and regenerate the block with
+  `python3 scripts/scan_public_tree.py "$t" --accept-dose-ratio-baseline`. Node
+  test that the glossary names each term.
 - [ ] 16. **Amend the frozen behavior ledger.** In
   `mockups/harmonic-v2-desktop.behavior.md`, under a dated `## #464 amendment`
   header: one STORY per added or changed behavior — By meal default on block
@@ -178,18 +221,30 @@ implemented and verified, never attempted; the coordinator ticks.
   behavior — the block's run evidence on the tile — still ships, rebuilt), not a
   retirement; `mockups/sweep/harmonic-v2-desktop/acceptance.py`'s pinned
   `issued/active/retired` counts move to the new totals in the same commit.
-- [ ] 17. **Replay on the built app.** `npm ci && npm run build`; the QA
-  copy-then-serve command with `--no-fetch --token ''` on the `ic-block-evidence`
-  case store emitted by `scripts/gen_qa_e2e_db.py --case`; the new stories and
-  every story the amendment touched replayed at 1280×720 and 1440×900 with raw
-  output (story counts, pass/fail per story) retained under this change's
-  `evidence/`. The complete ledger runs exactly once, on the commit to be pushed.
+- [ ] 17. **Replay on the built app, and run the hand-listed browser suites.**
+  `npm ci && npm run build`; the QA copy-then-serve command with `--no-fetch
+  --token ''` on the `ic-block-evidence` case store emitted by
+  `scripts/gen_qa_e2e_db.py --case`; the new stories and every story the
+  amendment touched replayed at 1280×720 and 1440×900 with raw output (story
+  counts, pass/fail per story) retained under this change's `evidence/`. Then the
+  two hand-listed suites AGENTS.md names, exactly as CI runs them —
+  `PLAYWRIGHT_MODULE=… node --test frontend/browser-runner.browser.test.mjs` and
+  `PLAYWRIGHT_MODULE=… node --test frontend/desk.browser.test.mjs` (the desk
+  suite serves the regenerated capture's `cross_midnight` case as the
+  block-evidence endpoint and renders the revised tile and panel) — green. A
+  failure in a chart or panel is reported to the coordinator with the story or
+  test name, the served projection and the rendered DOM; the owning sub-order's
+  worker fixes it. The complete ledger runs exactly once, on the commit to be
+  pushed.
 - [ ] 18. **Before/after renders.** Synthetic renders of the block panel and each
   of the three views at both viewports from the base worktree and the revision,
   after console, request, accessibility and overflow checks pass, retained under
   `evidence/`. No real data; no snapshot-derived value.
 - [ ] 19. **Design record.** `DESIGN.md` gains a `### #464 carb-ratio block evidence
-  amendment` beside the #404 amendment naming every served value painted;
+  amendment` appended after the `### #404 desk revise amendment` section (past
+  the scan's pinned acknowledgements at `DESIGN.md:163`, `:181`, `:183`, which
+  therefore do not move; if the public-tree scan still reports a shifted
+  acknowledgement, regenerate the baseline as task 15 does);
   `mockups/INDEX.md`'s Finding → evidence routing row gains a "revised in #464"
   note; the coverage appendix and evidence are committed; tasks ticked by the
   coordinator.

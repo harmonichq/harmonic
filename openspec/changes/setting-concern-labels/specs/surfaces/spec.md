@@ -1,28 +1,34 @@
 ## ADDED Requirements
 
-### Requirement: The carb-ratio analyzer's sentences say carb ratio
+### Requirement: The carb-ratio analyzer's sentences pass the user-copy register
 
-Every sentence the carb-ratio analyzer serves SHALL name the setting "carb
-ratio" and SHALL NOT print "I:C". This covers:
+Every sentence the carb-ratio analyzer serves SHALL pass every rule of
+DESIGN.md's user-copy register. It SHALL name the setting "carb ratio", never
+"I:C", and SHALL use no prose em dash. It SHALL say "identifiable meals", never
+"clean-start". This covers:
 
 - its recommendation annotations;
-- its hold annotations;
-- the "Read with the … stretch" prefix around them;
-- the carb-counting finding's summary and occurrence detail.
+- its hold annotations and the start-high cross-reference;
+- the block owner prefix;
+- its block annotations;
+- its history annotation;
+- the summaries and occurrence details of its three Findings.
 
-A test over every served carb-ratio sentence branch SHALL guard against
-user-facing "I:C" and "ISF".
+Meaning and every served number SHALL be unchanged. A test SHALL build every
+served carb-ratio sentence branch and check it against the register's full rule
+set, as the basal and correction-strength tests do.
 
-#### Scenario: A held carb-ratio block's annotation says carb ratio
+#### Scenario: A held carb-ratio block's annotation reads in register
 
-- **GIVEN** a synthetic carb-ratio block held because its meals cannot yet test a direction
+- **GIVEN** a synthetic carb-ratio block held because too few identifiable meals can test a direction
 - **WHEN** the carb-ratio analyzer annotates it
-- **THEN** the annotation names the carb ratio and contains no "I:C"
+- **THEN** the annotation names the carb ratio and the identifiable meals
+- **AND** it contains no "I:C", no "clean" and no prose em dash
 
-#### Scenario: Every carb-ratio sentence branch stays free of engine names
+#### Scenario: Every carb-ratio sentence branch passes every register rule
 
 - **WHEN** the annotation-register test builds every served carb-ratio sentence branch
-- **THEN** none contains "I:C" or "ISF"
+- **THEN** every sentence passes every rule the basal and correction-strength sentences are held to
 
 ### Requirement: Diagnose's setting findings are titled by their user labels
 

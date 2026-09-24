@@ -28,7 +28,8 @@ source; the repro scripts are `docs/scope/451-setting-concern-labels.repro.py`
 and `docs/scope/451-setting-concern-labels.repro.mjs`.
 
 - **Carb-ratio sentences.** The carb-ratio analyzer's served sentences say
-  "I:C" ("relative to programmed I:C", "Held at the programmed I:C").
+  "I:C" ("relative to programmed I:C", "Held at the programmed I:C"), use prose
+  em dashes, and call identifiable meals "clean-start".
 - **Guidance titles.** Guidance titles every setting concern with the tuning
   lever's engine title ("ISF", "Carb ratio (I:C)", "Basal profile"). A set-aside
   subject the read no longer carries comes back with `title: null`, so Changes'
@@ -52,8 +53,9 @@ and `docs/scope/451-setting-concern-labels.repro.mjs`.
 
 - **Setting concern titles.** Guidance serves every setting concern's `title`
   from its closed setting-label table: Basal, Carb ratio, Correction factor.
-- **Carb-ratio sentences.** The carb-ratio analyzer's sentences say "carb
-  ratio", guarded by the annotation-register test.
+- **Carb-ratio sentences.** The carb-ratio analyzer's sentences pass every
+  user-copy register rule: "carb ratio", no prose em dash, "identifiable meals".
+  The annotation-register test holds them to the full rule set.
 - **Set-aside subject names.** Guidance serves a name for every set-aside
   subject it lists, from the backend's own name sources: the setting-label
   table, the Lever title, the investigation's title. Pattern names come from
@@ -111,7 +113,8 @@ and `docs/scope/451-setting-concern-labels.repro.mjs`.
 - **Generated parity:**
   - `mockups/findings-projection.mirror.mjs`;
   - the regenerated `frontend/__fixtures__/findings-projection.json`,
-    `frontend/__fixtures__/analysis.json` and
+    `frontend/__fixtures__/analysis.json`,
+    `mockups/diagnose-workstation.synthetic/ic-history-events.capture.json` and
     `mockups/diagnose-workstation.synthetic/finding-case-files.json` (after
     retitling two hand-written literals in its generator);
   - the QA queue-row and finding-title literals in `scripts/qa_e2e_cases.py`,

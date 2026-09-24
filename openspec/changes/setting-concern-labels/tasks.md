@@ -3,17 +3,32 @@
 ## 1. Analyzer and projection wording, with their generated parity
 
 - [ ] 1.1 Reword every served carb-ratio sentence in
-  `ciq_autotune/analyzers/ic.py` from "I:C" to "carb ratio" (for example
-  "relative to the programmed carb ratio", "a tighter (smaller) carb ratio",
-  "Carb ratio direction needs more identifiable meals", "Held at the programmed
-  carb ratio"). Leave comments, docstrings and error messages. The sentences
-  live in:
-  - `_recommend`'s estimate reasons and recommendation annotations;
-  - the hold annotations near its prior-meal-action gate;
-  - the carb-counting finding's summary and occurrence detail.
-- [ ] 1.2 Extend `tests/test_annotation_register.py` with a test that builds every
-  served carb-ratio sentence branch and asserts none contains "I:C" or "ISF".
-  It is a new guard against a changed behavior, so it fails first on the base.
+  `ciq_autotune/analyzers/ic.py` to the wording design.md's carb-ratio ADR
+  tables: "carb ratio" for "I:C", no prose em dash, and "identifiable meals"
+  for "clean-start". This covers:
+  - `_recommend`'s reasons and annotations;
+  - `_START_HIGH_XREF`;
+  - the hold intros, exit texts and close;
+  - the block owner prefix;
+  - `_block_annotation`'s states;
+  - `_history_annotation` ("(range …)" for "(CI …)");
+  - the carb-counting, meals-start-high and post-meal-correction-burden
+    Findings' summaries and occurrence details.
+
+  Meaning and every served number are unchanged. Leave comments, docstrings and
+  error messages.
+- [ ] 1.2 Extend `tests/test_annotation_register.py` with a carb-ratio catalog
+  built through the analyzer's own functions:
+  - every `_recommend` branch;
+  - each hold variant, with and without the start-high cross-reference;
+  - the block owner prefix;
+  - each `_block_annotation` state and hold reason;
+  - the history annotation;
+  - the three Findings' summaries and occurrence details.
+
+  Check each sentence against the full `BANNED` list, as the basal and
+  correction-strength tests do. It guards a changed behavior, so it fails first
+  on the base.
 - [ ] 1.3 In `ciq_autotune/findings_projection.py`, title the correction-factor
   row `_title("Correction factor", …)` and a carb-ratio block
   `_title(f"Carb ratio {label}", …)`; basal is unchanged. Make the same two edits
@@ -23,6 +38,8 @@
     (`uv run python scripts/gen_findings_projection_fixtures.py`);
   - `frontend/__fixtures__/analysis.json`
     (`uv run python scripts/gen_chart_builder_fixtures.py`);
+  - `mockups/diagnose-workstation.synthetic/ic-history-events.capture.json`
+    (`uv run python scripts/gen_ic_history_event_fixtures.py`);
   - `mockups/diagnose-workstation.synthetic/finding-case-files.json`, after
     retitling exactly the two hand-written literals `'I:C Evening'` →
     `'Carb ratio Evening'` and `'ISF'` → `'Correction factor'` in
@@ -39,8 +56,10 @@
     reworded annotations;
   - the six finding-title literals naming "ISF" or "I:C".
 
-  Re-dump the pinned assertion in `tests/test_analyzer_ic.py` (the "direction
-  needs more identifiable meals" line) the same way. Run each affected case's
+  Re-dump the pinned carb-ratio sentences in `tests/test_analyzer_ic.py` the
+  same way: the "direction needs more identifiable meals", "clean-start" and
+  "When Carb ratio was … (CI …)" assertions. `tests/test_result.py`'s "(CI …)"
+  string is a hand-set serialization input, not analyzer output; leave it. Run each affected case's
   `test_case_<name>` in `tests/test_qa_e2e_cases.py`. The coordinator
   re-measures the QA budgets at integration.
 - [ ] 1.6 Tests and checks.
@@ -52,7 +71,8 @@
     `startsWith('I:C')`) and `frontend/findings-projection-mirror.test.js`
     (`row('ISF')`) read the new titles.
   - These checks pass: `gen_findings_projection_fixtures.py --check`,
-    `gen_chart_builder_fixtures.py --check`, `check_demo_fixtures.py`, the
+    `gen_chart_builder_fixtures.py --check`,
+    `gen_ic_history_event_fixtures.py --check`, `check_demo_fixtures.py`, the
     exploration `generate.py --check` (regenerate any exploration output that
     moves and say which) and the event-comparison `generate.mjs --check`.
 

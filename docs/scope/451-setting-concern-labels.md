@@ -24,10 +24,17 @@ of 2026-09-23 ("figure it out yourself from here").
 - An unnamed set-aside row prints "A concern no longer in this read", and
   CONTEXT.md gains **Concern**. Why: round 1 item 6; never print an id.
   `→ ADR`
-- The carb-ratio analyzer's served sentences say "carb ratio". A new
-  annotation-register test guards against "I:C" and "ISF", and the QA queue-row
-  literals and the pinned `test_analyzer_ic` line are re-dumped. Why: round 1
-  item 1. `→ ADR`
+- The carb-ratio analyzer's served sentences pass every user-copy register
+  rule: "carb ratio", no prose em dash, "identifiable meals" for "clean-start",
+  and "(range …)" for "(CI …)".
+  - Its three Findings reword the same way.
+  - The new annotation-register test applies the full rule set.
+  - Four fixtures are regenerated (analysis, findings-projection,
+    ic-history-events, case files).
+  - The QA queue-row literals and `test_analyzer_ic` pins are re-dumped.
+
+  Why: round 1 item 1, widened by the coordinator's ruling on the register
+  finding, 2026-09-24. `→ ADR`
 - Diagnose's setting findings are titled "Correction factor …" and "Carb ratio
   <span> …". The mirror, three fixtures (two hand-written generator literals
   retitled) and the QA finding-title literals move with them. Rows tied on every
@@ -84,7 +91,7 @@ of 2026-09-23 ("figure it out yourself from here").
 - **Unsupported:** viewports other than the two supported desktop sizes.
 - **Evidence owed:**
   - Backend tests through the public reads:
-    - the carb-ratio sentence guard;
+    - the carb-ratio register guard (every rule);
     - guidance's setting titles and set-aside names for a setting, a habit and
       the investigation, with a set-aside Pattern served present;
     - the Plan history read's subject names;
@@ -155,5 +162,8 @@ None. The release rule is that nothing is filed as a follow-up.
   7. accept the tiebreak reorder;
   8. the fail-first scope.
 
-  All were fixed in one commit and re-pinned; the chunking was re-assessed from
-  three to four.
+  All were fixed in one commit and re-pinned at 1d82f68a; the chunking was
+  re-assessed from three to four.
+- Coordinator ruling on the register finding (2026-09-24): widen. The
+  carb-ratio sentences pass every register rule, and the guard applies all of
+  them. The work stays in sub-order 1. Re-pinned; round 2 follows.

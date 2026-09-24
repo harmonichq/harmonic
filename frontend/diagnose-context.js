@@ -31,20 +31,24 @@ export function createCaseContext(delegate) {
   };
 }
 
-// The Day door's name for what the reader was looking at: the served case
-// file's finding title, or, for a basal slot with no case, the setting and its
-// half-hour range in the wearer's words (CONTEXT.md, Slot).
-export function evidenceDayContext({ occurrence, selected, slot, focus }) {
+/* The Diagnose-origin Day entry (ADR 428 points 4 and 5). Subject, Occurrence
+   and window are the case the workstation publishes — the same one the address
+   names — and the date, moment and lever are the Occurrence's own. The held
+   Occurrence id is also the return target, so no selector rides along. The
+   title is the Day door's name for that case (ADR 426): the selected case
+   file's finding title while it is the case published, or, for a basal slot
+   with no case, the setting and its half-hour range in the wearer's words
+   (CONTEXT.md, Slot). A key can move the published case without a new
+   selection, so a selected file for another subject lends no title. */
+export function evidenceDayContext({ occurrence, current, selected }) {
   const at = occurrence.t || occurrence.anchor?.t || '';
+  const slot = /^basal:\d+$/.test(current?.subject || '') ? String(current.window || '').split('-').map(Number) : null;
   return {
     date: String(at).slice(0, 10), moment: at,
-    subject: selected?.subject || (slot ? `basal:${slot.start}` : ''),
-    title: selected?.finding.title
-      || (slot ? `${SETTING_NAME.basal_rate} · ${formatStartMin(slot.start)}–${formatStartMin(slot.end)}` : ''),
-    occurrence: occurrence.id || selected?.occurrence || String(at).slice(0, 10),
-    lever: occurrence.cause_lever || (slot ? 'basal_rate' : ''),
-    window: Number.isFinite(selected?.window?.start_min) ? `${selected.window.start_min}-${selected.window.end_min}`
-      : slot ? `${slot.start}-${slot.end}` : '',
-    from: 'diagnose', focus,
+    subject: current?.subject || '', occurrence: current?.occurrence || '', window: current?.window || '',
+    title: (selected && selected.subject === current?.subject ? selected.finding.title : '')
+      || (slot?.length === 2 ? `${SETTING_NAME.basal_rate} · ${formatStartMin(slot[0])}–${formatStartMin(slot[1])}` : ''),
+    lever: occurrence.cause_lever || '',
+    from: 'diagnose',
   };
 }

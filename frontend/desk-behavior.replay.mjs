@@ -3154,6 +3154,15 @@ export const S153 = appOnly('HV2-17', '#433 every basal key verdict agrees with 
 export const S154 = appOnly('#434 reader words',
   '#434 a basal slot names why its excluded nights were left out, in the panel and the tile description',
   C4_STORIES.S154);
+// STORY:harmonic-v2-desktop:S136
+export const S136 = appOnly('HV2-14',
+  '#428 after a Day return, a key, a window choice and Backspace each rename the address to the case on screen', C4_STORIES.S136);
+// STORY:harmonic-v2-desktop:S137
+export const S137 = appOnly('HV2-34',
+  '#428 a Diagnose round trip after a Day return holds one status read and names the retained case', C4_STORIES.S137);
+// STORY:harmonic-v2-desktop:S138
+export const S138 = appOnly('HV2-14',
+  '#428 a case address reopens its preset window and Occurrence, and its Day hop returns to Open in Day by id', C4_STORIES.S138);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3208,6 +3217,7 @@ export const REGISTRY = [
   ['S142', S142, J()], ['S143', S143, J()],
   ['S151', S151, J()], ['S152', S152, J()], ['S153', S153, J()],
   ['S154', S154, J()],
+  ['S136', S136, J()], ['S137', S137, J()], ['S138', S138, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

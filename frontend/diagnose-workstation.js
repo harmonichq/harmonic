@@ -268,6 +268,14 @@ const WINDOWS = {
 };
 const winText = (w) => windowSpanText(w.range);
 
+/* The Window preset whose range is exactly `<start>-<end>`, by its control's
+   label, so an entry restoration presses that same control (ADR 428 point 8).
+   A drawn or cross-midnight window matches none. */
+export function presetLabelFor(window) {
+  const [start, end] = String(window || '').split('-').map(Number);
+  return Object.values(WINDOWS).find(({ range }) => range[0] === start && range[1] === end)?.label || null;
+}
+
 /* ---- mock 1222-1242 — VERBATIM except the trailing `[state]` index:
        the app re-derives CFG per mount instead of once at load. ---- */
 /* `level` is the stack depth this state opens at: 1 factors, 2 one factor,
@@ -2085,6 +2093,31 @@ function boot(root, data, callbacks, signal) {
   let pendingFocus = null;
   let occurrenceFocusId = null;
   const top = () => stack[stack.length - 1];
+  /* THE CASE ON SCREEN (ADR 428). Only `top()` renders, so it names the case:
+     the rail row it was drilled from — a basal slot as `basal:<start>` — the
+     Occurrence or night it holds, and the window its served case file answered
+     for, or the slot's span. The Findings index names none. `paint()` publishes
+     it after every change, whatever moved it — a click, a key, a chart tile, a
+     response — and only when it differs from this boot's last publication. */
+  let publishedCase;
+  function publishCase() {
+    const f = top();
+    const subject = f.k === 'slot' ? `basal:${f.cell.startMin}` : f.rowId;
+    const served = f.caseFile?.window;
+    const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
+      : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
+    const current = subject ? { subject, occurrence: f.selectedId || null, window } : null;
+    const key = JSON.stringify(current);
+    if (key === publishedCase) return;
+    publishedCase = key;
+    callbacks.caseChanged?.(current);
+  }
+  /* A PARKED DIAGNOSE IS INERT (ADR 428). The page-level key handlers below
+     listen on the document, which outlives this root while Diagnose is parked
+     off-screen behind another destination. They act only while the host says
+     Diagnose is on screen, so nothing moves the case — or swallows another
+     destination's key — while it is parked. */
+  const onScreen = () => callbacks.onScreen?.() !== false;
   const push = (frame) => {
     if (top().k === 'factors') rememberQueuePosition();
     filterOpen = false;
@@ -3471,7 +3504,7 @@ function boot(root, data, callbacks, signal) {
         onSelect: (id) => selectNight(f, id),
         onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         onClear: () => { f.selectedId = null; paint(); },
-        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
+        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}`, cause_lever: 'basal_rate' }),
       });
       return;
     }
@@ -3960,7 +3993,7 @@ function boot(root, data, callbacks, signal) {
     el('grip-b').addEventListener('pointerdown', (ev) => { ev.stopPropagation(); begin('b', ev); }, { signal });
     // Esc restores the last preset
     document.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && drawn) { ev.preventDefault(); clearDrawn(); }
+      if (ev.key === 'Escape' && drawn && onScreen()) { ev.preventDefault(); clearDrawn(); }
     }, { signal });   // PORT: abortable
     window.addEventListener('resize', paintBrace, { signal });   // PORT: abortable
   }
@@ -4007,6 +4040,7 @@ function boot(root, data, callbacks, signal) {
       paintBrace();
     }
     applyPendingFocus();
+    publishCase();
   }
 
   /* Focus consumes only a reader-driven navigation request after every painter
@@ -4041,7 +4075,7 @@ function boot(root, data, callbacks, signal) {
      the ends rather than wrapping: an instrument should not silently return you
      to the first reading. */
   document.addEventListener('keydown', (ev) => {
-    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.metaKey || ev.ctrlKey || ev.altKey || !onScreen()) return;
     const f = top();
     if (ev.key === 'Backspace' && stack.length > 1) {
       ev.preventDefault();
@@ -4084,6 +4118,7 @@ function boot(root, data, callbacks, signal) {
   observeResize(el('chart'), () => chart);
   installDrag();
   document.addEventListener('keydown', (ev) => {
+    if (!onScreen()) return;
     if (ev.key === 'Escape' && fullscreen) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -4104,7 +4139,7 @@ function boot(root, data, callbacks, signal) {
     if (filterOpen && !el('filter-wrap')?.contains(ev.target)) closeFilter();
   }, { signal });
   document.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Escape' || !filterOpen) return;
+    if (ev.key !== 'Escape' || !filterOpen || !onScreen()) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
     closeFilter({ restoreFocus: true });

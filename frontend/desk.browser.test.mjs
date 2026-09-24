@@ -891,6 +891,78 @@ test('a canonical Day address reloads through the built shell and returns throug
   } finally { await close(); }
 });
 
+// ADR 428: once the reader acts inside Diagnose, the address names the case on
+// screen — rewritten in place — and never again the Day hop's own keys.
+test('after a Day return, acting inside Diagnose re-addresses it in place, and its Findings address reloads with no case open', async () => {
+  const subject = 'finding:over_treated_low';
+  const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
+  const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,
+    lever: 'over_treated_low', from: 'diagnose', focus: '.occ-foot button:last-child' })}`;
+  const { page, close } = await openDesk({ address });
+  const search = () => page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+  try {
+    await press(page, '[data-day="return"]');
+    assert.equal(await currentDestination(page), 'diagnose');
+    await page.locator(`#level .case-occurrence[data-occurrence-id="${occurrence}"][aria-pressed="true"]`)
+      .waitFor({ timeout: 30000 });
+    const entries = await page.evaluate(() => history.length);
+
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    const held = await page.evaluate(() =>
+      document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+    assert.deepEqual(await search(), { subject, ...(held ? { occurrence: held } : {}), window: '0-360' },
+      'the address names the Finding, the Occurrence on screen and the Overnight window, and no date, moment, lever or focus');
+    assert.equal(await page.evaluate(() => history.length), entries, 'the window choice added no history entry');
+
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    await page.waitForFunction(() => !document.querySelector('#level .case-occurrence'), null, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => `${location.pathname}${location.search}`), '/diagnose',
+      'back at Findings the address carries no subject, occurrence or focus');
+
+    await page.reload();
+    await page.locator('#level .qrow[data-id]').first().waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    assert.equal(await countOf(page, '#level .case-occurrence'), 0, 'the reload lands on Findings with no case file open');
+    assert.equal(await page.evaluate(() => location.search), '');
+  } finally { await close(); }
+});
+
+// ADR 428, review round 2: a parked Diagnose is inert. Its workstation's
+// page-level ↓ must not step the held Occurrence while Day holds the surface,
+// so the Day return is retained on exactly the Occurrence it opened Day from.
+test('a key pressed on Day leaves the parked Diagnose as it was, and the Day return keeps it with no guidance re-read', async () => {
+  const subject = 'finding:over_treated_low';
+  const occurrence = 'o_8b021be51ae0a9b20106e5ce1053f76c';
+  const address = `/day?${new URLSearchParams({ date: DAY, moment: `${DAY} 09:00:00`, subject, occurrence,
+    lever: 'over_treated_low', from: 'diagnose' })}`;
+  const { page, close } = await openDesk({ address });
+  const held = () => page.evaluate(() =>
+    document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+  const settledOnHeld = () => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
+    && document.querySelector('#level .case-occurrence[aria-pressed="true"]'), null, { timeout: 30000 });
+  try {
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    assert.equal(await held(), occurrence, 'premise: the entry restored its Occurrence');
+    await press(page, '.occ-foot button:last-child');
+    await page.locator('.gf-stage-day').waitFor({ timeout: 20000 });
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(300);
+    let guidanceReads = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname === '/api/analyze') guidanceReads += 1; });
+    await press(page, '[data-day="return"]');
+    await settledOnHeld();
+    await page.waitForTimeout(300);
+    assert.equal(await held(), occurrence, 'the return holds the Occurrence it opened Day from');
+    assert.equal(guidanceReads, 0, 'the return is retained: no guidance re-read');
+    assert.equal(await page.evaluate(() => new URLSearchParams(location.search).get('occurrence')), occurrence,
+      'the address names the Occurrence on screen');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.occ-foot button:last-child')), true,
+      'focus lands on that Occurrence\'s Open in Day control');
+  } finally { await close(); }
+});
+
 test('a utility takes the reading pane\'s seat, marks its launcher, and gives focus back on Close', async () => {
   const { page, close } = await openDesk({ address: '/?to=day' });
   try {

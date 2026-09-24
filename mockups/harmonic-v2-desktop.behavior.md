@@ -3435,3 +3435,120 @@ S154 · Opening a basal slot with excluded nights in Diagnose names why they
             renders are owed to docs/scope/release-422-434-evidence/434/ at
             integration
 ```
+
+## #428 amendment — 2026-09-23, issue #428
+
+S136–S138 are the fail-first obligations of ADR 428
+(`openspec/changes/diagnose-address-after-day-return/design.md`): Diagnose's
+address names the case the reader is on. They are app-opener-only, like
+S108–S117, and run on the showcase. Browser execution belongs to the
+coordinator at 1280x720 and 1440x900; the worker order prohibits serve and
+browser execution.
+
+Sanction: Connor Griffin, 2026-09-23, decision D2 — "once the reader acts
+inside Diagnose, the address names the case the reader is on. The CSS-selector
+`focus` in the address becomes an occurrence id." — under his standing Q2
+sanction for this release's checklists: "Yes. I record your answer as the
+approval for every change these 13 checklists call for, and write the wording
+in CONTEXT.md terms."
+
+Shipped desk behavior that changes, and no story that asserted the old fact:
+
+- **An in-place drill now writes the address.** Whenever the case on screen
+  changes inside Diagnose — a rail row, an Occurrence held or stepped, a window
+  chosen, a basal slot, a step back — the address is replaced in place with its
+  subject, held Occurrence and window, and names no case at Findings. It was
+  written only by a destination handoff; the C2 comment on S37b that said so is
+  superseded, and no story asserted it.
+- **A reload after a drill reopens that case**, in its window when that window
+  is a Window preset, instead of #413's cold 24 h Findings arrival. A bare
+  `/diagnose` still arrives on 24 h (S117 unchanged). No story reloaded after a
+  drill.
+- **The Diagnose-origin Day address carries no selector.** It names its return
+  target by the held Occurrence's id, and the return lands on that Occurrence's
+  Open in Day control, as S62 already asserts. Changes' entry into Diagnose
+  drops its `#crumb-trail` focus key, which only named the default.
+- **A Day return to the held case, and a plain Diagnose press after a Day
+  return, are ADR 414 retained returns**: one status read, the drill kept. S26
+  and S62 still hold on the retained path; S108 and S109 are unchanged. By the
+  coordinator's review rulings a parked Diagnose is inert — its workstation's
+  page-level keys (Backspace, ↑/↓, Escape) act only while Diagnose is on screen
+  — so input cannot move the case while another destination holds the surface
+  and a return compares its entry with the held entry, as ADR 414 does, while a
+  restoration unfinished when Diagnose parks, or a case-file answer already in
+  flight, can still leave the held entry disagreeing with the screen and is
+  reconciled when the root re-seats: a Day return then re-reads and restores
+  its entry, and a plain return names the case on screen.
+
+```
+S136 · After a Day return on a Finding case with an Occurrence held, ↓ steps to
+       the next Occurrence and the address names it with no focus; choosing a
+       window that keeps the case file open re-addresses to the Finding and that
+       window with no Day-entry key and no added history entry; Backspace back
+       to Findings leaves /diagnose; and a reload lands on Findings.
+  element:  #level .case-occurrence[aria-pressed="true"], .occ-foot button,
+            [data-day="return"], #seg-window, location
+  source:   frontend/diagnose-workstation.js publishCase (paint);
+            frontend/diagnose.js caseChanged / mount; frontend/routes.js
+            replaceAddress
+  lock:     HV2-14 (the contextual Day return); ADR 428
+  data:     showcase; finding:over_treated_low at 24 h, the first of a served
+            cohort's Occurrences held, opened in Day and returned. The showcase
+            serves no Finding at Overnight (its case files answer
+            finding_unavailable there), so the window chosen is Afternoon,
+            where this Finding stays open re-scoped
+  evidence: C4_STORIES.S136; reads the page's own address after ↓, after the
+            Afternoon choice (against the Occurrence on screen and
+            history.length), after Backspace, and after a reload
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S136 ↓ must re-address to the stepped Occurrence" (the
+            base address keeps the Day entry's date, moment, lever, from, focus
+            and first Occurrence), at 1280x720 and 1440x900; branch 136b9981
+            passes at both sizes; coordinator-run 2026-09-23
+```
+
+```
+S137 · Day return, then Changes, then Diagnose issues exactly one GET
+       /api/status and nothing else, keeps the pressed window and the drilled
+       case, and the address names that case with no Day-entry key and no from.
+  element:  nav.v2-nav [data-destination], .gf-loading, #seg-window
+            [aria-pressed="true"], #crumb-trail .here, location
+  source:   frontend/diagnose.js mount (ADR 428 point 7, a return naming no case)
+  lock:     HV2-34; ADR 414 retention, extended by ADR 428
+  data:     showcase; as S136 up to the Day return, then S108's held Changes
+            round trip
+  evidence: C4_STORIES.S137; heldReturnToDiagnose414 holds /api/status and
+            records every request, then compares the crumb, the pressed window
+            and the address
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S137 the return to Diagnose after a Day return must
+            issue no request besides the held status check" (the base compares
+            the held Day context with the empty topbar entry and re-reads every
+            guidance read), at 1280x720 and 1440x900; branch 136b9981 passes at
+            both sizes; coordinator-run 2026-09-23
+```
+
+```
+S138 · A Finding case with an Occurrence held in a preset window other than
+       Overnight: the address names subject, Occurrence and window with no
+       focus; a reload reopens it in that window with that Occurrence held;
+       Open in Day writes a Day address with no CSS selector; and the return
+       makes one status read and focuses that Occurrence's Open in Day control.
+  element:  #seg-window, #level .qrow, #level .case-occurrence, .occ-foot
+            button:last-child, [data-day="return"], location
+  source:   frontend/diagnose.js restoreEntry (preset press, return focus) /
+            mount (a Day return to the held case); frontend/diagnose-context.js
+            evidenceDayContext
+  lock:     HV2-14; ADR 428 points 5, 6 and 8
+  data:     showcase; finding:over_treated_low in the Afternoon preset, its
+            first roster Occurrence held
+  evidence: C4_STORIES.S138; reads the address, reloads and waits for the same
+            Occurrence held under a pressed Afternoon, reads the Day address,
+            then heldStatusReturn holds /api/status across Return to Diagnose
+            and checks document.activeElement
+  status:   base a4d374a7 with this harness laid over it fails at its feature
+            assertion, "S138 the address must name the Finding, its held
+            Occurrence and the Afternoon window" (base drills never write the
+            address, which stays /diagnose), at 1280x720 and 1440x900; branch
+            136b9981 passes at both sizes; coordinator-run 2026-09-23
+```

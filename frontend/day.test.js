@@ -250,9 +250,9 @@ test('a contextual entry names the served title it was opened from and returns t
   // The entry comes from the Diagnose door itself, over a served case file.
   const entry = evidenceDayContext({
     occurrence: { id: 'occ-7', t: '2024-06-26 13:55:00' },
+    current: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7', window: '720-1080' },
     selected: { subject: 'pattern:highs-after-meals', occurrence: 'occ-7',
       finding: { id: 'pattern:highs-after-meals', title: 'Highs after meals' }, window: { start_min: 720, end_min: 1080 } },
-    focus: '.occ-foot button:last-child',
   });
   const markup = dayFrame(state({ entry }));
   assert.equal(openedFrom(markup), 'Highs after meals');
@@ -262,12 +262,13 @@ test('a contextual entry names the served title it was opened from and returns t
   const back = dayReturnTarget(entry);
   assert.deepEqual(back, {
     utility: null, destination: 'diagnose', label: 'Diagnose',
-    focus: '.occ-foot button:last-child', title: 'Highs after meals',
+    focus: null, title: 'Highs after meals',
   });
 });
 
 test('a basal-slot entry names the setting and its half-hour range', () => {
-  const entry = evidenceDayContext({ occurrence: { t: '2024-06-26 03:00:00' }, slot: { start: 180, end: 210 }, focus: '#crumb-trail' });
+  const entry = evidenceDayContext({ occurrence: { t: '2024-06-26 03:00:00' },
+    current: { subject: 'basal:180', occurrence: '2024-06-26', window: '180-210' } });
   const markup = dayFrame(state({ entry }));
   assert.equal(openedFrom(markup), 'Basal · 03:00–03:30');
   assert.doesNotMatch(markup, ID_TEXT, 'the Day desk printed a routing id');

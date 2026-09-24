@@ -475,6 +475,11 @@ async function drilledDiagnose414(page) {
 async function heldReturnToDiagnose414(page, storyId) {
   await press(page, 'nav.v2-nav [data-destination="changes"]');
   await page.locator('.gf-stage-table, .gf-stage-trial, .gf-empty').first().waitFor({ timeout: 30000 });
+  return heldStatusReturn(page, storyId, 'nav.v2-nav [data-destination="diagnose"]');
+}
+// Press `returnControl` (the topbar's Diagnose, or Day's Return to Diagnose)
+// with /api/status held, and report every request the return issued.
+async function heldStatusReturn(page, storyId, returnControl) {
   const requests = [];
   const onRequest = request => requests.push(new URL(request.url()).pathname);
   page.on('request', onRequest);
@@ -493,7 +498,7 @@ async function heldReturnToDiagnose414(page, storyId) {
   // story's own assertion instead of letting it escape as a crash.
   const settled = completion.catch(() => null);
   try {
-    await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+    await press(page, returnControl);
     await boundedWait(arrived, STATUS_TIMEOUT);
     await page.locator('.gf-loading[aria-label="Loading Diagnose"]').waitFor({ timeout: 30000 });
     release();
@@ -504,6 +509,32 @@ async function heldReturnToDiagnose414(page, storyId) {
   }
   await waitForDesk(page);
   return requests;
+}
+// #428 (ADR 428): Diagnose's address names the case the reader is on. Each read
+// here is the page's own address, as a reload or a shared link would carry it.
+const address428 = page => page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+const heldOccurrence428 = page => page.evaluate(() =>
+  document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId ?? null);
+const waitForHeld428 = (page, id) => page.waitForFunction(id =>
+  document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId === id,
+id, { timeout: 30000 });
+// The showcase's over-treated low at 24 h: hold the first of a served cohort's
+// Occurrences (the ↑/↓ traversal steps within that cohort), open it in Day and
+// return. The showcase serves this Finding re-scoped in the Afternoon only.
+async function heldCaseThroughDay428(page, storyId) {
+  const file = await C2_STORIES.openComparisonCase(page);
+  const cohort = file.projection.cohorts.find(cohort => cohort.occurrence_ids.length > 1);
+  assert.ok(cohort, `${storyId} premise: one served cohort must hold two Occurrences`);
+  const [first, second] = cohort.occurrence_ids;
+  const row = page.locator(`#level .case-occurrence[data-occurrence-id="${first}"]`);
+  if (!await row.count()) await page.locator('#level .more').first().click();
+  await selectOccurrence(page, row);
+  await press(page, '.occ-foot button:last-child');
+  await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+  await press(page, '[data-day="return"]');
+  await waitForHeld428(page, first);
+  await waitForDesk(page);
+  return { subject: file.finding.id, first, second };
 }
 async function editChainRoster414(page) {
   await page.goto(new URL('/?to=changes&subject=history', page.url()).href);
@@ -1658,6 +1689,103 @@ export const C4_STORIES = {
       assert.ok(label?.includes('; 3 nights excluded: 1 insulin on board, 2 other reasons'),
         `S154 the tile's accessible description must name each served reason: ${label}`);
     }, 'S154 the tile description names the served reasons');
+  },
+  // #428 (ADR 428): after a Day return, every change to the case on screen —
+  // here a key, a window choice and Backspace, none of them a Diagnose click —
+  // renames the address in place, and a reload reopens what was on screen.
+  async S136(page) {
+    const { subject, second } = await heldCaseThroughDay428(page, 'S136');
+    await page.keyboard.press('ArrowDown');
+    await waitForHeld428(page, second);
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await address428(page)), { subject, occurrence: second },
+        'S136 ↓ must re-address to the stepped Occurrence, with no focus and no Day-entry key');
+    }, 'S136 ↓ re-addresses');
+    // The showcase serves no Finding at Overnight (its case file answers
+    // finding_unavailable there), so the preset that keeps this case file open
+    // re-scoped is Afternoon.
+    const entries = await page.evaluate(() => history.length);
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    await settled(page);
+    await waitForReplayAssertion(async seen => {
+      const held = seen(await heldOccurrence428(page));
+      assert.deepEqual(seen(await address428(page)), { subject, ...(held ? { occurrence: held } : {}), window: '720-1080' },
+        'S136 the window choice must re-address to the Finding, the Occurrence on screen and the Afternoon window');
+      assert.equal(seen(await page.evaluate(() => history.length)), entries, 'S136 the window choice must add no history entry');
+    }, 'S136 the window choice re-addresses');
+    await page.keyboard.press('Backspace');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#level .case-occurrence').count()), 0, 'S136 premise: Backspace returns to Findings');
+      assert.equal(seen(await page.evaluate(() => `${location.pathname}${location.search}`)), '/diagnose',
+        'S136 back at Findings the address must name no case');
+    }, 'S136 Backspace re-addresses');
+    await page.reload();
+    await settled(page);
+    await waitForReplayAssertion(async seen => {
+      assert.ok(seen(await page.locator('#level .qrow[data-id]').count()) > 0, 'S136 the reload must land on the Findings rail');
+      assert.equal(seen(await page.locator('#level .case-occurrence').count()), 0, 'S136 the reload must open no case file');
+    }, 'S136 the reload lands on Findings');
+  },
+  // #428: ADR 414's retained return also covers a plain Diagnose press after a
+  // Day return, and the address then names the retained case.
+  async S137(page) {
+    const { subject, first } = await heldCaseThroughDay428(page, 'S137');
+    const trailBefore = (await page.locator('#crumb-trail .here').innerText()).trim();
+    const windowBefore = (await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim();
+    const requests = await heldReturnToDiagnose414(page, 'S137');
+    assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
+      'S137 the return to Diagnose after a Day return must issue no request besides the held status check');
+    assert.equal(requests.filter(path => path === '/api/status').length, 1,
+      'S137 the return to Diagnose after a Day return must issue exactly one GET /api/status');
+    assert.equal((await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), windowBefore,
+      'S137 the pressed window must remain pressed after the return');
+    assert.equal((await page.locator('#crumb-trail .here').innerText()).trim(), trailBefore,
+      'S137 the drilled case must remain open after the return');
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await address428(page)), { subject, occurrence: first },
+        'S137 the address must name the retained case, with no Day-entry key and no from');
+    }, 'S137 the address names the retained case');
+  },
+  // #428: a case address in a preset window other than Overnight reopens that
+  // case in that window, and its Day hop names the Occurrence, not a selector.
+  async S138(page) {
+    const subject = 'finding:over_treated_low';
+    await press(page, '[data-destination="diagnose"]'); await settled(page);
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click(); await settled(page);
+    const row = page.locator(`#level .qrow[data-id="${subject}"]`);
+    await row.waitFor({ timeout: 30000 });
+    await row.click();
+    await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+    const held = await selectOccurrence(page);
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await address428(page)), { subject, occurrence: held, window: '720-1080' },
+        'S138 the address must name the Finding, its held Occurrence and the Afternoon window, with no focus');
+    }, 'S138 the case address');
+    await page.reload();
+    await waitForHeld428(page, held);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), 'Afternoon',
+        'S138 the reload must reopen the case in its Afternoon window');
+    }, 'S138 the reload reopens the case');
+    await press(page, '.occ-foot button:last-child');
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const day = seen(await address428(page));
+      assert.equal(day.subject, subject); assert.equal(day.occurrence, held); assert.equal(day.window, '720-1080');
+      assert.equal(Object.hasOwn(day, 'focus'), false, 'S138 the Day address must carry no return-focus key');
+      assert.ok(!Object.values(day).some(value => /button|:last-child|^[.#[]/.test(value)),
+        `S138 the Day address must carry no CSS selector: ${JSON.stringify(day)}`);
+    }, 'S138 the Day address');
+    const requests = await heldStatusReturn(page, 'S138', '[data-day="return"]');
+    assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
+      'S138 the Day return to the held case must issue no request besides the held status check');
+    assert.equal(requests.filter(path => path === '/api/status').length, 1,
+      'S138 the Day return to the held case must issue exactly one GET /api/status');
+    await waitForHeld428(page, held);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.occ-foot button:last-child').evaluate(node => node === document.activeElement)), true,
+        'S138 the return must focus that Occurrence\'s Open in Day control');
+    }, 'S138 the return focus');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

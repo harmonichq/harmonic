@@ -2311,9 +2311,12 @@ async function stage459(page, ctx, what) {
       `S187 premise: the press stages the ${what}`);
   }, `S187 the ${what} stage settles`);
 }
+/** The carb-ratio queue row's panel, from the Findings queue: a drilled level
+    returns through its crumb, as S147 does, since re-pressing the Window preset
+    already chosen lists nothing. */
 async function openCarbRatio459(page) {
-  await page.getByRole('button', { name: '24 h', exact: true }).click();
-  await settled(page);
+  const findings = page.locator('#crumb-trail').getByRole('button', { name: 'Findings', exact: true });
+  if (await findings.count()) { await findings.click(); await settled(page); }
   await page.locator('#level .qrow[data-id^="ic:"]').first().click();
   await page.locator('#level .stagebtn').waitFor({ timeout: 30000 });
 }

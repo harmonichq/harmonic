@@ -37,6 +37,8 @@ attribution, staging, tier, rank or Pattern rate value changes anywhere below.
   and regenerate every drift-checked artifact that serializes case files through
   its own generator (`scripts/gen_missed_meal_comparison_fixtures.py`,
   `.claude/qa/gen_synthetic_fixtures.py` via `scripts/check_demo_fixtures.py`,
+  `scripts/gen_eating_sequence_fixtures.py` for
+  `mockups/eating-sequence-findings.synthetic/payload.json`,
   `mockups/harmonic-v2.exploration/generate.py`); leave every `--check`,
   `node mockups/diagnose-event-comparison.synthetic/generate.mjs --check` and the
   fast gate green.

@@ -115,9 +115,11 @@ no count sentence, because it has no admission route or its counts are under
 review, every fold sentence of every cause folded under it SHALL be marked outside
 the Pattern's count and no credited count SHALL be served. Under a Pattern that
 serves a count sentence, the credited counts of its folded causes SHALL add up to
-the Pattern's count. The cause's count sentences and appearances, the Pattern's
-count and denominator, and the Pattern roster the projection publishes SHALL be
-unchanged.
+the Pattern's count. A Pattern that shows no shares is exempt from that add-up:
+Overnight lows with no insulin on board takes its count from harm-band nights, has
+no rate levers and folds no cause. The cause's count sentences and appearances, the
+Pattern's count and denominator, and the Pattern roster the projection publishes
+SHALL be unchanged.
 
 #### Scenario: A cause counted in another family still counts on the Pattern
 

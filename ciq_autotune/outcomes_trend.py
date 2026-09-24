@@ -4,16 +4,18 @@ A third versioned result object, sibling to :class:`~ciq_autotune.outcomes.Outco
 but trend-first: where the Outcome summary is one flat window with no movement, this
 tiles the data into a sequence of equal ``window_days`` windows (oldest→newest,
 index-aligned) and emits, per behavior and per glycemic metric, a **series** across
-them — so the frontend can show "am I pre-bolusing better than last window", "have my
-overnight lows trended down". It supersedes the snapshot-only framing of #108.
+them — so the CLI ``outcomes-trend`` command can show "am I pre-bolusing better than
+last window", "have my overnight lows trended down". It supersedes the snapshot-only
+framing of #108. ``/api/outcomes/trend`` serves none of these series, only the
+watched change (:func:`trend_watched_change`, #447).
 
 Like :mod:`~ciq_autotune.outcomes` it is **standalone**, NOT a field on
 :class:`~ciq_autotune.result.AnalysisResult` (which carries analyzer-specific window
 semantics — basal keeps per-slot basal measurement cuts, while ISF/I:C measure
 over the full requested window and use ISF/I:C setting epochs for
 caveats/settling). Its own
-:data:`SCHEMA_VERSION`, its own CLI + API renderers, mirroring ``result.py``'s "one
-versioned result, many renderers" pattern.
+:data:`SCHEMA_VERSION`, its own CLI renderers (markdown and JSON), mirroring
+``result.py``'s "one versioned result, many renderers" pattern.
 
 Two correctness rules this module is built around (issue #131):
 
@@ -26,8 +28,8 @@ Two correctness rules this module is built around (issue #131):
 
 * **Honest denominators.** Each behavior keeps its **own** exposure denominator
   (``missed_meal`` on highs, ``correction_stacking`` on correction-pairs) even where
-  the locked UI displays it under a different affinity group (Meals / Lows). The
-  ``exposure`` field is the true denominator; grouping is the frontend's job.
+  a reader groups it under a different affinity group (Meals / Lows). The
+  ``exposure`` field is the true denominator; grouping is presentation.
 
 ``correction_stacking`` is special (#131's resolved caveat): its outcome-gated verdict
 scores a green "~never" on real data — perfection at a thing done constantly — because
@@ -93,9 +95,9 @@ from .rest_window import detect_rest_windows
 # v7 (#377): ``overnight_lows.cleared`` — whether the newest window-over-window change
 # in the nights-with-a-low day-rate clears the adr-364 day-level significance bar
 # (Newcombe interval excludes zero AND two-sided Fisher exact < 0.05). This is the ONE
-# outcome carrying binary day-level counts, so it is the only outcome the Verify digest
-# can gate on for a "what changed" headline chip (adr-365 §2). Continuous metrics
-# (TIR, mean, the arc medians) carry no day-level test and never headline.
+# outcome carrying binary day-level counts; it rides in the CLI trend's JSON, and no
+# surface headlines it since #416 (adr-365 §2). Continuous metrics (TIR, mean, the
+# arc medians) carry no day-level test and never headline.
 # v8 (#392): ``profile_ic`` becomes the active programmed schedule's real min/max
 # bounds instead of an invented entry-count median. Meal attribution is independent
 # of this display field and uses each meal's Dose-stamped I:C.
@@ -518,7 +520,8 @@ class OvernightLowTrend:
 
     ``cleared`` (v7, #377) is whether the newest window-over-window change in the
     day-rate clears the adr-364 day-level bar — the ONE outcome carrying binary
-    day-level counts, so the only one the Verify digest can headline (adr-365 §2).
+    day-level counts. It rides in the CLI trend's JSON, and no surface headlines it
+    since #416 (adr-365 §2).
     """
 
     title: str
@@ -820,20 +823,21 @@ def summarize_trend(
     now: Optional[datetime] = None,
     scenario_config: Optional[ScenarioConfig] = None,
 ) -> OutcomesTrend:
-    """Build the Outcomes trend for ``store`` (the API + CLI entry).
+    """Build the Outcomes trend for ``store`` (the CLI ``outcomes-trend`` entry).
 
     Reads CGM / bolus / basal / settings once, resolves the **fixed** current-profile
     ISF (held constant across every window — the #131 correctness rule), tiles the
     data into equal ``window_days`` windows ending at ``now``, and for each window
     computes the glycemic metrics + post-meal arc over the CGM series and behavior
     attributions via the tally-only scenario path. Carb-undercount uses each meal's
-    dose-stamped I:C. ``now`` defaults to the latest data instant (so a static DB
-    summarizes its own tail); pass it for deterministic tests.
+    dose-stamped I:C. ``now`` defaults to the latest basal, CGM or bolus instant (so
+    a static DB summarizes its own tail); pass it for deterministic tests.
 
-    **Side effect:** resolving the active watched change (#244) can *drop* a pinned
-    Focus when a newly-detected setting change preempts it (ADR 0029 §4) — a persisted
-    write, not a pure read. This is deliberate: the preemption is a real state change,
-    surfaced wherever the trend is read.
+    The rolling-window series are the command line's: ``/api/outcomes/trend`` serves
+    only the watched change, which this reports through :func:`trend_watched_change`
+    so the two answer identically (#447). Resolving it reads the committed admission
+    and writes nothing; the reconciliation that preempts a pinned Focus (ADR 0029 §4)
+    runs when data is ingested, not here.
     """
     scenario_config = scenario_config or ScenarioConfig()
     basal = store.basal_events()
@@ -848,8 +852,7 @@ def summarize_trend(
     rescue_from = first_observation(carbs, prompt_rows)
 
     times = [e.t for e in basal] + [r.t for r in cgm] + [b.t for b in bolus]
-    span_end = max(times) if times else None
-    now = now or span_end or datetime.now()
+    now = now or _data_anchor(basal, cgm, bolus)
     earliest = min(times) if times else None
 
     # False-low reading invalidation (adr-381), applied full-response before any window's
@@ -1132,14 +1135,10 @@ def summarize_trend(
         cleared=_overnight_lows_cleared(overnight_low_n, overnight_rest_n),
     )
 
-    # The single active watched change — a Trial (derived from the setting-change
-    # epoch) or the pinned Focus, resolved by the one-active invariant (#244). This
-    # may DROP an active Focus if a Trial now preempts it (a persisted state change).
-    from .watched_change import active_watched_change
-    # The Trial's maturing window is the watched-change module's own fixed fact
-    # (#18) — the trend's tiling window deliberately does not travel into it.
-    watched = active_watched_change(store, basal, bolus, snaps,
-                                    now=now, cgm_readings=cgm)
+    # The single active watched change (#244), resolved exactly as the route resolves
+    # it (#447). The Trial's maturing window is the watched-change module's own fixed
+    # fact (#18) — the trend's tiling window deliberately does not travel into it.
+    watched = trend_watched_change(store, now=now)
 
     return OutcomesTrend(
         schema_version=SCHEMA_VERSION,
@@ -1154,6 +1153,31 @@ def summarize_trend(
         overnight_lows=overnight_lows,
         watched_change=watched,
     )
+
+
+def trend_watched_change(store, *, now: Optional[datetime] = None):
+    """The one active watched change — a Trial or Focus view, or ``None`` (#244).
+
+    This is the whole of what ``/api/outcomes/trend`` serves (#447), and
+    :func:`summarize_trend` reports it through here too, so the route and the CLI
+    trend answer identically. ``now`` defaults to the trend's anchor, the latest
+    basal, CGM or bolus instant. Settings snapshots never move it: on a store
+    reconciled at that anchor, a settings read captured after the last data point
+    would push ``now`` past a live Trial's watch horizon and read it as no active
+    change.
+    """
+    if now is None:
+        now = _data_anchor(store.basal_events(), store.cgm_readings(), store.bolus_events())
+    from .watched_change import active_watched_change
+    # The admission reads only the store and ``now``; it takes no event slices.
+    return active_watched_change(store, (), (), (), now=now)
+
+
+def _data_anchor(basal, cgm, bolus) -> datetime:
+    """The latest basal, CGM or bolus instant, so a static DB reads its own tail;
+    the wall clock only when the store holds none."""
+    times = [e.t for e in basal] + [r.t for r in cgm] + [b.t for b in bolus]
+    return max(times) if times else datetime.now()
 
 
 def _profile_settings(snaps) -> tuple:

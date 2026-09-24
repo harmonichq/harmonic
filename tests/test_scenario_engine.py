@@ -1148,7 +1148,7 @@ class CorrectionOnIobLeverTest(unittest.TestCase):
 
     def test_correction_stacking_still_surfaces_overnight(self):
         # Two corrections stack before midnight while BG is falling, then carry it
-        # below 70 after midnight. Reporting the low in Verify does not suppress the
+        # below 70 after midnight. Reporting the low as an outcome does not suppress the
         # actionable correction behavior in Diagnose (#327).
         fall = cgm_ramp(15, 23, 0, 160, -0.8, 60)        # 160 -> 112 at midnight
         crash = cgm_ramp(16, 0, 5, 108, -1.2, 60)       # 108 -> 36 after midnight

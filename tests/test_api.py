@@ -1577,7 +1577,7 @@ class CachePreWarmTest(unittest.TestCase):
     #: The builders behind the landing set, patched to count recomputes.
     _BUILDERS = (
         ("analyze", "ciq_autotune.api", "analyze"),
-        ("outcomes-trend", "ciq_autotune.outcomes_trend", "summarize_trend"),
+        ("outcomes-trend", "ciq_autotune.outcomes_trend", "trend_watched_change"),
         ("scenarios", "ciq_autotune.analyzers.scenario", "build_scenarios"),
         ("exposures", "ciq_autotune.api", "build_exposures"),
         ("explore-time-of-day", "ciq_autotune.api", "build_time_of_day"),
@@ -1618,7 +1618,7 @@ class CachePreWarmTest(unittest.TestCase):
         """Exactly what the browser asks for on the initial Diagnose load."""
         for path, params in (
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": False}),
-            ("/api/outcomes/trend", {"window": 30}),
+            ("/api/outcomes/trend", {}),
             ("/api/analyze", {"window": 30, "ignore_changes": False, "pool": True}),
             ("/api/scenarios", {"window": 30}),
             ("/api/explore/time-of-day", {}),
@@ -1975,7 +1975,7 @@ class CachePreWarmTest(unittest.TestCase):
                                           "finding-case-file": 1})
             expected_keys = (
                 ("analyze", 30, False, False),
-                ("outcomes-trend", 30), ("explore-time-of-day",),
+                ("outcomes-trend",), ("explore-time-of-day",),
                 ("analyze", 30, False, True), ("scenarios", 30),
                 ("exposures",),
                 ("isf-rest-window-evidence", 30),
@@ -2057,13 +2057,12 @@ class CachePreWarmTest(unittest.TestCase):
             raise RuntimeError("outcomes trend blew up")
 
         with self._counting_builders() as counts:
-            with patch.object(trend_mod, "summarize_trend", boom):
+            with patch.object(trend_mod, "trend_watched_change", boom):
                 with self._run_worker():
                     self.assertEqual(counts["outcomes-trend"], 0)
                     self.assertEqual(counts["analyze"], 2)
                     self.assertEqual(counts["scenarios"], 1)
-            self.assertEqual(self.client.get("/api/outcomes/trend",
-                                             params={"window": 30}).status_code, 200)
+            self.assertEqual(self.client.get("/api/outcomes/trend").status_code, 200)
             self.assertEqual(counts["outcomes-trend"], 1)
 
 

@@ -345,11 +345,15 @@ The coordinator's rulings Q1–Q4 on #447 are made under the same delegation.
    byte. The default anchor does not change: the latest basal, CGM or bolus
    instant, else now. `api._latest_instant` is not reused for it, because it also
    counts settings snapshots. A settings read captured after the last data point
-   would then move `now` past a Trial's 28-day watch horizon, and a live Trial
-   would read as no active change: that is a different served `watched_change`
-   from the base's. `docs/scope/447-trend-anchor.spike.py` shows this on
-   `c3-trial` with an unchanged snapshot captured 2024-06-15. Task 1.2's anchor
-   test pins the live Trial there.
+   would then move `now` past a Trial's 28-day watch horizon. On a store
+   reconciled at the data anchor, a live Trial would then read as no active
+   change: that is a different served `watched_change` from the base's. The
+   app's own reconciles already anchor on a snapshot-inclusive instant, so on a
+   store the app reconciled that Trial has already ended and both anchors read
+   it the same; the divergence is confined to a store reconciled at the data
+   anchor. `docs/scope/447-trend-anchor.spike.py` shows it on `c3-trial` with an
+   unchanged snapshot captured 2024-06-15. Task 1.2's anchor test pins the live
+   Trial there.
 3. The route computes only that, not the series. The series cost fell on
    Diagnose's cold landing path (`scripts/profile_cold_shapes.py` names this
    shape "cold").
@@ -441,9 +445,11 @@ with the coordinator's ruling F1.
   - durable Save draft and Record decision (S40, S89);
   - a recorded Plan's phase from its served verdict (ADR 431, S145).
 
-  It claims no hand-edit layer and no browser reconciliation; the desk has
-  neither. The surfaces Purpose's "four distinct surfaces" becomes the three
-  destinations.
+  It claims no hand-edit layer and no Plan phase decided by a browser pump
+  comparison; the desk has neither. The browser's comparison only draws the
+  planned-versus-pump rows under a served `mismatch`, as "Changes states a
+  Plan's phase from its served verdict" already requires. The surfaces
+  Purpose's "four distinct surfaces" becomes the three destinations.
 - **The QA consumer list (F4).** The qa-e2e-database requirement "Remaining
   consumers migrate before revise-E2E retires" is MODIFIED to the tree as it
   stands. The desk ledger replay is the one database-backed browser consumer:

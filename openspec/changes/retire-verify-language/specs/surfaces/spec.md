@@ -91,8 +91,8 @@ copy "‹n› of ‹capacity› segments used" and "Nothing here is sent to your
 It SHALL keep the detected pump settings distinct from the proposed schedule.
 Saving a draft and recording a decision SHALL be durable writes. A recorded
 Plan's phase SHALL come from its served verdict, as "Changes states a Plan's
-phase from its served verdict" requires. Changes' Plan SHALL compare no
-deliverable with a pump read of its own.
+phase from its served verdict" requires. Changes' Plan SHALL decide no Plan
+phase from a pump comparison of its own.
 
 #### Scenario: A staged change reads as the complete schedule in Changes' Plan
 

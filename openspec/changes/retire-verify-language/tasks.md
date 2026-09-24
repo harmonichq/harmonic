@@ -9,7 +9,7 @@ outcomes-trend route and the legacy Trial detector.
 
 ## 1. Backend contract (sub-order 1)
 
-- [ ] 1.1 Delete `detect_trial` and `_profile_switch_diff` from
+- [x] 1.1 Delete `detect_trial` and `_profile_switch_diff` from
   `ciq_autotune/watched_change.py`. In `tests/test_watched_change.py`, delete the
   five classes that exist only to test `detect_trial` (`TrialDetectionTest`,
   `MaturingTest`, `RevertRuleTest`, `ProfileSwitchAttributionTest` and
@@ -20,7 +20,7 @@ outcomes-trend route and the legacy Trial detector.
   -- ciq_autotune scripts frontend tests .claude
   mockups/harmonic-v2.exploration/generate.py` prints nothing, and
   `uv run python -m pytest tests/test_watched_change.py` passes.
-- [ ] 1.2 Write the failing tests first in `tests/test_outcomes_trend.py`.
+- [x] 1.2 Write the failing tests first in `tests/test_outcomes_trend.py`.
   Replace `test_trend_endpoint_returns_versioned_payload` and
   `test_window_param_flows_through` with route tests over manufactured stores:
   `c3-trial` and `c3-focus`, built with `scripts.qa_e2e_cases.materialize_case`,
@@ -42,7 +42,7 @@ outcomes-trend route and the legacy Trial detector.
   prints `schema_version`, `windows`, `behaviors`, `metrics`, `arc`,
   `pre_meal`, `overnight_lows` and `watched_change`. Watch the route tests fail
   on the base, where the body carries every series.
-- [ ] 1.3 Implement http-api **The outcomes-trend route serves only the watched
+- [x] 1.3 Implement http-api **The outcomes-trend route serves only the watched
   change** and the modified outcomes requirement.
   - `ciq_autotune/outcomes_trend.py` gains one function that returns the watched
     change with `summarize_trend`'s anchor (the latest basal, CGM or bolus
@@ -61,12 +61,12 @@ outcomes-trend route and the legacy Trial detector.
   - `scripts/profile_cold_shapes.py` profiles the route's one window-free shape
     through the new function.
   - The CLI's `outcomes-trend` output does not change.
-- [ ] 1.4 Re-point the docstrings and comments that describe the route as
+- [x] 1.4 Re-point the docstrings and comments that describe the route as
   serving series. That is `ciq_autotune/outcomes_trend.py`'s module docstring,
   `summarize_trend`'s docstring and the route's docstring, plus
   `ciq_autotune/watched_change.py`'s module docstring and its line-43 comment.
   The series are the CLI trend's, and the route serves only the watched change.
-- [ ] 1.5 Re-point the backend, test, script, generator and CI lines the
+- [x] 1.5 Re-point the backend, test, script, generator and CI lines the
   inventory lists, and `frontend/data.js:190, 400, 419`. The line-400 comment
   names `focus-entry.js` as `fetchFocuses`' only caller. `watched_change.py:507`
   goes with 1.1. Reword
@@ -75,11 +75,11 @@ outcomes-trend route and the legacy Trial detector.
   `TrialWindowInvarianceTest.test_trend_and_roster_count_the_same_bounded_days`,
   add `self.assertEqual(roster[0]["state"], "complete")`, and reword that file's
   lines 1292, 1349 and 1375.
-- [ ] 1.6 Run `uv run python mockups/harmonic-v2.exploration/generate.py`, then
+- [x] 1.6 Run `uv run python mockups/harmonic-v2.exploration/generate.py`, then
   run it with `--check`. Exactly `focus.json` and `journey.json` move, because
   their `code_version` hashes `ciq_autotune/*.py`. Any other moved file is
   reported, not committed.
-- [ ] 1.7 After `uv sync --frozen --extra api --extra sync` and
+- [x] 1.7 After `uv sync --frozen --extra api --extra sync` and
   `npm ci && npm run build`, every one of these exits 0:
   `uv run python -m pytest tests/test_watched_change.py tests/test_outcomes_trend.py tests/test_api.py tests/test_scenario_engine.py tests/test_trial_evidence.py tests/test_verify_trials.py tests/test_verify_block_ic.py tests/test_gen_verify_payload_block_ic.py`;
   `node --test 'frontend/**/*.test.js'`;

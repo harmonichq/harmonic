@@ -1,8 +1,9 @@
-"""The per-period breakdown the Verify workstation renders (#660).
+"""The per-period breakdown served with a selected Trial's detail, which Changes'
+Trial view renders (#660).
 
 The legacy front door — :func:`trial_breakdown` — answering "what does one Trial's
-Before period look like beside its Trial period?" in the four shapes the ★ LOCKED
-Verify surface's data-bindings contract binds it to:
+Before period look like beside its Trial period?" in the four shapes the locked v1
+mock's data-bindings contract (#660) binds it to:
 
 * **changes** — the engine-derived constituent settings diff ("what changed").
 * **envelopes** — paired glucose-by-clock medians, the read Diagnose teaches.

@@ -2,8 +2,9 @@
 """Fail CI when a committed demo fixture set no longer matches its generator (#716).
 
 Two synthetic fixture sets are committed under `mockups/` so the browser gates can
-render a deterministic demo without touching real PHI: the Verify workstation's
-`verify-660-story.synthetic/` and the Diagnose workstation's
+render a deterministic demo without touching real PHI: the Trial roster capture
+`verify-660-story.synthetic/`, which the desk replay and browser suite read, and
+the Diagnose workstation's
 `diagnose-workstation.synthetic/`. Both are produced by running a real generator
 script, not hand-written — the same "fixture encodes the assumption under test"
 trap `CLAUDE.md` records for the thin-slot hold applies here: if a generator's

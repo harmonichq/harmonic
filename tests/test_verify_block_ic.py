@@ -1,6 +1,6 @@
 """Block-scoped I:C Trial identity, matching, and cohort binding (#581).
 
-ADR 581 amends ADR 579 §5: a block-scoped I:C change is admitted to the Verify
+ADR 581 amends ADR 579 §5: a block-scoped I:C change is admitted to the Trial
 roster only when the pump-observed schedule change *uniquely* matches one complete
 annotated applied Plan group (the ``ic_block_provenance`` slice 1 stamps onto every
 staged member). These tests drive the one public interface — ``review_trials`` /

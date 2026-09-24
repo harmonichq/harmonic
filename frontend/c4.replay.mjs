@@ -649,6 +649,42 @@ async function openStillOpenRecord430(page, storyId) {
   return open;
 }
 
+// #445 (ADR 445): a Day link from Changes or a carb utility names its return
+// target by an identity its origin owns, and the return lands on the control
+// the reader pressed. A value reads as a selector when it carries a bracket or
+// leads with a class or id mark.
+function identityAddress445(storyId, day) {
+  assert.equal(Object.hasOwn(day, 'focus'), false, `${storyId} the Day address must carry no return-focus key`);
+  assert.ok(!Object.values(day).some(value => /[[\]]|^[.#]/.test(value)),
+    `${storyId} the Day address must carry no CSS selector: ${JSON.stringify(day)}`);
+}
+const focusedOn445 = (page, selector) => page.evaluate(selector =>
+  document.activeElement === document.querySelector(selector), selector);
+// The reading pane's first supporting-date control, once the change's evidence
+// has rendered it.
+async function supportingDate445(page, storyId) {
+  const control = page.locator('.gf-reading [data-day-date]').first();
+  await control.waitFor({ timeout: 30000 });
+  const date = await control.getAttribute('data-day-date');
+  assert.match(date, /^\d{4}-\d{2}-\d{2}$/, `${storyId} premise: a supporting date names an ISO date`);
+  return { control, date };
+}
+// Text of a control in the inspector, which a seated utility hides: innerText
+// reads nothing from a hidden element, so these read its text content.
+const text445 = (page, selector) => page.locator(selector).evaluate(node => node.textContent.trim());
+// S138's drill: the showcase's over-treated low in the Afternoon preset, its
+// first roster Occurrence held.
+async function heldAfternoonCase445(page) {
+  const subject = 'finding:over_treated_low';
+  await press(page, '[data-destination="diagnose"]'); await settled(page);
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click(); await settled(page);
+  const row = page.locator(`#level .qrow[data-id="${subject}"]`);
+  await row.waitFor({ timeout: 30000 });
+  await row.click();
+  await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { subject, held: await selectOccurrence(page) };
+}
+
 // Holds the next request matching `pattern` that also satisfies `matches`
 // (other traffic on the same pattern is let through), so a caller can prove
 // which named loading frame stands for which in-flight read.
@@ -2322,6 +2358,149 @@ export const C4_STORIES = {
       assert.equal(seen(await page.locator('.occ-foot button:last-child').evaluate(node => node === document.activeElement)), true,
         'S138 the return must focus that Occurrence\'s Open in Day control');
     }, 'S138 the return focus');
+  },
+  // #445 (ADR 445): a contributing date of the active Trial opens Day naming
+  // that date and no selector, and Return to Changes lands on its control.
+  async S162(page) {
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'trial', 'S162 premise: the case must serve an active Trial');
+    await press(page, 'nav.v2-nav [data-destination="changes"]');
+    await page.locator('.gf-stage-trial').waitFor({ timeout: 30000 });
+    const { control, date } = await supportingDate445(page, 'S162');
+    await control.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.date, date, 'S162 the Day address must name the supporting date');
+    assert.equal(day.from, 'changes', 'S162 the Day address must return to Changes');
+    identityAddress445('S162', day);
+    await press(page, '[data-day="return"]');
+    await page.locator('.gf-stage-trial').waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await focusedOn445(page, `[data-day-date="${date}"]`)), true,
+        `S162 Return to Changes must land focus on the ${date} control once the evidence has rendered`);
+    }, 'S162 the return focus');
+  },
+  // #445: the same from the Trial's change record, reached as S142 reaches it.
+  async S163(page) {
+    const open = await openStillOpenRecord430(page, 'S163');
+    const record = `record:${await open.getAttribute('data-record')}`;
+    await open.click();
+    await page.locator('[data-record-part="reassessment"]').waitFor({ timeout: 30000 });
+    const { control, date } = await supportingDate445(page, 'S163');
+    await control.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.date, date, 'S163 the Day address must name the supporting date');
+    assert.equal(day.occurrence, record, 'S163 the Day address must name the record');
+    assert.equal(day.from, 'changes', 'S163 the Day address must return to Changes');
+    identityAddress445('S163', day);
+    await press(page, '[data-day="return"]');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await address428(page)).occurrence, record, 'S163 the return must reopen the same record');
+      assert.equal(seen(await page.locator('[data-record-part="reassessment"]').count()), 1,
+        'S163 the reopened record must show its evidence');
+      assert.equal(seen(await focusedOn445(page, `[data-day-date="${date}"]`)), true,
+        `S163 the return must land focus on the ${date} control`);
+    }, 'S163 the return reopens the record on its date');
+  },
+  // #445: Log carbs over a drilled case, on both return paths. Logging moves
+  // the store, so the first return re-reads and restores the case (ADR 414);
+  // after a reload Diagnose has read the moved store, so the second is retained.
+  async S164(page) {
+    const { subject, held } = await heldAfternoonCase445(page);
+    const caseAddress = { subject, occurrence: held, window: '720-1080' };
+    await waitForReplayAssertion(async seen => {
+      assert.deepEqual(seen(await address428(page)), caseAddress, 'S164 premise: the address names the held case');
+    }, 'S164 premise: the held case');
+    const { latest_data_day: latest } = await read(page, '/api/status');
+    const at = `${latest} 12:07:00`;
+    const before = new Set((await read(page, '/api/carbs')).carb_entries.map(entry => entry.id));
+    await press(page, '.cockpit-log-carbs');
+    await press(page, '[data-utility-when="custom"]');
+    await page.fill('#ut-custom', `${latest}T12:07`);
+    await press(page, '.gf-utility .gf-chips [data-certainty="exact"]');
+    const entry = await waitForReplayAssertion(async seen => {
+      const logged = seen(await read(page, '/api/carbs')).carb_entries
+        .find(row => row.t === at && !before.has(row.id));
+      assert.ok(logged, `S164 premise: the entry logged at ${at} must be served`);
+      return logged;
+    }, 'S164 premise: the logged entry');
+    // Found by its Remove control, which the base names the same way.
+    const opener = `.gf-entry-row:has([data-utility-remove="${entry.id}"]) [data-action="day"]`;
+    const control = `.gf-utility [data-action="day"][data-subject="carb:${entry.id}"]`;
+    await press(page, opener);
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    const day = await address428(page);
+    assert.equal(day.subject, `carb:${entry.id}`, 'S164 the Day address must name the entry by its id');
+    assert.ok(day.title?.startsWith('Log carbs · '), `S164 the Day address must carry the printed title: ${JSON.stringify(day)}`);
+    identityAddress445('S164', day);
+
+    await press(page, '[data-utility-close]');
+    const moved = await heldStatusReturn(page, 'S164', '[data-day="return"]');
+    assert.ok(moved.includes('/api/analyze'), 'S164 the return after logging must re-read Diagnose: the store moved');
+    await waitForHeld428(page, held);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="carbs"]').count()), 1,
+        'S164 Log carbs must be open over the restored case');
+      assert.deepEqual(seen(await address428(page)), caseAddress, 'S164 the address must name the restored case');
+      assert.equal(seen(await focusedOn445(page, control)), true,
+        'S164 focus must land on the entry\'s Open Day control once the restoration settles');
+    }, 'S164 the return after logging');
+
+    await page.reload();
+    await waitForHeld428(page, held);
+    await settled(page);
+    const trailBefore = await text445(page, '#crumb-trail .here');
+    await press(page, '.cockpit-log-carbs');
+    await press(page, control);
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    await press(page, '[data-utility-close]');
+    const kept = await heldStatusReturn(page, 'S164', '[data-day="return"]');
+    assert.deepEqual(kept.filter(path => path !== '/api/status'), [],
+      'S164 the return after a reload must issue no request besides the held status check');
+    assert.equal(kept.filter(path => path === '/api/status').length, 1,
+      'S164 the return after a reload must issue exactly one GET /api/status');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await heldOccurrence428(page)), held, 'S164 the retained case must keep its Occurrence');
+      assert.equal(seen(await text445(page, '#crumb-trail .here')), trailBefore, 'S164 the drilled case must remain open');
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="carbs"]').count()), 1,
+        'S164 Log carbs must be open over the retained case');
+      assert.deepEqual(seen(await address428(page)), caseAddress,
+        'S164 the address must name the retained case, with no title, from or focus');
+      assert.equal(seen(await focusedOn445(page, control)), true, 'S164 focus must land on the entry\'s Open Day control');
+    }, 'S164 the return after a reload');
+  },
+  // #445: Carb questions over a drilled case with a window pressed (S137's
+  // path) is a retained return: one status read, the case and window kept.
+  async S165(page) {
+    await heldCaseThroughDay428(page, 'S165');
+    const trailBefore = await text445(page, '#crumb-trail .here');
+    const windowBefore = await text445(page, '#seg-window [aria-pressed="true"]');
+    const caseAddress = await address428(page);
+    assert.ok((await read(page, '/api/prompts')).length > 0, 'S165 premise: the showcase must serve a carb question');
+    await press(page, '[data-utility="questions"]');
+    const open = page.locator('.gf-utility [data-action="day"][data-date]').filter({ visible: true }).first();
+    await open.waitFor({ timeout: 30000 });
+    const identity = await open.getAttribute('data-subject');
+    await open.click();
+    await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+    await press(page, '[data-utility-close]');
+    const requests = await heldStatusReturn(page, 'S165', '[data-day="return"]');
+    assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
+      'S165 the Carb questions return must issue no request besides the held status check');
+    assert.equal(requests.filter(path => path === '/api/status').length, 1,
+      'S165 the Carb questions return must issue exactly one GET /api/status');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await text445(page, '#seg-window [aria-pressed="true"]')), windowBefore,
+        'S165 the pressed window must remain pressed');
+      assert.equal(seen(await text445(page, '#crumb-trail .here')), trailBefore, 'S165 the drilled case must remain open');
+      assert.equal(seen(await page.locator('.gf-utility[data-utility="questions"]').count()), 1,
+        'S165 Carb questions must be open over the retained case');
+      assert.equal(seen(await focusedOn445(page, `.gf-utility [data-action="day"][data-subject="${identity}"]`)), true,
+        'S165 focus must land on the prompt\'s Open Day control');
+      assert.deepEqual(seen(await address428(page)), caseAddress,
+        'S165 the address must name the retained case, with no title, from or focus');
+    }, 'S165 the retained return');
   },
   // #424: a same-population comparison's caption names each served cohort as its
   // section heading does, links the band's words once, adds up to the header

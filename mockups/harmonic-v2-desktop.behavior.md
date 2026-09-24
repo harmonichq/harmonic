@@ -4118,3 +4118,168 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Case-file roster row description, both rosters | frontend/diagnose-workstation.js occurrenceDescription | S148, S150 |
 | Selected Occurrence figure and evidence facts | frontend/diagnose-workstation.js occurrenceFacts, renderCaseSelection | S149, S150, S25 |
+
+## #445 amendment — 2026-09-23, issue #445
+
+S162–S165 are the fail-first obligations of ADR 445: a Day link from Changes
+or a carb utility names its return target by an identity its origin owns — a
+supporting date, a Carb log entry's id, a Carb-log prompt's detector and anchor
+time — never a page selector, and the origin puts the reader back on the
+control they pressed. #444's Log carbs header rides the same change as ADR 444.
+Both decisions are recorded in the day-link-identities change's design record.
+The four stories are app-opener-only, like S136–S138: S162 and S163 run on
+c3-trial, whose active Trial and its change record list contributing dates, and
+S164 and S165 run on the showcase.
+
+Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
+from here"); coordinator ruling R445, and R444 for the Log carbs header. The
+coordinator's plan-review round-1 rulings of the same date — Q1, Q2 and r1-1 to
+r1-2, recorded with ADR 445 — settle the Return to Trial, the Log carbs return
+control, and the moved-store return.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command
+(`uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765`)
+over the committed synthetic showcase or a generated `scripts/qa_e2e_cases.py`
+case store through `CASE_STORE_DIR`. No real data is read. The worker ran no
+server and no browser; every replay below is the coordinator's, at 1280x720 and
+1440x900.
+
+Shipped desk behavior that changes, and no story that asserted the old fact:
+
+- **The Changes and carb-utility Day addresses carry no selector.** A
+  supporting date's Day address names the date (and, from a change record,
+  that record); a Log carbs or Carb questions Day address names its item by
+  identity as the routing subject, beside the printed "Log carbs · …" or "Carb
+  questions · …" title. No Day address carries the return-focus key, and an
+  older link that still carries one is read without it.
+- **A Changes return lands on the date's control.** Once the change's evidence
+  has rendered, focus is on the supporting-date control the reader pressed, on
+  the desktop and once per arrival. The base landed on the reading heading for
+  the active change. The narrow desk keeps its sheet-toggle focus.
+- **A carb-utility return over Diagnose is a plain return.** The utility is
+  reopened over Diagnose, which makes its one status read and keeps the drill,
+  the window and the scroll while the store has not moved since it last read;
+  the address names the retained case with no utility title, origin or
+  selector. After a carb is logged or a question answered the store has moved,
+  and Diagnose re-reads and restores the case it held (ADR 414). The base handed
+  Diagnose the utility's entry, which re-read on every return, discarded the
+  drill and left the utility's title and selector in the address.
+- **A utility opened over Day returns into Day as a direct entry.** It stays on
+  the day shown and offers no second return. The base re-adopted the utility's
+  entry and offered the same return again.
+- **Log carbs returns to the entry's Open Day control** (ruling Q2), not its
+  Remove button. Either utility's return lands on the pressed item's Open Day
+  control, or on the utility's heading when that item is no longer served.
+- **A plain utility return drops a held Return to Trial** (ruling Q1), as every
+  plain return does under ADR 428.
+- **A Diagnose rebuild under a seated utility sets no crumb focus.** The
+  inspector that holds the crumb is inert under the utility, so the default
+  landed nowhere and displaced the utility's focus.
+
+The Log carbs header (ADR 444) has no story: no replay or browser context sets
+a `timezoneId`, so the replay browser runs in the runner's zone, UTC on CI,
+where the header's date and time cannot disagree. A Node test pins its own zone
+and clock instead (`frontend/utility-day-links.test.js`).
+
+S76 is unchanged: a utility's Open Day still keeps the utility open over Day,
+and its return still reopens it.
+
+```
+S162 · On the active Trial, a contributing date opens Day with an address that
+       names the date, returns to Changes and carries no return-focus key or
+       CSS selector; Return to Changes lands focus on that date's control once
+       the Trial's evidence has rendered.
+  element:  .gf-reading [data-day-date], [data-day="return"], location,
+            document.activeElement
+  source:   frontend/follow-up.js bind ([data-day-date]) / supportingDateFocus
+            / mount; frontend/day.js bind (return); frontend/tab-routing.js
+            CONTEXT_KEYS
+  lock:     HV2-14; ADR 445 points 1, 2 and 4
+  data:     c3-trial; its active Trial's retained comparison lists
+            contributing dates, eight of a period rendered as controls
+  evidence: C4_STORIES.S162; reads the Day address, presses Return to Changes
+            and checks document.activeElement
+  status:   pending the coordinator's runs. Expected: base b03431d2 with this
+            harness laid over it fails at its feature assertion, "S162 the Day
+            address must carry no return-focus key"; the branch passes at
+            1280x720 and 1440x900
+```
+
+```
+S163 · From the active Trial's change record, opened from the Changes roster
+       as S142 opens it, a contributing date opens Day with an address that
+       names the date and the record and carries no return-focus key or CSS
+       selector; the return reopens that record and lands focus on the date's
+       control.
+  element:  table.gf-table [data-record], [data-record-part="reassessment"],
+            .gf-reading [data-day-date], [data-day="return"], location
+  source:   frontend/history.js bind ([data-day-date]) / mount;
+            frontend/follow-up.js supportingDateFocus
+  lock:     HV2-14; ADR 445 points 1, 2 and 4
+  data:     c3-trial; the roster's first still-open record is the active
+            Trial's, and its retained comparison lists contributing dates
+  evidence: C4_STORIES.S163 (openStillOpenRecord430); reads the Day address,
+            presses the return, then checks the record address, its evidence
+            and document.activeElement
+  status:   pending the coordinator's runs. Expected: base b03431d2 with this
+            harness laid over it fails at its feature assertion, "S163 the Day
+            address must carry no return-focus key"; the branch passes at
+            1280x720 and 1440x900
+```
+
+```
+S164 · Log carbs over a drilled Finding case with an Occurrence held: an entry
+       logged on a recorded day opens Day with an address that names it by id
+       (carb:<id>), carries its printed "Log carbs · …" title and no
+       return-focus key or CSS selector. Close, then Return to Log carbs: the
+       store moved when the entry was logged, so Diagnose re-reads (at least
+       one guidance read) and restores the same Finding with the same
+       Occurrence held, Log carbs is open over it, and once the restoration
+       settles focus is on that entry's Open Day control. After a reload of the
+       case address, the same round trip issues exactly one GET /api/status and
+       nothing else, keeps the case, puts focus on that entry's Open Day
+       control, and the address names the case with no title, from or focus.
+  element:  .cockpit-log-carbs, [data-utility-when="custom"], #ut-custom,
+            .gf-utility [data-action="day"], [data-utility-close],
+            [data-day="return"], #level .case-occurrence, #crumb-trail .here,
+            location
+  source:   frontend/utilities.js bindPane / reopenUtility / seatUtility;
+            frontend/day.js bind (return); frontend/diagnose.js mount /
+            restoreEntry
+  lock:     HV2-14; ADR 445 points 3, 4 and 7; ADR 414 retention; rulings Q2
+            and r1-1(a) to r1-1(c)
+  data:     showcase; finding:over_treated_low in the Afternoon preset with its
+            first roster Occurrence held (S138's drill), and an entry the story
+            logs at 12:07 on the latest recorded day, into its own fresh copy
+  evidence: C4_STORIES.S164; reads the served entry and the Day address, then
+            heldStatusReturn across each Return to Log carbs, the held
+            Occurrence, the crumb, the address and document.activeElement
+  status:   pending the coordinator's runs. Expected: base b03431d2 with this
+            harness laid over it fails at its feature assertion, "S164 the Day
+            address must name the entry by its id"; the branch passes at
+            1280x720 and 1440x900
+```
+
+```
+S165 · Carb questions over a drilled Finding case with a window pressed: a
+       prompt's Open Day, Close, then Return to Carb questions issues exactly
+       one GET /api/status and nothing else; the case and the pressed window
+       are unchanged, Carb questions is open with focus on that prompt's Open
+       Day control, and the address names the retained case with no title,
+       from or focus.
+  element:  [data-utility="questions"], .gf-utility [data-action="day"],
+            [data-utility-close], [data-day="return"], #seg-window
+            [aria-pressed="true"], #crumb-trail .here, location
+  source:   frontend/utilities.js reopenUtility / seatUtility; frontend/day.js
+            bind (return); frontend/diagnose.js mount (a return naming no case)
+  lock:     HV2-34; ADR 414 retention; ADR 445 points 3 and 4
+  data:     showcase; as S137 up to its Day return, then the first served
+            prompt's Open Day
+  evidence: C4_STORIES.S165; heldStatusReturn holds /api/status across Return
+            to Carb questions and records every request, then compares the
+            crumb, the pressed window, the address and document.activeElement
+  status:   pending the coordinator's runs. Expected: base b03431d2 with this
+            harness laid over it fails at its feature assertion, "S165 the Carb
+            questions return must issue no request besides the held status
+            check"; the branch passes at 1280x720 and 1440x900
+```

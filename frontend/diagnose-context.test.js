@@ -53,7 +53,7 @@ test('the Day return keeps moment, title and evidence coordinates through the sh
   const { dayReturnContext } = await import('./day.js');
   const { parseRoute, serializeRoute } = await import('./tab-routing.js');
   const entry = { key: 'private-memory-key', date: '2024-06-01', moment: '2024-06-01 08:12:00',
-    subject: 'pattern:served', title: 'Highs after meals', occurrence: 'opaque-7', window: '360-720', lever: 'served-lever', from: 'diagnose', focus: '.occ-foot button:last-child' };
+    subject: 'pattern:served', title: 'Highs after meals', occurrence: 'opaque-7', window: '360-720', lever: 'served-lever', from: 'diagnose' };
   const context = dayReturnContext(entry);
   const address = serializeRoute({ destination: 'diagnose', context });
   assert.deepEqual(parseRoute({ search: address.slice(address.indexOf('?')) }).context, context);

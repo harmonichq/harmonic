@@ -12,11 +12,13 @@
 //
 //   openUtility(kind, launcher)   open one utility; `launcher` gets focus back
 //   seatUtility(destination)      seat it over whatever frame just rendered
+//   reopenUtility(kind, identity) reopen it on a Day return, back on that item
+//   seatedUtility()               which utility is seated, or null
 //
 // Chunk 2 places the Pump settings entry inside Changes by rendering nothing:
 // this module puts it in the Changes stage head, because the entry belongs to
 // the utility layer that owns the pane behind it (HV2-12).
-import { QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, isLoggable, carbToast } from './carb-log.js';
+import { QUICKLOG_PRESETS, QUICKLOG_TIMES, buildCarbPayload, formatWallClock, isLoggable, carbToast } from './carb-log.js';
 import { answerToSource, answerLabel, detectorKicker, sortOldestFirst, buildSparklineOption } from './prompt-queue.js';
 import { AUTHORED, GENERATED, CATEGORIES, renderMarkdown, articleBySlug } from './kb.js';
 import { guideGroups, guideTierLabel, guideMd, guideWorkedRows } from './guide.js';
@@ -47,10 +49,20 @@ const userValue = (param, value) => (value == null || value === '' ? '' : param 
 
 const questionKey = (prompt) => `${prompt.detector}|${prompt.anchor_t}`;
 
+// The identity a utility's Day entry names its item by, as the entry's routing
+// subject (ADR 445): a Carb log entry by its served id, a Carb-log prompt by its
+// detector and anchor time. Built from the served item, never from display text.
+const IDENTITY = { carbs: (entry) => `carb:${entry.id}`, questions: (prompt) => `question:${questionKey(prompt)}` };
+const HEADING = '.gf-utility header h2';
+
 /* -------------------------------------------------------------- the state */
 
 let seated = null;
 let opener = null;
+// A Day return's pending resolution: the identity of the item the reopened
+// utility's Day entry came from, held until it is next seated with its items
+// loaded. Dropped when used, on Close, and when a utility is opened.
+let returning = null;
 // Whether the narrow reading sheet was open when the utility opened. Closing
 // returns the reader there, so a launcher inside the open sheet — an Episode
 // Log band caption (ADR 423) — is still on screen to take focus back.
@@ -221,14 +233,16 @@ function carbsBody() {
   if (state.entries === null) { need('carbs', refreshEntries); return waiting('the carb log'); }
   const draft = state.draft;
   const entries = state.entries.slice().sort((a, b) => (a.t < b.t ? 1 : -1));
-  const now = new Date();
-  return { meta: `at ${e(shortDate(now.toISOString()))} · ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`, html: `
+  // One local wall-clock reading for both halves, so a local evening west of
+  // UTC keeps its own date beside its time (ADR 444).
+  const now = formatWallClock(new Date());
+  return { meta: `at ${e(shortDate(now))} · ${e(clock(now))}`, html: `
       <section class="gf-section"><h3>Amount</h3>${amountControls()}</section>
       <section class="gf-section"><h3>When</h3><div class="seg gf-seg" role="group" aria-label="When">${QUICKLOG_TIMES.map((when) => `<button data-utility-when="${when.k}" aria-pressed="${draft.when === when.k}">${when.label}</button>`).join('')}</div>
         ${draft.when === 'custom' ? `<div class="gf-field"><label for="ut-custom" class="gf-visually-hidden">Custom time</label><input id="ut-custom" type="datetime-local" value="${e(draft.customAt)}"></div>` : ''}
         <p class="gf-meta">One tap logs · defaults to now.</p></section>
       <section class="gf-section"><h3>Logged <span class="meta">${entries.length}</span></h3>
-        ${entries.length ? entries.map((entry) => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(String(entry.t).slice(0, 10))}" data-subject="Log carbs · ${e(shortDate(entry.t))} ${e(clock(entry.t))}" data-utility-from="carbs" data-utility-label="${e(UTILITY_TITLE.carbs)}" data-return-focus="[data-utility-remove='${entry.id}']">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
+        ${entries.length ? entries.map((entry) => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(String(entry.t).slice(0, 10))}" data-subject="${e(IDENTITY.carbs(entry))}" data-title="Log carbs · ${e(shortDate(entry.t))} ${e(clock(entry.t))}" data-utility-from="carbs" data-utility-label="${e(UTILITY_TITLE.carbs)}">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
       </section>` };
 }
 
@@ -236,8 +250,8 @@ function carbsBody() {
 // Undo), so the three answers read as one group and this stays the secondary
 // step. The day opens under the questions, which stay open beside it: the entry
 // names the question it came from, and the way back is this pane on that same
-// question (S76).
-const openDayRow = (prompt) => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(String(prompt.anchor_t).slice(0, 10))}" data-subject="Carb questions · ${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))}" data-utility-from="questions" data-utility-label="${e(UTILITY_TITLE.questions)}" data-return-focus="[data-question-card='${e(questionKey(prompt))}'] [data-action='day']">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
+// question's Open Day (S76, ADR 445).
+const openDayRow = (prompt) => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(String(prompt.anchor_t).slice(0, 10))}" data-subject="${e(IDENTITY.questions(prompt))}" data-title="Carb questions · ${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))}" data-utility-from="questions" data-utility-label="${e(UTILITY_TITLE.questions)}">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
 
 function questionCard(prompt) {
   const key = questionKey(prompt);
@@ -315,6 +329,25 @@ function utilityPane(kind = seated) {
 
 /* -------------------------------------------------------------- the seat */
 
+// The items each utility serves that a Day entry can name. A utility that
+// serves none has nothing to match a returned identity against.
+const ITEMS = { carbs: () => state.entries, questions: () => state.prompts && pending() };
+
+// A Day return's held identity resolves once, on the first seat at which the
+// utility's items have loaded: the matched item's own Open Day control, the
+// one the reader pressed, else the utility's heading. Selector text comes only
+// from the matched item's own identity, never from the address (ADR 445). The
+// address also names the utility, so one that serves no items is matched
+// against none.
+function resolveReturn() {
+  if (!returning) return;
+  const items = ITEMS[seated] ? ITEMS[seated]() : [];
+  if (!items) return;
+  const match = items.find((item) => IDENTITY[seated](item) === returning.identity);
+  view.focusAfterRender = match ? [`.gf-utility [data-action="day"][data-subject="${IDENTITY[seated](match)}"]`, HEADING] : HEADING;
+  returning = null;
+}
+
 /**
  * Seat the open utility over whichever frame just rendered, add the Changes
  * stage's Pump settings entry, and keep every launcher's pressed state and open
@@ -345,6 +378,7 @@ export function seatUtility(destination) {
         if (stage) stage.outerHTML = desk(stage.outerHTML, utilityPane());
       }
     }
+    resolveReturn();
   }
   // The detected pump settings open from Changes, beside the proposed Plan.
   if (destination === 'changes') {
@@ -373,6 +407,7 @@ export function seatUtility(destination) {
  * group (ADR 423).
  */
 export function openUtility(kind, launcher, inView = null) {
+  returning = null;
   if (seated !== kind) {
     if (!seated) sheetWasOpen = view.sheetOpen;
     opener = launcher || opener;
@@ -387,6 +422,7 @@ function close() {
   const back = opener;
   opener = null;
   seated = null;
+  returning = null;
   // Narrow only: a window widened past 700px meanwhile shows no sheet, and
   // closing there leaves it shut exactly as it always has.
   view.sheetOpen = narrow() && sheetWasOpen;
@@ -522,14 +558,14 @@ function bindPane(surface) {
   // A dated moment inside a utility opens Day as the same contextual entry, and
   // this utility stays open over it as the continuation (S76). The return
   // target names both halves — the destination the utility was opened over, and
-  // the utility itself, which is what the return is named for.
+  // the utility itself, which is what the return is named for — and the subject
+  // names the item, which this utility resolves when it is reopened (ADR 445).
   for (const button of surface.querySelectorAll('.gf-utility [data-action="day"][data-date]')) {
     button.onclick = () => navigate('day', {
       date: button.dataset.date,
       subject: button.dataset.subject || '',
-      title: button.dataset.subject || '',
+      title: button.dataset.title || '',
       from: `${currentDestination()}.${button.dataset.utilityFrom}`,
-      focus: button.dataset.returnFocus || '',
     });
   }
 }
@@ -580,8 +616,16 @@ export function installUtilities({ glossary = [] } = {}) {
 }
 
 /** Re-open a utility over the destination underneath. The Day return uses it to
-    put the reader back inside the utility that opened Day (S76). */
-export function reopenUtility(kind) {
+    put the reader back inside the utility that opened Day (S76), holding the
+    identity of the item Day was opened from until the utility can resolve it
+    to that item's own Open Day control (ADR 445). */
+export function reopenUtility(kind, identity = null) {
   seated = kind;
   sheetWasOpen = false;
+  returning = { identity };
 }
+
+/** The seated utility's kind, or null. A seated utility covers the reading
+    pane of the destination underneath, so that destination places no focus of
+    its own there (ADR 445). */
+export const seatedUtility = () => seated;

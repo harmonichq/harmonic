@@ -788,14 +788,14 @@ function publishing() {
   return view;
 }
 
-function desk428({ address = '/diagnose', root: overrides = {} } = {}) {
+function desk428({ address = '/diagnose', root: overrides = {}, seatedUtility } = {}) {
   const page = browser(address);
   globalThis.window = page;
   const served = source(); const seat = host(); seat.ownerDocument.defaultView = page;
   const root = makeRoot(overrides);
   root.ownerDocument = seat.ownerDocument; seat.ownerDocument.createElement = () => root;
   const view = publishing();
-  const destination = createDiagnoseDestination({ api: served.api, createView: view.create });
+  const destination = createDiagnoseDestination({ api: served.api, createView: view.create, seatedUtility });
   return { page, served, seat, view, destination };
 }
 
@@ -1009,6 +1009,40 @@ test('ADR 428 · a Day return to the held case keeps the drill and focuses that 
     assert.equal(focused, 'open-day', 'the return lands on the held Occurrence\'s Open in Day control');
     destination.leave();
   } finally { globalThis.window = previous; }
+});
+
+// ADR 445 point 7. A carb utility's Day return into a parked Diagnose is a plain
+// return; when the store moved while the reader was away, Diagnose re-reads and
+// rebuilds under the reopened utility. The desk's focus request after that
+// rebuild is what the router applies next.
+async function rebuiltUnder(seatedUtility) {
+  const previous = globalThis.window;
+  const { navigate, view: desk } = await import('./routes.js');
+  const { page, served, seat, view, destination } = desk428({ root: restores('finding:late_bolus'), seatedUtility });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+    park(destination, seat, 0, routed(page));
+    served.setRevision(2); // a carb logged while the reader was away
+    page.history.pushState(null, '', '/diagnose');
+    served.requests.length = 0; desk.focusAfterRender = null;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await afterHandlers();
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    assert.ok(served.requests.includes('analysis'), 'premise: the moved store re-read the guidance');
+    assert.equal(view.setData.filter(Boolean).length, 2, 'premise: the rebuild applied the re-read payload');
+    return desk.focusAfterRender;
+  } finally { navigate('diagnose'); desk.focusAfterRender = null; globalThis.window = previous; destination.leave(); }
+}
+
+test('ADR 445 · a Diagnose rebuild under a seated utility sets no focus of its own', async () => {
+  assert.equal(await rebuiltUnder(() => 'carbs'), null,
+    'the rebuild displaced the utility\'s carried focus with its crumb default');
+});
+
+test('regression pin: a Diagnose rebuild with no utility seated still lands on its crumb', async () => {
+  assert.equal(await rebuiltUnder(() => null), '#crumb-trail');
 });
 
 test('ADR 428 · restoring a Finding presses the Window preset its window names', async () => {

@@ -36,7 +36,7 @@ import { hold, navigate, render, view } from './routes.js';
 // Changes composition is handed both mounts by the entry module.
 import {
   comparisonReasonWords, comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
-  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock,
+  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock, supportingDateFocus,
 } from './follow-up.js';
 
 // The backend's own ending vocabulary, rendered as the words a reader reads.
@@ -541,15 +541,15 @@ function bind(host) {
     render();
   };
   // A supporting date opens that day through the published door, carrying the
-  // subject and the exact control to come back to (HV2-14). This desk implements
-  // no Day of its own.
+  // subject, the record and the date, which is what the return comes back to
+  // (HV2-14, ADR 445). This desk implements no Day of its own.
   for (const button of host.querySelectorAll('[data-day-date]')) {
     button.onclick = () => navigate('day', {
       date: button.dataset.dayDate,
       subject: memory.record?.detail?.subject || 'history',
       title: recordTitle(memory.record.detail, memory.record.kind),
       lever: button.dataset.dayLever || null,
-      from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
+      from: 'changes',
       occurrence: `record:${memory.open.kind}:${memory.open.id}`,
     });
   }
@@ -569,7 +569,7 @@ function bind(host) {
 }
 
 /** The record destination's content. */
-export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
+export function mount(host, { hold: holdCleanup = hold, context = {}, navigation } = {}) {
   const match = /^record:(trial|focus):(.+)$/.exec(context.occurrence || '');
   const open = match ? { kind: match[1], id: match[2] } : null;
   if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
@@ -613,4 +613,6 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   host.innerHTML = recordFrame({ ...memory.record, failed });
   bind(host);
   mountComparisonChart(host, shownComparison(memory.record.detail).comparison, holdCleanup);
+  const back = supportingDateFocus({ context, navigation });
+  if (back) view.focusAfterRender = back;
 }

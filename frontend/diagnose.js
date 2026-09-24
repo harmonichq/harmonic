@@ -7,7 +7,7 @@ import { currentDestination, hold, navigate, registerDestination, render, replac
 import { caseAddress } from './tab-routing.js';
 import { presetLabelFor } from './diagnose-workstation.js';
 import { loadingFrame, emptyFrame } from './frame.js';
-import { openUtility } from './utilities.js';
+import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
@@ -43,7 +43,7 @@ const outcomeWindowRoute = selected => {
  * unchanged Promise seam for the journey's caller; it is NOT a selection event.
  * Tile loads use it too. C3 must observe the reader's drill separately. */
 export function createDiagnoseDestination({ api = client, createView = createDiagnoseEventComparison,
-  loadCase = (coordinates) => api.fetchDiagnoseFindingCase(coordinates) } = {}) {
+  loadCase = (coordinates) => api.fetchDiagnoseFindingCase(coordinates), seatedUtility = utilitySeated } = {}) {
   let root = null;
   let workstation = null;
   let payload = null;
@@ -278,7 +278,10 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     }
     const heading = root.querySelector('#crumb-trail');
     if (heading) heading.tabIndex = -1;
-    if (!view.focusAfterRender) view.focusAfterRender = '#crumb-trail';
+    // A seated utility makes the inspector that holds the crumb inert, so the
+    // default would land nowhere and displace the focus the desk carries — the
+    // utility's own (ADR 445 point 7).
+    if (!view.focusAfterRender && !seatedUtility()) view.focusAfterRender = '#crumb-trail';
   }
 
   // S129/S131: a catalog pick drills its chart. The owner no-ops a pick

@@ -181,6 +181,27 @@ export function readinessArm(name, arm, { lever = null } = {}) {
     ${supporting}</div>`;
 }
 
+// A Changes Day link names the supporting date it opened and no selector, and
+// Day hands the whole entry back (ADR 445). Only a well-formed ISO date becomes
+// selector text; any other date lands on the reading heading.
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const READING_HEADING = '.gf-reading > header h2';
+let returnedArrival = null;
+
+/**
+ * Where a Day return to Changes puts focus: an arrival whose context came back
+ * from a Changes Day link resolves once, on the render that first shows the
+ * change's content, to that date's supporting-date control, else the reading
+ * heading. Null for any other arrival or render, and on the narrow desk, where
+ * the dates sit in the closed reading sheet and Day's sheet-toggle focus stands.
+ * Both the active change's mount and a change record's call it.
+ */
+export function supportingDateFocus({ context = {}, navigation } = {}) {
+  if (context.from !== 'changes' || !context.date || narrow() || returnedArrival === navigation) return null;
+  returnedArrival = navigation;
+  return ISO_DATE.test(context.date) ? [`[data-day-date="${context.date}"]`, READING_HEADING] : READING_HEADING;
+}
+
 /**
  * The evidence readiness of both arms, plus what the comparison concluded.
  *
@@ -807,7 +828,7 @@ function bind(host) {
       title: changeTitle(memory.detail),
       lever: button.dataset.dayLever || null,
       occurrence: memory.detail.id, window: retainedEvidenceContext(memory.detail).window,
-      from: 'changes', focus: `[data-day-date="${button.dataset.dayDate}"]`,
+      from: 'changes',
     });
   }
   const retry = host.querySelector('[data-retry]');
@@ -862,6 +883,8 @@ export function mount(host, deps = {}) {
   host.innerHTML = kind === 'focus' ? focusFrame(state) : trialFrame(state);
   bind(host);
   mountComparisonChart(host, (memory.retained || {}).comparison || null, holdCleanup);
+  const back = supportingDateFocus(deps);
+  if (back) view.focusAfterRender = back;
 }
 
 /** The retained decision supplies the inspection subject and affected hours. */

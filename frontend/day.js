@@ -1,6 +1,8 @@
 // The Day desk: the five-track chronology, the week ribbon, its month, the
 // day's statistics and the Episode Log (HV2-13), plus the contextual entry that
-// carries a subject and returns to the exact target it left (HV2-14).
+// carries a subject and returns to where it was opened from, whose origin puts
+// the reader back on the control they left by an identity it owns (HV2-14,
+// ADR 445).
 //
 // Ported from the ★ LOCKED desktop prototype under the harmonic-v2-desktop lock
 // manifest, with one substitution: the prototype read a captured day set, and
@@ -12,7 +14,7 @@
 // PUBLISHED FOR CHUNKS 2 AND 3:
 //
 //   openDay(context)     a contextual Day entry; the caller supplies the context
-//   dayReturnTarget()    where the current entry returns to, and to what focus
+//   dayReturnTarget()    where the current entry returns to, and its name
 //
 // A supporting night, an occurrence, a follow-up or a utility calls openDay (or
 // navigate('day', context), which is the same door); none of them re-implements
@@ -157,7 +159,7 @@ function adopt(context) {
 }
 
 /**
- * Where this entry returns to, and to what.
+ * Where this entry returns to, and what the return is called.
  *
  * `from` is the return target, written `<destination>` for an ordinary
  * contextual entry and `<destination>.<utility>` when a utility opened Day: a
@@ -174,7 +176,6 @@ export function dayReturnTarget(entry = memory.entry) {
     utility,
     destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
     label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Diagnose'),
-    focus: entry.focus || null,
     title: entry.title || '',
   };
 }
@@ -420,14 +421,22 @@ function bind(host) {
         if (m < 1) { m = 12; y -= 1; } else if (m > 12) { m = 1; y += 1; }
         memory.month = { y, m };
       } else if (action === 'return') {
-        // Back to the subject's own row; narrow keeps the sheet closed and
-        // focuses its toggle. A utility origin reopens that utility over the
-        // destination it was opened on.
+        // A utility origin reopens that utility with its item's identity and
+        // moves plainly to the destination it was opened over: the entry names
+        // the utility's item, not that destination's case, and the utility
+        // puts focus back on the item itself (ADR 445). Every other origin gets
+        // its whole entry back and resolves the identity it carries — Diagnose
+        // its Occurrence, Changes its date — over the reading heading; narrow
+        // keeps the sheet closed and focuses its toggle.
         const back = dayReturnTarget();
         const context = dayReturnContext();
         memory.entry = null;
-        if (back.utility) reopenUtility(back.utility);
-        view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : [back.focus, '.gf-reading > header h2'].filter(Boolean);
+        if (back.utility) {
+          reopenUtility(back.utility, context.subject);
+          navigate(back.destination);
+          return;
+        }
+        view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : '.gf-reading > header h2';
         navigate(back.destination, context);
         return;
       }

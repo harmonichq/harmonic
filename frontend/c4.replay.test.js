@@ -201,6 +201,18 @@ test('S142 and S143 are unique app-only C4 record stories with their manufacture
   }
 });
 
+test('S162–S165 are unique app-only C4 Day-return stories on their manufactured cases', () => {
+  for (const [id, expectedCase, term] of [
+    ['S162', 'c3-trial', 'HV2-14'], ['S163', 'c3-trial', 'HV2-14'],
+    ['S164', 'showcase', 'HV2-14'], ['S165', 'showcase', 'HV2-34'],
+  ]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 test('S115–S117 are unique app-only C4 rail stories, served from the showcase', () => {
   const term = '#413 design lock';
   for (const id of ['S115', 'S116', 'S117']) {

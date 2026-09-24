@@ -13,7 +13,7 @@ alone.
 
 ## 1. The address and Day's return
 
-- [ ] 1.1 In `frontend/tab-routing.js`, drop `focus` from `CONTEXT_KEYS` and
+- [x] 1.1 In `frontend/tab-routing.js`, drop `focus` from `CONTEXT_KEYS` and
   rewrite the comment above it to say a return target is named by identity
   (ADR 428, ADR 445 point 2). In `frontend/tab-routing.test.js`: an address
   carrying `focus=` parses with no `focus` key and serializes without it (fails
@@ -22,9 +22,9 @@ alone.
   title. In `frontend/diagnose-context.test.js`, the Day-return fixture that
   round-trips through the address drops its `focus` key. The case-address tests
   stay unchanged.
-- [ ] 1.2 In `frontend/routes.js`, the `navigate()` comment names the contextual
+- [x] 1.2 In `frontend/routes.js`, the `navigate()` comment names the contextual
   entry without `focus`. Comment only.
-- [ ] 1.3 In `frontend/day.js` (ADR 445 point 3), `dayReturnTarget` no longer
+- [x] 1.3 In `frontend/day.js` (ADR 445 point 3), `dayReturnTarget` no longer
   returns `focus`. The return control, for a utility origin, hands the utility
   its identity through `reopenUtility(kind, subject)`, makes no focus request of
   its own, and navigates to the destination with no context. Every other origin
@@ -47,12 +47,12 @@ alone.
 
 ## 2. The carb utilities and the desk they return to
 
-- [ ] 2.1 In `frontend/utilities.js`, each Open Day control declares its item's
+- [x] 2.1 In `frontend/utilities.js`, each Open Day control declares its item's
   identity as the routing subject (`carb:<id>`, `question:<detector>|<anchor_t>`),
   and keeps its date, its printed title (`Log carbs · …`, `Carb questions · …`),
   `data-utility-from` and `data-utility-label`. It carries no `data-return-focus`,
   and its handler writes date, subject, title and `from`, with no `focus`.
-- [ ] 2.2 `reopenUtility(kind, identity)` (ADR 445 points 4 and 5) holds the
+- [x] 2.2 `reopenUtility(kind, identity)` (ADR 445 points 4 and 5) holds the
   identity until the first seat at which the utility's items have loaded. It then
   matches the identity against the served items (a Carb log entry by id, a
   Carb-log prompt by detector and anchor time). A match requests focus on that
@@ -60,10 +60,10 @@ alone.
   request is made once. Selector text comes only from the matched item's own
   identity. The held identity is dropped when used, on Close, and when another
   utility opens. The request applies at every width.
-- [ ] 2.3 #444 (ADR 444): `carbsBody()` builds its header from
+- [x] 2.3 #444 (ADR 444): `carbsBody()` builds its header from
   `formatWallClock(new Date())` (from `frontend/carb-log.js`), printed with
   `shortDate` and `clock`.
-- [ ] 2.4 Tests in a new `frontend/utility-day-links.test.js`, which has its own
+- [x] 2.4 Tests in a new `frontend/utility-day-links.test.js`, which has its own
   desktop seat, stubbed carbs and prompts reads, and the desk's own router.
   `frontend/utilities.test.js` keeps its narrow desk.
   - Under `process.env.TZ = 'America/Denver'` with `mock.timers` at
@@ -81,7 +81,7 @@ alone.
   In `frontend/utilities.test.js`, the source-reading pin "a utility Open Day
   names no precise return target" becomes one asserting each Open Day declares
   an identity subject and no `data-return-focus`.
-- [ ] 2.5 A Diagnose rebuild takes no focus from a seated utility (ADR 445 point
+- [x] 2.5 A Diagnose rebuild takes no focus from a seated utility (ADR 445 point
   7, ruling r1-1(b)).
   - `frontend/utilities.js` exports `seatedUtility()`, the seated utility's kind
     or `null`, which task 1.3's Day test also reads.
@@ -105,10 +105,10 @@ alone.
 
 ## 3. Changes
 
-- [ ] 3.1 The Day links in `frontend/follow-up.js` and `frontend/history.js` drop
+- [x] 3.1 The Day links in `frontend/follow-up.js` and `frontend/history.js` drop
   `focus`. Their date, subject, title, lever, occurrence, window and `from` are
   unchanged.
-- [ ] 3.2 One resolver beside `readinessArm` in `frontend/follow-up.js` (ADR 445
+- [x] 3.2 One resolver beside `readinessArm` in `frontend/follow-up.js` (ADR 445
   points 4 and 5). It treats an arrival whose context came back from a Changes
   Day link (`from=changes` with a `date`) as a return. A well-formed ISO date
   resolves to that date's supporting-date control then the reading heading; any
@@ -117,7 +117,7 @@ alone.
   shows the change's content (not a loading, failure or unavailable frame), once
   per arrival (by `deps.navigation`), and only when the desk is not narrow. They
   set the desk's focus request from its answer.
-- [ ] 3.3 Tests in `frontend/follow-up-lifecycle.test.js`, through both mounts
+- [x] 3.3 Tests in `frontend/follow-up-lifecycle.test.js`, through both mounts
   over the file's stubbed reads, with a comparison that lists contributing dates:
   - On a Day-return arrival naming a listed date, the content render requests
     that date's control first and the reading heading second (fails first: the
@@ -132,7 +132,7 @@ alone.
 
 ## 4. Browser evidence and the behavior ledger
 
-- [ ] 4.1 In `frontend/desk.browser.test.mjs`, extend "a utility's own Day entry
+- [x] 4.1 In `frontend/desk.browser.test.mjs`, extend "a utility's own Day entry
   keeps the utility open and returns into it":
   - the Day address has a `subject` beginning `question:` and no `focus`;
   - after Return to Carb questions, no `/api/analyze` request is made;
@@ -142,7 +142,7 @@ alone.
 
   On the base it fails at the Day-address assertion. The canonical-door test,
   which still opens a legacy address carrying `focus=`, stays unchanged and green.
-- [ ] 4.2 Add four app-only stories to `mockups/harmonic-v2-desktop.behavior.md`
+- [x] 4.2 Add four app-only stories to `mockups/harmonic-v2-desktop.behavior.md`
   in a new dated `## #445 amendment — 2026-09-23, issue #445` section, following
   the #428 amendment's shape. The section quotes the sanction line, names ADR 445
   and ADR 444, and lists the shipped behavior that changes with no story
@@ -179,7 +179,7 @@ alone.
 
   Never rewrite, re-date or replace an existing `★ FROZEN` block, and leave the
   header's inventory line and `ACCEPTANCE.md` alone.
-- [ ] 4.3 Replay:
+- [x] 4.3 Replay:
   - `C4_STORIES.S162`–`S165` go in `frontend/c4.replay.mjs`, reusing
     `openStillOpenRecord430`, `heldCaseThroughDay428`, `heldReturnToDiagnose414`
     and `heldStatusReturn` where they fit;
@@ -191,7 +191,7 @@ alone.
 
   `SMOKE_STORIES` does not change, because S7 already covers `c3-trial` and many
   smoke stories cover the showcase.
-- [ ] 4.4 Move the pinned inventory literals so this branch's own tests pass:
+- [x] 4.4 Move the pinned inventory literals so this branch's own tests pass:
   - `inventory()` in `mockups/sweep/harmonic-v2-desktop/acceptance.py` becomes
     `{"issued": 175, "active": 156, "retired": 19}`;
   - in `mockups/sweep/harmonic-v2-desktop/acceptance.test.py`, the plan count

@@ -12,6 +12,7 @@ from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from ciq_autotune.events import BolusEvent, CgmReading
 from ciq_autotune.ic_block_evidence import InconsistentIcBlockEvidence, prepare_ic_block_evidence
 from ciq_autotune.store import Store
+from scripts.gen_estimator_truth import write_set_to_store
 
 
 BASE = datetime(2026, 1, 1)
@@ -29,17 +30,15 @@ def _blocks(events, segments=((0, 5.0),), **kwargs):
     return analyze_ic_blocks_fuzzy(events, list(segments), **kwargs)[0]
 
 
-class _Store:
-    def __init__(self, readings):
-        self.readings = readings
-
-    def cgm_readings(self, start=None, end=None):
-        return [reading for reading in self.readings
-                if (start is None or reading.t >= start)
-                and (end is None or reading.t <= end)]
-
-
 class IcBlockEvidenceProjectionTest(unittest.TestCase):
+    def _store(self, readings=(), events=()):
+        """The preparation reads a real store — its meal outcomes come off one."""
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        write_set_to_store(store, {"events": list(events),
+                                   "cgm_readings": list(readings), "snapshots": []})
+        return store
+
     def test_cross_midnight_multi_meal_roster_and_bounds_are_analyzer_owned(self):
         events = [
             item for day in range(9)
@@ -58,7 +57,7 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             for run in runs for minute in (-10, 0, 120, 435, 440)
         ]
         result = prepare_ic_block_evidence(
-            _Store(readings), {"ic_blocks": [block]},
+            self._store(readings, events), {"ic_blocks": [block]},
         ).project(block["block_id"], analysis_generation="fixture-process:0")
 
         self.assertEqual(result["runs"], runs)
@@ -75,7 +74,7 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
 
     def test_below_floor_roster_is_present_while_analyzer_verdict_stays_held(self):
         block = _blocks([_meal(day, 9) for day in range(4)])[0].to_dict()
-        result = prepare_ic_block_evidence(_Store([]), {"ic_blocks": [block]}).project(0)
+        result = prepare_ic_block_evidence(self._store(), {"ic_blocks": [block]}).project(0)
 
         self.assertEqual(block["state"], "below-floor")
         self.assertFalse(block["asserts_move"])
@@ -94,7 +93,8 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             events, [(0, 5.0)], config=IcConfig(), observed_days=90,
             cgm_readings=readings, isf_effective=50.0,
         )[0][0].to_dict()
-        result = prepare_ic_block_evidence(_Store(readings), {"ic_blocks": [block]}).project(0)
+        result = prepare_ic_block_evidence(self._store(readings, events),
+                                           {"ic_blocks": [block]}).project(0)
 
         self.assertEqual(result["runs"], block["evidence"]["runs"])
         self.assertGreater(len(result["runs"]), result["block"]["support"])
@@ -110,7 +110,8 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
         readings = [CgmReading(event.t + timedelta(minutes=minute), 40, "synthetic")
                     for minute in (290, 295, 300, 305, 310)]
         block = _blocks([event], cgm_readings=readings, isf_effective=50.0)[0].to_dict()
-        result = prepare_ic_block_evidence(_Store(readings), {"ic_blocks": [block]}).project(0)
+        result = prepare_ic_block_evidence(self._store(readings, [event]),
+                                           {"ic_blocks": [block]}).project(0)
 
         self.assertEqual(result["block"]["support"], 0)
         self.assertEqual(result["block"]["examined_runs"], 1)
@@ -120,7 +121,77 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
 
     def test_missing_analyzer_evidence_is_not_an_empty_roster(self):
         with self.assertRaises(InconsistentIcBlockEvidence):
-            prepare_ic_block_evidence(_Store([]), {"ic_blocks": [{"block_id": 0}]})
+            prepare_ic_block_evidence(self._store(), {"ic_blocks": [{"block_id": 0}]})
+
+
+class IcBlockMealOutcomeTest(unittest.TestCase):
+    """The block's meal outcomes are the Pattern roster's own credited claims (#464).
+
+    Every fixture here is manufactured through the scenario engine's own recipes, so
+    the verdict under test is the one the Patterns publish rather than a second
+    in-range rule written for this payload.
+    """
+
+    def _prepared(self, events, cgm, basal=(), isf=40.0):
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        write_set_to_store(store, {"events": events, "cgm_readings": cgm,
+                                   "snapshots": []})
+        store.upsert_basal([
+            {"seq_num": index, "time": row.t.strftime("%Y-%m-%d %H:%M:%S"),
+             "delivery_type": row.delivery_type, "basal_rate": row.basal_rate,
+             "profile_basal_rate": row.profile_basal_rate}
+            for index, row in enumerate(basal, start=1)
+        ])
+        block = _blocks(events, cgm_readings=cgm, isf_effective=50.0)[0].to_dict()
+        with patch("ciq_autotune.explore_exposures._effective_isf", return_value=isf):
+            prepared = prepare_ic_block_evidence(store, {"ic_blocks": [block]})
+        return store, prepared.project(0)
+
+    def test_a_chain_that_spikes_and_a_meal_that_prints_a_low_are_tallied_apart(self):
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, meal, suspend_run
+
+        spiking = meal(13, 12, 0, carbs=45.0, dose=9.0)
+        over_delivered = meal(15, 11, 45, carbs=50.0, dose=5.0)
+        basal = suspend_run(15, 12, 0, rows=12)
+        cgm = (
+            cgm_flat(13, 11, 40, 120, 20)
+            + cgm_ramp(13, 12, 0, 120, 2.4, 50)
+            + cgm_ramp(13, 12, 50, 240, -2.5, 45)
+            + cgm_flat(15, 11, 30, 110.0, 105)
+            + [CgmReading(datetime(2026, 6, 15, 13, 15), 68.0, "EGV")]
+        )
+        _store, result = self._prepared([spiking, over_delivered], cgm, basal)
+
+        counts = result["outcomes"]["counts"]
+        self.assertGreaterEqual(counts["ran_high"], 1)
+        self.assertGreaterEqual(counts["ran_low"], 1)
+        self.assertEqual(2, counts["n"])
+        self.assertIn("at the end of each meal chain", result["outcomes"]["sentence"])
+        self.assertEqual(
+            {"ran-high": 1, "ran-low": 1, "in-range": 0},
+            {cohort["key"]: cohort["routed_count"]
+             for cohort in result["meal_comparison"]["cohorts"]},
+        )
+
+    def test_a_meal_the_pattern_credits_to_late_bolus_ran_high_here_too(self):
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp, meal
+
+        late = meal(15, 12, 40, carbs=45.0, dose=10.0)
+        cgm = (
+            cgm_flat(15, 11, 40, 120, 30)
+            + cgm_ramp(15, 12, 10, 120, 2.0, 60)
+            + cgm_ramp(15, 13, 10, 360, -2.0, 120)
+        )
+        store, result = self._prepared([late], cgm, isf=None)
+
+        with patch("ciq_autotune.explore_exposures._effective_isf", return_value=None):
+            exposures = build_exposures(store, window_days=90)
+        [occurrence] = exposures["exposures"]["meals"]["occurrences"]
+        self.assertIn("late_bolus", occurrence["attributed_levers"])
+        self.assertEqual(1, result["outcomes"]["counts"]["ran_high"])
+        self.assertEqual(0, result["outcomes"]["counts"]["unread"])
 
 
 class IcBlockEvidenceEndpointTest(unittest.TestCase):
@@ -260,6 +331,11 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
             "block_id": 0, "start_min": 0, "end_min": 1440, "label": "All day",
             "state": "collecting", "asserts_move": False, "support": 0,
             "effective_support": 0.0, "examined_runs": 1, "excluded_runs": 1,
+            "current": 5.0,
+            "estimate": {"value": None, "lo": None, "hi": None, "wide": True},
+            "side": {"side_k": 0, "side_n": 0},
+            "support_detail": {"whole_runs": 0, "fractional_run_ownership": 0.0,
+                               "effective_run_count": 0.0},
         })
         self.assertEqual(len(response.json()["runs"]), 1)
         self.assertFalse(response.json()["runs"][0]["in_pool"])

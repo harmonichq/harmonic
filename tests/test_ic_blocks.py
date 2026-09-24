@@ -16,7 +16,7 @@ from ciq_autotune.analyzers.ic import (
     ic_blocks_from_segments,
 )
 from ciq_autotune.analyzers.tuning_priority import ic_headline_block, price_ic_blocks
-from ciq_autotune.events import BolusEvent, CarbEntry
+from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.safety import _MIN_SUPPORTED_BLOCK_RUNS
 
@@ -292,6 +292,93 @@ class BlockHarmTest(unittest.TestCase):
         self.assertEqual(b.recommended, b.current_values[0])   # held at current
         self.assertFalse(b.asserts_move)
         self.assertIn("pre-empted low", b.annotation)
+
+
+class BlockLedgerTest(unittest.TestCase):
+    """The published balance sheet is the arithmetic behind the number (#464).
+
+    Every quantity here is read off the analyzer's own published rows — the point of
+    the row is that a reader can divide it and land on the published ratio.
+    """
+
+    SEGMENTS = [(0, 5.0)]
+
+    def test_each_run_ratio_is_its_own_served_terms_quotient(self):
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        block = by_id(blocks_for(self.SEGMENTS, events)[0])[0]
+
+        runs = block.evidence["runs"]
+        self.assertEqual(12, len(runs))
+        for run in runs:
+            self.assertAlmostEqual(run["carbs"] / run["effective_insulin"],
+                                   run["true_ic"], places=6, msg=run["run_id"])
+
+    def test_the_pooled_ratio_is_the_weighted_quotient_of_the_served_terms(self):
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        block = by_id(blocks_for(self.SEGMENTS, events)[0])[0]
+
+        ledger = block.evidence["ledger"]
+        pooled = [run for run in block.evidence["runs"] if run["in_pool"]]
+        carbs = sum(run["ownership"] * run["carbs"] for run in pooled)
+        insulin = sum(run["ownership"] * run["effective_insulin"] for run in pooled)
+        self.assertAlmostEqual(carbs, ledger["carbs_covered"], places=4)
+        self.assertAlmostEqual(insulin, ledger["effective_insulin"], places=4)
+        self.assertAlmostEqual(
+            ledger["carbs_covered"] / ledger["effective_insulin"],
+            ledger["pooled_ratio"], places=4)
+        self.assertAlmostEqual(
+            sum(run["ownership"] * run["meal_dose"] for run in pooled),
+            ledger["meal_dose"], places=4)
+
+    def test_an_empty_pool_serves_the_row_with_no_ratio_to_check(self):
+        # The one meal reads a deep hypo at its outcome, so its denominator is floored
+        # and the run stays directional-only evidence outside the numeric pool.
+        event = BolusEvent(t=BASE + timedelta(hours=9), insulin=4.0, carbs=20.0,
+                           carb_ratio=5.0, bg=300.0, completion="Completed")
+        readings = [CgmReading(event.t + timedelta(minutes=minute), 40, "synthetic")
+                    for minute in (290, 295, 300, 305, 310)]
+        block = by_id(blocks_for(self.SEGMENTS, [event], cgm_readings=readings,
+                                 isf_effective=50.0)[0])[0]
+
+        self.assertEqual(0, block.n_runs)
+        self.assertEqual(["directional-only"],
+                         [run["pool_reason"] for run in block.evidence["runs"]])
+        self.assertEqual(0.0, block.evidence["ledger"]["carbs_covered"])
+        self.assertIsNone(block.evidence["ledger"]["pooled_ratio"])
+
+
+class BlockHarmEvidenceTest(unittest.TestCase):
+    """The harm arm's published row travels with the block that was gated (#464)."""
+
+    SEGMENTS = [(0, 5.0), (720, 5.0), (1080, 4.0)]
+
+    def test_two_attributed_lows_on_separate_days_serve_both_rows_and_their_median(self):
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        lows = [
+            PrintedLow(t=events[2].t + timedelta(minutes=90), bg=58.0, iob_u=2.1,
+                       arm=HarmArm.IC, dominant_bolus_t=events[2].t,
+                       attribution_reason="meal-bolus"),
+            PrintedLow(t=events[5].t + timedelta(minutes=150), bg=54.0, iob_u=2.4,
+                       arm=HarmArm.IC, dominant_bolus_t=events[5].t,
+                       attribution_reason="meal-bolus"),
+        ]
+        block = by_id(blocks_for(self.SEGMENTS, events, harm_config=HarmConfig(),
+                                 harm_lows=lows)[0])[0]
+
+        evidence = block.evidence["harm_evidence"]
+        self.assertEqual(2, len(evidence["lows"]))
+        self.assertEqual(2, evidence["row_days"])
+        self.assertEqual(120.0, evidence["minutes_after_bolus_median"])
+        self.assertEqual(block.harm["gated"], evidence["gated"])
+        self.assertEqual(block.guidance["seriousness"], evidence["seriousness"])
+
+    def test_a_block_with_no_harm_row_serves_no_median(self):
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        block = by_id(blocks_for(self.SEGMENTS, events, harm_config=HarmConfig(),
+                                 harm_lows=[])[0])[0]
+
+        self.assertIsNone(block.evidence["harm_evidence"]["minutes_after_bolus_median"])
+        self.assertEqual([], block.evidence["harm_evidence"].get("lows", []))
 
 
 class HeldReasonTest(unittest.TestCase):

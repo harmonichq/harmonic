@@ -115,6 +115,14 @@ coordinator's rulings on sub-order 1's findings), each implemented and verified:
 - Sub-order 2's review: `verify-workstation-chart.js`'s header says it is
   byte-identical to the mock bar its opening comment, which #416 and #447
   re-pointed.
+- Whole-diff review, F1 (design.md decision 7): Changes' Trial outcome table
+  leads with the rows served for the Trial's served `target_metrics`, marked as
+  its target, in the Trial view and the history record view; S169 checks it on
+  `c3-trial`. CONTEXT.md's Trial and Focus entries, the surfaces delta and
+  design.md say exactly that.
+- F2: `outcomes_trend.py`'s comments name the CLI as the series' only renderer.
+- F3: README's Settings list names what the desk's Settings holds.
+- F4: design.md says `_candidate`'s only caller was `detect_trial`.
 
 ## 2. Shipped surfaces (sub-order 2)
 

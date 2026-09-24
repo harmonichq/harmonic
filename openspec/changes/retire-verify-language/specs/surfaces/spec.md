@@ -5,9 +5,11 @@
 Changes SHALL answer "are my changes working?" for the active Trial and Focus
 (ADR 397). For a Trial it SHALL show the Before and Trial periods the server bounds
 from the served change date. Beside them it SHALL show the served comparison
-outcomes with the mapped outcome first and overall time in range alongside, the
-served evidence readiness, and the served watch maturity. For a Focus it SHALL
-show adherence beside outcome. Changes SHALL read every one of these from the
+outcomes led by the rows served for the Trial's served target metric, marked as
+its target, with overall time in range alongside, the served evidence readiness,
+and the served watch maturity. For a Focus it SHALL show adherence beside
+outcome, with the served mapped outcome first and the other rows marked as
+context. Changes SHALL read every one of these from the
 server and SHALL recompute no readiness, maturity, comparison or verdict. No text
 Changes renders for a Trial or Focus SHALL name Verify.
 
@@ -16,8 +18,8 @@ Changes renders for a Trial or Focus SHALL name Verify.
 - **GIVEN** a synthetic store whose server serves an active Trial
 - **WHEN** Changes opens on the watch at 1280×720 and at 1440×900
 - **THEN** the Trial's view shows the served Before and Trial periods, the served
-  comparison outcomes with the mapped outcome first, the served evidence
-  readiness and the served watch maturity
+  comparison outcomes led by its served target metric's rows, marked as its
+  target, the served evidence readiness and the served watch maturity
 - **AND** no text in the view names Verify
 
 #### Scenario: A watched Focus reads adherence beside outcome in Changes

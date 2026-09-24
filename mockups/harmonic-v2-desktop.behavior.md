@@ -4155,27 +4155,34 @@ S169 · A watched Trial's dock and Changes print one day count, the served
        "Ready to judge — ‹N› days since ‹MM-DD› · ‹R› required", and Changes'
        Watch maturity figure reads "‹N› days" with "‹R› required". Neither the
        dock's detail nor the Watch maturity figure prints "‹N› of ‹R›" past its
-       requirement; only Changes' progress bar clamps.
+       requirement; only Changes' progress bar clamps. Changes' outcome table
+       leads with the Trial's served target metric, marked as its target.
   element:  .inspector > .watch .how, .inspector > .watch .go;
-            [data-part="maturity"] .gf-figure, progress[aria-label="Trial progress"]
-  source:   frontend/follow-up.js trialDayCount, maturitySection;
+            [data-part="maturity"] .gf-figure, progress[aria-label="Trial progress"];
+            .gf-stage-trial [data-table="outcomes"] tbody tr
+  source:   frontend/follow-up.js trialDayCount, maturitySection, outcomesTable;
             frontend/watched-change-dock.js watchDockView
   lock:     HV2-24, HV2-12
-  data:     c3-trial; the server serves a complete Trial at 15 of 14 days
+  data:     c3-trial; the server serves a complete Trial at 15 of 14 days,
+            target metric tbr
   evidence: C4_STORIES.S169 → trialDayCount447; reads /api/verify/trials and the
             selected Trial, requiring an active Trial served complete with
-            days_elapsed past days_required as premises; opens Diagnose and
+            days_elapsed past days_required and one row-keyed target metric as
+            premises; opens Diagnose and
             requires the dock's detail to read exactly the ready sentence built
             from the served values; activates the dock's link, requires
             .gf-stage-trial visible, the Watch maturity figure to start with
-            "‹N› days" and carry "‹R› required", and the progress bar at value
-            ‹R› of max ‹R›
+            "‹N› days" and carry "‹R› required", the progress bar at value ‹R›
+            of max ‹R›, and the outcome table's first row to be the served
+            target's, marked gf-target
   status:   replay owed to the release coordinator (task 4.1). Expected: base
             b03431d2 with this harness laid over it fails at its dock-count
             assertion ("S169 the dock must print the served day count in
             Changes' words") at both sizes; the branch passes at both sizes.
             Fake-page controls in frontend/c4.replay.test.js pass on the
-            branch's text and reject the base's "14 of 14" at that assertion
+            branch's text, reject the base's "14 of 14" at that assertion, and
+            reject a TIR-first outcome table at "S169 Changes' outcomes must
+            lead with the served target metric tbr" (coordinator ruling F1)
 ```
 
 ```
@@ -4203,5 +4210,6 @@ Additional handler inventory for this amendment:
 | Handler / registration | Source | Story |
 |---|---|---|
 | Trial day count, both printers | frontend/follow-up.js trialDayCount | S169 |
+| Trial outcome table led by the served target | frontend/follow-up.js outcomesTable, comparisonTables; frontend/history.js record view | S169 |
 | Watch dock ready line | frontend/watched-change-dock.js watchDockView | S169 |
 | Guide authored article | frontend/utilities.js guideBody, docs/kb/reading-diagnose.md | S170 |

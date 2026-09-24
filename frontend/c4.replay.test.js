@@ -1415,18 +1415,20 @@ test('S169 and S170 are unique app-only C4 stories on their cases and terms', ()
 });
 
 // #447: a fake page for S169 — the served admission and selected Trial (15 of 14,
-// complete, changed 05-15), the dock, and the Changes Watch maturity its link opens.
-// `dock` is the dock's detail line: the branch prints the served count, the base
-// clamped it.
-function qa447CountPage(dock) {
+// complete, changed 05-15, target TBR), the dock, and the Changes Watch maturity
+// and outcomes its link opens. `dock` is the dock's detail line: the branch prints
+// the served count, the base clamped it. `lead` is the outcomes table's first row:
+// the branch leads with the served target, the base kept TIR first, unmarked.
+function qa447CountPage(dock, lead = { 'data-outcome': 'tbr', class: 'gf-target' }) {
   const roster = { admission: { state: 'available', active_kind: 'trial', active_id: 'basal_rate-0300' } };
-  const selected = { state: 'complete', changed_at: '2024-05-15 00:00:00',
+  const selected = { state: 'complete', changed_at: '2024-05-15 00:00:00', target_metrics: ['tbr'],
     maturing: { days_elapsed: 15, days_required: 14, gap_count: 0 } };
   const text = {
     '.inspector > .watch .how': dock,
     '[data-part="maturity"] .gf-figure': '15 days14 required · 0 data gaps',
   };
-  const attributes = { 'progress[aria-label="Trial progress"]': { value: '14', max: '14' } };
+  const attributes = { 'progress[aria-label="Trial progress"]': { value: '14', max: '14' },
+    '.gf-stage-trial [data-table="outcomes"] tbody tr': lead };
   const node = selector => ({
     filter() { return this; }, first() { return this; },
     locator: sub => node(`${selector} ${sub}`),
@@ -1445,6 +1447,15 @@ function qa447CountPage(dock) {
 test('S169 passes when the dock prints the served count in Changes\' words', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   await C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required'));
+});
+
+test('S169 fails at the outcomes lead, not at a premise, when Changes keeps TIR first', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await withReplayAssertionTimeout(10, () => assert.rejects(
+    C4_STORIES.S169(qa447CountPage('Ready to judge — 15 days since 05-15 · 14 required',
+      { 'data-outcome': 'tir', class: '' })),
+    error => error.message.includes("S169 Changes' outcomes must lead with the served target metric tbr")
+      && !error.message.includes('premise')));
 });
 
 test('S169 fails at the dock count, not at a premise, when the dock clamps to "14 of 14"', async () => {

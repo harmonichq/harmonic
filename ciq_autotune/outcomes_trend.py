@@ -79,7 +79,8 @@ from .rescue_evidence import (
 )
 from .rest_window import detect_rest_windows
 
-# Bump on any breaking change to the shapes below; the frontend keys off this.
+# Bump on any breaking change to the shapes below; readers of the CLI trend's JSON
+# key off this (no desk surface reads the series since #416).
 # v2 (#196): the net-new post-meal spike metric is replaced by the post-meal ARC —
 # a paired peak + subsequent-nadir series carried in a new top-level ``arc`` object
 # (ADR 0018). The ``spike`` metric row and ``POST_MEAL_SPIKE_HORIZON_MIN`` are gone.
@@ -134,7 +135,7 @@ _DATE_FMT = "%Y-%m-%d"
 
 # The behaviors, in the locked render order (issue #131's "Shape"). Each keeps its own
 # honest recurrence population via the evidence-population policy — the affinity
-# regrouping (Meals / Lows) the UI does is presentation, not denominator.
+# regrouping (Meals / Lows) a reader applies is presentation, not denominator.
 _BEHAVIOR_ORDER = [
     Lever.LATE_BOLUS,
     Lever.CARB_UNDERCOUNT,
@@ -156,7 +157,7 @@ OVERRIDE_LEVER = "user_override"
 OVERRIDE_TITLE = "Doses above pump calculation"
 OVERRIDE_EXPOSURE = "boluses"
 # The override tile carries no baked coaching prose (issue #420): its copy is a bounded,
-# factual evidence summary the frontend builds from this tile's own payload numbers
+# factual evidence summary made only from this tile's own payload numbers
 # (counts, plus the harm threshold + look-ahead surfaced below). No claim about why the
 # pump calculated its correction, and no dosing instruction. Kept empty here so the
 # generic ``recommendation`` slot stays honest for the tile.
@@ -169,8 +170,9 @@ MIN_OVERRIDES_TO_SHOW = 5
 
 # The glycemic metrics, in the locked render order. ``extract`` pulls the per-window
 # value off a :class:`~ciq_autotune.outcomes.GlycemicMetrics`; ``spike`` is computed
-# separately (post-meal, net-new) and injected. ``polarity`` drives the frontend's
-# "green always means better for you" per-row coloring.
+# separately (post-meal, net-new) and injected. ``polarity`` records which direction is
+# better for the reader ("green always means better for you"); it rides in the CLI
+# trend's JSON, and the markdown does not color rows.
 @dataclass(frozen=True)
 class _MetricSpec:
     key: str
@@ -291,7 +293,7 @@ class WindowMeta:
 
     ``cgm_active`` is a 0–1 fraction of the expected 5-min readings actually present
     over the full ``days``-day span (capped at 1.0) — the honest "how much data backs
-    this window" the frontend dims thin windows by. ``start`` / ``end`` are dates.
+    this window" the CLI's window strip prints. ``start`` / ``end`` are dates.
     """
 
     start: str
@@ -340,8 +342,8 @@ class BehaviorTrend:
     """One behavior lever's full trend: metadata plus a per-window series.
 
     ``harm_threshold_mgdl`` / ``harm_lookahead_min`` are populated only for the override
-    tile (#420), carrying the ``ScenarioConfig`` values its harm gate used so the frontend
-    can spell out the evidence summary ("… glucose at or below 80 mg/dL within 5 hours")
+    tile (#420), carrying the ``ScenarioConfig`` values its harm gate used so a reader of
+    the CLI trend's JSON can spell out the evidence summary ("… glucose at or below 80 mg/dL within 5 hours")
     without hardcoding those literals. Both are omitted from the dict for every other lever.
     """
 
@@ -375,7 +377,7 @@ class MetricTrend:
     """One glycemic metric's full trend: metadata plus a per-window value series.
 
     ``series`` values are plain numbers, or ``None`` for a window with no data (never
-    a fabricated zero) — the frontend renders a gap, not a false dip.
+    a fabricated zero) — the CLI prints a dash, never a false dip.
     """
 
     key: str
@@ -1084,7 +1086,7 @@ def summarize_trend(
     ]
     # Append the override-rate tile iff it clears the thin-data gate (ADR 0015 §2): a
     # real handful of overrides across the tracked history, else stay silent — no n=2
-    # headline. Rides in the same BehaviorTrend shape so the frontend renders it
+    # headline. Rides in the same BehaviorTrend shape so the CLI renders it
     # generically; its `harm` sub-count is the ~1-in-3 low cost the ADR measured.
     if sum(p.attributed for p in override_series) >= MIN_OVERRIDES_TO_SHOW:
         behaviors.append(
@@ -1241,7 +1243,8 @@ def _watched_change_lines(wc) -> List[str]:
 def markdown_trend(trend: OutcomesTrend) -> str:
     """Render an :class:`OutcomesTrend` as markdown (the CLI ``outcomes-trend`` view).
 
-    One versioned result, two renderers (CLI here, API JSON in ``api.py``) — the same
+    One versioned result, two CLI renderers (this markdown, and ``--json``;
+    ``/api/outcomes/trend`` serves only the watched change, #447) — the same
     pattern ``outcomes.py`` / ``report.py`` use. Shows the window strip, then each
     behavior's per-window problem-rate trend with its current ``k of n`` and vs-prior
     delta, then the glycemic metric trends — enough to eyeball movement on a real DB.

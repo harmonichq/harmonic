@@ -236,9 +236,9 @@ CI:
   ran, and the model's own account of what it saw.
 
 A utility strip sits alongside them: Log carbs, Questions, the Guide, Settings
-(encrypted credential storage, the hourly fetch loop) and the Glossary, with
-Pump settings reached from Changes. Harmonic still only **advises** — it never
-writes to your pump.
+(the API token, your Tandem Source credentials, stored encrypted, and Developer
+mode) and the Glossary, with Pump settings reached from Changes. Harmonic still
+only **advises** — it never writes to your pump.
 
 Still future work: scheduled auto-fetch beyond the hourly loop, change-triggered
 notifications, and mmol/L display — tracked as [GitHub issues](https://github.com/harmonichq/harmonic/issues).

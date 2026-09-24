@@ -97,9 +97,10 @@ async function watchDock429(page, id, kind) {
   }, `${id} Changes shows the admitted Trial`);
 }
 // #447: a watched Trial's dock and Changes' Watch maturity print one day count,
-// the served `days_elapsed`. The admission and the selected Trial are read first,
-// so a case serving no complete Trial past its requirement fails at a premise,
-// never at the count.
+// the served `days_elapsed`, and Changes' outcomes lead with the Trial's served
+// target metric. The admission and the selected Trial are read first, so a case
+// serving no complete Trial past its requirement, or no row-keyed target, fails
+// at a premise, never at the count.
 async function trialDayCount447(page) {
   const roster = await read(page, '/api/verify/trials');
   assert.equal(roster.admission?.active_kind, 'trial', 'S169 premise: the case must serve an active Trial');
@@ -107,6 +108,9 @@ async function trialDayCount447(page) {
   assert.equal(selected?.state, 'complete', 'S169 premise: the active Trial must be served complete');
   const { days_elapsed: n, days_required: r } = selected.maturing;
   assert.ok(n > r, `S169 premise: the served count must run past its requirement (${n} against ${r})`);
+  const target = selected.target_metrics?.length === 1 && selected.target_metrics[0] !== 'arc'
+    ? selected.target_metrics[0] : null;
+  assert.ok(target, `S169 premise: the Trial must serve one row-keyed target metric (${JSON.stringify(selected.target_metrics)})`);
   const ready = `Ready to judge — ${n} days since ${selected.changed_at.slice(5, 10)} · ${r} required`;
 
   await press(page, 'nav.v2-nav [data-destination="diagnose"]');
@@ -125,6 +129,13 @@ async function trialDayCount447(page) {
     assert.equal(seen(await bar.getAttribute('value')), String(r), 'S169 only the progress bar clamps, at its requirement');
     assert.equal(seen(await bar.getAttribute('max')), String(r), 'S169 the progress bar runs to the requirement');
   }, 'S169 Changes prints the same count');
+  await waitForReplayAssertion(async seen => {
+    const lead = page.locator('.gf-stage-trial [data-table="outcomes"] tbody tr').first();
+    assert.equal(seen(await lead.getAttribute('data-outcome')), target,
+      `S169 Changes' outcomes must lead with the served target metric ${target}`);
+    assert.match(seen(await lead.getAttribute('class')) || '', /\bgf-target\b/,
+      'S169 the served target row must be marked as the Trial\'s target');
+  }, 'S169 Changes leads with the served target');
 }
 // #447: the Guide's "Reading the Diagnose surface" article names no Verify, and
 // its Cause-lever line sends those levers to a Focus that Changes follows.

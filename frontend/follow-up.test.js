@@ -274,6 +274,36 @@ test('a mapped outcome leads the outcome table and context rows are marked', () 
   assert.ok(html.indexOf('data-outcome="tir"') < html.indexOf('data-outcome="tbr"'));
 });
 
+// #447: a Trial's rows arrive in the served TIR, TBR, TAR order with no role;
+// its served `target_metrics` say which of them lead. This is c3-trial's shape:
+// a basal 03:00 Trial whose served target is TBR.
+const trialRows = (keys) => ({ outcomes: keys.map((key) => ({
+  key, label: key, unit: '%', before: 1, after: 1, difference: 0, denominator: 'readings',
+  denominators: { before: 10, after: 10 }, assessment: { state: 'unclear' },
+})) });
+const rowOrder = (html) => [...html.matchAll(/data-outcome="([^"]+)"/g)].map(([, key]) => key);
+
+test('#447 · a Trial\'s served target metric leads its outcome table, marked as its target', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar', 'nights_with_low']), 'trial', ['tbr']);
+  assert.deepEqual(rowOrder(html), ['tbr', 'tir', 'tar', 'nights_with_low']);
+  assert.match(html, /<tr class="gf-target" data-outcome="tbr"><td>tbr<small>target metric<\/small>/);
+  assert.equal((html.match(/gf-target/g) || []).length, 1, 'only the served target is marked');
+  // The Trial's tables pass the served target through.
+  assert.deepEqual(rowOrder(comparisonTables(trialRows(['tir', 'tbr', 'tar']), 'trial', ['tbr'])), ['tbr', 'tir', 'tar']);
+});
+
+test('#447 · a carb-ratio Trial\'s arc target leads with the arc\'s peak and nadir rows', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar', 'peak', 'nadir', 'bg0']), 'trial', ['arc']);
+  assert.deepEqual(rowOrder(html), ['peak', 'nadir', 'tir', 'tbr', 'tar', 'bg0']);
+  assert.equal((html.match(/gf-target/g) || []).length, 2);
+});
+
+test('#447 · a Trial with no served target keeps the served order and marks nothing', () => {
+  const html = outcomesTable(trialRows(['tir', 'tbr', 'tar']), 'trial');
+  assert.deepEqual(rowOrder(html), ['tir', 'tbr', 'tar']);
+  assert.doesNotMatch(html, /gf-target/);
+});
+
 test('a null outcome against a zero denominator is not an unavailable measurement', () => {
   const html = outcomesTable(SETTING_COMPARISON, 'trial');
   // The prototype's own wording: an absent population says so in its own terms,

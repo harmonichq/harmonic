@@ -663,13 +663,15 @@ the outgoing vs incoming profile is authoritative, so the trial does not wait fo
 dose stream to re-observe the new value.
 Because the setting is objectively in effect, *adherence is guaranteed*, so
 Changes shows a clean before-and-Trial comparison anchored to the change date and
-the trial resolves **keep-or-revert**. Each trial carries a **target metric** — inferred from
-the parameter + slot that changed (an overnight-basal lift → overnight lows / TIR),
-else **overall** (TIR + arc) for a whole-profile switch or an untargeted raw pump
-edit — which is the before-and-Trial read Changes puts first; overall TIR is
-always shown alongside. A trial never carries a lever: the lever it *descended from* (a
-tuning-flavored Diagnose lever, applied to the pump) is not tracked on the trial, and
-the target metric is read from param+slot, not lever provenance. Prospective and
+the trial resolves **keep-or-revert**. Each trial carries a **target metric** —
+inferred from the parameter that changed (basal → time below range; ISF or target
+→ time in range; I:C → the **Post-meal arc**), else **overall** (TIR + arc) for a
+whole-profile switch or an untargeted raw pump edit. The server serves it with the
+Trial, and Changes' outcome table leads with the rows the comparison serves for
+it, marked as the Trial's target; overall TIR is always shown alongside. A trial
+never carries a lever: the lever it *descended from* (a tuning-flavored Diagnose
+lever, applied to the pump) is not tracked on the trial, and the target metric is
+read from the changed parameter, not lever provenance. Prospective and
 live — the forward-looking counterpart to the retrospective **Backtest**. Passes
 through a **Maturing** phase while post-change data accrues. A **revert** — the
 setting walked back to its exact pre-change baseline inside the maturing window —
@@ -682,10 +684,12 @@ A behavioral lever the user **pins by hand** to work on ("pre-bolus more for two
 weeks"). Unlike a **Trial** it is a habit with no pump artifact and no guaranteed
 adherence, so Changes follows it in **two dimensions**: *adherence* — are you doing
 it, read from the same detector that raised the lever (pre-bolus timing, over-treat
-rate) — and *outcome* — did the **Clean rate** / **Post-meal arc** improve. A flat
-outcome on a Focus is ambiguous until read against its adherence (didn't help vs
-didn't stick); a flat outcome on a Trial is not. Resolves when it sticks or the user
-drops it.
+rate) — and *outcome* — did its mapped glucose outcome improve: the **Post-meal
+arc** for a meal habit, time below range for a lows or correction-cluster habit,
+time in range for a highs habit. Changes' outcome table leads with that mapped
+outcome and marks the other rows as context. A flat outcome on a Focus is
+ambiguous until read against its adherence (didn't help vs didn't stick); a flat
+outcome on a Trial is not. Resolves when it sticks or the user drops it.
 When started from a scoped Pattern, Focus retains that outcome clock window for
 its eligibility and both comparison arms. It keeps the full contributing episode
 as evidence; changing the Diagnose window later does not rewrite the Focus.

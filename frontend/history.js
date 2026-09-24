@@ -442,7 +442,7 @@ function recordFrame(state) {
   })}
     <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
-    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind)}</div></section>`;
+    <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind, detail.target_metrics)}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.
   const pane = kind === 'focus' ? 'This Focus' : 'This trial';
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">

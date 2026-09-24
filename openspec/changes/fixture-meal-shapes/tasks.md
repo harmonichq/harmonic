@@ -45,6 +45,12 @@
 
 ## 2. Manufactured rows take their producer's shapes (sub-order 2)
 
+Coordinator-authorized note (release coordinator, 2026-09-24, recorded by the
+sub-order 1 worker): manufactured cause sentences carry no dose or ratio text (no
+"N U", no ratios). Use dose-free wording like the spike's ("Corrected at 06:50 with
+insulin still active; glucose fell to 48…"), so the public-tree dose/ratio set stays
+unchanged in sub-order 2.
+
 - [ ] 2.1 Implement behavioral-layer **Manufactured browser-gate rows carry only
   shapes their producer can serve** in `.claude/qa/gen_synthetic_fixtures.py`
   (`verdicts`, `occurrence`, `build_exposures`, `build_case_file_capture`) to

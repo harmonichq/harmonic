@@ -279,10 +279,21 @@ coordinator widened this ADR under the same delegation. Sanction:
 6. **Each new arrival re-reads guidance once, before a served draft or pending
    Plan can seat the Plan.** It is the same place that clears the Plan-open
    state (decision 1), on the same new `navigation` value. A re-render within
-   the visit makes no read. While that read has not answered, a served `draft`
-   or `pending_plan` shows the Reading frame instead of the Plan. When the read
-   answers, Changes redraws and follows the disposition the server serves now.
-   The Focus options read on the same arrival shares that one request.
+   the visit makes no read of its own. While that read has not answered, a
+   served `draft` or `pending_plan` shows the Reading frame instead of the Plan.
+   When the read answers, Changes redraws and follows the disposition the server
+   serves now.
+
+   The Focus options read on the same arrival shares that request when the
+   arrival's first draw reaches it, because that draw runs while the request is
+   still in flight. Two rare arrivals make one further guidance read on the
+   redraw instead. In the first, the page holds a `pending_plan` or `draft` read
+   while the server now serves neither a watch nor a Plan. The first draw holds
+   on the Reading frame, so the Focus options read starts only on the redraw,
+   after the arrival's request has answered. In the second, the page holds
+   `active_change` after the watch has ended, and its first draw reads no Focus
+   options. The further read is harmless: it asks the server the same question
+   again and changes nothing the arrival decided.
 
    Only the served Plan branch waits. The explicit Plan arrival and Open Plan
    within the visit are the reader's own choice, and they open the Plan at once.

@@ -87,3 +87,15 @@ Rounds 1–2 settled 2026-09-24 (Q1–Q5 above). Frontier empty.
 ## Spawned tasks
 
 (none)
+
+## Plan review rounds (one panel, Opus cold reader, resumed on deltas)
+
+| Round | Blockers | Tag | Outcome |
+|---|---|---|---|
+| 1 | 5 (tally authority; glossary extract guard; scan ack digest; comparison-chart guard on the reuse seam; desk browser suite) + 1 note | authoring | all reproduced; fixed at `097fe784` |
+| 2 | 4 (cohort contract; http-api delta; ADR bodies; two-population median) | 1 injected by fix 4, 2 injected by an aborted edit script, 1 authoring | reproduced |
+| 3 | same 4 | coordinator process defect: edit script aborted, chain still dispatched | edits re-applied and verified; `336e3d1b` |
+| 4 | 1 (key printed `usable_count`, withheld cohort undrawn) | injected | fixed at `686c1734` |
+| 5 | 0 | — | **countersigned** |
+
+Injected blockers did not climb across rounds once the edit gate was fixed; no rewrite-clean signal. Round ledger with corrections and re-check results: session scratch `plan-review-mechanical-fixes.md` (not committed).

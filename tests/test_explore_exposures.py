@@ -101,9 +101,9 @@ class ExploreExposuresTest(unittest.TestCase):
             self.assertEqual(len(family["levers"]), len(set(family["levers"])))
             for occurrence in occurrences:
                 expected_keys = {
-                    "t", "date", "bg", "worst_bg", "kind", "label", "state",
-                    "attributed", "attributed_levers", "cause_lever", "cause_title",
-                    "text", "verdicts", "ep_id",
+                    "t", "date", "bg", "insulin", "carbs", "worst_bg", "kind", "label",
+                    "state", "attributed", "attributed_levers", "cause_lever",
+                    "cause_title", "text", "verdicts", "ep_id",
                 }
                 optional_keys = set(occurrence) - expected_keys
                 self.assertIn(optional_keys, (
@@ -149,6 +149,37 @@ class ExploreExposuresTest(unittest.TestCase):
                 occurrence["state"] == "fired" for occurrence in family["occurrences"]
             ))
             self.assertEqual(sum(family["by_cause"].values()), family["attributed"])
+
+    def test_every_occurrence_serves_its_anchor_bolus_dose_and_carbs(self):
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr, meal
+
+        cgm = (
+            cgm_flat(19, 18, 40, 120, 20)
+            + cgm_ramp(19, 19, 0, 120, 1.75, 40)
+            + cgm_ramp(19, 19, 40, 190, -1.4, 100)
+            + cgm_ramp(19, 21, 20, 50, 4.0, 40)
+            + cgm_ramp(19, 22, 0, 210, -1.2, 80)
+        )
+        bolus = [meal(19, 19, 0, carbs=40, dose=6), corr(19, 20, 0, units=4)]
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                self._seed_scenario_events(store, bolus, cgm)
+                with patch("ciq_autotune.explore_exposures._effective_isf", return_value=ISF):
+                    payload = build_exposures(store)
+
+        families = payload["exposures"]
+        [served_meal] = families["meals"]["occurrences"]
+        self.assertEqual((served_meal["t"], served_meal["bg"], served_meal.get("insulin"),
+                          served_meal.get("carbs")), ("2026-06-19 19:00:00", None, 6, 40))
+        [correction] = families["correction_clusters"]["occurrences"]
+        self.assertEqual((correction.get("insulin"), correction.get("carbs")), (4, None))
+        lows, highs = families["lows"]["occurrences"], families["highs"]["occurrences"]
+        self.assertTrue(lows and highs)
+        for occurrence in lows + highs:
+            self.assertIsNotNone(occurrence["bg"])
+            self.assertEqual({key: occurrence.get(key, "absent") for key in ("insulin", "carbs")},
+                             {"insulin": None, "carbs": None})
 
     def test_announced_meal_low_stays_in_low_population_without_association(self):
         from ciq_autotune.explore_exposures import build_exposures

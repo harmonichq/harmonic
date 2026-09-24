@@ -231,6 +231,56 @@ class MealArcTest(unittest.TestCase):
         self.assertIsNone(arc.peak)
         self.assertIsNone(arc.nadir)
 
+    def test_public_read_times_each_reading_it_serves(self):
+        from ciq_autotune.outcomes_trend import meal_arcs
+
+        # Out of order, with a reading on each side of (meal, meal + 6 h]: the read
+        # sorts once and slices, and nothing outside the slice may move a value.
+        cgm = _series(self.START, [(240, 70), (-30, 400), (90, 180), (30, 120),
+                                   (400, 40), (300, 90), (360, 75)])
+        [arc] = meal_arcs([self.START], cgm)
+        whole = _meal_arc(self.START, None, sorted(cgm, key=lambda r: r.t))
+        by_t = {r.t: r.bg for r in cgm}
+        self.assertEqual((arc.peak, arc.peak_t),
+                         (180.0, self.START + timedelta(minutes=90)))
+        self.assertEqual((arc.nadir, arc.nadir_t),
+                         (70.0, self.START + timedelta(minutes=240)))
+        self.assertEqual((by_t[arc.peak_t], by_t[arc.nadir_t]), (arc.peak, arc.nadir))
+        self.assertEqual((arc.peak, arc.nadir), (whole.peak, whole.nadir))
+
+    def test_public_read_withholds_a_nadir_whose_window_does_not_qualify(self):
+        from ciq_autotune.outcomes_trend import meal_arcs
+
+        cgm = _series(self.START, [(30, 120), (60, 170), (85, 150), (100, 60)])
+        nxt = self.START + timedelta(minutes=90)
+        first, second = meal_arcs([self.START, nxt], cgm)
+        self.assertEqual((first.peak, first.peak_t),
+                         (170.0, self.START + timedelta(minutes=60)))
+        self.assertEqual((first.nadir, first.nadir_t), (None, None))
+        self.assertEqual((second.peak, second.peak_t),
+                         (60.0, self.START + timedelta(minutes=100)))
+        [context_truncated] = meal_arcs([self.START], cgm, ctx_meal_times=[self.START, nxt])
+        self.assertEqual(context_truncated, first)
+
+    def test_meal_measurements_keep_their_values_through_the_public_read(self):
+        from ciq_autotune.outcomes_trend import meal_measurements
+
+        meals = [_meal(self.START), _meal(self.START + timedelta(minutes=90)),
+                 _meal(self.START + timedelta(hours=12))]
+        # Unsorted; the first meal is cut short by the second, and the last by a
+        # context-only meal two hours on. Values measured before the read existed.
+        cgm = _series(self.START, [(725, 210), (-5, 112), (30, 150), (60, 190), (85, 160),
+                                   (120, 230), (200, 140), (330, 95), (400, 60), (715, 118),
+                                   (800, 175), (850, 250), (900, 90)])
+        late = BolusEvent(self.START + timedelta(hours=14), insulin=2.0, carbs=30.0)
+        self.assertEqual(meal_measurements(meals, cgm, ctx_meals=meals + [late]), [
+            {"t": self.START, "peak": 190.0, "nadir": None, "bg0": 112.0},
+            {"t": self.START + timedelta(minutes=90), "peak": 230.0, "nadir": 60.0,
+             "bg0": 160.0},
+            {"t": self.START + timedelta(hours=12), "peak": 210.0, "nadir": None,
+             "bg0": 118.0},
+        ])
+
 
 class PostMealArcTest(unittest.TestCase):
     """Aggregation: split denominator, the 5-meal gate, and the None gap (ADR 0018)."""

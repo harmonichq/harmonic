@@ -10,7 +10,7 @@ import time
 import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
-from .analyzers.scenario.anchors import Anchor, AnchorKind
+from .analyzers.scenario.anchors import Anchor, AnchorKind, _is_meal
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import _lever_identities, outcome_window_population
@@ -19,7 +19,7 @@ from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.model_view import _build_episode_view
 from .analyzers.scenario import opportunities
 from .analyzers.scenario_config import ScenarioConfig
-from . import event_comparison, findings_projection
+from . import event_comparison, findings_projection, outcomes_trend
 from .rescue_evidence import eligible_carb_entries
 from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .false_low import drop_readings, false_low_span_records, spans_from_records
@@ -54,6 +54,12 @@ class Member:
     outcome_t: datetime
     verdict: str
     occurrence_id: str | None = None
+    # Why the row was judged (ADR 432): the anchor's recorded classifier verdicts as
+    # the model view serializes them, the lever that drove its episode at this anchor,
+    # and the attributed narrative text of the claim that put it in its case file.
+    recorded: tuple = ()
+    driver: str | None = None
+    claim_text: str = ""
 
     @property
     def id(self):
@@ -103,6 +109,29 @@ class PreparedCases:
     def _authoritative_row(self, finding_id):
         return next((row for row in self.findings["rows"] if row.get("id") == finding_id), None)
 
+    def _arc_outcomes(self, anchors, lever):
+        """Each meal anchor's Post-meal arc reading in the direction ``lever`` judges.
+
+        ADR 432: the Arc peak for a high outcome, the Arc nadir for a low one, read by
+        the Outcomes trend over the readings the analyzer judged and truncated at the
+        next meal among the window's boluses.
+        """
+        kind = _ARC_READINGS[outcome_kind(lever)]
+        truncators = [row.t for row in _window_bolus(self.bolus, self.cgm, self.basal,
+                                                     self.source_window_days)
+                      if _is_meal(row)]
+        arcs = outcomes_trend.meal_arcs(anchors, self.sequence_cgm, ctx_meal_times=truncators)
+        return [_arc_outcome(kind, anchor, arc) for anchor, arc in zip(anchors, arcs)]
+
+    def _meal_outcomes(self, roster, lever):
+        """The served outcome of every meal row; a glucose or correction row has none."""
+        meals = [member for member in roster if member.opportunity.family is Exposure.MEALS]
+        if not meals:
+            return {}
+        return dict(zip((member.id for member in meals), self._arc_outcomes(
+            [member.opportunity.anchor_t for member in meals], lever,
+        )))
+
     def case(self, finding_id, alignment, occ, *, lever=None):
         """Project a Finding claim or a claim-free lever/window case file.
 
@@ -148,8 +177,12 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
+        outcomes = self._meal_outcomes(roster, lever)
+        facts = {member.id: (*_anchor_dose(member.opportunity), outcomes.get(member.id))
+                 for member in roster}
         selection, cohort_of = _select_roster_occurrence(
-            occ, alignment, projection, roster, lever,
+            occ, alignment, projection, roster, lever, facts,
+            lambda member: _habit_reason(member, lever, member.id in claimed_ids),
             self.cgm, self.basal, self.bolus, self.carbs,
         )
         if (selection["state"] == "unavailable" and alignment == "event"
@@ -158,13 +191,16 @@ class PreparedCases:
                 self.bolus, self.cgm, self.basal, self.source_window_days,
             ) if _opaque("m_", row.seq_num) == occ), None)
             if announced is not None:
+                [outcome] = self._arc_outcomes([announced.t], lever)
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": _announced_detail(announced, self.cgm, self.bolus)}
+                             "detail": _announced_detail(announced, outcome, self.cgm,
+                                                         self.bolus)}
                 selection["detail"]["comparison_cohort"] = cohort_of[occ]
         occurrences = (
-            [_missed_occurrence(member, member.id in claimed_ids, self.cgm)
+            [_missed_occurrence(member, member.id in claimed_ids, self.cgm, facts[member.id])
              for member in roster]
-            if lever is Lever.MISSED_MEAL else [_occurrence(member) for member in roster]
+            if lever is Lever.MISSED_MEAL
+            else [_occurrence(member, facts[member.id]) for member in roster]
         )
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
@@ -347,9 +383,11 @@ class PreparedCases:
         rate_levers = [
             subject.removeprefix("habit:") for subject in pattern["rate_levers"]
         ]
+        # The habit members this Pattern judges in its own rate family.
         habits = [
-            Lever(member["subject"].removeprefix("habit:"))
-            for member in pattern["members"] if member["kind"] == "habit"
+            lever for lever in (Lever(member["subject"].removeprefix("habit:"))
+                                for member in pattern["members"] if member["kind"] == "habit")
+            if policy_for(lever).rate_family is family
         ]
         population_lever = next(
             Lever(subject.removeprefix("habit:"))
@@ -363,7 +401,8 @@ class PreparedCases:
             ):
                 claims_by_identity.setdefault(identity, lever)
         claimed_identities = set(claims_by_identity)
-        claimed_by_id = {}
+        claimant_of = {}
+        doses = {}
         member_associations = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         pattern_roster = []
@@ -373,36 +412,49 @@ class PreparedCases:
             t = datetime.strptime(candidate["t"], FMT)
             occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
             member_associations[occurrence_id] = list(candidate.get("member_associations") or ())
+            doses[occurrence_id] = (candidate.get("insulin"), candidate.get("carbs"))
             claimant = claims_by_identity.get(identity)
             if claimant is not None and identity in remaining_claims:
-                claimed_by_id[occurrence_id] = f"habit:{claimant}"
-                verdict = "fired"
+                claimant_of[occurrence_id] = claimant
                 remaining_claims.remove(identity)
             else:
-                states = [findings_projection._occurrence_verdict(candidate, lever.value)
-                          for lever in habits if policy_for(lever).rate_family is family]
-                states = ["outranked" if state == "fired" else state for state in states]
-                verdict = max(states or ["clean"], key=lambda state: precedence[state])
+                claimant = None
+            recorded = tuple(candidate.get("verdicts") or ())
+            driver = candidate.get("cause_lever")
+            verdict = ("fired" if claimant is not None else max(
+                _pattern_verdicts(recorded, driver, None, habits).values(),
+                default="clean", key=precedence.get,
+            ))
             opportunity = opportunities.Opportunity(
                 family=family, source_key=(identity, index), anchor_t=t,
                 anchor_kind=candidate.get("kind") or _event_anchor(family)[0],
                 anchor_bg=candidate.get("bg"),
             )
-            pattern_roster.append(Member(opportunity, t, verdict, occurrence_id))
+            pattern_roster.append(Member(
+                opportunity, t, verdict, occurrence_id, recorded=recorded, driver=driver,
+                claim_text=((candidate.get("text") or "")
+                            if claimant is not None and driver == claimant else ""),
+            ))
         pattern_roster = tuple(pattern_roster)
-        claimed_ids = frozenset(claimed_by_id)
+        claimed_ids = frozenset(claimant_of)
         counts = {key: sum(member.verdict == key for member in pattern_roster)
                   for key in findings_projection.FINDING_VERDICTS}
         projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
                       else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
                                   self.bolus, self.source_window_days, self.basal))
+        outcomes = self._meal_outcomes(pattern_roster, population_lever)
+        facts = {member.id: (*doses[member.id], outcomes.get(member.id))
+                 for member in pattern_roster}
         selection, _ = _select_roster_occurrence(
-            occ, alignment, projection, pattern_roster, population_lever,
+            occ, alignment, projection, pattern_roster, population_lever, facts,
+            lambda member: _pattern_reason(member, claimant_of.get(member.id), habits),
             self.cgm, self.basal, self.bolus, self.carbs,
         )
-        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean"),
-                                                **({"member_associations": member_associations[member.id]}
-                                                   if member_associations[member.id] else {})})
+        occurrences = [(_occurrence(member, facts[member.id])
+                        | {"member": (f"habit:{claimant_of[member.id]}"
+                                      if member.id in claimant_of else "clean"),
+                           **({"member_associations": member_associations[member.id]}
+                              if member_associations[member.id] else {})})
                        for member in pattern_roster]
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
@@ -495,6 +547,11 @@ def _population(
     associations = {lever: set() for lever in Lever}
     provenance = {lever: [] for lever in Lever}
     withheld = set()
+    # The Member reason carrier (ADR 432), keyed like ``by_family``; claim texts are
+    # keyed by the served identity the association was recorded under.
+    recorded = {family: {} for family in Exposure}
+    drivers = {family: {} for family in Exposure}
+    claim_texts = {lever: {} for lever in Lever}
     for index, evaluated_episode in enumerate(evaluated.episodes):
         episode = evaluated_episode.anchors
         attr = evaluated_episode.attribution
@@ -508,6 +565,8 @@ def _population(
                 continue
             cause = attr.lever.value if source is attr.driver_anchor and attr.lever else None
             occurrence = {"verdicts": row["verdicts"], "cause_lever": cause}
+            recorded[family][key] = tuple(row["verdicts"])
+            drivers[family][key] = cause
             for lever in Lever:
                 if exposure(lever) is family:
                     states[lever][key] = findings_projection._occurrence_verdict(
@@ -516,6 +575,8 @@ def _population(
         if attr.lever is None or policy_for(attr.lever).recurrence_noun == "sequences":
             continue
         policy = policy_for(attr.lever)
+        # An attribution that names a lever always leads with its driver's step.
+        claim_text = view["steps"][0]["text"]
         if policy.recurrence_family is None:
             # The rise onset the classifier judged, not the driver anchor's peak —
             # see the same note in `explore_exposures`. These associations are checked
@@ -523,6 +584,7 @@ def _population(
             occurrence_id = evaluated_episode.occurrence_id
             served_id = _opaque("m_", occurrence_id)
             associations[attr.lever].add(served_id)
+            claim_texts[attr.lever].setdefault(served_id, claim_text)
             landing_kind = outcome_kind(attr.lever)
             landings = [anchor.t for anchor in episode.anchors
                         if anchor.kind.value == landing_kind]
@@ -540,6 +602,7 @@ def _population(
         item = by_family[family][key]
         opportunity_id = _opaque("o_", family.value, *item.source_key)
         associations[attr.lever].add(opportunity_id)
+        claim_texts[attr.lever].setdefault(opportunity_id, claim_text)
         provenance[attr.lever].append(Association(
             opportunity_id=opportunity_id,
             outcome_t=outcome_t,
@@ -554,11 +617,11 @@ def _population(
         verdict = classify_correction_stacking(item.members, filtered_cgm, filtered_basal,
                                                scenario_config=config,
                                                iob_boluses=filtered_bolus)
-        occurrence = {"verdicts": [{"classifier": Lever.CORRECTION_STACKING.value,
-                                     "matched": verdict.matched,
-                                     "silence_reason": getattr(verdict.silence_reason,
-                                                               "value", verdict.silence_reason)}],
-                      "cause_lever": None}
+        own = {"classifier": Lever.CORRECTION_STACKING.value, "matched": verdict.matched,
+               "detail": verdict.detail, "evidence_tier": verdict.evidence_tier.value,
+               "silence_reason": getattr(verdict.silence_reason, "value", verdict.silence_reason)}
+        recorded[Exposure.CORRECTION_CLUSTERS][item.source_key] = (own,)
+        occurrence = {"verdicts": [own], "cause_lever": None}
         if item.source_key not in outcomes[Lever.CORRECTION_STACKING]:
             states[Lever.CORRECTION_STACKING][item.source_key] = (
                 findings_projection._occurrence_verdict(
@@ -575,20 +638,30 @@ def _population(
         if policy.recurrence_family is None:
             meals = {item.members[0].seq_num: item
                      for item in opportunity_families[Exposure.MEALS]}
-            members[lever] = tuple(
-                Member(meals[item.seq_num],
-                       outcomes[lever].get(_opaque("m_", policy.occurrence_id(item)), item.t),
-                       "fired" if _opaque("m_", policy.occurrence_id(item)) in associations[lever]
-                       else "clean", _opaque("m_", policy.occurrence_id(item)))
-                for item in policy.recurrence_population(
-                    opportunity_families, filtered_bolus, scenario_config=config,
-                )
-                if item.seq_num in meals
-            )
+            rows = []
+            for item in policy.recurrence_population(
+                opportunity_families, filtered_bolus, scenario_config=config,
+            ):
+                if item.seq_num not in meals:
+                    continue
+                meal = meals[item.seq_num]
+                served_id = _opaque("m_", policy.occurrence_id(item))
+                rows.append(Member(
+                    meal, outcomes[lever].get(served_id, item.t),
+                    "fired" if served_id in associations[lever] else "clean", served_id,
+                    recorded=recorded[Exposure.MEALS].get(meal.source_key, ()),
+                    driver=drivers[Exposure.MEALS].get(meal.source_key),
+                    claim_text=claim_texts[lever].get(served_id, ""),
+                ))
+            members[lever] = tuple(rows)
             continue
         family = policy.recurrence_family
         members[lever] = tuple(Member(item, outcomes[lever].get(key, item.anchor_t),
-                                     states[lever].get(key, "clean"))
+                                     states[lever].get(key, "clean"),
+                                     recorded=recorded[family].get(key, ()),
+                                     driver=drivers[family].get(key),
+                                     claim_text=claim_texts[lever].get(
+                                         _opaque("o_", family.value, *key), ""))
                                for key, item in by_family[family].items())
     return (members, {lever: frozenset(ids) for lever, ids in associations.items()},
             {lever: tuple(rows) for lever, rows in provenance.items()}, frozenset(withheld))
@@ -720,12 +793,40 @@ _ANCHOR_LABELS = {
 }
 
 
-def _occurrence(member):
+_ARC_READINGS = {"high": "peak", "low": "nadir"}
+
+
+def _arc_outcome(kind, anchor, arc):
+    """A served outcome reading off one meal's ``outcomes_trend.MealArc``, or none."""
+    value, t = (arc.peak, arc.peak_t) if kind == "peak" else (arc.nadir, arc.nadir_t)
+    if value is None:
+        return None
+    return {"kind": kind, "bg": value, "t": t.strftime(FMT),
+            "minute": round((t - anchor).total_seconds() / 60, 1)}
+
+
+def _anchor_dose(opportunity):
+    """A roster opportunity's anchor bolus dose and carbs (ADR 432): a meal's own
+    bolus, a correction cluster's second correction without carbs, and neither for a
+    glucose anchor."""
+    if opportunity.family is Exposure.MEALS:
+        meal = opportunity.members[0]
+        return meal.insulin, meal.carbs
+    if opportunity.family is Exposure.CORRECTION_CLUSTERS:
+        return opportunity.members[1].insulin, None
+    return None, None
+
+
+def _occurrence(member, facts):
+    """One roster row; ``facts`` is its anchor dose, carbs and served outcome."""
     _, label = _event_anchor(member.opportunity.family)
+    insulin, carbs, outcome = facts
     return {"id": member.id, "date": member.opportunity.anchor_t.date().isoformat(),
             "anchor": {"t": member.opportunity.anchor_t.strftime(FMT),
                        "kind": member.opportunity.anchor_kind, "label": label,
-                       "bg": member.opportunity.anchor_bg}, "verdict": member.verdict}
+                       "bg": member.opportunity.anchor_bg,
+                       "insulin": insulin, "carbs": carbs},
+            "verdict": member.verdict, "outcome": outcome}
 
 
 def _rise_onset_anchor(member, cgm):
@@ -734,14 +835,67 @@ def _rise_onset_anchor(member, cgm):
     if reading is None:
         raise InconsistentProjection("missing rise-onset EGV")
     return {"t": onset.strftime(FMT), "kind": "detected_rise_onset",
-            "label": "Detected rise onset", "bg": reading.bg}
+            "label": "Detected rise onset", "bg": reading.bg,
+            "insulin": None, "carbs": None}
 
 
-def _missed_occurrence(member, attributed, cgm):
-    return _occurrence(member) | {
+def _missed_occurrence(member, attributed, cgm, facts):
+    return _occurrence(member, facts) | {
         "attributed": attributed,
         "comparison_anchor": _rise_onset_anchor(member, cgm) if attributed else None,
     }
+
+
+def _cause(lever, text):
+    return {"lever": lever, "title": title(Lever(lever)), "text": text}
+
+
+def _habit_entry(member, lever, verdict, *, mapped=False):
+    """One judged habit on a selected row, at exactly the verdict its roster assigned.
+
+    It carries the classifier's recorded sentence at this anchor only where that
+    recorded verdict, read with the anchor's episode driver, gives ``verdict`` — or
+    gives fired, for an entry an unclaimed Pattern row ``mapped`` to outranked — so a
+    row fired by association never shows a sentence that says otherwise.
+    """
+    own = next((item for item in member.recorded if item.get("classifier") == lever), None)
+    reads = findings_projection._occurrence_verdict(
+        {"verdicts": member.recorded, "cause_lever": member.driver}, lever,
+    )
+    agrees = reads == verdict or (mapped and (reads, verdict) == ("fired", "outranked"))
+    return {"lever": lever, "title": title(Lever(lever)), "verdict": verdict,
+            "detail": own.get("detail") if own is not None and agrees else None}
+
+
+def _habit_reason(member, lever, claimed):
+    """A single-habit row's reason: the case lever as its cause exactly when this case
+    file claims the row, and its one judged habit at the row's own verdict."""
+    return {"cause": _cause(lever.value, member.claim_text) if claimed else None,
+            "habits": [_habit_entry(member, lever.value, member.verdict)]}
+
+
+def _pattern_verdicts(recorded, driver, claimant, habits):
+    """Each habit member's verdict on one Pattern row, as that roster assigns it.
+
+    A claimed row's claimant is fired and every other habit keeps its row-relative
+    state; an unclaimed row maps each fired state to outranked, because no rate lever
+    claimed it. The row's own verdict and its selected reason both read this.
+    """
+    occurrence = {"verdicts": recorded, "cause_lever": driver}
+    states = {lever.value: findings_projection._occurrence_verdict(occurrence, lever.value)
+              for lever in habits}
+    if claimant is not None:
+        return {lever: "fired" if lever == claimant else state
+                for lever, state in states.items()}
+    return {lever: "outranked" if state == "fired" else state
+            for lever, state in states.items()}
+
+
+def _pattern_reason(member, claimant, habits):
+    verdicts = _pattern_verdicts(member.recorded, member.driver, claimant, habits)
+    return {"cause": _cause(claimant, member.claim_text) if claimant is not None else None,
+            "habits": [_habit_entry(member, lever, verdict, mapped=claimant is None)
+                       for lever, verdict in verdicts.items()]}
 
 
 def _clock(roster, claimed_ids):
@@ -797,14 +951,19 @@ def _round_outward(minute):
     return 5 * floor(minute / 5)
 
 
-def _completed_carb_boluses(bolus, cgm, basal, source_window_days):
+def _window_bolus(bolus, cgm, basal, source_window_days):
+    """The boluses inside the source window the retained population was built over."""
     times = [row.t for row in basal] + [row.t for row in cgm]
     if not times:
         return ()
     end = max(times)
     start = end - timedelta(days=source_window_days)
-    return tuple(row for row in event_comparison.completed_carb_boluses(bolus)
-                 if start <= row.t <= end)
+    return tuple(row for row in bolus if start <= row.t <= end)
+
+
+def _completed_carb_boluses(bolus, cgm, basal, source_window_days):
+    return event_comparison.completed_carb_boluses(
+        _window_bolus(bolus, cgm, basal, source_window_days))
 
 
 def _comparison_anchor(member, lever):
@@ -907,7 +1066,9 @@ def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
     return markers
 
 
-def _missed_detail(member, cgm, basal, bolus, carbs):
+def _missed_detail(member, facts, reason, cgm, basal, bolus, carbs):
+    # The rise onset carries no bolus; only the row's outcome carries over.
+    _, _, outcome = facts
     anchor = member.opportunity.reach_start or member.opportunity.anchor_t
     before, after = policy_for(Lever.MISSED_MEAL).comparison_window
     lo = anchor + timedelta(minutes=before)
@@ -917,12 +1078,13 @@ def _missed_detail(member, cgm, basal, bolus, carbs):
     )["trace"]["cgm"]
     return {"id": member.id, "date": anchor.date().isoformat(),
             "anchor": _rise_onset_anchor(member, cgm),
-            "verdict": member.verdict, "glucose": trace,
+            "verdict": member.verdict, "outcome": outcome, "glucose": trace,
             "markers": _detail_markers(anchor, lo, hi, basal, bolus, carbs),
-            "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
+            "source_corrections": [], "day_target": {"date": anchor.date().isoformat()},
+            "reason": reason}
 
 
-def _announced_detail(row, cgm, bolus):
+def _announced_detail(row, outcome, cgm, bolus):
     anchor = row.t
     trace = _comparison_trace(
         _opaque("m_", row.seq_num), anchor, cgm,
@@ -930,30 +1092,37 @@ def _announced_detail(row, cgm, bolus):
     )["trace"]["cgm"]
     return {"id": _opaque("m_", row.seq_num), "date": anchor.date().isoformat(),
             "anchor": {"t": anchor.strftime(FMT), "kind": "completed_carb_bolus",
-                       "label": "Completed carb bolus", "bg": row.bg},
-            "verdict": "comparison", "glucose": trace,
+                       "label": "Completed carb bolus", "bg": row.bg,
+                       "insulin": row.insulin, "carbs": row.carbs},
+            "verdict": "comparison", "outcome": outcome, "glucose": trace,
             "markers": [{"kind": "bolus", "t": dose.t.strftime(FMT),
                          "minute": round((dose.t - anchor).total_seconds() / 60, 1),
                          "seq_num": dose.seq_num, "insulin": dose.insulin, "carbs": dose.carbs}
                         for dose in bolus if anchor - timedelta(minutes=60) <= dose.t
                         <= anchor + timedelta(minutes=300)],
-            "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
+            "source_corrections": [], "day_target": {"date": anchor.date().isoformat()},
+            # A comparison meal is judged by no habit, so nothing claims it.
+            "reason": {"cause": None, "habits": []}}
 
 
-def _detail(member, lever, cgm, basal, bolus, carbs):
+def _detail(member, lever, facts, reason, cgm, basal, bolus, carbs):
     lo, hi = _trace_bounds(member, lever)
     anchor = member.opportunity.anchor_t
     markers = _detail_markers(anchor, lo, hi, basal, bolus, carbs)
     source = ([{"seq_num": row.seq_num, "t": row.t.strftime(FMT),
                 "insulin": row.insulin} for row in member.opportunity.members]
               if member.opportunity.family is Exposure.CORRECTION_CLUSTERS else [])
-    return _occurrence(member) | {"glucose": _trace(member, lever, cgm)["trace"]["cgm"],
-                                  "markers": markers, "source_corrections": source,
-                                  "day_target": {"date": anchor.date().isoformat()}}
+    return _occurrence(member, facts) | {
+        "glucose": _trace(member, lever, cgm)["trace"]["cgm"],
+        "markers": markers, "source_corrections": source,
+        "day_target": {"date": anchor.date().isoformat()}, "reason": reason,
+    }
 
 
-def _select_roster_occurrence(occ, alignment, projection, roster, lever,
+def _select_roster_occurrence(occ, alignment, projection, roster, lever, facts, reason,
                               cgm, basal, bolus, carbs):
+    """Resolve one requested row; ``facts`` maps each row id to its anchor dose,
+    carbs and outcome, and ``reason`` builds the selected row's served reason."""
     cohort_of = {
         occurrence_id: cohort["key"]
         for cohort in projection["cohorts"]
@@ -969,9 +1138,11 @@ def _select_roster_occurrence(occ, alignment, projection, roster, lever,
     selection = {"state": "unavailable", "requested_id": occ, "detail": None}
     if selected is None or selected.id not in active_ids:
         return selection, cohort_of
-    detail = (_missed_detail(selected, cgm, basal, bolus, carbs)
+    detail = (_missed_detail(selected, facts[selected.id], reason(selected),
+                             cgm, basal, bolus, carbs)
               if lever is Lever.MISSED_MEAL and alignment == "event"
-              else _detail(selected, lever, cgm, basal, bolus, carbs))
+              else _detail(selected, lever, facts[selected.id], reason(selected),
+                           cgm, basal, bolus, carbs))
     if alignment == "event":
         detail["comparison_cohort"] = cohort_of[occ]
     return {"state": "selected", "requested_id": occ, "detail": detail}, cohort_of

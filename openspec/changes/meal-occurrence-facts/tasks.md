@@ -2,12 +2,12 @@
 
 ## 1. Served facts (backend)
 
-- [ ] 1.1 Serve `insulin` and `carbs` on every exposure Occurrence in
+- [x] 1.1 Serve `insulin` and `carbs` on every exposure Occurrence in
   `ciq_autotune/explore_exposures.py`, copied from the model-view anchor (null
   where the anchor is not a bolus), and extend the locked key contract in
   `tests/test_explore_exposures.py`: every Occurrence carries both keys, a meal
   Occurrence's values equal its bolus's, a low's and a high's are null.
-- [ ] 1.2 Expose one public per-meal arc read in `ciq_autotune/outcomes_trend.py`
+- [x] 1.2 Expose one public per-meal arc read in `ciq_autotune/outcomes_trend.py`
   that runs the existing `_meal_arc` (still the one implementation) on the
   time-sorted series narrowed by bisection to (bolus, bolus + 6 h], returning the
   Arc peak and its reading time and, only when the nadir window qualifies, the Arc
@@ -15,7 +15,7 @@
   `tests/test_outcomes_trend.py` that the read's times match its values on a
   synthetic series, that narrowing changes no value, and that `meal_measurements`
   output for existing keys is unchanged.
-- [ ] 1.3 Implement behavioral-layer **Case-file Occurrences serve the facts their
+- [x] 1.3 Implement behavioral-layer **Case-file Occurrences serve the facts their
   anchor has** in `ciq_autotune/finding_case_file.py`, in both roster paths, the
   rise-onset anchor and the announced-meal detail, to the served shape in
   `design.md`. Test through `PreparedCases.case` over a store run through the real
@@ -28,7 +28,7 @@
   Extend the exact key sets in `tests/test_finding_case_file_api.py`
   (`assert_case_tree`) to the new anchor, Occurrence and detail keys. Show the
   facts test failing on the base for its feature reason.
-- [ ] 1.4 Implement behavioral-layer **A selected case-file Occurrence serves why
+- [x] 1.4 Implement behavioral-layer **A selected case-file Occurrence serves why
   it was judged** in the same module, carrying the per-anchor facts on `Member`'s
   defaulted `recorded`, `driver` and `claim_text` fields as `design.md` states.
   Test over analyzer output, for every Occurrence of each tested single-habit and
@@ -41,7 +41,7 @@
   that lever drove the meal's episode), building or extending a synthetic store
   until the projection publishes that roster by its own rules, never by hand-set
   claims; and a correction cluster judged by its Correction stacking verdict.
-- [ ] 1.5 Remove the hand-set meal glucose from the Pattern tests in
+- [x] 1.5 Remove the hand-set meal glucose from the Pattern tests in
   `tests/test_finding_case_file.py`: their exposure rows carry what the exposure
   feed serves for a meal (null glucose, dose, carbs), and the tests assert the
   served facts rather than a glucose.

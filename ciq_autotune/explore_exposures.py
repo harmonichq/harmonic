@@ -183,6 +183,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 "t": anchor["t"],
                 "date": anchor["t"][:10],
                 "bg": anchor["bg"],
+                # The anchor bolus's dose and carbs, null on a glucose anchor: a
+                # Pattern case file reads them here rather than matching a bolus.
+                "insulin": anchor["insulin"],
+                "carbs": anchor["carbs"],
                 "worst_bg": episode["worst_bg"],
                 "kind": anchor["kind"],
                 "label": anchor["label"],

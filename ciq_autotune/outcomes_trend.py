@@ -604,11 +604,14 @@ class _MealArc:
     ``nadir_qualifies`` is True only when the arc spanned ≥ :data:`ARC_MIN_NADIR_SPAN_MIN`
     before truncation — a shorter arc cannot tell a crash story (ADR 0018 §4) and is kept
     out of the nadir series regardless of whether a reading happened to exist.
+    ``peak_t`` / ``nadir_t`` are the times of the readings that set each value.
     """
 
     peak: Optional[float]
     nadir: Optional[float]
     nadir_qualifies: bool
+    peak_t: Optional[datetime] = None
+    nadir_t: Optional[datetime] = None
 
 
 def _meal_arc(meal_t: datetime, next_meal_t: Optional[datetime], cgm: Sequence) -> _MealArc:
@@ -632,9 +635,53 @@ def _meal_arc(meal_t: datetime, next_meal_t: Optional[datetime], cgm: Sequence) 
     if next_meal_t is not None and next_meal_t < nadir_end:
         nadir_end = next_meal_t
     qualifies = (nadir_end - meal_t) >= timedelta(minutes=ARC_MIN_NADIR_SPAN_MIN)
-    nadir_vals = [r.bg for r in cgm if r.bg is not None and peak_t < r.t <= nadir_end]
-    nadir = min(nadir_vals) if nadir_vals else None
-    return _MealArc(peak=peak, nadir=nadir, nadir_qualifies=qualifies)
+    nadir_pts = [(r.t, r.bg) for r in cgm if r.bg is not None and peak_t < r.t <= nadir_end]
+    nadir_t, nadir = min(nadir_pts, key=lambda tv: tv[1]) if nadir_pts else (None, None)
+    return _MealArc(peak=peak, nadir=nadir, nadir_qualifies=qualifies,
+                    peak_t=peak_t, nadir_t=nadir_t)
+
+
+@dataclass(frozen=True)
+class MealArc:
+    """One meal's Post-meal arc as served (ADR 0018), each value with its reading time.
+
+    ``peak`` / ``peak_t`` is the Arc peak and the reading that set it, ``None`` when the
+    peak window held no reading. ``nadir`` / ``nadir_t`` is the Arc nadir, served only
+    when its window qualifies (``_MealArc.nadir_qualifies``) and held a reading — the
+    same gate that keeps a short arc out of the nadir series.
+    """
+
+    peak: Optional[float]
+    peak_t: Optional[datetime]
+    nadir: Optional[float]
+    nadir_t: Optional[datetime]
+
+
+def meal_arcs(meal_times: Sequence[datetime], cgm: Sequence, *,
+              ctx_meal_times: Optional[Sequence[datetime]] = None) -> List[MealArc]:
+    """Each meal's :class:`MealArc`, index-aligned with ``meal_times``.
+
+    ``ctx_meal_times`` are the carb-tagged bolus times that may truncate an arc; they
+    default to ``meal_times``. The series is time-sorted once, and each meal's
+    :func:`_meal_arc` reads only its ``(meal_t, meal_t + 6 h]`` slice, found by bisection.
+    Both arc windows sit inside that span, so the slice moves no value, and a window of
+    meals costs a slice per meal rather than a scan of the whole series.
+    """
+    series = sorted(cgm, key=lambda r: r.t)
+    times = [r.t for r in series]
+    truncators = sorted(ctx_meal_times if ctx_meal_times is not None else meal_times)
+    horizon = timedelta(minutes=ARC_NADIR_HORIZON_MIN)
+    arcs = []
+    for meal_t in meal_times:
+        following = bisect.bisect_right(truncators, meal_t)
+        next_meal_t = truncators[following] if following < len(truncators) else None
+        arc = _meal_arc(meal_t, next_meal_t, series[bisect.bisect_right(times, meal_t):
+                                                     bisect.bisect_right(times, meal_t + horizon)])
+        qualified = arc.nadir_qualifies
+        arcs.append(MealArc(arc.peak, arc.peak_t,
+                            arc.nadir if qualified else None,
+                            arc.nadir_t if qualified else None))
+    return arcs
 
 
 def _meal_tail_end(meal_t: datetime, next_meal_t: Optional[datetime]) -> datetime:
@@ -1357,16 +1404,12 @@ def meal_measurements(meals, cgm, *, ctx_meals=None):
     Context meals truncate peak/nadir using the existing arc policy. The caller
     owns the CGM period, so context never supplies an out-of-period measurement.
     """
-    times = sorted(m.t for m in (ctx_meals if ctx_meals is not None else meals))
+    arcs = meal_arcs([m.t for m in meals], cgm, ctx_meal_times=[
+        m.t for m in (ctx_meals if ctx_meals is not None else meals)])
     series = CgmSeries(cgm, timedelta(minutes=IcConfig().bg0_max_gap_min))
-    rows = []
-    for meal in meals:
-        nxt = next((t for t in times if t > meal.t), None)
-        arc = _meal_arc(meal.t, nxt, cgm)
-        rows.append({"t": meal.t, "peak": arc.peak,
-                     "nadir": arc.nadir if arc.nadir_qualifies else None,
-                     "bg0": meal_start_bg(meal, series)})
-    return rows
+    return [{"t": meal.t, "peak": arc.peak, "nadir": arc.nadir,
+             "bg0": meal_start_bg(meal, series)}
+            for meal, arc in zip(meals, arcs)]
 
 
 def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,

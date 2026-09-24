@@ -71,7 +71,7 @@ The backend must validate admission and save the selected window with the Focus 
 This ordinary change owns the new requirements in its OpenSpec deltas. It amends
 the active behavioral-layer requirement that says scoped queries omit a Pattern,
 the active durable-follow-up contract, and the v2 surface contract. Historical
-text in `openspec/changes/harmonic-v2/design.md` and
+text in `openspec/changes/archive/2026-09-24-harmonic-v2/design.md` and
 `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md` remains historical; the
 implementation record must point to this ADR where prior wording is superseded.
 
@@ -91,7 +91,7 @@ active records, which were restored exactly to
 source references preserve the original placement without leaving a second
 active #404 folder.
 
-- From `openspec/changes/harmonic-v2/contracts.md`: a new Pattern Focus retains
+- From `openspec/changes/archive/2026-09-24-harmonic-v2/contracts.md`: a new Pattern Focus retains
   its outcome clock window in bounded decision context; the ending contract adds
   `/api/verify/trials/{trial_id}/conclusion` for one separately dated late
   conclusion on an expired Trial. That conclusion is additive: the expiry's
@@ -100,11 +100,11 @@ active #404 folder.
   remains named and on demand, never prewarmed. A Focus without retained scope
   remains legacy history with its existing comparison semantics, without an
   inferred scope or new unavailable state.
-- From `openspec/changes/harmonic-v2/design.md`: ADR 397 supersedes navigation
+- From `openspec/changes/archive/2026-09-24-harmonic-v2/design.md`: ADR 397 supersedes navigation
   only in historical ADR 348; all other requirements remain binding. #404
   further supersedes only the earlier no-local-recovery scope for stale local
   follow-up reconciliation. Immutable-ending and admission rules remain binding.
-- From `openspec/changes/harmonic-v2/journeys.md`: #404 supersedes the
+- From `openspec/changes/archive/2026-09-24-harmonic-v2/journeys.md`: #404 supersedes the
   historical journey only for readable v2 paths, exact Plan/Trial record doors,
   and backend-served Focus withholding context. Its original navigation and
   follow-up prose remains historical.

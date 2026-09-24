@@ -23,7 +23,7 @@ coordinator, never to the operator.
   `context_after_ending`. → ADR (ADR 442)
 - **R442 reverses ADR 386's "do not auto-finish or date them" clause for older
   records.** Recorded in ADR 442. A one-line supersession pointer goes beside
-  the clause in `openspec/changes/harmonic-v2/design.md`, following the
+  the clause in `openspec/changes/archive/2026-09-24-harmonic-v2/design.md`, following the
   existing ADR 397 pointer. → ADR (ADR 442)
 - **Any later detected change supersedes, whatever its setting.** Coordinator
   ruling on Q1, 2026-09-23 (R442 corrected): the frontier's actual rule. R442's

@@ -37,7 +37,7 @@ both app surfaces. Its exact predecessor IDs and retained mixed-story obligation
 are recorded in the two frozen ledgers and desktop lock. All other missing
 prototype coverage remains missing, rather than a sanctioned omission.
 The original comparison and selected direction remain in
-[the rendered review](../../../mockups/harmonic-v2.exploration/REVIEW.md).
+[the rendered review](../../../../mockups/harmonic-v2.exploration/REVIEW.md).
 
 
 ## Basal exploration clarification

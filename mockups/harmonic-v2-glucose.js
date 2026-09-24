@@ -1,6 +1,6 @@
 // RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
 //
-// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/archive/2026-09-24-harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
 //
 // Old (superseded): "the four destinations and their default (Overview)"
 // New: "the three destinations and their default (Diagnose)"
@@ -44,7 +44,7 @@
 // ★ LOCKED — harmonic-v2-desktop · 2026-09-08
 //
 // Direction selected by Connor Griffin on 2026-09-07 and recorded in "ADR 348 —
-// Adopt the reviewed desktop direction" (openspec/changes/harmonic-v2/design.md).
+// Adopt the reviewed desktop direction" (openspec/changes/archive/2026-09-24-harmonic-v2/design.md).
 // This header was written by Claude Opus 5 (high) as the #348 planning author.
 // The contract is mockups/harmonic-v2-desktop.lock.md, which governs; this
 // header narrates. The locked surface is harmonic-v2-glucose.html?source=journey,

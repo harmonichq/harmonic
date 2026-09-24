@@ -3,7 +3,7 @@
 ## Decisions
 
 - Classify #348 as an attended investigation. Its output is an agreed product/design plan and findings. The issue explicitly withholds application-build authority. Connor later requested an open draft PR for the planning and prototype checkpoint; that delivery instruction supersedes the original no-planning-PR constraint. inline
-- Use `openspec/changes/harmonic-v2/` as the planning authority. This scope ledger records the interview; proposal, design, and tasks own the resulting plan. inline
+- Use `openspec/changes/archive/2026-09-24-harmonic-v2/` as the planning authority. This scope ledger records the interview; proposal, design, and tasks own the resulting plan. inline
 - Route scope to interview mode: the issue supplies a concrete navigation and delivery hypothesis, while the operator's primary unmet need and the first useful journey remain untested. Do not turn this intake into a second epic or a component backlog. inline
 - Preserve the issue's agreed architecture: sibling `frontend-v2/`, Vue/Vite/TypeScript, `/v2/` and `/v2/assets/`, one Python API/database owner, Node for building only, and ordinary human-reviewed increments to main. V1 need not migrate to Vite first. Recorded as ADR 348 — A parallel v2 frontend with one Python data owner. → ADR (discharged)
 - Preserve analyzer authority, existing clinical eligibility, manual pump entry, one active watched change, separate adherence/outcome, and non-causal before/after language. Use synthetic evidence only. inline

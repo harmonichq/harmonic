@@ -50,7 +50,7 @@ read matches it."
 
 ### What it amends
 
-ADR 386 (`openspec/changes/harmonic-v2/design.md`) requires "a real observed
+ADR 386 (`openspec/changes/archive/2026-09-24-harmonic-v2/design.md`) requires "a real observed
 transition" for a Plan–Trial relationship. That rule is unchanged, and a
 pump-read confirmation creates no relationship. What changes is that a
 relationship is no longer the only way a Plan leaves pending: confirmation and

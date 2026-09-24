@@ -205,7 +205,7 @@ was refuted by measurement and is recorded as refuted rather than folded in.
    caller" (the track had a real caller for one day).
 3. *(authoring)* The `#96` presence sentinel `verdict:  retired` already matches five
    times on the base, so it could never detect #96's absence. Replaced with
-   `## ADR 96` in `openspec/changes/finding-evidence-routing/design.md`, which is
+   `## ADR 96` in `openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md`, which is
    absent on base.
 4. *(authoring)* The new story was pinned `'drawn'` while copying S40's drive, and S40
    is registered `'typical'` (`replay.mjs:3378`). No `'drawn'` story uses that drive.

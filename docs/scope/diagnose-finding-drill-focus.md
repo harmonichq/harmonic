@@ -164,7 +164,7 @@ Blocking:
 6. Step 8 said "an OpenSpec change folder … following the existing folders'
    shape", but `scripts/check_adr_numbers.py` reads only the
    `## ADR <issue> — <title>` heading under `openspec/changes/**/design.md`, and
-   `openspec/changes/finding-evidence-routing/` already exists for this exact
+   `openspec/changes/archive/2026-09-24-finding-evidence-routing/` already exists for this exact
    surface (design.md only, ADRs 31/42/41). Now names that exact path and
    forbids proposal.md/tasks.md as unenforced busywork.
 

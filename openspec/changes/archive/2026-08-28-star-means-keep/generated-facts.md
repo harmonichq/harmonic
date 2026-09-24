@@ -7,7 +7,7 @@ Captured from base `45f0f7ddcacc606b530791c07f00271f30979852` before implementat
 Command:
 
 ```sh
-git ls-files AGENTS.md CONTEXT.md DESIGN.md PRODUCT.md frontend/diagnose-canvas-layout.js frontend/diagnose-canvas-state.js frontend/diagnose-workstation.js frontend/diagnose-canvas-layout.test.js frontend/diagnose-canvas-state.test.js frontend/diagnose-canvas-composition.browser.test.mjs frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-behavior-ledger-parity.test.js mockups/finding-evidence-routing.behavior.md mockups/INDEX.md openspec/changes/canvas-tile-controls/design.md openspec/specs/surfaces/spec.md scripts/gen_revise_e2e_db.py mockups/revise-e2e.synthetic/harmonic.sqlite
+git ls-files AGENTS.md CONTEXT.md DESIGN.md PRODUCT.md frontend/diagnose-canvas-layout.js frontend/diagnose-canvas-state.js frontend/diagnose-workstation.js frontend/diagnose-canvas-layout.test.js frontend/diagnose-canvas-state.test.js frontend/diagnose-canvas-composition.browser.test.mjs frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-behavior-ledger-parity.test.js mockups/finding-evidence-routing.behavior.md mockups/INDEX.md openspec/changes/archive/2026-09-24-canvas-tile-controls/design.md openspec/specs/surfaces/spec.md scripts/gen_revise_e2e_db.py mockups/revise-e2e.synthetic/harmonic.sqlite
 ```
 
 Output:
@@ -28,7 +28,7 @@ frontend/diagnose-workstation.js
 mockups/INDEX.md
 mockups/finding-evidence-routing.behavior.md
 mockups/revise-e2e.synthetic/harmonic.sqlite
-openspec/changes/canvas-tile-controls/design.md
+openspec/changes/archive/2026-09-24-canvas-tile-controls/design.md
 openspec/specs/surfaces/spec.md
 scripts/gen_revise_e2e_db.py
 ```

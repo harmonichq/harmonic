@@ -28,11 +28,11 @@
 
 ### Grounding
 
-The selected issue has no formal parent and no existing work-order comment. #405 merged the #389 implementation. The main branch subsequently merged #407 (gate scheduling) and #409 (replay timing). Standing decisions are in AGENTS.md, DESIGN.md, CONTEXT.md and `openspec/changes/harmonic-v2/`, including its design, contracts, journeys and spec deltas; no separate standing-decisions source is configured.
+The selected issue has no formal parent and no existing work-order comment. #405 merged the #389 implementation. The main branch subsequently merged #407 (gate scheduling) and #409 (replay timing). Standing decisions are in AGENTS.md, DESIGN.md, CONTEXT.md and `openspec/changes/archive/2026-09-24-harmonic-v2/`, including its design, contracts, journeys and spec deltas; no separate standing-decisions source is configured.
 
 `FindingsProjection.project` only calls `_pattern_rows` for unscoped queries. Pattern rows declare `window_scope=whole_day`, though their chart coordinate includes the query window. A narrower chart is not proof of a narrower Pattern rate or membership.
 
-`openspec/changes/harmonic-v2/design.md` preserves the 28-day expiry and immutable saved endings; later assessments are labeled reassessments. `frontend-v2/history.js` describes expired records but has no late-conclusion action in that record view. `_review_focus_title` uses the current Pattern roster and falls back to Focus when the old vocabulary is unavailable.
+`openspec/changes/archive/2026-09-24-harmonic-v2/design.md` preserves the 28-day expiry and immutable saved endings; later assessments are labeled reassessments. `frontend-v2/history.js` describes expired records but has no late-conclusion action in that record view. `_review_focus_title` uses the current Pattern roster and falls back to Focus when the old vocabulary is unavailable.
 
 `loadingFrame` emits a blank loading element with an accessible label. The ticket's slow count-free skeleton direction is settled; its destination coverage and retained-reassessment loading remain open.
 
@@ -168,9 +168,9 @@ The selected ticket's latest decision comment is https://github.com/harmonichq/h
 
 ### Additional inventory receipts
 
-The document worker located the current whole-feed/scoped omission promise in `openspec/specs/behavioral-layer/spec.md` and ADR 395 in `openspec/changes/harmonic-v2/design.md`; the coordinator read both cited statements. The new #404 decision supersedes this behavior. The late-conclusion contract must preserve the existing separation of original ending and reassessment in `openspec/changes/harmonic-v2/contracts.md`. Source admission must express these amendments in the owning new OpenSpec change and explicitly identify any still-active contract updates. Preserve historical decisions and archived records; do not rewrite them as if the new behavior had already existed.
+The document worker located the current whole-feed/scoped omission promise in `openspec/specs/behavioral-layer/spec.md` and ADR 395 in `openspec/changes/archive/2026-09-24-harmonic-v2/design.md`; the coordinator read both cited statements. The new #404 decision supersedes this behavior. The late-conclusion contract must preserve the existing separation of original ending and reassessment in `openspec/changes/archive/2026-09-24-harmonic-v2/contracts.md`. Source admission must express these amendments in the owning new OpenSpec change and explicitly identify any still-active contract updates. Preserve historical decisions and archived records; do not rewrite them as if the new behavior had already existed.
 
-Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 adds the Focus comparison contract to the required document inventory. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
+Other candidate document surfaces from the closed search are `openspec/changes/archive/2026-09-24-harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/archive/2026-09-24-diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 adds the Focus comparison contract to the required document inventory. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
 
 The static behavior worker found existing window, occurrence, fullscreen, Day and Changes stories but no measured rail-parity, long-label collision, compact-control or icon-placement assertions. Its result is an inventory, not a fresh passing freeze or complete runtime coverage. `frontend-v2/diagnose.js` currently starts Focus with only subject/from; the coordinator verified the omitted window and the backend's unscoped Focus admission. The new Focus-window contract is settled by Q6 below.
 

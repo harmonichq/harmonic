@@ -85,7 +85,7 @@ Classification: code. UI Craft lifecycle: revise. Review depth: Targeted.
   `mockups/finding-evidence-routing.behavior.md`; replay
   `frontend/diagnose-workstation-behavior.replay.mjs`. **Disposition:** → work order.
 - **ADR home is the existing surface change folder.**
-  `openspec/changes/finding-evidence-routing/design.md` already holds ADRs 96, 31,
+  `openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md` already holds ADRs 96, 31,
   42, 97, 100 and 41 for this surface, under `## ADR <issue> — Title`. ADR 179
   joins it; no new change folder, no `docs/adr/` tree. **Disposition:** → ADR.
 - **Slicing stays flat.** No rubric trait fires: one deliverable surface, one

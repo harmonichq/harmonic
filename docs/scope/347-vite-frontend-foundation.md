@@ -1,14 +1,14 @@
 # #347 — Vite production foundation scope
 
 Triage ledger for #347. The authoritative plan is
-`openspec/changes/vite-frontend-foundation/`; this page records what was decided,
+`openspec/changes/archive/2026-09-24-vite-frontend-foundation/`; this page records what was decided,
 what was measured, and how the order was reviewed.
 
 ## Decisions
 
 ### Risk contract
 
-Recorded in `openspec/changes/vite-frontend-foundation/proposal.md` (Risk
+Recorded in `openspec/changes/archive/2026-09-24-vite-frontend-foundation/proposal.md` (Risk
 contract). Disposition: inline; the proposal is the authoritative copy.
 
 ### Settled by the operator on 2026-09-06 (do not re-litigate)

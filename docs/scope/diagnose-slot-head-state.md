@@ -81,7 +81,7 @@ moves is stated as "re-measure", never as a literal.
   no `return 'raise'|'lower'`, and no numeric comparison against a
   `days`/`n_runs`/`support` field. A `VERDICT_KEY` lookup satisfies all four.
   Why: read the test. `inline`
-- **This settles a rule and gets an ADR.** `openspec/changes/isf-detail-verdict/`
+- **This settles a rule and gets an ADR.** `openspec/changes/archive/2026-09-24-isf-detail-verdict/`
   records ADR 25 settling the identical question for the correction-factor
   detail — the verdict comes from the analyzer's own field, stageability stays
   separate, and "DESIGN.md's voice register governs the copy". #103 is that same

@@ -116,9 +116,9 @@ it unchanged for execution; this ledger remains the non-normative session record
   in 10 design.md files`; owned-identifier `30` rules passed; public allowlist
   cleared the tree with every tracked path dispositioned.
 - `find openspec/changes -maxdepth 2 -name design.md` confirms ADRs live in a
-  change-local `design.md`; `openspec/changes/ic-dose-stamped-anchor/design.md`
+  change-local `design.md`; `openspec/changes/archive/2026-09-24-ic-dose-stamped-anchor/design.md`
   is the existing ADR 20 authority and
-  `openspec/changes/finding-evidence-routing/design.md` is the ADR 31 authority.
+  `openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md` is the ADR 31 authority.
 
 ## Spawned tasks
 

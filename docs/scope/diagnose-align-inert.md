@@ -12,7 +12,7 @@ cold-QA sweep (P2).
 
 - The ticket's "expected" is already settled and is **hide it**, not make it
   interactive. ADR 31 part 3
-  (`openspec/changes/finding-evidence-routing/design.md:44-50`): the canvas gains
+  (`openspec/changes/archive/2026-09-24-finding-evidence-routing/design.md:44-50`): the canvas gains
   exactly one `ALIGN` control, "present only where the canvas is showing a
   factor's events". The initial `#/diagnose` frame shows no factor's events, so
   ALIGN must not be presented there. No new decision is taken, so no new ADR is

@@ -186,7 +186,7 @@ triage questions settle the rest:
 **This amends ADR 386.** Its legacy clause ("a derived legacy Trial may
 acquire a first-observed record now … but no earlier decision or ending … do not
 auto-finish or date them") no longer holds for Trial endings. A pointer beside
-that clause in `openspec/changes/harmonic-v2/design.md` says so. The clause's
+that clause in `openspec/changes/archive/2026-09-24-harmonic-v2/design.md` says so. The clause's
 concern, not repairing history by silently rerunning today's model, is met in
 three ways. The ending is dated from observed facts: the reversal, the detected
 change or the fixed watch window. Its recorded time says when Harmonic recorded

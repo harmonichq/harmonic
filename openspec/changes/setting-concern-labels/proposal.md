@@ -9,9 +9,10 @@ change adds three stories (S177–S179) in its own dated amendment section and
 amends or retires none.
 
 Sanction: Q3 delegation, Connor Griffin, 2026-09-23 ("figure it out yourself
-from here"); coordinator ruling R451 as corrected, and the coordinator's
-widening of #451 on 2026-09-23. Under the correction, the correction factor
-takes CONTEXT.md's insulin-first form and the carb ratio keeps "<value> g/U".
+from here"); coordinator ruling R451 as corrected, the coordinator's widening
+of #451 on 2026-09-23, and its plan review round 1 rulings (2026-09-24). Under
+the correction, the correction factor takes CONTEXT.md's insulin-first form and
+the carb ratio keeps "<value> g/U".
 
 ## Why
 
@@ -26,6 +27,8 @@ shipped desk modules. The coordinator's widening items were read from the
 source; the repro scripts are `docs/scope/451-setting-concern-labels.repro.py`
 and `docs/scope/451-setting-concern-labels.repro.mjs`.
 
+- **Carb-ratio sentences.** The carb-ratio analyzer's served sentences say
+  "I:C" ("relative to programmed I:C", "Held at the programmed I:C").
 - **Guidance titles.** Guidance titles every setting concern with the tuning
   lever's engine title ("ISF", "Carb ratio (I:C)", "Basal profile"). A set-aside
   subject the read no longer carries comes back with `title: null`, so Changes'
@@ -49,25 +52,33 @@ and `docs/scope/451-setting-concern-labels.repro.mjs`.
 
 - **Setting concern titles.** Guidance serves every setting concern's `title`
   from its closed setting-label table: Basal, Carb ratio, Correction factor.
+- **Carb-ratio sentences.** The carb-ratio analyzer's sentences say "carb
+  ratio", guarded by the annotation-register test.
 - **Set-aside subject names.** Guidance serves a name for every set-aside
   subject it lists, from the backend's own name sources: the setting-label
-  table, the Lever title, the Pattern roster's name, the investigation's title.
+  table, the Lever title, the investigation's title. Pattern names come from
+  the roster, which always serves every Pattern present. Changes lists a row
+  with no name as "A concern no longer in this read", never by its id.
 - **Recorded subject names.** The Plan history read serves the names beside
   each recorded Plan's subjects. The Plan's "What was known" prints those names,
   never an id.
 - **Finding titles.** The findings projection titles setting findings by their
   user labels ("Correction factor · <direction>", "Carb ratio <span> ·
   <direction>"). Its JS mirror, frozen fixture, case-file fixture and QA
-  finding-title literals move with it.
+  finding-title literals move with it. Rows tied on every earlier sort key may
+  reorder by their new titles; that is accepted.
 - **One formatter.** One desk formatter prints a setting value in the wearer's
   words. A correction factor reads **1 U : <value> mg/dL** on every desk line,
   and no desk line prints mg/dL/U. A carb ratio keeps "<value> g/U" and gains
   its unit where a Pattern's figure printed none.
-- **Disposition words.** Changes prints the served disposition in words.
+- **Status words.** Changes prints the served disposition in words, chosen
+  from the served action's shape ("Ready to stage" for a setting change, "Ready
+  to start a Focus" for a habit or Pattern action).
 - **Diagnose panel copy.** The correction-factor panel's heading, breadcrumb and
   scope sentence say "Correction factor".
-- **Watch dock.** The watch dock and Diagnose's staged title name a setting
-  "Correction factor" or "Carb ratio".
+- **Watch dock.** The watch dock's one-line title names the change by its
+  setting name, span and served direction, never "ISF" or "I:C". Its from→to
+  values move to the wrapping detail line, so they are never truncated.
 - **Dead writes deleted.** The dead status-strip writes are deleted.
 
 ## Not in this change
@@ -94,16 +105,17 @@ and `docs/scope/451-setting-concern-labels.repro.mjs`.
 - **Backend:**
   - `ciq_autotune/guidance.py` (setting titles, set-aside names, one subject-name
     lookup);
-  - `ciq_autotune/analyzers/scenario/outcome_patterns.py` (a public roster name
-    lookup);
+  - `ciq_autotune/analyzers/ic.py` (carb-ratio sentences);
   - `ciq_autotune/api.py` (the Plan history read's served names);
   - `ciq_autotune/findings_projection.py` (setting finding titles).
 - **Generated parity:**
   - `mockups/findings-projection.mirror.mjs`;
-  - the regenerated `frontend/__fixtures__/findings-projection.json` and
-    `mockups/diagnose-workstation.synthetic/finding-case-files.json`;
-  - the QA finding-title literals in `scripts/qa_e2e_cases.py`, re-dumped by the
-    coverage-era process.
+  - the regenerated `frontend/__fixtures__/findings-projection.json`,
+    `frontend/__fixtures__/analysis.json` and
+    `mockups/diagnose-workstation.synthetic/finding-case-files.json` (after
+    retitling two hand-written literals in its generator);
+  - the QA queue-row and finding-title literals in `scripts/qa_e2e_cases.py`,
+    re-dumped by the coverage-era process.
 - **Desk:**
   - `frontend/plan.js` (the one setting-value formatter);
   - `frontend/guidance.js` (disposition words);
@@ -111,5 +123,6 @@ and `docs/scope/451-setting-concern-labels.repro.mjs`.
     `frontend/follow-up.js`, `frontend/utilities.js`;
   - `frontend/diagnose-findings-queue.js`, `frontend/diagnose-workstation.js`,
     `frontend/watched-change-dock.js`.
+- **Docs:** a **Concern** entry in `CONTEXT.md`.
 - **Ledger:** three new stories on the manufactured case store isf-strengthen.
   S177 joins the PR smoke slice.

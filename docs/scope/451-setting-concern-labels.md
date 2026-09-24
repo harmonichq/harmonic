@@ -2,60 +2,64 @@
 
 Scope ledger. Opened 2026-09-23 by delegated triage (release brief for
 #442–#457). Route: nothing for a specialist. Wording and breadth are settled by
-coordinator ruling R451 as corrected and by the coordinator's widening of #451.
-Both come under Connor Griffin's Q3 delegation of 2026-09-23 ("figure it out
-yourself from here").
+coordinator ruling R451 as corrected, the coordinator's widening of #451, and
+its plan review round 1 rulings. All come under Connor Griffin's Q3 delegation
+of 2026-09-23 ("figure it out yourself from here").
 
 ## Decisions
 
 - Classification: code. Why: reproduced render defects plus served fields.
   `inline`
-- Guidance serves a setting concern's `title` from `_SETTING_TITLES`. The tuning
-  lever's title, `priority_inputs`, `units` and `_state` stay unchanged. Why:
-  guidance already owns the one reader-facing name per setting subject (ADR
-  426). R451. `→ ADR`
-- One subject-name lookup in guidance serves names for set-aside subjects and for
-  recorded Plan subjects. Its sources:
+- Guidance serves a setting concern's `title` from `_SETTING_TITLES`;
+  `priority_inputs`, `units` and `_state` are unchanged. Why: R451; ADR 426's
+  label table. `→ ADR`
+- One subject-name lookup in guidance serves names for set-aside subjects and
+  for recorded Plan subjects, with no Pattern or override branch. Its sources:
   - settings: the setting-label table;
   - habits: `levers.title`;
-  - Patterns: the outcome roster's name, through a public lookup over
-    `_ROSTER`;
   - the uncaused-highs investigation: its title constant.
 
-  There is no override branch: habit subjects are closed over `Lever`, which
-  has no override member. Why: coordinator widening (c) and (b), 2026-09-23.
+  Why: widening (b) and (c). Round 1 found the Pattern branch unreachable,
+  because the roster serves every Pattern present. `→ ADR`
+- An unnamed set-aside row prints "A concern no longer in this read", and
+  CONTEXT.md gains **Concern**. Why: round 1 item 6; never print an id.
   `→ ADR`
+- The carb-ratio analyzer's served sentences say "carb ratio". A new
+  annotation-register test guards against "I:C" and "ISF", and the QA queue-row
+  literals and the pinned `test_analyzer_ic` line are re-dumped. Why: round 1
+  item 1. `→ ADR`
 - Diagnose's setting findings are titled "Correction factor …" and "Carb ratio
-  <span> …". The correction-factor panel's heading, breadcrumb and scope
-  sentence say "Correction factor". The JS mirror, both fixtures and the six QA
-  finding-title literals move with it, the literals by the coverage-era dump.
-  Why: coordinator widening (a). `→ ADR`
-- One desk formatter, `settingValue`, lives in `plan.js`. A correction factor
-  reads "1 U : <value> mg/dL" on every desk line. Why: CONTEXT.md; four desk
-  modules each spelled the form. `→ ADR`
-- The carb ratio keeps "<value> g/U" everywhere; only the missing unit is added.
-  Why: coordinator ruling on Q1, 2026-09-23. R451's insulin-first carb ratio
-  was withdrawn, because CONTEXT.md defines none. `→ ADR`
-- Recorded explanations print as recorded; new records carry the label. Why:
-  coordinator ruling on Q2, 2026-09-23. `→ ADR`
-- Changes prints the served disposition in words, drawn from existing desk copy.
-  Why: coordinator addition from #449's triage, 2026-09-23. `→ ADR`
-- The dead `#status-src`/`#status-clock` writes are deleted. Why: no shipped
-  markup declares either id. Coordinator widening (d). `→ ADR`
-- Three serial chunks, all on Opus:
-  1. backend names and their generated parity;
-  2. the Changes and Diagnose desk lines;
-  3. the watch dock plus the ledger amendment and replay.
+  <span> …". The mirror, three fixtures (two hand-written generator literals
+  retitled) and the QA finding-title literals move with them. Rows tied on every
+  earlier sort key may reorder by their new titles, which is accepted. Why:
+  widening (a); round 1 items 5 and 7. `→ ADR`
+- One desk formatter, `settingValue`, lives in `plan.js`, and the correction
+  factor reads "1 U : <value> mg/dL" on every desk line. `→ ADR`
+- The carb ratio keeps "<value> g/U". Why: ruling on Q1. `→ ADR`
+- Recorded explanations print as recorded. Why: ruling on Q2. `→ ADR`
+- Changes' status words come from the disposition and, under `eligible_action`,
+  the served action's shape: "Ready to stage" or "Ready to start a Focus". Why:
+  coordinator addition; round 1 item 2. `→ ADR`
+- The dock's one-line title carries only the setting name, span and served
+  direction, and the dock derives none. The from→to values move to the wrapping
+  detail line, and S178 measures that nothing truncates. Why: round 1 item 3;
+  AGENTS.md forbids a frontend-derived direction. `→ ADR`
+- The dead `#status-src`/`#status-clock` writes are deleted. Why: widening (d);
+  no shipped markup declares either id. `→ ADR`
+- Four serial chunks, all on Opus:
+  1. analyzer and projection wording with generated parity;
+  2. guidance and Plan-history names;
+  3. the Changes and Diagnose lines;
+  4. the dock plus the ledger and replay.
 
-  Why: three slicing traits fire (multiple deliverable artifacts; a live run
-  against the offline server; lockstep copies of the finding title across the
-  projection, the JS mirror, two fixtures and the QA literals). The rubric's
-  registry and lifecycle boundary is absent, and each remaining chunk projects
-  between 120k and 180k. Operator instruction: every chunk runs on Opus.
-  `inline`
+  Why: three traits fire (multiple deliverable artifacts; lockstep copies of the
+  finding titles and carb-ratio sentences across the projection, the mirror,
+  three fixtures and the QA literals; a live run). Round 1's additions pushed the
+  first chunk past the 180k target, so the guidance names split into their own
+  chunk. That is four chunks, the rubric's ceiling. Two parallel backend chunks
+  would both tick `tasks.md`, so the four run serially. `inline`
 - S177–S179 are new stories on case store isf-strengthen, and S177 joins the
-  smoke slice. Why: it is the manufactured case that serves a correction-factor
-  concern with a staged action. `inline`
+  smoke slice. `inline`
 
 ### Risk contract
 
@@ -63,6 +67,7 @@ yourself from here").
   - a desk line this change owns printing "ISF", "I:C", "Carb ratio (I:C)",
     "Basal profile", "mg/dL/U", a raw guidance subject id or a raw disposition
     code;
+  - a truncated dock title that hides its values;
   - a printed value that differs from the served number (silent incorrect
     success);
   - any change to served `units`, recommendation values, caps, floors,
@@ -74,20 +79,24 @@ yourself from here").
 - **Accepted failures:**
   - A record written before this change keeps its recorded engine title in
     its explanation lines.
-  - A legacy set-aside subject outside today's closed subject set still
-    prints its identifier.
+  - Findings-projection rows tied on every earlier sort key may reorder within
+    their tier by their new titles.
 - **Unsupported:** viewports other than the two supported desktop sizes.
 - **Evidence owed:**
   - Backend tests through the public reads:
-    - guidance's setting titles and set-aside names for setting, habit and
-      Pattern subjects, with the baseline unchanged;
-    - the Plan history read's served subject names;
+    - the carb-ratio sentence guard;
+    - guidance's setting titles and set-aside names for a setting, a habit and
+      the investigation, with a set-aside Pattern served present;
+    - the Plan history read's subject names;
     - the projection's setting finding titles;
-    - the QA case tests over the re-dumped finding-title literals.
-  - A node test for each moved desk line, failing first on the base.
+    - the QA case tests over the re-dumped literals.
+  - A node test for each moved desk line.
   - S177–S179 replayed at both sizes, failing on the base and passing on the
     branch.
   - Before/after renders on isf-strengthen.
+
+  Tests of changed behavior fail first on the base. Invariance and served-data
+  rendering tests are regression tests.
 - Why: these lines sit on an advisory dosing surface, so the harm is a misread
   setting, unit or state, not downtime. Disposition: copied unchanged into
   `openspec/changes/setting-concern-labels/design.md`.
@@ -119,10 +128,13 @@ None. The release rule is that nothing is filed as a follow-up.
   - Diagnose's queue prints "now 30.0 mg/dL/U → 32.0 mg/dL/U";
   - the dock titles a correction-factor Trial "ISF · 30.0 → 32.0 mg/dL/U".
 - Read from source on b03431d2:
-  - the committed QA literal for isf-strengthen carries the finding title "ISF
-    · strengthen", and four carb-ratio literals carry "I:C 00:00 to 24:00 · …";
+  - the committed QA literals carry "ISF · strengthen", "ISF · weaken" and "I:C
+    00:00 to 24:00 · …" finding titles, plus four carb-ratio queue-row
+    headlines quoting "programmed I:C";
   - `knownSection` prints `context.subjects` raw;
-  - no shipped markup declares `status-src` or `status-clock`.
+  - no shipped markup declares `status-src` or `status-clock`;
+  - `build_outcome_patterns` appends one row per roster entry;
+  - a watched Trial and a carb-ratio block serve no direction.
 
 ## Review rounds
 
@@ -131,5 +143,17 @@ None. The release rule is that nothing is filed as a follow-up.
   - #451 was widened by (a)–(d) and by the disposition words;
   - every chunk runs on Opus.
 
-  The change was re-authored and re-pinned; the lock draft awaits
-  `/plan-review`.
+  The change was re-pinned at 488f20bf.
+- Plan review round 1 (coordinator-dispatched, 2026-09-24): BLOCKED, 8. All eight
+  were ruled by the coordinator:
+  1. carb-ratio sentences;
+  2. status words from the action's shape;
+  3. the dock's title and detail split;
+  4. drop the Pattern branch;
+  5. two generator literals;
+  6. an unnamed-row phrase;
+  7. accept the tiebreak reorder;
+  8. the fail-first scope.
+
+  All were fixed in one commit and re-pinned; the chunking was re-assessed from
+  three to four.

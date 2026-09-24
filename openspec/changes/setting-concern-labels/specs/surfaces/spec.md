@@ -1,5 +1,47 @@
 ## ADDED Requirements
 
+### Requirement: The carb-ratio analyzer's sentences say carb ratio
+
+Every sentence the carb-ratio analyzer serves SHALL name the setting "carb
+ratio" and SHALL NOT print "I:C". This covers:
+
+- its recommendation annotations;
+- its hold annotations;
+- the "Read with the … stretch" prefix around them;
+- the carb-counting finding's summary and occurrence detail.
+
+A test over every served carb-ratio sentence branch SHALL guard against
+user-facing "I:C" and "ISF".
+
+#### Scenario: A held carb-ratio block's annotation says carb ratio
+
+- **GIVEN** a synthetic carb-ratio block held because its meals cannot yet test a direction
+- **WHEN** the carb-ratio analyzer annotates it
+- **THEN** the annotation names the carb ratio and contains no "I:C"
+
+#### Scenario: Every carb-ratio sentence branch stays free of engine names
+
+- **WHEN** the annotation-register test builds every served carb-ratio sentence branch
+- **THEN** none contains "I:C" or "ISF"
+
+### Requirement: Diagnose's setting findings are titled by their user labels
+
+The findings projection SHALL title a correction-factor row "Correction factor"
+and a carb-ratio block "Carb ratio <span>". Each carries the same direction
+suffix as today (" · <direction>" or " · leaning <direction>"). A basal row
+keeps "Basal <span>". The JS mirror, the regenerated fixtures and the QA
+finding-title literals SHALL carry the same titles.
+
+The projection's ordering is unchanged except for its final title tiebreak,
+which now orders rows tied on every earlier key by their new titles.
+
+#### Scenario: A correction-factor finding reads as Correction factor
+
+- **GIVEN** the manufactured case isf-strengthen
+- **WHEN** the findings projection publishes its correction-factor row
+- **THEN** the row is titled "Correction factor · strengthen"
+- **AND** no setting row's title contains "ISF" or "I:C"
+
 ### Requirement: A setting concern is served under its setting's user label
 
 The guidance read SHALL serve every setting concern's `title` from guidance's
@@ -27,29 +69,37 @@ The following SHALL be unchanged:
 - **WHEN** a setting concern's baseline is taken
 - **THEN** it equals the baseline of the same concern with its `title` removed
 
-### Requirement: Every set-aside subject is served with its name
+### Requirement: Every set-aside subject guidance lists carries its served name
 
-The guidance read SHALL serve a `title` on every set-aside subject it lists,
-including one the read no longer carries. The name SHALL come from the backend's
-own name source for that subject, looked up by the whole subject and never
-parsed from it:
+The guidance read SHALL serve a `title` on every set-aside subject it lists.
+For a set-aside subject the read no longer carries, the name SHALL come from the
+backend's own name source for that subject, looked up by the whole subject and
+never parsed from it:
 
 | Subject | Name source |
 |---|---|
 | setting | the setting-label table |
 | habit | its Lever's title |
-| Pattern | the outcome roster's name |
 | the uncaused-highs investigation | its title |
+
+Every Pattern is always served present with its roster title, so a set-aside
+Pattern keeps that title.
 
 A subject outside the closed subject set SHALL be served with no title. No name
 SHALL enter the set-aside comparison state.
 
 #### Scenario: Set-aside subjects the read no longer carries are named
 
-- **GIVEN** set-aside preferences for a setting, a habit and a Pattern that the read serves no candidate for
+- **GIVEN** set-aside preferences for a setting, a habit and the uncaused-highs investigation that the read serves no candidate for
 - **WHEN** the guidance read serves them as absent rows
-- **THEN** the setting row is titled by its setting label, the habit row by its Lever's title and the Pattern row by its roster name
+- **THEN** the setting row is titled by its setting label, the habit row by its Lever's title and the investigation row by its title
 - **AND** each row remains set aside
+
+#### Scenario: A set-aside Pattern is served present with its roster title
+
+- **GIVEN** a set-aside Pattern preference
+- **WHEN** the guidance read serves it
+- **THEN** the Pattern is served present, not absent, with its roster title and remains set aside
 
 ### Requirement: A recorded Plan's subjects are served with their names
 
@@ -64,21 +114,6 @@ never stored.
 - **WHEN** the Plan history read serves it
 - **THEN** its `decision_context` serves `subjects` ["setting:isf"] and `subject_titles` ["Correction factor"]
 - **AND** its recorded explanation is "Correction factor"
-
-### Requirement: Diagnose's setting findings are titled by their user labels
-
-The findings projection SHALL title a correction-factor row "Correction factor"
-and a carb-ratio block "Carb ratio <span>". Each carries the same direction
-suffix as today (" · <direction>" or " · leaning <direction>"). A basal row
-keeps "Basal <span>". The JS mirror, the regenerated fixtures and the QA
-finding-title literals SHALL carry the same titles.
-
-#### Scenario: A correction-factor finding reads as Correction factor
-
-- **GIVEN** the manufactured case isf-strengthen
-- **WHEN** the findings projection publishes its correction-factor row
-- **THEN** the row is titled "Correction factor · strengthen"
-- **AND** no setting row's title contains "ISF" or "I:C"
 
 ### Requirement: A setting value in Changes prints in its user form
 
@@ -99,7 +134,9 @@ come from the instruction's own parameter, never from the concern's served
 
 The Plan's "What was known" SHALL:
 
-- name each recorded subject by its served name and never print an identifier;
+- name each recorded subject by its served name, and print nothing for a
+  subject without one;
+- never print an identifier;
 - print each recorded setting in its user form, using the parameter of the
   recorded instruction it was captured from;
 - print the recorded explanation as recorded.
@@ -133,14 +170,29 @@ No Changes line SHALL print "mg/dL/U". Served `units` SHALL be unchanged.
 - **AND** it contains no "setting:" text
 - **AND** the recorded explanation prints as recorded
 
-### Requirement: Changes names the served disposition in words
+### Requirement: Changes lists every set-aside concern by a name
+
+Changes' set-aside rows SHALL print each row's served name. A row served with no
+name SHALL print the fixed phrase "A concern no longer in this read" and never
+its identifier.
+
+#### Scenario: An unnamed set-aside row prints the fixed phrase
+
+- **GIVEN** a served set-aside row with no title for a subject outside the closed subject set
+- **WHEN** Changes lists its set-aside concerns
+- **THEN** the row reads "A concern no longer in this read"
+- **AND** the list contains no subject identifier
+
+### Requirement: Changes says why its concern leads in words
 
 Changes SHALL print the served guidance disposition in words, never the code,
-on its nameplate and its Action heading:
+on its nameplate and its Action heading. Under `eligible_action`, the words
+depend on the shape of the served action:
 
-| Code | Words |
+| Code, action | Words |
 |---|---|
-| `eligible_action` | Ready to stage |
+| `eligible_action`, the action carries setting instructions | Ready to stage |
+| `eligible_action`, the action is an identified action | Ready to start a Focus |
 | `guided_investigation` | Evidence to inspect |
 | `active_change` | A change is being watched |
 | `quiet` | No priority needs action |
@@ -150,14 +202,25 @@ on its nameplate and its Action heading:
 
 A code outside that set SHALL print no words there.
 
-#### Scenario: A lead concern's disposition reads as words
+#### Scenario: A setting-led concern reads Ready to stage
 
-- **GIVEN** a served read whose disposition is `eligible_action`, and another whose disposition is `guided_investigation`
-- **WHEN** Changes renders each selected concern
-- **THEN** the frames read "Ready to stage" and "Evidence to inspect"
-- **AND** neither frame's text contains a disposition code
+- **GIVEN** a served `eligible_action` read whose selected concern carries setting instructions
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Ready to stage" and contains no disposition code
 
-### Requirement: Diagnose prints the correction factor in the wearer's words
+#### Scenario: A habit-led concern reads Ready to start a Focus
+
+- **GIVEN** a served `eligible_action` read whose selected concern's action is an identified habit action
+- **WHEN** Changes renders it
+- **THEN** the frame reads "Ready to start a Focus" and not "Ready to stage"
+
+#### Scenario: An investigation reads Evidence to inspect
+
+- **GIVEN** a served `guided_investigation` read
+- **WHEN** Changes renders its selected concern
+- **THEN** the frame reads "Evidence to inspect" and contains no disposition code
+
+### Requirement: Diagnose names the correction factor and carb ratio in the wearer's words
 
 These Diagnose values SHALL print as "1 U : <value> mg/dL", each keeping the
 rounding its line prints today:
@@ -167,9 +230,9 @@ rounding its line prints today:
   values.
 
 The correction-factor panel's heading, breadcrumb and scope sentence SHALL say
-"Correction factor". No Diagnose line SHALL print "mg/dL/U", or "ISF" or "I:C"
-as a setting's name. Carb-ratio and basal values on Diagnose keep their unit
-after the value.
+"Correction factor", and the peak-hour link SHALL name a "carb ratio" block. No
+Diagnose line SHALL print "mg/dL/U", or "ISF" or "I:C" as a setting's name.
+Carb-ratio and basal values on Diagnose keep their unit after the value.
 
 #### Scenario: An asserting correction-factor queue row reads insulin first
 
@@ -183,28 +246,40 @@ after the value.
 - **THEN** its heading says "Correction factor" and its values read "1 U : <value> mg/dL"
 - **AND** the rendered text contains neither "ISF" nor "mg/dL/U"
 
-### Requirement: The watch dock names a setting change in the wearer's words
+### Requirement: The watch dock's title names the change and its values wrap below
 
-The watch dock's Trial title and Diagnose's staged title SHALL name the setting
-as the desk names it everywhere else: Basal, Correction factor, Carb ratio or
-Target, never "ISF" or "I:C". They SHALL print a correction-factor value as
-"1 U : <value> mg/dL".
+The watch dock's one-line title, for a watched Trial and for Diagnose's staged
+change, SHALL carry:
 
-#### Scenario: A correction-factor Trial is titled in the wearer's words
+- the setting's user name (Basal, Correction factor, Carb ratio, Target; a
+  whole profile keeps its own word), never "ISF" or "I:C";
+- its slot or span where it has one;
+- the direction the server serves for it, where it serves one. The dock derives
+  no direction.
+
+The from→to values SHALL move out of the title into the dock's wrapping detail
+line, in their user form (a correction factor as "1 U : <value> mg/dL"). The
+title SHALL NOT truncate at 1280x720 or 1440x900, and the values SHALL be fully
+visible.
+
+#### Scenario: A correction-factor Trial is titled by name, its values below
 
 - **GIVEN** a watched Trial of the correction factor from 30 to 32
 - **WHEN** the dock reports it
-- **THEN** its title reads "Correction factor · 1 U : 30.0 mg/dL → 1 U : 32.0 mg/dL"
+- **THEN** its title reads "Correction factor"
+- **AND** its detail line carries "1 U : 30.0 mg/dL → 1 U : 32.0 mg/dL"
+- **AND** neither contains "ISF" or "mg/dL/U"
 
 #### Scenario: A carb-ratio Trial is named Carb ratio
 
 - **GIVEN** a watched Trial of the carb ratio from 5 to 4.8
 - **WHEN** the dock reports it
-- **THEN** its title reads "Carb ratio · 5.0 → 4.8 g/U"
-- **AND** it contains neither "I:C" nor "ISF"
+- **THEN** its title reads "Carb ratio" and its detail line carries "5.0 → 4.8 g/U"
+- **AND** neither contains "I:C"
 
-#### Scenario: A staged correction factor names itself in the dock
+#### Scenario: A staged correction factor fits the dock and shows its values
 
-- **GIVEN** the manufactured case isf-strengthen on Diagnose
+- **GIVEN** the manufactured case isf-strengthen on Diagnose at 1280x720 and at 1440x900
 - **WHEN** the reader stages the correction factor
-- **THEN** the dock's staged title reads "Correction factor · 1 U : <current> mg/dL → 1 U : <recommended> mg/dL"
+- **THEN** the dock's title reads "Correction factor · <served direction>" and does not truncate
+- **AND** its detail line shows "1 U : <current> mg/dL → 1 U : <recommended> mg/dL" in full

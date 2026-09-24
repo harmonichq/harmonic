@@ -23,8 +23,8 @@ explicit witness and SHALL NOT fall back to the trigger when it is missing.
 Legacy occurrences SHALL retain their existing membership behavior. New lever
 metadata SHALL use Meals display affinity with a custom `sequences` recurrence
 population; this SHALL NOT charge sequence counts to a legacy Exposure clean-rate
-account. Neither new lever SHALL enter the outcomes trend's existing behavior roster
-(`/api/outcomes/trend` `behaviors`).
+account. Neither new lever SHALL enter the CLI outcomes trend's behavior roster
+(`summarize_trend` `behaviors`).
 Legacy levers SHALL retain their existing rollup mechanism using final winning counts.
 
 #### Scenario: Analyzer output reaches a scoped finding
@@ -46,6 +46,6 @@ Legacy levers SHALL retain their existing rollup mechanism using final winning c
 
 #### Scenario: Sequence counts do not masquerade as meal clean-rate counts
 - **GIVEN** a sequence owns several episodes while legacy levers retain other winning occurrences
-- **WHEN** clean-rate accounts and the outcomes trend's behavior roster are produced
+- **WHEN** clean-rate accounts and the CLI outcomes trend's behavior roster (`summarize_trend` `behaviors`) are produced
 - **THEN** sequence counts enter neither the legacy Exposure accounts nor a new behavior-roster row
 - **AND** legacy winners keep their existing rollup mechanism without converting the noun sequences to an Exposure

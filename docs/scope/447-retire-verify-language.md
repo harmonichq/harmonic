@@ -78,7 +78,9 @@ carries the default this triage assumed.
 ### Risk contract
 
 - **Must prevent:** the dock and Changes printing different day counts for one
-  served Trial. Any printed "‹N› of ‹R›" with ‹N› > ‹R›. A frontend rule that
+  served Trial. A watch-maturity count (the dock's detail or Changes' Watch
+  maturity figure) printed as "‹N› of ‹R›" with ‹N› > ‹R›. The
+  evidence-readiness arms stay as ruled in Q2. A frontend rule that
   re-derives readiness, maturity or the count instead of reading the served
   facts. Any change to a served payload, `_maturing`, the readiness rule, a
   staging predicate, cap or floor. A served `watched_change` that differs from
@@ -121,3 +123,20 @@ None. No issue is filed from triage.
 
 Instrumentation for `/plan-review` rounds, dispatched by the coordinator: the
 blockers found per round, each tagged `authoring` or `injected`.
+
+- **Round 1** (cold `/plan-review`, BLOCKED, 4 blockers; the coordinator
+  verified them and ruled each fixed as the reviewer proposed):
+  - `frontend/data.js:190, 400, 419` sat in no sub-order's task after the
+    chunked rewrite (`injected`). Its :400 disposition also named `follow-up.js`,
+    which never calls `fetchFocuses` (`authoring`, counted with it).
+  - The behavioral-layer delta named `/api/outcomes/trend` `behaviors`, a field
+    F2 drops (`injected` by the widening).
+  - The must-prevent "‹N› of ‹R›" was unscoped, so it caught the Q2
+    evidence-readiness arm (`authoring`).
+  - No test pinned the watched-change anchor against a snapshot-inclusive
+    anchor (`injected` by the widening). It is now spiked in
+    `docs/scope/447-trend-anchor.spike.py`, pinned by task 1.2, and stated in
+    the ADR.
+
+  Totals: 1 `authoring`, 3 `injected`.
+

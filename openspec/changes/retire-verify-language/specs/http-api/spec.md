@@ -30,6 +30,16 @@ rolling-window series stay available through the CLI's `outcomes-trend` command.
 - **THEN** `watched_change` is the Focus's view in the first case and `null` in
   the second, and neither body carries any other series
 
+#### Scenario: A settings read after the last data point does not move the anchor
+
+- **GIVEN** the synthetic `c3-trial` case store with an unchanged settings
+  snapshot captured `2024-06-15 00:00:00`, past the Trial's 28-day watch horizon,
+  reconciled at its latest basal, CGM or bolus instant
+- **WHEN** `/api/outcomes/trend` is read and `summarize_trend` runs over the same
+  store
+- **THEN** both give the live basal 03:00 Trial changed `2024-05-15 00:00:00`,
+  with `days_elapsed` 15 of 14 required, not `null`
+
 #### Scenario: The command line keeps the rolling-window series
 
 - **WHEN** `harmonic outcomes-trend --json` runs over a synthetic store

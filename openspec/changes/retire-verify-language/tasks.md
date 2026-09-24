@@ -28,7 +28,17 @@ outcomes-trend route and the legacy Trial detector.
   `watched_change` and, when served, `input_data_age`. Its `watched_change`
   equals `summarize_trend(store, window_days=30).to_dict()["watched_change"]`,
   computed on a separate copy of the same store. A supplied `window` changes
-  nothing. Add a CLI test: `outcomes-trend --json` over a synthetic store still
+  nothing. Add an anchor test, the one `docs/scope/447-trend-anchor.spike.py`
+  runs. Materialise `c3-trial`, add an unchanged settings snapshot captured
+  `2024-06-15 00:00:00`, which lies past the Trial's 28-day watch horizon, and
+  reconcile at the latest basal, CGM or bolus instant (`2024-06-01 23:59:00`).
+  Pin, for both the route and `summarize_trend`, the literal `watched_change`
+  `{"kind": "trial", "parameter": "basal_rate", "slot": "03:00",
+  "changed_at": "2024-05-15 00:00:00", "before": 0.6, "after": 0.54,
+  "target_metrics": ["tbr"], "maturing": {"is_maturing": false,
+  "days_elapsed": 15, "days_required": 14}, "deliberate": false}`. An
+  anchor that counts settings snapshots reads `null` there and fails. Add a
+  CLI test: `outcomes-trend --json` over a synthetic store still
   prints `schema_version`, `windows`, `behaviors`, `metrics`, `arc`,
   `pre_meal`, `overnight_lows` and `watched_change`. Watch the route tests fail
   on the base, where the body carries every series.
@@ -57,7 +67,9 @@ outcomes-trend route and the legacy Trial detector.
   `ciq_autotune/watched_change.py`'s module docstring and its line-43 comment.
   The series are the CLI trend's, and the route serves only the watched change.
 - [ ] 1.5 Re-point the backend, test, script, generator and CI lines the
-  inventory lists. `watched_change.py:507` goes with 1.1. Reword
+  inventory lists, and `frontend/data.js:190, 400, 419`. The line-400 comment
+  names `focus-entry.js` as `fetchFocuses`' only caller. `watched_change.py:507`
+  goes with 1.1. Reword
   `tests/test_scenario_engine.py:1151–1152` in place with the same line count. In
   `tests/test_outcomes_trend.py`
   `TrialWindowInvarianceTest.test_trend_and_roster_count_the_same_bounded_days`,
@@ -135,7 +147,8 @@ outcomes-trend route and the legacy Trial detector.
   - **S169**: a watched Trial's dock and Changes print one day count, the served
     `days_elapsed`. On `c3-trial` the dock reads `Ready to judge — ‹N› days since
     ‹MM-DD› · ‹R› required`, and Changes' Watch maturity figure reads `‹N› days`
-    with `‹R› required`. Neither prints `‹N› of ‹R›` past its requirement.
+    with `‹R› required`. Neither the dock's detail nor the Watch maturity
+    figure prints `‹N› of ‹R›` past its requirement.
     `lock: HV2-24, HV2-12`.
   - **S170**: the Guide's "Reading the Diagnose surface" article names no Verify.
     Its Cause-lever line says those levers flow to a Focus, followed in Changes.

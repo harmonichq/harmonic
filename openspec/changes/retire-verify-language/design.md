@@ -108,7 +108,10 @@ coordinator's ruling Q1 fixes the ready-state words above.
 ### Risk contract
 
 - **Must prevent:** the dock and Changes printing different day counts for one
-  served Trial. Any printed "‹N› of ‹R›" with ‹N› > ‹R›. A frontend rule that
+  served Trial. A watch-maturity count (the dock's detail or Changes' Watch
+  maturity figure) printed as "‹N› of ‹R›" with ‹N› > ‹R›. The
+  evidence-readiness arms (`follow-up.js` `readinessArm`) print a separate
+  served fact and stay as ruled in Q2. A frontend rule that
   re-derives readiness, maturity or the count instead of reading the served
   facts. Any change to a served payload, `_maturing`, the readiness rule, a
   staging predicate, cap or floor. Real glucose, insulin or schedule values in
@@ -258,7 +261,7 @@ may keep it as a retirement pointer.
 | `ciq_autotune/watched_change.py:801, 817` | "private Verify candidate", "Verify instead keeps" | "retained Trial candidate on the roster", "The Trial roster instead keeps" |
 | `ciq_autotune/watched_change.py:1226` | "The Verify workstation's paired reads (#660)" | "The selected Trial's paired reads (#660), which Changes' Trial view renders" |
 | `frontend/data.js:190` | "Verify Trial roster (#587)" | "Trial roster (#587)" |
-| `frontend/data.js:400` | "Verify uses this to resolve the active Focus's id…" | Names its current callers (`focus-entry.js` and `follow-up.js`, reached through `client.js`) and what they read it for |
+| `frontend/data.js:400` | "Verify uses this to resolve the active Focus's id…" | Names `fetchFocuses`' only caller, `focus-entry.js` (reached through `client.js`), and what it reads the roster for |
 | `frontend/data.js:419` | "#246 Diagnose's "Pin as Focus → Verify" disposition" | "#246's Pin as Focus disposition" |
 | `frontend/desk-behavior.replay.mjs:1404` | "the shipped Verify hero drew no canvas" | "the Trial hero drew no canvas". The assertion message only; the assertion is unchanged |
 | `frontend/diagnose-workspaces.js:43` | "(or Verify trial)" | "(or the Trial it opens)" |
@@ -339,7 +342,14 @@ The coordinator's rulings Q1–Q4 on #447 are made under the same delegation.
 2. One function in `outcomes_trend.py` resolves the watched change and its
    anchor. `summarize_trend` and the route both call it, so the anchor has one
    implementation and the route's `watched_change` is the CLI trend's, byte for
-   byte.
+   byte. The default anchor does not change: the latest basal, CGM or bolus
+   instant, else now. `api._latest_instant` is not reused for it, because it also
+   counts settings snapshots. A settings read captured after the last data point
+   would then move `now` past a Trial's 28-day watch horizon, and a live Trial
+   would read as no active change: that is a different served `watched_change`
+   from the base's. `docs/scope/447-trend-anchor.spike.py` shows this on
+   `c3-trial` with an unchanged snapshot captured 2024-06-15. Task 1.2's anchor
+   test pins the live Trial there.
 3. The route computes only that, not the series. The series cost fell on
    Diagnose's cold landing path (`scripts/profile_cold_shapes.py` names this
    shape "cold").
@@ -371,7 +381,9 @@ The coordinator's rulings Q1–Q4 on #447 are made under the same delegation.
   desk is the only HTTP client.
 - **Evidence owed:** route tests on `c3-trial`, `c3-focus` and a store with
   nothing watched, showing the body's fields and `watched_change` equal to
-  `summarize_trend`'s (the field test fails on the base). A CLI keys test. The
+  `summarize_trend`'s (the field test fails on the base). The anchor test on
+  `c3-trial` with a late settings snapshot pins the literal live Trial for both
+  the route and `summarize_trend`. A CLI keys test. The
   landing-warm tests counting the new builder under the window-free key.
 - Why: the watch dock is the only reader, and it reports the one active change.
   Disposition: admitted into this design.md unchanged.

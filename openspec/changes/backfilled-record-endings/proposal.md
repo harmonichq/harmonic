@@ -52,7 +52,10 @@ change, and is still open.
   extends; that change integrates before this one. The unavailable assessment is
   built by the comparison's own exported envelope. The comparison's period-end
   label now says a period ends at the next relevant setting change even when
-  that change is the ending instant. Periods and values do not move.
+  that change is the ending instant, provided a pump read captured the change.
+  A later change known only from bolus settings is not settled at the cut, so
+  that record's comparison still reads "Data read through" the change. Periods
+  and values do not move.
 - **The superseded note stops naming "the same setting".** A later change of
   any setting ends a watch; the old note was already false for the live watch.
   The desk's note for a superseded ending no longer says the later change was to

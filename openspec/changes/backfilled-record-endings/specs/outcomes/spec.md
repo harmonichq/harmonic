@@ -99,9 +99,12 @@ comparison SHALL be computed for it. A context whose source pump read was
 captured at or before the instant SHALL be used as it is. The unavailable
 assessment SHALL be built by the comparison's own unavailable envelope, with
 the record's retained context and that reason. A saved After period that ends
-at the record's next relevant setting change SHALL carry the end reason
-`next_relevant_setting_change`, including when that change falls exactly at
-the cutoff. A period with no next relevant change SHALL keep `data_tail`. The
+at a next relevant setting run the comparison reads at or before the cutoff
+SHALL carry the end reason `next_relevant_setting_change`, including when that
+run starts exactly at the cutoff. A pump read captured at the change is such a
+run. A later change known only from dose-stamped boluses is not a settled run
+at the cut. Its period, like a period with no next relevant change, SHALL keep
+`data_tail`, and the record's ending SHALL still be `superseded`. The
 comparison's periods, values and readiness criteria, and the record's retained
 context, SHALL NOT change.
 
@@ -122,15 +125,25 @@ context, SHALL NOT change.
 - **THEN** the saved assessment is unavailable with reason `context_after_ending`
 - **AND** its data cutoff is the ending instant
 
-#### Scenario: A same-setting supersession says its period ends at that change
+#### Scenario: A pump-read supersession says its period ends at that change
 
-- **GIVEN** two detected carb-ratio changes nine days apart, one pump read before
-  both, and one reconcile after both windows have passed
+- **GIVEN** two correction-factor changes nine days apart, each captured by a pump
+  read at the change, one pump read before both, and one reconcile after both
+  windows have passed
 - **WHEN** the reconcile records the older record's `superseded` ending and the
   later record's `expired_unreviewed` ending
 - **THEN** the older record's saved After period ends at the later change's time
   with end reason `next_relevant_setting_change`
 - **AND** the later record's saved After period ends with end reason `data_tail`
+
+#### Scenario: A dose-detected supersession reads data through that change
+
+- **GIVEN** two carb-ratio changes nine days apart, known only from dose-stamped
+  boluses, one pump read before both, and one reconcile after both windows have
+  passed
+- **WHEN** the reconcile records the older record's ending
+- **THEN** the older record ends `superseded` at the later change's time
+- **AND** its saved After period ends at that time with end reason `data_tail`
 
 #### Scenario: A context read before the ending is used
 

@@ -55,11 +55,14 @@ coordinator ruling R442.
      mutating that same envelope, so every existing return is byte-identical,
      including a current-policy return that has already appended its
      limitation.
-  2. In `_setting_period`, change the one line that labels the After end: label
-     it `next_relevant_setting_change` when a next relevant run exists
-     (`index + 1 < len(runs)`), else `data_tail`. Do not use `following <= cutoff`
-     alone: `following` defaults to the cutoff when no next run exists (see
-     `premises.py`'s label table). Periods and values do not move.
+  2. In `_setting_period`, change the one line that labels the After end to
+     exactly `premises.py`'s `PATCHED_LABEL`:
+     `"next_relevant_setting_change" if index + 1 < len(runs) else "data_tail")`.
+     Do not use `following <= cutoff` alone: `following` defaults to the cutoff
+     when no next run exists. Periods and values do not move. The line labels a
+     next run the comparison reads at the cut, such as a pump read captured at
+     the change. A successor known only from dose-stamped boluses is not settled
+     at the cut and keeps `data_tail` (`premises.py`'s label lines).
 - [ ] 1.3 In `capture_ending`, before computing the comparison, check the
   record's retained `comparison_context`. When its `state` is `available` and its
   `source_snapshot` is missing or was captured later than `data_cutoff`, save the
@@ -79,14 +82,15 @@ coordinator ruling R442.
     context.
 
   No hand-set endings or `asserts_move` flags. `premises.py`'s
-  `multi_slot_store` and `same_setting_pair_store` build the stores for (k) and
-  (b). Assert on the records reconcile saved:
+  `multi_slot_store`, `pump_read_pair_store` and `dose_pair_store` build the
+  stores for (k), (b) and (l). Assert on the records reconcile saved:
   - (a) the issue's failing-first case: four correction-factor changes, each
     more than 28 days after the previous, reconciled once. Every record ends
     `expired_unreviewed` at its change plus 28 days, and none is left without an
     ending kind;
-  - (b) two carb-ratio changes nine days apart, one pump read before both,
-    recorded by one reconcile after both windows passed:
+  - (b) two correction-factor changes nine days apart, each captured by a pump
+    read at the change (a profile switch), one pump read before both, doses
+    stamped to match, recorded by one reconcile after both windows passed:
     - the older record ends `superseded` at the later change's time;
     - its saved `periods.after` ends at that time, with
       `boundary_reasons.end == "next_relevant_setting_change"`;
@@ -120,9 +124,16 @@ coordinator ruling R442.
     05:00 slot moves ten days later. After one reconcile past every window:
     - both the 01:00 and 03:00 records end `superseded` at the 05:00 change;
     - neither ends at the other's detected time;
-    - dropping the 05:00 change, both expire at their own window ends instead.
+    - dropping the 05:00 change, both expire at their own window ends instead;
+  - (l) the dose-detected same-setting case: two carb-ratio changes nine days
+    apart, known only from dose-stamped boluses, one pump read before both,
+    recorded by one reconcile after both windows passed. The older record ends
+    `superseded` at the later change's time. Its saved `periods.after` ends at
+    that time with `boundary_reasons.end == "data_tail"`, pinned so this
+    consequence cannot drift silently.
 
-  Show (a), (b), (c), (g), (h) and (k) failing on base b03431d2 before they pass.
+  Show (a), (b), (c), (g), (h), (k) and (l) failing on base b03431d2 before they
+  pass.
   In `tests/test_follow_up_comparison.py`, add one test that the exported
   envelope with a reason equals `compare_follow_up`'s early unavailable return
   for that reason on the same context. Keep every existing test passing
@@ -261,10 +272,11 @@ the whole replay at module link.
     <kind> at <instant>" now reports as ended with that kind at that instant.
     The one exception is `edit-chain`'s 2024-05-01 record: task 2.1 moves it,
     and all four of that case's records stay open. `c4-isf` and `c4-profile`
-    report a saved cutoff of 2024-06-29 00:00:00. The superseded records of
-    `c4-ic` (06-01) and `same-setting-pair` (older) report a saved After end of
-    `next_relevant_setting_change`. `same-setting-pair`'s frontier keeps
-    `data_tail`.
+    report a saved cutoff of 2024-06-29 00:00:00. `pump-read-pair`'s older
+    record reports a saved After end of `next_relevant_setting_change`.
+    `dose-pair`'s older record, `c4-ic`'s 06-01 record and the frontiers of
+    `pump-read-pair` and `dose-pair` report `data_tail`. The "label" lines are unchanged from the
+    pinned output.
 - [ ] 5.3 The coordinator owns every port-bound leg and ticks this task with its
   evidence; the implementer runs none.
   1. On base b03431d2, served from a second worktree with this branch's replay

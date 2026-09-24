@@ -48,6 +48,12 @@ coordinator, never to the operator.
   "a next relevant run exists" (`index + 1 < len(runs)`), because the literal
   `following <= cutoff` mislabels every period with no next run (`following`
   defaults to the cutoff); `premises.py` tabulates it. → ADR (ADR 442)
+- **A dose-detected same-setting successor keeps `data_tail`.** Coordinator
+  ruling after round 2, option (a). The label line stays. Its proof moves to a
+  pair captured by pump reads at both changes. The dose-detected case is
+  recorded as a consequence and in the risk contract, applies to live frontier
+  endings too, and is pinned by a test. `premises.py`'s label lines run the real
+  `_setting_period`, unpatched and patched. → ADR (ADR 442)
 - **The unavailable assessment reuses the engine's exported envelope.**
   Coordinator ruling after round 1: the second and last touch in
   `follow_up_comparison.py`. → ADR (ADR 442)
@@ -89,12 +95,17 @@ coordinator, never to the operator.
   one reversal scan per open record inside the reconcile transaction. It is
   slower once and loses nothing. A backfilled record whose retained context
   came from a later pump read saves an unavailable assessment; the reader still
-  has the labelled reassessment.
+  has the labelled reassessment. A record superseded by a dose-detected change
+  of its own setting saves "Data read through <the change>" (`data_tail`),
+  because the successor's regime is not settled at the cut. Its ending still
+  reads "Superseded by a later change", and live frontier endings do the same.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
 - **Evidence owed:** reconcile-path backend tests. They cover the issue's
-  failing-first case, same-setting supersession with its saved end reason
-  `next_relevant_setting_change`, cross-setting supersession, a detected
+  failing-first case, same-setting supersession by a pump-read change with its
+  saved end reason `next_relevant_setting_change`, same-setting supersession by
+  a dose-detected change with its saved end reason pinned as `data_tail`,
+  cross-setting supersession, a detected
   multi-slot Edit whose siblings never supersede each other, reversal
   precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
   `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
@@ -122,3 +133,4 @@ handed to the coordinator.
 | Round | Blockers | Authoring | Injected | Notes |
 |---|---|---|---|---|
 | 1 | 3 | 3 | 0 | Multi-slot Edit self-supersession; same-setting ending loses its period-end reason; edit-chain's moved record missing from the premises expectation. Notes: name the unavailable-envelope route; point the words evidence at #449/#450. |
+| 2 | 1 | 0 | 1 | Round 1's label fix claimed next_relevant_setting_change for dose-detected successors (c4-ic, the dose-only pair), which are not settled at the cut; the label table printed hand-typed strings. |

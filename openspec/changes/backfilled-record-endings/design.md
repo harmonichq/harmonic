@@ -54,7 +54,10 @@ triage questions settle the rest:
 - after plan review round 1: a change inside the record's own ADR 414 Edit never
   supersedes it, and `follow_up_comparison.py` gets exactly two touches, the
   period-end label and an exported unavailable envelope. Its periods and values
-  are otherwise unchanged.
+  are otherwise unchanged;
+- after plan review round 2 (option a): the label line stays. A supersession by a
+  dose-detected change of the same setting keeps `data_tail`, recorded as a
+  consequence and pinned by a test.
 
 1. **One rule for every open record.** After a reconcile has recorded its newly
    detected changes, reconciled Plan receipts and confirmed a pending Plan, it
@@ -134,11 +137,18 @@ triage questions settle the rest:
    one changed line labels the end `next_relevant_setting_change` when a next
    relevant run exists (`index + 1 < len(runs)`). Every such run starts at or
    before the cutoff, because runs are read only up to it. The ruling's literal
-   `following <= cutoff` cannot be used on its own: with no next run,
-   `following` defaults to the cutoff itself, and every data-tail period would
-   read as ending at a change (premises: the label table, and
-   `same-setting-pair`'s frontier, which has no next change). These are the only
-   two touches in `follow_up_comparison.py`.
+   `following <= cutoff` cannot be used on its own. With no next run,
+   `following` defaults to the cutoff itself (`following = runs[index + 1][0]
+   if index + 1 < len(runs) else cutoff`), so every data-tail period would read
+   as ending at a change. These are the only two touches in
+   `follow_up_comparison.py`.
+
+   The line labels only a next run the comparison can see at the cut. A pump
+   read captured at the successor is such a run (premises: `pump-read-pair`).
+   A successor known only from dose-stamped boluses is not yet a settled
+   regime at the cut: a dose-stamped value must hold for `_MIN_EPOCH_DAYS`
+   observed days (`ciq_autotune/epochs.py`). So the comparison reads no next
+   run, and the period keeps `data_tail` (premises: `dose-pair` and `c4-ic`).
 4. **The desk says it in words.** The words for `context_after_ending` belong
    to the desk's one word table for comparison reasons. The #449/#450 change owns
    that table and adds them; it integrates before this one. This change adds no
@@ -205,9 +215,16 @@ worded reason.
   watched record until the first detected change after the Edit or their own
   windows. The live watch is no longer superseded by a slot of its own Edit that
   a later reconcile happens to detect.
-- A record superseded by a later change of its own setting saves its After
-  period with end reason `next_relevant_setting_change`. `c4-ic`'s 06-01 record
-  and `same-setting-pair` show it.
+- A record superseded by a later change of its own setting that a pump read
+  captured at the change saves its After period with end reason
+  `next_relevant_setting_change` (premises: `pump-read-pair`).
+- A record superseded by a dose-detected change of its own setting saves "Data
+  read through <the change>" (end reason `data_tail`), because the successor's
+  regime is not settled at the cut (premises: `dose-pair`, and `c4-ic`'s 06-01
+  record). Its ending line still reads "Superseded by a later change". This also
+  applies to live frontier endings. It is a change sanctioned under R442 and the
+  Q3 delegation, recorded here rather than hidden, and task 1.4 case (l) pins it
+  so it cannot drift silently.
 - A live frontier ending now saves an assessment cut at its own instant, not
   at the reconcile that noticed it. The days between the two are lost to the
   saved assessment: up to an hour of fetch interval for an expiry, and the
@@ -236,12 +253,17 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
   one reversal scan per open record inside the reconcile transaction. It is
   slower once and loses nothing. A backfilled record whose retained context
   came from a later pump read saves an unavailable assessment; the reader still
-  has the labelled reassessment.
+  has the labelled reassessment. A record superseded by a dose-detected change
+  of its own setting saves "Data read through <the change>" (`data_tail`),
+  because the successor's regime is not settled at the cut. Its ending still
+  reads "Superseded by a later change", and live frontier endings do the same.
 - **Unsupported:** hand-edited follow-up rows; a retained context that claims
   available with no source pump read (read as "cannot bound").
 - **Evidence owed:** reconcile-path backend tests. They cover the issue's
-  failing-first case, same-setting supersession with its saved end reason
-  `next_relevant_setting_change`, cross-setting supersession, a detected
+  failing-first case, same-setting supersession by a pump-read change with its
+  saved end reason `next_relevant_setting_change`, same-setting supersession by
+  a dose-detected change with its saved end reason pinned as `data_tail`,
+  cross-setting supersession, a detected
   multi-slot Edit whose siblings never supersede each other, reversal
   precedence, expiry, first-wins across a second reconcile, the bounded cutoff,
   `context_after_ending`, and an unchanged Plan receipt. Also owed: the exported
@@ -276,17 +298,20 @@ Copied unchanged from the scope ledger (`docs/scope/backfilled-record-endings.md
 on base b03431d2 (in process, scratch copies, no server):
 
 ```
-period-end label: (next run?, following vs cutoff) -> base `following < cutoff` | literal `following <= cutoff` | ADR 442 `index + 1 < len(runs)`
-  next run True, following < cutoff -> next_relevant_setting_change | next_relevant_setting_change | next_relevant_setting_change
-  next run True, following == cutoff -> data_tail | next_relevant_setting_change | next_relevant_setting_change
-  next run False, following == (default) cutoff -> data_tail | next_relevant_setting_change | data_tail
 multi-slot-edit: data tail 2026-06-30 00:00:00, 3 retained, frontier basal_rate-05-00-20260521050000, 3 detected
   2026-05-11 01:00:00 history OPEN today -> ADR 442: superseded at 2026-05-21 05:00:00; context unavailable (missing_programmed_isf); without the Edit exclusion: superseded at 2026-05-11 03:00:00
   2026-05-11 03:00:00 history OPEN today -> ADR 442: superseded at 2026-05-21 05:00:00; context unavailable (missing_programmed_isf)
   2026-05-21 05:00:00 frontier ended expired_unreviewed at 2026-06-18 05:00:00; saved cutoff 2026-06-30 00:00:00 (ADR 442 cutoff 2026-06-18 05:00:00); saved After end None; context unavailable (missing_programmed_isf)
-same-setting-pair: data tail 2026-06-30 00:00:00, 2 retained, frontier carb_ratio-all-20260520080000, 2 detected
+pump-read-pair: data tail 2026-06-30 00:00:00, 2 retained, frontier isf-all-20260520060000, 2 detected
+  2026-05-11 06:00:00 history OPEN today -> ADR 442: superseded at 2026-05-20 06:00:00; context bounded; saved assessment unavailable/no_readable_period_evidence, After ends 2026-05-20 06:00:00 (data_tail), read to 2026-05-20 06:00:00
+  2026-05-20 06:00:00 frontier ended expired_unreviewed at 2026-06-17 06:00:00; saved cutoff 2026-06-30 00:00:00 (ADR 442 cutoff 2026-06-17 06:00:00); saved After end data_tail; context bounded
+  label pump-read-pair 2026-05-11 06:00:00 superseded cut 2026-05-20 06:00:00: After ends 2026-05-20 06:00:00; base data_tail | patched next_relevant_setting_change
+  label pump-read-pair 2026-05-20 06:00:00 expired_unreviewed cut 2026-06-17 06:00:00: After ends 2026-06-17 06:00:00; base data_tail | patched data_tail
+dose-pair: data tail 2026-06-30 00:00:00, 2 retained, frontier carb_ratio-all-20260520080000, 2 detected
   2026-05-11 08:00:00 history OPEN today -> ADR 442: superseded at 2026-05-20 08:00:00; context bounded; saved assessment unavailable/no_readable_period_evidence, After ends 2026-05-20 08:00:00 (data_tail), read to 2026-05-20 08:00:00
   2026-05-20 08:00:00 frontier ended expired_unreviewed at 2026-06-17 08:00:00; saved cutoff 2026-06-30 00:00:00 (ADR 442 cutoff 2026-06-17 08:00:00); saved After end data_tail; context bounded
+  label dose-pair 2026-05-11 08:00:00 superseded cut 2026-05-20 08:00:00: After ends 2026-05-20 08:00:00; base data_tail | patched data_tail
+  label dose-pair 2026-05-20 08:00:00 expired_unreviewed cut 2026-06-17 08:00:00: After ends 2026-06-17 08:00:00; base data_tail | patched data_tail
 issue-store: data tail 2026-10-18 00:00:00, 4 retained, frontier isf-all-20260908080000, 4 detected
   2026-05-11 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-06-08 08:00:00; context unavailable (missing_programmed_isf)
   2026-06-20 08:00:00 history OPEN today -> ADR 442: expired_unreviewed at 2026-07-18 08:00:00; context unavailable (missing_programmed_isf)
@@ -314,6 +339,7 @@ c4-history: data tail 2024-06-01 23:59:00, 1 retained, frontier carb_ratio-all-2
 c4-ic: data tail 2024-07-01 23:55:00, 2 retained, frontier carb_ratio-all-20240610090000, 2 detected
   2024-06-01 00:00:00 history OPEN today -> ADR 442: superseded at 2024-06-10 09:00:00; context bounded; saved assessment unavailable/no_readable_period_evidence, After ends 2024-06-10 09:00:00 (data_tail), read to 2024-06-10 09:00:00
   2024-06-10 09:00:00 frontier OPEN today -> ADR 442: stays open
+  label c4-ic 2024-06-01 00:00:00 superseded cut 2024-06-10 09:00:00: After ends 2024-06-10 09:00:00; base data_tail | patched data_tail
 c4-isf: data tail 2024-07-01 23:55:00, 1 retained, frontier isf-all-20240601000000, 1 detected
   2024-06-01 00:00:00 frontier ended expired_unreviewed at 2024-06-29 00:00:00; saved cutoff 2024-07-01 23:55:00 (ADR 442 cutoff 2024-06-29 00:00:00); saved After end data_tail; context bounded
 c4-profile: data tail 2024-07-01 23:55:00, 1 retained, frontier profile-all-20240601000000, 1 detected
@@ -330,7 +356,7 @@ edit-chain with its four records 14 days later: 05-15 window ends 06-12, 05-22 w
 by today's code across two reconciles. Every other "ended" line was recorded by
 today's code. Every "ADR 442:" line is `premises.py`'s read-only `rule()`,
 the spike of Decisions 1 and 3. A "without the Edit exclusion" suffix is what
-the round-1 rule would have recorded. The label table is the spike of the
-period-end label fix. `same-setting-pair`'s older record shows the "data_tail"
-label that fix corrects. Its frontier, with no next change, shows the label the
-fix must keep.
+the round-1 rule would have recorded. Each "label" line runs
+`follow_up_comparison._setting_period` on that store at the record's ADR 442
+cut, twice: once with the label line as at base, and once as patched. The
+"saved assessment" previews run the pinned, unpatched engine.

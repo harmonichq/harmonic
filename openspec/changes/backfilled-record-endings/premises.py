@@ -12,16 +12,21 @@ than the record, outside the record's own ADR 414 Edit (read through the
 existing ``_group_edits``) and inside its watch window, else
 ``expired_unreviewed`` at the window's end once the reconcile instant has
 reached it, else open. ``label_table()`` is the spike of the one-line
-period-end label fix in ``follow_up_comparison._setting_period``. It also
+period-end label fix: it runs ``follow_up_comparison._setting_period`` with the
+label line as it stands at base and as patched, on real stores, at each
+record's ADR 442 cut. It also
 reports whether the record's retained comparison context came from a pump read
 at or before that ending instant ("bounded") or after it
 (``context_after_ending``). Nothing here writes to a committed store. Synthetic
 stores only; the output is dates and codes, no record-level values.
 """
+import inspect
 import tempfile
+import textwrap
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from ciq_autotune import follow_up_comparison as fc
 from ciq_autotune import watched_change as wc
 from ciq_autotune.settings import PumpSettings, ProfileSegment, ProfileSettings
 from ciq_autotune.follow_up_comparison import compare_follow_up
@@ -123,11 +128,14 @@ def bolus_rows(spans, day):
     return rows
 
 
-def settings(isf):
+def profile(idp, isf):
     segment = ProfileSegment(start_min=0, basal_rate=0.6, isf=isf, carb_ratio=7.0, target_bg=110)
-    profile = ProfileSettings(idp=1, name="1", dia_min=300, carb_entry=True, max_bolus=15.0,
-                              segments=(segment,))
-    return PumpSettings(active_idp=1, profiles=(profile,))
+    return ProfileSettings(idp=idp, name=str(idp), dia_min=300, carb_entry=True, max_bolus=15.0,
+                           segments=(segment,))
+
+
+def settings(isf):
+    return PumpSettings(active_idp=1, profiles=(profile(1, isf),))
 
 
 def issue_store(with_later_read):
@@ -183,9 +191,10 @@ def multi_slot_store():
     return store, day(60)
 
 
-def same_setting_pair_store():
-    """Task 1.3 (b): two carb-ratio changes nine days apart, one pump read before
-    both (so the retained context is bounded), reconciled once after both windows."""
+def dose_pair_store():
+    """Task 1.4 (l): two carb-ratio changes nine days apart, known only from the
+    dose-stamped boluses, one pump read before both (so the retained context is
+    bounded), reconciled once after both windows."""
     base = datetime(2026, 5, 1)
     day = lambda n: base + timedelta(days=n)
     store = Store.open(":memory:")
@@ -196,25 +205,77 @@ def same_setting_pair_store():
     return store, day(60)
 
 
-def label_table():
-    """The After period's end label, as a table over the only reachable inputs.
-    A next run always starts at or before the cutoff (runs are read up to it);
-    with no next run, ``following`` defaults to the cutoff itself."""
-    print("period-end label: (next run?, following vs cutoff) -> base `following < cutoff` | "
-          "literal `following <= cutoff` | ADR 442 `index + 1 < len(runs)`")
-    for has_next, relation in ((True, "<"), (True, "=="), (False, "== (default)")):
-        base = "next_relevant_setting_change" if has_next and relation == "<" else "data_tail"
-        literal = "next_relevant_setting_change"
-        adr = "next_relevant_setting_change" if has_next else "data_tail"
-        print(f"  next run {has_next}, following {relation} cutoff -> {base} | {literal} | {adr}")
+def pump_read_pair_store():
+    """Task 1.4 (b): two correction-factor changes nine days apart, each captured
+    by a pump read at the change (a profile switch), one pump read before both,
+    doses stamped to match, reconciled once after both windows."""
+    base = datetime(2026, 5, 1)
+    day = lambda n: base + timedelta(days=n)
+    store = Store.open(":memory:")
+    profiles = (profile(1, 40), profile(2, 36), profile(3, 32))
+    for n, active in ((0, 1), (10, 2), (19, 3)):
+        store.upsert_settings_snapshot((day(n) + timedelta(hours=6)).strftime(FMT),
+                                       PumpSettings(active_idp=active, profiles=profiles))
+    store.upsert_bolus(bolus_rows([(40, 7.0, 1, 9), (36, 7.0, 10, 18), (32, 7.0, 19, 60)], day))
+    with store.follow_up_transaction():
+        wc.reconcile_follow_up(store, now=day(60), recorded_at=day(60))
+    return store, day(60)
+
+
+BASE_LABEL = '"next_relevant_setting_change" if following < cutoff else "data_tail")'
+PATCHED_LABEL = '"next_relevant_setting_change" if index + 1 < len(runs) else "data_tail")'
+
+
+def setting_period_variants():
+    """``_setting_period`` with its label line as at base and as patched, built
+    from the module's own source (either side may be the one installed)."""
+    source = textwrap.dedent(inspect.getsource(fc._setting_period))
+    if BASE_LABEL in source:
+        sources = source, source.replace(BASE_LABEL, PATCHED_LABEL)
+    elif PATCHED_LABEL in source:
+        sources = source.replace(PATCHED_LABEL, BASE_LABEL), source
+    else:
+        raise SystemExit("the period-end label line moved; update premises.py")
+    built = []
+    for code in sources:
+        namespace = dict(vars(fc))
+        exec(compile(code, fc.__file__, "exec"), namespace)
+        built.append(namespace["_setting_period"])
+    return built
+
+
+def label_table(label, store, now):
+    """The After end label each record's saved assessment gets at its ADR 442 cut."""
+    base, patched = setting_period_variants()
+    trials = wc._reviewable_trials(store, now, horizon_start=datetime.min)
+    starts = sorted((datetime.fromisoformat(t.view.changed_at), wc._review_id(t.view, t.block))
+                    for t in trials)
+    records = sorted(store.follow_up_records("trial"), key=lambda r: (r["changed_at"], r["id"]))
+    edit_of, _ = wc._group_edits(records)
+    for record in records:
+        ending = record["ending"]
+        if "kind" in ending:
+            kind, cut = ending["kind"], datetime.fromisoformat(ending["effective_at"])
+        else:
+            kind, cut = rule(store, record, now, starts, edit_of)
+        if kind is None:
+            continue
+        times = [x.t for x in store.cgm_readings() + store.bolus_events() + store.basal_events()
+                 if x.t < cut]
+        earliest = min(times)
+        ends = [variant(store, record, cut, earliest) for variant in (base, patched)]
+        print(f"  label {label} {record['changed_at']} {kind} cut {cut.strftime(FMT)}: After ends "
+              f"{ends[1][2].strftime(FMT)}; base {ends[0][4]} | patched {ends[1][4]}")
 
 
 def main():
-    label_table()
     for label, build in (("multi-slot-edit", multi_slot_store),
-                         ("same-setting-pair", same_setting_pair_store)):
+                         ("pump-read-pair", pump_read_pair_store),
+                         ("dose-pair", dose_pair_store)):
         store, now = build()
         report(label, store, now)
+        if label != "multi-slot-edit":
+            label_table(label, store, now)
         store.close()
     for label, with_read in (("issue-store", False), ("issue-store+later-read", True)):
         store, now = issue_store(with_read)
@@ -229,6 +290,8 @@ def main():
             with Store.open(str(path)) as store:
                 materialize_case(store, next(case for case in QA_CASES if case.name == name))
                 report(name, store)
+                if name == "c4-ic":
+                    label_table(name, store, data_tail(store))
     tail = datetime(2024, 6, 1, 23, 59)
     shifted = [datetime(2024, 5, 15), datetime(2024, 5, 22), datetime(2024, 5, 23), datetime(2024, 5, 24)]
     print("edit-chain with its four records 14 days later: "

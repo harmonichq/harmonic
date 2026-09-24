@@ -376,10 +376,10 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(body["latest_data_day"], "2026-06-05")
 
     def test_status_counts_days_with_glucose(self):
-        # #425: _seed records glucose on 2026-06-01 through 06-05. June 6 and 8
-        # stay empty (gap days), June 7 holds only a sensor HIGH — stored with no
-        # glucose value — and June 9 holds glucose. Neither the gaps nor the
-        # glucose-less day is counted.
+        # #425: _seed records glucose on 2026-06-01 through 06-05. 06-06 and
+        # 06-08 stay empty (gap days), 06-07 holds only a sensor HIGH — stored
+        # with no glucose value — and 06-09 holds glucose. Neither the gaps nor
+        # the glucose-less day is counted.
         with Store.open(self.tmp.name) as store:
             store.upsert_cgm([
                 {"EventDateTime": "2026-06-07T10:00:00", "Readings (CGM / BGM)": None, "Description": "EGV"},

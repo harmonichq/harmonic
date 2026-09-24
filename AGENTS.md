@@ -53,6 +53,8 @@ npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
+t=$(mktemp -d) && python3 scripts/build_public_tree.py "$t" && \
+  python3 scripts/check_public_links.py "$t" && python3 scripts/scan_public_tree.py "$t"  # public-tree scan
 ```
 
 The backend job also runs eleven **drift checks**, so a committed

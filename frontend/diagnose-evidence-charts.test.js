@@ -687,7 +687,7 @@ const reasonScenario = () => ({
     below_range_or_suspended: 1, insulin_acting: 1 }),
 });
 /* The full-furniture basal tile's canvas, measured on the served base desk
-   (a4d374a7, the showcase's 12:30 slot, coordinator, 2026-09-23): 806x308 at
+   (a4d374a7, the showcase's 12:30 slot, measured by the coordinator): 806x308 at
    1280x720 and 966x482 at 1440x900, both with the tally rail. The smaller
    height is the one a crowded rail has to fit (#434, measure-434-tile.json). */
 const FULL_TILE_CANVAS_HEIGHT = 308;

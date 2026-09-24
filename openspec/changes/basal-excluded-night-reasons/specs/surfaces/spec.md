@@ -7,8 +7,9 @@ served excluded-night reason with its served count, beside the served
 excluded-night total, in rank order and in these reader words: "before the
 current rate" (`before_current_setting`), "low or suspended"
 (`below_range_or_suspended`), "high" (`above_range`), "insulin on board"
-(`insulin_acting`), "logged carbs" (`carb_log`) and "other reasons" (`other`). A
-reason whose count is zero SHALL NOT print.
+(`insulin_acting`), "logged carbs" (`carb_log`) and "other reasons" (`other`),
+which SHALL read "other reason" when its count is 1. A reason whose count is zero
+SHALL NOT print.
 
 At full furniture the verdict rail SHALL carry the total on its own row, labelled
 "excluded", followed by one row per nonzero reason, and no rail text SHALL overlap
@@ -67,3 +68,11 @@ The miniature SHALL be unchanged.
   supported desktop size
 - **THEN** the panel's excluded-night line and the tile's accessible description
   name the served total and each nonzero served reason with its served count
+
+#### Scenario: One night left out for another reason reads in the singular
+
+- **WHEN** a payload serves an excluded-night count of 1 with 1 `other`
+- **THEN** the full rail's rows after the total read 1 "other reason"
+- **AND** the accessible description carries the clause "1 night excluded: 1 other
+  reason" and the panel's line reads "1 excluded night: 1 other reason"
+- **AND** a payload serving 2 `other` reads "2 other reasons" in all three

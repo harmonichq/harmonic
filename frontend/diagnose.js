@@ -11,7 +11,7 @@ import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
 import { draftItems, stageEvidence, evidenceIsStaged, loadPlanState, replacedDraftItems } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
-import { pendingPlan, planDraft } from './guidance.js';
+import { guidance, pendingPlan, planDraft } from './guidance.js';
 import { draftName } from './watched-change-dock.js';
 import { formatStartMin } from './plan.js';
 
@@ -99,6 +99,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // pending (ADR 460 point 7): a retained return skips its Plan re-read while
   // it is set.
   let staging = null;
+  // The guidance read in hand when Diagnose parked (ADR 460 addendum): a
+  // retained return re-reads the Plan only when a later read has answered.
+  let parkedGuidance = null;
 
   // Context names a served identity or an explicit slot; the window is the
   // route's own string coordinate. Equal on all three means "the same return".
@@ -514,6 +517,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.ownerDocument.body.append(root);
     parked = true;
     parkedOn = published;
+    parkedGuidance = guidance();
   }
 
   function mount(host, deps = {}) {
@@ -642,12 +646,15 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // ADR 460 point 7: a draft save does not move the input revision, so a
       // draft written while Diagnose was parked is read here, and when the read
       // moves the Plan state the refresh it ends with re-seeds the staged marks.
-      // Only a plain return reads it: a Day return comes straight back from
-      // Day, which writes no draft, and reads the held status check alone
-      // (ADR 460 addendum, S164, S165). Never while a stage save is pending: a
-      // read issued before it commits could land after it and hand back the
-      // pre-press draft; the save's own settle re-seeds instead.
-      if (back.plain && !staging) readPlan({ retained: true });
+      // Only a return after a guidance read answered while Diagnose was parked
+      // reads it: every Changes arrival and every Plan write re-reads guidance,
+      // and no other surface does, so any other return (a Day or utility
+      // return, a top-nav press straight back) cannot have seen the draft move
+      // and reads the held status check alone (ADR 460 addendum, S164, S165).
+      // Never while a stage save is pending: a read issued before it commits
+      // could land after it and hand back the pre-press draft; the save's own
+      // settle re-seeds instead.
+      if (guidance() !== parkedGuidance && !staging) readPlan({ retained: true });
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;
       if (moved) writeCase();

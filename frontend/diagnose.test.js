@@ -1446,9 +1446,12 @@ async function retainedReturn460(between = () => {}) {
   } finally { globalThis.window = previous; fetchReply = previousFetch; }
 }
 
-test('#460 · a retained return re-reads Plan state and guidance, then refreshes the view', async () => {
-  // A draft replaced while Diagnose was parked, as a Plan route write or another tab does.
-  const events = await retainedReturn460((served) => {
+test('#460 · a retained return after a Changes visit re-reads Plan state and guidance, then refreshes the view', async () => {
+  // A Changes arrival forces a guidance read, and a draft is then replaced
+  // while Diagnose is still parked, as a Plan route write or another tab does.
+  const { loadGuidance } = await import('./guidance.js');
+  const events = await retainedReturn460(async (served) => {
+    await loadGuidance({ force: true });
     served.draft = { items: [{ type: 'basal', start_min: 0, value: 0.7 }], updated_at: 't460-replaced' };
   });
   const lastRead = Math.max(events.lastIndexOf('/api/plan'), events.lastIndexOf('/api/guidance'));
@@ -1475,15 +1478,26 @@ test('#460 · a retained return repaints when the Plan surface\'s draft moved, t
 test('#460 · a retained return whose served Plan state has not moved repaints the view once, at the re-seat', async () => {
   // A second repaint would rebuild the reading pane under the focus a Day
   // return has just put back on its Occurrence's Open in Day control.
-  const events = await retainedReturn460();
+  const { loadGuidance } = await import('./guidance.js');
+  const events = await retainedReturn460(() => loadGuidance({ force: true }));
   assert.ok(events.includes('/api/plan') && events.includes('/api/guidance'),
     `premise: the return re-reads Plan state and guidance: ${events.join(', ')}`);
   assert.equal(events.filter(event => event === 'refresh').length, 1, `one refresh: ${events.join(', ')}`);
 });
 
+test('#460 · a top-nav return with no guidance read since Diagnose parked re-reads nothing', async () => {
+  // No Changes arrival and no Plan write happened while parked, so the draft
+  // cannot have moved in this page: the held status check is the only read.
+  const events = await retainedReturn460();
+  assert.deepEqual(events.filter(path => path === '/api/plan' || path === '/api/guidance'), [],
+    `no Plan or guidance read: ${events.join(', ')}`);
+  assert.equal(events.filter(event => event === 'refresh').length, 1, `one refresh, at the re-seat: ${events.join(', ')}`);
+});
+
 test('#460 · a Day return to the held case re-reads neither Plan state nor guidance', async () => {
-  // Day offers no Plan write, so a return straight from it cannot have moved
-  // the draft; the return reads the held status check alone (S164, S165).
+  // Day and the utilities over Diagnose read no guidance, so a return from
+  // them cannot have seen the draft move; it reads the held status check
+  // alone (S164, S165).
   const previous = globalThis.window;
   const previousFetch = fetchReply;
   const events = [];

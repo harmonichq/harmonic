@@ -5434,10 +5434,12 @@ Additional handler inventory for this amendment:
 
 Addendum · 2026-09-24 · #462/#463 slice (ADR 460 addendum, decided
 autonomously under the coordinator's authorization): the retained return's Plan
-and guidance re-read runs on a plain return only. A Day return to the held case
-reads the held status check alone, which S164 and S165 assert; both failed on
-the re-read in the slice's touched-story replay on cfa1ace4 and on the branch.
-No story text changes, and S186's top-nav returns keep the re-read.
+and guidance re-read runs only when a guidance read answered while Diagnose was
+parked, which a Changes arrival or a Plan write always makes. Any other retained
+return, a Day return from a utility included, reads the held status check alone,
+which S164 and S165 assert; both failed on the re-read in the slice's
+touched-story replay. No story text changes, and S186's legs, which each visit
+Changes, keep the re-read.
 
 ## #459 amendment — 2026-09-24, issue #459
 

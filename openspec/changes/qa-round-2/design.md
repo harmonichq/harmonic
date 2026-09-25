@@ -130,14 +130,20 @@ Each was taken as the simplest option consistent with the settled decisions:
 
 **Addendum (#462/#463 slice, 2026-09-24), decided autonomously during AFK run,
 under the coordinator's authorization to reconcile point 7 with S164 and S165.**
-Point 7's re-read runs on a plain return only (a top-nav press of Diagnose). A
-Day return to the held case comes straight back from Day, which offers no Plan
-write, so it cannot have moved the draft, and it reads the held status check
-alone, as S164 and S165 require. The slice's touched-story replay caught the
-contradiction: both stories failed on the Plan, guidance, Focus and Pump
-settings reads the re-read started. A draft written while the reader detoured
-from Day to Changes and back to Day is picked up by the next plain return or
-fresh read. Every S186 leg returns by the top nav and keeps its re-read.
+Point 7's re-read runs only when a guidance read has answered since Diagnose
+parked. Every Changes arrival forces a guidance read, and so does every Plan
+write; Day and the utilities over Diagnose read none. So the re-read follows
+exactly the returns that can have seen the draft move — through Changes, where
+the Plan surface writes it and where a route or another tab's write is picked
+up — and every other retained return (a Day or utility return, a top-nav press
+straight back) reads the held status check alone, as S164, S165, S108, S137 and
+S138 require. The slice's touched-story replay caught the contradiction: S164
+and S165 failed on the Plan, guidance, Focus and Pump settings reads the re-read
+started. A first narrowing to top-nav returns missed them, because a return from
+a Day that a utility opened carries no Diagnose case in its context and so reads
+as a top-nav return. A draft another tab writes while the reader never visits
+Changes is picked up by the next fresh read. Every S186 leg visits Changes and
+keeps its re-read.
 
 **Consequences.** A partially admitted draft (some items the analysis still
 admits, some it no longer does) is named by the admitted part, because the

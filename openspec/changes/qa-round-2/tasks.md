@@ -1058,7 +1058,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   `tests/test_eating_sequence_finding_fixture.py`'s 1,000,000-byte limit pass).
   Any pinned count or order the regenerated sets move in the frontend tests that
   read them is updated to the regenerated answer and named in the commit message.
-- [ ] 81. Rewrite `behavioral-split-meal`'s literal expectation from its post-fix
+- [x] 81. Rewrite `behavioral-split-meal`'s literal expectation from its post-fix
   `execute_case` dump (AGENTS.md step 2): 15 meals, each split pair one meal at
   its first bolus. Re-measure the five budgets (step 4) against the limits of
   record in `openspec/changes/archive/2026-09-24-harmonic-v2/coverage-appendix.md`
@@ -1157,7 +1157,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   `frontend/browser-fixture-population.js`; the event-comparison generator's
   `--check` then passes. Add "Stayed in range" to `scenario/guide.py`'s
   `_SILENCE_META` and its comment's count.
-- [ ] 89. Rewrite both behavioral cases' literal expectations from their post-fix
+- [x] 89. Rewrite both behavioral cases' literal expectations from their post-fix
   dumps: `behavioral-late-bolus` serves Late bolus 2 / 1 / 1 / 1 / 2 and Carb
   undercount 1 / 2 / 0 / 0 / 4 over 7 meals and "3 of 7"; `behavioral-carb-undercount`
   serves 2 / 1 / 1 / 1 / 1 and 1 / 2 / 0 / 0 / 3 over 6. Re-measure the five

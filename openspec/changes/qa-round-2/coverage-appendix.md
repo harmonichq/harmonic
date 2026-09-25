@@ -162,3 +162,48 @@ re-baselining the 160 s figure. The slice's worker ran the whole suite once on
 bb694f14 (2693 passed, 1 skipped, 408.54 s reported by pytest), and the
 QA-case files alone at 79.83 s. Both budget receipts are coordinator-run records
 outside this tree.
+
+## #470 behavioral-split-meal case — 2026-09-25
+
+Task 74 adds the manufactured case `behavioral-split-meal`: twelve noon meals of
+45 g / 4.5 U under a 2 mg/dL/min climb to 360, each topped up with 20 g / 2 U at
++10 minutes on six days, exactly +30 on three and +35 on three. Its
+`execute_case` dump at task 74's commit (c225183a) served 24 meals and "21 of 24"
+Highs after meals, and its first literal expectation was transcribed from that
+dump. Task 81 rewrote it from the post-fix dump: 15 meals, each +10 and +30 pair
+one meal at its first bolus, and "12 of 15". No other committed QA case holds a
+same-meal pair, so no other expectation moves; the committed showcase is
+unchanged.
+
+The five budgets were measured once, by `acceptance.py budget` on the slice's
+implementation head `93da3647` (which carries #470 and #461), with no limit
+raised:
+
+| Budget | Slice 93da3647 | Unchanged limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,409,024 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.199 s wall | 30 s |
+| Focused QA suite | 51.731 s wall | 90 s |
+| Slowest generated case | 10.1 s (`test_case_c4_profile`), 77 cases | 15 s |
+| Whole pytest | 374.87 s wall (2730 passed, 1 skipped) | 400 s |
+
+Every budget is within its limit of record, so the whole-pytest figure needs no
+same-machine base comparison under ADR 463's ruling. The receipt is the run's
+`budgets.json`, outside this tree.
+
+## #461 behavioral-late-bolus and behavioral-carb-undercount reshape — 2026-09-25
+
+Task 86 re-shapes both behavioral cases: `behavioral-late-bolus`'s days 23 and
+24 and `behavioral-carb-undercount`'s day 25 carry the late climb with a
+post-bolus peak of 195, and `behavioral-late-bolus` gains day 22 (seq 110_022)
+with the old exact-180 rise. At task 86's commit (c098e9dd) the late-bolus case
+served Late bolus 3 / 1 / 1 / 1 / 1 and Carb undercount 1 / 3 / 0 / 0 / 3 over 7
+meals and "4 of 7"; task 89 rewrote it from the post-rule dump: Late bolus
+2 / 1 / 1 / 1 / 2 and Carb undercount 1 / 2 / 0 / 0 / 4 over 7, "3 of 7". The
+carb-undercount case keeps 2 / 1 / 1 / 1 / 1 and 1 / 2 / 0 / 0 / 3 over 6 and
+"3 of 6" at both commits. The committed showcase is unchanged.
+
+The five budgets are the one slice measurement in the #470 section above
+(`93da3647` carries both tickets): showcase 1,409,024 bytes, drift 0.199 s,
+focused QA suite 51.731 s, slowest generated case 10.1 s, whole pytest 374.87 s,
+each within its limit of record and none raised.

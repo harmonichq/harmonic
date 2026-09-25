@@ -5814,9 +5814,12 @@ Changed shipped behavior:
   served low (date · time · glucose). Pressing a row opens Day on that low's
   date. A recurring-lows lower, a hold within the threshold and a withheld
   raise show the same list. The rows are not roster occurrences.
-- **The roster names its columns.** One header row reads "Delivered U/h",
+- **The roster names its columns.** One header row names "Delivered U/h",
   "Programmed U/h" and "Night mean mg/dL" in the rows' order, for the eye
-  alone; each row's values carry their column and unit in visually hidden text.
+  alone. Each name stands in its value's track on the rows' own grid,
+  abbreviated over two lines ("Deliv. U/h", "Prog. U/h", "Mean mg/dL") with its
+  full name on hover; each row's values carry their column and unit in visually
+  hidden text.
 - **"Overnight", not "at this hour".** The recurring-lows lower's served
   sentence reads "lows keep happening overnight, so the rate steps down toward
   the measured rate (20% at most)", and its lane cell is named "suggests a lower
@@ -5829,7 +5832,8 @@ S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
        overnight lows listed below." and not "not established by it", the
        count line prints the served count and bar, two low rows print their
        served dates, times and glucose, pressing the first opens Day on that
-       low's date, and the roster shows its header row. Leg 2: on
+       low's date, and the roster shows its header row, each name over
+       its own values. Leg 2: on
        basal-recurring-low-within-floor, the held 03:00 panel lists its lows
        under the count line and offers no Stage change.
   element:  #lane > .lane-cell[data-cell="6"], #level .slot-head,
@@ -5852,7 +5856,10 @@ S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
             and leg 1 timed out at both sizes: the header check read the row's
             whole text, which runs its last two column names together; the
             harness now reads each header cell. The branch passes both legs
-            at 1280x720 and 1440x900 on 431de418. Renders of the 03:00 panel, before on 5377e044
+            at 1280x720 and 1440x900 on 431de418. Review round 1 (note N1):
+            the header now stands on the rows' grid, and the harness also
+            requires each name's right edge to meet its value's; branch
+            run of that pending. Renders of the 03:00 panel, before on 5377e044
             and after on d705ac0a, handed to the coordinator uncommitted.
             Coordinator-run 2026-09-24
 ```

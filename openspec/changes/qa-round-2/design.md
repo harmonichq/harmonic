@@ -714,3 +714,27 @@ are not moved to keep the old count.
 
 **Consequences.** #465's diff carries one file beyond its lock's expected diff,
 named here and in the commit message.
+
+## ADR 466 — The roster header stands on the rows' grid, abbreviated
+
+**Context.** Decided autonomously during AFK run, from code review round 1's
+note N1. The first roster header was a flex row offset by a hand-copied 119px,
+so in the 1440x900 render "Delivered U/h" spanned both rate values,
+"Programmed U/h" sat over the glucose mean and "Night mean mg/dL" over empty
+space. The rows' value tracks are 30, 30 and 42 px wide, and the full names are
+about 70 px wide at the micro size, so no placement of the full words fits their
+tracks.
+
+**Decision.** The header shares the rows' one grid declaration, so a change to
+the grid moves both, and each name stands in its value's track, right-aligned
+like the value. The visible words are abbreviated over two lines, "Deliv. U/h",
+"Prog. U/h" and "Mean mg/dL", and each label carries its full name
+("Delivered U/h", "Programmed U/h", "Night mean mg/dL") as its title, which is
+how the header still names the columns in order as ADR 466 decision 6 and the
+surfaces requirement ask. The header stays hidden from assistive technology;
+each row's values keep their full hidden labels. S191 now also requires each
+name's right edge to meet its value's.
+
+**Consequences.** The header reads as column heads over their values at every
+width the rows keep. The visible names are shorter than decision 6's words; the
+full words remain on hover and in every row's hidden text.

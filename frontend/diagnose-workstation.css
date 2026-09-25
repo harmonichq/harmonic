@@ -1445,10 +1445,12 @@
 /* ONE shared column grid, so ten rows scan down as columns rather than as ten
    sentences: when · entry → worst · delta · tier. Every column is a
    fixed width; only the tier column flexes. */
-.ev-row {
+.ev-row, .ev-cols {
   display: grid;
   grid-template-columns: 112px 30px 9px 30px 42px minmax(0, 1fr);
   gap: 0 7px; align-items: baseline;
+}
+.ev-row {
   width: 100%; text-align: left; padding: 4px var(--ck-pad); cursor: pointer;
   background: none; border: 0; color: inherit; font-family: var(--ck-mono); font-size: var(--ck-data);
   border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 40%, transparent);
@@ -1495,15 +1497,18 @@
 .ev-row[aria-pressed="true"] {
   background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
 }
-/* ADR 466: the basal night roster's column names, in its columns' order, set
-   past the date column. For the eye only; each row's values carry their own
-   hidden labels. */
+/* ADR 466: the basal night roster's column names, each on the rows' own grid
+   (shared above) in its value's track, abbreviated over two lines to fit it.
+   For the eye only; each row's values carry their full hidden labels. */
 .ev-cols {
-  display: flex; flex-wrap: wrap; gap: 2px 12px;
-  padding: 4px var(--ck-pad) 4px calc(var(--ck-pad) + 119px);
-  font-size: 10.5px; color: var(--mk-muted);
+  padding: 4px var(--ck-pad);
+  font-size: var(--ck-micro); line-height: 1.2; color: var(--mk-muted);
   border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 40%, transparent);
 }
+.ev-cols span { text-align: right; white-space: nowrap; }
+.ev-cols .entry { grid-column: 2; }
+.ev-cols .worst { grid-column: 4; }
+.ev-cols .delta { grid-column: 5; }
 /* ADR 466: the count the recurring-lows nudge used, in the slot panel's own
    sentence register, then one row per overnight low (date · time · glucose),
    each opening its day in Day. */

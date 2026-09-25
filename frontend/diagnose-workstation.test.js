@@ -812,9 +812,13 @@ test('each basal night row prints the served date, both rates and the in-slot me
     const hidden = (row) => [...row.innerHTML.matchAll(cellPattern)].map((match) => match[3]?.trim())
       .filter(Boolean);
 
-    assert.match(host.html.join('\n'),
-      /<div class="ev-cols" aria-hidden="true">[^]*?Delivered U\/h[^]*?Programmed U\/h[^]*?Night mean mg\/dL[^]*?<\/div>/,
-      'one header row, hidden from assistive technology, names the three columns in order');
+    const header = host.html.join('\n').match(/<div class="ev-cols" aria-hidden="true">([^]*?)<\/div>/);
+    assert.ok(header, 'one header row, hidden from assistive technology');
+    // N1: each name sits in the track of the value it names, on the rows' grid.
+    assert.deepEqual([...header[1].matchAll(/<span class="(\w+)" title="([^"]+)">/g)]
+      .map((match) => [match[1], match[2]]),
+    [['entry', 'Delivered U/h'], ['worst', 'Programmed U/h'], ['delta', 'Night mean mg/dL']],
+    'the header names the three columns in order, each in its value\'s track');
     for (const row of rows) {
       assert.deepEqual(hidden(row), ['U/h delivered', 'U/h programmed', 'mg/dL night mean'],
         'each row\'s values carry their column and unit for a screen reader');

@@ -1095,9 +1095,12 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     <span class="meta">${evidence.roster_glucose_mean == null ? '—' : Math.round(evidence.roster_glucose_mean)} mg/dL mean</span></div>`);
   /* ADR 466: the rows are buttons in a flat list, which cannot own column
      headers, so this header row is for the eye alone and each value below
-     carries its own column and unit for a screen reader. */
-  host.insertAdjacentHTML('beforeend', `<div class="ev-cols" aria-hidden="true"><span>Delivered U/h</span>
-    <span>Programmed U/h</span><span>Night mean mg/dL</span></div>`);
+     carries its own column and unit for a screen reader. Each name sits in its
+     value's track, abbreviated to fit, its full name on hover. */
+  host.insertAdjacentHTML('beforeend', '<div class="ev-cols" aria-hidden="true">'
+    + '<span class="entry" title="Delivered U/h">Deliv.<br>U/h</span>'
+    + '<span class="worst" title="Programmed U/h">Prog.<br>U/h</span>'
+    + '<span class="delta" title="Night mean mg/dL">Mean<br>mg/dL</span></div>');
   renderOccurrenceRoster(host, groups, {
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),

@@ -15,20 +15,23 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Sequence, Tuple
 
-from .analyzers.ic import BLOCK_WINDOW_DAYS
+from .analyzers.ic import BLOCK_WINDOW_DAYS, IcConfig
 # `_ROSTER` is the Pattern roster's own lever table and the only place the two
 # meal Patterns' rate levers are written down; reading it here is what keeps
 # "ran high" one definition in this app (ADR 464 — credited claims).
 from .analyzers.scenario.outcome_patterns import _ROSTER, credited_claims
 from .event_comparison import project_cohort
 from .explore_exposures import build_exposures
+# The Finding case file's meals-family trace producer, reused so a meal's clock is
+# cut, rounded and filtered exactly as the Pattern comparison chart's is.
+from .finding_case_file import _comparison_trace
 
 
 SCHEMA = "diagnose-carb-ratio-block-evidence-v2"
 MEAL_COMPARISON_SCHEMA = "diagnose-carb-ratio-meal-comparison-v1"
-# Ten minutes before the bolus to the end of the post-meal window: the meal's own
-# five-hour clock, the same span the run ledger closes over.
-MEAL_WINDOW_MIN = (-10, 315)
+# From the run series' own start before the bolus to the end of the post-meal
+# window: the meal's own clock, over the span the run ledger closes over.
+MEAL_WINDOW_MIN = (-IcConfig().bg0_max_gap_min, IcConfig().post_meal_min)
 _MEAL_ANCHOR = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
 # The outcomes a meal can be traced under.  An `unread` meal is counted in the
 # tally and traced nowhere — there is no verdict to pool it with.
@@ -38,6 +41,11 @@ _RUN_FACTS = frozenset({
     "pool_reason", "side", "meal_carbs", "meal_dose", "post_correction_user",
     "post_correction_ciq", "post_correction_unknown", "ciq_basal_delta_acted_u",
     "rescue_carbs",
+})
+# The harm row the analyzer publishes on every block, in its one closed shape.
+_HARM_FACTS = frozenset({
+    "arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
+    "seriousness", "minutes_after_bolus_median",
 })
 
 # One reconciling sentence per served key, chosen on the server and printed verbatim
@@ -164,13 +172,12 @@ def _meal_comparison(block: dict, outcomes: Dict[str, str],
         if outcome not in traces:
             continue
         anchor = datetime.fromisoformat(point["t"])
-        traces[outcome].append({"id": point["t"], "trace": {"cgm": [
-            {"minute": round((reading.t - anchor).total_seconds() / 60.0, 1),
-             "bg": reading.bg}
-            for reading in windows.between(anchor + timedelta(minutes=before),
-                                           anchor + timedelta(minutes=after))
-            if reading.bg is not None
-        ]}})
+        # The slice only spares the producer a scan of the whole read; the
+        # producer applies its own window bounds to what it is handed.
+        nearby = windows.between(anchor + timedelta(minutes=before),
+                                 anchor + timedelta(minutes=after))
+        traces[outcome].append(
+            _comparison_trace(point["t"], anchor, nearby, MEAL_WINDOW_MIN))
     cohorts = []
     for key, name in _COHORT_NAMES.items():
         cohort = project_cohort(key, traces[key], MEAL_WINDOW_MIN)
@@ -195,55 +202,56 @@ class IcBlockEvidenceProjection:
         block = next((row for row in self._blocks if row.get("block_id") == block_id), None)
         if block is None:
             raise UnknownIcBlockId(block_id)
+        # Every fact is read inside the guard: a block missing any one of them is
+        # refused as inconsistent rather than served with a hole.
         try:
             evidence = block["evidence"]
             runs = list(evidence["runs"])
-            examined_runs = evidence["n_runs_touching"]
-            excluded_runs = evidence["n_runs_excluded"]
             eligibility = evidence["eligibility"]
             channels = evidence["recurrence_channels"]
             estimate = block["estimate"]
-            ledger = evidence["ledger"]
-            outcomes = evidence["outcomes"]
             harm_evidence = evidence["harm_evidence"]
-            meal_comparison = evidence["meal_comparison"]
-            # Every run row carries its own reason, side and ledger terms, or the
-            # roster has a hole in exactly the place the reader looks first.
+            # Every run row carries its own reason, side and ledger terms, and the
+            # harm row its whole closed shape, or the payload has a hole in exactly
+            # the place the reader looks first.
+            if not _HARM_FACTS <= harm_evidence.keys():
+                raise KeyError("harm evidence is missing a published fact")
             for run in runs:
                 if not _RUN_FACTS <= run.keys():
                     raise KeyError("run row is missing a published fact")
+            payload = {
+                "schema": SCHEMA,
+                "analysis_generation": analysis_generation,
+                "block": {
+                    "block_id": block["block_id"], "start_min": block["start_min"],
+                    "end_min": block["end_min"], "label": block["label"],
+                    "state": block["state"], "asserts_move": block["asserts_move"],
+                    "current": (block["current_values"] or [None])[0],
+                    "estimate": {"value": estimate["value"], "lo": estimate["lo"],
+                                 "hi": estimate["hi"], "wide": estimate["wide"]},
+                    "side": {"side_k": channels["side_k"],
+                             "side_n": channels["side_n"]},
+                    "support_detail": {
+                        "whole_runs": eligibility["whole_runs"],
+                        "fractional_run_ownership":
+                            eligibility["fractional_run_ownership"],
+                        "effective_run_count": eligibility["effective_run_count"],
+                    },
+                    # The analyzer's published support, not a roster-derived count.
+                    "support": block["n_runs"],
+                    "effective_support": eligibility["effective_run_count"],
+                    "examined_runs": evidence["n_runs_touching"],
+                    "excluded_runs": evidence["n_runs_excluded"],
+                },
+                "ledger": evidence["ledger"],
+                "outcomes": evidence["outcomes"],
+                "harm_evidence": harm_evidence,
+                "meal_comparison": evidence["meal_comparison"],
+                "runs": runs,
+            }
         except (KeyError, TypeError) as error:
             raise InconsistentIcBlockEvidence("current block evidence is incomplete") from error
-        return {
-            "schema": SCHEMA,
-            "analysis_generation": analysis_generation,
-            "block": {
-                "block_id": block["block_id"], "start_min": block["start_min"],
-                "end_min": block["end_min"], "label": block["label"],
-                "state": block["state"], "asserts_move": block["asserts_move"],
-                "current": (block["current_values"] or [None])[0],
-                "estimate": {"value": estimate["value"], "lo": estimate["lo"],
-                             "hi": estimate["hi"], "wide": estimate["wide"]},
-                "side": {"side_k": channels["side_k"], "side_n": channels["side_n"]},
-                "support_detail": {
-                    "whole_runs": eligibility["whole_runs"],
-                    "fractional_run_ownership":
-                        eligibility["fractional_run_ownership"],
-                    "effective_run_count": eligibility["effective_run_count"],
-                },
-                # This is the analyzer's published support, not a roster-derived count.
-                "support": block["n_runs"],
-                "effective_support": eligibility["effective_run_count"],
-                "examined_runs": examined_runs,
-                "excluded_runs": excluded_runs,
-            },
-            "ledger": ledger,
-            "outcomes": outcomes,
-            "harm_evidence": harm_evidence,
-            "meal_comparison": meal_comparison,
-            "runs": runs,
-            "series": list(self._series.get(block_id, ())),
-        }
+        return {**payload, "series": list(self._series.get(block_id, ()))}
 
 
 def prepare_ic_block_evidence(store, analysis: dict) -> IcBlockEvidenceProjection:

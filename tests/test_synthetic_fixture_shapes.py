@@ -9,6 +9,7 @@ high-anchor threshold.
 """
 import json
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from ciq_autotune.analyzers.classifiers.evidence import SilenceReason
@@ -137,6 +138,9 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             self.assertEqual({"whole_runs", "fractional_run_ownership",
                               "effective_run_count"},
                              set(case["block"]["support_detail"]), name)
+            self.assertEqual({"arm", "gated", "nudged", "arm_days", "row_days", "lows",
+                              "evaluated", "seriousness", "minutes_after_bolus_median"},
+                             set(case["harm_evidence"]), name)
 
     def test_every_run_row_names_a_reason_from_the_analyzers_closed_set(self):
         for name, case in self.cases.items():
@@ -189,6 +193,20 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
         self.assertEqual(2, case["harm_evidence"]["row_days"])
         self.assertEqual(2, len(case["harm_evidence"]["lows"]))
         self.assertIsNotNone(case["harm_evidence"]["minutes_after_bolus_median"])
+        # Each low belongs to a pooled chain whose first meal ran high and whose
+        # later meal ran low: the spike and the low are one run's evidence.
+        cohorts = {cohort["key"]: set(cohort["occurrence_ids"])
+                   for cohort in case["meal_comparison"]["cohorts"]}
+        runs = {run["run_id"]: run for run in case["runs"]}
+        for low in case["harm_evidence"]["lows"]:
+            chain = runs[low["dominant_bolus_t"]]
+            self.assertTrue(chain["in_pool"], low["t"])
+            self.assertGreaterEqual(chain["n_meals"], 2, low["t"])
+            self.assertIn(chain["run_id"], cohorts["ran-high"], low["t"])
+            start = datetime.fromisoformat(chain["run_id"])
+            later = {(start + timedelta(minutes=offset)).isoformat()
+                     for offset in chain["member_offsets_min"][1:]}
+            self.assertTrue(later & cohorts["ran-low"], low["t"])
         self.assertGreater(case["block"]["support_detail"]["fractional_run_ownership"],
                            0.0)
 

@@ -2774,16 +2774,26 @@ def _analyze_ic_blocks_shared(
                 "seriousness": "recurring_low" if block.harm.get("nudged") else None,
             },
         )
-        # The harm arm's own published row, gathered where both halves already exist
-        # so the evidence copies them rather than re-deciding either. The median is
-        # the one fact this block adds, and it reads only the lows just published.
+        # The harm arm's own row for this block, on every block and in one closed
+        # shape, so a reader never infers "no lows" from a missing key. It is the
+        # same `arm_harm_evidence` call `block.harm` carries wherever the arm touched
+        # this block, and the verdicts it copies are the ones stamped above; the
+        # backend states whether the arm ran at all. The median is the one fact this
+        # block adds, and it reads only the lows published here.
+        harm_row = (
+            arm_harm_evidence(harm, bid) if harm is not None else {
+                "arm": HarmArm.IC.value, "gated": False, "nudged": False,
+                "arm_days": 0, "row_days": 0, "lows": [],
+            }
+        )
         block = replace(block, evidence={
             **block.evidence,
             "harm_evidence": {
-                **block.harm,
+                **harm_row,
+                "evaluated": harm is not None,
                 "seriousness": block.guidance["seriousness"],
                 "minutes_after_bolus_median": _minutes_after_bolus_median(
-                    block.harm.get("lows") or ()),
+                    harm_row["lows"]),
             },
         })
         if block.asserts_move:

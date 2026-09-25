@@ -33,7 +33,14 @@
     }
    },
    "harm_evidence": {
+    "arm": "ic",
+    "arm_days": 0,
+    "evaluated": false,
+    "gated": false,
+    "lows": [],
     "minutes_after_bolus_median": null,
+    "nudged": false,
+    "row_days": 0,
     "seriousness": null
    },
    "ledger": {
@@ -1792,7 +1799,14 @@
     }
    },
    "harm_evidence": {
+    "arm": "ic",
+    "arm_days": 0,
+    "evaluated": false,
+    "gated": false,
+    "lows": [],
     "minutes_after_bolus_median": null,
+    "nudged": false,
+    "row_days": 0,
     "seriousness": null
    },
    "ledger": {
@@ -3687,7 +3701,14 @@
     }
    },
    "harm_evidence": {
+    "arm": "ic",
+    "arm_days": 0,
+    "evaluated": false,
+    "gated": false,
+    "lows": [],
     "minutes_after_bolus_median": null,
+    "nudged": false,
+    "row_days": 0,
     "seriousness": null
    },
    "ledger": {
@@ -6092,7 +6113,14 @@
     }
    },
    "harm_evidence": {
+    "arm": "ic",
+    "arm_days": 0,
+    "evaluated": false,
+    "gated": false,
+    "lows": [],
     "minutes_after_bolus_median": null,
+    "nudged": false,
+    "row_days": 0,
     "seriousness": null
    },
    "ledger": {
@@ -8277,9 +8305,9 @@
     "effective_support": 18.0,
     "end_min": 720,
     "estimate": {
-     "hi": 5.3886,
-     "lo": 5.1916,
-     "value": 5.2892,
+     "hi": 5.4832,
+     "lo": 5.2452,
+     "value": 5.3704,
      "wide": false
     },
     "examined_runs": 28,
@@ -8301,6 +8329,7 @@
    "harm_evidence": {
     "arm": "ic",
     "arm_days": 2,
+    "evaluated": true,
     "gated": true,
     "lows": [
      {
@@ -8311,7 +8340,7 @@
       "dominant_bolus_iob_u": null,
       "dominant_bolus_t": "2026-02-07T09:00:00",
       "iob_u": 2.2,
-      "t": "2026-02-07T10:30:00"
+      "t": "2026-02-07T12:30:00"
      },
      {
       "attribution_reason": "meal-bolus",
@@ -8321,21 +8350,21 @@
       "dominant_bolus_iob_u": null,
       "dominant_bolus_t": "2026-02-08T09:00:00",
       "iob_u": 2.2,
-      "t": "2026-02-08T10:30:00"
+      "t": "2026-02-08T12:30:00"
      }
     ],
-    "minutes_after_bolus_median": 90.0,
+    "minutes_after_bolus_median": 210.0,
     "nudged": true,
     "row_days": 2,
     "seriousness": "recurring_low"
    },
    "ledger": {
-    "bg_outcome_u": -7.2,
-    "carbs_covered": 1220.0,
+    "bg_outcome_u": -11.2,
+    "carbs_covered": 1340.0,
     "ciq_basal_delta_acted_u": -1.766,
-    "effective_insulin": 227.034,
-    "meal_dose": 236.0,
-    "pooled_ratio": 5.3736,
+    "effective_insulin": 247.034,
+    "meal_dose": 260.0,
+    "pooled_ratio": 5.4244,
     "post_correction_ciq": 0.0,
     "post_correction_unknown": 0.0,
     "post_correction_user": 0.0,
@@ -8361,541 +8390,543 @@
        "2026-01-30T09:00:00",
        "2026-02-01T09:00:00",
        "2026-02-03T09:00:00",
-       "2026-02-05T09:00:00"
+       "2026-02-05T09:00:00",
+       "2026-02-07T09:00:00",
+       "2026-02-08T09:00:00"
       ],
       "points": [
        {
         "median": 160.0,
         "minute": -10,
-        "n": 6,
+        "n": 8,
         "p25": 160.0,
-        "p75": 160.0,
+        "p75": 165.0,
         "support": "supported"
        },
        {
         "median": 170.0,
         "minute": -5,
-        "n": 6,
+        "n": 8,
         "p25": 170.0,
-        "p75": 170.0,
+        "p75": 176.25,
         "support": "supported"
        },
        {
         "median": 180.0,
         "minute": 0,
-        "n": 6,
+        "n": 8,
         "p25": 180.0,
-        "p75": 180.0,
+        "p75": 187.5,
         "support": "supported"
        },
        {
         "median": 190.0,
         "minute": 5,
-        "n": 6,
+        "n": 8,
         "p25": 190.0,
-        "p75": 190.0,
+        "p75": 198.75,
         "support": "supported"
        },
        {
         "median": 200.0,
         "minute": 10,
-        "n": 6,
+        "n": 8,
         "p25": 200.0,
-        "p75": 200.0,
+        "p75": 210.0,
         "support": "supported"
        },
        {
         "median": 210.0,
         "minute": 15,
-        "n": 6,
+        "n": 8,
         "p25": 210.0,
-        "p75": 210.0,
+        "p75": 221.25,
         "support": "supported"
        },
        {
         "median": 220.0,
         "minute": 20,
-        "n": 6,
+        "n": 8,
         "p25": 220.0,
-        "p75": 220.0,
+        "p75": 232.5,
         "support": "supported"
        },
        {
         "median": 230.0,
         "minute": 25,
-        "n": 6,
+        "n": 8,
         "p25": 230.0,
-        "p75": 230.0,
+        "p75": 243.75,
         "support": "supported"
        },
        {
         "median": 240.0,
         "minute": 30,
-        "n": 6,
+        "n": 8,
         "p25": 240.0,
-        "p75": 240.0,
+        "p75": 255.0,
         "support": "supported"
        },
        {
         "median": 350.0,
         "minute": 35,
-        "n": 6,
-        "p25": 350.0,
+        "n": 8,
+        "p25": 334.1071428571429,
         "p75": 350.0,
         "support": "supported"
        },
        {
         "median": 340.0,
         "minute": 40,
-        "n": 6,
-        "p25": 340.0,
+        "n": 8,
+        "p25": 323.2142857142857,
         "p75": 340.0,
         "support": "supported"
        },
        {
         "median": 330.0,
         "minute": 45,
-        "n": 6,
-        "p25": 330.0,
+        "n": 8,
+        "p25": 312.32142857142856,
         "p75": 330.0,
         "support": "supported"
        },
        {
         "median": 320.0,
         "minute": 50,
-        "n": 6,
-        "p25": 320.0,
+        "n": 8,
+        "p25": 301.42857142857144,
         "p75": 320.0,
         "support": "supported"
        },
        {
         "median": 310.0,
         "minute": 55,
-        "n": 6,
-        "p25": 310.0,
+        "n": 8,
+        "p25": 290.5357142857143,
         "p75": 310.0,
         "support": "supported"
        },
        {
         "median": 300.0,
         "minute": 60,
-        "n": 6,
-        "p25": 300.0,
+        "n": 8,
+        "p25": 279.6428571428571,
         "p75": 300.0,
         "support": "supported"
        },
        {
         "median": 290.0,
         "minute": 65,
-        "n": 6,
-        "p25": 290.0,
+        "n": 8,
+        "p25": 268.75,
         "p75": 290.0,
         "support": "supported"
        },
        {
         "median": 280.0,
         "minute": 70,
-        "n": 6,
-        "p25": 280.0,
+        "n": 8,
+        "p25": 257.8571428571429,
         "p75": 280.0,
         "support": "supported"
        },
        {
         "median": 270.0,
         "minute": 75,
-        "n": 6,
-        "p25": 270.0,
+        "n": 8,
+        "p25": 246.96428571428572,
         "p75": 270.0,
         "support": "supported"
        },
        {
         "median": 260.0,
         "minute": 80,
-        "n": 6,
-        "p25": 260.0,
+        "n": 8,
+        "p25": 236.07142857142856,
         "p75": 260.0,
         "support": "supported"
        },
        {
         "median": 250.0,
         "minute": 85,
-        "n": 6,
-        "p25": 250.0,
+        "n": 8,
+        "p25": 225.17857142857144,
         "p75": 250.0,
         "support": "supported"
        },
        {
         "median": 240.0,
         "minute": 90,
-        "n": 6,
-        "p25": 240.0,
+        "n": 8,
+        "p25": 214.28571428571428,
         "p75": 240.0,
         "support": "supported"
        },
        {
         "median": 230.0,
         "minute": 95,
-        "n": 6,
-        "p25": 230.0,
+        "n": 8,
+        "p25": 203.39285714285714,
         "p75": 230.0,
         "support": "supported"
        },
        {
         "median": 220.0,
         "minute": 100,
-        "n": 6,
-        "p25": 220.0,
+        "n": 8,
+        "p25": 192.5,
         "p75": 220.0,
         "support": "supported"
        },
        {
         "median": 210.0,
         "minute": 105,
-        "n": 6,
-        "p25": 210.0,
+        "n": 8,
+        "p25": 185.0,
         "p75": 210.0,
         "support": "supported"
        },
        {
         "median": 200.0,
         "minute": 110,
-        "n": 6,
-        "p25": 200.0,
+        "n": 8,
+        "p25": 177.5,
         "p75": 200.0,
         "support": "supported"
        },
        {
         "median": 190.0,
         "minute": 115,
-        "n": 6,
-        "p25": 190.0,
+        "n": 8,
+        "p25": 170.0,
         "p75": 190.0,
         "support": "supported"
        },
        {
         "median": 180.0,
         "minute": 120,
-        "n": 6,
-        "p25": 180.0,
+        "n": 8,
+        "p25": 162.5,
         "p75": 180.0,
         "support": "supported"
        },
        {
         "median": 170.0,
         "minute": 125,
-        "n": 6,
-        "p25": 170.0,
+        "n": 8,
+        "p25": 155.0,
         "p75": 170.0,
         "support": "supported"
        },
        {
         "median": 160.0,
         "minute": 130,
-        "n": 6,
-        "p25": 160.0,
+        "n": 8,
+        "p25": 147.5,
         "p75": 160.0,
         "support": "supported"
        },
        {
         "median": 150.0,
         "minute": 135,
-        "n": 6,
-        "p25": 150.0,
+        "n": 8,
+        "p25": 140.0,
         "p75": 150.0,
         "support": "supported"
        },
        {
         "median": 140.0,
         "minute": 140,
-        "n": 6,
-        "p25": 140.0,
+        "n": 8,
+        "p25": 132.5,
         "p75": 140.0,
         "support": "supported"
        },
        {
         "median": 130.0,
         "minute": 145,
-        "n": 6,
-        "p25": 130.0,
+        "n": 8,
+        "p25": 125.0,
         "p75": 130.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 150,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 155,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 160,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 165,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 170,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 175,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 180,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 185,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 190,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 195,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 200,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 114.0,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 205,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 110.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 210,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 107.0,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 215,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 107.875,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 220,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 108.75,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 225,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 109.625,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 230,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 110.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 235,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 111.375,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 240,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 112.25,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 245,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 113.125,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 250,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 114.0,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 255,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 114.875,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 260,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 115.75,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 265,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 116.625,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 270,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 275,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 280,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 285,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 290,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 295,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 300,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 305,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 310,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        },
        {
         "median": 120.0,
         "minute": 315,
-        "n": 6,
-        "p25": 120.0,
+        "n": 8,
+        "p25": 117.5,
         "p75": 120.0,
         "support": "supported"
        }
       ],
-      "routed_count": 6,
+      "routed_count": 8,
       "support": "supported",
-      "usable_count": 6
+      "usable_count": 8
      },
      {
       "anchor": {
@@ -8905,8 +8936,8 @@
       "key": "ran-low",
       "name": "Ran low",
       "occurrence_ids": [
-       "2026-02-07T09:00:00",
-       "2026-02-08T09:00:00"
+       "2026-02-07T11:00:00",
+       "2026-02-08T11:00:00"
       ],
       "points": [
        {
@@ -10014,8 +10045,8 @@
    "outcomes": {
     "counts": {
      "in_range": 19,
-     "n": 28,
-     "ran_high": 6,
+     "n": 30,
+     "ran_high": 8,
      "ran_low": 2,
      "unread": 1
     },
@@ -10473,23 +10504,24 @@
      "true_ic": 5.0
     },
     {
-     "bg_outcome_u": 0.0,
-     "carbs": 50.0,
-     "cgm_end_min": 315.0,
+     "bg_outcome_u": -2.0,
+     "carbs": 110.0,
+     "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "ciq_basal_delta_acted_u": -0.883,
      "directional_only": false,
-     "effective_insulin": 9.117,
-     "end_t": "2026-02-07T09:00:00",
+     "effective_insulin": 19.117,
+     "end_t": "2026-02-07T11:00:00",
      "in_pool": true,
-     "meal_carbs": 50.0,
-     "meal_dose": 10.0,
+     "meal_carbs": 110.0,
+     "meal_dose": 22.0,
      "member_offsets_min": [
-      0.0
+      0.0,
+      120.0
      ],
-     "n_meals": 1,
+     "n_meals": 2,
      "outcome_bg": 110.0,
-     "outcome_min": 300.0,
+     "outcome_min": 420.0,
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
@@ -10498,28 +10530,29 @@
      "rescue_carbs": 0,
      "run_id": "2026-02-07T09:00:00",
      "side": 1,
-     "start_bg": 110.0,
+     "start_bg": 210.0,
      "t": "2026-02-07T09:00:00",
-     "true_ic": 5.484
+     "true_ic": 5.754
     },
     {
-     "bg_outcome_u": 0.0,
-     "carbs": 50.0,
-     "cgm_end_min": 315.0,
+     "bg_outcome_u": -2.0,
+     "carbs": 110.0,
+     "cgm_end_min": 435.0,
      "cgm_start_min": -10.0,
      "ciq_basal_delta_acted_u": -0.883,
      "directional_only": false,
-     "effective_insulin": 9.117,
-     "end_t": "2026-02-08T09:00:00",
+     "effective_insulin": 19.117,
+     "end_t": "2026-02-08T11:00:00",
      "in_pool": true,
-     "meal_carbs": 50.0,
-     "meal_dose": 10.0,
+     "meal_carbs": 110.0,
+     "meal_dose": 22.0,
      "member_offsets_min": [
-      0.0
+      0.0,
+      120.0
      ],
-     "n_meals": 1,
+     "n_meals": 2,
      "outcome_bg": 110.0,
-     "outcome_min": 300.0,
+     "outcome_min": 420.0,
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
@@ -10528,9 +10561,9 @@
      "rescue_carbs": 0,
      "run_id": "2026-02-08T09:00:00",
      "side": 1,
-     "start_bg": 110.0,
+     "start_bg": 210.0,
      "t": "2026-02-08T09:00:00",
-     "true_ic": 5.484
+     "true_ic": 5.754
     },
     {
      "bg_outcome_u": 0.0,
@@ -14913,131 +14946,131 @@
     {
      "points": [
       {
-       "bg": 110.0,
+       "bg": 180.0,
        "minute": -10.0
       },
       {
-       "bg": 110.0,
+       "bg": 195.0,
        "minute": -5.0
       },
       {
-       "bg": 110.0,
+       "bg": 210.0,
        "minute": 0.0
       },
       {
-       "bg": 110.0,
+       "bg": 225.0,
        "minute": 5.0
       },
       {
-       "bg": 110.0,
+       "bg": 240.0,
        "minute": 10.0
       },
       {
-       "bg": 110.0,
+       "bg": 255.0,
        "minute": 15.0
       },
       {
-       "bg": 110.0,
+       "bg": 270.0,
        "minute": 20.0
       },
       {
-       "bg": 110.0,
+       "bg": 285.0,
        "minute": 25.0
       },
       {
-       "bg": 110.0,
+       "bg": 300.0,
        "minute": 30.0
       },
       {
-       "bg": 110.0,
+       "bg": 286.42857142857144,
        "minute": 35.0
       },
       {
-       "bg": 110.0,
+       "bg": 272.85714285714283,
        "minute": 40.0
       },
       {
-       "bg": 110.0,
+       "bg": 259.2857142857143,
        "minute": 45.0
       },
       {
-       "bg": 110.0,
+       "bg": 245.71428571428572,
        "minute": 50.0
       },
       {
-       "bg": 110.0,
+       "bg": 232.14285714285714,
        "minute": 55.0
       },
       {
-       "bg": 110.0,
+       "bg": 218.57142857142856,
        "minute": 60.0
       },
       {
-       "bg": 110.0,
+       "bg": 205.0,
        "minute": 65.0
       },
       {
-       "bg": 110.0,
+       "bg": 191.42857142857144,
        "minute": 70.0
       },
       {
-       "bg": 110.0,
+       "bg": 177.85714285714286,
        "minute": 75.0
       },
       {
-       "bg": 96.0,
+       "bg": 164.28571428571428,
        "minute": 80.0
       },
       {
-       "bg": 82.0,
+       "bg": 150.71428571428572,
        "minute": 85.0
       },
       {
-       "bg": 68.0,
+       "bg": 137.14285714285714,
        "minute": 90.0
       },
       {
-       "bg": 71.5,
+       "bg": 123.57142857142858,
        "minute": 95.0
       },
       {
-       "bg": 75.0,
+       "bg": 110.0,
        "minute": 100.0
       },
       {
-       "bg": 78.5,
+       "bg": 110.0,
        "minute": 105.0
       },
       {
-       "bg": 82.0,
+       "bg": 110.0,
        "minute": 110.0
       },
       {
-       "bg": 85.5,
+       "bg": 110.0,
        "minute": 115.0
       },
       {
-       "bg": 89.0,
+       "bg": 110.0,
        "minute": 120.0
       },
       {
-       "bg": 92.5,
+       "bg": 110.0,
        "minute": 125.0
       },
       {
-       "bg": 96.0,
+       "bg": 110.0,
        "minute": 130.0
       },
       {
-       "bg": 99.5,
+       "bg": 110.0,
        "minute": 135.0
       },
       {
-       "bg": 103.0,
+       "bg": 110.0,
        "minute": 140.0
       },
       {
-       "bg": 106.5,
+       "bg": 110.0,
        "minute": 145.0
       },
       {
@@ -15081,59 +15114,59 @@
        "minute": 195.0
       },
       {
-       "bg": 110.0,
+       "bg": 96.0,
        "minute": 200.0
       },
       {
-       "bg": 110.0,
+       "bg": 82.0,
        "minute": 205.0
       },
       {
-       "bg": 110.0,
+       "bg": 68.0,
        "minute": 210.0
       },
       {
-       "bg": 110.0,
+       "bg": 71.5,
        "minute": 215.0
       },
       {
-       "bg": 110.0,
+       "bg": 75.0,
        "minute": 220.0
       },
       {
-       "bg": 110.0,
+       "bg": 78.5,
        "minute": 225.0
       },
       {
-       "bg": 110.0,
+       "bg": 82.0,
        "minute": 230.0
       },
       {
-       "bg": 110.0,
+       "bg": 85.5,
        "minute": 235.0
       },
       {
-       "bg": 110.0,
+       "bg": 89.0,
        "minute": 240.0
       },
       {
-       "bg": 110.0,
+       "bg": 92.5,
        "minute": 245.0
       },
       {
-       "bg": 110.0,
+       "bg": 96.0,
        "minute": 250.0
       },
       {
-       "bg": 110.0,
+       "bg": 99.5,
        "minute": 255.0
       },
       {
-       "bg": 110.0,
+       "bg": 103.0,
        "minute": 260.0
       },
       {
-       "bg": 110.0,
+       "bg": 106.5,
        "minute": 265.0
       },
       {
@@ -15175,6 +15208,102 @@
       {
        "bg": 110.0,
        "minute": 315.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 320.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 325.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 330.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 335.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 340.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 345.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 350.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 355.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 360.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 365.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 370.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 375.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 380.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 385.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 390.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 395.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 400.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 405.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 410.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 415.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 420.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 425.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 430.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 435.0
       }
      ],
      "run_id": "2026-02-07T09:00:00"
@@ -15182,131 +15311,131 @@
     {
      "points": [
       {
-       "bg": 110.0,
+       "bg": 180.0,
        "minute": -10.0
       },
       {
-       "bg": 110.0,
+       "bg": 195.0,
        "minute": -5.0
       },
       {
-       "bg": 110.0,
+       "bg": 210.0,
        "minute": 0.0
       },
       {
-       "bg": 110.0,
+       "bg": 225.0,
        "minute": 5.0
       },
       {
-       "bg": 110.0,
+       "bg": 240.0,
        "minute": 10.0
       },
       {
-       "bg": 110.0,
+       "bg": 255.0,
        "minute": 15.0
       },
       {
-       "bg": 110.0,
+       "bg": 270.0,
        "minute": 20.0
       },
       {
-       "bg": 110.0,
+       "bg": 285.0,
        "minute": 25.0
       },
       {
-       "bg": 110.0,
+       "bg": 300.0,
        "minute": 30.0
       },
       {
-       "bg": 110.0,
+       "bg": 286.42857142857144,
        "minute": 35.0
       },
       {
-       "bg": 110.0,
+       "bg": 272.85714285714283,
        "minute": 40.0
       },
       {
-       "bg": 110.0,
+       "bg": 259.2857142857143,
        "minute": 45.0
       },
       {
-       "bg": 110.0,
+       "bg": 245.71428571428572,
        "minute": 50.0
       },
       {
-       "bg": 110.0,
+       "bg": 232.14285714285714,
        "minute": 55.0
       },
       {
-       "bg": 110.0,
+       "bg": 218.57142857142856,
        "minute": 60.0
       },
       {
-       "bg": 110.0,
+       "bg": 205.0,
        "minute": 65.0
       },
       {
-       "bg": 110.0,
+       "bg": 191.42857142857144,
        "minute": 70.0
       },
       {
-       "bg": 110.0,
+       "bg": 177.85714285714286,
        "minute": 75.0
       },
       {
-       "bg": 96.0,
+       "bg": 164.28571428571428,
        "minute": 80.0
       },
       {
-       "bg": 82.0,
+       "bg": 150.71428571428572,
        "minute": 85.0
       },
       {
-       "bg": 68.0,
+       "bg": 137.14285714285714,
        "minute": 90.0
       },
       {
-       "bg": 71.5,
+       "bg": 123.57142857142858,
        "minute": 95.0
       },
       {
-       "bg": 75.0,
+       "bg": 110.0,
        "minute": 100.0
       },
       {
-       "bg": 78.5,
+       "bg": 110.0,
        "minute": 105.0
       },
       {
-       "bg": 82.0,
+       "bg": 110.0,
        "minute": 110.0
       },
       {
-       "bg": 85.5,
+       "bg": 110.0,
        "minute": 115.0
       },
       {
-       "bg": 89.0,
+       "bg": 110.0,
        "minute": 120.0
       },
       {
-       "bg": 92.5,
+       "bg": 110.0,
        "minute": 125.0
       },
       {
-       "bg": 96.0,
+       "bg": 110.0,
        "minute": 130.0
       },
       {
-       "bg": 99.5,
+       "bg": 110.0,
        "minute": 135.0
       },
       {
-       "bg": 103.0,
+       "bg": 110.0,
        "minute": 140.0
       },
       {
-       "bg": 106.5,
+       "bg": 110.0,
        "minute": 145.0
       },
       {
@@ -15350,59 +15479,59 @@
        "minute": 195.0
       },
       {
-       "bg": 110.0,
+       "bg": 96.0,
        "minute": 200.0
       },
       {
-       "bg": 110.0,
+       "bg": 82.0,
        "minute": 205.0
       },
       {
-       "bg": 110.0,
+       "bg": 68.0,
        "minute": 210.0
       },
       {
-       "bg": 110.0,
+       "bg": 71.5,
        "minute": 215.0
       },
       {
-       "bg": 110.0,
+       "bg": 75.0,
        "minute": 220.0
       },
       {
-       "bg": 110.0,
+       "bg": 78.5,
        "minute": 225.0
       },
       {
-       "bg": 110.0,
+       "bg": 82.0,
        "minute": 230.0
       },
       {
-       "bg": 110.0,
+       "bg": 85.5,
        "minute": 235.0
       },
       {
-       "bg": 110.0,
+       "bg": 89.0,
        "minute": 240.0
       },
       {
-       "bg": 110.0,
+       "bg": 92.5,
        "minute": 245.0
       },
       {
-       "bg": 110.0,
+       "bg": 96.0,
        "minute": 250.0
       },
       {
-       "bg": 110.0,
+       "bg": 99.5,
        "minute": 255.0
       },
       {
-       "bg": 110.0,
+       "bg": 103.0,
        "minute": 260.0
       },
       {
-       "bg": 110.0,
+       "bg": 106.5,
        "minute": 265.0
       },
       {
@@ -15444,6 +15573,102 @@
       {
        "bg": 110.0,
        "minute": 315.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 320.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 325.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 330.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 335.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 340.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 345.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 350.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 355.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 360.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 365.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 370.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 375.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 380.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 385.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 390.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 395.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 400.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 405.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 410.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 415.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 420.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 425.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 430.0
+      },
+      {
+       "bg": 110.0,
+       "minute": 435.0
       }
      ],
      "run_id": "2026-02-08T09:00:00"

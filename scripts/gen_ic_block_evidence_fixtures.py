@@ -84,10 +84,10 @@ def _settings(segments):
     ),))
 
 
-def _trace(anchor, shape):
+def _trace(anchor, shape, until=330):
     """Dense five-minute CGM over the meal's own clock and the chain's read."""
     return [CgmReading(anchor + timedelta(minutes=minute), shape(minute), "synthetic")
-            for minute in range(-60, 331, 5)]
+            for minute in range(-60, until + 1, 5)]
 
 
 def _ran_high(minute):
@@ -105,13 +105,21 @@ def _in_range(minute):
     return 120.0
 
 
-def _ran_low(minute):
-    if minute <= 75:
+def _spike_then_low(minute):
+    """A two-meal chain from its first bolus: rising into it and peaking at 300,
+    then a low at +210 while Control-IQ suspends under the second meal."""
+    if minute <= -30:
+        return 120.0
+    if minute <= 30:
+        return 120.0 + 3.0 * (minute + 30)
+    if minute <= 100:
+        return 300.0 - 190.0 * (minute - 30) / 70.0
+    if minute <= 195:
         return 110.0
-    if minute <= 90:
-        return 110.0 - 2.8 * (minute - 75)
-    if minute <= 150:
-        return 68.0 + 0.7 * (minute - 90)
+    if minute <= 210:
+        return 110.0 - 2.8 * (minute - 195)
+    if minute <= 270:
+        return 68.0 + 0.7 * (minute - 210)
     return 110.0
 
 
@@ -125,10 +133,11 @@ def _suspends(anchor, rows=12):
 def _explained():
     """One block carrying every fact #464 publishes, on both of its blocks.
 
-    Lone morning runs on the current value (half of them chains that spike), two
-    over-delivered meals Control-IQ suspends under until a low prints, ten runs
-    chained across the midday boundary, one run read into a CGM gap, and three runs
-    dosed under the value a snapshot retired inside the window.
+    Lone morning runs on the current value (half of them meals that spike), two
+    pooled morning chains that spike and then print a low attributed to their first
+    meal (on separate days), ten runs chained across the midday boundary, one run
+    read into a CGM gap, and three runs dosed under the value a snapshot retired
+    inside the window.
     """
     events, cgm, basal, lows = [], [], [], []
     for day in range(25, 37):
@@ -136,12 +145,13 @@ def _explained():
         events.append(event)
         cgm.extend(_trace(event.t, _ran_high if day % 2 else _in_range))
     for day in (37, 38):
-        event = _meal(day, 9, carbs=50.0, insulin=10.0, bg=None)
-        events.append(event)
-        cgm.extend(_trace(event.t, _ran_low))
-        basal.extend(_suspends(event.t))
-        lows.append(PrintedLow(t=event.t + timedelta(minutes=90), bg=68.0, iob_u=2.2,
-                               arm=HarmArm.IC, dominant_bolus_t=event.t,
+        first = _meal(day, 9, bg=None)
+        second = _meal(day, 11, carbs=50.0, insulin=10.0, bg=None)
+        events.extend([first, second])
+        cgm.extend(_trace(first.t, _spike_then_low, until=450))
+        basal.extend(_suspends(second.t))
+        lows.append(PrintedLow(t=first.t + timedelta(minutes=210), bg=68.0, iob_u=2.2,
+                               arm=HarmArm.IC, dominant_bolus_t=first.t,
                                attribution_reason="meal-bolus"))
     for day in range(40, 50):
         first = _meal(day, 11, carbs=40.0, insulin=8.0, bg=None)

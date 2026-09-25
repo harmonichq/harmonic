@@ -366,19 +366,39 @@ class BlockHarmEvidenceTest(unittest.TestCase):
                                  harm_lows=lows)[0])[0]
 
         evidence = block.evidence["harm_evidence"]
+        self.assertEqual(self.KEYS, set(evidence))
         self.assertEqual(2, len(evidence["lows"]))
         self.assertEqual(2, evidence["row_days"])
         self.assertEqual(120.0, evidence["minutes_after_bolus_median"])
-        self.assertEqual(block.harm["gated"], evidence["gated"])
+        self.assertTrue(evidence["evaluated"])
+        self.assertEqual(block.harm, {key: evidence[key] for key in block.harm})
         self.assertEqual(block.guidance["seriousness"], evidence["seriousness"])
 
-    def test_a_block_with_no_harm_row_serves_no_median(self):
+    KEYS = {"arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
+            "seriousness", "minutes_after_bolus_median"}
+
+    def test_a_block_the_arm_left_alone_serves_the_same_closed_row(self):
         events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
         block = by_id(blocks_for(self.SEGMENTS, events, harm_config=HarmConfig(),
                                  harm_lows=[])[0])[0]
 
-        self.assertIsNone(block.evidence["harm_evidence"]["minutes_after_bolus_median"])
-        self.assertEqual([], block.evidence["harm_evidence"].get("lows", []))
+        evidence = block.evidence["harm_evidence"]
+        self.assertEqual({}, block.harm)
+        self.assertEqual(self.KEYS, set(evidence))
+        self.assertEqual((True, False, False, [], 0, None), (
+            evidence["evaluated"], evidence["gated"], evidence["nudged"],
+            evidence["lows"], evidence["row_days"],
+            evidence["minutes_after_bolus_median"]))
+
+    def test_a_block_analysed_without_the_harm_arm_says_it_was_not_evaluated(self):
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        block = by_id(blocks_for(self.SEGMENTS, events)[0])[0]
+
+        evidence = block.evidence["harm_evidence"]
+        self.assertEqual(self.KEYS, set(evidence))
+        self.assertEqual((False, False, False, [], None), (
+            evidence["evaluated"], evidence["gated"], evidence["nudged"],
+            evidence["lows"], evidence["minutes_after_bolus_median"]))
 
 
 class HeldReasonTest(unittest.TestCase):

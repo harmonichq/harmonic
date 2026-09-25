@@ -31,9 +31,12 @@ CURRENT = ((0, 5.0), (720, 6.0))
 EARLIER = ((0, 6.0), (720, 7.0))
 
 
-def _store(events, readings, basal=()):
-    """A real store: the preparation reads its meal outcomes off one."""
-    store = Store.open(":memory:")
+def seed_store(store, events, readings, basal=()):
+    """Write one case's boluses, CGM and basal through the store's public shapes.
+
+    The preparation reads its meal outcomes off a real store, so the rows a case
+    was prepared over are part of the case.
+    """
     write_set_to_store(store, {"events": list(events),
                                "cgm_readings": list(readings), "snapshots": []})
     store.upsert_basal([
@@ -43,7 +46,6 @@ def _store(events, readings, basal=()):
          "profile_basal_rate": row.profile_basal_rate}
         for index, row in enumerate(basal, start=1)
     ])
-    return store
 
 
 def _meal(day, hour, *, carbs=60.0, insulin=12.0, bg=110.0, ratio=5.0):
@@ -51,8 +53,9 @@ def _meal(day, hour, *, carbs=60.0, insulin=12.0, bg=110.0, ratio=5.0):
                       carbs=carbs, carb_ratio=ratio, bg=bg, completion="Completed")
 
 
-def _project(events, *, segments=((0, 5.0),), block_id=0, cgm=None, basal=None,
-             harm_lows=None, snapshots=None, window=None):
+def case_inputs(events, *, segments=((0, 5.0),), block_id=0, cgm=None, basal=None,
+                harm_lows=None, snapshots=None, window=None):
+    """One case's analyzer payload, and the store rows its preparation reads."""
     blocks, _ = analyze_ic_blocks_fuzzy(
         events, list(segments), config=IcConfig(), observed_days=90,
         cgm_readings=cgm, isf_effective=ISF, basal_events=basal,
@@ -69,10 +72,20 @@ def _project(events, *, segments=((0, 5.0),), block_id=0, cgm=None, basal=None,
                    100 + minute, "synthetic")
         for run in block["evidence"]["runs"] for minute in (-10, 0, 120, 435)
     ]
-    prepared = prepare_ic_block_evidence(
-        _store(events, readings, basal or ()), {"ic_blocks": payload})
-    return prepared.project(
+    return {"ic_blocks": payload}, (events, readings, basal or ())
+
+
+def _project(events, *, block_id=0, **kwargs):
+    analysis, rows = case_inputs(events, block_id=block_id, **kwargs)
+    store = Store.open(":memory:")
+    seed_store(store, *rows)
+    return prepare_ic_block_evidence(store, analysis).project(
         block_id, analysis_generation="ic-block-evidence-fixture:0")
+
+
+def explained_case():
+    """The published case's analyzer payload and store rows, so a test can serve it."""
+    return case_inputs(**_explained())
 
 
 def _settings(segments):

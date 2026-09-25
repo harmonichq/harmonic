@@ -377,6 +377,32 @@ class BlockHarmEvidenceTest(unittest.TestCase):
     KEYS = {"arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
             "seriousness", "minutes_after_bolus_median"}
 
+    def test_a_tighten_held_by_a_low_elsewhere_on_the_arm_says_it_was_gated(self):
+        # Block 0 (00:00-18:00) asserts a tighten; the only low belongs to an evening
+        # meal in block 18:00. The arm holds block 0 all the same, so its evidence
+        # must say gated — while `block.harm`, the arm's per-block row, keeps saying
+        # block 0 owns no lows and is not one of the arm's gated keys.
+        events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+        evening = meal(3, 19, 40, 8.0, ratio=4.0)
+        low = PrintedLow(t=evening.t + timedelta(hours=2), bg=58.0, iob_u=2.1,
+                         arm=HarmArm.IC, dominant_bolus_t=evening.t,
+                         attribution_reason="meal-bolus")
+        blocks = by_id(blocks_for(self.SEGMENTS, events + [evening],
+                                  harm_config=HarmConfig(), harm_lows=[low])[0])
+        held, owner = blocks[0], blocks[1080]
+
+        self.assertEqual(held.current_values[0], held.recommended)
+        self.assertFalse(held.asserts_move)
+        self.assertIn("meal-owned low", held.annotation)
+        self.assertEqual({"arm": "ic", "gated": False, "nudged": False, "arm_days": 1,
+                          "row_days": 0, "lows": []}, held.harm)
+        evidence = held.evidence["harm_evidence"]
+        self.assertTrue(evidence["gated"])
+        self.assertEqual([], evidence["lows"])
+        self.assertEqual((0, 1), (evidence["row_days"], evidence["arm_days"]))
+        self.assertEqual([low.t.isoformat()],
+                         [row["t"] for row in owner.evidence["harm_evidence"]["lows"]])
+
     def test_a_block_the_arm_left_alone_serves_the_same_closed_row(self):
         events = [meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
         block = by_id(blocks_for(self.SEGMENTS, events, harm_config=HarmConfig(),

@@ -42,6 +42,12 @@ _RUN_FACTS = frozenset({
     "post_correction_ciq", "post_correction_unknown", "ciq_basal_delta_acted_u",
     "rescue_carbs",
 })
+# The pooled balance sheet's terms and the quotient they make.
+_LEDGER_FACTS = frozenset({
+    "carbs_covered", "meal_dose", "post_correction_user", "post_correction_ciq",
+    "post_correction_unknown", "ciq_basal_delta_acted_u", "bg_outcome_u",
+    "rescue_carbs", "effective_insulin", "pooled_ratio",
+})
 # The harm row the analyzer publishes on every block, in its one closed shape.
 _HARM_FACTS = frozenset({
     "arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
@@ -216,6 +222,8 @@ class IcBlockEvidenceProjection:
             # the place the reader looks first.
             if not _HARM_FACTS <= harm_evidence.keys():
                 raise KeyError("harm evidence is missing a published fact")
+            if not _LEDGER_FACTS <= evidence["ledger"].keys():
+                raise KeyError("ledger is missing a published term")
             for run in runs:
                 if not _RUN_FACTS <= run.keys():
                     raise KeyError("run row is missing a published fact")

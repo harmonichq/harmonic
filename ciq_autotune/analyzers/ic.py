@@ -33,6 +33,7 @@ from ..harm import (
     HarmArm,
     HarmConfig,
     PrintedLow,
+    _harm_evidence_payload,
     apply_harm_gate_nudge,
     arm_harm,
     arm_harm_evidence,
@@ -2588,6 +2589,7 @@ def _analyze_ic_blocks_shared(
         # arm-wide low evidence has no claim on it.
         harm_evidence: Dict = {}
         hold_reason: Optional[str] = None
+        gated = False
         if harm is not None:
             tightening = (rec is not None and programmed is not None
                           and rec < programmed)
@@ -2781,15 +2783,19 @@ def _analyze_ic_blocks_shared(
         # backend states whether the arm ran at all. The median is the one fact this
         # block adds, and it reads only the lows published here.
         harm_row = (
-            arm_harm_evidence(harm, bid) if harm is not None else {
-                "arm": HarmArm.IC.value, "gated": False, "nudged": False,
-                "arm_days": 0, "row_days": 0, "lows": [],
-            }
+            arm_harm_evidence(harm, bid) if harm is not None
+            else _harm_evidence_payload(arm=HarmArm.IC.value, gated=False,
+                                        nudged=False, arm_days=0, row_days=0,
+                                        lows=())
         )
         block = replace(block, evidence={
             **block.evidence,
             "harm_evidence": {
                 **harm_row,
+                # The gate this block was actually judged by. A tighten is held by a
+                # meal-owned low anywhere on the arm, so it can be gated here while
+                # `block.harm["gated"]` — the arm's per-block key — stays False.
+                "gated": gated,
                 "evaluated": harm is not None,
                 "seriousness": block.guidance["seriousness"],
                 "minutes_after_bolus_median": _minutes_after_bolus_median(

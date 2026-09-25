@@ -1,13 +1,14 @@
 """Public current I:C block meal-run evidence contract (#145)."""
 from copy import deepcopy
 from datetime import datetime, timedelta
+import json
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from ciq_autotune.analyzers.ic import _CIQ_SUSPEND_TYPE, IcConfig
+from ciq_autotune.analyzers.ic import _CIQ_SUSPEND_TYPE, POOL_REASONS, IcConfig
 from ciq_autotune.analyzers.isf import FastingEvidence
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
@@ -179,7 +180,8 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             ("evidence", "recurrence_channels", "side_k"),
             ("evidence", "eligibility", "whole_runs"),
             ("evidence", "eligibility", "fractional_run_ownership"),
-            ("evidence", "ledger"), ("evidence", "harm_evidence"),
+            ("evidence", "ledger"), ("evidence", "ledger", "pooled_ratio"),
+            ("evidence", "harm_evidence"),
             ("evidence", "harm_evidence", "gated"),
             ("evidence", "harm_evidence", "evaluated"),
             ("evidence", "runs", 0, "pool_reason"), ("evidence", "runs", 0, "side"),
@@ -466,6 +468,43 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
         self.assertEqual(body["block"]["effective_support"],
                          self.block["evidence"]["eligibility"]["effective_run_count"])
         self.assertTrue(all(run["ownership"] == 0.5 for run in body["runs"]))
+
+    def test_public_route_serves_the_committed_fixtures_published_case(self):
+        # The endpoint is answered over the very analyzer payload and store rows the
+        # generator prepared the committed capture from, so what it serves is the
+        # capture's `explained` case — the payload the browser gates read.
+        from scripts.gen_ic_block_evidence_fixtures import OUT, explained_case, seed_store
+
+        committed = json.loads(OUT.read_text())["cases"]["explained"]
+        self.analysis, rows = explained_case()
+        self.tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(self.tmp.close)
+        with Store.open(self.tmp.name) as store:
+            seed_store(store, *rows)
+        app, products = self._app()
+        with products:
+            response = TestClient(app).get(
+                "/api/diagnose/carb-ratio-block-evidence", params={
+                    "block_id": committed["block"]["block_id"],
+                    "analysis_generation": app.state.result_cache.generation,
+                })
+
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        for key in ("schema", "block", "runs", "ledger", "outcomes", "harm_evidence",
+                    "meal_comparison", "series"):
+            self.assertEqual(committed[key], body[key], key)
+        self.assertEqual("diagnose-carb-ratio-block-evidence-v2", body["schema"])
+        self.assertTrue(body["runs"])
+        self.assertTrue(all(run["pool_reason"] in POOL_REASONS for run in body["runs"]))
+        self.assertTrue(body["harm_evidence"]["lows"])
+        counts = body["outcomes"]["counts"]
+        self.assertEqual(
+            [("ran-high", "Ran high", counts["ran_high"]),
+             ("ran-low", "Ran low", counts["ran_low"]),
+             ("in-range", "In range", counts["in_range"])],
+            [(cohort["key"], cohort["name"], cohort["routed_count"])
+             for cohort in body["meal_comparison"]["cohorts"]])
 
     def test_public_route_serves_the_v2_explainability_facts(self):
         # The same pooled spike-then-low chain as the outcome test, now answered by

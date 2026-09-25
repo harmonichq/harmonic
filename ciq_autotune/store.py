@@ -1555,9 +1555,8 @@ class Store:
             isf = context.get('programmed_isf')
             if (not isinstance(isf, dict) or type(isf.get('value')) not in (int, float)
                     or not isinstance(isf.get('unit'), str) or not isf['unit']
-                    or not context.get('source_snapshot') or not context.get('code_version')
-                    or not context.get('configuration')):
-                raise ValueError('available comparison context requires ISF, units, snapshot and code/config identity')
+                    or not context.get('source_snapshot') or not context.get('configuration')):
+                raise ValueError('available comparison context requires ISF, units, snapshot and config identity')
             return
         required = {'action', 'explanation', 'source_window', 'policy', 'subjects',
                     'occurrences', 'settings', 'support', 'unknowns'}

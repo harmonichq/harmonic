@@ -633,7 +633,12 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
             comparison = {"comparison_context": _unavailable("not_recorded"),
                           "comparison": {"availability": _unavailable("not_recorded")}}
         else:
-            comparison = compare_follow_up(store, record=record, data_cutoff=now,
+            # An ended Trial is reassessed only on the evidence up to its ending,
+            # as its saved ending was (ADR 462); an open record reads to the tail.
+            ending = record.get("ending") or {}
+            cutoff = (min(now, datetime.fromisoformat(ending["effective_at"]))
+                      if kind == "trial" and "kind" in ending else now)
+            comparison = compare_follow_up(store, record=record, data_cutoff=cutoff,
                                            input_revision=store.input_data_revision(), context_mode=assessment)
         detail["reassessment"] = {"mode": assessment, "computed_at": wall_clock_now().strftime(_DT_FMT),
                                   "input_revision": store.input_data_revision(), **comparison}
@@ -1383,24 +1388,19 @@ def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutof
     """Save the comparison and release this identity in the caller's transaction.
 
     The data cutoff bounds every evidence read but the retained context, which
-    was read once when the record was first recorded. A context whose pump read
-    is later than the cutoff, or that names none, saves the assessment
-    unavailable instead (ADR 442).
+    was read once when the record was first recorded. The comparison answers a
+    context whose pump read is later than the cutoff, or that names none,
+    unavailable ``context_after_ending`` (ADR 442, ADR 462).
     """
-    from .follow_up_comparison import compare_follow_up, comparison_envelope
+    from .follow_up_comparison import compare_follow_up
     if "kind" in record["ending"]:
         return record
     ending = {"version": "386:1", "state": "available", "kind": kind,
               "effective_at": effective_at.strftime(_DT_FMT),
               "recorded_at": recorded_at.strftime(_DT_FMT), "conclusion": conclusion}
     proposed = {**record, "ending": ending}
-    context = record["comparison_context"]
-    source = (context.get("source_snapshot") or {}).get("captured_at")
-    if context.get("state") == "available" and (source is None or datetime.fromisoformat(source) > data_cutoff):
-        compared = comparison_envelope(context, "retained", "context_after_ending")
-    else:
-        compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
-                                     input_revision=store.input_data_revision())
+    compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
+                                 input_revision=store.input_data_revision())
     comparison = compared["comparison"]
     ending["assessment"] = {**{key: value for key, value in comparison.items() if key != "views"},
                             "version": "386:1", **comparison["availability"],

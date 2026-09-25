@@ -14,7 +14,6 @@ from bisect import bisect_right
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from .analyzers.scenario import low_prompt_answers
 from .analyzers.scenario.anchors import _is_meal, collect_anchors
@@ -48,16 +47,9 @@ def _availability(reason=None):
 
 
 def _execution():
-    # Installed Python sources identify the executable, including transitive
-    # classifier/metric defaults. A changed executable cannot impersonate a saved
-    # computation. No historical executable archive is maintained.
-    root = Path(__file__).parent
-    digest = hashlib.sha256()
-    for path in sorted(root.rglob("*.py")):
-        digest.update(str(path.relative_to(root)).encode())
-        digest.update(path.read_bytes())
-    return {"code_version": digest.hexdigest(), "policy": "340:1/386:1/387:1",
-            "configuration": asdict(ScenarioConfig())}
+    # The comparison policy and the scenario configuration a Focus executes
+    # identify a retained computation; an update to other code does not (ADR 462).
+    return {"policy": "340:1/386:1/387:1", "configuration": asdict(ScenarioConfig())}
 
 
 def capture_comparison_context(store, *, at, input_revision):
@@ -264,6 +256,12 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
 
     if not context or context.get("state") != "available":
         return unavailable("missing_comparison_context")
+    # A context read from a pump read later than the cutoff, or from none, is not
+    # the setting in force then: a saved ending and a Retained read of an ended
+    # record answer it the same way (ADR 442, ADR 462).
+    source = (context.get("source_snapshot") or {}).get("captured_at")
+    if source is None or _time(source) > cutoff:
+        return unavailable("context_after_ending")
     if context.get("version") != _VERSION or any(context.get(key) != value for key, value in _execution().items()):
         return unavailable("unsupported_retained_execution")
     programmed = context.get("programmed_isf")

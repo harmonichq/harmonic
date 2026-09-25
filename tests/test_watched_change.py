@@ -569,5 +569,61 @@ class EveryRecordEndsTest(unittest.TestCase):
                 self.assertEqual(slot_reads["per record"] - slot_reads["shared"], 2)
 
 
+class EndedReassessmentTest(unittest.TestCase):
+    """ADR 462 decision 2: a requested reassessment of an ended Trial reads only
+    the evidence up to its ending instant, as its saved ending does. Each case
+    store is a committed synthetic QA case, read through ``review_trials``."""
+
+    NOW = datetime(2024, 7, 2)
+
+    def case_store(self, name):
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        materialize_case(store, next(case for case in QA_CASES if case.name == name))
+        return store
+
+    def reassessment(self, store, record, mode):
+        return wc.review_trials(store, now=self.NOW, selected=record["id"],
+                                assessment=mode)["selected"]["reassessment"]
+
+    def test_a_superseded_records_reassessments_stop_at_its_ending(self):
+        store = self.case_store("c4-ic")
+        record = next(r for r in store.follow_up_records("trial") if r["ending"].get("kind") == "superseded")
+        ending = record["ending"]["effective_at"]
+        for mode in ("retained", "current"):
+            with self.subTest(mode):
+                after = self.reassessment(store, record, mode)["comparison"]["periods"]["after"]
+                self.assertLessEqual(after["end"], ending)
+
+    def test_a_late_context_record_answers_current_policy_and_refuses_retained(self):
+        store = self.case_store("c4-isf-late-read")
+        (record,) = store.follow_up_records("trial")
+        ending = record["ending"]["effective_at"]
+        self.assertEqual(record["ending"]["assessment"]["reason"], "context_after_ending")
+        current = self.reassessment(store, record, "current")
+        self.assertEqual(current["comparison"]["availability"]["state"], "available")
+        self.assertEqual(set(current["comparison"]["periods"]), {"before", "after"})
+        self.assertLessEqual(current["comparison"]["periods"]["after"]["end"], ending)
+        self.assertLessEqual(current["comparison_context"]["source_snapshot"]["captured_at"], ending)
+        retained = self.reassessment(store, record, "retained")["comparison"]["availability"]
+        self.assertEqual((retained["state"], retained["reason"]), ("unavailable", "context_after_ending"))
+
+    def test_an_open_records_reassessment_reads_to_the_data_tail(self):
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        store.upsert_settings_snapshot(_at(0, 6), PumpSettings(
+            active_idp=1, profiles=(_profile(1, [_seg(0, 0.6, 30, 7.0, 110)]),)))
+        store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 20)])))
+        with store.follow_up_transaction():
+            wc.reconcile_follow_up(store, now=_day(20), recorded_at=_day(20))
+        (record,) = store.follow_up_records("trial")
+        self.assertNotIn("kind", record["ending"])
+        after = wc.review_trials(store, now=_day(21), selected=record["id"], assessment="retained"
+                                 )["selected"]["reassessment"]["comparison"]["periods"]["after"]
+        self.assertEqual((after["end"], after["boundary_reasons"]["end"]),
+                         (_day(21).strftime(wc._DT_FMT), "data_tail"))
+
+
 if __name__ == "__main__":
     unittest.main()

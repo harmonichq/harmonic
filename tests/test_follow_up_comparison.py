@@ -68,7 +68,7 @@ class FollowUpComparisonTest(unittest.TestCase):
                 result = self.compare(store, {**record, **change}, datetime(2026, 6, 12))
                 self.assertEqual(result["availability"]["reason"], reason)
                 self.assertEqual(result["outcomes"], [])
-        record["comparison_context"]["code_version"] = "retired"
+        record["comparison_context"]["policy"] = "retired"
         self.assertEqual(self.compare(store, record, datetime(2026, 6, 12))["availability"]["reason"], "unsupported_retained_execution")
         result = self.compare(store, record, datetime(2026, 6, 12), context_mode="current")
         self.assertEqual(result["context_mode"], "current")
@@ -79,13 +79,26 @@ class FollowUpComparisonTest(unittest.TestCase):
         available = capture_comparison_context(store, at=datetime(2026, 6, 11), input_revision=1)
         for context, reason in (({"version": "386:1", "state": "unavailable", "reason": "not_recorded"},
                                  "missing_comparison_context"),
-                                ({**available, "code_version": "retired"}, "unsupported_retained_execution")):
+                                ({**available, "policy": "retired"}, "unsupported_retained_execution")):
             with self.subTest(reason=reason):
                 record = {"kind": "trial", "id": "isf-all-20260610000000", "parameter": "isf", "slot": None,
                           "changed_at": "2026-06-10 00:00:00", "comparison_context": context}
                 returned = compare_follow_up(store, record=record, data_cutoff=datetime(2026, 6, 12),
                                              input_revision=2)
                 self.assertEqual(comparison_envelope(context, "retained", reason), returned)
+
+    def test_a_context_saved_by_another_build_is_read(self):
+        """ADR 462 decision 3: an update never voids a retained context. Only its
+        policy stamp or scenario configuration can refuse it, never a hash of the
+        installed source files, whether it carries a different one or none."""
+        store = self.store(cgm_ramp(10, 15, 40, 180, 1.4, 140) + cgm_ramp(11, 15, 40, 180, 1.4, 140))
+        record = self.focus(store, datetime(2026, 6, 11))
+        context = record["comparison_context"]
+        for label, retained in (("another build", {**context, "code_version": "0" * 64}),
+                                ("no source hash", {k: v for k, v in context.items() if k != "code_version"})):
+            with self.subTest(label):
+                result = self.compare(store, {**record, "comparison_context": retained}, datetime(2026, 6, 12))
+                self.assertEqual(result["availability"], {"state": "available", "reason": None})
 
     def test_retained_context_survives_profile_change_and_record_is_unchanged(self):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot

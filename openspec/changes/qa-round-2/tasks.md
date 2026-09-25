@@ -748,7 +748,11 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   the pinned commit, `:1063`–`:1070`): a scoped Pattern row carries a chart
   coordinate exactly when `pattern_chartable` holds, and a scoped `claimed_by`
   names a served Pattern row, in place of "every scoped Pattern row carries a
-  chart" and "no scoped row is claimed".
+  chart" and "no scoped row is claimed". Amend
+  `tests/test_outcome_patterns.py`'s lookup of `highs_after_treating_lows` in
+  the 14:00–18:00 scoped roster (at the pinned commit `:193`–`:198`), which
+  pins it at k 0, n 0 and readiness `withheld`: under decision 4 it now asserts
+  that zero-n Pattern is absent from that roster.
 - [ ] 60. Backend (ADR 467 decisions 1–4): in
   `ciq_autotune/analyzers/scenario/outcome_patterns.py`, add
   `pattern_in_window(pattern, query)` and have `outcome_window_population`
@@ -768,7 +772,12 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   serves `evidence["harm"]["band_nights"]` 2 and
   `evidence["harm_band_source_nights"]` 20. Regenerate
   `frontend/__fixtures__/findings-projection.json`; its `--check` and
-  `frontend/findings-projection-mirror.test.js` pass. Any pinned count or order the regenerated fixture moves in
+  `frontend/findings-projection-mirror.test.js` pass. Regenerate the
+  eating-sequence payload (`uv run python scripts/gen_eating_sequence_fixtures.py`),
+  whose 00:00–06:00 windows run the scoped projection: only
+  `mockups/eating-sequence-findings.synthetic/payload.json` moves (measured under
+  the spike at 977,835 bytes); its `--check` and
+  `tests/test_eating_sequence_finding_fixture.py`'s 1,000,000-byte limit pass. Any pinned count or order the regenerated fixture moves in
   `tests/test_findings_projection.py`, `tests/test_guidance.py` or
   `frontend/diagnose-findings-queue.test.js` is updated to the regenerated
   answer and named in the commit message.
@@ -820,8 +829,12 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
     "Ranked on all 30 days" and `ic:720` none;
   - 06:00–11:00: Highs after meals carries no anchor and `rank_note` "Ranked on
     all 30 days";
-  - the direction-only weaken (`direction_only_isf_rows()`), whole day: the
-    `isf` row sorts before `pattern:lows_after_correcting_highs`.
+  - the direction-only weaken with no Pattern roster:
+    `FindingsProjection(_analysis=analysis(isf=direction_only_isf_rows()),
+    _exposures=exposures(), _scenarios=scenarios(), _outcome_patterns=[])`
+    projected over the whole day serves `finding:correction_on_iob` and
+    `finding:correction_stacking` unpriced with one episode each, and the `isf`
+    row sorts before both (today the episode count puts both first).
   Replace `test_the_sorted_queue_publishes_its_three_closed_ranking_tiers`
   (at the pinned commit `:958`), which pins the tier to the register, with the
   band assertions above.
@@ -837,7 +850,10 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
 - [ ] 67. Mirror and fixture: make the same changes to
   `mockups/findings-projection.mirror.mjs` (row fields, anchors, sort, tiers,
   rank notes); regenerate `frontend/__fixtures__/findings-projection.json`; its
-  `--check` and `frontend/findings-projection-mirror.test.js` pass.
+  `--check` and `frontend/findings-projection-mirror.test.js` pass. Regenerate
+  the eating-sequence payload (task 61's command): its rows' field layout, order
+  and tiers move (measured under the spike at 979,302 bytes); its `--check` and
+  the 1,000,000-byte limit pass.
 - [ ] 68. Frontend Node tests, failing-first on #469's base with task 67's
   fixture laid over it:
   - in `frontend/diagnose-findings-queue.test.js`: on `global`, `queueRows`
@@ -847,7 +863,8 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
     false and weight `anchored`, each directly after its anchor, and
     `basal:30-90`, `basal:330-360` and `finding:over_treated_low` take ranks 2,
     3 and 4; with the sift `{ highs }` (hiding `ic:720`), Highs after meals is
-    ranked 1; painted, an anchored item carries class `qitem anchored` and its
+    ranked 1 with no tier word, no caption and `urgent` false (ADR 469 decision
+    6), and the in-row tier word is not painted on it; painted, an anchored item carries class `qitem anchored` and its
     detail's `.scope-note` reads " · Ranked with its setting", and on
     `afternoon` `finding:over_treated_low`'s reads " · Ranked on all 30 days";
     on `direction_only_windows.global`, the `isf` row opens no seam, its detail
@@ -865,8 +882,9 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
     "Ranked on all 30 days" and "Not recurring often enough to rank yet".
 - [ ] 69. Frontend (ADR 469 decisions 2, 4 and 5): in
   `frontend/diagnose-findings-queue.js`, `queueRows` marks a row anchored to a
-  shown row (weight `anchored`: no numeral, caption or stripe), keeps an
-  anchored row whose anchor is hidden as an ordinary ranked row, opens the seam
+  shown row (weight `anchored`: no numeral, caption or stripe), gives an
+  anchored row whose anchor is hidden a rank numeral but no tier word, caption
+  or stripe, and leaves it out of the tier and stripe bookkeeping, opens the seam
   only before an unranked row that is not an asserting row the served verdict
   keeps from staging, and gives that row the `isfStageNote` reason detail; the
   painter paints a reason detail on a tail row, gives the anchored item class
@@ -883,8 +901,10 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   defines `next_in_line`, `worth_a_look` and `noted` as bands of the one
   ranking. In `DESIGN.md`, rule 4 says what "Next in line" and "Worth a look"
   mean and that each prints at most once. Regenerate the design exploration
-  (`uv run python mockups/harmonic-v2.exploration/generate.py`), whose Glossary
-  extract moves; its `--check` then passes.
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Glossary
+  extract (`glossary.js`, `utilities.json`) and the queue rows its captures
+  carry (`setting.json`, `focus.json`, `journey.json`, `workstation.json`, and
+  `evidence.json` if its rows move) are rewritten; its `--check` then passes.
 - [ ] 71. Add one ledger story (the next unissued S id after task 62's, S193 at
   the pinned commit) in a dated `## #469 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24

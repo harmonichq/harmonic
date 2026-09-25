@@ -119,3 +119,4 @@ nothing to regenerate.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial flat draft pinned dd531198 | Blocker (`authoring`): the eating-sequence payload's 00:00–06:00 windows run the scoped projection and move (measured under the spike: 975,413 → 977,835 bytes, report fixture unchanged), outside Expected diff and Verification. Notes (`authoring`): `tests/test_outcome_patterns.py:193`–`:198` pins a zero-n Pattern in a scoped roster; `$scratch`/`$PW` undefined for the coordinator's legs; flat shape (disclosed, coordinator's plan). Refuted: none. Measured: the design exploration does not move under #467's rule. Fixed: task 61 regenerates the payload, whose `--check` and size limit join Verification and Expectation; task 59 amends the zero-n pin; `scratch` and `PW` are defined per lock. | BLOCKED (1 block, 3 notes); fixed, no further panel by operator instruction |

@@ -867,6 +867,14 @@ committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
    says a setting-admitted Pattern shares its setting's position; DESIGN.md rule
    4 says what each tier word means and that each prints at most once; the queue
    module's header says the same.
+6. **A filtered-out setting leaves its Pattern ranked but unlabelled.** When a
+   filter hides an anchored Pattern's setting row, the rail shows the Pattern as
+   a ranked row with its own numeral (the one visible holder of that Priority),
+   but with no tier word, in the row or as a caption, and no stripe, and it takes
+   no part in the rail's tier and stripe bookkeeping. Its served tier is its
+   anchor's, and "Next in line" names setting changes, so printing it on a
+   Pattern that cannot stage would contradict the Glossary. Its "Ranked with its
+   setting" note still prints.
 
 **Consequences.** One Priority fills one ranked position: a reader looking for
 the next change reads settings and the habits that outrank them in one order,

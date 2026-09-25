@@ -92,8 +92,8 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 
 #### Scenario: An asserting row that cannot stage sorts before the unranked findings
 
-- **GIVEN** the findings-fixture projection with the direction-only
-  correction-factor weaken
+- **GIVEN** the findings-fixture inputs with the direction-only
+  correction-factor weaken and no Pattern roster, so two unpriced causes with one
+  episode each are top-level rows
 - **WHEN** the whole-day queue is published
-- **THEN** the correction-factor row, unpriced, sorts before the first unpriced
-  Pattern or Cause row
+- **THEN** the correction-factor row, unpriced, sorts before both causes

@@ -452,8 +452,8 @@ of each contiguous served priced-tier group using the existing tier-word map;
 because the served tiers are bands of the one ranking, each tier word SHALL
 print at most once. A row the server anchors to a shown row (`anchored_by`)
 SHALL sit directly beneath it with the same columns but no rank numeral, tier
-word, caption or stripe; when its anchor is hidden by a filter it SHALL be an
-ordinary ranked row. A row's served `rank_note` SHALL print after its detail
+word, caption or stripe; when its anchor is hidden by a filter it SHALL take a
+rank numeral but still no tier word, caption or stripe. A row's served `rank_note` SHALL print after its detail
 line. Unpriced tail rows SHALL retain their title-only seam, and the seam SHALL
 open only before a row that is unranked for want of recurrence: an asserting row
 that cannot stage SHALL stand before it and print its own staging refusal, the

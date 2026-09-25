@@ -180,7 +180,9 @@ def same_change(record, *, parameter, slot, block, start, before, after) -> bool
     slot, block and values match and its change time is on ``start``'s pump day,
     at or before ``start``. A record dated at ``start`` itself matches too. Only
     changes derived from the dose-stamped boluses or the basal feed ask; a
-    pump-read switch is dated at its read.
+    pump-read switch is dated at its read. A whole-profile change carries no
+    slot, block or values, so any earlier profile record that day matches it:
+    the caller lets each record be kept by the earliest matching candidate only.
     """
     changed = datetime.fromisoformat(record["changed_at"])
     kept = record.get("block")
@@ -510,16 +512,24 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         basal, bolus, snapshots, plan_history, mature_window=mature_window,
         horizon_start=horizon_start,
     )
-    retained = store.follow_up_records("trial")
-    trials = []
-    for cand in candidates:
-        # A retained record of a delivery-detected change keeps its own time,
-        # and so its id, whatever the detector dates the change at now (ADR 463).
-        # A pump-read switch is dated at its own read and was never re-dated, so
-        # a second switch that day is its own Trial.
-        kept = None if cand.switch else next((record for record in retained if same_change(
+    # A retained record of a delivery-detected change keeps its own time, and so
+    # its id, whatever the detector dates the change at now (ADR 463). Each
+    # record is kept by at most one candidate: the earliest delivery-detected
+    # candidate it names on its pump day, at or after it. A later candidate that
+    # day, such as a second whole-profile change, whose parameter, slot, block
+    # and values all match, is a Trial of its own. A pump-read switch is dated
+    # at its own read and was never re-dated, so it keeps no record.
+    delivered = sorted((cand for cand in candidates if not cand.switch), key=lambda cand: cand.start)
+    keeper = {}
+    for record in store.follow_up_records("trial"):
+        cand = next((cand for cand in delivered if same_change(
             record, parameter=cand.parameter, slot=cand.slot, block=cand.block,
             start=cand.start, before=cand.before, after=cand.after)), None)
+        if cand is not None:
+            keeper.setdefault(id(cand), record)
+    trials = []
+    for cand in candidates:
+        kept = keeper.get(id(cand))
         start = datetime.fromisoformat(kept["changed_at"]) if kept else cand.start
         target = _PROFILE_TARGET if cand.parameter == "profile" else _TARGET_METRIC[cand.parameter]
         # A block-bound I:C Trial accrues only from meals inside its captured arc

@@ -423,8 +423,13 @@ change time.
    delivery-detected change that an existing retained record already names (same
    parameter, slot, block, before and after values, with the record's change
    time on the same pump day and at or before the derived time) is that record:
-   it keeps the record's change time and id. A pump-read switch is dated at its
-   own read and was never re-dated, so the match never applies to it: a second
+   it keeps the record's change time and id. Each record is kept by at most one
+   candidate: the earliest delivery-detected candidate it names on its pump day,
+   at or after it. A whole-profile change seen only in delivery history carries
+   no slot, block or values, so any earlier profile record that day names it; a
+   second such change later that day is therefore a Trial of its own, never the
+   first record (review round 2). A pump-read switch is dated at its own read
+   and was never re-dated, so the match never applies to it: a second
    whole-profile switch on the same day is a Trial of its own (review round 1).
    The comparison's setting-period lookup and the reversal check accept the same
    match; both read delivery history only. Nothing is rewritten or migrated. The spike moved
@@ -472,13 +477,16 @@ width" to the narrow desk. The new story takes S189, after #462's S188.
 
 **The whole-pytest budget for this slice, decided autonomously during AFK run
 (coordinator ruling after code review round 1).** On one machine in one quiet
-session, back to back, the slice's whole pytest took 421.12 s and the unchanged
-base (origin/main 59fa4737) took 416.74 s (real 417.88 s): the base already
-exceeds the 400 s ceiling of record there, and the slice adds about 4 s (1%).
-For this run the whole-pytest budget is judged against the base measured on the
-same machine in the same session. No limit is raised. Re-baselining the 160 s
-figure the ceiling is 2.5× of is Connor's decision, flagged in the pull request
-body.
+session, back to back, the slice's whole pytest took 421.12 s wall and the
+unchanged base (origin/main 59fa4737) 417.88 s wall (416.74 s as pytest reports
+it): the base already exceeds the 400 s ceiling of record there, and wall
+against wall the slice adds 3.24 s (0.8%). For this run the whole-pytest budget
+is judged against the base measured on the same machine in the same session. No
+limit is raised. Lock #462's Expectation line ("every … budget leg passes with
+no QA budget limit raised") is therefore unmet as written: the budget leg exits
+with a breach. The coordinator accepts it by this ruling, pending Connor.
+Re-baselining the 160 s figure the ceiling is 2.5× of is Connor's decision, and
+both are flagged in the pull request body.
 
 **Consequences.** Every ending `capture_ending` saves from now on carries clock
 views, generated case stores included, so c3-history's finished record and a Trial finished in the

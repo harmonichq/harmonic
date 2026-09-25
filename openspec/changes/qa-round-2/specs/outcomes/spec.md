@@ -88,7 +88,10 @@ delivery-detected change that an existing retained record already names (same
 parameter, slot, block, and before and after values, with the record's change
 time on the same pump day at or before the derived time) SHALL be that record:
 it SHALL keep the record's change time and id, its comparison SHALL find its
-setting history, and its reversal SHALL still be detected. A change a pump read
+setting history, and its reversal SHALL still be detected. Each retained record
+SHALL be kept by at most one change: the earliest same-day delivery-detected
+change at or after it, so a second whole-profile change seen only in delivery
+history later that day SHALL be a record of its own. A change a pump read
 supplies (an active-profile switch) SHALL keep its read's instant and SHALL NOT
 be matched to an earlier record this way. No retained record SHALL be
 rewritten. The analyzer's setting epochs SHALL be unchanged.
@@ -106,6 +109,15 @@ rewritten. The analyzer's setting epochs SHALL be unchanged.
   switch read at 18:00 the same day
 - **WHEN** a reconcile runs
 - **THEN** there are two records, one at each switch's read
+
+#### Scenario: Two whole-profile changes seen only in delivery history on one day are two records
+
+- **GIVEN** a whole-profile change seen only in delivery history recorded at
+  06:00, and a second whole-profile change seen only in delivery history at
+  20:00 the same day, derived by a later reconcile
+- **WHEN** that reconcile runs
+- **THEN** there are two records, at 06:00 and at 20:00, and the 06:00 record
+  keeps its time and id
 
 #### Scenario: A record saved under the old dating stays one record
 

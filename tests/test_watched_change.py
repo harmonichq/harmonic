@@ -683,6 +683,39 @@ class DeliveryDatingTest(unittest.TestCase):
         self.assertEqual(records, [(_at(10, 8), "profile", "profile-all-20260511080000"),
                                    (_at(10, 18), "profile", "profile-all-20260511180000")])
 
+    def test_two_same_day_delivery_detected_profile_changes_keep_their_own_records(self):
+        """Code review round 2's probe: two whole-profile changes seen only in
+        delivery history on one day (06:00 and 20:00) are two records. A
+        retained record is kept by one candidate only, the earliest same-day
+        candidate at or after it, so the 20:00 change never takes the 06:00
+        record's time and id."""
+        def boluses(last):
+            return _meal_day_boluses(1, last, lambda n, hour: {
+                "isf": 40.0, "carb_ratio": 8.0 if n >= 9 else 7.0,
+                "target_bg": 100 if n > 10 or (n == 10 and hour >= 10) else 110})
+
+        def basal(last):
+            rows = []
+            for n in range(1, last + 1):
+                for hour, new_rate in ((6, 0.7), (20, 0.8)):
+                    for minute in range(0, 30, 5):
+                        rate = new_rate if n >= 10 else 0.6
+                        rows.append({"seq_num": 50_000 + len(rows), "time": (_day(n) + timedelta(hours=hour, minutes=minute)).strftime(wc._DT_FMT),
+                                     "delivery_type": "Profile", "duration_mins": 5,
+                                     "basal_rate": rate, "profile_basal_rate": rate})
+            return rows
+        cutoff = _day(10) + timedelta(hours=11)
+        self.store.upsert_bolus([row for row in boluses(10) if row["request_time"] <= cutoff.strftime(wc._DT_FMT)])
+        self.store.upsert_basal([row for row in basal(10) if row["time"] <= cutoff.strftime(wc._DT_FMT)])
+        self.reconcile(cutoff)
+        first = [(r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial")]
+        self.assertEqual(first, [(_at(10, 6), "profile")], "premise: the 11:00 reconcile records the 06:00 change")
+        self.store.upsert_bolus(boluses(12))
+        self.store.upsert_basal(basal(12))
+        self.reconcile(_day(12) + timedelta(hours=23))
+        records = sorted((r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 6), "profile"), (_at(10, 20), "profile")])
+
     def test_a_record_saved_under_the_day_dating_stays_that_record(self):
         from ciq_autotune.follow_up_comparison import capture_comparison_context
         self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(

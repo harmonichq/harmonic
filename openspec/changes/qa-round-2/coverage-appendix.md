@@ -67,14 +67,17 @@ to back, quiet:
 
 | Run | Commit | Whole pytest | Result |
 | --- | --- | ---: | --- |
-| Base | origin/main 59fa4737 | 416.74 s (real 417.88 s) | 2656 passed, 1 skipped |
-| Slice | fbe632d8 | 421.12 s wall | 2670 passed, 1 skipped (worker run) |
+| Base | origin/main 59fa4737 | 417.88 s wall (pytest reports 416.74 s) | 2656 passed, 1 skipped |
+| Slice | fbe632d8 | 421.12 s wall (the budget leg's own timing) | every test passed |
 | Limit of record | — | 400 s | 2.5× the 160 s baseline |
 
 The other four budgets in the quiet run were within their limits: showcase
 1,409,024 bytes, drift 0.285 s, focused QA suite 58.080 s, slowest generated case
-11.82 s (`test_case_c4_profile`). The base already exceeds the ceiling on this
-machine, and the slice adds about 4 s (1%). By the coordinator's ruling (ADR
-463), this run judges the whole-pytest budget against the base on the same
-machine. No limit was raised, and re-baselining the 160 s figure is Connor's
-decision.
+11.82 s. The base already exceeds the ceiling on this machine, and wall against
+wall the slice adds 3.24 s (0.8%). By the coordinator's ruling (ADR 463), this
+run judges the whole-pytest budget against the base on the same machine. No
+limit was raised. Lock #462's Expectation on the budget leg is unmet as written;
+the ruling accepts it pending Connor, and re-baselining the 160 s figure is
+Connor's decision. The budget leg's own output (`full_pytest_seconds
+[421.12, 400]`) and the base timing are coordinator-run records outside this
+tree.

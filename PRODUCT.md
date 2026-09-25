@@ -9,10 +9,12 @@ product
 A single user: a Tandem Control-IQ pump wearer analyzing their own pump/CGM
 history, self-hosting this tool against their own local SQLite store. No
 multi-tenant, no accounts beyond one optional API token. They arrive with one
-of three jobs (ADR 0027): **Diagnose** ("I've been going low after dinner" →
-ranked levers to act on), **Changes** ("I changed settings last week, did it
-help?" → the watched Trial's or Focus's before-and-after), or **Forensics** ("I crashed yesterday, what
-happened?" → one day's chart). They're reading their own glucose/insulin data
+job: find the one change most worth making, make it, and learn whether it
+helped. The change is either a pump setting (basal, correction factor, carb
+ratio) or a habit (bolus timing, carb counting, how a low is treated).
+**Diagnose** ranks those changes by health impact, **Changes** shows whether
+the committed change helped, and **Day** answers "what happened yesterday?"
+and is where any claim can be checked against one real day. They're reading their own glucose/insulin data
 under real stakes, often already tired or stressed from the condition itself —
 not a casual analytics audience.
 
@@ -22,7 +24,16 @@ Reads off what Control-IQ actually delivered during clean windows to suggest
 basal/ISF/I:C adjustments and surface behavioral coaching — strictly
 **advisory**, never writes to the pump. Success is a user trusting a specific
 number enough to bring it to their clinician, because the tool showed its
-uncertainty and evidence rather than asserting a verdict. See CONTEXT.md for
+uncertainty and evidence rather than asserting a verdict.
+
+**The loop is the product.** Find → commit one change (stage a setting, or start
+a Focus on a habit) → see whether it helped. Habits are first-class: on most days
+they cost more than settings do. A feature that serves no step of that loop is
+not part of the product. (Settled 2026-09-25, after the product grew layer by
+layer — settings tuner, habit tracker, day auditor, chart explorer — without
+finishing one loop.)
+
+See CONTEXT.md for
 the full domain glossary and the twelve capability specifications under
 `openspec/specs/` for what each part of the system is required to do, and why.
 
@@ -61,6 +72,15 @@ soften it toward warmth or playfulness.
 - **Job-shaped, not feature-shaped.** Organize around what the user came to
   do — Diagnose / Changes / Day (ADR 397) — not around which engineering
   milestone shipped a given analyzer (ADR 0027).
+- **Charts are evidence, not destinations.** Every chart answers "why should I
+  believe this item?" for one queue item or one day. Browsing every slot or meal
+  for its own sake is not a job this product serves; Day is the one place for
+  free browsing.
+- **A queue item is something you can act on.** Each one carries a plain "what
+  to do differently" and its action (stage, or Focus). What can't be acted on is
+  context inside an item's evidence, not a row of its own.
+- **Finish before adding.** A new surface or analyzer waits until the loop it
+  serves works end to end.
 - **Reuse the domain's own visual language.** Basal/ISF/I:C/behavioral
   evidence each have an established chart idiom in the shipped builders under
   `frontend/`; extend those rather than reaching for generic dashboard

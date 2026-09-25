@@ -1321,7 +1321,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
   prose in a dated `## #468 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md`, carrying the AFK run's delegation
   (ADR 468) and Connor's 2026-09-24 skip of item 5 as its sanction.
-- [ ] 102. In the same section, add one ledger story (the next unissued S id) on
+- [x] 102. In the same section, add one ledger story (the next unissued S id) on
   the showcase: Day on 2024-06-26, whose quiet anchors fall on both sides of a
   Finding. Confirm the day by running `docs/scope/468-reader-text.probe.py` and
   `.probe.mjs` on task 95's commit, before task 97 removes the `quiet.start` and
@@ -1339,7 +1339,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
   the base, S115 and S126 at the fold words, S124 at its comparison term and
   S188 at its Retained words, and all pass on the branch at both sizes. Raise the
   story inventory by this one story in the four places task 9 names.
-- [ ] 103. Capture before/after renders at 1280x720 and 1440x900 from the no-fetch
+- [x] 103. Capture before/after renders at 1280x720 and 1440x900 from the no-fetch
   serve, the before from task 95's commit: the fold on
   `behavioral-correction-stacking` and on the showcase, the Episode Log on the
   showcase's 2024-06-26, the Retained line on `c4-isf-late-read` and the Response

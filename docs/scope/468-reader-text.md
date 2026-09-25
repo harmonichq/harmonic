@@ -166,7 +166,8 @@ the QA copy-then-serve of the showcase driven by a headless driver:
 - Replay `ONLY=S115,S124,S125,S126,S188`: `executed 5 · failed 0 · deferred 0 ·
   selected 5` at 1280x720 and at 1440x900.
 - Fold, showcase (S115): under Highs after meals, "Meal bolus fell short" reads
-  "outside the count·1 of 32 meals" on its second row, with no first row.
+  "outside the count·1 of 32 meals" on its second row, with no first row: that
+  Pattern serves no count on the showcase.
 - Fold, `behavioral-correction-stacking` (S126): the Lows after correcting highs
   Pattern serves a count ("2 of 2 lows followed a correction"); Correction
   stacking reads "2 of 2 lows" over "outside the count·2 of 8 correction clusters".

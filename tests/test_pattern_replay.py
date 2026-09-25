@@ -46,6 +46,7 @@ EXPECTED_ACTIVE_KINDS = {
     "ic-history-register": None,
     "behavioral-carb-undercount": None,
     "behavioral-late-bolus": None,
+    "behavioral-split-meal": None,
     "behavioral-uncaused-highs": None,
     "behavioral-false-low-suppressed": None,
     "behavioral-low-no-suppressed": None,

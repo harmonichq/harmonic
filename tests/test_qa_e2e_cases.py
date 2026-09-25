@@ -45,6 +45,7 @@ EXPECTED_CASE_NAMES = (
     "ic-history-register",
     "behavioral-carb-undercount",
     "behavioral-late-bolus",
+    "behavioral-split-meal",
     "behavioral-uncaused-highs",
     "behavioral-false-low-suppressed", "behavioral-low-no-suppressed",
     "behavioral-lone-correction-clean",

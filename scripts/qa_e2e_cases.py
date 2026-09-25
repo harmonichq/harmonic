@@ -433,6 +433,54 @@ def _materialize_behavioral_late_bolus(store) -> None:
     store.upsert_bolus(bolus)
 
 
+def _materialize_behavioral_split_meal(store) -> None:
+    """Write twelve noon meals bolused as a first bolus plus a 20 g top-up.
+
+    The top-up lands 10 minutes after the first bolus on six days, exactly 30 on
+    three (the inclusive edge of the same-meal grace) and 35 on three (just
+    outside it). Each meal climbs 2 mg/dL/min from the first bolus to 360."""
+    first = _materialize_behavioral_background(store, span_days=30)
+    bolus = []
+    cgm = []
+
+    def meal_bolus(seq_num: int, at: datetime, *, insulin: float, carbs: float) -> dict:
+        return {
+            "seq_num": seq_num,
+            "request_time": at.strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": insulin,
+            "requested_insulin": insulin,
+            "carbs": carbs,
+            "carb_ratio": 10.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        }
+
+    gaps = (10,) * 6 + (30,) * 3 + (35,) * 3
+    for offset, gap in enumerate(gaps, start=2):
+        noon = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        noon = noon.replace(hour=12)
+        bg, climbing = 110.0, True
+        for index in range(-6, 61):
+            if index > 0:
+                bg = min(360.0, bg + 10.0) if climbing else max(110.0, bg - 5.0)
+                climbing = climbing and bg < 360.0
+            cgm.append((noon + timedelta(minutes=5 * index), bg))
+        bolus.append(meal_bolus(130_000 + offset, noon, insulin=4.5, carbs=45.0))
+        bolus.append(meal_bolus(131_000 + offset, noon + timedelta(minutes=gap),
+                                insulin=2.0, carbs=20.0))
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+    store.upsert_bolus(bolus)
+
+
 def _materialize_behavioral_uncaused_highs(store) -> None:
     """Write two clean high Occurrences with one wholly unexplained Episode."""
     day = date(2024, 5, 2)
@@ -2419,6 +2467,60 @@ QA_CASES = (
             },
             1,
             outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'habit:late_bolus', 'kind': 'habit', 'k': 2, 'price': 0, 'admitted': True, 'producer': 'scenario', 'lo': 0.1477, 'hi': 0.5906, 'seriousness': 'info', 'action': 'habit:late_bolus'}, {'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus', 'habit:meal_bolus_short'], 'n': 6, 'k': 3, 'rate': 0.5, 'wilson': {'lo': 0.2682, 'hi': 0.7318}, 'rate_producer': 'exposures', 'readiness': {'count': 6, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'habit_threshold', 'collapse': 'remain_pattern', 'action': 'habit:late_bolus', 'seriousness': 'info', 'overlap_counts': {'lows_after_meals': {'status': 'comparable', 'count': 0, 'reason': 'shared_meals_exposure'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:carb_undercount', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:late_bolus', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:high_carb_sequence', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:repeat_eating', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}], 'member_set_fingerprint': '7b70fc1df4bdda74'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 6, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.2149}, 'rate_producer': 'exposures', 'readiness': {'count': 6, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'comparable', 'count': 0, 'reason': 'shared_meals_exposure'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:meal_over_delivery', 'setting_subject': 'setting:carb_ratio', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}], 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 1, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.6216}, 'rate_producer': 'exposures', 'readiness': {'count': 1, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'comparable', 'count': 0, 'reason': 'shared_lows_exposure'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [], 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [{'subject': 'setting:isf', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 1, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.6216}, 'rate_producer': 'exposures', 'readiness': {'count': 1, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'highs_after_treating_lows': {'status': 'comparable', 'count': 0, 'reason': 'shared_lows_exposure'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:correction_stacking', 'setting_subject': 'setting:isf', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}, {'habit_subject': 'habit:correction_on_iob', 'setting_subject': 'setting:isf', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}], 'member_set_fingerprint': '72e37bdefcacb6d7'}, {'key': 'overnight_lows_no_iob', 'title': 'Overnight lows with no insulin on board', 'subject': 'pattern:overnight_lows_no_iob', 'members': [{'subject': 'setting:basal_rate', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': [], 'n': 30, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.0519}, 'rate_producer': 'harm_band_source_nights', 'readiness': {'count': 30, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [], 'member_set_fingerprint': 'be01b57ca95abd31'})),
+        30,
+    ),
+    QaCase(
+        "behavioral-split-meal",
+        _materialize_behavioral_split_meal,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ('highs', '2024-05-03 14:05:00', 'near_miss'),
+                ('highs', '2024-05-04 14:05:00', 'near_miss'),
+                ('highs', '2024-05-05 14:05:00', 'near_miss'),
+                ('highs', '2024-05-06 14:05:00', 'near_miss'),
+                ('highs', '2024-05-07 14:05:00', 'near_miss'),
+                ('highs', '2024-05-08 14:05:00', 'near_miss'),
+                ('highs', '2024-05-09 14:05:00', 'near_miss'),
+                ('highs', '2024-05-10 14:05:00', 'near_miss'),
+                ('highs', '2024-05-11 14:05:00', 'near_miss'),
+                ('highs', '2024-05-12 14:05:00', 'near_miss'),
+                ('highs', '2024-05-13 14:05:00', 'near_miss'),
+                ('highs', '2024-05-14 14:05:00', 'near_miss'),
+                ('meals', '2024-05-03 12:00:00', 'fired'),
+                ('meals', '2024-05-03 12:10:00', 'fired'),
+                ('meals', '2024-05-04 12:00:00', 'fired'),
+                ('meals', '2024-05-04 12:10:00', 'fired'),
+                ('meals', '2024-05-05 12:00:00', 'fired'),
+                ('meals', '2024-05-05 12:10:00', 'fired'),
+                ('meals', '2024-05-06 12:00:00', 'fired'),
+                ('meals', '2024-05-06 12:10:00', 'fired'),
+                ('meals', '2024-05-07 12:00:00', 'fired'),
+                ('meals', '2024-05-07 12:10:00', 'fired'),
+                ('meals', '2024-05-08 12:00:00', 'fired'),
+                ('meals', '2024-05-08 12:10:00', 'fired'),
+                ('meals', '2024-05-09 12:00:00', 'fired'),
+                ('meals', '2024-05-09 12:30:00', 'fired'),
+                ('meals', '2024-05-10 12:00:00', 'fired'),
+                ('meals', '2024-05-10 12:30:00', 'fired'),
+                ('meals', '2024-05-11 12:00:00', 'fired'),
+                ('meals', '2024-05-11 12:30:00', 'fired'),
+                ('meals', '2024-05-12 12:00:00', 'no_data'),
+                ('meals', '2024-05-12 12:35:00', 'fired'),
+                ('meals', '2024-05-13 12:00:00', 'no_data'),
+                ('meals', '2024-05-13 12:35:00', 'fired'),
+                ('meals', '2024-05-14 12:00:00', 'no_data'),
+                ('meals', '2024-05-14 12:35:00', 'fired'),
+            }),
+            frozenset({'Carb undercount', 'Highs after meals', 'Highs after treating lows', 'Lows after correcting highs', 'Lows after meals', 'Overnight lows with no insulin on board', 'meals-start-high'}),
+            {
+                ("carb_undercount", "meals"): _verdict_tally(
+                    24, fired=21, outranked=0, near_miss=0, no_data=0, clean=3,
+                ),
+            },
+            9,
+            outcome_patterns=({'key': 'highs_after_meals', 'title': 'Highs after meals', 'subject': 'pattern:highs_after_meals', 'members': [{'subject': 'habit:carb_undercount', 'kind': 'habit', 'k': 21, 'price': 50, 'admitted': True, 'producer': 'scenario', 'lo': 0.7639, 'hi': 0.9381, 'seriousness': 'medium', 'action': 'habit:carb_undercount'}, {'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:carb_undercount', 'habit:late_bolus', 'habit:meal_bolus_short'], 'n': 24, 'k': 21, 'rate': 0.875, 'wilson': {'lo': 0.7639, 'hi': 0.9381}, 'rate_producer': 'exposures', 'readiness': {'count': 24, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 50, 'admission_route': 'habit_threshold', 'collapse': 'remain_pattern', 'action': 'habit:carb_undercount', 'seriousness': 'medium', 'overlap_counts': {'lows_after_meals': {'status': 'comparable', 'count': 0, 'reason': 'shared_meals_exposure'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:carb_undercount', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:late_bolus', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:high_carb_sequence', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}, {'habit_subject': 'habit:repeat_eating', 'setting_subject': 'setting:carb_ratio', 'status': 'not_comparable', 'count': None, 'reason': 'different_identity_spaces'}], 'member_set_fingerprint': '3dbae730bfb75717'}, {'key': 'lows_after_meals', 'title': 'Lows after meals', 'subject': 'pattern:lows_after_meals', 'members': [{'subject': 'setting:carb_ratio', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:meal_over_delivery'], 'n': 24, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.0641}, 'rate_producer': 'exposures', 'readiness': {'count': 24, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'comparable', 'count': 0, 'reason': 'shared_meals_exposure'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:meal_over_delivery', 'setting_subject': 'setting:carb_ratio', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}], 'member_set_fingerprint': '13141e472c40a768'}, {'key': 'highs_after_treating_lows', 'title': 'Highs after treating lows', 'subject': 'pattern:highs_after_treating_lows', 'members': [], 'rate_levers': ['habit:over_treated_low'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_correcting_highs': {'status': 'comparable', 'count': 0, 'reason': 'shared_lows_exposure'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [], 'member_set_fingerprint': 'e3b0c44298fc1c14'}, {'key': 'lows_after_correcting_highs', 'title': 'Lows after correcting highs', 'subject': 'pattern:lows_after_correcting_highs', 'members': [{'subject': 'setting:isf', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': ['habit:correction_stacking', 'habit:correction_on_iob'], 'n': 0, 'k': 0, 'rate': None, 'wilson': None, 'rate_producer': 'exposures', 'readiness': {'count': 0, 'gate': 12, 'verdict': 'withheld'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'different_exposure_families'}, 'highs_after_treating_lows': {'status': 'comparable', 'count': 0, 'reason': 'shared_lows_exposure'}, 'overnight_lows_no_iob': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [{'habit_subject': 'habit:correction_stacking', 'setting_subject': 'setting:isf', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}, {'habit_subject': 'habit:correction_on_iob', 'setting_subject': 'setting:isf', 'status': 'comparable', 'count': 0, 'reason': 'shared_low_episode_nadir'}], 'member_set_fingerprint': '72e37bdefcacb6d7'}, {'key': 'overnight_lows_no_iob', 'title': 'Overnight lows with no insulin on board', 'subject': 'pattern:overnight_lows_no_iob', 'members': [{'subject': 'setting:basal_rate', 'kind': 'setting', 'k': 0, 'price': 0, 'admitted': False, 'producer': 'tuning_levers', 'lo': None, 'hi': None, 'seriousness': None, 'seriousness_segments': [], 'action': None}], 'rate_levers': [], 'n': 30, 'k': 0, 'rate': 0.0, 'wilson': {'lo': 0.0, 'hi': 0.0519}, 'rate_producer': 'harm_band_source_nights', 'readiness': {'count': 30, 'gate': 12, 'verdict': 'ready'}, 'settled_price': 0, 'admission_route': 'none', 'collapse': 'remain_pattern', 'action': None, 'seriousness': None, 'overlap_counts': {'highs_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'lows_after_meals': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'highs_after_treating_lows': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}, 'lows_after_correcting_highs': {'status': 'not_comparable', 'count': None, 'reason': 'no_habit_exposure_identity'}}, 'harm_low_overlap': [], 'member_set_fingerprint': 'be01b57ca95abd31'})),
         30,
     ),
     QaCase(

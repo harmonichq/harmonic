@@ -949,7 +949,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   copy-then-serve, the Highs after meals row's count sentence, its case file's
   rows (anchor time, carbs, dose, outcome peak) and the Carb undercount Finding's
   rows, and record any observed behavior with no story before designing.
-- [ ] 74. Add the manufactured case `behavioral-split-meal` to
+- [x] 74. Add the manufactured case `behavioral-split-meal` to
   `scripts/qa_e2e_cases.py`: `_materialize_behavioral_background(store,
   span_days=30)`, then on twelve days a noon meal bolus of 45 g / 4.5 U
   (carb ratio 10, ISF stamp 40) under the reproduction's trace (flat, a

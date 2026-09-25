@@ -435,3 +435,99 @@ panels SHALL be unchanged.
   hour, and no Stage change control
 - **AND** a slot with no served harm evidence renders no count line and no low
   rows
+
+### Requirement: Ranked findings share one aligned row structure
+
+Every shown priced ranked row SHALL use the same rank, short title, served
+annotation where already applicable, support/action detail, type label and
+drill-affordance columns, with a matching full-width mini preview below the text.
+The first row SHALL use that same
+structure without a hero card, unique shadow, enlarged title, or special height.
+Wrapped content MAY increase row height when needed; rank alone SHALL NOT.
+The root stage's current row SHALL have a restrained non-geometric selected
+state, separately recognizable from its rank number. The queue SHALL retain
+server order and existing filtering semantics and SHALL derive no clinical
+rank, tier, eligibility or verdict. Tier captions SHALL appear at the beginning
+of each contiguous served priced-tier group using the existing tier-word map;
+because the served tiers are bands of the one ranking, each tier word SHALL
+print at most once. A row the server anchors to a shown row (`anchored_by`)
+SHALL sit directly beneath it with the same columns but no rank numeral, tier
+word, caption or stripe; when its anchor is hidden by a filter it SHALL be an
+ordinary ranked row. A row's served `rank_note` SHALL print after its detail
+line. Unpriced tail rows SHALL retain their title-only seam, and the seam SHALL
+open only before a row that is unranked for want of recurrence: an asserting row
+that cannot stage SHALL stand before it and print its own staging refusal, the
+words the correction-factor panel's foot note uses for the same verdict. The
+Glossary SHALL define each tier word, each rank note and the tail sentence.
+Watching reads SHALL retain their disclosure and drill paths, with available
+chart previews when expanded.
+
+A mini SHALL use the descriptor's already fetched evidence in a purpose-built
+queue preview. It SHALL preserve served observations, support and gaps without
+inventing values. Preview rendering SHALL cause no additional analysis request
+and SHALL leave full-size chart options unchanged. All priced rows, including
+the first, SHALL reflow their preview below readable text at narrow widths.
+The existing minimum readable mini-width policy remains the fallback if a host
+cannot meet that floor; text and drill affordances SHALL remain available.
+Pending, empty, failed
+or stale evidence SHALL use the existing state presentation, never fabricated
+curves or fabricated counts.
+
+#### Scenario: Ranked rows align regardless of rank or type
+
+- **GIVEN** synthetic ranked settings and habit findings with mixed-length titles
+- **WHEN** the queue is rendered at a width that admits minis
+- **THEN** rank, type and drill columns align across every priced row, with equally sized full-width preview wells below the text
+- **AND** the top row has the same structure and a mini governed by the same rules
+
+#### Scenario: Filtering changes order visibility, not geometry
+
+- **WHEN** the reader filters the queue so a different priced row becomes first
+- **THEN** the existing served-order projection determines the shown order and the root stage selection
+- **AND** no promoted row becomes a hero card or loses its mini solely because it is first
+
+#### Scenario: Minis remain honest at narrow widths and during failures
+
+- **WHEN** the queue is rendered at phone or tablet width
+- **THEN** available previews reflow to retain readable chart wells and can scroll fully into view
+- **AND** a host below the existing readable-width floor is omitted, while an unready descriptor uses the normal evidence-state presentation
+- **AND** every affected row still opens its existing finding details
+
+#### Scenario: Each tier word prints once and a setting's Patterns sit beneath it
+
+- **GIVEN** the findings-fixture projection's whole day
+- **WHEN** the rail renders
+- **THEN** it paints "Next in line" and "Worth a look" once each
+- **AND** Highs after meals and Lows after meals sit directly beneath the
+  carb-ratio row with no rank numeral and "Ranked with its setting", and the
+  next ranked row takes the next numeral
+
+#### Scenario: The direction-only correction-factor weaken gives its own reason
+
+- **GIVEN** the findings-fixture projection with the direction-only
+  correction-factor weaken
+- **WHEN** the rail renders
+- **THEN** the correction-factor row prints "No new number is available, so
+  there is nothing to stage." and no tail note stands above it
+
+### Requirement: The rail shows served urgency
+
+The first tier caption in the rail SHALL paint in the primary hue and
+the ranked rows of that tier SHALL carry a rank stripe and a primary rank
+numeral; a row anchored beneath one of them carries neither. Because the served
+tiers are bands of the one ranking, the striped rows SHALL be one leading run.
+Later tiers SHALL stay quiet. The caption word, the tier membership and the rank
+SHALL be the served values; the desk SHALL derive none of them.
+
+#### Scenario: One tier still reads as ranked
+
+- **GIVEN** a synthetic window in which every ranked row shares one served tier
+- **WHEN** the rail renders
+- **THEN** that tier's caption is primary and each of its rows carries the stripe
+- **AND** the caption and ranks equal the served projection's
+
+#### Scenario: The stripe marks one leading run
+
+- **GIVEN** the findings-fixture projection's whole day
+- **WHEN** the rail renders
+- **THEN** no striped row follows an unstriped ranked row

@@ -154,3 +154,54 @@ Impact: the harm evidence, the recurring-lows sentence, the basal slot panel
 and its roster, the lane cell's name, one QA case, one generated fixture key,
 one ledger story and S113's amendment. The Recommended value, staging and every
 harm rule are unchanged. Triage record: `docs/scope/466-recurring-low-explain.md`.
+
+## #467
+
+Pressing Overnight drops "Overnight lows with no insulin on board", the one
+Pattern whose whole population lies in that window. A scoped window serves a
+Pattern only when it is chartable, and this Pattern never is: it has no habit
+member and its population is band nights, not an Exposure family. The same gate
+drops setting-staged and unadmitted Patterns from every scoped window, even the
+explicit 00:00–24:00 scope, leaving their causes unfolded.
+
+- A scoped window serves a Pattern when its outcomes land in it: an
+  Exposure-family Pattern when its outcome-anchored count in the window is above
+  zero, the harm-band Pattern when the window overlaps 00:00–06:00 (Connor's
+  option A, 2026-09-24). Membership is decided where the scoped roster is built.
+- In a scoped window the harm-band Pattern keeps its band counts, and its count
+  sentence names the band.
+- Chartability goes back to deciding only the chart coordinate and the case file.
+- The JS mirror and the generated fixture follow; no QA expectation moves.
+
+Impact: the scoped Pattern roster, the findings projection's Pattern rows and
+count sentence, the fixture mirror and generator, one ledger story. Staging,
+pricing, queue order, the Harm signal's band and counts, and Pattern Focus
+admission are unchanged. Triage record:
+`docs/scope/467-scoped-pattern-membership.md`.
+
+## #469
+
+The findings rail breaks the one urgency ranking (Connor, 2026-09-24: the queue
+is one ranking by urgency across settings and habits) in four places: a Pattern
+admitted through its setting takes a second ranked position at that setting's
+Priority while reading "0 of N"; a scoped window ranks on 30-day Priority while
+printing the window's counts; the tier headings repeat and nothing explains
+them; and the direction-only correction-factor weaken sits under a tail note
+that gives the wrong reason.
+
+- A Pattern admitted through its setting sits beneath that setting's row, in its
+  position, and says it is ranked with its setting.
+- The served tiers become bands of the one ranking, so each tier heading prints
+  at most once and the urgency stripe marks one leading run. The Glossary
+  explains each tier word and the tail sentence.
+- In a scoped window, a ranked Pattern or cause that prints the window's counts
+  says it is ranked on all 30 days.
+- An asserting row that cannot stage prints its staging refusal and stands
+  before the tail note, never under it.
+
+Impact: the findings projection's order, tiers and two served row fields, the
+mirror and fixture, the rail, the ISF panel's shared refusal wording, the
+Glossary and its design-exploration extract, CONTEXT.md and DESIGN.md, and one
+ledger story. Priority, the Pattern price, staging predicates and caps are
+unchanged, and no QA expectation moves. Triage record:
+`docs/scope/469-queue-rank.md`.

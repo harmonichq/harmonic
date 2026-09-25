@@ -703,3 +703,205 @@ roster or its lane. The reproduction is
   48's commit, and an after render of the held 03:00 panel on
   `basal-recurring-low-within-floor`. The coordinator attaches them to the pull
   request; they are not committed.
+
+## #467 — A scoped window serves a Pattern when its outcomes land in it
+
+Tasks 1–57 (#460, #459, #462, #463, #465, #466) land first on this branch;
+#467's base is the triage commit its lock pins. #467's touched stories are S192
+(task 62) and the stories whose replays read the rail or press a Window preset:
+R4, R10, R15, S113, S115, S116, S126, S136, S138, S147, S154, S178, S183, S190
+and S191. The reproduction is `docs/scope/467-scoped-pattern-membership.repro.py`
+and the rule's spike is `docs/scope/467-scoped-pattern-membership.spike.py`;
+under it no QA expectation moves, so no QA case is added or rewritten.
+
+- [ ] 58. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #467's touched
+  stories against #467's base at 1280x720 and 1440x900 through
+  `frontend/desk-behavior.replay.mjs`, re-inventory the 24 h and Overnight
+  queues on `basal-recurring-low-lower` in the served app (the Pattern rows,
+  their count sentences, which rows carry a mini), and record any observed
+  behavior with no story before designing.
+- [ ] 59. Failing-first backend tests, each seen to fail on #467's base:
+  - in `tests/test_findings_projection.py`, through `materialize_case` then
+    `execute_case` (`scripts/qa_e2e_cases.py`) then
+    `prepare_findings_projection(...).project` on `basal-recurring-low-lower`:
+    under `WindowQuery.clock(0, 360)`, `pattern:overnight_lows_no_iob` is served
+    with the k, n, `admission_route` and `priority` of its whole-day row,
+    `window_scope` "window", `pattern_chart` None and one count sentence "2 of 30
+    nights ran low between 00:00 and 06:00"; under `clock(120, 300)` the same k,
+    n and sentence; under `clock(840, 1260)` no overnight Pattern row and no
+    overnight Pattern in the served `outcome_patterns`; the whole day still
+    reads "2 of 30 nights ran low overnight";
+  - in the same file, on the generator's `projection()` under `clock(0, 1440)`:
+    `pattern:lows_after_meals` and `pattern:lows_after_correcting_highs` are
+    served, `finding:correction_stacking` and `finding:correction_on_iob` carry
+    `claimed_by` "pattern:lows_after_correcting_highs" as in the whole day, and
+    every `claimed_by` names a served Pattern row;
+  - in `tests/test_outcome_patterns.py`, through `outcome_window_population` on
+    a synthetic analysis whose basal rows publish `harm_band_source_nights` 8
+    and a `band_nights` 2 harm evidence: the scoped roster carries the overnight
+    Pattern for `clock(0, 360)` and `clock(300, 420)` and not for
+    `clock(360, 1440)`; with `harm_band_source_nights` 0 it is absent from
+    `clock(0, 360)`; an unadmitted Exposure-family Pattern with one outcome in
+    the window is carried and one with none is not.
+  Amend `tests/test_findings_projection.py`'s scoped-Pattern assertions (at
+  the pinned commit, `:1063`–`:1070`): a scoped Pattern row carries a chart
+  coordinate exactly when `pattern_chartable` holds, and a scoped `claimed_by`
+  names a served Pattern row, in place of "every scoped Pattern row carries a
+  chart" and "no scoped row is claimed".
+- [ ] 60. Backend (ADR 467 decisions 1–4): in
+  `ciq_autotune/analyzers/scenario/outcome_patterns.py`, add
+  `pattern_in_window(pattern, query)` and have `outcome_window_population`
+  return only member Patterns for a scoped query; update the module and
+  function docstrings. In `ciq_autotune/findings_projection.py`, remove the
+  scoped `pattern_chartable` gate from `_pattern_rows`, keep `pattern_chartable`
+  for the chart coordinate alone (docstring says so), and have
+  `_pattern_count_sentences` serve the harm-band Pattern's outcome as "ran low
+  between <start> and <end>" on a `window_scope` "window" row, the minutes
+  printed with `_hhmm` from `HarmConfig`'s band; the whole-day outcome word is
+  unchanged.
+- [ ] 61. Mirror and fixture (ADR 467 decision 5): in
+  `mockups/findings-projection.mirror.mjs`, drop the scoped membership gate,
+  stamp the scoped chart coordinate from `patternChartable` over the scoped `n`
+  (removing the `pattern.n > 0` stand-in) and transcribe the band sentence. In
+  `scripts/gen_findings_projection_fixtures.py`, `_slot(..., recurring_lows=True)`
+  serves `evidence["harm"]["band_nights"]` 2 and
+  `evidence["harm_band_source_nights"]` 20. Regenerate
+  `frontend/__fixtures__/findings-projection.json`; its `--check`,
+  `frontend/findings-projection-mirror.test.js` and `tests/test_guidance.py`
+  pass. Any pinned count or order the regenerated fixture moves in
+  `tests/test_findings_projection.py` or
+  `frontend/diagnose-findings-queue.test.js` is updated to the regenerated
+  answer and named in the commit message.
+- [ ] 62. Add one ledger story (the next unissued S id, S192 at the pinned
+  commit) on `basal-recurring-low-lower`, in a dated `## #467 amendment`
+  section of `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's
+  2026-09-24 option A as its sanction, with its replay function in
+  `frontend/c4.replay.mjs`, registry entry in
+  `frontend/desk-behavior.replay.mjs`, case in `frontend/replay-cases.mjs` and
+  story-table row in `frontend/c4.replay.test.js`. At 24 h the rail's overnight
+  Pattern row prints "2 of 30 nights ran low overnight" and draws no mini;
+  pressing Overnight keeps the row, printing "2 of 30 nights ran low between
+  00:00 and 06:00", with no mini, as its whole-day twin; pressing Afternoon
+  lists no overnight Pattern row. The story asserts no rank numeral, tier or
+  position (#469 moves those). Lay its harness over #467's base and record that
+  base run, which must fail at the Overnight row, and the branch run at both
+  sizes on its status line. Raise the story inventory by this one story in the
+  four places task 9 names.
+- [ ] 63. Capture before/after renders of the Overnight queue on
+  `basal-recurring-low-lower` at 1280x720 and 1440x900 from the no-fetch serve,
+  the before from #467's base. The coordinator attaches them to the pull
+  request; they are not committed.
+
+## #469 — The findings rail follows the one urgency ranking
+
+Tasks 58–63 (#467) land first; #469's base is their final commit, and its
+scoped rows read the membership #467 serves. #469's touched stories are S192,
+S193 (task 71) and #467's rail-reading list. The reproduction is
+`docs/scope/469-queue-rank.repro.mjs` and the server rules' spike is
+`docs/scope/469-queue-rank.spike.py`; under it no QA expectation moves.
+
+- [ ] 64. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #469's touched
+  stories against #469's base at 1280x720 and 1440x900, re-inventory the rail's
+  numerals, tier words, stripe, tail note and folds on the showcase at 24 h and
+  Overnight and on `isf-direction-only-weaken` at 24 h in the served app, and
+  record any observed behavior with no story before designing.
+- [ ] 65. Failing-first backend tests in `tests/test_findings_projection.py`
+  `QueueOrderTest`, on the generator's `projection()`, each seen to fail on
+  #469's base:
+  - whole day: `pattern:highs_after_meals` and `pattern:lows_after_meals` carry
+    `anchored_by` "ic:720" and `pattern:overnight_lows_no_iob` carries
+    "basal:30-90"; each follows its anchor with nothing between them but other
+    rows anchored to it and their claimed causes, `finding:carb_undercount`
+    directly after Highs after meals; each carries `rank_note` "Ranked with its
+    setting" and its anchor's tier; every `next_in_line` row precedes every
+    `worth_a_look` row; no other row carries a `rank_note` or an anchor;
+  - 14:00–21:00 (`AFTERNOON`): `finding:over_treated_low` carries `rank_note`
+    "Ranked on all 30 days" and `ic:720` none;
+  - 06:00–11:00: Highs after meals carries no anchor and `rank_note` "Ranked on
+    all 30 days";
+  - the direction-only weaken (`direction_only_isf_rows()`), whole day: the
+    `isf` row sorts before `pattern:lows_after_correcting_highs`.
+  Replace `test_the_sorted_queue_publishes_its_three_closed_ranking_tiers`
+  (at the pinned commit `:958`), which pins the tier to the register, with the
+  band assertions above.
+- [ ] 66. Backend (ADR 469 decisions 1–4): in `ciq_autotune/findings_projection.py`,
+  `_row` carries `anchored_by` and `rank_note`; `project` stamps each
+  `setting_staging` Pattern's anchor after `_pattern_rows`, sorts with a
+  `_sort_key` that places an anchored or claimed row after its parent
+  (recursively, so a claimed cause follows its anchored Pattern) and puts
+  unpriced asserting rows before unpriced findings; `_assign_tiers` stamps the
+  bands; the rank notes are stamped last, the day count read from the
+  analysis. Update the module docstring's ordering paragraph and the
+  docstrings of `_assign_tiers`, `_sort_key` and `_RANKING_TIERS`.
+- [ ] 67. Mirror and fixture: make the same changes to
+  `mockups/findings-projection.mirror.mjs` (row fields, anchors, sort, tiers,
+  rank notes); regenerate `frontend/__fixtures__/findings-projection.json`; its
+  `--check` and `frontend/findings-projection-mirror.test.js` pass.
+- [ ] 68. Frontend Node tests, failing-first on #469's base with task 67's
+  fixture laid over it:
+  - in `frontend/diagnose-findings-queue.test.js`: on `global`, `queueRows`
+    paints each tier word at most once (replacing the pinned caption list of
+    the "#302 · weights and captions" test); Highs after meals, Lows after
+    meals and the overnight Pattern have rank null, caption null, `urgent`
+    false and weight `anchored`, each directly after its anchor, and
+    `basal:30-90`, `basal:330-360` and `finding:over_treated_low` take ranks 2,
+    3 and 4; with the sift `{ highs }` (hiding `ic:720`), Highs after meals is
+    ranked 1; painted, an anchored item carries class `qitem anchored` and its
+    detail's `.scope-note` reads " · Ranked with its setting", and on
+    `afternoon` `finding:over_treated_low`'s reads " · Ranked on all 30 days";
+    on `direction_only_windows.global`, the `isf` row opens no seam, its detail
+    is `{ kind: 'reason', text: 'No new number is available, so there is
+    nothing to stage.' }` and is painted, and the seam opens at
+    `pattern:lows_after_correcting_highs`; the "#395 · … interleave" test's
+    flavor list is updated to the regenerated order;
+  - in `frontend/diagnose-workstation-data.test.js`: the exported
+    `isfStageNote` answers the direction-only weaken, the rounded no-op, a held
+    strengthen and a stageable row (null) with the correction-factor panel's
+    foot-note words; the panel test at `frontend/diagnose-workstation.test.js`
+    that prints the weaken's foot note passes unchanged;
+  - in `frontend/utilities.test.js`: the Glossary renders a "Findings queue"
+    group defining "Next in line", "Worth a look", "Ranked with its setting",
+    "Ranked on all 30 days" and "Not recurring often enough to rank yet".
+- [ ] 69. Frontend (ADR 469 decisions 2, 4 and 5): in
+  `frontend/diagnose-findings-queue.js`, `queueRows` marks a row anchored to a
+  shown row (weight `anchored`: no numeral, caption or stripe), keeps an
+  anchored row whose anchor is hidden as an ordinary ranked row, opens the seam
+  only before an unranked row that is not an asserting row the served verdict
+  keeps from staging, and gives that row the `isfStageNote` reason detail; the
+  painter paints a reason detail on a tail row, gives the anchored item class
+  `qitem anchored`, and prints a served `rank_note` after the detail line in
+  its `.scope-note`; rewrite the module header's settled-rules paragraph. In
+  `frontend/diagnose-workstation-data.js`, export `isfStageNote` beside
+  `isfVerdict`, and have `renderIsfLevel` in `frontend/diagnose-workstation.js`
+  take its foot note from it. In `frontend/diagnose-workstation.css`, an
+  anchored item indents to the title column and draws the causes list's left
+  rule, from existing tokens. In `frontend/glossary.js`, add the "Findings
+  queue" group.
+- [ ] 70. In `CONTEXT.md`, the **Priority** entry says a Pattern admitted through
+  its setting shares that setting's position, and a new **Ranking tier** entry
+  defines `next_in_line`, `worth_a_look` and `noted` as bands of the one
+  ranking. In `DESIGN.md`, rule 4 says what "Next in line" and "Worth a look"
+  mean and that each prints at most once. Regenerate the design exploration
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`), whose Glossary
+  extract moves; its `--check` then passes.
+- [ ] 71. Add one ledger story (the next unissued S id after task 62's, S193 at
+  the pinned commit) in a dated `## #469 amendment` section of
+  `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
+  one-ranking decision as its sanction, with its replay function, registry
+  entry, case mapping and story-table row in the files task 8 names. Leg 1, on
+  the showcase at 24 h: the overnight Pattern's item follows the 03:00–04:00
+  basal row with no numeral and no stripe and prints "Ranked with its setting";
+  "Worth a look" appears once; `finding:over_treated_low` carries numeral 2; no
+  striped row follows an unstriped ranked row. Leg 2, on
+  `isf-direction-only-weaken` through `ctx.withCase` at 24 h: the correction
+  factor row prints "No new number is available, so there is nothing to
+  stage." and no `.tailnote` precedes it. The story fails once, naming each
+  failed leg. Lay its harness over #469's base and record that base run, where
+  both legs fail, and the branch run at both sizes on its status line. Raise
+  the story inventory by this one story in the four places task 9 names.
+- [ ] 72. Capture before/after renders of the 24 h rail on the showcase and on
+  `isf-direction-only-weaken`, and of the Afternoon rail on the showcase, at
+  1280x720 and 1440x900, the before from #469's base. The coordinator attaches
+  them to the pull request; they are not committed.

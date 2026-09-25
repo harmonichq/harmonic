@@ -738,3 +738,143 @@ name's right edge to meet its value's.
 **Consequences.** The header reads as column heads over their values at every
 width the rows keep. The visible names are shorter than decision 6's words; the
 full words remain on hover and in every row's hidden text.
+
+## ADR 467 — A scoped window serves a Pattern when its outcomes land in it
+
+**Context.** Connor chose option A on 2026-09-24: the overnight-lows Pattern
+joins any window overlapping the 00:00–06:00 band, with its band counts and a
+sentence naming the band. Where membership is decided, the treatment of a
+Pattern with no population, the sentence's words and the fixture's band
+evidence were decided autonomously during AFK run. Reproduced on synthetic data
+at this change's base (`docs/scope/467-scoped-pattern-membership.repro.py`):
+
+- on the QA case `basal-recurring-low-lower`, the whole-day queue serves
+  `pattern:overnight_lows_no_iob` at k 2 of n 30 nights, `setting_staging`,
+  Priority 97; the 00:00–06:00, 02:00–05:00, 03:00–04:00 and 00:00–24:00
+  windows serve no Pattern row at all, while the roster published beside them
+  carries all five;
+- on the findings-fixture projection, the explicit 00:00–24:00 scope drops Lows
+  after meals, Lows after correcting highs and the overnight Pattern, and serves
+  `finding:correction_stacking` and `finding:correction_on_iob` unfolded.
+
+The gate is `pattern_chartable`, which ADR 395 built to decide a Pattern's chart
+and case file and which #411 reused as scoped admission. The overnight Pattern
+has no habit member and no Exposure family, so it fails it in every window.
+
+**Decision.**
+
+1. **One membership predicate, where the scoped roster is built.**
+   `outcome_patterns.pattern_in_window(pattern, query)` is true when the
+   Pattern's `n` is above zero and, for the harm-band Pattern (rate producer
+   `harm_band_source_nights`), the window overlaps the Harm signal's band
+   (`HarmConfig.overnight_start_min` to `overnight_end_min`). For an
+   Exposure-family Pattern the scoped roster's `n` is already the
+   outcome-anchored count in the window, so the rule is the Outcome anchor rule
+   every other row follows; admission plays no part, matching the whole-day
+   `remain_pattern` rule. `outcome_window_population` returns only the member
+   Patterns for a scoped query, so the rows and the roster published beside them
+   agree by construction.
+2. **The projection serves the scoped roster.** `_pattern_rows` serves every
+   `remain_pattern` Pattern of that roster. `pattern_chartable` decides only the
+   chart coordinate and, through it, the case file.
+3. **Band counts in any overlapping window.** The harm-band Pattern keeps k and n
+   counted over the whole band in a partial window, as basal and carb-ratio rows
+   keep their whole-span counts. In a scoped window its count sentence reads
+   "k of n nights ran low between 00:00 and 06:00", the band's minutes printed
+   from `HarmConfig`; the whole day keeps "ran low overnight". Its headline, chart
+   (none) and Priority are unchanged.
+4. **No population, no scoped row.** A Pattern whose `n` is zero joins no scoped
+   window. The whole day still serves it, as today.
+5. **The mirror follows the served roster.** The fixture mirror reads the
+   server's frozen per-window roster, which is now membership-filtered, so it
+   drops its scoped gate rather than re-deciding membership; its scoped chart
+   uses the chartability predicate over the scoped `n` in place of its
+   `pattern.n > 0` stand-in, and it transcribes decision 3's sentence. The
+   fixture generator's 03:00 recurring-lows slot serves `band_nights` 2 and
+   `harm_band_source_nights` 20, as the analyzer publishes them, so frozen
+   windows exercise decision 3 in both implementations.
+
+**Consequences.** The Overnight preset and any window reaching into the band
+list the overnight Pattern with the counts the basal lower acted on. Scoped
+Pattern Focus admission, which reads the scoped roster's readiness, answers as
+before: a Pattern with no outcome in the window was already `withheld`. Across
+the 75 QA cases, 34 scoped windows now serve a Pattern and no literal
+expectation moves (`docs/scope/467-scoped-pattern-membership.spike.py --qa`).
+Queue order and Pattern pricing are #469's. The live behavioral-layer text that
+once omitted scoped Patterns left the spec when `v2-findings-ledger` archived;
+this change adds the membership rule beside it.
+
+## ADR 469 — The findings rail follows the one urgency ranking
+
+**Context.** Connor settled on 2026-09-24 that the queue is one ranking by
+urgency (health impact) across settings and habits, withdrew the issue's
+ordering questions, and named four places the rail breaks that rule. How each is
+fixed was decided autonomously during AFK run, taking the issue's recommended
+shapes (2(b) and 3(a)) and the smallest change for the rest. Reproduced on the
+committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
+
+- in `global`, Highs after meals and Lows after meals rank 2 and 3 at the carb
+  ratio's Priority (reading 1 of 3 and 0 of 3 meals) and the overnight Pattern
+  ranks 6 at basal's (0 of 0 nights), each a second position for a Priority a
+  setting row already holds; the committed showcase store ranks the overnight
+  Pattern, "0 of 30 nights", second at 24 h the same way;
+- in `afternoon`, `drawn` and `low_block`, Highs after meals ranks 2 at its
+  30-day Priority while reading 0 of 1 meals, and nothing says the rank is not
+  the window's;
+- `global` paints four tier words, "Next in line" twice and "Worth a look"
+  twice, and neither has a Glossary or CONTEXT.md entry;
+- in `direction_only_windows.global`, the direction-only correction-factor
+  weaken, unpriced because it has no new number to stage, sits under "Not
+  recurring often enough to rank yet".
+
+**Decision.**
+
+1. **A setting-admitted Pattern sits in its setting's position.** A Pattern the
+   projection serves with `admission_route` `setting_staging` carries a new row
+   field, `anchored_by`: the id of the first served, priced, asserting row of its
+   setting member's parameter in queue order. Every such row carries the same
+   parameter-level Priority, and in the whole day the earliest of them is the
+   in-band row that admitted the harm-band Pattern, so no band test is added. It
+   sorts directly after that row, and its own claimed causes directly after it. Its `priority` stays the roster's price (ADR 391 and
+   `tests/test_pattern_policy.py` unchanged); the rail gives it no numeral of its
+   own. When no served row qualifies (a scoped window without the setting's row),
+   it has no anchor and keeps its own ranked position.
+2. **Tiers are bands of the one ranking.** Over the sorted rows, the leading run
+   of priced, top-level asserting rows is `next_in_line`; every later priced
+   top-level row is `worth_a_look`; an anchored Pattern takes its anchor's tier;
+   a claimed cause keeps today's rule (priced `worth_a_look`, else `noted`);
+   every unpriced row is `noted`. The rail's caption rule (a caption where the
+   served tier changes) therefore prints each tier word at most once, and its
+   stripe rule (the ranked rows of the first priced tier) marks one leading run.
+   The rail's caption and stripe code does not change.
+3. **The rank basis is said where it differs from the counts.** A new row field,
+   `rank_note`, is served as "Ranked with its setting" on an anchored Pattern, and
+   as "Ranked on all N days" (N the analysis window, 30) on a priced, top-level
+   Pattern or Cause row in a scoped window; otherwise it is null. The rail prints
+   it after the row's detail line, where it prints " · Whole day".
+4. **An asserting row that cannot stage gives its own reason.** Among unpriced
+   ranked-head rows, the server sorts asserting rows before findings. In the rail,
+   a row whose register is `assert` but whose served verdict does not let it stage
+   never opens the tail seam, and its detail line is its staging refusal, chosen
+   by one function beside `isfVerdict` that the correction-factor panel's foot
+   note also uses ("No new number is available, so there is nothing to stage."
+   for the direction-only weaken). The tail note keeps its words and now covers
+   only rows that are unranked for want of recurrence.
+5. **The words are explained.** The Glossary gains a "Findings queue" group
+   defining "Next in line", "Worth a look", "Ranked with its setting", "Ranked on
+   all 30 days" and "Not recurring often enough to rank yet". No caption control
+   is added. CONTEXT.md gains a **Ranking tier** entry and its **Priority** entry
+   says a setting-admitted Pattern shares its setting's position; DESIGN.md rule
+   4 says what each tier word means and that each prints at most once; the queue
+   module's header says the same.
+
+**Consequences.** One Priority fills one ranked position: a reader looking for
+the next change reads settings and the habits that outrank them in one order,
+with the Patterns a setting admits beneath it. This amends, and does not
+re-open, the settled rules: CONTEXT.md's one honest queue and #395's interleave
+hold (settings and habits still interleave by Priority); ADR 302's one caption
+per run holds, and runs are now unique; ADR 391's price holds, and only its
+placement in the rail changes; #413's stripe on the first tier holds, and that
+tier is now one run. No Priority, input, floor, staging predicate or cap moves,
+and no QA expectation moves (`docs/scope/469-queue-rank.spike.py --qa`). S115
+holds unchanged: it reads the served tiers.

@@ -5863,7 +5863,9 @@ S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
             the names over their columns and "Deliv." overhanging its track by
             a few pixels. Each label line now ends on its track's right edge
             (a wider line spills left), and the check allows 2 px for a row's
-            own border and logs every offset; branch run of that pending. Renders of the 03:00 panel, before on 5377e044
+            own border and logs every offset. The branch passes both legs at
+            1280x720 and 1440x900 on bf78c680, and its 1440x900 render shows
+            each name over its own values. Coordinator-run 2026-09-24 Renders of the 03:00 panel, before on 5377e044
             and after on d705ac0a, handed to the coordinator uncommitted.
             Coordinator-run 2026-09-24
 ```

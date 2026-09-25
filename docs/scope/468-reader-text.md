@@ -156,3 +156,36 @@ The last day adds a case the issue missed: a span that runs backwards.
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
 | 1 | — | Initial flat draft pinned cf06ffb3 | Blocker (`authoring`): tasks 93, 102 and 103 need Chromium, yet the fence named no handback and `Done when` required every task ticked, inviting status lines about runs the worker never made. Notes (`authoring`): `frontend/diagnose-workstation.test.js:1064` bans "not comparable" from the whole caption, which decision 5's caption now carries; the showcase probe reads `quiet.start`/`quiet.end`, so after task 97 it prints no day rather than failing; the drafting-conventions path did not resolve in the checkout. Refuted: none; each reproduced against the tree. Fixed: the fence names three browser-leg handbacks through `.afk/out/browser-legs.md` and `Done when` names the coordinator-evidenced ticks (93, 102's status lines, 103); task 96 narrows `:1064` to a count-labelled "not comparable"; task 102 runs the probes on task 95's commit, before task 97; the path is absolute. Slice s6 was dropped from the run, so the renumbering note is removed. | BLOCKED (1 block, 3 notes); fixed, no further panel by operator instruction |
+
+## Behavior sweep at the base (task 93)
+
+Coordinator-run browser legs on d5649a82 (the lock's pin, #468's base), through
+`frontend/desk-behavior.replay.mjs` with `CASE_STORE_DIR` and `CAPTURE_DIR`, and
+the QA copy-then-serve of the showcase driven by a headless driver:
+
+- Replay `ONLY=S115,S124,S125,S126,S188`: `executed 5 · failed 0 · deferred 0 ·
+  selected 5` at 1280x720 and at 1440x900.
+- Fold, showcase (S115): under Highs after meals, "Meal bolus fell short" reads
+  "outside the count·1 of 32 meals" on its second row, with no first row.
+- Fold, `behavioral-correction-stacking` (S126): the Lows after correcting highs
+  Pattern serves a count ("2 of 2 lows followed a correction"); Correction
+  stacking reads "2 of 2 lows" over "outside the count·2 of 8 correction clusters".
+- Caption, `behavioral-carb-undercount` (S124): the band's residue reads "1 not
+  comparable"; the caption reads "3 Matched (meets criteria) · 1 Nearly matched
+  (borderline) · 2 Other meal opportunities". The comparison group's 2 holds
+  Occurrences the band splits between Does not meet and not comparable.
+- Caption, `behavioral-missed-meal` (S125): the caption reads "2 Matched · 1 Nearly
+  matched (borderline) · 2 Completed carb-bolus meals · 3 highs outside the
+  comparison"; its comparison is drawn from another population.
+- Retained line, `c4-isf-late-read` (S188): the Context row reads "Stored context
+  recorded Jul 1, 2024 · 23:55".
+- Day, showcase 2024-06-26: "Findings · 1" lists 13:55 (Over-treated low); "Quiet ·
+  2" reads "08:00–14:35 · 0 clean · 1 explained · 1 no data", a span covering the
+  Finding.
+- Day, showcase 2024-06-30: "Findings · 1" lists 22:00 (Correction on active
+  insulin); "Quiet · 3" reads "19:00–08:00 · 1 clean · 0 explained · 2 no data", a
+  span that runs backwards. No console errors on either day.
+
+Observed behavior with no story: the Day Episode Log's Quiet caption and line
+(the band lists no rows, only its caption and counts). Task 102's new story covers
+it. Nothing else observed lacks a story.

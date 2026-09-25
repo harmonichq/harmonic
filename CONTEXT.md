@@ -563,14 +563,18 @@ you mean the cross-parameter unit).
 
 **Silence reason**:
 Why the engine withheld a Lever from an episode — the reason it stayed silent. A
-closed set of six: *insufficient-data* (too little CGM to judge), *no-trigger*
+closed set of nine: *insufficient-data* (too little CGM to judge), *no-trigger*
 (the behavior plainly didn't happen), *under-threshold* (it happened but fell
 short of the bar — the near-miss), *upstream-cause* (an observable recent low or
 defensive suspend already explains the move — the context gate — or the rise is
 the rebound of an over-treated low, which owns every High its rebound reaches,
 so that High is never also a missed meal or a meal bolus that fell short), *prior-high-
-baseline* (the rise was from an already-high start, not from-flat), and *horizon-
-expired* (the outcome never arrived inside the classifier's window). The negative
+baseline* (the rise was from an already-high start, not from-flat), *owned-by-prior-
+bolus* (a recent completed carb bolus already owns the rise), *owned-by-announced-
+meal* (a substantial announced meal at the low owns its rebound), *horizon-expired*
+(the outcome never arrived inside the classifier's window), and *stayed-in-range*
+(glucose rose before a meal bolus but the meal's **Arc peak** never went above the
+range line, so there was no spike to blunt; ADR 461). The negative
 complement of a **Lever**: every episode gets either one Lever or one Silence
 reason. Distinct from being **outranked** — an episode whose behavior *did* match
 but lost episode ownership to another Lever and remains retained evidence, decided at

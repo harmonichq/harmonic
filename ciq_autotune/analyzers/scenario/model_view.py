@@ -61,6 +61,7 @@ _CALM_REASONS = frozenset({
     SilenceReason.NO_TRIGGER,
     SilenceReason.INSUFFICIENT_DATA,
     SilenceReason.OWNED_BY_ANNOUNCED_MEAL,
+    SilenceReason.STAYED_IN_RANGE,
 })
 
 # Human labels per anchor kind (mirror the frontend KIND_LABEL).

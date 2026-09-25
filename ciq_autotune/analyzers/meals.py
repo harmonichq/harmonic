@@ -12,6 +12,9 @@ a top-up, a dual-wave, a forgotten side. The grace is measured from the opener a
 never chained (ADR 0030), and a bolus exactly at the grace is a member. Carb-free
 boluses and carb boluses under the floor are never members.
 
+It also holds the one Arc peak reader, :func:`meal_peak` (ADR 461), which the
+Post-meal arc prints and Late bolus judges.
+
 The module sits beside :mod:`.scenario_config` rather than inside :mod:`.scenario`
 because the classifiers read it, and a classifier that imports ``scenario.anchors``
 first re-enters ``scenario/__init__``, which imports the classifier back
@@ -123,6 +126,30 @@ def group_meals(
             completed_carb_bolus(b, scenario_config=scenario_config) for b in members))
         for members in groups
     )
+
+
+#: The Arc peak window: the highest CGM reading in (first bolus, first bolus + 3 h]
+#: (ADR 0018), cut at the next meal's first bolus (ADR 470).
+ARC_PEAK_HORIZON_MIN = 180.0
+
+
+def meal_peak(
+    meal_t: datetime,
+    next_meal_t: Optional[datetime],
+    readings: Sequence,
+) -> Optional[tuple[datetime, float]]:
+    """A meal's Arc peak: the time and value of its highest reading in
+    ``(meal_t, meal_t + 3 h]``, cut at ``next_meal_t`` when that lands earlier, or
+    ``None`` when the window holds no reading.
+
+    The one peak definition (ADR 461): the Post-meal arc prints it and Late bolus
+    judges it, so a claimed meal's row shows the reading its verdict read.
+    """
+    end = meal_t + timedelta(minutes=ARC_PEAK_HORIZON_MIN)
+    if next_meal_t is not None and next_meal_t < end:
+        end = next_meal_t
+    points = [(r.t, r.bg) for r in readings if r.bg is not None and meal_t < r.t <= end]
+    return max(points, key=lambda point: point[1]) if points else None
 
 
 def next_meal_t(

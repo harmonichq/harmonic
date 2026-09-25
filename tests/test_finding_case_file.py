@@ -1833,6 +1833,26 @@ def test_a_split_meal_is_one_row_with_its_summed_dose_and_the_peak_past_its_top_
             for row in case["occurrences"]} == {("peak", 360.0, 125.0)}
 
 
+def test_every_meal_counted_as_running_high_prints_a_peak_above_the_line():
+    """ADR 461: a fired Highs after meals row is a meal that ran above 180, and the
+    Arc peak it prints is the reading its verdict judged."""
+    from tests.test_outcome_patterns import write_late_meals, write_split_meals
+
+    for label, recipe in (
+        ("split meals", lambda store: write_split_meals(store, gap=10)),
+        ("late meals with a top-up", lambda store: write_late_meals(
+            store, post_peak=240.0, top_up=True)),
+        ("late meals that stayed in range", lambda store: write_late_meals(
+            store, post_peak=165.0)),
+    ):
+        case = _analyzer_prepared(recipe).case("pattern:highs_after_meals", "event", None)
+        # A store where no meal ran high serves no Highs after meals case at all.
+        fired = [row for row in (case or {"occurrences": []})["occurrences"]
+                 if row["verdict"] == "fired"]
+        assert all(row["outcome"]["bg"] > 180 for row in fired), (
+            label, [row["outcome"] for row in fired])
+
+
 def test_a_reason_never_shows_a_sentence_its_row_contradicts():
     lever = Lever.LATE_BOLUS
     first = _opportunity(lever)

@@ -49,6 +49,38 @@ def write_split_meals(store, *, gap, peak=360.0, days=14):
         } for seq_num, at, insulin, carbs in doses])
 
 
+def write_late_meals(store, *, post_peak, top_up=False):
+    """Write fourteen synthetic late noon meals, every other day from 2024-05-03.
+
+    Each meal climbs 2 mg/dL/min from 120 to 160 at a 45 g / 4.5 U bolus. With a
+    ``post_peak`` of 165 or less glucose reads 165 once after the bolus and falls to
+    80; above it, it climbs on to ``post_peak`` and falls. No low, suspend or earlier
+    carb bolus explains the climb. ``top_up`` adds a 20 g / 2 U top-up ten minutes
+    after each bolus.
+    """
+    from scripts.qa_e2e_cases import _materialize_behavioral_background
+
+    first = _materialize_behavioral_background(store, span_days=30)
+    lane = datetime.combine(first, datetime.min.time())
+    for day in range(2, 30, 2):
+        noon = lane + timedelta(days=day, hours=12)
+        after = ([165.0, 150.0, 130.0, 110.0, 95.0, 85.0, 80.0] if post_peak <= 165
+                 else [180.0, 210.0, post_peak, 220.0, 190.0, 160.0, 130.0, 110.0, 95.0, 80.0])
+        values = [120.0, 130.0, 140.0, 150.0, 160.0] + after
+        store.upsert_cgm([{
+            "EventDateTime": (noon + timedelta(minutes=5 * (i - 4))).strftime(FMT),
+            "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+        } for i, bg in enumerate(values)])
+        doses = [(400_000 + day, noon, 4.5, 45.0)]
+        if top_up:
+            doses.append((500_000 + day, noon + timedelta(minutes=10), 2.0, 20.0))
+        store.upsert_bolus([{
+            "seq_num": seq_num, "request_time": at.strftime(FMT),
+            "description": "Synthetic meal bolus", "completion": "Completed",
+            "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+            "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
+        } for seq_num, at, insulin, carbs in doses])
+
 class SequenceHabitPatternTest(unittest.TestCase):
     def test_covered_and_empty_winners_admit_without_rate_claims(self):
         for lever in ('high_carb_sequence', 'repeat_eating'):
@@ -341,3 +373,33 @@ class SplitMealIdentityTest(unittest.TestCase):
         self.assertEqual(meals["n"], 28)
         self.assertEqual((highs["k"], highs["n"]), (14, 28))
         self.assertEqual(undercount["confidence"]["n"], 28)
+
+
+class LateBolusOutcomeTest(unittest.TestCase):
+    """ADR 461: Late bolus puts a meal in "ran high" only when it ran above 180."""
+
+    def _serve(self, post_peak):
+        import tempfile
+
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.store import Store
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                write_late_meals(store, post_peak=post_peak)
+                exposures = build_exposures(store)
+                scenarios = build_scenarios(store).to_dict()
+        patterns = {p["key"]: p for p in build_outcome_patterns({}, exposures, scenarios)}
+        return exposures["exposures"]["meals"]["occurrences"], patterns["highs_after_meals"]
+
+    def test_late_meals_that_stayed_in_range_did_not_run_high(self):
+        meals, highs = self._serve(165.0)
+
+        self.assertEqual((highs["k"], highs["n"]), (0, 14))
+        self.assertFalse([o for o in meals if "late_bolus" in o["attributed_levers"]])
+
+    def test_late_meals_that_ran_above_the_line_still_count(self):
+        meals, highs = self._serve(240.0)
+
+        self.assertEqual((highs["k"], highs["n"]), (14, 14))
+        self.assertTrue(all("late_bolus" in o["attributed_levers"] for o in meals))

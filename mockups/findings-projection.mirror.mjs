@@ -501,7 +501,9 @@ function outcomeMinute(occurrence, anchors) {
 
 // Silence reasons that keep an occurrence "calm" for a lever whose classifier
 // looked and had nothing to flag (mirrors `_CALM_SILENCE_REASONS`).
-const CALM_SILENCE_REASONS = new Set([null, undefined, 'no_trigger', 'owned_by_announced_meal']);
+const CALM_SILENCE_REASONS = new Set([
+  null, undefined, 'no_trigger', 'owned_by_announced_meal', 'stayed_in_range',
+]);
 const NO_DATA_SILENCE_REASON = 'insufficient_data';
 
 /** This finding's own, ROW-RELATIVE verdict on one occurrence (ADR 41, item 2).

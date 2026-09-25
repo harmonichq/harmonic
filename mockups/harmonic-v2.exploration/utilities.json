@@ -231,6 +231,12 @@
           "label": "Horizon expired",
           "tier": "observed",
           "value": "horizon_expired"
+        },
+        {
+          "body": "Glucose rose before the bolus but never went above the range line afterwards, so there was no spike for an earlier bolus to blunt.",
+          "label": "Stayed in range",
+          "tier": "observed",
+          "value": "stayed_in_range"
         }
       ],
       "tiers": [

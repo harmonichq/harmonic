@@ -168,6 +168,13 @@ test('S194 is a unique app-only #470 story on the behavioral-split-meal store', 
   assert.equal(storyCase('S194'), 'behavioral-split-meal');
 });
 
+test('S195 is a unique app-only #461 story on the behavioral-late-bolus store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S195');
+  assert.equal(entries.length, 1, 'S195 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 461');
+  assert.equal(storyCase('S195'), 'behavioral-late-bolus');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

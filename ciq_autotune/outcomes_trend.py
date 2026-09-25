@@ -65,7 +65,7 @@ from .analyzers.scenario import (
     low_prompt_answers,
     tally_attributions,
 )
-from .analyzers.meals import group_meals
+from .analyzers.meals import ARC_PEAK_HORIZON_MIN, group_meals, meal_peak
 from .false_low import drop_readings, false_low_spans
 from .analyzers.scenario.levers import recommendation, title
 from .analyzers.scenario.evidence_population import policy_for
@@ -123,7 +123,8 @@ _CONTEXT_PAD_MIN = 300.0
 # truncated at the next meal's first bolus, never at a same-meal top-up (ADR 470):
 #   peak  = max CGM in (bolus, bolus + 3 h]
 #   nadir = min CGM in (peak_time, bolus + 6 h]
-ARC_PEAK_HORIZON_MIN = 180.0
+# The peak half is ``meals.meal_peak``, the one Arc peak reader Late bolus also judges
+# (ADR 461); its ``ARC_PEAK_HORIZON_MIN`` is re-exported here.
 ARC_NADIR_HORIZON_MIN = 360.0
 # A meal whose arc was truncated to under 3 h cannot tell a crash story — it is dropped
 # from the NADIR series (its peak half is still valid). The peak series keeps all meals.
@@ -628,13 +629,10 @@ def _meal_arc(meal_t: datetime, next_meal_t: Optional[datetime], cgm: Sequence) 
     boundary rather than reading into its insulin activity. Values are absolute mg/dL, no baseline offset. Pure function of its
     inputs, so it is unit-testable on a synthetic series.
     """
-    peak_end = meal_t + timedelta(minutes=ARC_PEAK_HORIZON_MIN)
-    if next_meal_t is not None and next_meal_t < peak_end:
-        peak_end = next_meal_t
-    peak_pts = [(r.t, r.bg) for r in cgm if r.bg is not None and meal_t < r.t <= peak_end]
-    if not peak_pts:
+    peak_point = meal_peak(meal_t, next_meal_t, cgm)
+    if peak_point is None:
         return _MealArc(None, None, False)
-    peak_t, peak = max(peak_pts, key=lambda tv: tv[1])
+    peak_t, peak = peak_point
 
     nadir_end = meal_t + timedelta(minutes=ARC_NADIR_HORIZON_MIN)
     if next_meal_t is not None and next_meal_t < nadir_end:

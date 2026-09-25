@@ -6130,3 +6130,71 @@ Additional handler inventory for this amendment:
 | One meal anchor and opportunity per meal | ciq_autotune/analyzers/scenario/anchors.py collect_anchors; opportunities.py build_opportunities | S194 |
 | A meal row's summed dose and carbs | ciq_autotune/analyzers/scenario/model_view.py _anchor_facts; ciq_autotune/finding_case_file.py _anchor_dose | S194 |
 | The Arc cut at the next separate meal | ciq_autotune/finding_case_file.py _arc_outcomes; ciq_autotune/outcomes_trend.py | S194 |
+
+## #461 amendment — 2026-09-25, issue #461
+
+S195 is the fail-first obligation of ADR 461 (`openspec/changes/qa-round-2/design.md`):
+Late bolus claims a meal only when it ran above the range line. It is
+app-opener-only and runs on the manufactured `behavioral-late-bolus` case store
+(`CASE_STORE_DIR`). As the only story on that store it joins the fixed PR smoke
+slice (33 stories). No story is retired or amended: S13, S124 and R8 open
+`behavioral-carb-undercount`, whose reshaped Late bolus meal keeps every served
+tally. Browser execution belongs to the coordinator at 1280x720 and 1440x900.
+No `★ FROZEN` block and no header inventory line is edited here; the release
+coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24/25, option A: Late bolus matches only when
+the meal's post-bolus peak is above the 180 range line, otherwise it returns a new
+calm silence reason, and the one peak definition is shared between the verdict and
+the row. The window, the reason's name and words, the second case's reshape and
+the in-range band are ADR 461's autonomous decisions. It covers S195 and the
+behavior below, and nothing outside #461.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 203 issued · 184
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case behavioral-late-bolus` emits.
+
+Changed shipped behavior:
+
+- **A late meal that stayed in range is not claimed.** Late bolus puts a meal in
+  "k of n meals ran high" only when its Arc peak went above 180. A meal that
+  climbed before the bolus but peaked at or under the line reads clean, is never a
+  near miss, and is not told to blunt a spike.
+- **A claimed row prints the peak its verdict judged.** Each fired Late bolus row's
+  peak is the Arc peak the verdict read, above 180, read past its own top-up up to
+  the next separate meal.
+- **The Guide names the new reason.** The silence article lists "Stayed in range"
+  with the Observed tier.
+
+```
+S195 · Late bolus claims only meals that ran high. On behavioral-late-bolus at
+       24 h the Highs after meals row prints "3 of 7 meals ran high" (the base
+       served 4 of 7); the Late bolus case file serves two fired meals, each
+       printing a peak above 180; the Guide's silence article lists "Stayed in
+       range".
+  element:  #level .qrow[data-id="pattern:highs_after_meals"] .den,
+            #level .case-occurrence .only, .gf-article
+  source:   ciq_autotune/analyzers/classifiers/late_bolus.py
+            classify_late_bolus; ciq_autotune/analyzers/meals.py meal_peak;
+            ciq_autotune/analyzers/scenario/guide.py _SILENCE_META
+  lock:     ADR 461 (openspec/changes/qa-round-2/design.md)
+  data:     behavioral-late-bolus: two late climbs peaking at 195 after the
+            bolus, one peaking at exactly 180, beside the case's other bands
+  evidence: C4_STORIES.S195; opens the 24 h rail and reads the Pattern row,
+            drills the Late bolus Finding's event case and reads its served and
+            rendered fired rows, and opens the Guide's silence article
+  status:   not yet replayed; the base run (task 86's commit with this harness
+            laid over it) must fail at the count sentence (4 of 7), and the
+            branch run pass at 1280x720 and 1440x900. Coordinator-run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Late bolus outcome step | ciq_autotune/analyzers/classifiers/late_bolus.py classify_late_bolus | S195 |
+| One Arc peak reader | ciq_autotune/analyzers/meals.py meal_peak; ciq_autotune/outcomes_trend.py _meal_arc | S195 |
+| Stayed in range is calm | model_view._CALM_REASONS; findings_projection._CALM_SILENCE_REASONS | S195 |
+| Guide silence article | ciq_autotune/analyzers/scenario/guide.py _SILENCE_META | S195 |

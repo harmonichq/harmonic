@@ -2701,3 +2701,30 @@ class SequenceProducerProjectionTest(unittest.TestCase):
             cause = next(r for r in rows if r["id"] == f"finding:{lever}")
             self.assertGreater(cause["episodes"], 0)
             self.assertEqual(cause["chips"], ["highs", "meals"])
+
+
+class LateBolusCauseRowTest(unittest.TestCase):
+    """ADR 461: the Late bolus Cause row counts only meals that ran high."""
+
+    def _cause(self, post_peak):
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.explore_exposures import build_exposures
+        from ciq_autotune.store import Store
+        from tests.test_outcome_patterns import write_late_meals
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                write_late_meals(store, post_peak=post_peak)
+                projection = prepare_findings_projection(
+                    analysis={}, exposures=build_exposures(store),
+                    scenarios=build_scenarios(store).to_dict(),
+                ).project(WindowQuery.whole_day(), None)
+        return next((r for r in projection["rows"] if r.get("id") == "finding:late_bolus"), None)
+
+    def test_late_meals_that_stayed_in_range_serve_no_cause_row(self):
+        self.assertIsNone(self._cause(165.0))
+
+    def test_late_meals_that_ran_high_read_as_running_high(self):
+        cause = self._cause(240.0)
+        self.assertEqual([s["sentence"] for s in cause["count_sentences"]],
+                         ["14 of 14 meals ran high"])

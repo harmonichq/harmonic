@@ -389,8 +389,9 @@ class MeasurementComparisonTest(unittest.TestCase):
         from dataclasses import replace
         from tests.test_scenario_engine import cgm_flat
         start = datetime(2026, 1, 1)
+        # A late climb that runs above the range line after the bolus (ADR 461).
         source = [CgmReading(datetime(2026, 6, 15, 12, 15) + timedelta(minutes=5*i), value)
-                  for i, value in enumerate((100,110,120,130,140,150,160,170,180,175,165,150,135))]
+                  for i, value in enumerate((100,110,120,130,140,150,165,180,195,190,175,160,140))]
         cgm, bolus = [], []
         for day in range(32):
             offset = start + timedelta(days=day) - datetime(2026, 6, 15)

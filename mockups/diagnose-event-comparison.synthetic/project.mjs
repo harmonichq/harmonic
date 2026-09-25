@@ -293,7 +293,8 @@ function patternState(occurrence, lever) {
   if (!fact) return occurrence.cause_lever ? 'outranked' : 'no_data';
   if (fact.matched) return 'fired';
   if (fact.silence_reason === 'insufficient_data') return 'no_data';
-  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal'].includes(fact.silence_reason)) {
+  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal', 'stayed_in_range']
+    .includes(fact.silence_reason)) {
     return 'near_miss';
   }
   return occurrence.cause_lever ? 'outranked' : 'clean';

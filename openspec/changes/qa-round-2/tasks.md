@@ -1110,7 +1110,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   dumps on #461's base (AGENTS.md steps 1–3) and run their generated tests.
   Commit this task on its own: that commit is the base for tasks 87 and 90's
   failing-first runs.
-- [ ] 87. Failing-first backend tests, each seen to fail on task 86's commit:
+- [x] 87. Failing-first backend tests, each seen to fail on task 86's commit:
   - in `tests/test_classifier_late_bolus.py`: a climb to 160 at the bolus that
     reads 165 once and falls is not matched, `stayed_in_range`, Observed; a
     post-bolus peak of exactly 180 is not matched; 181 is matched; a meal with no
@@ -1142,7 +1142,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
     meal is `stayed_in_range`;
   - in `tests/test_guide_catalog.py` and `tests/test_api.py`: the served taxonomy
     lists nine silence reasons, "Stayed in range" among them at tier Observed.
-- [ ] 88. Backend (ADR 461 decisions 1–3): in
+- [x] 88. Backend (ADR 461 decisions 1–3): in
   `ciq_autotune/analyzers/classifiers/evidence.py`, add
   `SilenceReason.STAYED_IN_RANGE` and make the docstring's closed set nine; in
   `ciq_autotune/analyzers/meals.py`, add `ARC_PEAK_HORIZON_MIN` and `meal_peak`,
@@ -1175,7 +1175,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   run, which must fail at the count sentence (the base serves 4 of 7), and the
   branch run at both sizes on its status line. Raise the story inventory by this
   one story in the four places task 9 names.
-- [ ] 91. Regenerate the design exploration
+- [x] 91. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Late bolus
   captures (`evidence.json`, `workstation.json`) and Guide capture
   (`utilities.json`) move; its `--check` then passes.

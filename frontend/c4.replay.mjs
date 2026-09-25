@@ -4421,7 +4421,59 @@ export const C4_STORIES = {
         `S194 the 2024-05-03 row must read "65 g · 6.5 U · peak 360"; it reads "${row?.text}"`);
     }, 'S194 the case file lists one row per meal');
   },
+  // #461: Late bolus claims a meal only when it ran above the range line. On
+  // behavioral-late-bolus at 24 h the Highs after meals row reads "3 of 7 meals
+  // ran high", the Late bolus case file's two fired rows each print a peak above
+  // 180, and the Guide's silence article lists "Stayed in range".
+  async S195(page) {
+    await openDiagnoseRail(page);
+    await waitForReplayAssertion(async seen => {
+      const text = seen(await page.locator('#level .qrow[data-id="pattern:highs_after_meals"] .den').innerText())
+        .replace(/\s+/g, ' ').trim();
+      assert.ok(text.includes('3 of 7 meals ran high'),
+        `S195 the Highs after meals row must print "3 of 7 meals ran high"; it prints "${text}"`);
+    }, 'S195 Highs after meals counts only the meals that ran high');
+
+    const coordinate = await lateBolusCase461(page);
+    const served = await read(page, '/api/diagnose/finding-case-file', coordinate);
+    const fired = served.occurrences.filter(row => row.verdict === 'fired');
+    assert.equal(fired.length, 2, `S195 the Late bolus case file must serve two fired meals; it serves ${fired.length}`);
+    for (const row of fired) {
+      assert.ok(row.outcome?.kind === 'peak' && row.outcome.bg > 180,
+        `S195 fired meal ${row.anchor.t} must serve a peak above 180; it serves ${JSON.stringify(row.outcome)}`);
+    }
+    await expandRoster432(page);
+    await waitForReplayAssertion(async seen => {
+      const rows = seen(await renderedRows432(page));
+      for (const source of fired) {
+        const row = rows.find(entry => entry.occurrenceId === source.id);
+        assert.equal(row?.text, expectedDescription432(source),
+          `S195 fired meal ${source.anchor.t} must print its peak; it reads "${row?.text}"`);
+      }
+    }, 'S195 each fired Late bolus row prints its peak above the line');
+
+    await press(page, '[data-utility="guide"]');
+    await press(page, '[data-utility-slug="silence"]');
+    await waitForReplayAssertion(async seen => {
+      const article = seen(await page.locator('.gf-article').innerText()).replace(/\s+/g, ' ');
+      assert.ok(article.includes('Stayed in range'), 'S195 the Guide\'s silence article must list "Stayed in range"');
+    }, 'S195 the Guide lists the new silence reason');
+  },
 };
+
+// #461: the Late bolus Finding, drilled from All charts to its event case; returns
+// that case's coordinate.
+async function lateBolusCase461(page) {
+  await fullDayDiagnose(page);
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const finding = preparation.rendered_rows.find(row => row.id === 'finding:late_bolus' && row.event_chart);
+  assert.ok(finding, 'S195 premise: the case store serves a chartable Late bolus Finding');
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${finding.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${finding.id}"]`).waitFor({ timeout: 30000 });
+  await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { projection_id: preparation.projection_id, finding_id: finding.id, alignment: 'event' };
+}
 
 // #469: the rail's top-level list in painted order, each list item with its row's
 // numeral, stripe and rank note, and the caption and tail-note lines between them.

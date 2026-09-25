@@ -46,7 +46,7 @@ class SilenceReason(str, Enum):
     behavior drew no lever, so #152 (per-day view) and #157 (Guide) read one source
     of truth instead of each re-deriving free-text.
 
-    The set is **closed** — eight members, mirroring the honesty tier each branch
+    The set is **closed** — nine members, mirroring the honesty tier each branch
     already returns. Adding one is a deliberate act, like adding a ``Lever``.
     Subclasses ``str`` so it serializes to a plain string in a payload.
 
@@ -68,6 +68,9 @@ class SilenceReason(str, Enum):
       rebound, so fast-carb treatment cannot be isolated (``INFERRED``; ADR 225).
     * ``HORIZON_EXPIRED`` — the outcome never arrived inside the classifier's window
       (``OBSERVED``).
+    * ``STAYED_IN_RANGE`` — glucose rose before the bolus but the meal's Arc peak
+      never went above the range line, so there was no spike to blunt (``OBSERVED``;
+      ADR 461).
 
     Deliberately **not** a member: being *outranked* — an episode whose behavior
     matched but lost to an earlier-driver lever. That is an attribution-layer
@@ -82,6 +85,7 @@ class SilenceReason(str, Enum):
     OWNED_BY_PRIOR_BOLUS = "owned_by_prior_bolus"
     OWNED_BY_ANNOUNCED_MEAL = "owned_by_announced_meal"
     HORIZON_EXPIRED = "horizon_expired"
+    STAYED_IN_RANGE = "stayed_in_range"
 
 
 @dataclass(frozen=True)

@@ -1505,7 +1505,9 @@
   font-size: var(--ck-micro); line-height: 1.2; color: var(--mk-muted);
   border-bottom: 1px solid color-mix(in srgb, var(--ck-hair) 40%, transparent);
 }
-.ev-cols span { text-align: right; white-space: nowrap; }
+/* Each line ends on its track's right edge, as the values do; a line wider
+   than its track spills left, into the gap, never past its value. */
+.ev-cols > span { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
 .ev-cols .entry { grid-column: 2; }
 .ev-cols .worst { grid-column: 4; }
 .ev-cols .delta { grid-column: 5; }

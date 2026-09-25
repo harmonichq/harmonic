@@ -4339,7 +4339,7 @@ export const C4_STORIES = {
         await run(page, ctx);
         process.stdout.write(`# S191 ${leg}: pass\n`);
       } catch (error) {
-        const reason = String(error?.message || error).split('\n')[0];
+        const reason = String(error?.message || error).replace(/\s+/g, ' ').slice(0, 800);
         failures.push(`${leg}: ${reason}`);
         process.stdout.write(`# S191 ${leg}: fail — ${reason}\n`);
       }
@@ -4382,8 +4382,8 @@ const readLows466 = page => page.evaluate(() => ({
   // night row's value it names (0 when it stands in that value's track).
   header: [...document.querySelectorAll('#level .ev-cols > span')].map(cell => {
     const value = document.querySelector(`#level .ev-row.case-occurrence .${cell.className}`);
-    return [cell.title, value ? Math.round(Math.abs(cell.getBoundingClientRect().right
-      - value.getBoundingClientRect().right)) : null];
+    const right = box => Math.max(...[...box.children].map(line => line.getBoundingClientRect().right));
+    return [cell.title, value ? Math.round(right(cell) - value.getBoundingClientRect().right) : null];
   }),
 }));
 
@@ -4401,8 +4401,11 @@ async function recurringLowsLower466(page) {
     assert.equal(lows.count, lowsCountLine466(harm), 'S191 the count line must print the served count and bar');
     assert.deepEqual(lows.rows, harm.lows.map(lowRowText466), 'S191 each low row must print its served date, time and glucose');
     assert.equal(lows.occurrences, 0, 'S191 a low row must not be a roster occurrence');
-    assert.deepEqual(lows.header, [['Delivered U/h', 0], ['Programmed U/h', 0], ['Night mean mg/dL', 0]],
-      'S191 the roster must show its header row, its columns in order, each over its own values');
+    assert.deepEqual(lows.header.map(([name]) => name), ['Delivered U/h', 'Programmed U/h', 'Night mean mg/dL'],
+      'S191 the roster must show its header row, its columns in order');
+    // A row's own 1 px border may sit between the two edges; N1's drift was tens of pixels.
+    assert.ok(lows.header.every(([, offset]) => offset != null && Math.abs(offset) <= 2),
+      `S191 each header name's widest line must end at its value's right edge; offsets ${JSON.stringify(lows.header)}`);
   }, 'S191 the spread lower explains its step and lists its lows');
   const iso = harm.lows[0].t.slice(0, 10);
   await page.locator('#level .low-row').first().click();

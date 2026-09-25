@@ -1098,9 +1098,9 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
      carries its own column and unit for a screen reader. Each name sits in its
      value's track, abbreviated to fit, its full name on hover. */
   host.insertAdjacentHTML('beforeend', '<div class="ev-cols" aria-hidden="true">'
-    + '<span class="entry" title="Delivered U/h">Deliv.<br>U/h</span>'
-    + '<span class="worst" title="Programmed U/h">Prog.<br>U/h</span>'
-    + '<span class="delta" title="Night mean mg/dL">Mean<br>mg/dL</span></div>');
+    + '<span class="entry" title="Delivered U/h"><span>Deliv.</span><span>U/h</span></span>'
+    + '<span class="worst" title="Programmed U/h"><span>Prog.</span><span>U/h</span></span>'
+    + '<span class="delta" title="Night mean mg/dL"><span>Mean</span><span>mg/dL</span></span></div>');
   renderOccurrenceRoster(host, groups, {
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),

@@ -92,3 +92,21 @@ committed synthetic store, then the proposed case's recipe):
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
 | 1 | — | Initial flat draft pinned 2988a569 | Blockers (`authoring`): the threshold check did not say it reads the target before rounding, so settings such as 0.137 U/h would hold instead of taking their full step (reproduced: 0.137 steps to 0.11, 0.027 against 0.0274); Verification ran the complete ledger through `replay --base` on a commit that is not pushed; Verification omitted `acceptance.test.py` and `case-cache --check`. Note (`authoring`): the new sentence escaped the register guard. Coordinator ruling: #435's guard register (verdict, value against the bar). Fixed: ADR 465 decisions 1, 2 and 5 and task 41 compare before rounding, task 39 adds the 0.137 guards and safety 2 its scenario; the sentence now reads as a measured verdict; task 41 adds it to `basal_annotations()`; Verification names an ONLY= replay and both acceptance checks, and leaves the complete ledger to the coordinator's final commit. | BLOCKED (3 block, 1 note); fixed, no further panel by operator instruction |
+
+## Start (AFK run, 2026-09-24)
+
+- Revise pre-work (task 37), coordinator-run on #465's base 718fcf77: S113,
+  S151, S152, S153, S183, S184 and S185 passed at 1280x720 and 1440x900. Renders
+  of `basal-recurring-low-lower` (lane `down`/`recurring-lows`, panel "lower
+  (recurring lows)", one Stage change) and `basal-recurring-low-gate` (lane
+  `hold`, "holds at current", no Stage change), with their queue rows, showed no
+  behavior without a story.
+- Failing-first: tasks 39, 40 and 42's tests failed at their assertions on
+  cc87c41c (task 38) and pass on the branch; S190 failed on cc87c41c with the
+  branch harness at "S190 the 03:00 lane cell must read a hold, not a
+  recurring-lows lower" and passes at both sizes on the branch.
+- One autonomous decision beyond the lock's expected diff: the regenerated
+  findings fixture's held 03:00 slot sits in the `quiet` window, so the Node
+  queue test's pinned count moves from one collapsed row to two (ADR 465 — The
+  fixture's held 03:00 slot moves one Node count).
+- Budgets: the #465 section of `openspec/changes/qa-round-2/coverage-appendix.md`.

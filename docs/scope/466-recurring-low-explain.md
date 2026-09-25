@@ -91,3 +91,21 @@ recurring-lows lower after #465.
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
 | 1 | — | Initial flat draft pinned 2988a569 | Blocker (`authoring`): Verification omitted `acceptance.test.py` and `case-cache --check`, which CI gates and which task 55's inventory and case map edit. Note (`authoring`): task 52 did not name the roster test at `:799` or its `:808` cell regex, which the hidden labels break. Coordinator ruling: ONLY= replay and a filtered desk suite per push rule. Fixed: both checks join Verification and Expectation; the replay is ONLY= on the new story, S113 and the touched stories, the desk suite filtered to `basal|#460`; task 52 names both lines. | BLOCKED (1 block, 1 note); fixed, no further panel by operator instruction |
+
+## Start (AFK run, 2026-09-24)
+
+- Revise pre-work (task 47), coordinator-run on #466's base 1090a33b: all 46
+  touched stories passed at 1280x720 and 1440x900. Renders of a recurring-lows
+  lower and the within-threshold hold showed the interval hedge, the roster
+  groups and the excluded-night line as the issue describes, and no behavior
+  without a story.
+- Failing-first: task 49's tests failed at their assertions on 5377e044 (task
+  48); task 52's tests failed on the unchanged frontend with task 51's fixture
+  laid over; both pass on the branch. S191 failed both legs on 5377e044 with the
+  branch harness and passes both legs at both sizes on the branch.
+- The basal-night fixture's `recurring_lows` key carries the thirty spread
+  nights and their served rows, taking the file from 88 KB to 498 KB. Trimming
+  its glucose to each half hour dropped the two low nights from 03:00's
+  estimate (28 nights, median 0.495) and broke the case's shape, so each slot
+  keeps its hour of readings from half an hour before it.
+- Budgets: the #466 section of `openspec/changes/qa-round-2/coverage-appendix.md`.

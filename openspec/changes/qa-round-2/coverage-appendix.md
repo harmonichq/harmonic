@@ -81,3 +81,57 @@ the ruling accepts it pending Connor, and re-baselining the 160 s figure is
 Connor's decision. The budget leg's own output (`full_pytest_seconds
 [421.12, 400]`) and the base timing are coordinator-run records outside this
 tree.
+
+## #465 basal-recurring-low-within-floor case — 2026-09-24
+
+Task 38 adds the manufactured case `basal-recurring-low-within-floor`: thirty
+steady nights delivering 0.59 U/h against a programmed 0.60, with lows at 03:00
+on two nights, scoped to the (180, 240) window. At task 38's commit (cc87c41c)
+its `execute_case` dump served 03:00 as "lower (recurring lows)" at 0.59, and
+that dump was its first literal expectation. After ADR 465 its dump serves
+03:00 held at 0.60 with the recurring-lows hold sentence, no whole-day row and a
+held (180, 240) row, and task 43 rewrote the literal from that dump. The
+expectations of `basal-recurring-low-lower`, `basal-recurring-low-no-clean-median`
+and `basal-recurring-low-gate` did not move under #465. The committed showcase is
+unchanged.
+
+The five budgets were measured once for the slice, by `acceptance.py budget` on
+the slice branch at d705ac0a (which also carries #466's tasks 48–54), and the
+base 718fcf77 was measured on the same machine, back to back, for the
+whole-pytest comparison ADR 463's ruling uses. No limit was raised:
+
+| Budget | Slice d705ac0a | Base 718fcf77 | Unchanged limit |
+| --- | ---: | ---: | ---: |
+| Committed showcase size | 1,409,024 bytes | 1,409,024 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.303 s wall | 0.285 s wall | 30 s |
+| Focused QA suite | 59.909 s wall | 60.254 s wall | 90 s |
+| Slowest generated case | 11.55 s (`test_case_c4_profile`), 76 cases | 12.58 s (`test_case_c4_profile`), 74 cases | 15 s |
+| Whole pytest | 392.41 s wall | 449.64 s wall | 400 s |
+
+The new case's own generated test takes 0.07 s (measured separately in the
+worker). The slice's whole pytest is within its ceiling, and the base ran
+57.23 s slower in the same sitting. By ADR 463's ruling the slice is judged
+against the base on the same machine; the gap is machine noise, not a code
+saving. Both receipts are the `budgets.json` each run wrote; in the coordinator's
+logged re-run each `--out` directory already held its receipt, so the re-run
+refused ("use a fresh --out for each run") and the receipts were read back.
+
+## #466 basal-recurring-low-spread case — 2026-09-24
+
+Task 48 gives `_materialize_basal_coverage` a `clean_rates` parameter (one
+delivered rate per informative night; `None` keeps `clean_rate` for every night,
+so no other case moves) and adds the manufactured case
+`basal-recurring-low-spread`: fourteen nights at 0.45, two at 0.54 and fourteen
+at 0.66 against a programmed 0.60, with lows at 03:00 on two nights. Its
+`execute_case` dump at task 48's commit (5377e044) serves 03:00 as
+"lower (recurring lows)" at 0.54 with an interval of 0.45–0.66, and its literal
+expectation was transcribed from that dump. Task 50 rewrote the headline
+literals of `basal-recurring-low-lower`, `basal-recurring-low-no-clean-median`
+and `basal-recurring-low-spread` from their dumps ("overnight"). The committed
+showcase is unchanged.
+
+The five budgets are the one slice measurement recorded in the #465 section
+above (d705ac0a carries this case), with no limit raised: showcase 1,409,024
+bytes, drift 0.303 s, focused QA suite 59.909 s, slowest generated case 11.55 s,
+whole pytest 392.41 s against the base's 449.64 s on the same machine. The new
+case's own generated test takes 0.08 s (measured separately in the worker).

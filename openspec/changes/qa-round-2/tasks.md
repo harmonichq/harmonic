@@ -465,7 +465,7 @@ touched stories are S113, S151, S152, S153, S183, S184 and S185: every story
 replays open recurring-lows rows. The reproduction is
 `docs/scope/465-recurring-low-floor.repro.py`.
 
-- [ ] 37. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 37. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #465's touched
   stories against #465's base at 1280x720 and 1440x900 through
   `frontend/desk-behavior.replay.mjs`, re-inventory a recurring-lows lower and a
@@ -549,7 +549,7 @@ replays open recurring-lows rows. The reproduction is
   `tests/test_guidance.py` pass; any `tests/test_findings_projection.py`
   count the new held row moves is updated to the regenerated answer and named
   in the commit message.
-- [ ] 43. Rewrite `basal-recurring-low-within-floor`'s literal expectation from
+- [x] 43. Rewrite `basal-recurring-low-within-floor`'s literal expectation from
   its post-fix `execute_case` dump (AGENTS.md step 2): 03:00 `HARM_GATED`, no
   whole-day assert row, a held `(180, 240)` row whose headline opens with the
   recurring-lows hold sentence. The expectations of `basal-recurring-low-lower`,
@@ -559,7 +559,7 @@ replays open recurring-lows rows. The reproduction is
   without raising any, judging the whole-pytest budget against the base on the
   same machine as ADR 463's ruling does, and record them as a dated `#465`
   section of `openspec/changes/qa-round-2/coverage-appendix.md`.
-- [ ] 44. Add one ledger story (the next unissued S id) on
+- [x] 44. Add one ledger story (the next unissued S id) on
   `basal-recurring-low-within-floor`, in a dated `## #465 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
   decision as its sanction, with its replay function, registry entry, case
@@ -574,7 +574,7 @@ replays open recurring-lows rows. The reproduction is
 - [x] 45. In `CONTEXT.md`, the **Harm signal** entry says the nudge holds, rather
   than stepping, when its step would be smaller than the noise floor or one full
   step, whichever is smaller (ADR 465).
-- [ ] 46. Capture before/after renders of the 03:00 panel and lane on
+- [x] 46. Capture before/after renders of the 03:00 panel and lane on
   `basal-recurring-low-within-floor` at 1280x720 and 1440x900 from the no-fetch
   serve, the before from task 38's commit. The coordinator attaches them to the
   pull request; they are not committed.
@@ -589,7 +589,7 @@ roster or its lane. The reproduction is
 `docs/scope/466-recurring-low-explain.repro.py` and
 `docs/scope/466-slot-panel.repro.mjs`.
 
-- [ ] 47. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 47. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #466's touched
   stories against #466's base at 1280x720 and 1440x900, re-inventory the basal
   slot panel's interval sentences, its roster groups and excluded-night line,
@@ -677,7 +677,7 @@ roster or its lane. The reproduction is
 - [x] 54. In `DESIGN.md`, the recurring-lows worked example and the lane-key note
   say "overnight" and name the cell "suggests a lower because lows keep
   happening overnight".
-- [ ] 55. Add one ledger story (the next unissued S id after task 44's) in a
+- [x] 55. Add one ledger story (the next unissued S id after task 44's) in a
   dated `## #466 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`
   carrying Connor's 2026-09-24 decision as its sanction, with its replay
   function, registry entry, case mapping and story-table row in the files task
@@ -695,10 +695,10 @@ roster or its lane. The reproduction is
   because lows keep happening overnight", in `frontend/c4.replay.mjs` and its
   fake page in `frontend/c4.replay.test.js`. Raise the story inventory by this
   one story in the four places task 9 names.
-- [ ] 56. Re-measure the five QA budgets for `basal-recurring-low-spread` as task
+- [x] 56. Re-measure the five QA budgets for `basal-recurring-low-spread` as task
   43 does and record them as a dated `#466` section of
   `openspec/changes/qa-round-2/coverage-appendix.md`.
-- [ ] 57. Capture before/after renders of the 03:00 slot panel on
+- [x] 57. Capture before/after renders of the 03:00 slot panel on
   `basal-recurring-low-spread` at 1280x720 and 1440x900, the before from task
   48's commit, and an after render of the held 03:00 panel on
   `basal-recurring-low-within-floor`. The coordinator attaches them to the pull

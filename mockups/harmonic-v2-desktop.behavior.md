@@ -5851,8 +5851,8 @@ S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
             laid over it fails both legs at 1280x720. On d705ac0a leg 2 passed
             and leg 1 timed out at both sizes: the header check read the row's
             whole text, which runs its last two column names together; the
-            harness now reads each header cell. Branch run of the corrected
-            harness pending. Renders of the 03:00 panel, before on 5377e044
+            harness now reads each header cell. The branch passes both legs
+            at 1280x720 and 1440x900 on 431de418. Renders of the 03:00 panel, before on 5377e044
             and after on d705ac0a, handed to the coordinator uncommitted.
             Coordinator-run 2026-09-24
 ```

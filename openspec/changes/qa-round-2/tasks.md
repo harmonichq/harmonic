@@ -767,10 +767,9 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   `scripts/gen_findings_projection_fixtures.py`, `_slot(..., recurring_lows=True)`
   serves `evidence["harm"]["band_nights"]` 2 and
   `evidence["harm_band_source_nights"]` 20. Regenerate
-  `frontend/__fixtures__/findings-projection.json`; its `--check`,
-  `frontend/findings-projection-mirror.test.js` and `tests/test_guidance.py`
-  pass. Any pinned count or order the regenerated fixture moves in
-  `tests/test_findings_projection.py` or
+  `frontend/__fixtures__/findings-projection.json`; its `--check` and
+  `frontend/findings-projection-mirror.test.js` pass. Any pinned count or order the regenerated fixture moves in
+  `tests/test_findings_projection.py`, `tests/test_guidance.py` or
   `frontend/diagnose-findings-queue.test.js` is updated to the regenerated
   answer and named in the commit message.
 - [ ] 62. Add one ledger story (the next unissued S id, S192 at the pinned

@@ -943,7 +943,7 @@ same-meal pair (`uv run python docs/scope/470-meal-identity.repro.py --qa`), so
 the Diagnose workstation demo set it reads. The reproduction is
 `docs/scope/470-meal-identity.repro.py`.
 
-- [ ] 73. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 73. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): re-inventory, on the
   `behavioral-split-meal` case store of task 74 served through the QA
   copy-then-serve, the Highs after meals row's count sentence, its case file's
@@ -1069,7 +1069,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   same-meal top-ups; _Avoid_: second meal, split meal as two meals) and make the
   **Post-meal arc**, **Arc peak** and **Arc nadir** entries say the windows stop
   at the next meal's first bolus, never at a top-up.
-- [ ] 83. Add one ledger story (the next unissued S id) on `behavioral-split-meal`,
+- [x] 83. Add one ledger story (the next unissued S id) on `behavioral-split-meal`,
   in a dated `## #470 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`
   carrying Connor's 2026-09-24 decision as its sanction, with its replay function
   in `frontend/c4.replay.mjs`, registry entry in `frontend/desk-behavior.replay.mjs`,
@@ -1081,7 +1081,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   sentence (the base serves 24 meals), and the branch run at both sizes on its
   status line. Raise the story inventory by this one story in the four places
   task 9 names.
-- [ ] 84. Capture before/after renders of the Highs after meals case file on
+- [x] 84. Capture before/after renders of the Highs after meals case file on
   `behavioral-split-meal` at 1280x720 and 1440x900 from the no-fetch serve, the
   before from task 74's commit. The coordinator attaches them to the pull
   request; they are not committed.
@@ -1096,7 +1096,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
 `docs/scope/461-late-bolus-outcome.repro.py` and the rule's spike is
 `docs/scope/461-late-bolus-outcome.spike.py`.
 
-- [ ] 85. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 85. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #461's touched
   stories against #461's base at 1280x720 and 1440x900, re-inventory the Highs
   after meals row, the Late bolus Finding's case file and the Guide's silence
@@ -1164,7 +1164,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   budgets as task 81 does and record them as a dated `#461` section of
   `openspec/changes/qa-round-2/coverage-appendix.md`. In `CONTEXT.md`, the
   **Silence reason** entry lists the nine members the enum defines.
-- [ ] 90. Add one ledger story (the next unissued S id after task 83's) on
+- [x] 90. Add one ledger story (the next unissued S id after task 83's) on
   `behavioral-late-bolus`, in a dated `## #461 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24 option A
   as its sanction, with its replay function, registry entry, case mapping and
@@ -1179,7 +1179,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Late bolus
   captures (`evidence.json`, `workstation.json`) and Guide capture
   (`utilities.json`) move; its `--check` then passes.
-- [ ] 92. Capture before/after renders of the Late bolus Finding's case file and
+- [x] 92. Capture before/after renders of the Late bolus Finding's case file and
   the Guide's silence article on `behavioral-late-bolus` at 1280x720 and
   1440x900 from the no-fetch serve, the before from task 86's commit. The
   coordinator attaches them to the pull request; they are not committed.

@@ -6117,9 +6117,16 @@ S194 · A top-up is part of its meal. On behavioral-split-meal at 24 h, the
   evidence: C4_STORIES.S194; opens the 24 h rail, reads the served count
             sentence and the row that prints it, drills the Highs after meals
             case file, and reads its served and rendered rows
-  status:   not yet replayed; the base run (task 74's commit with this harness
-            laid over it) must fail at the count sentence (24 meals), and the
-            branch run pass at 1280x720 and 1440x900. Coordinator-run
+  status:   #470's base c225183a (task 74's commit) with this harness laid
+            over it fails at 1280x720 at the count sentence ("it counts 24").
+            The branch passes at 1280x720 and 1440x900 on 4f62a3e0. The
+            pre-work inventory on the base served "21 of 24 meals ran high"
+            and 24 case-file rows for Highs after meals and Carb undercount,
+            each top-up its own row; the branch serves "12 of 15" and 15 rows.
+            No observed behavior lacked a story: the Cause rows fold under
+            the Pattern as S115 holds. Renders of the rail and both case
+            files, before on c225183a and after on 4f62a3e0, at both sizes,
+            handed to the coordinator uncommitted. Coordinator-run 2026-09-25
 ```
 
 Additional handler inventory for this amendment:
@@ -6185,9 +6192,17 @@ S195 · Late bolus claims only meals that ran high. On behavioral-late-bolus at
   evidence: C4_STORIES.S195; opens the 24 h rail and reads the Pattern row,
             drills the Late bolus Finding's event case and reads its served and
             rendered fired rows, and opens the Guide's silence article
-  status:   not yet replayed; the base run (task 86's commit with this harness
-            laid over it) must fail at the count sentence (4 of 7), and the
-            branch run pass at 1280x720 and 1440x900. Coordinator-run
+  status:   #461's base c098e9dd (task 86's commit) with this harness laid
+            over it fails at 1280x720 at the count sentence (it prints "4 of 7
+            meals ran high"). The branch passes at 1280x720 and 1440x900 on
+            4f62a3e0, beside S13, S124 and R8, which pass at both sizes on
+            the pre-work base b4e20c30 and on the branch. The pre-work
+            inventory on b4e20c30 served "3 of 6" with two fired Late bolus
+            meals and a Guide silence article without "Stayed in range"; no
+            observed behavior lacked a story. Renders of the rail, the Late
+            bolus case file and the Guide's silence article, before on
+            c098e9dd and after on 4f62a3e0, at both sizes, handed to the
+            coordinator uncommitted. Coordinator-run 2026-09-25
 ```
 
 Additional handler inventory for this amendment:

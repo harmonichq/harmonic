@@ -5432,6 +5432,13 @@ Additional handler inventory for this amendment:
 | Staged marks asked again on refresh and after a settled save | frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh | S186 |
 | Retained return re-reads Plan state and guidance | frontend/diagnose.js readPlan, mount | S186 |
 
+Addendum · 2026-09-24 · #462/#463 slice (ADR 460 addendum, decided
+autonomously under the coordinator's authorization): the retained return's Plan
+and guidance re-read runs on a plain return only. A Day return to the held case
+reads the held status check alone, which S164 and S165 assert; both failed on
+the re-read in the slice's touched-story replay on cfa1ace4 and on the branch.
+No story text changes, and S186's top-nav returns keep the re-read.
+
 ## #459 amendment — 2026-09-24, issue #459
 
 S187 is the fail-first obligation of ADR 459 (`openspec/changes/qa-round-2/design.md`):

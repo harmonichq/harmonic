@@ -1481,6 +1481,35 @@ test('#460 · a retained return whose served Plan state has not moved repaints t
   assert.equal(events.filter(event => event === 'refresh').length, 1, `one refresh: ${events.join(', ')}`);
 });
 
+test('#460 · a Day return to the held case re-reads neither Plan state nor guidance', async () => {
+  // Day offers no Plan write, so a return straight from it cannot have moved
+  // the draft; the return reads the held status check alone (S164, S165).
+  const previous = globalThis.window;
+  const previousFetch = fetchReply;
+  const events = [];
+  fetchReply = draftTransport(DRAFT_460, { log: events });
+  const { page, served, seat, view, destination } = desk428({ root: {
+    querySelectorAll: () => [], querySelector: () => null } });
+  try {
+    await destination.read();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    view.publish({ subject: 'finding:late_bolus', occurrence: 'o-1', window: null });
+    park(destination, seat, 0, routed(page));
+    page.history.pushState(null, '', serializeRoute({ destination: 'diagnose', context: DAY_RETURN }));
+    await afterHandlers();
+    events.length = 0; served.requests.length = 0;
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await flush();
+    assert.deepEqual(served.requests, ['status'], 'premise: the input revision is unchanged, so no payload read');
+    destination.mount(seat, { navigation: 1, hold() {}, context: routed(page) });
+    await afterHandlers();
+    assert.equal(view.refreshes, 1, 'premise: the Day return re-seated the retained desk');
+    assert.deepEqual(events.filter(path => path === '/api/plan' || path === '/api/guidance'), [],
+      `a Day return issues no Plan or guidance read: ${events.join(', ')}`);
+    destination.leave();
+  } finally { globalThis.window = previous; fetchReply = previousFetch; }
+});
+
 // Last: it seats the desk's one router on a stand-in surface for this module.
 test('ADR 428 · the in-place write renames the current entry with no navigation, push, render or focus, and the next render hands Diagnose that context', async () => {
   const { startDesk, registerDestination, render, view: desk } = await import('./routes.js');

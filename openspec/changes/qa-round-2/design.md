@@ -128,6 +128,17 @@ Each was taken as the simplest option consistent with the settled decisions:
   so a base run records every leg's own verdict (decided autonomously during
   AFK run).
 
+**Addendum (#462/#463 slice, 2026-09-24), decided autonomously during AFK run,
+under the coordinator's authorization to reconcile point 7 with S164 and S165.**
+Point 7's re-read runs on a plain return only (a top-nav press of Diagnose). A
+Day return to the held case comes straight back from Day, which offers no Plan
+write, so it cannot have moved the draft, and it reads the held status check
+alone, as S164 and S165 require. The slice's touched-story replay caught the
+contradiction: both stories failed on the Plan, guidance, Focus and Pump
+settings reads the re-read started. A draft written while the reader detoured
+from Day to Changes and back to Day is picked up by the next plain return or
+fresh read. Every S186 leg returns by the top nav and keeps its re-read.
+
 **Consequences.** A partially admitted draft (some items the analysis still
 admits, some it no longer does) is named by the admitted part, because the
 surface's marks win. That is today's behavior for the admitted part, and the

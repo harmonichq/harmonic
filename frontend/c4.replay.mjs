@@ -4228,7 +4228,10 @@ export const C4_STORIES = {
     await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
     await page.locator('[data-record-part="ending"] [data-ending-kind]').waitFor({ timeout: 30000 });
     const stage = page.locator('.gf-stage-trial');
-    const instrument = async () => (await stage.locator('.instruments .instrument').first().innerText()).replace(/\s+/g, ' ').trim();
+    // The caption is set in capitals by the stylesheet, so its words compare
+    // without case.
+    const instrument = async () => (await stage.locator('.instruments .instrument').first().innerText())
+      .replace(/\s+/g, ' ').trim().toLowerCase();
     const figure = stage.locator('[data-trial-chart]');
     await waitForReplayAssertion(async seen => {
       assert.ok(seen(await instrument()).includes('as saved at the ending'), 'S188 premise: the record opens on its saved ending');
@@ -4245,7 +4248,7 @@ export const C4_STORIES = {
     await page.locator('[data-reassessment-context="current"]').waitFor({ timeout: 120000 });
     await check(async seen => {
       const words = seen(await instrument());
-      assert.ok(words.includes('Current policy reassessment') && words.includes('recomputed now'),
+      assert.ok(words.includes('current policy reassessment') && words.includes('recomputed now'),
         `S188 after pressing Current policy, the stage must name "Current policy reassessment" and "recomputed now": ${words}`);
       assert.ok(!words.includes('as saved at the ending'), 'S188 the Current policy stage must not read "as saved at the ending"');
       assert.equal(seen(await figure.getAttribute('data-figure-state')), 'paired',
@@ -4262,7 +4265,7 @@ export const C4_STORIES = {
     await press(page, '[data-assessment="retained"]');
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 120000 });
     await check(async seen => {
-      assert.ok(seen(await instrument()).includes('Retained context reassessment'),
+      assert.ok(seen(await instrument()).includes('retained context reassessment'),
         'S188 after pressing Retained context, the stage must name "Retained context reassessment"');
       assert.equal(seen(await figure.getAttribute('data-figure-state')), 'unavailable',
         'S188 the Retained read must read unavailable');

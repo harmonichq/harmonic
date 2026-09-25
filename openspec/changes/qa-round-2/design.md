@@ -478,6 +478,26 @@ gives the candidate, to the second, and a switch instant is never kept. An
 old-dated record carries that date by construction, so it still keeps its time and
 id. Every other record is either the candidate's own id or not the candidate at all.
 
+Two consequences are accepted, both found by the scoped cold check of the exact
+rule, both matching main's own behavior in kind, and neither changing any dose
+advice:
+
+- **Grouping edge.** Whole-profile grouping and the switch-corroboration drop
+  compare the new change instants against their one-day tolerance, where the
+  earlier dating compared day-first observations. When re-dating moves a gap
+  across that tolerance, the parts group differently. Example: a basal slot
+  changes at 08:00 on day D−1, whose own instant is its earlier date; carb ratio's
+  first bolus on day D is at 07:00 at the old value, and its new value is first
+  seen at 12:30. The earlier dating saw a 23-hour gap and saved one profile record
+  at D 07:00. The new dating sees 28.5 hours and derives separate basal and
+  carb-ratio candidates, which the parameter check does not match to that profile
+  record, so the roster shows three rows for one edit where main showed one.
+  Grouping is not re-run on earlier dates for the keeper match.
+- **A shifted earlier observation.** A re-decoded or late-arriving observation
+  that moves a settled day's first observation moves the earlier-dating date
+  computed for its change. An old-dated record then no longer matches, and the
+  change mints a second id, as main does when its own day-first date moves.
+
 **Decided autonomously during AFK run.** Decisions 1–4, 6 and 7, and their
 words: the ticket offered no option for 1, 2, 4, 6 or 7 beyond its example rule,
 and 3 is its recommendation. Rounding stays in the desk because a server rounding

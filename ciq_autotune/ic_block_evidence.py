@@ -40,7 +40,7 @@ _COHORT_NAMES = {"ran-high": "Ran high", "ran-low": "Ran low", "in-range": "In r
 _RUN_FACTS = frozenset({
     "pool_reason", "side", "meal_carbs", "meal_dose", "post_correction_user",
     "post_correction_ciq", "post_correction_unknown", "ciq_basal_delta_acted_u",
-    "rescue_carbs",
+    "rescue_carbs", "member_in_block",
 })
 # The pooled balance sheet's terms and the quotient they make.
 _LEDGER_FACTS = frozenset({
@@ -238,7 +238,8 @@ class IcBlockEvidenceProjection:
                     "estimate": {"value": estimate["value"], "lo": estimate["lo"],
                                  "hi": estimate["hi"], "wide": estimate["wide"]},
                     "side": {"side_k": channels["side_k"],
-                             "side_n": channels["side_n"]},
+                             "side_n": channels["side_n"],
+                             "direction": channels["side_direction"]},
                     "support_detail": {
                         "whole_runs": eligibility["whole_runs"],
                         "fractional_run_ownership":

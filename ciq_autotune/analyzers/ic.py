@@ -2640,8 +2640,12 @@ def _analyze_ic_blocks_shared(
         # `tuning_priority` turns these into a Wilson bound; the denominator is fixed
         # here so a 30-day divisor can never reach a 90-day count.
         side_k = side_n = 0
+        side_direction: Optional[str] = None
         if band_excludes and measured is not None and programmed is not None:
             direction = 1.0 if measured > programmed else -1.0
+            # The side `side_k` counts toward, served so no reader re-derives it from
+            # the estimate and the programmed value.
+            side_direction = "above" if direction > 0 else "below"
             for r in pool:
                 side_n += 1
                 if (r.true_ic - programmed) * direction > 0:
@@ -2651,6 +2655,7 @@ def _analyze_ic_blocks_shared(
             "window_days": BLOCK_WINDOW_DAYS,
             "side_k": side_k,
             "side_n": side_n,
+            "side_direction": side_direction,
             "low_days": int((harm_evidence or {}).get("row_days") or 0),
             "rescue_days": rescue_days,
             "measurement_asserts": band_excludes,
@@ -2706,6 +2711,11 @@ def _analyze_ic_blocks_shared(
                 # no projection has to reconstruct its member chain or horizon.
                 "member_offsets_min": [
                     (meal.t - r.t).total_seconds() / 60.0 for meal in r.meals
+                ],
+                # Parallel to the offsets: whether each member was dosed inside this
+                # block's hours, by the same membership test `coverage_meals` uses.
+                "member_in_block": [
+                    _block_of(_tod(meal.t), groups) == bid for meal in r.meals
                 ],
                 "cgm_start_min": -float(cfg.bg0_max_gap_min),
                 "cgm_end_min": duration + cfg.post_meal_min,

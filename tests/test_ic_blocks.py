@@ -294,6 +294,35 @@ class BlockHarmTest(unittest.TestCase):
         self.assertIn("pre-empted low", b.annotation)
 
 
+class BlockSideDirectionTest(unittest.TestCase):
+    """The side the counted runs landed on is served, never inferred (#464)."""
+
+    SEGMENTS = [(0, 5.0), (720, 6.0)]
+
+    def test_a_raise_block_serves_above_and_a_lower_block_serves_below(self):
+        # Mornings read 60 g on 15 U = 4.0 g/U against 5.0; evenings 60 g on 7.5 U =
+        # 8.0 g/U against 6.0.
+        events = ([meal(day, 9, 60, 15.0, ratio=5.0) for day in range(12)]
+                  + [meal(day, 17, 60, 7.5, ratio=6.0) for day in range(12)])
+        blocks = by_id(blocks_for(self.SEGMENTS, events)[0])
+
+        self.assertEqual("lower", blocks[0].guidance["action"]["direction"])
+        self.assertEqual("below",
+                         blocks[0].evidence["recurrence_channels"]["side_direction"])
+        self.assertEqual("raise", blocks[720].guidance["action"]["direction"])
+        self.assertEqual("above",
+                         blocks[720].evidence["recurrence_channels"]["side_direction"])
+
+    def test_a_block_that_counted_no_side_serves_none(self):
+        # 60 g on 12 U reads exactly the programmed 5.0, so no side is counted.
+        events = [meal(day, 9, 60, 12.0, ratio=5.0) for day in range(12)]
+        channels = by_id(blocks_for(self.SEGMENTS, events)[0])[0].evidence[
+            "recurrence_channels"]
+
+        self.assertEqual(0, channels["side_n"])
+        self.assertIsNone(channels["side_direction"])
+
+
 class BlockLedgerTest(unittest.TestCase):
     """The published balance sheet is the arithmetic behind the number (#464).
 

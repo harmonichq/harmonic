@@ -20,6 +20,7 @@
     "excluded_runs": 1,
     "label": "All day",
     "side": {
+     "direction": null,
      "side_k": 0,
      "side_n": 0
     },
@@ -1720,6 +1721,9 @@
      "in_pool": false,
      "meal_carbs": 20,
      "meal_dose": 4,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -1786,6 +1790,7 @@
     "excluded_runs": 0,
     "label": "All day",
     "side": {
+     "direction": null,
      "side_k": 0,
      "side_n": 0
     },
@@ -3489,6 +3494,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -3519,6 +3527,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -3549,6 +3560,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -3579,6 +3593,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -3688,6 +3705,7 @@
     "excluded_runs": 0,
     "label": "Overnight",
     "side": {
+     "direction": null,
      "side_k": 0,
      "side_n": 0
     },
@@ -5405,6 +5423,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5436,6 +5458,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5467,6 +5493,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5498,6 +5528,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5529,6 +5563,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5560,6 +5598,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5591,6 +5633,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5622,6 +5668,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -5653,6 +5703,10 @@
      "in_pool": true,
      "meal_carbs": 120.0,
      "meal_dose": 24.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -6100,6 +6154,7 @@
     "excluded_runs": 1,
     "label": "All day",
     "side": {
+     "direction": null,
      "side_k": 0,
      "side_n": 0
     },
@@ -7808,6 +7863,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7838,6 +7896,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7868,6 +7929,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7898,6 +7962,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7928,6 +7995,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7958,6 +8028,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -7988,6 +8061,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -8018,6 +8094,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -8048,6 +8127,9 @@
      "in_pool": false,
      "meal_carbs": 20,
      "meal_dose": 4,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -8314,6 +8396,7 @@
     "excluded_runs": 4,
     "label": "Morning",
     "side": {
+     "direction": "above",
      "side_k": 18,
      "side_n": 24
     },
@@ -10065,6 +10148,9 @@
      "in_pool": false,
      "meal_carbs": 60.0,
      "meal_dose": 10.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10095,6 +10181,9 @@
      "in_pool": false,
      "meal_carbs": 60.0,
      "meal_dose": 10.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10125,6 +10214,9 @@
      "in_pool": false,
      "meal_carbs": 60.0,
      "meal_dose": 10.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10155,6 +10247,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10185,6 +10280,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10215,6 +10313,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10245,6 +10346,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10275,6 +10379,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10305,6 +10412,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10335,6 +10445,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10365,6 +10478,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10395,6 +10511,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10425,6 +10544,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10455,6 +10577,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10485,6 +10610,9 @@
      "in_pool": true,
      "meal_carbs": 60.0,
      "meal_dose": 12.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],
@@ -10515,6 +10643,10 @@
      "in_pool": true,
      "meal_carbs": 110.0,
      "meal_dose": 22.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10546,6 +10678,10 @@
      "in_pool": true,
      "meal_carbs": 110.0,
      "meal_dose": 22.0,
+     "member_in_block": [
+      true,
+      true
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10577,6 +10713,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10608,6 +10748,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10639,6 +10783,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10670,6 +10818,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10701,6 +10853,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10732,6 +10888,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10763,6 +10923,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10794,6 +10958,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10825,6 +10993,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10856,6 +11028,10 @@
      "in_pool": true,
      "meal_carbs": 100.0,
      "meal_dose": 18.0,
+     "member_in_block": [
+      true,
+      false
+     ],
      "member_offsets_min": [
       0.0,
       120.0
@@ -10887,6 +11063,9 @@
      "in_pool": false,
      "meal_carbs": 55.0,
      "meal_dose": 11.0,
+     "member_in_block": [
+      true
+     ],
      "member_offsets_min": [
       0.0
      ],

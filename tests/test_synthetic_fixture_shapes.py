@@ -134,7 +134,10 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 set(case), name)
             self.assertEqual({"value", "lo", "hi", "wide"},
                              set(case["block"]["estimate"]), name)
-            self.assertEqual({"side_k", "side_n"}, set(case["block"]["side"]), name)
+            self.assertEqual({"side_k", "side_n", "direction"},
+                             set(case["block"]["side"]), name)
+            self.assertIn(case["block"]["side"]["direction"], ("above", "below", None),
+                          name)
             self.assertEqual({"whole_runs", "fractional_run_ownership",
                               "effective_run_count"},
                              set(case["block"]["support_detail"]), name)
@@ -149,6 +152,11 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 self.assertEqual(run["pool_reason"] in POOLED_REASONS, run["in_pool"],
                                  (name, run["run_id"]))
                 self.assertIn(run["side"], (-1, 0, 1), (name, run["run_id"]))
+                self.assertEqual(len(run["member_offsets_min"]),
+                                 len(run["member_in_block"]), (name, run["run_id"]))
+                self.assertTrue(all(isinstance(flag, bool)
+                                    for flag in run["member_in_block"]),
+                                (name, run["run_id"]))
 
     def test_the_ledger_quotient_is_the_served_terms_own_arithmetic(self):
         for name, case in self.cases.items():

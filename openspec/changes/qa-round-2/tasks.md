@@ -230,7 +230,7 @@ S157, S180 and R18: every story that opens a change record or reads a
 reassessment. The reproduction is `docs/scope/462-record-comparison.repro.py`
 and `docs/scope/462-stage.repro.mjs`.
 
-- [ ] 18. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 18. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #462's touched
   stories against the unchanged base at 1280x720 and 1440x900 through
   `frontend/desk-behavior.replay.mjs`, re-inventory an ended record's stage
@@ -313,7 +313,7 @@ and `docs/scope/462-stage.repro.mjs`.
   `frontend/c4.replay.mjs`, the `readiness` helper's "comparison the page shows"
   follows the same rule, with its comment and its pin in
   `frontend/c4.replay.test.js`.
-- [ ] 24. Add one ledger story (the next unissued S id) on `c4-isf-late-read`,
+- [x] 24. Add one ledger story (the next unissued S id) on `c4-isf-late-read`,
   in a dated `## #462 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
   decisions as its sanction, with its replay function, registry entry, case
@@ -336,7 +336,7 @@ and `docs/scope/462-stage.repro.mjs`.
 - [x] 25. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`); its `focus.json`
   and `journey.json` lose the package hash. Its `--check` then passes.
-- [ ] 26. Capture before/after renders of the `c4-isf-late-read` record's stage,
+- [x] 26. Capture before/after renders of the `c4-isf-late-read` record's stage,
   on Original and after pressing Current policy, at 1280x720 and 1440x900 from
   the no-fetch serve, the before from task 19's commit. The coordinator
   attaches them to the pull request; they are not committed.
@@ -350,7 +350,7 @@ case: each one renders an evidence figure or an outcome table. The
 reproduction is `docs/scope/463-record-display.repro.py`,
 `docs/scope/463-figure.repro.mjs` and `docs/scope/463-redate.spike.py`.
 
-- [ ] 27. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 27. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #463's touched
   stories against #463's base at 1280x720 and 1440x900, re-inventory the six
   figure states and the Read column in the served app, and record any observed
@@ -419,12 +419,12 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   only for a figure that draws a curve, updating `evidenceFigure`'s comment; in
   `frontend/desk.css`, give the figure's track only its legend's height when the
   figure draws no curve, on the Trial and Focus stages at every width.
-- [ ] 32. Desk-suite test in `frontend/desk.browser.test.mjs`, failing-first on
+- [x] 32. Desk-suite test in `frontend/desk.browser.test.mjs`, failing-first on
   #463's base, at 1280x720 and 1440x900: a served hand-built ended record whose
   saved assessment serves both periods and rows and no clock views opens with
   its figure no taller than its legend line plus one pixel, and nothing inside
   the stage carries `role="img"`.
-- [ ] 33. Add one ledger story (the next unissued S id after task 24's) in a
+- [x] 33. Add one ledger story (the next unissued S id after task 24's) in a
   dated `## #463 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`,
   with its replay function, registry entry, case mapping and story-table row in
   the files task 8 names. Leg 1, on `showcase`: Changes' watched Trial reads
@@ -445,7 +445,7 @@ reproduction is `docs/scope/463-record-display.repro.py`,
 - [x] 35. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`) if #463's changes
   move it; its `--check` passes.
-- [ ] 36. Capture before/after renders at 1280x720 and 1440x900: the showcase's
+- [x] 36. Capture before/after renders at 1280x720 and 1440x900: the showcase's
   watched Trial Read column, c3-history's finished record stage, and the
   desk-suite collapsed figure of task 32, the before from #463's base. The
   coordinator attaches them to the pull request; they are not committed.

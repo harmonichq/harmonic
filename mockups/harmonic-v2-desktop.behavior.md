@@ -5575,9 +5575,17 @@ S188 · An ended record whose saved ending serves no periods opens on that saved
             the stage, presses Current policy and compares the stage with the
             served Current policy read, then presses Retained context. The
             checks are gathered and the story fails once
-  status:   pending; the coordinator runs task 19's commit 578ec3c7 with this
-            harness laid over it, which must fail at its Current policy stage
-            assertion, and the branch at 1280x720 and 1440x900
+  status:   task 19's commit 578ec3c7 with this harness (403cfd67) laid over
+            it fails at both sizes at its Current policy stage assertion
+            ("S188 after pressing Current policy, the stage must name
+            \"Current policy reassessment\"", the stage still reading "Ending
+            snapshot / as saved at the ending"), then at its Retained context
+            one; the branch passes at 1280x720 and 1440x900 on a700330b, after
+            a story defect (a case-sensitive read of the capitalised caption)
+            failed the first branch run on 403cfd67. Renders of the record on
+            Original and after Current policy, before on 578ec3c7 and after on
+            a700330b, handed to the coordinator uncommitted. Coordinator-run
+            2026-09-24
 ```
 
 Amended S91 · 2026-09-24 · #462 / Connor Griffin's decisions above: The story's text is unchanged. Its c4 part reads the Retained read of each case's watched, else first, record. c4-isf's and c4-profile's records are ended, and a reassessment of an ended Trial now reads only up to its ending (ADR 462), so their Retained reads count what their saved endings count: 27 and 28 Trial-arm dates, criterion not met, where they counted 30 and 31 and were met. For those two cases the story now asserts that the Retained read's readiness arms equal the saved ending's arms, and that the read stays `unclear`, instead of criterion met. c4-ic's watched record is open and is unchanged. The readiness helper's "comparison the page shows" follows ADR 462's rule: the saved ending when it serves periods, else the retained read the helper pressed; it now returns the record read. Pinned by node tests in `frontend/c4.replay.test.js`; the replay run is the coordinator's.
@@ -5671,9 +5679,13 @@ S189 · A change record prints one decimal and draws a saved curve. Leg 1: on
             leg 2 reads the served roster, requires the finished record's
             saved clock bins, opens the record by its address and reads the
             stage. Each leg runs; the story fails once, naming each failed leg
-  status:   pending; the coordinator runs #463's base cfa1ace4 with this
-            harness laid over it, where both legs must fail, and the branch at
-            1280x720 and 1440x900
+  status:   #463's base cfa1ace4 with this harness (403cfd67) laid over it
+            fails both legs at both sizes: leg 1 reads "difference
+            -3.9000000000000057", leg 2 finds no saved clock bins; the branch
+            passes both legs at 1280x720 and 1440x900 on 403cfd67. Renders of
+            the Read column and the finished record's stage, before on
+            cfa1ace4 and after on 403cfd67, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
 ```
 
 Additional handler inventory for this amendment:

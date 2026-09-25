@@ -61,3 +61,29 @@ retained : stage "Ending snapshot / as saved at the ending", figure unavailable,
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
 | 1 | — | Initial flat draft pinned f985b3a6 | Note (`authoring`): Verification ran the whole pytest suite twice, once standalone and once inside the budget leg. Fixed: the standalone pytest line is dropped and the budget leg's pytest is the run of record. | CLEAN (0 block, 1 note) |
+
+## Start evidence (2026-09-24)
+
+Worker-run, sandboxed; every browser leg coordinator-run, unsandboxed, on
+synthetic case stores.
+
+- **Revise pre-work (task 18).** #462's touched stories (S49, S54, S54b, S91,
+  S92, S94, S95, S96, S105, S110, S111, S112, S142, S143, S157, S180, R18) on the
+  unchanged base 9648cdcb: `# executed 17 · failed 0` at 1280x720 and at
+  1440x900. The pre-work ran after the implementation, not before it, but
+  against the unchanged base, so what it recorded is the base's behavior. It
+  found no observed behavior without a story. S188's base run on 578ec3c7 is
+  the inventory of the ended record's stage: "Ending snapshot / as saved at the
+  ending", an unavailable figure naming the late-context reason, and a stage
+  that stays the same after either reassessment is pressed.
+- **Failing first.** Backend, on 578ec3c7: the retained-context version test
+  `2 failed, 3 passed`; the ending-cut tests `3 failed, 2 passed` (Trial periods
+  ending 07-02, after the 06-10 and 06-29 endings). Frontend: the reason words
+  and the Retained line `ℹ pass 81 / ℹ fail 2`; the lifecycle stage test
+  `ℹ pass 28 / ℹ fail 1`. S188 fails on 578ec3c7 at both sizes at its Current
+  policy stage assertion.
+- **Branch.** S188 passes at both sizes; the budgets are in
+  `openspec/changes/qa-round-2/coverage-appendix.md`.
+- **Renders (task 26).** The c4-isf-late-read record on Original and after
+  Current policy, at both sizes, before on 578ec3c7 and after on a700330b,
+  are handed to the coordinator uncommitted.

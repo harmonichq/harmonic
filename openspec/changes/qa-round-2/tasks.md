@@ -778,8 +778,9 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   `mockups/eating-sequence-findings.synthetic/payload.json` moves (measured under
   the spike at 977,835 bytes); its `--check` and
   `tests/test_eating_sequence_finding_fixture.py`'s 1,000,000-byte limit pass. Any pinned count or order the regenerated fixture moves in
-  `tests/test_findings_projection.py`, `tests/test_guidance.py` or
-  `frontend/diagnose-findings-queue.test.js` is updated to the regenerated
+  `tests/test_findings_projection.py`, `tests/test_guidance.py`,
+  `frontend/diagnose-findings-queue.test.js` or
+  `frontend/browser-fixture-population.test.js` is updated to the regenerated
   answer and named in the commit message.
 - [ ] 62. Add one ledger story (the next unissued S id, S192 at the pinned
   commit) on `basal-recurring-low-lower`, in a dated `## #467 amendment`

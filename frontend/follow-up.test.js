@@ -563,6 +563,10 @@ test('every comparison reason has plain words, and an unknown code prints as ser
   assert.equal(comparisonReasonWords('a_new_served_reason'), 'a_new_served_reason');
 });
 
+test('a retained context from another version of the comparison names Current policy as the read left', () => {
+  assert.match(comparisonReasonWords('unsupported_retained_execution'), /Current policy is the read left/);
+});
+
 /* ------------------------------------- the watched behavior's served name */
 
 // An adherence arm as the comparison serves it, for a given lever.

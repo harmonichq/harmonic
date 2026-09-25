@@ -329,9 +329,22 @@ test('a reassessment is offered beside the original and never in place of it', (
     },
   }, 'retained');
   assert.match(retained, /data-reassessment-context="retained"/);
-  assert.match(retained, /Stored context dcbc2e96d98a/);
   assert.match(retained, /data-reassessment-state="available"/);
   assert.match(retained, /never replaces the saved ending/);
+});
+
+test('the Retained line names its stored context by when it was recorded, never by its id', () => {
+  const read = (context) => reassessmentSection({ reassessment: {
+    mode: 'retained', computed_at: '2026-09-08 15:15:44', comparison_context: context,
+    comparison: { availability: { state: 'available', reason: null }, assessment: { state: 'unclear' } },
+  } }, 'retained');
+  const recorded = read({ id: 'dcbc2e96d98ac06a3369dccc5fcdd4f2876c7c0f', captured_at: '2024-06-01 00:00:00' });
+  const line = /data-reassessment-context="retained">([^<]*)</.exec(recorded)[1];
+  assert.equal(line, `Stored context recorded ${stamp('2024-06-01 00:00:00')}`);
+  assert.doesNotMatch(recorded, /[0-9a-f]{8,}/, 'no run of the context id prints');
+  const unrecorded = read({ id: 'dcbc2e96d98ac06a3369dccc5fcdd4f2876c7c0f' });
+  assert.match(unrecorded, /data-reassessment-context="retained">No stored context was recorded</);
+  assert.doesNotMatch(unrecorded, /[0-9a-f]{8,}/);
 });
 
 test('a current-policy reassessment labels its context and claims no like-for-like read', () => {

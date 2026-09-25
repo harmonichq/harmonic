@@ -165,13 +165,15 @@ async function guideArticle447(page) {
   }, 'S170 the Guide article names Changes');
 }
 // #442: the page's readiness lines print the comparison the page shows, which
-// is an ended record's saved ending assessment, else the retained reassessment.
-// The returned comparison, and every S91 assertion on it, stays the retained read.
+// is an ended record's saved ending assessment when it serves periods, else the
+// retained reassessment the helper pressed (ADR 462). It returns the record
+// read, so every S91 assertion reads the retained comparison and the saved
+// ending it came with.
 export async function readiness(page, unit, required) {
   const detail = await openRetained(page);
   const comparison = detail.reassessment.comparison;
   const ending = detail.original.ending;
-  const shown = ending.kind ? ending.assessment : comparison;
+  const shown = ending.kind && Object.keys(ending.assessment.periods || {}).length ? ending.assessment : comparison;
   await waitForReplayAssertion(async seen => {
     for (const side of ['before', 'after']) {
       const arm = comparison.readiness[side];
@@ -190,7 +192,7 @@ export async function readiness(page, unit, required) {
       if (printed.reason) assert.notEqual(criterion, `Not met — ${printed.reason}.`, 'a served reason prints in words, never its code');
     }
   }, "readiness");
-  return comparison;
+  return detail;
 }
 
 // #404 · 2026-09-10. These are prospective fail-first obligations; browser
@@ -3987,11 +3989,15 @@ export const C4_STORIES = {
       ['c4-profile', 'coverage-qualified informative dates', 30],
     ]) {
       await ctx.withCase(name, async fresh => {
-        const comparison = await readiness(fresh, unit, required);
+        const detail = await readiness(fresh, unit, required);
+        const comparison = detail.reassessment.comparison;
         assert.ok(comparison.readiness.after.elapsed_days > 14, 'actual accumulation continues past fourteen days');
         if (name !== 'c4-ic') {
-          assert.ok(Object.values(comparison.readiness).every(arm => arm.criterion_met));
-          assert.equal(comparison.assessment.state, 'unclear', 'criterion met does not manufacture a direction');
+          // #462: these records ended, so their Retained read stops at the
+          // ending and counts what the saved ending counts (ADR 462).
+          assert.deepEqual(comparison.readiness, detail.original.ending.assessment.readiness,
+            'S91 an ended record\'s Retained read counts what its saved ending counts');
+          assert.equal(comparison.assessment.state, 'unclear', 'the Retained read manufactures no direction');
         }
         await capture(fresh, ctx, `S91-${name}`, name);
       });

@@ -1077,14 +1077,16 @@ test('S157 fails when the periods note reads data past the saved ending', async 
 });
 
 // #442: S91's c4 readiness helper over an ended record whose saved ending read
-// its evidence to the ending while the retained read runs to the data tail, as
-// c4-isf serves them. `lines` is the readiness the page prints.
-function qa442ReadinessPage(lines, { rawReason = false } = {}) {
+// its evidence to the ending while the retained read runs to the data tail.
+// `lines` is the readiness the page prints; `periods: false` serves a saved
+// ending with no periods, whose stage shows the pressed read instead (ADR 462).
+function qa442ReadinessPage(lines, { rawReason = false, periods = true } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
   const arm = (observed, met, reason = null) => ({ unit: 'qualifying fasting Rest windows', required: 30,
     observed, criterion_met: met, reason, elapsed_days: 31 });
   const retained = { readiness: { before: arm(31, true), after: arm(30, true) }, assessment: { state: 'unclear' } };
-  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') } };
+  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') },
+    periods: periods ? { before: {}, after: {} } : {} };
   const detail = { original: { ending: { kind: 'expired_unreviewed', assessment: saved } },
     reassessment: { comparison: retained } };
   const roster = { trials: [{ id: 'isf-all-20240601000000', parameter: 'isf' }],
@@ -1116,9 +1118,17 @@ function qa442ReadinessPage(lines, { rawReason = false } = {}) {
 
 test('S91 readiness compares an ended record’s lines with its saved ending, and returns the retained read', async () => {
   const { readiness } = await import('./c4.replay.mjs');
-  const comparison = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
-  assert.equal(comparison.readiness.after.observed, 30);
-  assert.equal(comparison.readiness.after.criterion_met, true);
+  const detail = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
+  assert.equal(detail.reassessment.comparison.readiness.after.observed, 30);
+  assert.equal(detail.reassessment.comparison.readiness.after.criterion_met, true);
+  assert.equal(detail.original.ending.assessment.readiness.after.observed, 27);
+});
+
+test('S91 readiness compares a saved ending with no periods against the retained read the page draws', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await readiness(qa442ReadinessPage('retained', { periods: false }), 'qualifying fasting Rest windows', 30);
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('saved', { periods: false }),
+    'qualifying fasting Rest windows', 30)), /the after readiness line must print the criterion of the comparison the page shows/);
 });
 
 test('S91 readiness rejects an arm that prints its served reason code instead of words', async () => {

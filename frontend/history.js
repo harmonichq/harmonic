@@ -403,7 +403,7 @@ export function reassessmentSection(detail, mode, { kind } = {}) {
       <dt>Computed</dt><dd>${e(stamp(reassessment.computed_at))}</dd>
       <dt>Context</dt><dd data-reassessment-context="${e(reassessment.mode)}">${reassessment.mode === 'current'
         ? 'Current policy: this is not a like-for-like comparison with the saved ending.'
-        : `Stored context ${e(context.id ? String(context.id).slice(0, 12) : 'unavailable')}`}</dd>
+        : context.captured_at ? `Stored context recorded ${e(stamp(context.captured_at))}` : 'No stored context was recorded'}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
         ? e(stateWords((comparison.assessment || {}).state || 'unclear'))
         : `Unavailable · ${e(comparisonReasonWords(availability.reason || 'not_recorded'))}`}</dd>
@@ -430,7 +430,10 @@ function rosterFrame(roster) {
 
 /**
  * The ONE comparison a record renders: the ending's own saved assessment where
- * it has one, and the requested reassessment where it does not.
+ * it has one, and the requested reassessment where it does not. A saved ending
+ * that serves no periods has nothing to draw, so a reassessment the reader
+ * requests takes the stage instead (ADR 462); with none requested, the saved
+ * ending still shows.
  *
  * Never the two at once, and never one for the figure and the other for the
  * rows — a stage carrying two generations is exactly what the replacement terms
@@ -438,9 +441,11 @@ function rosterFrame(roster) {
  */
 function shownComparison(detail) {
   const ending = (detail.original || {}).ending || {};
-  return ending.kind && ending.assessment && ending.assessment.state
-    ? { comparison: ending.assessment, source: 'ending' }
-    : { comparison: (detail.reassessment || {}).comparison || null, source: 'reassessment' };
+  const saved = ending.kind && ending.assessment && ending.assessment.state ? ending.assessment : null;
+  const requested = (detail.reassessment || {}).comparison || null;
+  return saved && (Object.keys(saved.periods || {}).length || !requested)
+    ? { comparison: saved, source: 'ending' }
+    : { comparison: requested, source: 'reassessment' };
 }
 
 /** A failed reassessment read, in the stage: which read failed, and its retry.
@@ -459,13 +464,18 @@ function recordFrame(state) {
   const label = ended ? (ENDING_WORD[ending.kind] || ending.kind) : 'Still open';
   const title = recordTitle(detail, kind);
   const shown = shownComparison(detail);
+  // A reassessment drawn for an ended record names its own mode, never the
+  // saved ending's snapshot (ADR 462).
+  const cap = ended && shown.source === 'reassessment' && shown.comparison
+    ? `${MODE_WORD[detail.reassessment.mode] || detail.reassessment.mode} reassessment`
+    : ended ? 'Ending snapshot' : 'Available observations';
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Record evidence">${nameplate({
     kicker: `${e(KIND_WORD[kind])} · <b>${e(label)}</b>`,
     title: e(title),
     sub: kind === 'focus' ? `Pinned ${e(stamp(detail.pinned_at))}` : `Detected ${e(stamp(detail.changed_at))}`,
     end: '<button class="gf-btn" data-record-close>Back to records</button><button class="gf-btn" data-action="overview">Back to Diagnose</button>',
   })}
-    <div class="instruments"><div class="instrument"><span class="cap">${ended ? 'Ending snapshot' : 'Available observations'}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
+    <div class="instruments"><div class="instrument"><span class="cap">${e(cap)}</span><span class="meta">${shown.source === 'ending' ? 'as saved at the ending' : shown.comparison ? 'recomputed now' : 'no comparison read'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
     ${evidenceFigure(shown.comparison, kind, figureColors(), { saved: shown.source === 'ending' })}
     <div class="gf-scroll">${reassessmentFailure(failed)}${comparisonTables(shown.comparison, kind, { leverTitle: detail.lever_title, targets: detail.target_metrics })}</div></section>`;
   // The reading pane is named for what it holds, as the prototype named it.

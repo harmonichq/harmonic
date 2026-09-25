@@ -90,7 +90,7 @@ const BOUNDARY_WORD = {
 // line and a record's original context.
 const COMPARISON_REASON = {
   missing_comparison_context: 'no retained comparison context was recorded with this change',
-  unsupported_retained_execution: 'the retained context was saved by a different version of the comparison',
+  unsupported_retained_execution: 'the retained context was saved by a different version of the comparison, so Current policy is the read left',
   missing_programmed_isf: 'no programmed correction factor is recorded for this change',
   no_source_evidence: 'no glucose, bolus or basal data has been read',
   change_predates_pin: 'the recorded ending falls before the Focus was pinned',

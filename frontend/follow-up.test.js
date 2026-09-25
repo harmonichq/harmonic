@@ -453,6 +453,7 @@ test('a comparison with no envelope at all says so, rather than reporting no rea
   assert.equal(figureState(retained), 'saved');
   assert.match(retained, /no clock envelope is retained for this record/);
   assert.doesNotMatch(retained, /half-hours read/);
+  assert.doesNotMatch(retained, /gf-chart-seat|role="img"/, 'a snapshot with no curve reserves no chart');
   const beforeOnly = evidenceFigure({
     ...SETTING_COMPARISON,
     views: { before: SETTING_COMPARISON.views.before, after: { clock: [] } },
@@ -461,6 +462,54 @@ test('a comparison with no envelope at all says so, rather than reporting no rea
   assert.match(evidenceFigure(SETTING_COMPARISON, 'trial'), /Trial above Before/);
   assert.match(evidenceFigure(FOCUS_COMPARISON, 'focus'), /data-focus-chart/);
   assert.match(evidenceFigure(SETTING_COMPARISON, 'trial'), /data-trial-chart/);
+});
+
+/* ------------------------------ ADR 463: a figure with no curve has no chart */
+
+test('a figure that draws no curve renders no chart seat and nothing with role="img"', () => {
+  const { views, ...snapshot } = SETTING_COMPARISON;
+  const states = {
+    saved: evidenceFigure(snapshot, 'trial', undefined, { saved: true }),
+    unavailable: evidenceFigure({ availability: { state: 'unavailable', reason: 'missing_comparison_context' },
+      periods: {}, views: {}, outcomes: [] }, 'trial'),
+    'no-readings': evidenceFigure({ ...SETTING_COMPARISON,
+      views: { before: { clock: [] }, after: { clock: [] } } }, 'trial'),
+    'not-requested': evidenceFigure(null, 'trial'),
+  };
+  for (const [state, html] of Object.entries(states)) {
+    assert.match(html, new RegExp(`data-figure-state="${state}"`), `premise: ${state}`);
+    assert.doesNotMatch(html, /role="img"/, `${state} announces no chart`);
+    assert.doesNotMatch(html, /gf-chart-seat/, `${state} reserves no chart seat`);
+  }
+  const drawn = {
+    paired: evidenceFigure(SETTING_COMPARISON, 'trial'),
+    'before-only': evidenceFigure({ ...SETTING_COMPARISON,
+      views: { before: SETTING_COMPARISON.views.before, after: { clock: [] } } }, 'trial'),
+  };
+  for (const [state, html] of Object.entries(drawn)) {
+    assert.match(html, new RegExp(`data-figure-state="${state}"`), `premise: ${state}`);
+    assert.match(html, /<div class="gf-chart-seat"><div class="gf-chart" role="img"/, `${state} keeps its chart`);
+  }
+});
+
+/* ------------------------- ADR 463: differences and percents at one decimal */
+
+test('the Read column prints each difference at one decimal with its sign, and percents at one decimal', () => {
+  const row = (extra) => ({ key: 'tir', label: 'Time in range', unit: '%', before: 100, after: 96.1,
+    denominator: 'observed CGM readings in eligible windows', denominators: { before: 12, after: 12 },
+    assessment: { state: 'unclear' }, ...extra });
+  const table = (rows) => outcomesTable({ outcomes: rows }, 'trial');
+  const tail = table([row({ difference: -3.9000000000000057 })]);
+  assert.match(tail, /difference -3\.9</);
+  assert.doesNotMatch(tail, /3\.90000/);
+  assert.match(table([row({ difference: 2.25 })]), /difference \+2\.3</);
+  assert.match(table([row({ difference: 0.04 })]), /difference 0</);
+  assert.match(table([row({ difference: -0.04 })]), /difference 0</);
+  const rest = table([row({ key: 'nights_with_low', label: 'Rest windows with a low', before: 33.333333333333336,
+    after: 100, difference: 66.66666666666666, denominator: 'coverage-qualified Rest windows in affected hours' })]);
+  assert.match(rest, />33\.3%</);
+  assert.match(rest, />100%</);
+  assert.match(rest, /difference \+66\.7</);
 });
 
 /* ------------------------------------------- why an empty figure is empty */

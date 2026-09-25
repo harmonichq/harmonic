@@ -674,7 +674,11 @@ pump-programmable value (basal / ISF / I:C / target) flipped at a known instant,
 which the app **auto-detects** from the settings-snapshot diff / setting epoch. An
 active-profile switch starts a trial on its own, at the switch instant — the diff of
 the outgoing vs incoming profile is authoritative, so the trial does not wait for the
-dose stream to re-observe the new value.
+dose stream to re-observe the new value. A change seen only in delivery history —
+the dose-stamped boluses or the basal feed — is dated at the first observation
+carrying its new value on the first day that value settled, not at that day's
+first observation; a record saved under the earlier day-level dating keeps its
+time.
 Because the setting is objectively in effect, *adherence is guaranteed*, so
 Changes shows a clean before-and-Trial comparison anchored to the change date and
 the trial resolves **keep-or-revert**. Each trial carries a **target metric** —
@@ -731,7 +735,10 @@ pending Plan the latest pump read after its decision does not hold — a Plan
 whose recorded items cannot be compared with a read stays pending; confirmed;
 withdrawn; superseded) with when it was confirmed and whether the latest read still holds
 it (on pump). A confirmed Plan stays confirmed when a later read stops holding
-it. Surfaces read the verdict; none decides it.
+it. Surfaces read the verdict; none decides it. A Trial detected within a day of
+the pump read that confirmed its Plan links to that Plan, one Trial to one Plan,
+and a Trial linked or matched to a Plan shows that Plan's recorded decision as
+its original decision; the Plan itself is not rewritten.
 _Avoid_: applied, entered or verified (for confirmed), canceled or deleted (for
 withdrawn), stale, expired or abandoned (for superseded).
 

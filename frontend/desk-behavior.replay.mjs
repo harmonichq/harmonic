@@ -3270,6 +3270,10 @@ export const S187 = appOnly('ADR 459',
 export const S188 = appOnly('ADR 462',
   '#462 an ended record whose saved ending has no periods draws the reassessment the reader presses, cut at its ending',
   C4_STORIES.S188);
+// STORY:harmonic-v2-desktop:S189
+export const S189 = appOnly('ADR 463',
+  '#463 a change record prints one decimal and an ending saved with its clock bins draws its curve',
+  C4_STORIES.S189);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3337,7 +3341,7 @@ export const REGISTRY = [
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
-  ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()],
+  ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

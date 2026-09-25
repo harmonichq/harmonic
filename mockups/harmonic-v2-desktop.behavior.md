@@ -5581,3 +5581,98 @@ Additional handler inventory for this amendment:
 | Requested reassessment on an ended record's stage | frontend/history.js shownComparison, recordFrame | S188 |
 | Reassessment cut at the ending | ciq_autotune/watched_change.py review_trials | S188, S91 |
 | Retained line in words | frontend/history.js reassessmentSection | S188 |
+
+## #463 amendment — 2026-09-24, issue #463
+
+S189 is the fail-first obligation of ADR 463 (`openspec/changes/qa-round-2/design.md`):
+a change record prints its differences and percent cells at one decimal, and an
+ending saved with its clock bins draws its curve. It is app-opener-only, runs
+leg 1 on the committed `showcase` store and leg 2 on the manufactured
+`c3-history` case store (`CASE_STORE_DIR`), and fails once, naming each failed
+leg. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+story is amended or retired. No `★ FROZEN` block and no header inventory line is
+edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: if re-dating delivery-detected changes
+moves Trial ids, existing records keep their time and identity. The one-decimal
+rule, the collapsed figure, new endings saving their clock views, the served
+Plan decision and the Plan link rule are ADR 463's autonomous decisions. It
+covers S189 and the behavior below, and nothing outside #463.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 197 issued · 178
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the
+committed showcase and the case store `scripts/gen_qa_e2e_db.py --case
+c3-history` emits.
+
+Changed shipped behavior:
+
+- **Differences and percent cells print at one decimal.** A served difference
+  prints rounded to one decimal with "+" before a positive value, and "0" when
+  it rounds to zero; a percent cell prints at most one decimal. The served
+  values stay unrounded, so no assessment moves, and saved endings print the
+  same way.
+- **A figure with no curve takes no chart space.** A figure that draws no
+  curve (saved with no clock bins, unavailable, no readings, not requested)
+  renders no chart seat and nothing with `role="img"`, and its stage track is
+  its legend line, on a record, the watched Trial and a Focus. The desk browser
+  suite's hand-built ended record with rows and no curve holds the figure to its
+  legend line at both sizes.
+- **New endings keep their curve.** An ending saved from now on keeps its
+  comparison's Before and Trial clock bins, and the record draws that curve
+  under "as saved at the ending". Older endings keep the collapsed figure.
+- **A Trial matched or linked to a Plan shows that Plan's decision.** Its
+  reading pane's original part reads the Plan's recorded decision ("Original
+  decision", "Recorded with this change") instead of "Not recorded". A Trial
+  detected within a day of the pump read that confirmed a Plan with no Trial
+  links to that Plan, one to one, writing only the Trial's receipt. No
+  committed case records a Plan, so this is evidenced by backend tests only:
+  `tests/test_watched_change.py` `test_j_a_matched_trial_serves_its_plans_decision`
+  and `tests/test_plan_verdict.py`
+  `test_a_trial_detected_within_a_day_of_the_confirming_read_links_to_its_plan`,
+  with the unlinked guards beside it.
+- **A delivery-detected change is dated at its new value's first
+  observation.** A Trial seen only in dose-stamped boluses or the basal feed
+  reads its Detected time at the first observation carrying the new value, not
+  its day's first observation; a record saved under the day-level dating keeps
+  its time and id. Evidenced by `tests/test_watched_change.py`
+  `DeliveryDatingTest`; no committed case store moves (73 stores checked in
+  `docs/scope/463-redate.spike.py`).
+
+```
+S189 · A change record prints one decimal and draws a saved curve. Leg 1: on
+       the showcase, Changes' watched Trial reads "difference -3.9" on its Time
+       in range row, and no printed difference or percent cell carries more
+       than one decimal. Leg 2: c3-history's finished record, whose saved
+       ending kept its Before and Trial clock bins, draws a paired figure with
+       its chart under "as saved at the ending".
+  element:  .gf-stage-trial [data-table="outcomes"] [data-outcome="tir"]
+            [data-outcome-state] small, .gf-stage-trial [data-trial-chart]
+            [data-figure-state], .gf-chart[role="img"],
+            .gf-stage-trial .instruments .instrument
+  source:   frontend/follow-up.js outcomesTable, percent, signed,
+            evidenceFigure; ciq_autotune/watched_change.py capture_ending
+  lock:     HV2-28; ADR 463 (openspec/changes/qa-round-2/design.md)
+  data:     showcase, whose watched carb-ratio Trial serves a Time in range
+            difference of -3.9000000000000057; c3-history, whose finished
+            record's ending the case server's reconcile saves
+  evidence: C4_STORIES.S189; leg 1 reads the served retained read and
+            requires the binary tail, opens Changes and reads the Read column;
+            leg 2 reads the served roster, requires the finished record's
+            saved clock bins, opens the record by its address and reads the
+            stage. Each leg runs; the story fails once, naming each failed leg
+  status:   pending; the coordinator runs #463's base cfa1ace4 with this
+            harness laid over it, where both legs must fail, and the branch at
+            1280x720 and 1440x900
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| One-decimal Read column and percent cells | frontend/follow-up.js outcomesTable, percent, signed | S189 |
+| No chart seat without a curve | frontend/follow-up.js evidenceFigure; frontend/desk.css | S189 (desk suite) |
+| Saved ending clock envelopes | ciq_autotune/watched_change.py capture_ending | S189 |
+| Matched Plan decision; Plan link from a pump read | ciq_autotune/watched_change.py review_trials, _link_from_read | backend tests |
+| Delivery-detected dating; existing records kept | ciq_autotune/watched_change.py dose_regimes, basal_slot_regimes, same_change | backend tests |

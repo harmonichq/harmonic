@@ -355,7 +355,7 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   stories against #463's base at 1280x720 and 1440x900, re-inventory the six
   figure states and the Read column in the served app, and record any observed
   behavior with no story before designing.
-- [ ] 28. Backend tests, failing-first where marked, each seen to fail on #463's
+- [x] 28. Backend tests, failing-first where marked, each seen to fail on #463's
   base:
   - failing-first, in `tests/test_watched_change.py`: an ending a reconcile
     records carries `views.before.clock` and `views.after.clock` equal to the
@@ -386,7 +386,7 @@ reproduction is `docs/scope/463-record-display.repro.py`,
     its id and change time, serves an available comparison rather than
     `missing_continuous_setting_history`, and still ends `reverted` when the
     setting walks back inside its window.
-- [ ] 29. Backend (ADR 463 decisions 3–7): in `ciq_autotune/watched_change.py`,
+- [x] 29. Backend (ADR 463 decisions 3–7): in `ciq_autotune/watched_change.py`,
   date `dose_regimes` and `basal_slot_regimes` at the first observation carrying
   the regime's value and correct the `Regime` and `_regimes_from_days`
   docstrings; add one helper, `watched_change.same_change(record, *, parameter,
@@ -401,7 +401,7 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   as a Trial's original context in `review_trials`; add the link pass after
   `_confirm_from_read` in `reconcile_follow_up`. `ciq_autotune/epochs.py` is not
   changed.
-- [ ] 30. Frontend tests, failing-first where marked, each seen to fail on #463's
+- [x] 30. Frontend tests, failing-first where marked, each seen to fail on #463's
   base:
   - failing-first, in `frontend/follow-up.test.js`: `outcomesTable` given a
     served difference of -3.9000000000000057 prints "difference -3.9", a Before
@@ -414,7 +414,7 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   - failing-first, in `frontend/follow-up-lifecycle.test.js`: an expired record
     whose saved assessment carries clock bins on both sides draws
     `data-figure-state="paired"` on its stage under "as saved at the ending".
-- [ ] 31. Frontend (ADR 463 decisions 1 and 2): in `frontend/follow-up.js`,
+- [x] 31. Frontend (ADR 463 decisions 1 and 2): in `frontend/follow-up.js`,
   print differences and percent cells at one decimal, and render the chart seat
   only for a figure that draws a curve, updating `evidenceFigure`'s comment; in
   `frontend/desk.css`, give the figure's track only its legend's height when the
@@ -438,11 +438,11 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   behavior evidenced by backend tests, naming that no committed case records a
   Plan. Raise the story inventory by this one story in the four places task 9
   names.
-- [ ] 34. In `CONTEXT.md`, the Plan entry says a Trial detected after its Plan's
+- [x] 34. In `CONTEXT.md`, the Plan entry says a Trial detected after its Plan's
   pump-read confirmation links to that Plan and shows its decision, and the
   Trial entry says a change seen only in delivery history is dated at the first
   observation carrying its new value.
-- [ ] 35. Regenerate the design exploration
+- [x] 35. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`) if #463's changes
   move it; its `--check` passes.
 - [ ] 36. Capture before/after renders at 1280x720 and 1440x900: the showcase's

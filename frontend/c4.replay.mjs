@@ -4273,7 +4273,75 @@ export const C4_STORIES = {
     }, 'S188 Retained context');
     failOnce('S188', 'an ended record whose saved ending has no periods must draw the reassessment the reader presses', failures);
   },
+  // #463: a change record prints one decimal (leg 1, the showcase's watched
+  // Trial, whose served Time in range difference keeps a binary tail) and an
+  // ending saved with its clock bins draws its curve (leg 2, c3-history's
+  // finished record). Each leg runs; the story fails once, naming each failed leg.
+  async S189(page, ctx) {
+    const failures = [];
+    for (const [leg, run] of [['leg 1 · one decimal', readColumn463], ['leg 2 · saved curve', savedCurve463]]) {
+      try {
+        await run(page, ctx);
+        process.stdout.write(`# S189 ${leg}: pass\n`);
+      } catch (error) {
+        const reason = String(error?.message || error).split('\n')[0];
+        failures.push(`${leg}: ${reason}`);
+        process.stdout.write(`# S189 ${leg}: fail — ${reason}\n`);
+      }
+    }
+    failOnce('S189', 'a change record must print one decimal and draw a saved curve', failures);
+  },
 };
+
+// #463 leg 1: Changes' watched Trial prints its Time in range difference at one
+// decimal, and no difference or percent cell carries more than one.
+async function readColumn463(page, ctx) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.active_kind, 'trial', 'S189 premise: the showcase serves a watched Trial');
+  const retained = (await read(page, '/api/verify/trials',
+    { selected: roster.admission.active_id, assessment: 'retained' })).selected.reassessment.comparison;
+  const tir = retained.outcomes.find(row => row.key === 'tir');
+  assert.ok(tir && tir.difference !== Number(tir.difference.toFixed(1)),
+    `S189 premise: the served Time in range difference keeps a binary tail (${tir?.difference})`);
+  await press(page, 'nav.v2-nav [data-destination="changes"]');
+  const table = page.locator('.gf-stage-trial [data-table="outcomes"]');
+  await table.locator('[data-outcome="tir"]').waitFor({ state: 'visible', timeout: 60000 });
+  await waitForReplayAssertion(async seen => {
+    const printed = seen(await table.locator('[data-outcome="tir"] [data-outcome-state] small').innerText()).trim();
+    assert.equal(printed, `difference ${Number(tir.difference.toFixed(1))}`,
+      'S189 the Time in range row must read its difference at one decimal');
+    const cells = seen(await table.innerText());
+    assert.doesNotMatch(cells, /difference [+-]?\d+\.\d{2,}|\d+\.\d{2,}%/,
+      'S189 no printed difference or percent cell may carry more than one decimal');
+  }, 'S189 the Read column');
+  await capture(page, ctx, 'S189-read', 'showcase');
+}
+
+// #463 leg 2: c3-history's finished record, whose ending saved its clock bins,
+// draws its paired curve under "as saved at the ending".
+async function savedCurve463(page, ctx) {
+  await ctx.withCase('c3-history', async fresh => {
+    const roster = await read(fresh, '/api/verify/trials');
+    const finished = roster.trials.find(trial => (trial.ending || {}).kind);
+    assert.ok(finished, 'S189 premise: c3-history serves a finished record');
+    const views = finished.ending.assessment.views || {};
+    assert.ok((views.before || {}).clock?.length && (views.after || {}).clock?.length,
+      'S189 the finished record\'s saved ending must keep its Before and Trial clock bins');
+    await fresh.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${finished.id}`)}`,
+      fresh.url()).href);
+    const stage = fresh.locator('.gf-stage-trial');
+    await stage.locator('[data-trial-chart]').waitFor({ state: 'visible', timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const instrument = seen(await stage.locator('.instruments .instrument').first().innerText()).replace(/\s+/g, ' ');
+      assert.ok(instrument.includes('as saved at the ending'), 'S189 the stage must read "as saved at the ending"');
+      assert.equal(seen(await stage.locator('[data-trial-chart]').getAttribute('data-figure-state')), 'paired',
+        'S189 the finished record\'s stage must draw a paired figure');
+      assert.equal(seen(await stage.locator('[data-trial-chart] .gf-chart[role="img"]').count()), 1,
+        'S189 the paired figure must carry its chart');
+    }, 'S189 the saved curve');
+    await capture(fresh, ctx, 'S189-saved-curve', 'c3-history');
+  });
+}
 
 // RETIRED:Connor Griffin:2026-09-08 — the frozen R18 premise is non-vacuous.
 export async function historicalAbsence(page) {

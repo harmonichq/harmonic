@@ -126,6 +126,13 @@ test('S188 is a unique app-only #462 story on the c4-isf-late-read store', () =>
   assert.equal(storyCase('S188'), 'c4-isf-late-read');
 });
 
+test('S189 is a unique app-only #463 story on the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S189');
+  assert.equal(entries.length, 1, 'S189 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 463');
+  assert.equal(storyCase('S189'), 'showcase');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

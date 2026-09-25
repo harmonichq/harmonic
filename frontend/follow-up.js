@@ -127,7 +127,16 @@ const NOT_READ = 'No comparison has been read for this record yet.';
 // into whole runs — printed at the precision it arrived with.
 const count = (value) => (value == null ? '—' : Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2))));
 const days = (value) => (value == null ? '—' : `${Math.floor(value)}`);
-const percent = (value) => (value == null ? '—' : `${value}%`);
+// A served difference is the subtraction of two rounded values and keeps a
+// binary tail, and a saved ending can never be rewritten, so the desk prints
+// percents and differences at one decimal; the served values stay unrounded,
+// so no assessment moves (ADR 463).
+const oneDecimal = (value) => Number(value.toFixed(1));
+const percent = (value) => (value == null ? '—' : `${oneDecimal(value)}%`);
+const signed = (value) => {
+  const rounded = oneDecimal(value);
+  return rounded === 0 ? '0' : `${rounded > 0 ? '+' : ''}${rounded}`;
+};
 
 // The prototype's own figure palette (harmonic-v2-glucose.js:115-126), read off
 // the live desk rather than transcribed: the shipped Trial hero
@@ -335,7 +344,7 @@ export function outcomesTable(comparison, kind, targets = []) {
   const head = kind === 'focus'
     ? '<th scope="col">Glucose outcomes</th><th scope="col">Before</th><th scope="col">After</th>'
     : '<th scope="col">Glucose observations</th><th scope="col">Before</th><th scope="col">Trial</th>';
-  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${leads(row) ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : target.has(row.key) ? 'target metric' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${row.difference > 0 ? '+' : ''}${row.difference}`)}</small></td></tr>`).join('')}</tbody></table>`;
+  return `<table class="gf-table gf-trend" data-table="outcomes"><thead><tr>${head}<th scope="col">Read</th></tr></thead><tbody>${ordered.map((row) => `<tr class="${leads(row) ? 'gf-target' : ''}" data-outcome="${e(row.key)}"${row.role ? ` data-role="${e(row.role)}"` : ''}><td>${e(row.label)}<small>${e(row.role === 'context' ? 'context' : row.role === 'mapped_outcome' ? 'mapped outcome' : target.has(row.key) ? 'target metric' : row.denominator)}</small></td>${cell(row, 'before')}${cell(row, 'after')}<td class="v" data-outcome-state="${e((row.assessment || {}).state || 'unclear')}">${e(STATE_WORD[(row.assessment || {}).state] || 'unclear')}<small>${e(row.difference == null ? 'no difference estimable' : `difference ${signed(row.difference)}`)}</small></td></tr>`).join('')}</tbody></table>`;
 }
 
 /**
@@ -426,8 +435,11 @@ function viewSegment(mode) {
  * `[data-trial-chart]` and a habit's is `[data-focus-chart]`, and the ribbon
  * names the marks the figure draws or says plainly why it draws none.
  *
- * `saved` is the caller's word that the comparison is a saved ending snapshot,
- * which drops its clock views when it is captured.
+ * `saved` is the caller's word that the comparison is a saved ending snapshot;
+ * one saved before endings kept their clock views has no curve to draw.
+ *
+ * Only a figure that draws a curve seats a chart, so one with nothing to draw
+ * announces no chart and its stage gives it only its legend's height (ADR 463).
  */
 export function evidenceFigure(comparison, kind, colors, { saved = false } = {}) {
   const pairs = comparisonPairs(comparison);
@@ -448,7 +460,8 @@ export function evidenceFigure(comparison, kind, colors, { saved = false } = {})
   }[state]();
   const drawn = state === 'paired' || state === 'before-only';
   const attribute = kind === 'focus' ? 'data-focus-chart' : 'data-trial-chart';
-  return `<div class="gf-fig ${kind === 'focus' ? 'gf-fig-focus' : 'gf-fig-trial'}" ${attribute}="${e(kind)}" data-figure-state="${state}"><div class="gf-chart-seat"><div class="gf-chart" role="img" aria-label="Median glucose by clock, before against after"></div></div><div class="ds-chart-legend">${legend}${drawn ? `<span>median glucose by clock · ${e(pairs.days)}</span>` : ''}</div></div>`;
+  const seat = drawn ? '<div class="gf-chart-seat"><div class="gf-chart" role="img" aria-label="Median glucose by clock, before against after"></div></div>' : '';
+  return `<div class="gf-fig ${kind === 'focus' ? 'gf-fig-focus' : 'gf-fig-trial'}" ${attribute}="${e(kind)}" data-figure-state="${state}">${seat}<div class="ds-chart-legend">${legend}${drawn ? `<span>median glucose by clock · ${e(pairs.days)}</span>` : ''}</div></div>`;
 }
 
 /** A comparison's availability, nested as served or — on a legacy saved ending

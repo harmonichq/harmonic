@@ -973,6 +973,46 @@ test(`an expired Trial distinguishes its Later conclusion input from the immutab
 });
 }
 
+// ADR 463: an ended record saved before endings kept their clock views serves
+// its periods and rows and no curve. Its figure takes only its legend line.
+const SAVED_ROWS_TRIAL_ID = 'saved-rows-trial-synthetic';
+const savedRowsPeriod = (start, end, reasons) => ({ start, end, boundary_reasons: reasons,
+  semantics: '[start,end)', data_cutoff: '2026-09-29 00:00:00', source_revision: 7 });
+const savedRowsTrial = { ...expiredTrial, id: SAVED_ROWS_TRIAL_ID, original: { ...expiredTrial.original,
+  ending: { ...expiredTrial.original.ending, effective_at: '2026-09-29 00:00:00', recorded_at: '2026-09-29 00:00:00',
+    assessment: { version: '386:1', state: 'available', reason: null, availability: { state: 'available', reason: null },
+      periods: { before: savedRowsPeriod('2026-08-18 00:00:00', '2026-09-01 00:00:00', { start: 'available_history', end: 'setting_change' }),
+        after: savedRowsPeriod('2026-09-01 00:00:00', '2026-09-29 00:00:00', { start: 'setting_change', end: 'data_tail' }) },
+      outcomes: [{ key: 'tir', label: 'Time in range', unit: '%', before: 90, after: 92, difference: 2,
+        denominator: 'observed CGM readings in eligible windows', denominators: { before: 4000, after: 8000 },
+        assessment: { state: 'unclear', reasons: [] } }],
+      assessment: { state: 'unclear' } } } } };
+const savedRowsRoster = { ...expiredTrialRoster, trials: [{ ...expiredTrialRoster.trials[0], id: SAVED_ROWS_TRIAL_ID,
+  ending: savedRowsTrial.original.ending }] };
+for (const viewport of ['1280x720', '1440x900']) {
+test(`an ended record with no saved curve gives its figure only its legend line at ${viewport}`, async () => {
+  const desk = await openDesk({ viewport, address: `/changes?subject=history&occurrence=record%3Atrial%3A${SAVED_ROWS_TRIAL_ID}`,
+    beforeNavigate: async page => {
+      await page.route('**/api/verify/trials*', route => {
+        const selected = new URL(route.request().url()).searchParams.get('selected');
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(selected
+          ? { ...savedRowsRoster, selected: savedRowsTrial } : savedRowsRoster) });
+      });
+    } });
+  const { page } = desk;
+  try {
+    await page.locator('.gf-stage-trial [data-outcome="tir"]').waitFor({ state: 'visible', timeout: 30000 });
+    assert.equal(await page.locator('.gf-stage-trial [data-trial-chart]').getAttribute('data-figure-state'), 'saved',
+      'premise: the saved ending serves no curve');
+    const figure = await box(page, '.gf-stage-trial [data-trial-chart]');
+    const legend = await box(page, '.gf-stage-trial [data-trial-chart] .ds-chart-legend');
+    assert.ok(figure.h <= legend.h + 1, `the figure (${figure.h}px) is no taller than its legend line (${legend.h}px)`);
+    assert.equal(await countOf(page, '.gf-stage-trial [role="img"]'), 0, 'nothing on the stage announces a chart');
+    await capture(page, `saved-no-curve-${viewport}`);
+  } finally { await desk.close(); }
+});
+}
+
 test('the chrome holds still across every destination, and one is current at a time', async () => {
   const { page, close } = await openDesk();
   try {

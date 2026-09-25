@@ -677,6 +677,18 @@ const SAVED_WITH_PERIODS = { version: '386:1', state: 'available', reason: null,
     denominators: { before: 12, after: 12 }, assessment: { state: 'unclear' } }] };
 const stageAndReading = (seat) => seat.innerHTML.split('<aside');
 
+test('an ended record whose saved ending kept its clock bins draws its saved curve', async () => {
+  kind = 'trial'; identity = 'saved-curve-synthetic'; expired = true;
+  expiredAssessment = { ...SAVED_WITH_PERIODS, views: PAIRED.views };
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    const [stage] = stageAndReading(seat);
+    assert.match(stage, /<span class="cap">Ending snapshot<\/span><span class="meta">as saved at the ending<\/span>/);
+    assert.match(stage, /data-figure-state="paired"/);
+    assert.match(stage, /role="img"/);
+  } finally { expired = false; expiredAssessment = { state: 'unavailable' }; }
+});
+
 test('an ended record whose saved ending serves no periods draws the reassessment the reader presses', async () => {
   const { comparisonReasonWords } = await import('./follow-up.js');
   kind = 'trial'; identity = 'late-context-synthetic'; expired = true; expiredAssessment = LATE_CONTEXT_ENDING;

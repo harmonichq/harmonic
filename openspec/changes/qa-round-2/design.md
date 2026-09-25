@@ -435,6 +435,14 @@ and 3 is its recommendation. Rounding stays in the desk because a server roundin
 would still leave every saved ending unrounded. The link rule is the issue's own
 example rule, made fail-closed in both directions as ADR 581's block matching is.
 
+Also decided autonomously during AFK run, at start: `tests/test_durable_follow_up.py`,
+which the lock's Expected diff omitted, pinned that a finished ending saves no
+`views`; decision 3 reverses that, so its assertion now reads the Before and
+Trial clock envelopes alone. Below 700px the stage seats the figure in its
+flexible track, so a figure with no curve gets an `auto` track there too, the
+desktop templates' rows otherwise kept, which carries decision 2's "every
+width" to the narrow desk. The new story takes S189, after #462's S188.
+
 **Consequences.** Every ending `capture_ending` saves from now on carries clock
 views, generated case stores included, so c3-history's finished record and a Trial finished in the
 served app draw their saved curves. The showcase's watched record prints

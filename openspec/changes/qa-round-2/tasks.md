@@ -473,7 +473,7 @@ replays open recurring-lows rows. The reproduction is
   queue row) in the served app on `basal-recurring-low-lower` and
   `basal-recurring-low-gate`, and record any observed behavior with no story
   before designing.
-- [ ] 38. Add the manufactured case `basal-recurring-low-within-floor` to
+- [x] 38. Add the manufactured case `basal-recurring-low-within-floor` to
   `scripts/qa_e2e_cases.py`: `_materialize_basal_coverage` with
   `clean_rate=0.59` and `recurring_lows=True` against the default programmed
   0.60, with the scoped window `(180, 240)`. Follow AGENTS.md "Maintaining QA

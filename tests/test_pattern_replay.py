@@ -31,6 +31,7 @@ EXPECTED_ACTIVE_KINDS = {
     "basal-recurring-low-lower": None,
     "basal-recurring-low-no-clean-median": None,
     "basal-recurring-low-gate": None,
+    "basal-recurring-low-within-floor": None,
     "isf-strengthen": None,
     "isf-direction-only-weaken": None,
     "isf-held": None,

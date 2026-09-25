@@ -3266,6 +3266,10 @@ export const S186 = appOnly('ADR 460',
 export const S187 = appOnly('ADR 459',
   '#459 a stage press that would replace another setting says so first, naming the change it replaces',
   C4_STORIES.S187);
+// STORY:harmonic-v2-desktop:S188
+export const S188 = appOnly('ADR 462',
+  '#462 an ended record whose saved ending has no periods draws the reassessment the reader presses, cut at its ending',
+  C4_STORIES.S188);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3333,7 +3337,7 @@ export const REGISTRY = [
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
-  ['S186', S186, J()], ['S187', S187, J()],
+  ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

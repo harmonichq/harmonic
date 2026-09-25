@@ -4208,6 +4208,71 @@ export const C4_STORIES = {
     }, 'S187 the replaced carb ratio');
     failOnce('S187', 'the stage control must warn before it replaces another setting', failures);
   },
+  // #462: an ended record whose saved ending serves no periods, because its
+  // context was read from a pump read after it ended, draws the reassessment the
+  // reader presses, cut at its ending, under that read's own mode (ADR 462).
+  async S188(page, ctx) {
+    const failures = [];
+    const check = async (assertion, description) => {
+      try { await waitForReplayAssertion(assertion, description); } catch (error) {
+        failures.push(String(error?.message || error).split('\n')[0]);
+      }
+    };
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.trials.length, 1, 'S188 premise: the case serves one Trial record');
+    const [{ id, ending }] = roster.trials;
+    assert.equal((ending || {}).kind, 'expired_unreviewed', 'S188 premise: the record ended unreviewed');
+    assert.equal(ending.assessment.reason, 'context_after_ending',
+      'S188 premise: its saved ending was read from a pump read after it ended');
+    const late = 'this change’s context was recorded after it ended';
+    await page.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
+    await page.locator('[data-record-part="ending"] [data-ending-kind]').waitFor({ timeout: 30000 });
+    const stage = page.locator('.gf-stage-trial');
+    const instrument = async () => (await stage.locator('.instruments .instrument').first().innerText()).replace(/\s+/g, ' ').trim();
+    const figure = stage.locator('[data-trial-chart]');
+    await waitForReplayAssertion(async seen => {
+      assert.ok(seen(await instrument()).includes('as saved at the ending'), 'S188 premise: the record opens on its saved ending');
+      assert.equal(seen(await figure.getAttribute('data-figure-state')), 'unavailable',
+        'S188 premise: the saved ending draws no curve');
+      assert.equal(seen(await figure.locator('[data-figure-reason]').innerText()).trim(), late,
+        'S188 premise: the saved ending names its late-context reason in words');
+    }, 'S188 the saved ending');
+    await capture(page, ctx, 'S188-original', 'c4-isf-late-read');
+
+    const current = (await read(page, '/api/verify/trials', { selected: id, assessment: 'current' }, 120000))
+      .selected.reassessment.comparison;
+    await press(page, '[data-assessment="current"]');
+    await page.locator('[data-reassessment-context="current"]').waitFor({ timeout: 120000 });
+    await check(async seen => {
+      const words = seen(await instrument());
+      assert.ok(words.includes('Current policy reassessment') && words.includes('recomputed now'),
+        `S188 after pressing Current policy, the stage must name "Current policy reassessment" and "recomputed now": ${words}`);
+      assert.ok(!words.includes('as saved at the ending'), 'S188 the Current policy stage must not read "as saved at the ending"');
+      assert.equal(seen(await figure.getAttribute('data-figure-state')), 'paired',
+        'S188 after pressing Current policy, the stage must draw a paired figure');
+      assert.ok(seen(await stage.locator('[data-table="outcomes"] [data-outcome]').count()) > 0,
+        'S188 after pressing Current policy, the stage must show its outcome rows');
+      assert.ok(current.periods.after.end <= ending.effective_at,
+        `S188 the Current policy Trial period must end at or before the record's Finished time: ${current.periods.after.end}`);
+      const printed = seen(await page.locator('[data-part="periods"] [data-period="after"]').innerText());
+      assert.ok(printed.includes(stamp(current.periods.after.end)), 'S188 the page must print that Trial period\'s end');
+    }, 'S188 Current policy');
+    await capture(page, ctx, 'S188-current', 'c4-isf-late-read');
+
+    await press(page, '[data-assessment="retained"]');
+    await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 120000 });
+    await check(async seen => {
+      assert.ok(seen(await instrument()).includes('Retained context reassessment'),
+        'S188 after pressing Retained context, the stage must name "Retained context reassessment"');
+      assert.equal(seen(await figure.getAttribute('data-figure-state')), 'unavailable',
+        'S188 the Retained read must read unavailable');
+      assert.equal(seen(await figure.locator('[data-figure-reason]').innerText()).trim(), late,
+        'S188 the Retained read must name the same late-context reason');
+      const context = seen(await page.locator('[data-reassessment-context="retained"]').innerText());
+      assert.doesNotMatch(context, /[0-9a-f]{8,}/, `S188 the Retained line must print no id characters: ${context}`);
+    }, 'S188 Retained context');
+    failOnce('S188', 'an ended record whose saved ending has no periods must draw the reassessment the reader presses', failures);
+  },
 };
 
 // RETIRED:Connor Griffin:2026-09-08 — the frozen R18 premise is non-vacuous.

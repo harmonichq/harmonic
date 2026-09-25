@@ -5494,3 +5494,90 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Stage control replace state | frontend/diagnose-workstation.js renderParamLevel, replacing | S187 |
 | Replaced-draft verdict | frontend/plan-view.js replacesDraft, replacedDraftItems; frontend/diagnose.js replacing | S187 |
+
+## #462 amendment — 2026-09-24, issue #462
+
+S188 is the fail-first obligation of ADR 462 (`openspec/changes/qa-round-2/design.md`):
+an ended change record whose saved ending serves no periods draws the
+reassessment the reader presses, cut at its ending, under that read's own mode.
+It is app-opener-only and runs on the manufactured `c4-isf-late-read` case store
+(`CASE_STORE_DIR`): c4-isf's recipe plus one unchanged pump read at 2024-06-30
+12:00 before its one reconcile, so its record's retained context was read after
+the record ended and its saved ending is unavailable `context_after_ending` with
+no periods. S188 joins the PR smoke slice, as the only story on that store.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900. S91 is
+amended in prose below; no story is retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: keep it as simple as possible; draw a
+requested reassessment when the saved ending has none; cut reassessment periods
+at the ending instant; drop or narrow the version gate, whichever is less code,
+with no migration. The stage words, the Retained line's words and the choice of
+option (a) over a default open on Current policy are ADR 462's autonomous
+decisions. It covers S188 and the S91 amendment, and nothing outside #462.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 196 issued · 177
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case c4-isf-late-read` emits.
+
+Changed shipped behavior:
+
+- **A requested reassessment reaches an ended record's stage when its saved
+  ending serves no periods.** The record still opens on its saved ending. After
+  Retained context or Current policy is pressed, the stage draws that read's
+  figure, periods and outcome rows under "Retained context reassessment" or
+  "Current policy reassessment" and "recomputed now", never "Ending snapshot" or
+  "as saved at the ending". A saved ending that serves periods keeps the stage
+  after every press (S96, S157).
+- **A reassessment of an ended Trial reads only up to its ending instant.**
+  Current policy reads the pump settings in force at the ending, and a Retained
+  read of a context recorded after the ending answers the saved ending's own
+  late-context reason. An open record still reads to the data tail.
+- **An update no longer voids a retained comparison.** Only a changed
+  comparison policy or scenario configuration refuses one; its words now say
+  that Current policy is the read left.
+- **The Retained line names the stored context by when it was recorded**,
+  "Stored context recorded ‹time›", never by characters of its id.
+
+```
+S188 · An ended record whose saved ending serves no periods opens on that saved
+       ending, whose figure reads unavailable naming its late-context reason in
+       words. Pressing Current policy draws a paired figure and outcome rows
+       under "Current policy reassessment" and "recomputed now", never "as saved
+       at the ending", with its Trial period ending at or before the record's
+       Finished time. Pressing Retained context reads unavailable under
+       "Retained context reassessment", naming the same late-context reason,
+       and its Retained line prints no id characters.
+  element:  .gf-stage-trial .instruments .instrument, [data-trial-chart]
+            [data-figure-state], [data-figure-reason], [data-table="outcomes"]
+            [data-outcome], [data-part="periods"] [data-period="after"],
+            [data-reassessment-context="retained"]
+  source:   frontend/history.js shownComparison, recordFrame,
+            reassessmentSection; ciq_autotune/watched_change.py review_trials;
+            ciq_autotune/follow_up_comparison.py compare_follow_up
+  lock:     HV2-28; ADR 462 (openspec/changes/qa-round-2/design.md)
+  data:     c4-isf-late-read; one correction-factor record changed 06-01,
+            expired unreviewed at 06-29, its context read from the 06-30 12:00
+            pump read
+  evidence: C4_STORIES.S188; reads the served roster and requires the record's
+            served late-context ending, opens the record by its address, reads
+            the stage, presses Current policy and compares the stage with the
+            served Current policy read, then presses Retained context. The
+            checks are gathered and the story fails once
+  status:   pending; the coordinator runs task 19's commit 578ec3c7 with this
+            harness laid over it, which must fail at its Current policy stage
+            assertion, and the branch at 1280x720 and 1440x900
+```
+
+Amended S91 · 2026-09-24 · #462 / Connor Griffin's decisions above: The story's text is unchanged. Its c4 part reads the Retained read of each case's watched, else first, record. c4-isf's and c4-profile's records are ended, and a reassessment of an ended Trial now reads only up to its ending (ADR 462), so their Retained reads count what their saved endings count: 27 and 28 Trial-arm dates, criterion not met, where they counted 30 and 31 and were met. For those two cases the story now asserts that the Retained read's readiness arms equal the saved ending's arms, and that the read stays `unclear`, instead of criterion met. c4-ic's watched record is open and is unchanged. The readiness helper's "comparison the page shows" follows ADR 462's rule: the saved ending when it serves periods, else the retained read the helper pressed; it now returns the record read. Pinned by node tests in `frontend/c4.replay.test.js`; the replay run is the coordinator's.
+The preceding wording and results are the attributed pre-amendment record.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Requested reassessment on an ended record's stage | frontend/history.js shownComparison, recordFrame | S188 |
+| Reassessment cut at the ending | ciq_autotune/watched_change.py review_trials | S188, S91 |
+| Retained line in words | frontend/history.js reassessmentSection | S188 |

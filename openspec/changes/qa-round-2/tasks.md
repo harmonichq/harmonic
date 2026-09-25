@@ -251,7 +251,7 @@ and `docs/scope/462-stage.repro.mjs`.
   `tests/test_qa_e2e_cases.py`'s expected case names and to
   `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
   commit is the base for task 24's failing-first run.
-- [ ] 20. Backend tests, failing-first where marked, each seen to fail on task
+- [x] 20. Backend tests, failing-first where marked, each seen to fail on task
   19's commit:
   - failing-first, in `tests/test_watched_change.py`: through `review_trials` on
     c4-ic's superseded carb-ratio record, each mode's Trial (after) period ends
@@ -270,7 +270,7 @@ and `docs/scope/462-stage.repro.mjs`.
     configuration is still refused with `unsupported_retained_execution`; `test_h_a_context_read_after_the_ending_leaves_the_assessment_unavailable`
     and `test_i_a_context_read_before_the_superseding_change_is_used` pass
     unchanged.
-- [ ] 21. Backend (ADR 462 decisions 2 and 3):
+- [x] 21. Backend (ADR 462 decisions 2 and 3):
   - in `ciq_autotune/follow_up_comparison.py`, `_execution()` returns the policy
     stamp and scenario configuration only (drop the package hash, its comment
     and any import left unused); in `compare_follow_up`, a retained context that
@@ -283,7 +283,7 @@ and `docs/scope/462-stage.repro.mjs`.
     data cutoff at the earlier of the ending's effective instant and `now`;
   - in `ciq_autotune/store.py`, an available comparison context no longer
     requires `code_version`.
-- [ ] 22. Frontend tests, failing-first where marked, each seen to fail on task
+- [x] 22. Frontend tests, failing-first where marked, each seen to fail on task
   19's commit:
   - failing-first, in `frontend/follow-up-lifecycle.test.js` with its host fake:
     an expired record whose saved assessment is unavailable
@@ -304,7 +304,7 @@ and `docs/scope/462-stage.repro.mjs`.
     `captured_at` reads "No stored context was recorded";
   - failing-first, in `frontend/follow-up.test.js`: the words for
     `unsupported_retained_execution` name Current policy as the read left.
-- [ ] 23. Frontend (ADR 462 decisions 1, 4 and 5): in `frontend/history.js`,
+- [x] 23. Frontend (ADR 462 decisions 1, 4 and 5): in `frontend/history.js`,
   `shownComparison` draws the requested reassessment for an ended record whose
   saved assessment serves no periods and the saved ending otherwise; the stage
   instrument names the mode and "recomputed now" for that case; the Retained
@@ -333,7 +333,7 @@ and `docs/scope/462-stage.repro.mjs`.
   arms equal the saved ending's arms instead of criterion met (ADR 462
   consequences). Raise the story inventory by this one story in the four places
   task 9 names.
-- [ ] 25. Regenerate the design exploration
+- [x] 25. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`); its `focus.json`
   and `journey.json` lose the package hash. Its `--check` then passes.
 - [ ] 26. Capture before/after renders of the `c4-isf-late-read` record's stage,

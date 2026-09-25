@@ -318,6 +318,12 @@ stage is byte-identical after either mode press.
 - The manufactured case `c4-isf-late-read`, c4-isf's recipe plus one unchanged
   pump read at 2024-06-30 12:00 before its one reconcile, is the committed state
   whose ending saves `context_after_ending`; no existing case reaches it.
+- At start: the store's own validator test (`tests/test_follow_up_store.py`)
+  deletes each key of its synthetic comparison-context fixture and expects a
+  refusal, so decision 3's store change cannot land without that fixture losing
+  its `code_version` key. The lock's Expected diff omitted the file; its one-line
+  fixture edit ships with decision 3 rather than keeping the store requirement.
+- At start: the new story takes S188, the next unissued id after slice 1's S187.
 
 **Consequences.** On a regularly updated install, a record's retained
 comparison survives updates, and an older detected change answers "did my change

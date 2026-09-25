@@ -196,7 +196,8 @@ test('#302 · weights and captions walk the served rows without assigning a prio
       { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
-  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed']);
+  // ADR 465: the quiet window also holds the fixture's recurring-lows hold at 03:00.
+  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
     { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },

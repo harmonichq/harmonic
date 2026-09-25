@@ -602,6 +602,37 @@ class RecurrenceChannelTest(unittest.TestCase):
         self.assertEqual(ch["kind"], "basal_lower")
         self.assertEqual((ch["k"], ch["n"]), (15, 20))
 
+    def test_a_recurring_lows_cut_within_the_threshold_cannot_take_the_headline(self):
+        # ADR 465: 01:30 on 14 nights and 03:00 on 9 nights at 0.60, programmed
+        # 0.72, lows at both on two nights. 01:30 delivering a hundredth under
+        # its setting holds, so the lever reads exactly as it does with 01:30 at
+        # its setting: 03:00's cut, 9 of 9.
+        def lever(rate_0130):
+            basal, cgm = [], []
+            for day, hour, minute, rate in (
+                [(d, 1, 30, rate_0130) for d in range(1, 15)]
+                + [(d, 3, 0, 0.60) for d in range(1, 10)]
+            ):
+                t0 = datetime(2022, 6, day, hour, minute)
+                basal.append(BasalEvent(
+                    t=t0, delivery_type="algorithmDelivery", duration_mins=30,
+                    basal_rate=rate, profile_basal_rate=0.72))
+                cgm += [CgmReading(t=t0 + timedelta(minutes=5 * k), bg=120.0, type="EGV")
+                        for k in range(7)]
+            for day in (20, 21):
+                for hour, minute in ((1, 30), (3, 0)):
+                    t0 = datetime(2022, 6, day, hour, minute)
+                    cgm += [CgmReading(t=t0 + timedelta(minutes=5 * k), bg=50.0, type="EGV")
+                            for k in range(3)]
+            slots = analyze_basal(basal, cgm, [], [], harm_config=HarmConfig())
+            return basal_lever(slots, slot_minutes=30)
+
+        within, at_setting = lever(0.71), lever(0.72)
+        self.assertEqual(within.priority, at_setting.priority)
+        self.assertEqual(within.recurrence_channel, at_setting.recurrence_channel)
+        self.assertEqual(within.recurrence_channel,
+                         {"kind": "basal_lower", "k": 9, "n": 9})
+
     def test_basal_no_headline_block_is_thin(self):
         # Nothing well-supported to change → no headline block → the thin marker.
         slots = [_slot(0, 0.6, 0.9, wide=True, nights=20)]

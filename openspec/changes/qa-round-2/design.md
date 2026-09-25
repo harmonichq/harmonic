@@ -695,3 +695,22 @@ which nights it moved on, and can open each in Day. S113's lane-name assertion
 changes with decision 2, by a dated amendment. The excluded-night line and #434's
 reasons, #290's deferral, the Recommended value, `asserts_move` and every harm
 rule are unchanged.
+
+## ADR 465 — The fixture's held 03:00 slot moves one Node count
+
+**Context.** Decided autonomously during AFK run. Task 42 adds one nudged
+within-threshold slot at 03:00 to the findings-fixture generator. The fixture's
+`quiet` window (03:00–04:00) then holds two Watching rows instead of one, and a
+Node test in `frontend/diagnose-findings-queue.test.js` pins that window's
+weights to exactly one collapsed row. Task 42 names the Python projection tests
+whose counts may move, not this Node twin, and the file is outside the lock's
+expected diff. The fixture's `browser_inputs` are unchanged, so no browser leg
+moves.
+
+**Decision.** The Node test's pinned count is updated to the regenerated answer
+(two collapsed rows), exactly as task 42 treats a moved Python count. The quiet
+window stays all Watching, which is what the test holds; the slot and the window
+are not moved to keep the old count.
+
+**Consequences.** #465's diff carries one file beyond its lock's expected diff,
+named here and in the commit message.

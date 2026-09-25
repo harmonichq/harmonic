@@ -264,7 +264,9 @@ _Avoid_: baseline need, background requirement.
 **Harm signal**:
 A printed low, attributed to one estimator (basal / ISF / I:C) and applied as a
 **gate + capped downward nudge** — forbid a more-insulin move, and nudge toward less
-by at most one step cap — never a precision value that *sets* the number. The layer
+by at most one step cap — never a precision value that *sets* the number. The nudge
+holds, rather than stepping, when its step would be smaller than the noise floor or
+one full step, whichever is smaller (ADR 465). The layer
 that lets the model *act* on the lows the **Maintenance need** estimators are
 structurally blind to; sourced **print-first** (the CGM nadir), with **Rescue carb**
 grams only for the masked residual (ADR 0038, amending ADR 0012 §4). A

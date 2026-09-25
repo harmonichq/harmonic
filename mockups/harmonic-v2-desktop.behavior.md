@@ -5697,3 +5697,73 @@ Additional handler inventory for this amendment:
 | Saved ending clock envelopes | ciq_autotune/watched_change.py capture_ending | S189 |
 | Matched Plan decision; Plan link from a pump read | ciq_autotune/watched_change.py review_trials, _link_from_read | backend tests |
 | Delivery-detected dating; existing records kept | ciq_autotune/watched_change.py dose_regimes, basal_slot_regimes, same_change | backend tests |
+
+## #465 amendment — 2026-09-24, issue #465
+
+S190 is the fail-first obligation of ADR 465 (`openspec/changes/qa-round-2/design.md`):
+a basal slot whose recurring overnight lows point to a step down smaller than
+the noise floor or one full step, whichever is smaller, holds at its setting and
+names the lows. It is app-opener-only and runs on the manufactured
+`basal-recurring-low-within-floor` case store (`CASE_STORE_DIR`). As the only
+story on that store it joins the fixed PR smoke slice (28 stories). Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No story is
+amended or retired. No `★ FROZEN` block and no header inventory line is edited
+here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24, option 1: below the threshold the slot
+holds and names the recurring lows; no minimum step is invented, and it never
+reads "leaning lower". The held sentence, its tolerance, the kept held status
+and the held row's title are ADR 465's autonomous decisions. It covers S190 and
+the behavior below, and nothing outside #465.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 198 issued · 179
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-recurring-low-within-floor` emits.
+
+Changed shipped behavior:
+
+- **A recurring-lows step down within the threshold holds.** The slot serves
+  "held (recurring-low gate)" at its setting, so it paints a hold in the lane,
+  opens a panel reading "holds at current" with no Stage change, and stages
+  nothing, moves nothing in the pump profile and takes no priority. Every
+  recurring-lows step at or above the threshold is unchanged; no committed
+  case's verdict moves.
+- **The held slot names the lows.** Its served sentence reads "lows keep
+  happening overnight, but the step down is smaller than the smallest change
+  worth making, so the rate stays as it is", in the panel and as its queue
+  row's headline. A withheld raise keeps "a low printed at this hour".
+- **The held row names no lean.** A held row the recurring lows nudged is
+  titled with the setting alone ("Basal 03:00"), never "leaning lower".
+
+```
+S190 · A recurring-lows step down within the threshold holds. On
+       basal-recurring-low-within-floor, Diagnose at 24 h paints the 03:00
+       lane cell a hold with no recurring-lows reason, the key counts no
+       "lower · recurring lows", and the opened 03:00 panel reads "holds at
+       current" and the served recurring-lows hold sentence, with no Stage
+       change.
+  element:  #lane > .lane-cell[data-cell="6"][data-verdict],
+            #lane-key > span, #level .slot-head .verdict, #level .stagebtn
+  source:   ciq_autotune/safety.py apply_harm; ciq_autotune/analyzers/basal.py
+            _annotation_for; frontend/diagnose-workstation.js renderLane,
+            renderSlotLevel
+  lock:     HV2-17; ADR 465 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-within-floor: thirty steady nights delivering
+            0.59 U/h against a programmed 0.60, lows at 03:00 on two nights
+  evidence: C4_STORIES.S190; opens the 24 h rail, waits for all 48 slots,
+            reads the 03:00 cell and the key, opens the 03:00 panel and reads
+            its verdict, sentence and Stage change count
+  status:   pending the coordinator's base run on cc87c41c with this harness
+            laid over it (expected to fail at the lane-cell assertion) and the
+            branch run at 1280x720 and 1440x900
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Recurring-lows threshold hold | ciq_autotune/safety.py apply_harm | S190 |
+| Recurring-lows hold sentence | ciq_autotune/analyzers/basal.py _annotation_for, analyze_basal | S190 |
+| Held row with no lower lean | ciq_autotune/findings_projection.py _basal_key | backend tests |

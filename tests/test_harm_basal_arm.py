@@ -40,6 +40,13 @@ def _low_at_0500(day, nadir=50.0):
             for k in range(3)]
 
 
+# ADR 465 decision 2: the held sentences a recurring-lows hold and a withheld
+# raise print.
+_RECURRING_HOLD = ("lows keep happening overnight, but the step down is smaller "
+                   "than the smallest change worth making, so the rate stays as it is")
+_RAISE_GATE = "a low printed at this hour, so a step up is withheld and the rate stays as it is"
+
+
 def _slot(slots, label):
     return next(s for s in slots if s.label == label)
 
@@ -77,6 +84,7 @@ class BasalArmIntegrationTest(unittest.TestCase):
         self.assertEqual(s.status, Status.HARM_GATED)
         self.assertEqual(s.recommended, 0.72)   # held at current, not 0.576
         self.assertFalse(s.asserts_move)         # a hold does not move the schedule
+        self.assertEqual(s.annotation, _RECURRING_HOLD)
         self.assertEqual(s.evidence["harm"]["arm"], "basal")
         self.assertEqual(s.evidence["harm"]["arm_days"], 2)
         self.assertEqual(s.evidence["harm"]["row_days"], 2)
@@ -102,6 +110,21 @@ class BasalArmIntegrationTest(unittest.TestCase):
         }]
         self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
         self.assertEqual(overnight["members"][0]["seriousness_segments"], seriousness)
+
+    def test_recurring_lows_hold_when_the_step_down_is_within_the_threshold(self):
+        # ADR 465: 03:00's steady nights deliver 0.71 against 0.72. The cut the
+        # lows point to (0.01 U/h) is below the noise floor, so the slot holds at
+        # its setting, keeps its recurring-low seriousness and evidence, and
+        # prints the recurring-lows hold sentence rather than a lean.
+        basal, cgm = _build(rate=0.71, programmed=0.72, low_nights=(20, 21))
+        s = _slot(analyze_basal(basal, cgm, [], [], harm_config=HarmConfig()), "03:00")
+        self.assertEqual(s.status, Status.HARM_GATED)
+        self.assertEqual(s.recommended, 0.72)
+        self.assertFalse(s.asserts_move)
+        self.assertIsNone(s.guidance["action"])
+        self.assertEqual(s.guidance["seriousness"], "recurring_low")
+        self.assertTrue(s.evidence["harm"]["nudged"])
+        self.assertEqual(s.annotation, _RECURRING_HOLD)
 
     def test_recurring_lows_clamp_to_a_median_below_current(self):
         # When the slot's own clean median sits below current, the downward magnitude
@@ -173,6 +196,7 @@ class BasalArmIntegrationTest(unittest.TestCase):
         self.assertEqual(s.status, Status.HARM_GATED)
         self.assertEqual(s.recommended, 0.72)  # held at current, never raised
         self.assertFalse(s.asserts_move)
+        self.assertEqual(s.annotation, _RAISE_GATE)
 
     def test_recurring_lows_never_raise_even_when_median_is_high(self):
         # Safety asymmetry: recurrent lows on a slot whose clean median screams RAISE
@@ -183,6 +207,7 @@ class BasalArmIntegrationTest(unittest.TestCase):
         self.assertEqual(s.status, Status.HARM_GATED)
         self.assertEqual(s.recommended, 0.72)    # held at current, never raised
         self.assertLessEqual(s.recommended, s.current)
+        self.assertEqual(s.annotation, _RAISE_GATE)
 
 
 if __name__ == "__main__":

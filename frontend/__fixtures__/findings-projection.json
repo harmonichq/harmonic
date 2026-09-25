@@ -21100,120 +21100,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -21221,7 +21225,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -37616,7 +37620,7 @@
     "assert": 1,
     "blind": 0,
     "finding": 0,
-    "held": 0,
+    "held": 1,
     "history": 1
    },
    "findings_window": {
@@ -38061,6 +38065,78 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": 1.0,
+     "direction": null,
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.01,
+      "lo": 0.97,
+      "method": "bootstrap-median",
+      "n": 20,
+      "value": 0.99,
+      "wide": false
+     },
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is. Delivered 0.99 U/h across 20 steady nights against 1.00 programmed.",
+     "id": "basal:180-210",
+     "kind": "setting",
+     "label": "03:00",
+     "lean": null,
+     "lever": null,
+     "members": [
+      {
+       "current": 1.0,
+       "days": 20,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 1.01,
+        "lo": 0.97,
+        "method": "bootstrap-median",
+        "n": 20,
+        "value": 0.99,
+        "wide": false
+       },
+       "recommended": 1.0,
+       "start_min": 180
+      }
+     ],
+     "parameter": "basal_rate",
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": "held (recurring-low gate)",
+     "recommended": 1.0,
+     "regime_end": null,
+     "register": "held",
+     "run_ids": null,
+     "span": {
+      "end_min": 210,
+      "label": "03:00",
+      "start_min": 180
+     },
+     "support": {
+      "n": 20,
+      "noun": "nights of steady data",
+      "run_days": 30
+     },
+     "tier": "noted",
+     "title": "Basal 03:00",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
     },
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (range 6–6). Past setting. No change suggested.",
@@ -39604,120 +39680,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -39725,7 +39805,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -62211,120 +62291,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -62332,7 +62416,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -69808,120 +69892,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -69929,7 +70017,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -77451,120 +77539,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -77572,7 +77664,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -85094,120 +85186,124 @@
      "slot": 5
     },
     {
-     "annotation": "the measured rate and the set rate agree, so no change is suggested",
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
      "asserts_move": false,
      "current": 1.0,
      "days": 20,
      "direction": null,
      "estimate": {
       "confidence": 0.8,
-      "hi": 1.04,
-      "lo": 0.96,
+      "hi": 1.01,
+      "lo": 0.97,
       "method": "bootstrap-median",
       "n": 20,
-      "value": 1.0,
+      "value": 0.99,
       "wide": false
      },
      "evidence": {
+      "harm": {
+       "gated": true,
+       "nudged": true
+      },
       "points": [
        {
         "date": "2026-08-17",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-17T03:00:00"
        },
        {
         "date": "2026-08-16",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-16T03:00:00"
        },
        {
         "date": "2026-08-15",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-15T03:00:00"
        },
        {
         "date": "2026-08-14",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-14T03:00:00"
        },
        {
         "date": "2026-08-13",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-13T03:00:00"
        },
        {
         "date": "2026-08-12",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-12T03:00:00"
        },
        {
         "date": "2026-08-11",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-11T03:00:00"
        },
        {
         "date": "2026-08-10",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-10T03:00:00"
        },
        {
         "date": "2026-08-09",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-09T03:00:00"
        },
        {
         "date": "2026-08-08",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-08T03:00:00"
        },
        {
         "date": "2026-08-07",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-07T03:00:00"
        },
        {
         "date": "2026-08-06",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-06T03:00:00"
        },
        {
         "date": "2026-08-05",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-05T03:00:00"
        },
        {
         "date": "2026-08-04",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-04T03:00:00"
        },
        {
         "date": "2026-08-03",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-03T03:00:00"
        },
        {
         "date": "2026-08-02",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-02T03:00:00"
        },
        {
         "date": "2026-08-01",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-08-01T03:00:00"
        },
        {
         "date": "2026-07-31",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-31T03:00:00"
        },
        {
         "date": "2026-07-30",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-30T03:00:00"
        },
        {
         "date": "2026-07-29",
-        "rate": 1.0,
+        "rate": 0.99,
         "t": "2026-07-29T03:00:00"
        }
       ]
@@ -85215,7 +85311,7 @@
      "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
-     "safety_status": "no change",
+     "safety_status": "held (recurring-low gate)",
      "slot": 6
     },
     {
@@ -222062,7 +222158,7 @@
     "assert": 0,
     "blind": 0,
     "finding": 0,
-    "held": 1,
+    "held": 2,
     "history": 1
    },
    "findings_window": {
@@ -222447,6 +222543,78 @@
     }
    ],
    "rows": [
+    {
+     "annotation": "lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [],
+     "claimed_by": null,
+     "count_sentences": null,
+     "current": 1.0,
+     "direction": null,
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 1.01,
+      "lo": 0.97,
+      "method": "bootstrap-median",
+      "n": 20,
+      "value": 0.99,
+      "wide": false
+     },
+     "event_chart": null,
+     "evidence": null,
+     "fold_sentences": null,
+     "headline": "Lows keep happening overnight, but the step down is smaller than the smallest change worth making, so the rate stays as it is. Delivered 0.99 U/h across 20 steady nights against 1.00 programmed.",
+     "id": "basal:180-210",
+     "kind": "setting",
+     "label": "03:00",
+     "lean": null,
+     "lever": null,
+     "members": [
+      {
+       "current": 1.0,
+       "days": 20,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 1.01,
+        "lo": 0.97,
+        "method": "bootstrap-median",
+        "n": 20,
+        "value": 0.99,
+        "wide": false
+       },
+       "recommended": 1.0,
+       "start_min": 180
+      }
+     ],
+     "parameter": "basal_rate",
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": "held (recurring-low gate)",
+     "recommended": 1.0,
+     "regime_end": null,
+     "register": "held",
+     "run_ids": null,
+     "span": {
+      "end_min": 210,
+      "label": "03:00",
+      "start_min": 180
+     },
+     "support": {
+      "n": 20,
+      "noun": "nights of steady data",
+      "run_days": 30
+     },
+     "tier": "noted",
+     "title": "Basal 03:00",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
     {
      "annotation": "fasting data agrees with the set factor",
      "appearances": null,

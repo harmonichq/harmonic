@@ -54,7 +54,9 @@ from ciq_autotune.ic_history import (
 from ciq_autotune.result import IcHistory, IcHistoryRunRecord
 from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import DAY_MINUTES
+from ciq_autotune.analyzers.basal import analyze_basal
 from tests.test_analyzer_isf import ISF_36, rw, synth_night
+from tests.test_harm_basal_arm import _build
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
              / "scripts" / "gen_findings_projection_fixtures.py")
@@ -436,6 +438,30 @@ class GroundedWindowTest(unittest.TestCase):
                           "history": 0})
         self.assertEqual(empty["chip_counts"],
                          {"highs": 0, "lows": 0, "meals": 0, "corrections": 0})
+
+    def test_a_recurring_lows_hold_names_the_lows_and_no_lean(self):
+        # ADR 465 decision 3: 03:00's steady nights deliver 0.71 against 0.72
+        # with lows there on two nights, so the slot holds. Its row names the
+        # setting alone and opens with the recurring-lows hold sentence.
+        basal, cgm = _build(rate=0.71, programmed=0.72, low_nights=(20, 21))
+        slots = analyze_basal(basal, cgm, [], [], harm_config=HarmConfig())
+        projection = FindingsProjection(
+            _analysis={"window_days": 30,
+                       "basal": [slot.to_dict() for slot in slots]},
+            _exposures={"exposures": {}},
+            _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
+        )
+        rows = projection.project(WindowQuery.clock(180, 240))["rows"]
+        self.assertEqual(
+            [row["title"] for row in rows if row["title"].startswith("Basal 03:00")],
+            ["Basal 03:00"])
+        row = _row(rows, "Basal 03:00")
+        self.assertEqual(row["register"], "held")
+        self.assertIsNone(row["priority"])
+        self.assertTrue(row["headline"].startswith(
+            "Lows keep happening overnight, but the step down is smaller than "
+            "the smallest change worth making, so the rate stays as it is."))
 
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]

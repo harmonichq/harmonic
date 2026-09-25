@@ -309,7 +309,12 @@ function basalKey(slot) {
   if (slot.asserts_move) return ['assert', slot.direction ?? null];
   const status = slot.safety_status;
   if (status === BLIND_STATUS) return ['blind', null];
-  if (HELD_STATUSES.has(status)) return ['held', lean(slot.current, (slot.estimate || {}).value)];
+  if (HELD_STATUSES.has(status)) {
+    const held = lean(slot.current, (slot.estimate || {}).value);
+    // ADR 465: a nudged recurring-lows hold names no lower lean.
+    if (held === 'lower' && ((slot.evidence || {}).harm || {}).nudged) return ['held', null];
+    return ['held', held];
+  }
   return null;
 }
 

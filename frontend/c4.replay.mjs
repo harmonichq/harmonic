@@ -4294,6 +4294,37 @@ export const C4_STORIES = {
     }
     failOnce('S189', 'a change record must print one decimal and draw a saved curve', failures);
   },
+  // #465: recurring lows at 03:00 point to a step down a hundredth deep, below
+  // the threshold, so the slot holds (ADR 465). The lane paints it a hold with
+  // no recurring-lows reason, the key counts no recurring-lows lower, and the
+  // panel reads the served hold sentence with nothing to stage. The lane opens
+  // on the plain 24 h rail, as S113's recurring-lows variant does.
+  async S190(page) {
+    await openDiagnoseRail(page);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#lane > button.lane-cell').count()), 48,
+        'S190 premise: the within-threshold store must render all 48 basal slots');
+    }, 'S190 the lane renders on the 24 h rail');
+    const cell = page.locator('#lane > .lane-cell[data-cell="6"]');
+    assert.equal(await cell.getAttribute('data-verdict'), 'hold',
+      'S190 the 03:00 lane cell must read a hold, not a recurring-lows lower');
+    assert.equal(await cell.getAttribute('data-reason'), null,
+      'S190 the 03:00 lane cell must carry no recurring-lows reason');
+    const entries = await page.locator('#lane-key > span')
+      .evaluateAll(spans => spans.map(span => span.textContent.replace(/\s+/g, ' ').trim()));
+    assert.ok(!entries.some(entry => entry.startsWith('lower · recurring lows')),
+      `S190 the key must count no recurring-lows lower; it reads ${JSON.stringify(entries)}`);
+    await cell.click();
+    await waitForReplayAssertion(async seen => {
+      const panel = seen(await page.evaluate(readSlotPanel));
+      assert.ok(panel?.time?.startsWith('03:00'), `S190 premise: the 03:00 slot's panel must open; it shows ${panel?.time}`);
+      assert.equal(panel.verdict, 'holds at current', 'S190 the panel must read "holds at current"');
+      assert.ok(panel.text.includes('lows keep happening overnight, but the step down is smaller than the '
+        + 'smallest change worth making, so the rate stays as it is'),
+      'S190 the panel must read the served recurring-lows hold sentence');
+      assert.equal(panel.stage, 0, 'S190 the held slot must offer no Stage change button');
+    }, 'S190 the held 03:00 panel names the recurring lows and stages nothing');
+  },
 };
 
 // #463 leg 1: Changes' watched Trial prints its Time in range difference at one

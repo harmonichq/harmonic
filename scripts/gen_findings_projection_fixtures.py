@@ -93,7 +93,7 @@ from ciq_autotune.result import (  # noqa: E402
     Span,
 )
 from ciq_autotune.settings import Snapshot, parse_pump_settings  # noqa: E402
-from ciq_autotune.safety import SafetyConfig, cap  # noqa: E402
+from ciq_autotune.safety import SafetyConfig, apply_harm, cap  # noqa: E402
 from ciq_autotune.uncertainty import Confidence, Estimate  # noqa: E402
 
 OUT = (pathlib.Path(__file__).resolve().parents[1]
@@ -127,12 +127,14 @@ WINDOWS = {
 
 # --- basal: 48 slots, every verdict from the real cap() ------------------------
 
-def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0):
+def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0,
+          recurring_lows=False):
     """One slot, with its verdict and sentence produced exactly as the analyzer does.
 
     The clean-night points are the same shelf the priority builder counts its
     on-suggested-side nights from, so the Lever score this fixture freezes is the one
-    the real builder computes rather than a floor of 0.
+    the real builder computes rather than a floor of 0. ``recurring_lows`` runs the
+    verdict through the real harm nudge and serves the held sentence it earns.
     """
     estimate = Estimate(value=value, lo=lo, hi=hi, n=n, method="bootstrap-median")
     recommended, status = cap(current, value, _SAFETY, estimate,
@@ -142,11 +144,16 @@ def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0):
                     f"T{_slot_label(index, SLOT_MINUTES)}:00",
                "rate": value}
               for back in range(n)]
+    evidence = {"points": points}
+    if recurring_lows:
+        recommended, status = apply_harm(current, recommended, status, _SAFETY,
+                                         nudge=True, median=value)
+        evidence["harm"] = {"gated": True, "nudged": True}
     return SlotEstimate(
         slot=index, label=_slot_label(index, SLOT_MINUTES), current=current,
         estimate=estimate, recommended=recommended,
-        annotation=_annotation_for(status), days=n,
-        evidence={"points": points}, status=status,
+        annotation=_annotation_for(status, recurring_hold=recurring_lows), days=n,
+        evidence=evidence, status=status,
     )
 
 
@@ -158,6 +165,11 @@ def basal_rows():
             # A contiguous pair leaning the same way and supported — one merged span.
             rows.append(_slot(index, current=0.85, value=1.05, lo=0.98, hi=1.12,
                               n=19, supported=1))
+        elif index == 6:
+            # 03:00 — recurring lows point to a step down a hundredth deep, too
+            # small to take, so the slot holds (ADR 465).
+            rows.append(_slot(index, current=1.00, value=0.99, lo=0.97, hi=1.01,
+                              n=20, recurring_lows=True))
         elif index == 11:
             # 05:30 — the grounded raise, big enough that the step cap trims it.
             rows.append(_slot(index, current=0.80, value=0.998, lo=0.816, hi=1.259,

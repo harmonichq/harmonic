@@ -819,8 +819,13 @@ def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
     if status == _BLIND_STATUS:
         return "blind", None
     if status in _HELD_STATUSES:
-        return "held", _lean(slot.get("current"),
-                             (slot.get("estimate") or {}).get("value"))
+        lean = _lean(slot.get("current"), (slot.get("estimate") or {}).get("value"))
+        if lean == "lower" and ((slot.get("evidence") or {}).get("harm")
+                                or {}).get("nudged"):
+            # ADR 465: recurring lows held a step down too small to take; the
+            # served sentence names the lows, so the title names no lean.
+            lean = None
+        return "held", lean
     return None
 
 
@@ -829,7 +834,9 @@ def _lean(current: Optional[float], value: Optional[float]) -> Optional[str]:
 
     A lean is not a direction: nothing asserts here, and the queue prints it as
     "leaning raise" (term 14). It is computed on the server for the same reason the
-    direction is — the frontend derives neither (#273/#465).
+    direction is — the frontend derives neither (#273/#465). A held basal slot the
+    recurring lows nudged drops a "lower" lean (``_basal_key``, ADR 465): its
+    served sentence already names the lows, and it never reads "leaning lower".
     """
     if current is None or value is None or value == current:
         return None

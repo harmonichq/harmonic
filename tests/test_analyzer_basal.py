@@ -551,6 +551,23 @@ class ConsolidateProfileTest(unittest.TestCase):
         # the rest stays at the programmed 0.6
         self.assertEqual(prof.segments[-1].basal_rate, 0.6)
 
+    def test_recurring_lows_within_the_threshold_leave_the_profile_at_its_setting(self):
+        # ADR 465: 03:00's steady nights deliver 0.71 against 0.72 with lows there
+        # on two nights. The one-hundredth cut holds, so no segment that starts
+        # overnight moves off the programmed 0.72.
+        basal, cgm = combine(*(
+            night(d, rate=0.71, programmed=0.72) for d in range(1, 13)
+        ))
+        for d in (20, 21):
+            cgm += [CgmReading(t=datetime(2022, 6, d, 3, 5 * k), bg=50.0, type="EGV")
+                    for k in range(3)]
+        prof = consolidate_profile(
+            analyze_basal(basal, cgm, [], [], harm_config=HarmConfig()))
+        overnight = [seg for seg in prof.segments if seg.start_min < 6 * 60]
+        self.assertTrue(overnight)
+        for seg in overnight:
+            self.assertEqual(seg.basal_rate, 0.72)
+
     def test_flat_profile_collapses_to_one_segment(self):
         prof = consolidate_profile(_slots_from_rates([0.6] * 48))
         self.assertEqual(len(prof.segments), 1)

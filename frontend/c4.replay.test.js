@@ -133,6 +133,13 @@ test('S189 is a unique app-only #463 story on the showcase', () => {
   assert.equal(storyCase('S189'), 'showcase');
 });
 
+test('S190 is a unique app-only #465 story on the basal-recurring-low-within-floor store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S190');
+  assert.equal(entries.length, 1, 'S190 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 465');
+  assert.equal(storyCase('S190'), 'basal-recurring-low-within-floor');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

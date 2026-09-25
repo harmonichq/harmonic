@@ -484,7 +484,7 @@ replays open recurring-lows rows. The reproduction is
   `tests/test_qa_e2e_cases.py`'s expected case names and to
   `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
   commit is the base for tasks 39, 40, 42 and 44's failing-first runs.
-- [ ] 39. Failing-first unit tests in `tests/test_harm.py` `ApplyHarmTest`, each
+- [x] 39. Failing-first unit tests in `tests/test_harm.py` `ApplyHarmTest`, each
   `nudge=True` and seen to fail on task 38's commit: setting 0.72 with median
   0.71 is `HARM_GATED` at 0.72; setting 0.20 with median 0.19 is `HARM_GATED`
   at 0.20; setting 0.11 with no median is `HARM_GATED` at 0.11; setting 0.10
@@ -495,7 +495,7 @@ replays open recurring-lows rows. The reproduction is
   `HARM_LOWER` at 0.576; setting 0.137 with no median, and setting 0.137 with
   median 0.10, are each `HARM_LOWER` at 0.11 (the check reads the target before
   rounding, ADR 465 decision 1); the gate-only cases are unchanged.
-- [ ] 40. Failing-first analyzer tests, each seen to fail on task 38's commit:
+- [x] 40. Failing-first analyzer tests, each seen to fail on task 38's commit:
   - in `tests/test_harm_basal_arm.py`, through `analyze_basal` on
     `_build(rate=0.71, programmed=0.72, low_nights=(20, 21))`: 03:00 is
     `HARM_GATED` at 0.72, `asserts_move` is false, the guidance action is
@@ -513,7 +513,7 @@ replays open recurring-lows rows. The reproduction is
     programmed 0.72, lows at both on two nights). `basal_lever` with 01:30
     delivering 0.71 returns the same priority and recurrence channel
     (`basal_lower`, 9 of 9) as with 01:30 delivering 0.72.
-- [ ] 41. Backend (ADR 465 decisions 1 and 2): in `ciq_autotune/safety.py`,
+- [x] 41. Backend (ADR 465 decisions 1 and 2): in `ciq_autotune/safety.py`,
   `apply_harm` passes every nudge target through one threshold check,
   `min(noise_floor, current * max_step_frac)` with a 1e-9 tolerance, comparing
   `current` against the clamped target before `round(…, 3)`, and holds at
@@ -528,7 +528,7 @@ replays open recurring-lows rows. The reproduction is
   nowhere else. In `tests/test_annotation_register.py`, `basal_annotations()`
   also catalogs `_annotation_for(Status.HARM_GATED, recurring_hold=True)`, so
   the register guard covers the new sentence.
-- [ ] 42. Findings projection (ADR 465 decision 3). Failing-first, seen to fail
+- [x] 42. Findings projection (ADR 465 decision 3). Failing-first, seen to fail
   on task 38's commit: in `tests/test_findings_projection.py`, an analysis whose
   basal rows are `analyze_basal`'s output for `_build(rate=0.71,
   programmed=0.72, low_nights=(20, 21))` projects, in the clock window
@@ -571,7 +571,7 @@ replays open recurring-lows rows. The reproduction is
   record that base run, which must fail at the lane-cell assertion, and the
   branch run at both sizes on its status line. Raise the story inventory by
   this one story in the four places task 9 names.
-- [ ] 45. In `CONTEXT.md`, the **Harm signal** entry says the nudge holds, rather
+- [x] 45. In `CONTEXT.md`, the **Harm signal** entry says the nudge holds, rather
   than stepping, when its step would be smaller than the noise floor or one full
   step, whichever is smaller (ADR 465).
 - [ ] 46. Capture before/after renders of the 03:00 panel and lane on

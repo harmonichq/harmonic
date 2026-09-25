@@ -205,3 +205,55 @@ Glossary and its design-exploration extract, CONTEXT.md and DESIGN.md, and one
 ledger story. Priority, the Pattern price, staging predicates and caps are
 unchanged, and no QA expectation moves. Triage record:
 `docs/scope/469-queue-rank.md`.
+
+## #470
+
+A meal bolused as a first carb bolus plus a top-up minutes later counts as two
+meals everywhere meals are counted: Highs after meals and Lows after meals double
+their denominator, the Pattern's case file lists two rows whose first peak stops at
+the top-up, and Carb undercount judges each half on its own carbs, so a split meal
+can be flagged where the same meal dosed once is not. ADR 0030's same-meal grace
+existed, but only inside Carb undercount's peak window.
+
+- ADR 0030's 30-minute grace becomes the single meal-identity rule (Connor,
+  2026-09-24): a carb bolus of 10 g or more within 30 minutes of a meal's first
+  bolus is part of that meal, measured from the first bolus and never chained.
+- A meal is anchored and identified by its first bolus; its carbs and dose are
+  summed over its members, a cancelled leg's carbs counted once.
+- Every meal counter reads the one rule: the meal opportunities and anchors, the
+  completed carb-bolus population, the meal classifiers, Meal over-delivery's
+  suspend ownership, Meal bolus short's implicated meal, the Post-meal arc (which
+  now reads through a top-up to the next separate meal), the Trial and
+  watched-change cohorts, the follow-up comparison and the time-of-day meal count.
+- A manufactured case, `behavioral-split-meal`, holds top-ups inside, at and just
+  outside the grace.
+
+Impact: a new meal-identity module and every meal counter named above; the
+Diagnose workstation demo set, the event-comparison capture and the
+eating-sequence findings payload, whose inputs hold same-meal pairs; one QA case
+and one ledger story; CONTEXT.md. Eating windows, the carb-ratio analyzer's meal
+and run ledgers, every staging predicate, cap and support floor, and every
+`ScenarioConfig` value are unchanged, and no committed QA expectation moves.
+Triage record: `docs/scope/470-meal-identity.md`.
+
+## #461
+
+Highs after meals counts a meal as "ran high" whenever Late bolus fires, and Late
+bolus never looks at glucose after the dose, so meals that climbed a little before
+the bolus and then fell back in range are claimed, and advised to "blunt the
+spike" that never happened.
+
+- Late bolus matches only when the meal's Arc peak is above the 180 range line
+  (Connor, 2026-09-24, option A); otherwise it stays silent with a new calm reason,
+  "stayed in range".
+- The peak Late bolus judges and the peak its case-file row prints are one reading
+  from one implementation, cut at the next separate meal (ADR 470).
+- `behavioral-late-bolus` and `behavioral-carb-undercount` are re-shaped so each
+  still fires Late bolus on a real high, and `behavioral-late-bolus` gains a meal
+  that peaks at exactly 180 and stays calm.
+
+Impact: the Late bolus classifier, the silence taxonomy and its calm sets, the
+Guide, the shared peak reader, two QA cases and their spec tallies, the design
+exploration's captures, one ledger story, CONTEXT.md. Staging, caps, floors,
+Priority inputs and the frontend are unchanged. Triage record:
+`docs/scope/461-late-bolus-outcome.md`.

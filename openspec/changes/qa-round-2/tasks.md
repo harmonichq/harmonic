@@ -932,3 +932,244 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   `isf-direction-only-weaken`, and of the Afternoon rail on the showcase, at
   1280x720 and 1440x900, the before from #469's base. The coordinator attaches
   them to the pull request; they are not committed.
+
+## #470 — A meal is its first carb bolus plus its same-meal top-ups
+
+Tasks 1–72 land first on this branch; #470's base is the triage commit its lock
+pins. #470 changes no frontend source: its surface change is served (fewer, summed
+meal rows and counts, and a peak read past a top-up). No committed QA case holds a
+same-meal pair (`uv run python docs/scope/470-meal-identity.repro.py --qa`), so
+#470's touched stories are only task 83's story; the desk suite is touched through
+the Diagnose workstation demo set it reads. The reproduction is
+`docs/scope/470-meal-identity.repro.py`.
+
+- [ ] 73. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): re-inventory, on the
+  `behavioral-split-meal` case store of task 74 served through the QA
+  copy-then-serve, the Highs after meals row's count sentence, its case file's
+  rows (anchor time, carbs, dose, outcome peak) and the Carb undercount Finding's
+  rows, and record any observed behavior with no story before designing.
+- [ ] 74. Add the manufactured case `behavioral-split-meal` to
+  `scripts/qa_e2e_cases.py`: `_materialize_behavioral_background(store,
+  span_days=30)`, then on twelve days a noon meal bolus of 45 g / 4.5 U
+  (carb ratio 10, ISF stamp 40) under the reproduction's trace (flat, a
+  2 mg/dL/min climb from the bolus to 360, then a fall) and a 20 g / 2 U top-up:
+  at +10 minutes on six days, at exactly +30 on three and at +35 on three. Follow
+  AGENTS.md "Maintaining QA coverage eras" steps 1–3 on #470's base: copy its
+  complete `execute_case` row dump (today: 24 meals) into literal `QaExpectation`
+  values and run its generated `test_case_behavioral_split_meal`. Add the name to
+  `tests/test_qa_e2e_cases.py`'s expected case names and to
+  `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
+  commit is the base for tasks 75 and 83's failing-first runs.
+- [ ] 75. Failing-first backend tests, each seen to fail on task 74's commit:
+  - in a new `tests/test_meals.py`, through `group_meals`: boluses at 0, +10 and
+    +30 minutes form one meal and one at +31 opens another; 0, +20 and +40 form
+    {0, +20} and {+40} (never chained); a 9.9 g and a carb-free bolus inside the
+    grace are never members; two meal boluses at one instant form one meal
+    ordered by `seq_num`; a cancelled 45 g leg that delivered 0.5 U and a
+    completed 45 g re-issue two minutes later form one meal of 45 g and the summed
+    insulin; members stamped 10 and 12 g/U judge at 10; a meal whose only
+    completed member is its top-up is `completed`;
+  - in `tests/test_outcome_patterns.py`, over a real temp `Store` with a settings
+    snapshot: fourteen synthetic days, each a 45 g / 4.5 U meal bolus and a
+    20 g / 2 U top-up at +10 minutes rising to 360. `build_exposures`,
+    `build_scenarios` and `build_outcome_patterns` serve a meals family of
+    `n == 14`, each occurrence at its first bolus with carbs 65 and insulin 6.5,
+    Highs after meals 14 of 14 and Carb undercount's recurrence `n == 14`
+    (today 28, 28 of 28, 28). The same store with the peak at 210 serves Highs
+    after meals 0 of 14 and no meal occurrence listing `carb_undercount` (today 28
+    of 28). Boundary controls on the same shape: a top-up at exactly +30 is the
+    same meal (`n == 14`); one at +35 stays separate, with today's counts
+    (`n == 28`). No hand-set levers, verdicts or flags;
+  - in `tests/test_finding_case_file.py`, through `finding_case_file.prepare`
+    (the `_analyzer_prepared` pattern) on the +10 store: the Highs after meals
+    Pattern case file serves 14 rows, summary claimed 14 of 14, each row's anchor
+    carbs 65 and dose 6.5, and each row's outcome the Arc peak of 360 read past
+    the top-up (today 28 rows, the first bolus's peak 130 at minute 10);
+  - in `tests/test_meal_suspend.py`: a split meal followed by a Control-IQ
+    suspend and a near-low yields one Lows after meals opportunity, and Meal
+    over-delivery judges that suspend for the meal (its first bolus), never for
+    the top-up;
+  - in `tests/test_meal_bolus_short_attribution.py`: a split meal whose rise is
+    corrected implicates the meal's first bolus (`meal-<first seq_num>`), and the
+    lever's recurrence counts one meal;
+  - in `tests/test_event_comparison.py`: `completed_carb_boluses` answers one
+    meal per split pair, at its first bolus;
+  - through each remaining counter's public function: `explore_time_of_day`
+    counts a 10 g bolus and a top-up ten minutes later in one bin as one meal
+    (`tests/test_explore_time_of_day.py`); `outcomes_trend.post_meal_arc` counts a
+    split meal once, its peak read past the top-up (`tests/test_outcomes_trend.py`);
+    the Trial evidence's daily meal count counts it once
+    (`tests/test_trial_evidence.py`); the follow-up comparison's
+    `contributing_meals` counts it once (`tests/test_follow_up_comparison.py`).
+- [ ] 76. `ciq_autotune/analyzers/meals.py` (ADR 470 decisions 1 and 2): move
+  `_is_meal` from `scenario/anchors.py` and `completed_carb_bolus` from
+  `scenario/evidence_population.py` into it unchanged, and add `Meal` and
+  `group_meals`. Every importer of either moved name imports it from `meals`.
+- [ ] 77. The scenario engine and classifiers (ADR 470 decision 3): in
+  `scenario/anchors.py`, `collect_anchors` emits one MEAL anchor per meal and
+  `Anchor` gains `meal`; `scenario/opportunities.py` emits one meals opportunity
+  per meal with every member; `scenario/model_view.py`'s `_anchor_facts` serves
+  the meal's sums; `scenario/attribute.py`'s `_meal_lever` and
+  `scenario/engine.py`'s `recurrence_observations` pass the `Meal`;
+  `scenario/evidence_population.py` builds Meal bolus short's and Missed meal's
+  meal populations from completed meals; `scenario/meal_suspend.py` owns suspends
+  by completed meal and drops `_is_comparison_meal`; in `classifiers/`,
+  `carb_undercount.py` judges the meal's sums and ends its window at the next
+  meal from `group_meals`, `late_bolus.py` documents the meal parameter, and
+  `meal_bolus_short.py` implicates the meal. Update each touched docstring and
+  the `scenario_config.py` comments on `anchor_meal_min_carbs` and
+  `carb_undercount_same_meal_grace_min` (ADR 470 decision 4: no field or value
+  changes).
+- [ ] 78. The other meal counters (ADR 470 decision 3): in
+  `ciq_autotune/event_comparison.py`, `completed_carb_boluses`,
+  `_completed_meal_at` and `_route_meal` read meals; in
+  `ciq_autotune/finding_case_file.py`, `_arc_outcomes` truncates at meals' first
+  bolus and `_anchor_dose` serves the meal's sums; `ciq_autotune/outcomes_trend.py`
+  (the trend windows' meal sets and the arc docstrings),
+  `ciq_autotune/watched_change.py`, `ciq_autotune/trial_evidence.py`,
+  `ciq_autotune/follow_up_comparison.py` and `ciq_autotune/explore_time_of_day.py`
+  (`meal_count`) read `group_meals`. The pooled 12 g meal track is unchanged.
+- [ ] 79. Update deliberately the tests that pin per-bolus meal judgement, each
+  named in the commit message:
+  - `tests/test_classifier_carb_undercount.py`'s
+    `test_dose_split_within_grace_is_not_a_separate_meal` classifies the grouped
+    meal and asserts its logged carbs are 45;
+  - `tests/test_finding_case_file.py`'s
+    `test_an_arc_ends_at_any_carb_tagged_bolus_and_a_cluster_reads_its_second_dose`,
+    whose `_edge_facts_recipe` puts a cancelled 40 g bolus exactly 30 minutes
+    after the completed noon meal: under ADR 470 it joins that meal (carbs 40,
+    dose 6 U), leaves Carb undercount's roster as a row of its own, and no longer
+    ends the noon arc. Rename the test for what it now pins;
+  - any other pin the rule moves in the test files `docs/scope/470-meal-identity.md`
+    lists as holding same-meal pairs, set to the analyzer's answer.
+- [ ] 80. Regenerate the generated sets whose inputs hold same-meal pairs: the
+  Diagnose workstation demo set (`python3 .claude/qa/gen_synthetic_fixtures.py`,
+  then `uv run python scripts/check_demo_fixtures.py` passes), the
+  event-comparison capture (`node mockups/diagnose-event-comparison.synthetic/generate.mjs --write`
+  when its `--check` fails) and the eating-sequence findings payload
+  (`uv run python scripts/gen_eating_sequence_fixtures.py`; its `--check` and
+  `tests/test_eating_sequence_finding_fixture.py`'s 1,000,000-byte limit pass).
+  Any pinned count or order the regenerated sets move in the frontend tests that
+  read them is updated to the regenerated answer and named in the commit message.
+- [ ] 81. Rewrite `behavioral-split-meal`'s literal expectation from its post-fix
+  `execute_case` dump (AGENTS.md step 2): 15 meals, each split pair one meal at
+  its first bolus. Re-measure the five budgets (step 4) against the limits of
+  record in `openspec/changes/archive/2026-09-24-harmonic-v2/coverage-appendix.md`
+  without raising any, judging the whole-pytest budget against the base on the
+  same machine as ADR 463's ruling does, and record them as a dated `#470` section
+  of `openspec/changes/qa-round-2/coverage-appendix.md`.
+- [ ] 82. In `CONTEXT.md`, add a **Meal** entry (a first carb bolus plus its
+  same-meal top-ups; _Avoid_: second meal, split meal as two meals) and make the
+  **Post-meal arc**, **Arc peak** and **Arc nadir** entries say the windows stop
+  at the next meal's first bolus, never at a top-up.
+- [ ] 83. Add one ledger story (the next unissued S id) on `behavioral-split-meal`,
+  in a dated `## #470 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`
+  carrying Connor's 2026-09-24 decision as its sanction, with its replay function
+  in `frontend/c4.replay.mjs`, registry entry in `frontend/desk-behavior.replay.mjs`,
+  case in `frontend/replay-cases.mjs` and story-table row in
+  `frontend/c4.replay.test.js`. At 24 h the Highs after meals row's count sentence
+  reads its served "k of 15 meals ran high"; its case file lists 15 rows, and a
+  +10 day's row serves 65 g and a peak read past its top-up. Lay its harness over
+  task 74's commit and record that base run, which must fail at the count
+  sentence (the base serves 24 meals), and the branch run at both sizes on its
+  status line. Raise the story inventory by this one story in the four places
+  task 9 names.
+- [ ] 84. Capture before/after renders of the Highs after meals case file on
+  `behavioral-split-meal` at 1280x720 and 1440x900 from the no-fetch serve, the
+  before from task 74's commit. The coordinator attaches them to the pull
+  request; they are not committed.
+
+## #461 — Late bolus claims a meal only when it ran above the range line
+
+Tasks 73–84 (#470) land first; #461's base is their final commit, and its peak
+window stops at the next meal #470 defines. #461 changes no frontend source: its
+surface change is served (fewer Late bolus claims, a new silence reason in the
+Guide). #461's touched stories are S13, S124 and R8, which open
+`behavioral-carb-undercount`, and task 90's story. The reproduction is
+`docs/scope/461-late-bolus-outcome.repro.py` and the rule's spike is
+`docs/scope/461-late-bolus-outcome.spike.py`.
+
+- [ ] 85. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #461's touched
+  stories against #461's base at 1280x720 and 1440x900, re-inventory the Highs
+  after meals row, the Late bolus Finding's case file and the Guide's silence
+  article on `behavioral-late-bolus` in the served app, and record any observed
+  behavior with no story before designing.
+- [ ] 86. Re-shape the two behavioral cases (ADR 461 decision 5) in
+  `scripts/qa_e2e_cases.py`, as the spike does: `behavioral-late-bolus`'s days 23
+  and 24 and `behavioral-carb-undercount`'s day 25 carry the late rise with a
+  post-bolus peak of 195 (`RISE_195`), and `behavioral-late-bolus` gains day 22,
+  seq 110_022, with today's exact-180 rise. Rewrite both expectations from their
+  dumps on #461's base (AGENTS.md steps 1–3) and run their generated tests.
+  Commit this task on its own: that commit is the base for tasks 87 and 90's
+  failing-first runs.
+- [ ] 87. Failing-first backend tests, each seen to fail on task 86's commit:
+  - in `tests/test_classifier_late_bolus.py`: a climb to 160 at the bolus that
+    reads 165 once and falls is not matched, `stayed_in_range`, Observed; a
+    post-bolus peak of exactly 180 is not matched; 181 is matched; a meal with no
+    reading after the bolus is `insufficient_data`; a meal whose +10 top-up
+    precedes a 240 peak at +60 is matched (the window reads past a member); a
+    separate meal at +40 ends the window, so a later 240 is not read. Update
+    deliberately, each named in the commit message, the tests whose Late bolus
+    match rests on no post-bolus reading or a post-bolus peak at or under 180, as
+    the triage probe found them: `test_in_range_start_still_flags_as_late`,
+    `test_exactly_at_high_threshold_does_not_gate` and
+    `test_same_rise_from_flat_with_no_low_would_flag` in this file,
+    `tests/test_follow_up_comparison.py`'s
+    `test_missing_after_measurements_cannot_improve_adherence` and
+    `tests/test_scenario_engine.py`'s
+    `test_known_positive_and_empty_domain_keep_existing_policy`: each keeps its
+    purpose by carrying a post-bolus high, or asserts the new reason where the
+    in-range meal is its point;
+  - in `tests/test_outcome_patterns.py`: the reproduction's 30-day store of
+    fourteen in-range late meals serves Highs after meals `k == 0` and no meal
+    occurrence lists `late_bolus` (today 14 of 14); the control with a post-bolus
+    peak of 240 still serves 14 of 14 with `late_bolus` on each;
+  - in `tests/test_finding_case_file.py`, on task 75's +10 top-up store and on a
+    variant with a pre-bolus climb and a 240 peak at +60: every `fired` meal row
+    serves an Arc peak above 180;
+  - in `tests/test_findings_projection.py`, from analyzer output: the in-range
+    store serves no Late bolus Cause row, and the control's reads "14 of 14 meals
+    ran high";
+  - in `tests/test_silence_reason.py`'s `LateBolusSilenceTest`: an in-range
+    meal is `stayed_in_range`;
+  - in `tests/test_guide_catalog.py` and `tests/test_api.py`: the served taxonomy
+    lists nine silence reasons, "Stayed in range" among them at tier Observed.
+- [ ] 88. Backend (ADR 461 decisions 1–3): in
+  `ciq_autotune/analyzers/classifiers/evidence.py`, add
+  `SilenceReason.STAYED_IN_RANGE` and make the docstring's closed set nine; in
+  `ciq_autotune/analyzers/meals.py`, add `ARC_PEAK_HORIZON_MIN` and `meal_peak`,
+  and have `ciq_autotune/outcomes_trend.py`'s `_meal_arc` call it and keep
+  exporting the constant; in `ciq_autotune/analyzers/classifiers/late_bolus.py`,
+  add the outcome step and its docstring; add the reason to
+  `scenario/model_view.py`'s `_CALM_REASONS`, `findings_projection.py`'s
+  `_CALM_SILENCE_REASONS` and `mockups/findings-projection.mirror.mjs`'s
+  `CALM_SILENCE_REASONS`; add "Stayed in range" to `scenario/guide.py`'s
+  `_SILENCE_META` and its comment's count.
+- [ ] 89. Rewrite both behavioral cases' literal expectations from their post-fix
+  dumps: `behavioral-late-bolus` serves Late bolus 2 / 1 / 1 / 1 / 2 and Carb
+  undercount 1 / 2 / 0 / 0 / 4 over 7 meals and "3 of 7"; `behavioral-carb-undercount`
+  serves 2 / 1 / 1 / 1 / 1 and 1 / 2 / 0 / 0 / 3 over 6. Re-measure the five
+  budgets as task 81 does and record them as a dated `#461` section of
+  `openspec/changes/qa-round-2/coverage-appendix.md`. In `CONTEXT.md`, the
+  **Silence reason** entry lists the nine members the enum defines.
+- [ ] 90. Add one ledger story (the next unissued S id after task 83's) on
+  `behavioral-late-bolus`, in a dated `## #461 amendment` section of
+  `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24 option A
+  as its sanction, with its replay function, registry entry, case mapping and
+  story-table row in the files task 83 names. At 24 h the Highs after meals row
+  reads "3 of 7 meals ran high"; the Late bolus Finding's case file lists two
+  fired rows, each printing a peak above 180; the Guide's silence article lists
+  "Stayed in range". Lay its harness over task 86's commit and record that base
+  run, which must fail at the count sentence (the base serves 4 of 7), and the
+  branch run at both sizes on its status line. Raise the story inventory by this
+  one story in the four places task 9 names.
+- [ ] 91. Regenerate the design exploration
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Late bolus
+  captures (`evidence.json`, `workstation.json`) and Guide capture
+  (`utilities.json`) move; its `--check` then passes.
+- [ ] 92. Capture before/after renders of the Late bolus Finding's case file and
+  the Guide's silence article on `behavioral-late-bolus` at 1280x720 and
+  1440x900 from the no-fetch serve, the before from task 86's commit. The
+  coordinator attaches them to the pull request; they are not committed.

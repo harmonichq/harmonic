@@ -901,3 +901,206 @@ placement in the rail changes; #413's stripe on the first tier holds, and that
 tier is now one run. No Priority, input, floor, staging predicate or cap moves,
 and no QA expectation moves (`docs/scope/469-queue-rank.spike.py --qa`). S115
 holds unchanged: it reads the served tiers.
+
+## ADR 470 — A meal is its first carb bolus plus its same-meal top-ups
+
+**Context.** Connor settled on 2026-09-24/25 that ADR 0030's 30-minute grace
+becomes the single meal-identity rule, used everywhere meals are counted (the
+issue's option A): anchor at the first bolus, identity the first bolus's
+`seq_num`, judged carbs and dose summed over the meal's members; the Post-meal
+arc truncates at the next separate meal; every per-bolus meal counter reads the
+one rule. The edge cases, the rule's module, and the configuration and
+remaining-divergence points below were decided autonomously during AFK run,
+taking the issue's recommendations where it has them and the simplest option
+otherwise.
+
+Reproduced in-process on synthetic stores at this change's base
+(`docs/scope/470-meal-identity.repro.py`): fourteen days of one 45 g meal with a
+20 g top-up at +5, +10, +20 or +30 minutes serve 28 meal opportunities, a meals
+family of 28 and "28 of 28" Highs after meals, where the same days without the
+top-up serve 14 and "14 of 14". The case file lists 28 rows, and the first
+bolus's row prints a peak of 130 at minute 10 because its arc stops at the top-up.
+With the peak lowered to 210, each half fires Carb undercount on its own carbs
+(28 of 28), while the same meal as one 65 g dose fires none (0 of 14). A top-up
+at +35 minutes stays a separate meal. Across the 75 committed QA cases no two
+carb boluses at or over the meal floor sit within 30 minutes (`--qa`).
+
+The grace lives today only in `carb_undercount._owned_window_end`. Every other
+meal counter forms one meal per carb bolus of 10 g or more: `collect_anchors`,
+`build_opportunities`, the completed carb-bolus population (ADR 679), Meal
+over-delivery's suspend ownership (ADR 681), Meal bolus short's implicated meal,
+the Post-meal arc's truncation, the Trial and watched-change meal cohorts, the
+follow-up comparison and the time-of-day `meal_count`.
+
+**Decision.**
+
+1. **One rule in one module.** A new module, `ciq_autotune/analyzers/meals.py`,
+   owns meal identity. It sits beside `scenario_config.py` rather than inside
+   `scenario/`, because the classifiers read it, and a classifier that imports
+   `scenario.anchors` first re-enters `scenario/__init__`, which imports the
+   classifier back half-initialized. The module holds:
+   - `_is_meal` (moved from `scenario/anchors.py`, unchanged: carbs at or over
+     `anchor_meal_min_carbs`) and `completed_carb_bolus` (moved from
+     `scenario/evidence_population.py`, unchanged). Callers import both from
+     `meals`; the old modules keep no copy.
+   - `group_meals(bolus_events, *, scenario_config) -> tuple[Meal, ...]`. Meal
+     boluses are taken in `(t, seq_num)` order. A meal bolus that is not already
+     a member opens a meal, and every later meal bolus at most
+     `carb_undercount_same_meal_grace_min` after the opener joins it. The grace
+     is measured from the opener and never chained, and a bolus exactly at the
+     grace is a member. Carb-free boluses and carb boluses under the meal floor
+     are never members (the issue's recommendation).
+   - `Meal`, a frozen value over `members` (time order; the first is the
+     opener) with `first`, `t` and `seq_num` from the first member; `carbs`;
+     `insulin`, the sum of every member's delivered insulin (`None` only when no
+     member carries one); `carb_ratio`, the first member's stamp; and
+     `completed`, true when any member is a `completed_carb_bolus`.
+2. **What a merged meal is judged on.** Its anchor time and identity are the
+   first bolus's, so a one-bolus meal's anchor, identity and occurrence ids do
+   not move. Its judged carbs and dose are sums over its members (Connor).
+   Decided autonomously during AFK run, for the three edge cases the issue names:
+   - members whose stamped carb ratios differ are judged at the first member's
+     stamp, the ratio the meal was dosed under when it began;
+   - a cancelled leg and its re-issue (#219) inside the grace are one meal.
+     `carbs` sums the members the pump completed (completion `Completed` or
+     unknown), or every member when none completed, so a cancelled leg's carbs,
+     which its re-issue carries again, count once. `insulin` sums what every
+     member delivered;
+   - sub-floor carb boluses and carb-free top-ups stay outside the meal, as
+     today.
+3. **Every meal counter reads `group_meals`.** No second implementation:
+   - `collect_anchors` emits one MEAL anchor per meal at its first bolus. The
+     anchor's `bolus` stays the first bolus, and a new `Anchor.meal` field carries
+     the `Meal`. `build_opportunities` emits one meals opportunity per meal with
+     identity `(first.seq_num,)` and `members` set to every member.
+   - The served anchor facts (`model_view._anchor_facts`, the case file's
+     `_anchor_dose`) serve the meal's summed dose and carbs.
+   - The meal classifiers take a `Meal`: `_meal_lever`, the engine's
+     `recurrence_observations` and the event comparison's near-miss routing pass
+     the meal, never a single member. Carb undercount judges `meal.carbs`,
+     `meal.insulin` and `meal.carb_ratio`, and `_owned_window_end` ends at the
+     next meal's first bolus from `group_meals` instead of keeping its own copy of
+     the grace. Late bolus judges at the meal's first bolus. Meal over-delivery's
+     ownership (ADR 681) assigns each suspend to the latest completed meal whose
+     first bolus is within the ownership window, and replaces its private
+     `_is_comparison_meal` copy of `completed_carb_bolus`. Meal bolus short
+     implicates the meal holding the most recent completed carb bolus in its
+     digestion window, and its `meal_t` and carb-free dose-split grace are
+     measured from that meal's first bolus. Production callers always pass the
+     `Meal`. A classifier unit test that hands one `BolusEvent` gets a one-member
+     meal's judgement: the attributes the classifiers read (`t`, `seq_num`,
+     `carbs`, `insulin`, `carb_ratio`) mean the same on both, and ownership looks
+     a meal up by its first bolus's `(t, seq_num)`.
+   - The completed carb-bolus population counts meals: a meal is in it when it is
+     `completed`, keyed `meal-<first seq_num>` (`evidence_population`'s
+     recurrence and comparison members for Meal bolus short and Missed meal, and
+     `event_comparison.completed_carb_boluses` with `_completed_meal_at`).
+   - The Post-meal arc's meal set and truncators are meals' first-bolus times:
+     `finding_case_file._arc_outcomes`, `outcomes_trend`'s trend windows and
+     `meal_measurements` callers, `watched_change`, `trial_evidence`,
+     `follow_up_comparison` and `explore_time_of_day`'s `meal_count` all read
+     `group_meals`. `meal_arcs` and `_meal_arc` keep their code; their
+     docstrings say the arc stops at the next meal.
+   - The frontend re-derives no meal grouping, peak or count.
+4. **The configuration does not move.** Decided autonomously during AFK run. The
+   grace keeps its field name, `carb_undercount_same_meal_grace_min`, and its
+   value, 30; its comment says it is the meal-identity grace. No `ScenarioConfig`
+   field is added, renamed or re-valued, and the retained-execution policy stamp
+   is unchanged: a retained comparison context stores `asdict(ScenarioConfig())`
+   and is refused on any difference (`follow_up_comparison._execution`), and #462
+   settled that an update must not make saved comparisons unreadable.
+5. **Named divergences that stay.** Decided autonomously during AFK run:
+   - eating windows chain carb boluses (carbs above zero) 30 minutes or less
+     apart and stay the spec-pinned sequence contract, so 12:00, 12:25 and 12:50
+     form one eating window but two meals (the issue's option B, not taken);
+   - the workstation's pooled meal track keeps drawing carb boluses per 30-minute
+     bucket at its locked 12 g floor: it is a dose glyph track, not a meal
+     denominator;
+   - the carb-ratio analyzer's own meal predicate, `meal_burdens` and
+     `run_burdens` do not change (the ticket's boundary);
+   - Late bolus's 60-minute prior-carb-bolus rule stays a silence reason, not an
+     identity.
+
+**Consequences.** Counts move only where a same-meal pair exists. No committed QA
+case holds one, so no QA expectation moves; the new `behavioral-split-meal` case
+holds them. The generated sets whose inputs hold pairs move and are regenerated:
+the Diagnose workstation demo set (nine pairs: `.claude/qa/gen_synthetic_fixtures.py`
+places breakfast and dinner boluses minutes apart), the event-comparison capture
+that reads it, and the eating-sequence findings payload (up to twenty pairs in the
+high-carb streams). Measured with an observation-only probe over every drift check
+(`docs/scope/470-meal-identity.md`). No basal, correction-factor or carb-ratio
+staging, cap, support floor, `meal_burdens` or `run_burdens` moves: the
+carb-ratio analyzer reads none of these counters (it imports only the
+pre-empted-lows helper from `scenario/`).
+
+## ADR 461 — Late bolus claims a meal only when it ran above the range line
+
+**Context.** Connor chose option A on 2026-09-24/25: Late bolus matches only when
+the meal's post-bolus peak is above the 180 range line, otherwise it returns a new
+calm silence reason; the one peak definition is shared between the verdict and the
+row, coordinated with ADR 470's arc truncation; `behavioral-late-bolus` is
+re-shaped. The window, the reason's name and words, the second case's reshape
+and the new band were decided autonomously during AFK run.
+
+Reproduced at this change's base (`docs/scope/461-late-bolus-outcome.repro.py`):
+fourteen meals that climb to 160 at the bolus, read 165 once and fall serve "14 of
+14 meals ran high" on Highs after meals and on the Late bolus Cause row, every row
+"fired" with a peak of 165, and Late bolus at effect 0.0 and Priority 0. The
+committed `behavioral-late-bolus` case serves "3 of 6" with both Late bolus meals
+peaking at exactly 180. `classify_late_bolus` reads the pre-bolus slope, the
+context gate, a prior carb bolus and the start level, and never a reading after
+the dose, while Carb undercount (a peak of at least 200) and Meal bolus short (a
+HIGH-anchored episode) already require a high.
+
+**Decision.**
+
+1. **The outcome check.** After today's five steps, and only when all of them
+   would match, Late bolus reads the meal's Arc peak and matches only when it is
+   above `segment_range_high_mgdl` (180, strictly above). Every earlier silence
+   keeps its reason. A meal with no reading in the peak window is not matched,
+   `insufficient_data`, "not enough CGM after the bolus to see whether the meal
+   ran high". A peak at or under the line is not matched with the new reason.
+2. **A new calm silence reason.** `SilenceReason.STAYED_IN_RANGE`,
+   `stayed_in_range`, tier Observed, detail "glucose was rising N mg/dL/min before
+   the bolus but peaked at P mg/dL, inside the range, so there was no spike to
+   blunt". It is calm everywhere calm is listed: `model_view._CALM_REASONS`,
+   `findings_projection._CALM_SILENCE_REASONS` and the fixture mirror's
+   `CALM_SILENCE_REASONS`, so such a meal reads `clean`, never a near miss. The
+   Guide lists it as "Stayed in range": "Glucose rose before the bolus but never
+   went above the range line afterwards, so there was no spike for an earlier
+   bolus to blunt." The closed set now has nine members; the enum, the Guide's
+   comment, CONTEXT.md's **Silence reason** entry and the behavioral-layer
+   refusal requirement say so.
+3. **One peak definition, one implementation.** The Arc peak window, the highest
+   CGM reading in (bolus, bolus + 3 h] cut at the next meal's first bolus (ADR
+   470), moves into `meals.py` as `meal_peak(meal_t, next_meal_t, readings)`
+   returning the reading's time and value, with `ARC_PEAK_HORIZON_MIN` beside it.
+   `outcomes_trend._meal_arc` calls it for its peak half and keeps exporting the
+   constant. Late bolus calls it with the next meal from `group_meals`. The peak a
+   Late bolus verdict judged and the Arc peak its case-file row prints are
+   therefore the same reading (the issue's "judge on the Arc window"). Carb
+   undercount keeps its 300-minute owned window (ADR 0030); both windows now stop
+   at the same next meal.
+4. **One verdict feeds every reader.** Highs after meals' `k`, the Late bolus
+   Finding, its Cause row's "k of n meals ran high" and its advice all read that
+   verdict. The Cause row's outcome word stays "ran high". No frontend gate moves:
+   the Day chart reads the served anchor state, which is `clean`.
+5. **The two behavioral cases keep every band.** Decided autonomously during AFK
+   run. Under the rule both of `behavioral-late-bolus`'s fired meals and
+   `behavioral-carb-undercount`'s Late bolus meal turn calm; the first case loses
+   its Late bolus Finding and the second loses Carb undercount's outranked band,
+   which the qa-e2e-database requirement forbids. Each late rise is re-shaped to
+   the same climb with a post-bolus peak of 195: above the range line and under
+   Carb undercount's 200 runaway bar, so Carb undercount stays calm on it.
+   `behavioral-late-bolus` gains a seventh meal carrying today's exact-180 trace,
+   the in-range band at its boundary. Spiked
+   (`docs/scope/461-late-bolus-outcome.spike.py`): `behavioral-late-bolus` serves
+   Late bolus 2 / 1 / 1 / 1 / 2 and Carb undercount 1 / 2 / 0 / 0 / 4 over 7 meals,
+   and "3 of 7"; `behavioral-carb-undercount` keeps today's 2 / 1 / 1 / 1 / 1 and
+   1 / 2 / 0 / 0 / 3 over 6 and "3 of 6".
+
+**Consequences.** Late bolus counts fall to the meals that ran high, and "k of n
+meals ran high" is true of every meal Late bolus puts in it. Classifier tests
+whose CGM ends at the bolus gain post-bolus readings. The design exploration,
+built on `behavioral-late-bolus` with its meals repeated, and its Guide capture
+are regenerated. No staging predicate, cap, floor or setting Priority moves.

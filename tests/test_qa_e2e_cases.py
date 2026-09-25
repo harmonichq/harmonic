@@ -74,6 +74,7 @@ EXPECTED_CASE_NAMES = (
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
     "basal-and-carb-ratio-lower",
+    "c4-isf-late-read",
 )
 
 

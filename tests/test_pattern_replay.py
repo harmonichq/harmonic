@@ -86,6 +86,7 @@ EXPECTED_ACTIVE_KINDS = {
     "c4-history": "trial",
     "edit-chain": None,
     "basal-and-carb-ratio-lower": None,
+    "c4-isf-late-read": None,
 }
 
 

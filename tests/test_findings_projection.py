@@ -979,11 +979,11 @@ class QueueOrderTest(unittest.TestCase):
                     for item in between
                 ), [item["id"] for item in between])
         self.assertEqual(ids[ids.index("pattern:highs_after_meals") + 1], "finding:carb_undercount")
-        # A claimed cause keeps its own tier inside its Pattern's fold; the bands
-        # order the top-level rows the rail ranks.
-        tiers = [row["tier"] for row in rows if not row["claimed_by"]
-                 and row["tier"] in ("next_in_line", "worth_a_look")]
-        self.assertEqual(tiers, sorted(tiers, key=["next_in_line", "worth_a_look"].index))
+        top_level = [row["tier"] for row in rows if row["claimed_by"] is None]
+        self.assertLess(
+            max(index for index, tier in enumerate(top_level) if tier == "next_in_line"),
+            min(index for index, tier in enumerate(top_level) if tier == "worth_a_look"),
+        )
         for row in rows:
             if row["id"] not in anchors:
                 self.assertIsNone(row.get("anchored_by"), row["id"])
@@ -1001,6 +1001,31 @@ class QueueOrderTest(unittest.TestCase):
         highs = rows["pattern:highs_after_meals"]
         self.assertIsNone(highs.get("anchored_by"))
         self.assertEqual(highs.get("rank_note"), "Ranked on all 30 days")
+
+    def test_the_overnight_pattern_never_anchors_to_a_daytime_basal_row(self):
+        """ADR 469 decision 7: in 05:00–08:00 the only asserting basal row is the
+        06:30 raise, outside the 00:00–06:00 band, so the overnight Pattern keeps
+        its own rank rather than sitting beneath it."""
+        whole_day = gen.basal_rows
+
+        def daytime_raise():
+            rows = whole_day()
+            rows[11] = gen._slot(11, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
+            rows[13] = gen._slot(13, current=0.80, value=0.998, lo=0.816, hi=1.259,
+                                 n=22, supported=1)
+            return rows
+
+        with patch.object(gen, "basal_rows", daytime_raise):
+            analysis = gen.analysis()
+        rows = {row["id"]: row for row in prepare_findings_projection(
+            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
+        ).project(WindowQuery.clock(5 * 60, 8 * 60))["rows"]}
+        self.assertEqual(rows["basal:390-420"]["register"], "assert")
+        self.assertNotIn("basal:330-360", rows)
+        overnight = rows["pattern:overnight_lows_no_iob"]
+        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
+        self.assertIsNone(overnight["anchored_by"])
+        self.assertEqual(overnight["rank_note"], "Ranked on all 30 days")
 
     def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
         rows = FindingsProjection(

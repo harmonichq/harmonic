@@ -71,6 +71,16 @@ test('#469 · isfStageNote gives the correction-factor panel\'s own reason a row
     evidence: { direction: 'strengthen' } }), null);
 });
 
+test('#469 · isfRoundsToCurrent is the one rounded no-op predicate the panel and the note read', () => {
+  const { isfRoundsToCurrent } = workstationData;
+  const strengthen = { asserts_move: false, evidence: { direction: 'strengthen' } };
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: 40 }), true);
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: null }), false);
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: 40, asserts_move: true }), false);
+  assert.equal(isfRoundsToCurrent({ asserts_move: false, evidence: { direction: 'weaken' },
+    current: 40, recommended: 40 }), false);
+});
+
 test('isfVerdict fails closed for false, missing, and malformed carried verdicts', () => {
   for (const verdict of [false, null, undefined, 'true', 1, {}, []]) {
     const row = {

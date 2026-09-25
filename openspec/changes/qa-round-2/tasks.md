@@ -824,8 +824,9 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
     "basal:30-90"; each follows its anchor with nothing between them but other
     rows anchored to it and their claimed causes, `finding:carb_undercount`
     directly after Highs after meals; each carries `rank_note` "Ranked with its
-    setting" and its anchor's tier; every `next_in_line` row precedes every
-    `worth_a_look` row; no other row carries a `rank_note` or an anchor;
+    setting" and its anchor's tier; every top-level `next_in_line` row precedes
+    every top-level `worth_a_look` row; no other row carries a `rank_note` or an
+    anchor;
   - 14:00–21:00 (`AFTERNOON`): `finding:over_treated_low` carries `rank_note`
     "Ranked on all 30 days" and `ic:720` none;
   - 06:00–11:00: Highs after meals carries no anchor and `rank_note` "Ranked on

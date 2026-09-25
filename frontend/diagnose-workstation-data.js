@@ -111,6 +111,17 @@ export function isfVerdict(row) {
 }
 
 /**
+ * Whether a correction-factor strengthen that cannot stage is a conservative step
+ * that rounds to the current value. The panel's verdict and qualifier and
+ * `isfStageNote` all read this one predicate.
+ */
+export function isfRoundsToCurrent(row) {
+  const { direction, canStage } = isfVerdict(row);
+  return !canStage && direction === 'strengthen'
+    && row.current != null && row.recommended === row.current;
+}
+
+/**
  * Why a correction-factor row cannot stage, in the panel's own words, or null when
  * it can. The correction-factor panel's foot note and the findings queue's detail
  * line both read this one choice (ADR 469), so the two never word it differently.
@@ -118,7 +129,7 @@ export function isfVerdict(row) {
 export function isfStageNote(row) {
   const { direction, canStage } = isfVerdict(row);
   if (canStage) return null;
-  if (direction === 'strengthen' && row.current != null && row.recommended === row.current) {
+  if (isfRoundsToCurrent(row)) {
     return 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.';
   }
   if (direction === 'weaken') return 'No new number is available, so there is nothing to stage.';

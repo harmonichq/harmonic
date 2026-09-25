@@ -833,8 +833,8 @@ committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
    projection serves with `admission_route` `setting_staging` carries a new row
    field, `anchored_by`: the id of the first served, priced, asserting row of its
    setting member's parameter in queue order. Every such row carries the same
-   parameter-level Priority, and in the whole day the earliest of them is the
-   in-band row that admitted the harm-band Pattern, so no band test is added. It
+   parameter-level Priority; for the harm-band Pattern decision 7 narrows the
+   candidates to in-band rows. It
    sorts directly after that row, and its own claimed causes directly after it. Its `priority` stays the roster's price (ADR 391 and
    `tests/test_pattern_policy.py` unchanged); the rail gives it no numeral of its
    own. When no served row qualifies (a scoped window without the setting's row),
@@ -846,7 +846,10 @@ committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
    every unpriced row is `noted`. The rail's caption rule (a caption where the
    served tier changes) therefore prints each tier word at most once, and its
    stripe rule (the ranked rows of the first priced tier) marks one leading run.
-   The rail's caption and stripe code does not change.
+   The rail's caption and stripe code does not change. The band order holds over
+   top-level rows: every top-level `next_in_line` row precedes every top-level
+   `worth_a_look` row, while a priced claimed cause keeps `worth_a_look` inside
+   its Pattern's fold wherever that Pattern sits (review round 1, B1).
 3. **The rank basis is said where it differs from the counts.** A new row field,
    `rank_note`, is served as "Ranked with its setting" on an anchored Pattern, and
    as "Ranked on all N days" (N the analysis window, 30) on a priced, top-level
@@ -875,6 +878,14 @@ committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
    anchor's, and "Next in line" names setting changes, so printing it on a
    Pattern that cannot stage would contradict the Glossary. Its "Ranked with its
    setting" note still prints.
+7. **The overnight Pattern anchors only inside its band.** Decided autonomously
+   during AFK run (coordinator ruling on review round 1, N3). The harm-band
+   Pattern ("Overnight lows with no insulin on board") anchors only to a served,
+   priced, asserting basal row whose span lies inside the Harm signal's
+   00:00–06:00 band. In a window that overlaps the band but serves no such row
+   (a 05:00–08:00 window whose only asserting basal row is a 06:30 raise), it has
+   no anchor and keeps its own ranked position, "Ranked on all 30 days", rather
+   than sitting "Ranked with its setting" beneath a daytime basal row.
 
 **Consequences.** One Priority fills one ranked position: a reader looking for
 the next change reads settings and the habits that outrank them in one order,

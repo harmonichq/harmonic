@@ -1281,9 +1281,10 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
 
     Its anchor is the first served, priced, asserting row of its setting member's
     parameter in queue order; every such row carries the same parameter-level
-    Priority. With none served (a scoped window without the setting's row) the
-    Pattern keeps its own ranked position. Its own ``priority`` stays the roster's
-    price (ADR 391).
+    Priority. The harm-band Pattern anchors only to such a row whose span lies
+    inside the Harm signal's overnight band, never beneath a daytime basal row.
+    With none served (a scoped window without the setting's row) the Pattern keeps
+    its own ranked position. Its own ``priority`` stays the roster's price (ADR 391).
     """
     for pattern_row in pattern_rows:
         pattern = pattern_row["pattern"]
@@ -1291,9 +1292,13 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
             continue
         member = next(item for item in pattern["members"] if item["kind"] == "setting")
         parameter = member["subject"].removeprefix("setting:")
+        in_band = pattern["rate_producer"] == "harm_band_source_nights"
         anchors = [row for row in rows
                    if row["register"] == "assert" and row["parameter"] == parameter
-                   and row["priority"] is not None]
+                   and row["priority"] is not None
+                   and (not in_band
+                        or (_HARM_CONFIG.overnight_start_min <= row["span"]["start_min"]
+                            and row["span"]["end_min"] <= _HARM_CONFIG.overnight_end_min))]
         if anchors:
             pattern_row["anchored_by"] = min(
                 anchors, key=lambda row: _sort_key(row, by_id))["id"]

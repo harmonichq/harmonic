@@ -51,9 +51,10 @@ findings mirror SHALL serve the same rows from the server's frozen scoped roster
 The findings projection SHALL present the one urgency ranking without giving a
 Priority two ranked positions. A Pattern served with admission route
 `setting_staging` SHALL carry `anchored_by`, the id of the first served, priced,
-asserting row of its setting's parameter in queue order, and SHALL sort
-directly after that row, its claimed causes directly after it. With no such row
-served it SHALL carry no anchor. Its Priority SHALL remain the Pattern producer's.
+asserting row of its setting's parameter in queue order (for the harm-band
+Pattern, only such a row whose span lies inside the 00:00–06:00 band), and SHALL
+sort directly after that row, its claimed causes directly after it. With no such
+row served it SHALL carry no anchor. Its Priority SHALL remain the Pattern producer's.
 
 The served tiers SHALL be bands of the ranking: the leading run of priced,
 top-level asserting rows is `next_in_line`, every later priced top-level row is
@@ -73,7 +74,8 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 - **THEN** Highs after meals and Lows after meals carry `anchored_by` "ic:720" and
   follow it, and the overnight-lows Pattern carries `anchored_by` "basal:30-90"
   and follows it, each with `rank_note` "Ranked with its setting"
-- **AND** every `next_in_line` row precedes every `worth_a_look` row
+- **AND** every top-level `next_in_line` row precedes every top-level
+  `worth_a_look` row
 
 #### Scenario: A scoped window says the rank is taken from all 30 days
 
@@ -89,6 +91,14 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 - **WHEN** the queue is published
 - **THEN** Highs after meals carries no anchor and `rank_note` "Ranked on all 30
   days"
+
+#### Scenario: The overnight Pattern never anchors beneath a daytime basal row
+
+- **GIVEN** the findings-fixture inputs with 05:30 quiet and a supported 06:30
+  basal raise
+- **WHEN** the findings projection publishes 05:00–08:00
+- **THEN** the overnight-lows Pattern carries no anchor and `rank_note` "Ranked
+  on all 30 days"
 
 #### Scenario: An asserting row that cannot stage sorts before the unranked findings
 

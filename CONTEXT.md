@@ -506,7 +506,8 @@ it shows up, as a single Wilson lower bound that fuses "how often" and "how sure
 threshold is *actionable now*; below it collapses into the "why so few?" tail.
 A Pattern admitted through its setting shares that setting's position: it sits
 beneath the setting's row, "Ranked with its setting", and takes no ranked position
-of its own, so one Priority fills one place in the queue (ADR 469).
+of its own, so one Priority fills one place in the queue (ADR 469). The
+overnight-lows Pattern shares only an overnight basal row's position.
 _Avoid_: score (overloaded — the behavioral `Confidence.score` is one input, not
 this), rank, weight, severity (that is one flavor's impact input, not the whole).
 

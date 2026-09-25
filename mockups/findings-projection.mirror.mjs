@@ -1011,8 +1011,11 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     if (projected.pattern.admission_route !== 'setting_staging') continue;
     const member = projected.pattern.members.find((item) => item.kind === 'setting');
     const parameter = member.subject.replace('setting:', '');
+    // The harm-band Pattern anchors only to a row inside the overnight band.
+    const inBand = projected.pattern.rate_producer === 'harm_band_source_nights';
     const anchors = rows.filter((r) => r.register === 'assert' && r.parameter === parameter
-      && r.priority != null);
+      && r.priority != null && (!inBand
+        || (HARM_BAND.start_min <= r.span.start_min && r.span.end_min <= HARM_BAND.end_min)));
     if (anchors.length) {
       projected.anchored_by = anchors.reduce((first, r) => (
         compare(r, first, byId) < 0 ? r : first)).id;

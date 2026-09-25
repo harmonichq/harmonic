@@ -35,7 +35,7 @@ import {
   queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { ANCHOR_STATE_WORD } from './day-chart.js';
-import { toCaptures, isfVerdict, isfStageNote } from './diagnose-workstation-data.js';
+import { toCaptures, isfVerdict, isfRoundsToCurrent, isfStageNote } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
 import {
@@ -1194,8 +1194,7 @@ export function renderIsfLevel(host, isf, isfStaged, onStage, options = {}) {
      this level's own weaken sentence, and disagreed with the queue row that
      drilled into it. Both facts come from `isfVerdict` now. */
   const { direction, canStage, nights } = isfVerdict(isf);
-  const roundedNoop = !canStage && direction === 'strengthen'
-    && isf.current != null && isf.recommended === isf.current;
+  const roundedNoop = isfRoundsToCurrent(isf);
   renderParamLevel(host, {
     head: 'Correction factor',
     verdict: canStage ? 'suggests a change'

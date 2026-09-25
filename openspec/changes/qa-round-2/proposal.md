@@ -66,3 +66,51 @@ A Plan holds one setting at a time by design, and that stays (Connor,
 
 Each ticket keeps its triage reproduction and plan-review ledger in
 `docs/scope/<issue>-<slug>.md`, the repository's scope-record convention.
+
+## #462
+
+Most past changes never show a Before/Trial comparison. An older detected
+change ends with a saved assessment that is unavailable when its retained
+context came from a pump read after its ending, every Harmonic update makes a
+retained comparison unreadable, and a requested reassessment never reaches an
+ended record's stage. A reassessment of an ended Trial also reads past the
+record's ending, into days under a later setting.
+
+- An ended record whose saved ending serves no periods draws a requested
+  Retained context or Current policy reassessment on its stage, labelled with its
+  mode and "recomputed now", never beside the saved ending (Connor, 2026-09-24).
+- A reassessment of an ended Trial reads evidence only up to the record's ending
+  instant; Current policy then reads the pump settings as of the ending (Connor).
+- A Harmonic update no longer voids retained comparisons: the whole-package
+  version gate is dropped, with no migration (Connor).
+- The Retained line names its stored context by when it was recorded, never by
+  an internal id.
+- A manufactured case whose ending saves `context_after_ending` makes the fix
+  reproducible in the served app.
+
+Impact: the comparison, the ending capture and the record read on the server;
+the change-record stage in the desk; one new QA case and one ledger story; S91's
+c4 part is amended. Staging, the Plan, saved endings and the analyzers are
+unchanged. Triage record: `docs/scope/462-record-comparison.md`.
+
+## #463
+
+A change record prints differences with binary float tails, reserves an empty
+chart box for an ended record it cannot draw, and says no decision was recorded
+for a change a Plan produced; a change seen only in delivery history can be
+dated hours before it was made.
+
+- Differences and percent cells print at one decimal in the desk.
+- A figure with no curve takes no chart space; new endings save their clock
+  envelope so they draw their saved curve.
+- A Trial matched to a Plan shows the Plan's decision, and a Trial detected after
+  its Plan's pump-read confirmation links to that Plan.
+- A delivery-detected change is dated at the first observation of its new
+  value; existing records keep their time and identity (Connor, 2026-09-24).
+
+Impact: Trial detection, the ending capture, the reconcile's Plan link and the
+record read on the server; the evidence figure, outcome table and stage layout
+in the desk; one ledger story and one desk-suite test. The analyzers' epochs,
+every classifier, cap, floor, staging predicate and assessment rule, and every
+saved ending and Plan receipt are unchanged. Triage record:
+`docs/scope/463-record-display.md`.

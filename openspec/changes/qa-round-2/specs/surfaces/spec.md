@@ -140,3 +140,97 @@ lets that item stage.
   save then settles
 - **THEN** the slot's lane cell stays marked staged, because the return did not
   re-read the Plan draft while the save was pending
+
+### Requirement: An ended record whose saved ending serves no periods draws a requested reassessment
+
+An ended change record SHALL open on its saved ending. When its saved ending's
+assessment serves no periods and the reader chooses Retained context or Current
+policy, the stage SHALL draw that reassessment's figure, periods and outcome
+rows, and its instrument SHALL name the reassessment's mode with "recomputed
+now". It SHALL NOT read "Ending snapshot" or "as saved at the ending" then, and
+the stage SHALL NOT show the saved ending's comparison beside it. The reading
+pane's saved-ending part SHALL be unchanged. An ended record whose saved ending
+serves periods SHALL keep drawing that saved ending whichever mode is chosen.
+
+#### Scenario: Current policy answers a record whose saved ending has no periods
+
+- **GIVEN** an ended record whose saved assessment is unavailable with reason
+  `context_after_ending` and serves no periods, and a Current policy
+  reassessment served with both periods, clock bins and outcome rows
+- **WHEN** the reader chooses Current policy
+- **THEN** the stage draws a paired figure and the outcome rows under "Current
+  policy reassessment" and "recomputed now"
+- **AND** the stage does not read "as saved at the ending", and the saved-ending
+  part still reads unavailable with its reason in words
+
+#### Scenario: A saved ending with periods keeps the stage
+
+- **GIVEN** an ended record whose saved assessment serves both periods
+- **WHEN** the reader chooses Retained context and then Current policy
+- **THEN** the stage keeps the saved ending's figure and rows under "as saved at
+  the ending"
+
+### Requirement: The Retained reassessment names its stored context in words
+
+The Retained context reassessment's Context line SHALL name the stored context by
+when it was recorded, "Stored context recorded" and the context's capture time,
+or "No stored context was recorded" when it carries none. It SHALL print no part
+of the context's id. The words for `unsupported_retained_execution` SHALL say
+that Current policy is the read left.
+
+#### Scenario: The Context line prints a time, never an id
+
+- **GIVEN** a Retained context reassessment whose context carries an id and a
+  capture time
+- **WHEN** the reassessment renders
+- **THEN** its Context line reads "Stored context recorded" with that time and
+  contains no run of hex characters from the id
+
+#### Scenario: An unsupported retained context points at Current policy
+
+- **GIVEN** a Retained context reassessment unavailable with reason
+  `unsupported_retained_execution`
+- **WHEN** its Result line renders
+- **THEN** its words name Current policy as the read left
+
+### Requirement: A change record's differences and percent cells print at one decimal
+
+A comparison outcome table SHALL print each served difference rounded to one
+decimal, with "+" before a positive value and no sign on a value that rounds to
+zero, and each percent cell with at most one decimal. The served values and
+their assessments SHALL be unchanged.
+
+#### Scenario: A binary tail prints as its row's precision
+
+- **GIVEN** an outcome row served with a difference of -3.9000000000000057 and a
+  Rest-windows row served with a Before of 33.333333333333336
+- **WHEN** the outcome table renders
+- **THEN** it prints "difference -3.9" and "33.3%"
+
+### Requirement: A figure with no curve takes no chart space
+
+An evidence figure SHALL render its chart seat and a `role="img"` chart only when
+it draws a curve. When it draws none, the stage SHALL give the figure only its
+legend's height, at every width, on a change record, the watched Trial and a
+Focus alike.
+
+#### Scenario: An older saved ending collapses its figure
+
+- **GIVEN** an ended record whose saved assessment serves its periods and rows
+  and no clock bins
+- **WHEN** the reader opens it at 1280x720 or 1440x900
+- **THEN** the figure is no taller than its legend line, and nothing on the stage
+  carries `role="img"`
+
+### Requirement: A saved ending with clock bins draws its saved curve
+
+An ended record whose saved assessment serves clock bins SHALL draw its paired or
+Before-only curve from those bins under "as saved at the ending".
+
+#### Scenario: A finished record draws its saved curve
+
+- **GIVEN** the `c3-history` case's finished record, saved with clock bins on both
+  sides
+- **WHEN** the reader opens it
+- **THEN** its stage draws a paired figure with its chart under "as saved at the
+  ending"

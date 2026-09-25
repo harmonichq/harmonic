@@ -228,3 +228,204 @@ left unchanged. Appending them there made the round's diff touch two active
 OpenSpec changes, which the outbound OpenSpec preflight refuses. The limits, the
 measurements and the no-raise rule are unchanged; only where the record lives
 moved. #459's lock 2 supersedes lock 1 for this location only.
+
+## ADR 462 — An ended record answers a requested reassessment
+
+**Context.** Three decisions below are Connor's (2026-09-24, on the ticket and
+in the AFK run's standing decisions); the rest were decided autonomously during
+AFK run and are named in their own section. Since #442 most older detected
+changes end, and on a store whose pump reads continue past their watch windows
+their saved assessments are unavailable (`context_after_ending`, ADR 442 in
+`openspec/changes/archive/2026-09-24-backfilled-record-endings/design.md`). The
+desk draws the saved ending whatever it holds, so a requested reassessment
+changes only the reading pane's Result line. The retained context is refused
+whenever any `.py` file in the package differs from the build that captured it
+(the harmonic-v2 contract,
+`openspec/changes/archive/2026-09-24-harmonic-v2/contracts.md`), so every update
+voids every retained comparison. A reassessment of an ended Trial reads to the
+data tail, past the record's ending, into days under a later setting.
+
+Reproduced on synthetic data at this change's base
+(`docs/scope/462-record-comparison.repro.py`, `docs/scope/462-stage.repro.mjs`):
+c4-isf's recipe plus one unchanged pump read after its window saves
+`context_after_ending` with no periods; its Retained read is available on the
+same build and `unsupported_retained_execution` after a simulated update, while
+Current policy stays available; c4-ic's superseded record ends at 06-10 09:00
+and both reassessments' Trial periods end at the data tail; and at node level the
+stage is byte-identical after either mode press.
+
+**Decision.**
+
+1. **A requested reassessment reaches the stage when the saved ending serves no
+   periods (Connor).** An ended record still opens on its saved ending (ADR 430
+   decision 1 is unchanged for the first read). When its saved ending's
+   assessment serves no periods and the reader presses Retained context or
+   Current policy, the stage draws that reassessment: its figure, its periods and
+   its outcome rows. The stage's instrument names the mode ("Retained context
+   reassessment" or "Current policy reassessment") with the meta "recomputed
+   now", never "Ending snapshot" or "as saved at the ending". The reading pane
+   keeps the saved-ending part as it is. The stage never shows the two at once.
+   An ended record whose saved ending serves periods keeps drawing that saved
+   ending after any press (HV2-28; S96 and S157). This amends ADR 442's
+   consequence that such records "open on their saved ending, and the labelled
+   Retained context and Current policy reassessments stay available": they are
+   now drawn when requested.
+2. **Reassessment periods stop at the ending instant (Connor).** For a Trial
+   record whose ending carries a kind, `review_trials` computes each requested
+   reassessment with its data cutoff at the ending's effective instant (never
+   later than the read's own data instant). Current policy then captures its
+   context from the pump read as of the ending. ADR 442's rule for the saved
+   assessment, "a retained context whose source pump read is later than the
+   cutoff, or that names none, is unavailable `context_after_ending`", moves into
+   the comparison itself, ahead of the version check, so the saved ending and a
+   Retained reassessment answer it the same way; `capture_ending` no longer
+   carries its own copy. This amends ADR 442's consequence that a reassessment of
+   a live ending "still reads" the settling days after it. An open record reads
+   to the data tail as before.
+3. **The whole-package version gate is dropped (Connor: whichever is less code,
+   no migration).** `_execution()` stops hashing the package's source files. A
+   retained context is refused only when its context version, its comparison
+   policy stamp or its scenario configuration differs from the running
+   comparison's. The configuration stays in the gate because a Focus comparison
+   executes the retained configuration. Dropping the hash is less code than
+   narrowing it, which would need its own list of comparison files. The store
+   stops requiring `code_version` on an available comparison context. Contexts
+   already saved keep their `code_version` field, and nothing reads it. This
+   amends the harmonic-v2 contract's "code/configuration identity" to
+   "policy/configuration identity".
+4. **The Retained line names its stored context in words.** It reads "Stored
+   context recorded <that context's captured_at, formatted as the desk formats
+   every stamp>", or "No stored context was recorded" when the context carries
+   no capture time. No part of the context's id prints.
+5. **`unsupported_retained_execution` names the read that is left.** Its words
+   become "the retained context was saved by a different version of the
+   comparison, so Current policy is the read left".
+
+**Decided autonomously during AFK run.**
+
+- Decision 1 takes the issue's option (a), not its recommended (b): Connor's
+  decision names a *requested* reassessment, and (a) keeps every ended record's
+  first read on its saved ending. Opening such records on Current policy by
+  default is not built.
+- The instrument words in decision 1 and the Retained line's words in decision 4.
+- Decision 2 applies to Trial records only. A Focus comparison already ends its
+  After period at the effective ending, and the ticket names Trials.
+- The one-rule move of `context_after_ending` into the comparison (decision 2)
+  follows the issue's own expectation that a Retained read answers the same
+  reason as the saved ending.
+- The c4 replay's `readiness` helper, which reads "the comparison the page
+  shows", follows decision 1's rule so its comment and its selection stay true.
+- The manufactured case `c4-isf-late-read`, c4-isf's recipe plus one unchanged
+  pump read at 2024-06-30 12:00 before its one reconcile, is the committed state
+  whose ending saves `context_after_ending`; no existing case reaches it.
+
+**Consequences.** On a regularly updated install, a record's retained
+comparison survives updates, and an older detected change answers "did my change
+help?" through a labelled, recomputed reassessment cut at its own ending. A
+Retained reassessment computed by a later build can differ from what the
+capturing build would have computed; it is labelled "recomputed now" and never
+replaces a saved ending. S91's c4 part is amended: c4-isf's and c4-profile's
+records are ended, so their Retained reads now count what their saved endings
+count (27 and 28 Trial-arm dates, criterion not met) instead of 30 and 31. The
+design exploration's generated JSON stops carrying a package hash and so stops
+moving on every Python edit.
+
+## ADR 463 — What a change record prints, draws, and knows about its Plan
+
+**Context.** The first four decisions were decided autonomously during AFK run,
+the first three taking the issue's recommendations; decision 5 carries Connor's
+2026-09-24 decision for existing records. Reproduced on synthetic data at this
+change's base (`docs/scope/463-record-display.repro.py`,
+`docs/scope/463-figure.repro.mjs`, `docs/scope/463-redate.spike.py`):
+
+- a reconciled copy of the committed showcase serves its watched carb-ratio
+  record's Time in range difference as `-3.9000000000000057`, and the desk prints
+  it verbatim; a 1-in-3 Rest-windows cell prints "33.333333333333336%";
+- the figure keeps a `role="img"` chart seat in all four no-curve states, inside
+  a 220px stage track (190px at the middle width);
+- c4-profile's saved ending carries no clock views while its retained read
+  serves 48 bins a side;
+- a Trial that `_reconcile_plan` matched to a Plan with a recorded decision still
+  serves the observed context (`action` None);
+- a dose-detected basal Trial and a Plan confirmed from a pump read never link;
+- a correction-factor and carb-ratio edit at 10:00 is dated at the day's 08:00
+  bolus, which carried the old values; the first bolus carrying the new values
+  was at 12:30.
+
+**The unverifiable premise.** The issue asked the operator to check a fresh
+snapshot: does the Plan's recorded time predate #443, and does the detected
+day's first observation carry the old values? The operator is away, so neither
+was checked. Both explanations are handled: (c) by decision 4's dating, (d) by
+decision 3's link rule, which never compares a Plan's recorded time with a
+change time.
+
+**Decision.**
+
+1. **One decimal, in the desk.** The Read column prints a served difference
+   rounded to one decimal, with "+" before a positive value; a difference that
+   rounds to zero prints "0". Percent cells print at most one decimal
+   ("33.3%", and "100%" stays "100%"). The server keeps serving unrounded values,
+   so no assessment, `low_exposure_worsened` included, can move, and saved
+   endings, which cannot be rewritten, print the same way.
+2. **No curve, no chart space.** The figure renders its chart seat and its
+   `role="img"` chart only when it draws a curve (paired or Before-only). A
+   stage whose figure draws no curve gives the figure's track only its legend's
+   height, at every width. This holds for every evidence figure: an open or
+   ended record, the watched Trial and a Focus.
+3. **New endings save their clock views (the issue's option 1).**
+   `capture_ending` keeps `views.before.clock` and `views.after.clock` on the
+   saved assessment, and nothing else from the views. An ending with clock bins
+   draws its curve, labelled as saved at the ending. Older endings keep the
+   collapsed figure of decision 2. The store's ending validator already accepts
+   the extra key.
+4. **A delivery-detected change is dated at its new value's first
+   observation.** A dose-stamped regime starts at the first bolus of its first
+   settled day that carries the regime's value, and a basal slot regime at the
+   first sample of that day that carries it. That day is the day the old rule
+   picked, so a re-dated start is never earlier and never on another day.
+   Epochs, the analyzer's own change point, are unchanged; the `Regime`
+   docstring stops claiming it matches them.
+5. **Existing records keep their time and identity (Connor).** A derived change
+   that an existing retained record already names (same parameter, slot, block,
+   before and after values, with the record's change time on the same pump day
+   and at or before the derived time) is that record: it keeps the record's
+   change time and id. The comparison's setting-period lookup and the reversal
+   check accept the same match. Nothing is rewritten or migrated. The spike moved
+   no regime start and no derived id on any of 73 committed case stores, so this
+   rule acts on real stores only.
+6. **A matched Trial shows its Plan's decision.** A Trial record whose receipt
+   names a Plan serves that Plan's decision context as its original context when
+   the context is available, and its observed context otherwise. The desk
+   already prints "Original decision" for a context with an action.
+7. **A Trial detected after its Plan's pump-read confirmation links to it
+   (addendum to ADR 431,
+   `openspec/changes/archive/2026-09-23-plan-state-one-verdict/design.md`).**
+   After the pump-read confirmation in each reconcile, a Trial record with no
+   receipt and no captured carb-ratio block links to a Plan confirmed from a
+   pump read with no Trial when all of these hold:
+   - the Trial's setting is the Plan's setting (a basal Trial's slot is one of
+     the Plan's item start minutes), or the Trial is whole-profile;
+   - the Trial's change time is within one day of the confirming read's capture
+     time;
+   - exactly one such Plan qualifies for the Trial, exactly one such Trial
+     qualifies for the Plan, and no Trial record already names that Plan.
+   The link writes only the Trial's receipt, naming the Plan, the confirming read
+   and the Plan's matched schedule. The Plan's receipt, its served verdict and its
+   confirmed time are unchanged, because nothing rewrites a Plan (R443). The one
+   day absorbs a pre-#443 read stamped on a UTC clock. The rule never reads a
+   Plan's recorded time.
+
+**Decided autonomously during AFK run.** Decisions 1–4, 6 and 7, and their
+words: the ticket offered no option for 1, 2, 4, 6 or 7 beyond its example rule,
+and 3 is its recommendation. Rounding stays in the desk because a server rounding
+would still leave every saved ending unrounded. The link rule is the issue's own
+example rule, made fail-closed in both directions as ADR 581's block matching is.
+
+**Consequences.** Every ending `capture_ending` saves from now on carries clock
+views, generated case stores included, so c3-history's finished record and a Trial finished in the
+served app draw their saved curves. The showcase's watched record prints
+"difference -3.9". A linked Trial's `deliberate` flag turns true; nothing in the
+desk reads it. No committed case records a Plan, so the Plan-linked decision is
+evidenced by backend tests only; the ledger amendment names that limit. Trial
+dating now differs from the analyzer's epoch change point by up to a day's
+hours on a mid-day edit.

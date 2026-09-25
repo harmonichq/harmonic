@@ -221,3 +221,221 @@ the Plan item `type` it stages as.
   `basal-and-carb-ratio-lower` at 1280x720 and 1440x900 from the no-fetch
   serve, the before from task 11's commit. The coordinator attaches them to the
   pull request; they are not committed.
+
+## #462 — An ended record answers a requested reassessment
+
+Tasks 1–17 (#460, #459) land first on this branch. #462's touched stories are
+S49, S54, S54b, S91, S92, S94, S95, S96, S105, S110, S111, S112, S142, S143,
+S157, S180 and R18: every story that opens a change record or reads a
+reassessment. The reproduction is `docs/scope/462-record-comparison.repro.py`
+and `docs/scope/462-stage.repro.mjs`.
+
+- [ ] 18. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #462's touched
+  stories against the unchanged base at 1280x720 and 1440x900 through
+  `frontend/desk-behavior.replay.mjs`, re-inventory an ended record's stage
+  (instrument words, figure state, periods note, outcome rows) and its
+  reassessment lines in Original, Retained context and Current policy in the
+  served app, and record any observed behavior with no story before designing.
+- [ ] 19. Add the manufactured case `c4-isf-late-read` to
+  `scripts/qa_e2e_cases.py`: c4-isf's recipe with one unchanged pump read at
+  2024-06-30 12:00 written before its one reconcile, as item 1 of
+  `docs/scope/462-record-comparison.repro.py` builds it (ADR 462). Follow
+  AGENTS.md "Maintaining QA coverage eras" steps 1–4: copy its complete
+  `execute_case` row dump into literal `QaExpectation` values, run its generated
+  `test_case_c4_isf_late_read`, and re-measure the five budgets against the
+  limits of record in
+  `openspec/changes/archive/2026-09-24-harmonic-v2/coverage-appendix.md` without
+  raising any, recording them as a dated `#462` section of
+  `openspec/changes/qa-round-2/coverage-appendix.md`. Add the name to
+  `tests/test_qa_e2e_cases.py`'s expected case names and to
+  `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
+  commit is the base for task 24's failing-first run.
+- [ ] 20. Backend tests, failing-first where marked, each seen to fail on task
+  19's commit:
+  - failing-first, in `tests/test_watched_change.py`: through `review_trials` on
+    c4-ic's superseded carb-ratio record, each mode's Trial (after) period ends
+    at or before the record's ending instant;
+  - failing-first, same file: on `c4-isf-late-read`, the Current policy read is
+    available with both periods, its Trial period ends at or before the ending,
+    and its context's source pump read was captured at or before the ending;
+    the Retained read is unavailable with reason `context_after_ending`;
+  - failing-first, in `tests/test_follow_up_comparison.py`: a retained context
+    whose `code_version` differs from, or is absent from, what the running build
+    would stamp is read (available). Reword the `code_version = "retired"` pins
+    at `tests/test_follow_up_comparison.py:71-72` and `:82` so a differing
+    policy stamp is still refused with `unsupported_retained_execution`;
+  - guards, passing before and after: an open record's reassessment still reads
+    to the data tail; `tests/test_durable_follow_up.py:752`'s changed scenario
+    configuration is still refused with `unsupported_retained_execution`; `test_h_a_context_read_after_the_ending_leaves_the_assessment_unavailable`
+    and `test_i_a_context_read_before_the_superseding_change_is_used` pass
+    unchanged.
+- [ ] 21. Backend (ADR 462 decisions 2 and 3):
+  - in `ciq_autotune/follow_up_comparison.py`, `_execution()` returns the policy
+    stamp and scenario configuration only (drop the package hash, its comment
+    and any import left unused); in `compare_follow_up`, a retained context that
+    is available and whose source pump read is after the cutoff, or names none,
+    answers `context_after_ending` through the same unavailable envelope, checked
+    before the version gate;
+  - in `ciq_autotune/watched_change.py`, `capture_ending` drops its own copy of
+    that check and always calls the comparison; `review_trials` computes a
+    requested reassessment of a Trial record whose ending carries a kind with its
+    data cutoff at the earlier of the ending's effective instant and `now`;
+  - in `ciq_autotune/store.py`, an available comparison context no longer
+    requires `code_version`.
+- [ ] 22. Frontend tests, failing-first where marked, each seen to fail on task
+  19's commit:
+  - failing-first, in `frontend/follow-up-lifecycle.test.js` with its host fake:
+    an expired record whose saved assessment is unavailable
+    `context_after_ending` with no periods, and a paired Current policy read
+    with one outcome row. After pressing Current policy the stage carries
+    `data-figure-state="paired"` and the outcome row, its instrument names
+    "Current policy reassessment" with "recomputed now" and does not read
+    "as saved at the ending", and the saved-ending part still reads
+    unavailable with its reason's words. Pressing Retained context served
+    `unsupported_retained_execution` draws the unavailable figure naming that
+    reason's words, under "Retained context reassessment";
+  - guard, same file, passing before and after: an expired record whose saved
+    assessment serves both periods keeps "as saved at the ending", its own rows
+    and its figure after pressing each mode (the S96 shape);
+  - failing-first: reword `frontend/history.test.js:332` so the Retained line
+    reads "Stored context recorded <stamp>" from the context's `captured_at` and
+    contains no run of eight or more hex characters, and a context with no
+    `captured_at` reads "No stored context was recorded";
+  - failing-first, in `frontend/follow-up.test.js`: the words for
+    `unsupported_retained_execution` name Current policy as the read left.
+- [ ] 23. Frontend (ADR 462 decisions 1, 4 and 5): in `frontend/history.js`,
+  `shownComparison` draws the requested reassessment for an ended record whose
+  saved assessment serves no periods and the saved ending otherwise; the stage
+  instrument names the mode and "recomputed now" for that case; the Retained
+  line prints ADR 462 decision 4's words. Update `shownComparison`'s comment. In
+  `frontend/follow-up.js`, change the `unsupported_retained_execution` words. In
+  `frontend/c4.replay.mjs`, the `readiness` helper's "comparison the page shows"
+  follows the same rule, with its comment and its pin in
+  `frontend/c4.replay.test.js`.
+- [ ] 24. Add one ledger story (the next unissued S id) on `c4-isf-late-read`,
+  in a dated `## #462 amendment` section of
+  `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
+  decisions as its sanction, with its replay function, registry entry, case
+  mapping and story-table row in the files task 8 names, and the case in the
+  smoke slice list in `mockups/sweep/harmonic-v2-desktop/acceptance.py` and its
+  test, as S187 joined it. The story opens the ended record: the stage reads
+  "as saved at the ending" with the unavailable figure naming the late-context
+  reason; pressing Current policy draws a paired figure and outcome rows under
+  "Current policy reassessment", with its Trial period ending at or before the
+  record's Finished time; pressing Retained context reads unavailable naming the
+  same late-context reason; the Retained line prints no id characters. Lay its
+  harness over task 19's commit and record that base run, which must fail at the
+  Current policy stage assertion, and the branch run at both sizes on its status
+  line. In the same section, amend S91 in prose: its c4 part's c4-isf and
+  c4-profile records are ended, so their Retained reads now count what their
+  saved endings count and are not met; the story asserts the Retained read's
+  arms equal the saved ending's arms instead of criterion met (ADR 462
+  consequences). Raise the story inventory by this one story in the four places
+  task 9 names.
+- [ ] 25. Regenerate the design exploration
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`); its `focus.json`
+  and `journey.json` lose the package hash. Its `--check` then passes.
+- [ ] 26. Capture before/after renders of the `c4-isf-late-read` record's stage,
+  on Original and after pressing Current policy, at 1280x720 and 1440x900 from
+  the no-fetch serve, the before from task 19's commit. The coordinator
+  attaches them to the pull request; they are not committed.
+
+## #463 — What a change record prints, draws, and knows about its Plan
+
+Tasks 18–26 (#462) land first on this branch, and #463's base is their final
+commit. #463's touched stories are every story `frontend/replay-cases.mjs` or
+`frontend/c3.replay.mjs` maps to `showcase`, `edit-chain` or a `c3-*` or `c4-*`
+case: each one renders an evidence figure or an outcome table. The
+reproduction is `docs/scope/463-record-display.repro.py`,
+`docs/scope/463-figure.repro.mjs` and `docs/scope/463-redate.spike.py`.
+
+- [ ] 27. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #463's touched
+  stories against #463's base at 1280x720 and 1440x900, re-inventory the six
+  figure states and the Read column in the served app, and record any observed
+  behavior with no story before designing.
+- [ ] 28. Backend tests, failing-first where marked, each seen to fail on #463's
+  base:
+  - failing-first, in `tests/test_watched_change.py`: an ending a reconcile
+    records carries `views.before.clock` and `views.after.clock` equal to the
+    comparison's clock bins and no other view, and the store reads it back;
+  - failing-first, same file: on `test_j`'s store with the Plan given an
+    available decision context, the matched Trial's served original context is
+    that decision context; a guard with the Plan's decision context unavailable
+    serves the observed context;
+  - failing-first, in `tests/test_plan_verdict.py`: extend
+    `test_a_change_the_dose_stream_detects_still_confirms_from_the_read` so the
+    Trial's receipt names the Plan, the Plan's receipt, verdict and confirmed
+    time are unchanged, and the Trial's served original context is the Plan's
+    decision context. Fail-closed guards in the same file: a second qualifying
+    Trial, a Trial more than a day from the confirming read, and a Trial of
+    another setting each leave the Trial unlinked;
+  - failing-first, in `tests/test_watched_change.py`: a correction-factor and
+    carb-ratio edit made mid-morning, whose day's first bolus carries the old
+    values, is served through `review_trials` with a `changed_at` at the first
+    bolus carrying the new values; a basal slot whose day's first sample carries
+    the old rate is dated at its first sample carrying the new one;
+  - failing-first, same file: a retained record saved at the day's first
+    observation (the old dating) is still one record after a reconcile, keeps
+    its id and change time, serves an available comparison rather than
+    `missing_continuous_setting_history`, and still ends `reverted` when the
+    setting walks back inside its window.
+- [ ] 29. Backend (ADR 463 decisions 3–7): in `ciq_autotune/watched_change.py`,
+  date `dose_regimes` and `basal_slot_regimes` at the first observation carrying
+  the regime's value and correct the `Regime` and `_regimes_from_days`
+  docstrings; add one same-change match used by `_reviewable_trials` (existing
+  records keep their time and id), by `_reversal_at`, and by
+  `ciq_autotune/follow_up_comparison.py`'s `_setting_period`; keep the clock
+  views in `capture_ending`; serve a matched Plan's available decision context
+  as a Trial's original context in `review_trials`; add the link pass after
+  `_confirm_from_read` in `reconcile_follow_up`. `ciq_autotune/epochs.py` is not
+  changed.
+- [ ] 30. Frontend tests, failing-first where marked, each seen to fail on #463's
+  base:
+  - failing-first, in `frontend/follow-up.test.js`: `outcomesTable` given a
+    served difference of -3.9000000000000057 prints "difference -3.9", a Before
+    of 33.333333333333336 prints "33.3%", a positive difference prints its "+",
+    and a difference that rounds to zero prints "difference 0";
+  - failing-first, same file: `evidenceFigure` in the `saved`, `unavailable`,
+    `no-readings` and `not-requested` states renders no `role="img"` and no chart
+    seat; guard: `paired` and `before-only` still render both. Update the
+    existing saved-state test near `frontend/follow-up.test.js:453`;
+  - failing-first, in `frontend/follow-up-lifecycle.test.js`: an expired record
+    whose saved assessment carries clock bins on both sides draws
+    `data-figure-state="paired"` on its stage under "as saved at the ending".
+- [ ] 31. Frontend (ADR 463 decisions 1 and 2): in `frontend/follow-up.js`,
+  print differences and percent cells at one decimal, and render the chart seat
+  only for a figure that draws a curve, updating `evidenceFigure`'s comment; in
+  `frontend/desk.css`, give the figure's track only its legend's height when the
+  figure draws no curve, on the Trial and Focus stages at every width.
+- [ ] 32. Desk-suite test in `frontend/desk.browser.test.mjs`, failing-first on
+  #463's base, at 1280x720 and 1440x900: a served hand-built ended record whose
+  saved assessment serves both periods and rows and no clock views opens with
+  its figure no taller than its legend line plus one pixel, and nothing inside
+  the stage carries `role="img"`.
+- [ ] 33. Add one ledger story (the next unissued S id after task 24's) in a
+  dated `## #463 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`,
+  with its replay function, registry entry, case mapping and story-table row in
+  the files task 8 names. Leg 1, on `showcase`: Changes' watched Trial reads
+  "difference -3.9" on its Time in range row, and no printed difference or
+  percent cell carries more than one decimal. Leg 2, on `c3-history`: the
+  finished record's stage draws a paired figure with its chart under "as saved
+  at the ending". The story fails once, naming each failed leg. Lay its harness
+  over #463's base and record that base run, where both legs fail, and the
+  branch run at both sizes on its status line. The amendment also records the
+  matched-Plan decision, the link rule and the dating as changed shipped
+  behavior evidenced by backend tests, naming that no committed case records a
+  Plan. Raise the story inventory by this one story in the four places task 9
+  names.
+- [ ] 34. In `CONTEXT.md`, the Plan entry says a Trial detected after its Plan's
+  pump-read confirmation links to that Plan and shows its decision, and the
+  Trial entry says a change seen only in delivery history is dated at the first
+  observation carrying its new value.
+- [ ] 35. Regenerate the design exploration
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`) if #463's changes
+  move it; its `--check` passes.
+- [ ] 36. Capture before/after renders at 1280x720 and 1440x900: the showcase's
+  watched Trial Read column, c3-history's finished record stage, and the
+  desk-suite collapsed figure of task 32, the before from #463's base. The
+  coordinator attaches them to the pull request; they are not committed.

@@ -34,3 +34,26 @@ virtualenv synced without the `sync` extra. After
 `tests/test_tandemsource_map_real.py` pass (18 passed). The whole-pytest time is
 within its ceiling but is the highest recorded here, measured in a sandboxed
 worker; it is a run-to-run figure, not an isolated code cost.
+
+## #462 c4-isf-late-read case — 2026-09-24
+
+Task 19 adds the manufactured case `c4-isf-late-read`: c4-isf's recipe with one
+unchanged pump read at 2024-06-30 12:00 written before its one reconcile, so
+its record's retained context reads a pump read later than its ending and the
+ending saves `context_after_ending`. Its `execute_case` dump equals c4-isf's,
+and its literal expectation was transcribed from that dump. The committed
+showcase is unchanged. The five budgets were measured once, by
+`acceptance.py budget` on the slice branch at 403cfd67 (which also carries
+#463's tasks 28–35), with no limit raised:
+
+| Budget | #462 measurement | Unchanged limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,409,024 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.233 s wall | 30 s |
+| Focused QA suite | 62.546 s wall; 95 passed | 90 s |
+| Slowest generated case | 12.22 s (`test_case_c4_profile`); the new case 1.15 s | 15 s |
+| Whole pytest | 398.82 s wall; 2669 passed, 1 skipped | 400 s |
+
+The whole-pytest time is within its ceiling by 1.2 s, measured in a sandboxed
+worker; like #459's 372.60 s it is a run-to-run figure, not an isolated code
+cost, and the next change that adds tests should expect to meet this ceiling.

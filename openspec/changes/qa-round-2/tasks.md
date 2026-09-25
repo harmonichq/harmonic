@@ -237,7 +237,7 @@ and `docs/scope/462-stage.repro.mjs`.
   (instrument words, figure state, periods note, outcome rows) and its
   reassessment lines in Original, Retained context and Current policy in the
   served app, and record any observed behavior with no story before designing.
-- [ ] 19. Add the manufactured case `c4-isf-late-read` to
+- [x] 19. Add the manufactured case `c4-isf-late-read` to
   `scripts/qa_e2e_cases.py`: c4-isf's recipe with one unchanged pump read at
   2024-06-30 12:00 written before its one reconcile, as item 1 of
   `docs/scope/462-record-comparison.repro.py` builds it (ADR 462). Follow

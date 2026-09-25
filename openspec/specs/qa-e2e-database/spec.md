@@ -279,7 +279,7 @@ literal:
 | Lever case | Target tally | Co-Lever tally required by target `outranked` |
 | --- | --- | --- |
 | `behavioral-carb-undercount` | `(carb_undercount, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(late_bolus, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
-| `behavioral-late-bolus` | `(late_bolus, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
+| `behavioral-late-bolus` | `(late_bolus, meals)` = `2 / 1 / 1 / 1 / 2`, denominator 7 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 4`, denominator 7 |
 | `behavioral-meal-over-delivery` | `(meal_over_delivery, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
 | `behavioral-over-treated-low` | `(over_treated_low, lows)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(correction_on_iob, lows)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
 | `behavioral-correction-stacking` | `(correction_stacking, correction_clusters)` = `2 / 0 / 1 / 4 / 1`, denominator 8 | none; a driver correction necessarily carries the matching stacking verdict |
@@ -365,6 +365,14 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 - **THEN** the committed showcase drift check remains current and its bytes remain
   unchanged against `origin/main`
 - **AND** the five measured budgets are recorded without raising a limit
+
+#### Scenario: Late bolus's cases keep a real high and an in-range band
+
+- **GIVEN** `behavioral-late-bolus` and `behavioral-carb-undercount`
+- **WHEN** each case is executed
+- **THEN** every meal Late bolus fires on peaks above 180 after its bolus, and
+  `behavioral-late-bolus`'s seventh meal, peaking at exactly 180, reads clean with
+  `stayed_in_range`
 
 ### Requirement: Remaining consumers migrate before revise-E2E retires
 

@@ -1,9 +1,10 @@
 """Late-bolus instance classifier (#71) — the foundation classifier of epic #70.
 
-Judges **one** meal bolus: was it given *late* — into a real, from-flat meal rise
-that a pre-bolus would have blunted — or was the pre-bolus rise actually the tail
-of an observable upstream event (a rescued low, a defensive suspend) that a bolus
-could not and should not have pre-empted?
+Judges **one** meal (ADR 470: its first bolus plus its same-meal top-ups), at its
+first bolus: was it given *late* — into a real, from-flat meal rise that a
+pre-bolus would have blunted — or was the pre-bolus rise actually the tail of an
+observable upstream event (a rescued low, a defensive suspend) that a bolus could
+not and should not have pre-empted?
 
 The old ``not_pre_bolusing`` detector flagged *any* meal bolus given while the
 20-min pre-bolus CGM slope cleared ~1 mg/dL/min, with **no notion of why** BG was
@@ -24,6 +25,7 @@ from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import CgmSeries
+from ..meals import Meal, meal_peak, next_meal_t
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -37,7 +39,7 @@ from .evidence import EvidenceTier, SilenceReason, Verdict
 
 
 def _owning_prior_carb_bolus(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     bolus_events: Sequence[BolusEvent],
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
@@ -91,7 +93,7 @@ class LateBolusVerdict(Verdict):
 
 
 def classify_late_bolus(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
     bolus_events: Sequence[BolusEvent] = (),
@@ -100,7 +102,9 @@ def classify_late_bolus(
 ) -> LateBolusVerdict:
     """Was ``meal`` bolused late into a real meal rise?
 
-    Judges a single meal bolus against its CGM/basal context:
+    ``meal`` is the :class:`~..meals.Meal` the engine passes (ADR 470), judged at its
+    first bolus; a unit test that hands one bolus gets a one-member meal's judgement.
+    Judges it against its CGM/basal context:
 
     1. Fit the pre-bolus CGM slope over the ``slope_lookback_min`` window ending at
        the bolus. Too sparse to fit → **not late** (can't judge; ``NOT_IN_DATA``).
@@ -121,12 +125,19 @@ def classify_late_bolus(
        from an already-high baseline (prior undercount, bad-BG day), not a
        from-flat meal spike a pre-bolus could have blunted → **not late**
        (``OBSERVED`` — the BG reading is a hard fact).
-    6. Slope rising, start not clearly high, gate/prior-bolus find nothing →
-       **late** into a real from-flat (or near-range) rise (``INFERRED``).
+    6. All of that holds, but the meal's Arc peak — the highest reading in
+       (bolus, bolus + 3 h], cut at the next meal's first bolus (the one peak the
+       Post-meal arc prints, :func:`~..meals.meal_peak`) — is missing → **not late**
+       (can't judge; ``NOT_IN_DATA``), or is at or under the range line
+       (``segment_range_high_mgdl``) → the meal never ran high, so there was no spike
+       to blunt → **not late** (``OBSERVED`` / ``STAYED_IN_RANGE``; ADR 461).
+    7. Slope rising, start not clearly high, gate/prior-bolus find nothing, and the
+       meal ran above the range line → **late** into a real from-flat (or
+       near-range) rise (``INFERRED``).
 
     ``bolus_events`` is the day's bolus sequence, threaded through so step 4 can see
-    a preceding carb dose; it defaults to empty, which reproduces the pre-#167
-    behavior (steps 1-3, 5-6 only). Returns a :class:`LateBolusVerdict`. Never
+    a preceding carb dose and step 6 can find the next meal; it defaults to empty,
+    which skips step 4 and reads the full peak window. Returns a :class:`LateBolusVerdict`. Never
     asserts rescue carbs — it gates on the observable low/suspend (ADR 0003).
     """
     rising_slope = scenario_config.late_bolus_rising_slope_mgdl_min
@@ -206,6 +217,35 @@ def classify_late_bolus(
             pre_bolus_slope=slope,
             pre_bolus_bg=bg_at_bolus,
             gate=None,
+        )
+
+    peak = meal_peak(
+        meal.t, next_meal_t(meal.t, bolus_events, scenario_config=scenario_config),
+        cgm_readings,
+    )
+    if peak is None:
+        return LateBolusVerdict(
+            matched=False,
+            detail="not enough CGM after the bolus to see whether the meal ran high",
+            evidence_tier=EvidenceTier.NOT_IN_DATA,
+            silence_reason=SilenceReason.INSUFFICIENT_DATA,
+            pre_bolus_slope=slope,
+            pre_bolus_bg=bg_at_bolus,
+            gate=gate,
+        )
+    if peak[1] <= scenario_config.segment_range_high_mgdl:
+        return LateBolusVerdict(
+            matched=False,
+            detail=(
+                f"glucose was rising {slope:.1f} mg/dL/min before the bolus but peaked "
+                f"at {peak[1]:.0f} mg/dL, inside the range, so there was no spike to "
+                "blunt"
+            ),
+            evidence_tier=EvidenceTier.OBSERVED,
+            silence_reason=SilenceReason.STAYED_IN_RANGE,
+            pre_bolus_slope=slope,
+            pre_bolus_bg=bg_at_bolus,
+            gate=gate,
         )
 
     return LateBolusVerdict(

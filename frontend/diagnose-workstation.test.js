@@ -119,7 +119,7 @@ test('#432 · a case row names its Occurrence from its served anchor facts', () 
   const bolusRows = Object.values(cases).flatMap((file) => [file.clock, file.event])
     .flatMap((file) => file.occurrences)
     .filter((row) => row.anchor.carbs != null || row.anchor.insulin != null);
-  assert.equal(bolusRows.length, 100, 'the capture serves meal and correction rows to describe');
+  assert.equal(bolusRows.length, 98, 'the capture serves meal and correction rows to describe');
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   for (const owner of ['renderCaseRoster', 'renderEventComparisonRoster']) {
     const body = source.slice(source.indexOf(`function ${owner}`));
@@ -324,6 +324,58 @@ test('the correction-factor panel names its setting and prints each value insuli
   }
 });
 
+/* #459 (ADR 459 point 1): a stage control whose press would replace a change
+   staged for a different setting says so, and names that change, before the
+   press. `replaces` is the panel option carrying that change's name. */
+function stagePanel459(isfStaged, replaces) {
+  const fixture = JSON.parse(readFileSync(
+    new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8',
+  ));
+  const held = fixture.inputs.analysis.isf[0];
+  const stageable = { ...held, asserts_move: true, recommended: 32,
+    evidence: { ...held.evidence, direction: 'strengthen' } };
+  const originalDocument = globalThis.document;
+  const buttons = [];
+  const element = (tagName = 'div') => {
+    const node = {
+      tagName: tagName.toUpperCase(), className: '', dataset: {}, innerHTML: '', children: [],
+      append(...children) { this.children.push(...children); },
+      addEventListener() {},
+    };
+    if (node.tagName === 'BUTTON') buttons.push(node);
+    return node;
+  };
+  try {
+    globalThis.document = { createElement: element };
+    renderIsfLevel(element(), stageable, isfStaged, () => {}, { replaces });
+  } finally {
+    globalThis.document = originalDocument;
+  }
+  assert.equal(buttons.length, 1, 'premise: the stageable panel renders one stage control');
+  return buttons[0];
+}
+
+test('#459 · a stage control that would replace another setting says so and names the change', () => {
+  const button = stagePanel459(false, 'Carb ratio 00:00–24:00');
+  assert.equal(button.dataset.staged, 'false');
+  assert.equal(button.innerHTML,
+    'Replace staged change<span class="sub">replaces Carb ratio 00:00–24:00</span>');
+});
+
+test('#459 guard · an already-staged control keeps "Staged · Undo" whatever it would replace', () => {
+  for (const replaces of [null, 'Carb ratio 00:00–24:00']) {
+    const button = stagePanel459(true, replaces);
+    assert.equal(button.dataset.staged, 'true');
+    assert.equal(button.innerHTML, 'Staged · <span class="undo">Undo</span><span class="sub">staged for Plan</span>');
+  }
+});
+
+test('#459 guard · a control that replaces nothing keeps "Stage change" and "staged for Plan"', () => {
+  const button = stagePanel459(false, null);
+  assert.equal(button.dataset.staged, 'false');
+  assert.equal(button.innerHTML, 'Stage change<span class="sub">staged for Plan</span>');
+});
+
 test('the breadcrumb names the correction-factor level in the wearer\'s words (#451)', () => {
   const chartTitle = (chartId) => (chartId === 'glucose' ? 'Glucose' : null);
   assert.equal(crumbLabel({ k: 'isf' }, chartTitle), 'Correction factor');
@@ -514,9 +566,9 @@ test('a recurring-lows lower cell says the lower comes from recurring lows', () 
     assert.equal(measured.getAttribute('aria-label'), '00:30 basal slot, suggests a lower');
     assert.equal(recurring.dataset.verdict, 'down');
     assert.equal(recurring.dataset.reason, 'recurring-lows');
-    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening at this hour');
+    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening overnight');
     assert.equal(recurring.getAttribute('aria-label'),
-      '05:00 basal slot, suggests a lower because lows keep happening at this hour');
+      '05:00 basal slot, suggests a lower because lows keep happening overnight');
   } finally { globalThis.document = originalDocument; }
 });
 
@@ -753,8 +805,24 @@ test('each basal night row prints the served date, both rates and the in-slot me
       nightEvidence: nightPayload, shownCount: 5,
     });
     const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
-    const cells = (row) => [...row.innerHTML.matchAll(/<span class="(when|entry|arrow|worst|delta)">([^<]*)<\/span>/g)]
-      .map((match) => match[2].trim());
+    // ADR 466 decision 6: each value's visible text comes first, then its column
+    // and unit in visually hidden text.
+    const cellPattern = /<span class="(when|entry|arrow|worst|delta)">([^<]*)(?:<span class="gf-visually-hidden">([^<]*)<\/span>)?<\/span>/g;
+    const cells = (row) => [...row.innerHTML.matchAll(cellPattern)].map((match) => match[2].trim());
+    const hidden = (row) => [...row.innerHTML.matchAll(cellPattern)].map((match) => match[3]?.trim())
+      .filter(Boolean);
+
+    const header = host.html.join('\n').match(/<div class="ev-cols" aria-hidden="true">([^]*?)<\/div>/);
+    assert.ok(header, 'one header row, hidden from assistive technology');
+    // N1: each name sits in the track of the value it names, on the rows' grid.
+    assert.deepEqual([...header[1].matchAll(/<span class="(\w+)" title="([^"]+)">/g)]
+      .map((match) => [match[1], match[2]]),
+    [['entry', 'Delivered U/h'], ['worst', 'Programmed U/h'], ['delta', 'Night mean mg/dL']],
+    'the header names the three columns in order, each in its value\'s track');
+    for (const row of rows) {
+      assert.deepEqual(hidden(row), ['U/h delivered', 'U/h programmed', 'mg/dL night mean'],
+        'each row\'s values carry their column and unit for a screen reader');
+    }
 
     assert.deepEqual(cells(rows[0]), ['Jan 1', '0.80', '·', '0.60', '116'],
       'the ran-above night compares its delivered rate against its programmed rate');
@@ -778,6 +846,118 @@ test('basal night roster preserves a null served roster mean as an em dash', () 
     const host = new RosterElement();
     renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
     assert.match(host.html.join('\n'), /— mg\/dL mean/);
+  } finally { globalThis.document = originalDocument; }
+});
+
+/* ADR 466: the recurring-lows panel reads task 51's served /api/analyze rows —
+   01:00 held on the spread nights, 03:00 a recurring-lows lower on the same
+   nights, 05:00 held within the threshold (ADR 465) — never a hand-set verdict. */
+const recurringLows = JSON.parse(readFileSync(new URL(
+  './__fixtures__/basal-night-evidence.json', import.meta.url), 'utf8')).recurring_lows;
+const recurringCell = (label) => buildSlotLane(recurringLows.analyze_basal).cells
+  .find((cell) => cell.label === label);
+const OWNER_SENTENCE = 'The steady nights alone do not establish this step down. '
+  + 'It comes from the overnight lows listed below.';
+const HEDGE = 'is consistent with this data, not established by it.';
+
+function recurringPanel(label, onDay = () => {}) {
+  const host = new RosterElement();
+  renderSlotLevel(host, recurringCell(label), new Set(), 30, 8, () => {}, {
+    nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 }, onDay,
+  });
+  return {
+    host,
+    panel: sentences({ children: [host.children[0]] }),
+    extra: host.html.join('\n').replace(/<[^>]*>/g, '').replace(/[ \t\n]+/g, ' '),
+    lows: host.children.filter((child) => child.tagName === 'BUTTON'),
+    stage: host.children[0].children.find((child) => child.className === 'slot-foot').children
+      .filter((child) => child.className === 'stagebtn').length,
+  };
+}
+
+const countLine = (harm) => `Overnight lows on ${harm.recurrence_nights} night`
+  + `${harm.recurrence_nights === 1 ? '' : 's'} counted since this rate was set, across the whole night, `
+  + `not this half hour alone. A step down needs lows on ${harm.recurrence_bar} night`
+  + `${harm.recurrence_bar === 1 ? '' : 's'}.`;
+
+test('ADR 466 · a recurring-lows lower says the overnight lows own its step down', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { panel } = recurringPanel('03:00');
+    assert.ok(panel.includes(OWNER_SENTENCE), `the interval sentence names the lows: ${panel}`);
+    assert.ok(!panel.includes(HEDGE), 'the hedge that the data does not establish a move is replaced');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a recurring-lows lower shows the served count and each low, each opening Day', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const opened = [];
+    const { extra, lows } = recurringPanel('03:00', (low) => opened.push(low.t));
+    const harm = recurringCell('03:00').slot.evidence.harm;
+    assert.ok(extra.includes(countLine(harm)), `the count line prints the served count and bar: ${extra}`);
+    assert.ok(extra.includes('Lows in this half hour'));
+    assert.equal(lows.length, harm.lows.length);
+    assert.equal(lows.length, 2, 'premise: the served row carries two lows');
+    lows.forEach((row, index) => {
+      const low = harm.lows[index];
+      const date = new Date(`${low.t.slice(0, 10)}T00:00:00`)
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      assert.equal(row.innerHTML.replace(/<[^>]*>/g, '').trim(),
+        `${date} · ${low.t.slice(11, 16)} · ${Math.round(low.bg)} mg/dL`);
+      assert.ok(!row.className.includes('case-occurrence'), 'a low row is not a roster occurrence');
+      row.click();
+    });
+    assert.deepEqual(opened, harm.lows.map((low) => low.t), 'each row hands its own served low to Day');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a slot held within the threshold lists its lows and stages nothing', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { extra, lows, stage } = recurringPanel('05:00');
+    const harm = recurringCell('05:00').slot.evidence.harm;
+    assert.ok(extra.includes(countLine(harm)), `the held slot prints the count line: ${extra}`);
+    assert.equal(lows.length, harm.lows.length);
+    assert.ok(lows.length > 0);
+    assert.equal(stage, 0, 'a held slot offers no Stage change');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a slot with no recurring lows keeps today\'s hedge and no lows list', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { panel, extra, lows } = recurringPanel('01:00');
+    assert.ok(panel.includes(HEDGE), `the held spread slot keeps the hedge: ${panel}`);
+    assert.ok(!extra.includes('Overnight lows on'));
+    assert.equal(lows.length, 0);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 guard · a plain lower whose interval reaches the setting keeps the hedge', () => {
+  // Hand-built on purpose: this pins the frontend's status-string branch, not a
+  // backend verdict.
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderSlotLevel(host, {
+      i: 6, startMin: 180, endMin: 210, asserts: true, verdict: 'down',
+      slot: {
+        current: 0.6, recommended: 0.54, safety_status: 'lower',
+        annotation: 'one cautious step down is supported at this time',
+        estimate: { value: 0.54, lo: 0.45, hi: 0.66, n: 30, wide: false },
+      },
+    }, new Set(), 30, 8, () => {}, {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
+    const panel = sentences({ children: [host.children[0]] });
+    assert.ok(panel.includes(HEDGE), panel);
+    assert.ok(!panel.includes(OWNER_SENTENCE));
   } finally { globalThis.document = originalDocument; }
 });
 
@@ -846,10 +1026,11 @@ test('#395 · fixture Pattern cases retain every requested clock and event coord
 });
 
 /* #424 — the Response comparison caption names every served cohort as its section
-   heading does, with its served count, links the band's own words once where a
-   cohort serves the band state it holds, and names the Occurrences outside the
-   comparison only when that served count is non-zero. It computes no count and
-   derives no link; the band keeps "not comparable" for no data. */
+   heading does, with its served count, and names the Occurrences outside the
+   comparison only when that served count is non-zero. #468 — each cohort is
+   followed once by the band's own words for the band states it serves, comma-joined
+   in one pair of parentheses, with no count. It computes no count and derives no
+   link; only the band counts "not comparable". */
 function renderedCaption(caseFile) {
   const originalDocument = globalThis.document;
   try {
@@ -866,22 +1047,25 @@ function renderedCaption(caseFile) {
   }
 }
 
-test('#424 · a same-population caption names each cohort as its heading does and adds up', () => {
+test('#424, #468 · a same-population caption names each cohort as its heading does, with the band states it holds', () => {
   const captures = JSON.parse(readFileSync(new URL(
     '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
   const caseFile = captures.cases['finding:carb_undercount'].event;
   const { cohorts, counts } = caseFile.projection;
   const { caption, headings } = renderedCaption(caseFile);
 
+  assert.deepEqual(cohorts.map((cohort) => cohort.band_states),
+    [['fired'], ['near_miss'], ['clean', 'outranked', 'no_data']], 'premise: the served band states');
   assert.equal(caption,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities');
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities'
+    + ' (does not meet, claimed by another finding, not comparable)');
   for (const cohort of cohorts) {
     assert.ok(headings.some((html) => html.includes(`<b>${cohort.name}</b>`)
       && html.includes(`· ${counts[cohort.key]} occurrence`)), `${cohort.name} heading matches`);
   }
   assert.equal(cohorts.reduce((sum, cohort) => sum + counts[cohort.key], 0),
     caseFile.summary.denominator);
-  assert.doesNotMatch(caption, /not comparable|outside the comparison/);
+  assert.doesNotMatch(caption, /\d+ not comparable|outside the comparison/);
 });
 
 test('#424 · a cross-population caption names its Highs outside the comparison', () => {

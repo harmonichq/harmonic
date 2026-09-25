@@ -147,7 +147,7 @@ _EXPOSURE_META = {
 }
 
 
-# --- the silence taxonomy, enumerated (all eight, ADR 0009) ---------------
+# --- the silence taxonomy, enumerated (all nine, ADR 0009) ----------------
 # label + user-facing body per SilenceReason. The evidence tier each member
 # rests on is read straight off the (member, tier) pairing below so the chip
 # color matches the honesty tier the classifier already returns.
@@ -202,6 +202,12 @@ _SILENCE_META = {
         EvidenceTier.OBSERVED,
         "The outcome never arrived inside the detector's window. The story ran "
         "past the edge of what it watches.",
+    ),
+    SilenceReason.STAYED_IN_RANGE: (
+        "Stayed in range",
+        EvidenceTier.OBSERVED,
+        "Glucose rose before the bolus but never went above the range line "
+        "afterwards, so there was no spike for an earlier bolus to blunt.",
     ),
 }
 

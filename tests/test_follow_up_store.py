@@ -49,7 +49,7 @@ def comparison_context():
     return available(captured_at=T1, input_revision=0,
                      programmed_isf={'value': 40, 'unit': 'mg/dL/U'},
                      source_snapshot={'captured_at': T0, 'idp': 1},
-                     code_version='synthetic:1', configuration={'classifier': 'synthetic:1'})
+                     configuration={'classifier': 'synthetic:1'})
 
 
 def trial(id='basal:0:20260902090000', changed_at=T1):

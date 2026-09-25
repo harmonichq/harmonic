@@ -5,6 +5,9 @@ classifier, re-price a Lever, manufacture a shared support population, or infer
 an uncertainty interval that a setting owner withheld.
 Overnight source nights come from the top-level ``harm_band_source_nights``
 evidence copy, while printed-low nights come from ``evidence["harm"]["band_nights"]``.
+A clock-scoped roster carries a Pattern only when its outcomes land in the window
+(:func:`pattern_in_window`); the overnight Pattern keeps its whole-band counts in
+any window overlapping that band.
 """
 
 from __future__ import annotations
@@ -135,6 +138,16 @@ def _setting_seriousness(
     return seriousness, segments
 
 
+def starts_in_harm_band(span: dict | None) -> bool:
+    """Whether a basal span starts inside the Harm signal's overnight band.
+
+    The one rule that admits the overnight Pattern through its basal setting and,
+    in the findings queue, seats it beneath that setting's row (ADR 469 decision 7).
+    """
+    start = (span or {}).get("start_min", -1)
+    return _HARM_CONFIG.overnight_start_min <= start < _HARM_CONFIG.overnight_end_min
+
+
 def _setting_member(
     analysis: dict, candidate_rows: Iterable[dict], parameter: str | None,
     *, overnight: bool,
@@ -164,10 +177,7 @@ def _setting_member(
     published_rows = (candidate or {}).get("members") or ()
     if overnight:
         published_rows = [
-            item for item in published_rows
-            if _HARM_CONFIG.overnight_start_min
-            <= (item.get("span") or {}).get("start_min", -1)
-            < _HARM_CONFIG.overnight_end_min
+            item for item in published_rows if starts_in_harm_band(item.get("span"))
         ]
         admitted_row = next((
             item for item in published_rows if item.get("asserts_move")
@@ -402,10 +412,33 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
     return roster
 
 
+def pattern_in_window(pattern: dict, query) -> bool:
+    """Whether a scoped Pattern's outcomes land in the window (ADR 467).
+
+    An Exposure-family Pattern's scoped ``n`` is already its outcome-anchored count
+    in the window, so a count above zero is membership, admitted or not. The
+    harm-band Pattern's ``n`` counts band nights whatever the window, so it also
+    needs the window to overlap the Harm signal's overnight band.
+    """
+    if not (pattern.get("n") or 0) > 0:
+        return False
+    if pattern["rate_producer"] == "harm_band_source_nights":
+        return query.overlaps(_HARM_CONFIG.overnight_start_min,
+                              _HARM_CONFIG.overnight_end_min)
+    return True
+
+
 def outcome_window_population(analysis: dict, exposures: dict, scenarios: dict, query):
-    """Return the one outcome-window evidence population and its Pattern roster."""
+    """Return the one outcome-window evidence population and its Pattern roster.
+
+    A scoped roster carries only the Patterns :func:`pattern_in_window` admits, so
+    the rows a window serves and the roster published beside them agree.
+    """
     from ...window_membership import outcome_window_exposures
 
     population = outcome_window_exposures(exposures, query)
-    return population, build_outcome_patterns(analysis, population, scenarios,
-                                               scoped_population=query.scoped)
+    roster = build_outcome_patterns(analysis, population, scenarios,
+                                    scoped_population=query.scoped)
+    if query.scoped:
+        roster = [pattern for pattern in roster if pattern_in_window(pattern, query)]
+    return population, roster

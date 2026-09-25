@@ -255,6 +255,31 @@ class BoundedRetainedReadTest(unittest.TestCase):
         self.assertEqual(row["maturing"]["gap_count"], 14)
 
 
+class RetainedTrialMealEdgeTest(unittest.TestCase):
+    """ADR 470: a retained carb-ratio Trial matures on the meals the whole history
+    forms, so a top-up of a meal begun before the change is no meal after it."""
+
+    def test_a_meal_opened_more_than_a_grace_before_the_change_still_decides(self):
+        changed = datetime(2024, 1, 1, 12, 0)
+        record_id = f"carb_ratio-all-{changed.strftime('%Y%m%d%H%M%S')}"
+        with Store.open(":memory:") as store:
+            _save_retained_trial(store, record_id=record_id, parameter="carb_ratio",
+                                 slot=None, changed_at=changed.strftime(wc._DT_FMT),
+                                 before=10.0, after=9.0)
+            # {11:20, 11:30} and {11:55, 12:20}: no meal starts after the change.
+            store.upsert_bolus([{
+                "seq_num": seq, "request_time": (changed + timedelta(minutes=minute))
+                .strftime(wc._DT_FMT), "description": "Bolus", "completion": "Completed",
+                "insulin": carbs / 10, "carbs": carbs, "carb_ratio": 10.0,
+            } for seq, (minute, carbs) in enumerate(
+                [(-40, 45.0), (-30, 20.0), (-5, 30.0), (20, 20.0)], start=1)])
+
+            result = wc.review_trials(store, now=changed + timedelta(days=2))
+
+        row = next(r for r in result["trials"] if r["id"] == record_id)
+        self.assertEqual(row["maturing"]["days_elapsed"], 0)
+
+
 def _at(n, hour=8):
     """``_day(n)`` at ``hour`` o'clock, as a stored record time."""
     return (_day(n) + timedelta(hours=hour)).strftime(wc._DT_FMT)
@@ -444,7 +469,9 @@ class EveryRecordEndsTest(unittest.TestCase):
         self.assertEqual(assessment["data_cutoff"], _at(20))
         self.assertEqual(assessment["periods"]["after"]["data_cutoff"], _at(20))
 
-    def test_j_a_plan_receipt_is_unchanged_by_the_ending(self):
+    def matched_plan(self, decision_context=None):
+        """test_j's store: a correction-factor Plan recorded on 05-06 whose
+        captured schedule the 05-11 switch programs, so the reconcile matches it."""
         profiles = self.pump_read_pair()
         items = [{"type": "isf", "start_min": 0, "value": 36}]
         self.store.save_plan_draft(items, _at(5, 0))
@@ -452,8 +479,12 @@ class EveryRecordEndsTest(unittest.TestCase):
         deliverable = {"version": "386:1", "state": "available", "source_profile": asdict(profiles[0]),
                        "rows": plan_deliverable([asdict(s) for s in profiles[0].segments], items)}
         with self.store.follow_up_transaction():
-            saved = self.store.save_follow_up_record({"kind": "plan", "id": plan["applied_at"], "version": "386:1",
-                                                      **plan, "deliverable": deliverable})
+            return self.store.save_follow_up_record({
+                "kind": "plan", "id": plan["applied_at"], "version": "386:1", **plan, "deliverable": deliverable,
+                **({"decision_context": decision_context} if decision_context else {})})
+
+    def test_j_a_plan_receipt_is_unchanged_by_the_ending(self):
+        saved = self.matched_plan()
         self.reconcile(_day(60))
         record = self.records()[_at(10, 6)]
         self.assertEnded(record, "superseded", _at(19, 6))
@@ -463,6 +494,26 @@ class EveryRecordEndsTest(unittest.TestCase):
                    "matched_deliverable": saved["deliverable"], "block": None}
         self.assertEqual(record["reconciliation"], receipt)
         self.assertEqual(self.store.follow_up_record("plan", _at(5, 0))["reconciliation"], receipt)
+
+    def test_j_a_matched_trial_serves_its_plans_decision(self):
+        """ADR 463 decision 6: a Trial whose receipt names a Plan serves that
+        Plan's decision as its original context, its observed context otherwise."""
+        decision = {"version": "386:1", "state": "available", "captured_at": _at(5, 0), "input_revision": 0,
+                    "action": [{"start_min": 0, "recommended": 36, "units": "mg/dL/U"}],
+                    "explanation": "Correction factor", "source_window": {"start": _at(1, 0), "end": _at(5, 0)},
+                    "policy": "synthetic:1", "subjects": ["setting:isf"], "occurrences": [],
+                    "settings": [{"value": 36, "unit": "mg/dL/U"}], "support": {}, "unknowns": []}
+        for label, context in (("recorded decision", decision), ("no recorded decision", None)):
+            with self.subTest(label):
+                self.store.close()
+                self.store = Store.open(":memory:")
+                plan = self.matched_plan(context)
+                self.reconcile(_day(60))
+                record = self.records()[_at(10, 6)]
+                self.assertEqual(record["reconciliation"]["applied_at"], plan["id"])
+                served = wc.review_trials(self.store, now=_day(60), selected=record["id"])["selected"]
+                expected = plan["decision_context"] if context else record["observed_context"]
+                self.assertEqual(served["original"]["context"], expected)
 
     def test_k_a_multi_slot_edit_ends_at_the_first_change_after_it(self):
         self.basal_edit({1: 10, 3: 10, 5: 20})
@@ -567,6 +618,277 @@ class EveryRecordEndsTest(unittest.TestCase):
             if name == "multi-slot Edit":
                 # Three open basal-slot records: one read of the basal history, not three.
                 self.assertEqual(slot_reads["per record"] - slot_reads["shared"], 2)
+
+
+class EndingClockViewsTest(unittest.TestCase):
+    """ADR 463 decision 3: an ending the reconcile saves keeps its comparison's
+    clock bins for both periods, and no other view."""
+
+    def test_a_reconciled_ending_saves_both_clock_envelopes(self):
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        from ciq_autotune.follow_up_comparison import compare_follow_up
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        materialize_case(store, next(case for case in QA_CASES if case.name == "c4-isf"))
+        (record,) = store.follow_up_records("trial")
+        ending = record["ending"]
+        self.assertEqual(ending["assessment"]["state"], "available")
+        views = compare_follow_up(store, record=record, data_cutoff=ending["effective_at"],
+                                  input_revision=store.input_data_revision())["comparison"]["views"]
+        self.assertTrue(views["before"]["clock"] and views["after"]["clock"], "premise: both periods have bins")
+        self.assertEqual(ending["assessment"]["views"],
+                         {arm: {"clock": views[arm]["clock"]} for arm in ("before", "after")})
+
+
+def _meal_day_boluses(first, last, stamped, *, seq=0):
+    """Three dose-stamped boluses a day (08:00, 12:30, 18:30); ``stamped(day,
+    hour)`` gives each one's settings."""
+    rows = []
+    for n in range(first, last + 1):
+        for hour, minute in ((8, 0), (12, 30), (18, 30)):
+            when = (_day(n) + timedelta(hours=hour, minutes=minute)).strftime(wc._DT_FMT)
+            rows.append({"seq_num": seq + len(rows) + 1, "request_time": when, "completion_time": when,
+                         "description": "Bolus", "completion": "Completed", "insulin": 5.0, "carbs": 40,
+                         "target_bg": 110, **stamped(n, hour)})
+    return rows
+
+
+class DeliveryDatingTest(unittest.TestCase):
+    """ADR 463 decisions 4 and 5: a change seen only in delivery history is dated
+    at the first observation carrying its new value, and a record saved under
+    the old day-level dating stays that record."""
+
+    def setUp(self):
+        self.store = Store.open(":memory:")
+
+    def tearDown(self):
+        self.store.close()
+
+    def reconcile(self, now):
+        with self.store.follow_up_transaction():
+            wc.reconcile_follow_up(self.store, now=now, recorded_at=now)
+
+    def test_a_mid_morning_dose_edit_is_dated_at_the_first_bolus_carrying_it(self):
+        # 10:00 on day 10: the day's 08:00 bolus still carries the old values.
+        new = lambda n, hour: n > 10 or (n == 10 and hour >= 10)
+        self.store.upsert_bolus(_meal_day_boluses(1, 20, lambda n, hour: (
+            {"isf": 44.0, "carb_ratio": 9.0} if new(n, hour) else {"isf": 40.0, "carb_ratio": 10.0})))
+        (trial,) = wc.review_trials(self.store, now=_day(20))["trials"]
+        self.assertEqual(trial["changed_at"], (_day(10) + timedelta(hours=12, minutes=30)).strftime(wc._DT_FMT))
+
+    def test_a_basal_slot_is_dated_at_its_first_sample_carrying_the_new_rate(self):
+        rows = []
+        for n in range(1, 21):
+            for minute in range(0, 30, 5):
+                rate = 0.7 if n > 10 or (n == 10 and minute >= 10) else 0.6
+                rows.append({"seq_num": len(rows) + 1, "time": _at(n, 3).replace("03:00:00", f"03:{minute:02d}:00"),
+                             "delivery_type": "Profile", "duration_mins": 5,
+                             "basal_rate": rate, "profile_basal_rate": rate})
+        self.store.upsert_basal(rows)
+        (trial,) = wc.review_trials(self.store, now=_day(20))["trials"]
+        self.assertEqual((trial["slot"], trial["changed_at"]),
+                         ("03:00", (_day(10) + timedelta(hours=3, minutes=10)).strftime(wc._DT_FMT)))
+
+    def test_two_same_day_profile_switches_keep_their_own_records(self):
+        """Only a delivery-detected change keeps an earlier same-day record's
+        time: a pump-read switch is dated at its own read, so a second
+        whole-profile switch that day is a Trial of its own."""
+        profiles = [_profile(idp, [_seg(0, 0.6, isf, ic, 110)])
+                    for idp, isf, ic in ((1, 40, 7.0), (2, 36, 8.0), (3, 32, 9.0))]
+        def read(when, active):
+            self.store.upsert_settings_snapshot(when.strftime(wc._DT_FMT),
+                                                PumpSettings(active_idp=active, profiles=tuple(profiles)))
+        read(_day(0) + timedelta(hours=6), 1)
+        read(_day(10) + timedelta(hours=8), 2)
+        # The 08:00 switch is recorded before the 18:00 one is read.
+        self.reconcile(_day(10) + timedelta(hours=12))
+        read(_day(10) + timedelta(hours=18), 3)
+        self.reconcile(_day(11))
+        records = sorted((r["changed_at"], r["parameter"], r["id"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 8), "profile", "profile-all-20260511080000"),
+                                   (_at(10, 18), "profile", "profile-all-20260511180000")])
+
+    def test_two_same_day_delivery_detected_profile_changes_keep_their_own_records(self):
+        """Code review round 2's probe: two whole-profile changes seen only in
+        delivery history on one day (06:00 and 20:00) are two records. A
+        retained record is kept by one candidate only, the earliest same-day
+        candidate at or after it, so the 20:00 change never takes the 06:00
+        record's time and id."""
+        def boluses(last):
+            return _meal_day_boluses(1, last, lambda n, hour: {
+                "isf": 40.0, "carb_ratio": 8.0 if n >= 9 else 7.0,
+                "target_bg": 100 if n > 10 or (n == 10 and hour >= 10) else 110})
+
+        def basal(last):
+            rows = []
+            for n in range(1, last + 1):
+                for hour, new_rate in ((6, 0.7), (20, 0.8)):
+                    for minute in range(0, 30, 5):
+                        rate = new_rate if n >= 10 else 0.6
+                        rows.append({"seq_num": 50_000 + len(rows), "time": (_day(n) + timedelta(hours=hour, minutes=minute)).strftime(wc._DT_FMT),
+                                     "delivery_type": "Profile", "duration_mins": 5,
+                                     "basal_rate": rate, "profile_basal_rate": rate})
+            return rows
+        cutoff = _day(10) + timedelta(hours=11)
+        self.store.upsert_bolus([row for row in boluses(10) if row["request_time"] <= cutoff.strftime(wc._DT_FMT)])
+        self.store.upsert_basal([row for row in basal(10) if row["time"] <= cutoff.strftime(wc._DT_FMT)])
+        self.reconcile(cutoff)
+        first = [(r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial")]
+        self.assertEqual(first, [(_at(10, 6), "profile")], "premise: the 11:00 reconcile records the 06:00 change")
+        self.store.upsert_bolus(boluses(12))
+        self.store.upsert_basal(basal(12))
+        self.reconcile(_day(12) + timedelta(hours=23))
+        records = sorted((r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 6), "profile"), (_at(10, 20), "profile")])
+
+    def test_an_in_place_edit_after_a_reverted_switch_keeps_its_own_record(self):
+        """Code review round 3's probe: a whole-profile switch at 08:00, recorded,
+        then walked back at 10:00; an in-place edit of basal and target seen
+        only in delivery history at 20:30 is a record of its own, never the
+        switch's record."""
+        profiles = [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)]), _profile(2, [_seg(0, 0.6, 36, 8.0, 110)])]
+
+        def read(when, active):
+            self.store.upsert_settings_snapshot(when.strftime(wc._DT_FMT),
+                                                PumpSettings(active_idp=active, profiles=tuple(profiles)))
+        read(_day(0) + timedelta(hours=6), 1)
+        read(_day(10) + timedelta(hours=8), 2)
+        self.reconcile(_day(10) + timedelta(hours=9))
+        self.assertEqual([r["changed_at"] for r in self.store.follow_up_records("trial")], [_at(10, 8)],
+                         "premise: the 08:00 switch is recorded")
+        read(_day(10) + timedelta(hours=10), 1)
+        edit = _day(10) + timedelta(hours=20, minutes=30)
+        rows = []
+        for n in range(1, 13):
+            for hour, minute in ((8, 0), (12, 30), (20, 30), (21, 0), (22, 0), (23, 0)):
+                when = _day(n) + timedelta(hours=hour, minutes=minute)
+                rows.append({"seq_num": len(rows) + 1, "request_time": when.strftime(wc._DT_FMT),
+                             "completion_time": when.strftime(wc._DT_FMT), "description": "Bolus",
+                             "completion": "Completed", "insulin": 5.0, "carbs": 40, "isf": 40.0,
+                             "carb_ratio": 7.0, "target_bg": 100 if when >= edit else 110})
+        self.store.upsert_bolus(rows)
+        self.store.upsert_basal([{"seq_num": n, "time": (_day(n) + timedelta(hours=20, minutes=30)).strftime(wc._DT_FMT),
+                                  "delivery_type": "Profile", "duration_mins": 30,
+                                  "basal_rate": 0.7 if n >= 10 else 0.6, "profile_basal_rate": 0.7 if n >= 10 else 0.6}
+                                 for n in range(1, 13)])
+        self.reconcile(_day(12) + timedelta(hours=23))
+        records = sorted((r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 8), "profile"), (edit.strftime(wc._DT_FMT), "profile")])
+
+    def old_dated_isf_record(self, changed_at):
+        """A correction-factor change edited at 10:00 on day 10, the day's 08:00
+        bolus still carrying the old value, with a retained record saved at
+        ``changed_at``; reconciled on day 15. Answers the records by change time."""
+        from ciq_autotune.follow_up_comparison import capture_comparison_context
+        self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(
+            active_idp=1, profiles=(_profile(1, [_seg(0, 0.6, 30, 7.0, 110)]),)))
+        self.store.upsert_bolus(_meal_day_boluses(1, 15, lambda n, hour: {
+            "isf": 45.0 if n > 10 or (n == 10 and hour >= 10) else 30.0, "carb_ratio": 7.0}))
+        stamp = datetime.fromisoformat(changed_at).strftime("%Y%m%d%H%M%S")
+        with self.store.follow_up_transaction():
+            self.store.save_follow_up_record({
+                "kind": "trial", "id": f"isf-all-{stamp}", "version": "386:1", "parameter": "isf", "slot": None,
+                "changed_at": changed_at, "before": 30.0, "after": 45.0, "block": None, "members": None,
+                "first_observed_at": changed_at, "observed_context": wc._unavailable("not_recorded"),
+                "comparison_context": capture_comparison_context(self.store, at=_day(11), input_revision=0)})
+        self.reconcile(_day(15))
+        return {r["changed_at"]: r["id"] for r in self.store.follow_up_records("trial")}
+
+    def test_a_record_at_the_legacy_date_is_kept_with_its_id(self):
+        # 08:00 is the day's first bolus: the date the old dating gave this change.
+        self.assertEqual(self.old_dated_isf_record(_at(10, 8)), {_at(10, 8): "isf-all-20260511080000"})
+
+    def test_a_record_off_the_legacy_date_is_not_kept(self):
+        # 09:00 is no date either dating gives this change, so the change is a
+        # record of its own at its first bolus carrying the new value.
+        first_new = (_day(10) + timedelta(hours=12, minutes=30)).strftime(wc._DT_FMT)
+        self.assertEqual(self.old_dated_isf_record(_at(10, 9)),
+                         {_at(10, 9): "isf-all-20260511090000", first_new: "isf-all-20260511123000"})
+
+    def test_a_record_saved_under_the_day_dating_stays_that_record(self):
+        from ciq_autotune.follow_up_comparison import capture_comparison_context
+        self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(
+            active_idp=1, profiles=(_profile(1, [_seg(0, 0.6, 30, 7.0, 110)]),)))
+        edited = lambda n, hour: {"isf": 45.0 if n > 10 or (n == 10 and hour >= 10) else 30.0, "carb_ratio": 7.0}
+        self.store.upsert_bolus(_meal_day_boluses(1, 15, edited))
+        cgm = [{"EventDateTime": (_day(0) + timedelta(minutes=5 * k)).strftime(wc._DT_FMT),
+                "Readings (CGM / BGM)": 120, "Description": "Synthetic EGV"} for k in range(288 * 26)]
+        self.store.upsert_cgm(cgm)
+        old = _at(10)  # the day's first bolus, 08:00, which carried the old value
+        identity = f"isf-all-{_day(10).strftime('%Y%m%d')}080000"
+        with self.store.follow_up_transaction():
+            self.store.save_follow_up_record({
+                "kind": "trial", "id": identity, "version": "386:1", "parameter": "isf", "slot": None,
+                "changed_at": old, "before": 30.0, "after": 45.0, "block": None, "members": None,
+                "first_observed_at": old, "observed_context": wc._unavailable("not_recorded"),
+                "comparison_context": capture_comparison_context(self.store, at=_day(11), input_revision=0)})
+        self.reconcile(_day(15))
+        records = self.store.follow_up_records("trial")
+        self.assertEqual([(r["id"], r["changed_at"]) for r in records], [(identity, old)])
+        comparison = wc.review_trials(self.store, now=_day(15), selected=identity,
+                                      assessment="retained")["selected"]["reassessment"]["comparison"]
+        self.assertEqual(comparison["availability"], {"state": "available", "reason": None})
+        # The pump walks back to 30 inside the watch window.
+        self.store.upsert_bolus(_meal_day_boluses(16, 25, lambda n, hour: {"isf": 30.0, "carb_ratio": 7.0}, seq=1000))
+        self.reconcile(_day(25))
+        records = self.store.follow_up_records("trial")
+        self.assertEqual([(r["id"], r["ending"].get("kind")) for r in records], [(identity, "reverted")])
+
+
+class EndedReassessmentTest(unittest.TestCase):
+    """ADR 462 decision 2: a requested reassessment of an ended Trial reads only
+    the evidence up to its ending instant, as its saved ending does. Each case
+    store is a committed synthetic QA case, read through ``review_trials``."""
+
+    NOW = datetime(2024, 7, 2)
+
+    def case_store(self, name):
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        materialize_case(store, next(case for case in QA_CASES if case.name == name))
+        return store
+
+    def reassessment(self, store, record, mode):
+        return wc.review_trials(store, now=self.NOW, selected=record["id"],
+                                assessment=mode)["selected"]["reassessment"]
+
+    def test_a_superseded_records_reassessments_stop_at_its_ending(self):
+        store = self.case_store("c4-ic")
+        record = next(r for r in store.follow_up_records("trial") if r["ending"].get("kind") == "superseded")
+        ending = record["ending"]["effective_at"]
+        for mode in ("retained", "current"):
+            with self.subTest(mode):
+                after = self.reassessment(store, record, mode)["comparison"]["periods"]["after"]
+                self.assertLessEqual(after["end"], ending)
+
+    def test_a_late_context_record_answers_current_policy_and_refuses_retained(self):
+        store = self.case_store("c4-isf-late-read")
+        (record,) = store.follow_up_records("trial")
+        ending = record["ending"]["effective_at"]
+        self.assertEqual(record["ending"]["assessment"]["reason"], "context_after_ending")
+        current = self.reassessment(store, record, "current")
+        self.assertEqual(current["comparison"]["availability"]["state"], "available")
+        self.assertEqual(set(current["comparison"]["periods"]), {"before", "after"})
+        self.assertLessEqual(current["comparison"]["periods"]["after"]["end"], ending)
+        self.assertLessEqual(current["comparison_context"]["source_snapshot"]["captured_at"], ending)
+        retained = self.reassessment(store, record, "retained")["comparison"]["availability"]
+        self.assertEqual((retained["state"], retained["reason"]), ("unavailable", "context_after_ending"))
+
+    def test_an_open_records_reassessment_reads_to_the_data_tail(self):
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        store.upsert_settings_snapshot(_at(0, 6), PumpSettings(
+            active_idp=1, profiles=(_profile(1, [_seg(0, 0.6, 30, 7.0, 110)]),)))
+        store.upsert_bolus(_dose_rows(_stamps([(30, 7.0, 1, 9), (45, 7.0, 10, 20)])))
+        with store.follow_up_transaction():
+            wc.reconcile_follow_up(store, now=_day(20), recorded_at=_day(20))
+        (record,) = store.follow_up_records("trial")
+        self.assertNotIn("kind", record["ending"])
+        after = wc.review_trials(store, now=_day(21), selected=record["id"], assessment="retained"
+                                 )["selected"]["reassessment"]["comparison"]["periods"]["after"]
+        self.assertEqual((after["end"], after["boundary_reasons"]["end"]),
+                         (_day(21).strftime(wc._DT_FMT), "data_tail"))
 
 
 if __name__ == "__main__":

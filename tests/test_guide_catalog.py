@@ -81,6 +81,16 @@ class BuildCatalogTest(unittest.TestCase):
             self.assertIn(s["tier"], tiers)
             self.assertTrue(s["body"])
 
+    def test_stayed_in_range_is_the_ninth_calm_reason(self):
+        # ADR 461: a late meal that never went above the range line is calm.
+        self.assertEqual(len(self.cat["silence_reasons"]), 9)
+        stayed = next(s for s in self.cat["silence_reasons"] if s["value"] == "stayed_in_range")
+        self.assertEqual((stayed["label"], stayed["tier"]), ("Stayed in range", "observed"))
+        self.assertEqual(
+            stayed["body"],
+            "Glucose rose before the bolus but never went above the range line afterwards, "
+            "so there was no spike for an earlier bolus to blunt.")
+
     def test_upstream_cause_names_both_of_its_sources(self):
         # ADR 448: the context gate's recent low or suspend, and an
         # over-treated low's rebound that owns the rise (ADR 422).

@@ -2731,6 +2731,7 @@
     "updated_at": "2024-06-12 12:00:00"
   },
   "finding": {
+    "anchored_by": null,
     "annotation": "one cautious step down is supported at this time",
     "appearances": null,
     "asserts_move": null,
@@ -2790,6 +2791,7 @@
     "pattern_chart": null,
     "priority": 54,
     "programmed_now": null,
+    "rank_note": null,
     "reason": null,
     "recommended": null,
     "regime_end": null,

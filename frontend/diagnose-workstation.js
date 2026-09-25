@@ -35,7 +35,7 @@ import {
   queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { ANCHOR_STATE_WORD } from './day-chart.js';
-import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { toCaptures, isfVerdict, isfRoundsToCurrent, isfStageNote } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
 import {
@@ -252,7 +252,7 @@ const FAMILY_SHORT = {
    the served reason behind it (#433, D6). */
 const VERDICT_KEY = {
   up: 'suggests a raise', down: 'suggests a lower',
-  'down:recurring-lows': 'suggests a lower because lows keep happening at this hour',
+  'down:recurring-lows': 'suggests a lower because lows keep happening overnight',
   hold: 'holds at current', insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
 // short forms for the lane key
@@ -689,17 +689,19 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
 /* Event comparison is its own served population. Members remain opaque until
    selection requests their server-owned detail and trace.
    #424 — the caption names every served cohort as its section heading does, with
-   its served count, in served order, and follows a cohort that holds a verdict-band
-   state with the band's own words once. The Occurrences outside the comparison are
+   its served count, in served order. The Occurrences outside the comparison are
    named only when their served count is non-zero; only a cross-population
-   comparison can leave any. The band keeps "not comparable" for no data. */
+   comparison can leave any. #468 — each cohort is followed once by the band's own
+   words for its served `band_states`, lowercased and comma-joined in one pair of
+   parentheses, with no count: the band above already counts them. */
 export function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
   const { cohorts = [], counts = {} } = caseFile.projection;
   const roster = new Map(caseFile.occurrences.map((row) => [row.id, row]));
   const outside = counts.outside_comparison;
   const terms = cohorts.map((cohort) => {
-    const band = VERDICT_BAND_KEY[cohort.band_verdict];
-    return `${counts[cohort.key]} ${cohort.name}${band ? ` (${band.toLowerCase()})` : ''}`;
+    const words = cohort.band_states
+      .map((state) => (VERDICT_BAND_KEY[state] || VERDICT_RESIDUE_KEY[state]).toLowerCase());
+    return `${counts[cohort.key]} ${cohort.name}${words.length ? ` (${words.join(', ')})` : ''}`;
   });
   if (outside) {
     const noun = outside === 1 ? caseFile.summary.noun.replace(/s$/, '') : caseFile.summary.noun;
@@ -857,12 +859,15 @@ function renderHighCarbStage(host, caseFile, range) {
  * in the same place on a block.
  *
  * spec: { head, headQual, verdict, unit, value, current, estimate, recommended,
- *         recommendedQual, scopeSay, currentNoun, moveWord, support, sentence,
- *         canStage, isStaged, footNote, onStage }
+ *         recommendedQual, scopeSay, currentNoun, moveWord, intervalSay, support,
+ *         sentence, canStage, isStaged, replaces, footNote, onStage }
  *
  * `value` spells one number; it defaults to the panel's own rounding. A setting
  * whose value carries its unit (the correction factor, ADR 451) passes its own
- * and no `unit`, so no qualifier repeats a unit.
+ * and no `unit`, so no qualifier repeats a unit. `replaces` names the change
+ * staged for another setting that a press would replace, or is null (ADR 459).
+ * `intervalSay` replaces the interval sentence's second half when something
+ * other than the steady nights owns the move (ADR 466).
  */
 function renderParamLevel(host, spec) {
   const e = spec.estimate;
@@ -870,7 +875,9 @@ function renderParamLevel(host, spec) {
   const unitThen = (sep) => (spec.unit ? `${spec.unit}${sep}` : '');
   /* Does the interval reach the figure already in the pump? Then the data is
      compatible with changing nothing, and that has to be said in words — two
-     numbers side by side leave the reader to notice it. */
+     numbers side by side leave the reader to notice it. The second half says
+     what that means for the move; a caller whose move the interval does not own
+     names its owner instead (ADR 466). */
   const spansCurrent = e.lo != null && e.hi != null
     && e.lo <= spec.current && spec.current <= e.hi;
   /* A recommendation normally sits between the figure you run and the figure the
@@ -902,8 +909,8 @@ function renderParamLevel(host, spec) {
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
       already run (${value(e.lo)}–${value(e.hi)} includes ${value(spec.current)}), so <b>it includes no
-      change at all</b>. A ${spec.moveWord} is consistent with this data, not established
-      by it.</div>` : ''}
+      change at all</b>. ${spec.intervalSay
+        || `A ${spec.moveWord} is consistent with this data, not established by it.`}</div>` : ''}
     ${between ? '' : `<div class="hedge">The recommended ${value(spec.recommended)} does not sit
       between the ${value(spec.current)} you run now and the ${value(e.value)} the data estimates, so
       <b>something outside the estimate set it</b>: ${spec.sentence}</div>`}
@@ -916,9 +923,15 @@ function renderParamLevel(host, spec) {
     btn.type = 'button';
     btn.className = 'stagebtn';
     btn.dataset.staged = String(spec.isStaged);
+    /* #459: a Plan holds one setting, so a press here drops a change staged for
+       another one. The control says so, naming that change, before the press;
+       once pressed it is staged and back in the staged box. */
+    const replacing = !spec.isStaged && spec.replaces;
+    if (replacing) btn.dataset.replaces = '';
     btn.innerHTML = spec.isStaged
       ? 'Staged · <span class="undo">Undo</span><span class="sub">staged for Plan</span>'
-      : 'Stage change<span class="sub">staged for Plan</span>';
+      : replacing ? `Replace staged change<span class="sub">replaces ${spec.replaces}</span>`
+        : 'Stage change<span class="sub">staged for Plan</span>';
     btn.addEventListener('click', spec.onStage);
     foot.append(btn);
   } else {
@@ -971,6 +984,30 @@ function renderSlotNightSelection(host, night, span, groupRows, rosterGlucoseMea
   renderOccurrenceFoot(host, night.date, onClear, () => onDay(night));
 }
 
+const hiddenLabel = (words) => `<span class="gf-visually-hidden">${words}</span>`;
+
+/* ADR 466: a slot the harm layer read shows the count its nudge used, and each
+   of this half hour's lows, from the served `evidence.harm` alone — a lower, a
+   hold within the threshold and a withheld raise alike. The count covers the
+   whole overnight band, so it says so. Each row hands its low to Day. */
+function renderSlotLows(host, harm, onDay) {
+  if (!harm) return;
+  const nights = (n) => `${n} night${n === 1 ? '' : 's'}`;
+  host.insertAdjacentHTML('beforeend', `<div class="low-count">Overnight lows on
+    ${nights(harm.recurrence_nights)} counted since this rate was set, across the whole night, not this
+    half hour alone. A step down needs lows on ${nights(harm.recurrence_bar)}.</div>
+    <div class="lvl-cap">Lows in this half hour</div>`);
+  for (const low of harm.lows) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ev-row low-row';
+    button.innerHTML = `<span class="low">${fmtDate(low.t.slice(0, 10))} · ${low.t.slice(11, 16)} · `
+      + `${Math.round(low.bg)} mg/dL</span>`;
+    button.addEventListener('click', () => onDay(low));
+    host.append(button);
+  }
+}
+
 export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage, options = {}) {
   const s = cell.slot;
   const e = s.estimate;
@@ -1000,12 +1037,20 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       : 'no direction asserted, so nothing is recommended',
     currentNoun: 'rate',
     moveWord: /raise/i.test(s.safety_status || '') ? 'raise' : 'move',
+    /* ADR 466: a recurring-lows lower moves whatever its interval, so the
+       interval sentence names the lows as the step's owner. Read from the served
+       status string alone, as the lane key is (#433). */
+    intervalSay: s.safety_status === 'lower (recurring lows)'
+      ? 'The steady nights alone do not establish this step down. It comes from the '
+        + 'overnight lows listed below.'
+      : null,
     support: `${e.n} night${e.n === 1 ? '' : 's'} of steady data <span>·</span> ${windowDays} d basal run`,
     sentence: canStage
       ? (s.annotation || '').replace(/,?\s*capped to one ≤?20% step from current/i, '')
       : s.annotation,
     canStage,
     isStaged: staged.has(cell.i),
+    replaces: options.replaces ?? null,
     footNote: thin
       ? `${e.n} night${e.n === 1 ? '' : 's'} of steady data: ${supportFloor == null
         ? 'the support floor is unavailable'
@@ -1015,6 +1060,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
         + 'are shown as measured.',
     onStage: () => onStage(cell),
   });
+  renderSlotLows(host, s.evidence?.harm, options.onDay || (() => {}));
   const evidence = options.nightEvidence;
   if (evidence?.pending) {
     // The pending line says so to assistive tech as well as to the eye; it is
@@ -1041,14 +1087,22 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       rows: rows.map((night) => ({
         id: night.date,
         html: `<span class="when">${fmtDate(night.date)}</span>
-          <span class="entry">${nightRate(night.delivered_rate)}</span>
-          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}</span>
-          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}</span>`,
+          <span class="entry">${nightRate(night.delivered_rate)}${hiddenLabel('U/h delivered')}</span>
+          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}${hiddenLabel('U/h programmed')}</span>
+          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}${hiddenLabel('mg/dL night mean')}</span>`,
       })),
     };
   }).filter((group) => group.servedCount > 0);
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Nights of steady data
     <span class="meta">${evidence.roster_glucose_mean == null ? '—' : Math.round(evidence.roster_glucose_mean)} mg/dL mean</span></div>`);
+  /* ADR 466: the rows are buttons in a flat list, which cannot own column
+     headers, so this header row is for the eye alone and each value below
+     carries its own column and unit for a screen reader. Each name sits in its
+     value's track, abbreviated to fit, its full name on hover. */
+  host.insertAdjacentHTML('beforeend', '<div class="ev-cols" aria-hidden="true">'
+    + '<span class="entry" title="Delivered U/h"><span>Deliv.</span><span>U/h</span></span>'
+    + '<span class="worst" title="Programmed U/h"><span>Prog.</span><span>U/h</span></span>'
+    + '<span class="delta" title="Night mean mg/dL"><span>Mean</span><span>mg/dL</span></span></div>');
   renderOccurrenceRoster(host, groups, {
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),
@@ -1073,7 +1127,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
  * asserts carries the identical stage button a slot does, and a held one prints
  * its number and interval at full contrast with nothing to stage.
  */
-function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
+function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, options = {}) {
   const b = cell.block;
   const e = b.estimate;
   const canStage = cell.asserts;
@@ -1116,6 +1170,7 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
     sentence: b.annotation || held,
     canStage,
     isStaged: icStaged.has(cell.id),
+    replaces: options.replaces ?? null,
     footNote: held
       ? 'The move is held for the reason above, so there is nothing to stage; the number and '
         + 'its interval are shown as measured.'
@@ -1135,14 +1190,13 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote) {
 const ISF_SCOPE = 'Measured in the overnight fasting window. A daytime Correction factor is not '
   + 'separately identifiable, so this one value stands for the whole day.';
 
-export function renderIsfLevel(host, isf, isfStaged, onStage) {
+export function renderIsfLevel(host, isf, isfStaged, onStage, options = {}) {
   const e = isf.estimate;
   /* Reading the verdict off `recommended` printed "no direction asserted" over
      this level's own weaken sentence, and disagreed with the queue row that
      drilled into it. Both facts come from `isfVerdict` now. */
   const { direction, canStage, nights } = isfVerdict(isf);
-  const roundedNoop = !canStage && direction === 'strengthen'
-    && isf.current != null && isf.recommended === isf.current;
+  const roundedNoop = isfRoundsToCurrent(isf);
   renderParamLevel(host, {
     head: 'Correction factor',
     verdict: canStage ? 'suggests a change'
@@ -1171,14 +1225,8 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
     sentence: isf.annotation,
     canStage,
     isStaged: isfStaged,
-    footNote: roundedNoop
-      ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
-      : direction === 'weaken'
-        ? 'No new number is available, so there is nothing to stage.'
-        : direction === 'strengthen'
-          ? 'This result is held, so there is no settings change to stage; the estimate and interval remain visible.'
-      : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `
-        + 'there is nothing to stage; the number and its interval are shown as measured.',
+    replaces: options.replaces ?? null,
+    footNote: isfStageNote(isf),
     onStage,
   });
 }
@@ -1371,14 +1419,24 @@ function boot(root, data, callbacks, signal) {
      in the same three descriptor shapes. This surface still decides nothing
      about what MAY be staged — that stays with the analysis (term 14), and a
      held slot yields no Plan item, so it can never seed. No callback, no
-     marks. */
-  for (const cell of lane.cells) {
-    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+     marks. ADR 460 point 5: every seed starts from nothing, so a mark the draft
+     no longer holds drops. It runs at boot, on every `refresh()` while no stage
+     save is in flight, and once an accepted save settles — the draft can change
+     after boot (a Plan read landing late, a save in Changes, a draft replaced
+     elsewhere), and the verdict is only worth what it is asked again. */
+  function seedMarks() {
+    staged.clear();
+    icStaged.clear();
+    isfStaged = false;
+    for (const cell of lane.cells) {
+      if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+    }
+    for (const cell of icBlocks) {
+      if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
+    }
+    if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
   }
-  for (const cell of icBlocks) {
-    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
-  }
-  if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
+  seedMarks();
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the gate edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
@@ -3215,29 +3273,43 @@ function boot(root, data, callbacks, signal) {
      surface painted itself unstaged. Dropping the re-entrant click is what keeps
      every restore point settled with respect to Diagnose's own staging. The
      optimistic paint is untouched — the
-     guard is released on the answer, not on the paint. */
+     guard is released on the answer, not on the paint. ADR 460 point 4: the
+     flag rises BEFORE the toggle and its paint, so that paint already tells the
+     dock a save is in flight and it never reads the served draft from before
+     the press. ADR 460 point 5: once an accepted save settles, the marks are
+     asked again and repainted, because a seated Diagnose is not refreshed by
+     the guidance render the save triggers; this is also what drops the mark of
+     a setting the save replaced. */
   let saveInFlight = false;
+  /** ADR 459: the change staged for another setting that staging `item` would
+      replace, named as the dock names it, or null. The app answers; this surface
+      decides nothing about the Plan's one-setting rule. */
+  const replacing = (item) => callbacks.replacing?.(item) ?? null;
   async function stageAndSettle(toggle, item, isStaged) {
     if (saveInFlight) return;
-    toggle();
-    // PORT: reach the app's Plan draft as well as the local tally
-    const answer = callbacks.stage?.(item, isStaged());
-    paint();
     saveInFlight = true;
+    let accepted = false;
     try {
-      if (await answer === false) { toggle(); paint(); }
+      toggle();
+      // PORT: reach the app's Plan draft as well as the local tally
+      const answer = callbacks.stage?.(item, isStaged());
+      paint();
+      if (await answer === false) { toggle(); paint(); } else accepted = true;
     } finally { saveInFlight = false; }
+    if (accepted) { seedMarks(); paint(); }
   }
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
      it is the pane's floor, not the level's content. The watched object's
      precedence is the server's (Trial XOR Focus, pump wins). Below it sits the
      recorded Plan awaiting the pump, as the guidance read serves it (#431), and
-     below that this surface's own staged draft, which is what the deleted
-     header used to report. */
+     below that the staged Plan, which is what the deleted header used to
+     report: this surface's own marks when they name a change, else the served
+     Plan draft (ADR 460), which the dock skips while a stage save is in flight. */
   function paintWatch() {
     paintWatchDock(el('watch-dock'),
-      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor() }),
+      watchDockView({ watched, pendingPlan: callbacks.pendingPlan?.(), staged: stagedDescriptor(),
+        draft: callbacks.planDraft?.(), saving: saveInFlight }),
       (to) => callbacks.go?.(to));
   }
 
@@ -3563,6 +3635,7 @@ function boot(root, data, callbacks, signal) {
     }
     if (f.k === 'slot') {
       const run = basalRun(f.cell);
+      const slotItem = { family: 'basal', key: f.cell.slot.__planKey, members: run.members };
       renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
         /* #372: one press acts on the whole finding. The cells that move are the
            ones the Plan draft's own predicate admitted for this frame's run —
@@ -3586,10 +3659,11 @@ function boot(root, data, callbacks, signal) {
             }
             applied = !applied;
           },
-          { family: 'basal', key: cell.slot.__planKey, members: run.members },
+          slotItem,
           () => staged.has(cell.i));
       }, {
         run,
+        replaces: replacing(slotItem),
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
         onSelect: (id) => selectNight(f, id),
@@ -3600,17 +3674,19 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'block') {
+      const blockItem = { family: 'ic', key: f.cell.block.__planKey };
       renderIcBlockLevel(host, f.cell, icStaged, (cell) => stageAndSettle(
         () => { if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id); },
-        { family: 'ic', key: cell.block.__planKey },
-        () => icStaged.has(cell.id)), demoNote);
+        blockItem,
+        () => icStaged.has(cell.id)), demoNote, { replaces: replacing(blockItem) });
       return;
     }
     if (f.k === 'isf') {
+      const isfItem = { family: 'isf', raw: isf };
       renderIsfLevel(host, isf, isfStaged, () => stageAndSettle(
         () => { isfStaged = !isfStaged; },
-        { family: 'isf', raw: isf },
-        () => isfStaged));
+        isfItem,
+        () => isfStaged), { replaces: replacing(isfItem) });
       return;
     }
     // 'factor' is the only remaining frame kind: render only the retained
@@ -4272,7 +4348,15 @@ function boot(root, data, callbacks, signal) {
     paintTiles();
   }
 
-  return { destroy() { chart = null; disposeTiles(); }, repaint: paint, leaveSurface };
+  /* The app's `refresh()`: the served state may have moved under the marks, so
+     they are asked again first — never mid-save, where the press's own mark is
+     the truth until the answer lands (ADR 460 point 5). */
+  function refresh() {
+    if (!saveInFlight) seedMarks();
+    paint();
+  }
+
+  return { destroy() { chart = null; disposeTiles(); }, repaint: paint, refresh, leaveSurface };
 }
 
 /* ---------------------------------------------------------------------------
@@ -4283,8 +4367,9 @@ function boot(root, data, callbacks, signal) {
 /**
  * Mount the ported workstation into `root`.
  *
- * Interface: `setData` re-renders from a fresh API payload, `refresh` repaints
- * the mounted workspace in place (the theme watcher uses it, because the ported
+ * Interface: `setData` re-renders from a fresh API payload, `refresh` asks the
+ * staged marks again (unless a stage save is in flight) and repaints the mounted
+ * workspace in place (the theme watcher uses it, because the ported
  * chartColors() samples the live stylesheet), `setError` replaces the surface
  * with a message. The behaviour behind it is the locked mock's, unedited.
  */
@@ -4293,6 +4378,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   let captures = null;
   let teardown = null;
   let repaint = null;
+  let refreshMounted = null;
   let leaveSurface = null;
   let aborter = null;
 
@@ -4311,6 +4397,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaint = null;
+    refreshMounted = null;
     leaveSurface = null;
     root.className = 'dw dw-error';
     root.textContent = '';
@@ -4358,6 +4445,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   function render() {
     if (teardown) { teardown(); teardown = null; }
     repaint = null;
+    refreshMounted = null;
     leaveSurface = null;
     if (aborter) { aborter.abort(); aborter = null; }
     if (!payload) return;
@@ -4396,6 +4484,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
     const booted = boot(root, captures, callbacks, aborter.signal);
     teardown = booted.destroy;
     repaint = booted.repaint;
+    refreshMounted = booted.refresh;
     leaveSurface = booted.leaveSurface;
   }
 
@@ -4414,7 +4503,7 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   return {
     setData(nextPayload) { payload = nextPayload; render(); },
     setError(message) { showError(message); },
-    refresh() { repaint?.(); },
+    refresh() { refreshMounted?.(); },
     /* A day's real trace resolved: repaint in place off the live boot instance,
        preserving navigation state. No-op if the surface is unmounted or in its
        error state (#666). */

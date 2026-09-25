@@ -35,3 +35,33 @@ class EventTraceSupportTest(unittest.TestCase):
             query=WindowQuery.clock(17 * 60, 19 * 60),
         )
         self.assertEqual(selected, [antecedent])
+
+
+class CompletedMealPopulationTest(unittest.TestCase):
+    """ADR 470: the completed carb-bolus population counts meals, not boluses."""
+
+    def test_a_split_meal_is_one_completed_meal_at_its_first_bolus(self):
+        from datetime import timedelta
+
+        from ciq_autotune.event_comparison import completed_carb_boluses
+        from ciq_autotune.events import BolusEvent
+
+        noon = datetime(2024, 5, 3, 12, 0)
+        bolus = []
+        for day, gap in enumerate((10, 30, 35)):
+            first = noon + timedelta(days=day)
+            bolus += [
+                BolusEvent(t=first, completion="Completed", insulin=4.5, carbs=45.0,
+                           seq_num=100 + day),
+                BolusEvent(t=first + timedelta(minutes=gap), completion="Completed",
+                           insulin=2.0, carbs=20.0, seq_num=200 + day),
+            ]
+
+        meals = completed_carb_boluses(bolus)
+
+        self.assertEqual([(meal.t, meal.seq_num, meal.carbs, meal.insulin) for meal in meals], [
+            (noon, 100, 65.0, 6.5),
+            (noon + timedelta(days=1), 101, 65.0, 6.5),
+            (noon + timedelta(days=2), 102, 45.0, 4.5),
+            (noon + timedelta(days=2, minutes=35), 202, 20.0, 2.0),
+        ])

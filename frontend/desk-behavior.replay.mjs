@@ -3215,7 +3215,7 @@ export const S125 = appOnly('HV2-18',
   '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
 // STORY:harmonic-v2-desktop:S126
 export const S126 = appOnly('#413 design lock',
-  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
+  '#424 a folded cause shows its share of its Pattern first, the rest set apart on a second row', C4_STORIES.S126);
 // STORY:harmonic-v2-desktop:S148
 export const S148 = appOnly('ADR 432',
   '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);
@@ -3258,6 +3258,49 @@ export const S178 = appOnly('ADR 451',
 // STORY:harmonic-v2-desktop:S179
 export const S179 = appOnly('ADR 451',
   '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
+// STORY:harmonic-v2-desktop:S186
+export const S186 = appOnly('ADR 460',
+  '#460 the watch dock and the staged marks follow the Plan draft after a return, a reload and a draft replaced elsewhere',
+  C4_STORIES.S186);
+// STORY:harmonic-v2-desktop:S187
+export const S187 = appOnly('ADR 459',
+  '#459 a stage press that would replace another setting says so first, naming the change it replaces',
+  C4_STORIES.S187);
+// STORY:harmonic-v2-desktop:S188
+export const S188 = appOnly('ADR 462',
+  '#462 an ended record whose saved ending has no periods draws the reassessment the reader presses, cut at its ending',
+  C4_STORIES.S188);
+// STORY:harmonic-v2-desktop:S189
+export const S189 = appOnly('ADR 463',
+  '#463 a change record prints one decimal and an ending saved with its clock bins draws its curve',
+  C4_STORIES.S189);
+// STORY:harmonic-v2-desktop:S190
+export const S190 = appOnly('ADR 465',
+  '#465 a recurring-lows step down within the threshold holds and names the lows, with nothing to stage',
+  C4_STORIES.S190);
+// STORY:harmonic-v2-desktop:S191
+export const S191 = appOnly('ADR 466',
+  '#466 a recurring-lows slot says the overnight lows own its move, counts them and lists each one',
+  C4_STORIES.S191);
+// STORY:harmonic-v2-desktop:S192
+export const S192 = appOnly('ADR 467',
+  '#467 a scoped window keeps the overnight Pattern its outcomes land in, with the band counts',
+  C4_STORIES.S192);
+// STORY:harmonic-v2-desktop:S193
+export const S193 = appOnly('ADR 469',
+  '#469 the rail follows the one urgency ranking: a setting-admitted Pattern shares its setting\'s position and a correction factor that cannot stage says why',
+  C4_STORIES.S193);
+// STORY:harmonic-v2-desktop:S194
+export const S194 = appOnly('ADR 470',
+  '#470 a top-up minutes after a meal is part of that meal: Highs after meals counts one meal per first bolus, and its case file lists each meal once with its summed dose and the peak past its top-up',
+  C4_STORIES.S194);
+// STORY:harmonic-v2-desktop:S195
+export const S195 = appOnly('ADR 461',
+  '#461 Late bolus claims a meal only when it ran above the range line: Highs after meals counts only meals that ran high, each fired Late bolus row prints a peak above 180, and the Guide lists "Stayed in range"',
+  C4_STORIES.S195);
+// STORY:harmonic-v2-desktop:S196
+export const S196 = appOnly('ADR 468',
+  '#468 the Quiet line prints its counts and no time span across a Finding', C4_STORIES.S196);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3325,6 +3368,9 @@ export const REGISTRY = [
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
+  ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
+  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
+  ['S193', S193, J()], ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

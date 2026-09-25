@@ -68,7 +68,7 @@ class FollowUpComparisonTest(unittest.TestCase):
                 result = self.compare(store, {**record, **change}, datetime(2026, 6, 12))
                 self.assertEqual(result["availability"]["reason"], reason)
                 self.assertEqual(result["outcomes"], [])
-        record["comparison_context"]["code_version"] = "retired"
+        record["comparison_context"]["policy"] = "retired"
         self.assertEqual(self.compare(store, record, datetime(2026, 6, 12))["availability"]["reason"], "unsupported_retained_execution")
         result = self.compare(store, record, datetime(2026, 6, 12), context_mode="current")
         self.assertEqual(result["context_mode"], "current")
@@ -79,13 +79,26 @@ class FollowUpComparisonTest(unittest.TestCase):
         available = capture_comparison_context(store, at=datetime(2026, 6, 11), input_revision=1)
         for context, reason in (({"version": "386:1", "state": "unavailable", "reason": "not_recorded"},
                                  "missing_comparison_context"),
-                                ({**available, "code_version": "retired"}, "unsupported_retained_execution")):
+                                ({**available, "policy": "retired"}, "unsupported_retained_execution")):
             with self.subTest(reason=reason):
                 record = {"kind": "trial", "id": "isf-all-20260610000000", "parameter": "isf", "slot": None,
                           "changed_at": "2026-06-10 00:00:00", "comparison_context": context}
                 returned = compare_follow_up(store, record=record, data_cutoff=datetime(2026, 6, 12),
                                              input_revision=2)
                 self.assertEqual(comparison_envelope(context, "retained", reason), returned)
+
+    def test_a_context_saved_by_another_build_is_read(self):
+        """ADR 462 decision 3: an update never voids a retained context. Only its
+        policy stamp or scenario configuration can refuse it, never a hash of the
+        installed source files, whether it carries a different one or none."""
+        store = self.store(cgm_ramp(10, 15, 40, 180, 1.4, 140) + cgm_ramp(11, 15, 40, 180, 1.4, 140))
+        record = self.focus(store, datetime(2026, 6, 11))
+        context = record["comparison_context"]
+        for label, retained in (("another build", {**context, "code_version": "0" * 64}),
+                                ("no source hash", {k: v for k, v in context.items() if k != "code_version"})):
+            with self.subTest(label):
+                result = self.compare(store, {**record, "comparison_context": retained}, datetime(2026, 6, 12))
+                self.assertEqual(result["availability"], {"state": "available", "reason": None})
 
     def test_retained_context_survives_profile_change_and_record_is_unchanged(self):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot
@@ -376,8 +389,9 @@ class MeasurementComparisonTest(unittest.TestCase):
         from dataclasses import replace
         from tests.test_scenario_engine import cgm_flat
         start = datetime(2026, 1, 1)
+        # A late climb that runs above the range line after the bolus (ADR 461).
         source = [CgmReading(datetime(2026, 6, 15, 12, 15) + timedelta(minutes=5*i), value)
-                  for i, value in enumerate((100,110,120,130,140,150,160,170,180,175,165,150,135))]
+                  for i, value in enumerate((100,110,120,130,140,150,165,180,195,190,175,160,140))]
         cgm, bolus = [], []
         for day in range(32):
             offset = start + timedelta(days=day) - datetime(2026, 6, 15)
@@ -713,6 +727,22 @@ class PracticalComparisonTest(unittest.TestCase):
         self.assertEqual(result['periods']['after']['end'],str(start+timedelta(days=3)))
         self.assertEqual(result['denominators']['after']['contributing_meals'],1)
         self.assertGreater(result['denominators']['after']['readings'],0)
+
+    def test_a_top_up_ten_minutes_after_a_meal_contributes_no_second_meal(self):
+        # ADR 470: the 23:10 top-up joins the 23:00 meal.
+        from ciq_autotune.settings import ProfileSegment,ProfileSettings,PumpSettings,Snapshot
+        start=datetime(2026,6,1)
+        def snapshot(day, ic):
+            return Snapshot(start+timedelta(days=day),PumpSettings(1,(ProfileSettings(
+                1,'synthetic',300,True,15,(ProfileSegment(0,1,40,ic,110),)),)))
+        cgm=[CgmReading(start+timedelta(hours=i),120) for i in range(96)]
+        store=self.store(cgm,[meal(2,23,0,carbs=40,dose=4),meal(2,23,10,carbs=20,dose=2)])
+        store._snaps=[snapshot(0,10),snapshot(1,9)]
+        pin=start+timedelta(days=1)
+        record={'kind':'trial','parameter':'carb_ratio','block':None,'members':[0],'detected_at':str(pin),
+                'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
+        result=self.compare(store,record,start+timedelta(days=4))
+        self.assertEqual(result['denominators']['after']['contributing_meals'],1)
 
     def test_profile_progress_withholds_direction_before_thirty_days(self):
         helper=SupportedComparisonTest()

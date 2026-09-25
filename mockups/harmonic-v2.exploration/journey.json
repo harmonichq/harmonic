@@ -72764,6 +72764,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -73078,6 +73081,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -73391,6 +73397,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -81008,6 +81019,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "fired"
+                  ],
                   "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
@@ -81321,6 +81335,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "near_miss"
+                  ],
                   "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
@@ -81632,6 +81649,10 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "clean",
+                    "outranked"
+                  ],
                   "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",
@@ -89141,6 +89162,7 @@
             "o_0d9c9210025df65d6afe39adf68dd8e3": "ep-005"
           },
           "finding_row": {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -89250,6 +89272,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -91370,6 +91393,7 @@
           },
           "source_findings": [
             {
+              "anchored_by": null,
               "annotation": "one cautious step down is supported at this time",
               "appearances": null,
               "asserts_move": null,
@@ -91429,6 +91453,7 @@
               "pattern_chart": null,
               "priority": 97,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -91451,6 +91476,7 @@
               "window_scope": "window"
             },
             {
+              "anchored_by": "basal:180-240",
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -91549,6 +91575,7 @@
               "pattern_chart": null,
               "priority": 97,
               "programmed_now": null,
+              "rank_note": "Ranked with its setting",
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -91556,13 +91583,14 @@
               "run_ids": null,
               "span": null,
               "support": null,
-              "tier": "worth_a_look",
+              "tier": "next_in_line",
               "title": "Overnight lows with no insulin on board",
               "verdict_counts": null,
               "verdict_counts_by_family": null,
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": [
                 {
@@ -91663,6 +91691,7 @@
               "pattern_chart": null,
               "priority": 28,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -91691,6 +91720,7 @@
               "window_scope": "window"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -91815,6 +91845,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -91829,6 +91860,7 @@
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -91938,6 +91970,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -91952,6 +91985,7 @@
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": [
                 {
@@ -92061,6 +92095,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -92089,6 +92124,7 @@
               "window_scope": "window"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -92190,6 +92226,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -92207,6 +92244,7 @@
         }
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -92307,6 +92345,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -94431,6 +94470,7 @@
       },
       "source_findings": [
         {
+          "anchored_by": null,
           "annotation": "one cautious step down is supported at this time",
           "appearances": null,
           "asserts_move": null,
@@ -94490,6 +94530,7 @@
           "pattern_chart": null,
           "priority": 97,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -94512,6 +94553,7 @@
           "window_scope": "window"
         },
         {
+          "anchored_by": "basal:180-240",
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -94610,6 +94652,7 @@
           "pattern_chart": null,
           "priority": 97,
           "programmed_now": null,
+          "rank_note": "Ranked with its setting",
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -94617,13 +94660,14 @@
           "run_ids": null,
           "span": null,
           "support": null,
-          "tier": "worth_a_look",
+          "tier": "next_in_line",
           "title": "Overnight lows with no insulin on board",
           "verdict_counts": null,
           "verdict_counts_by_family": null,
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -94724,6 +94768,7 @@
           "pattern_chart": null,
           "priority": 28,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -94752,6 +94797,7 @@
           "window_scope": "window"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -94876,6 +94922,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -94890,6 +94937,7 @@
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -94999,6 +95047,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -95013,6 +95062,7 @@
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -95122,6 +95172,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -95150,6 +95201,7 @@
           "window_scope": "window"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -95251,6 +95303,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -95439,6 +95492,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -95753,6 +95809,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -96066,6 +96125,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -103574,6 +103638,7 @@
         "o_7aa87ba93366d765cc0a86c27d922409": "ep-001"
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -103674,6 +103739,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -105865,7 +105931,6 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "3ce9b43c9c50f849e1652d4c8c2c158d6f5ed93bd43f06fc9197b69e784195cf",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105957,7 +106022,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "0982d49b878eb89a5a58fef373385f6ae512455b884e334b60d5263dd43cd495",
+              "id": "aed2324f641249e962b10f5808bdf253ebe84e40244da9c88ba12a66f84b8cda",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -106045,7 +106110,6 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "3ce9b43c9c50f849e1652d4c8c2c158d6f5ed93bd43f06fc9197b69e784195cf",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -106137,7 +106201,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "0982d49b878eb89a5a58fef373385f6ae512455b884e334b60d5263dd43cd495",
+                  "id": "aed2324f641249e962b10f5808bdf253ebe84e40244da9c88ba12a66f84b8cda",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -106818,7 +106882,497 @@
                 "reason": "unavailable_adherence",
                 "state": "unavailable",
                 "target_metric": "tbr",
-                "version": "386:1"
+                "version": "386:1",
+                "views": {
+                  "after": {
+                    "clock": [
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "00:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "00:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "01:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "01:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 174,
+                        "t": "02:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 174,
+                        "t": "02:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 174,
+                        "t": "03:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 174,
+                        "t": "03:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 164,
+                        "t": "04:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "04:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "05:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "05:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "06:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "06:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "07:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "07:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "08:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "08:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "09:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "09:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "10:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "10:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "11:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 162,
+                        "t": "11:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "12:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "12:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "13:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "13:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "14:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "14:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "15:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "15:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "16:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "16:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "17:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "17:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "18:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "18:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "19:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "19:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "20:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "20:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "21:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "21:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "22:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "22:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 168,
+                        "t": "23:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 169,
+                        "t": "23:30"
+                      }
+                    ]
+                  },
+                  "before": {
+                    "clock": [
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "00:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "00:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "01:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "01:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "02:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "02:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "03:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "03:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "04:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "04:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "05:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "05:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "06:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "06:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "07:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "07:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "08:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "08:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "09:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "09:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "10:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "10:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "11:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 198,
+                        "t": "11:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "12:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "12:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "13:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "13:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "14:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "14:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "15:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "15:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "16:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "16:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "17:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "17:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "18:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "18:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "19:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "19:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "20:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "20:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "21:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "21:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "22:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "22:30"
+                      },
+                      {
+                        "med": 120,
+                        "n": 192,
+                        "t": "23:00"
+                      },
+                      {
+                        "med": 120,
+                        "n": 195,
+                        "t": "23:30"
+                      }
+                    ]
+                  }
+                }
               },
               "conclusion": null,
               "effective_at": "2024-07-03 12:00:00",
@@ -107502,7 +108056,7 @@
             },
             {
               "before": {
-                "n_nadir": 0,
+                "n_nadir": 1,
                 "n_peak": 1,
                 "nadir": null,
                 "peak": null
@@ -117803,6 +118357,7 @@
         ],
         "rows": [
           {
+            "anchored_by": null,
             "annotation": "one cautious step down is supported at this time",
             "appearances": null,
             "asserts_move": null,
@@ -117862,6 +118417,7 @@
             "pattern_chart": null,
             "priority": 97,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -117884,6 +118440,7 @@
             "window_scope": "window"
           },
           {
+            "anchored_by": "basal:180-240",
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -117982,6 +118539,7 @@
             "pattern_chart": null,
             "priority": 97,
             "programmed_now": null,
+            "rank_note": "Ranked with its setting",
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -117989,13 +118547,14 @@
             "run_ids": null,
             "span": null,
             "support": null,
-            "tier": "worth_a_look",
+            "tier": "next_in_line",
             "title": "Overnight lows with no insulin on board",
             "verdict_counts": null,
             "verdict_counts_by_family": null,
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -118096,6 +118655,7 @@
             "pattern_chart": null,
             "priority": 28,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -118124,6 +118684,7 @@
             "window_scope": "window"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -118248,6 +118809,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -118262,6 +118824,7 @@
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -118371,6 +118934,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -118385,6 +118949,7 @@
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -118494,6 +119059,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -118522,6 +119088,7 @@
             "window_scope": "window"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -118623,6 +119190,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -126316,6 +126884,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -126630,6 +127201,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -126943,6 +127517,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -134451,6 +135030,7 @@
         "o_7aa87ba93366d765cc0a86c27d922409": "ep-001"
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -134551,6 +135131,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -136677,6 +137258,7 @@
     "candidates": {
       "basal": {
         "finding_row": {
+          "anchored_by": null,
           "annotation": "one cautious step down is supported at this time",
           "appearances": null,
           "asserts_move": null,
@@ -136736,6 +137318,7 @@
           "pattern_chart": null,
           "priority": 97,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -143409,6 +143992,7 @@
           "title": "Over-treated low"
         },
         "finding_row": {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -143509,6 +144093,7 @@
           "pattern_chart": null,
           "priority": 28,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -179545,6 +180130,7 @@
     },
     "source_findings": [
       {
+        "anchored_by": null,
         "annotation": "one cautious step down is supported at this time",
         "appearances": null,
         "asserts_move": null,
@@ -179604,6 +180190,7 @@
         "pattern_chart": null,
         "priority": 97,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -179626,6 +180213,7 @@
         "window_scope": "window"
       },
       {
+        "anchored_by": "basal:180-240",
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -179724,6 +180312,7 @@
         "pattern_chart": null,
         "priority": 97,
         "programmed_now": null,
+        "rank_note": "Ranked with its setting",
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -179731,13 +180320,14 @@
         "run_ids": null,
         "span": null,
         "support": null,
-        "tier": "worth_a_look",
+        "tier": "next_in_line",
         "title": "Overnight lows with no insulin on board",
         "verdict_counts": null,
         "verdict_counts_by_family": null,
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -179838,6 +180428,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -179866,6 +180457,7 @@
         "window_scope": "window"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -179990,6 +180582,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -180004,6 +180597,7 @@
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -180113,6 +180707,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -180127,6 +180722,7 @@
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -180236,6 +180832,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -180264,6 +180861,7 @@
         "window_scope": "window"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -180365,6 +180963,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -187757,6 +188356,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -188071,6 +188673,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -188384,6 +188989,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -196001,6 +196611,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "fired"
+                  ],
                   "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
@@ -196314,6 +196927,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "near_miss"
+                  ],
                   "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
@@ -196625,6 +197241,10 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "clean",
+                    "outranked"
+                  ],
                   "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",
@@ -204134,6 +204754,7 @@
             "o_7693e91669018a82bb3c0a6530581479": "ep-005"
           },
           "finding_row": {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -204243,6 +204864,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -206363,6 +206985,7 @@
           },
           "source_findings": [
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": [
                 {
@@ -206463,6 +207086,7 @@
               "pattern_chart": null,
               "priority": 28,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -206491,6 +207115,7 @@
               "window_scope": "window"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -206615,6 +207240,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -206629,6 +207255,7 @@
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -206738,6 +207365,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -206752,6 +207380,7 @@
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": [
                 {
@@ -206861,6 +207490,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -206889,6 +207519,7 @@
               "window_scope": "window"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -206990,6 +207621,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -207004,6 +207636,7 @@
               "window_scope": "whole_day"
             },
             {
+              "anchored_by": null,
               "annotation": null,
               "appearances": null,
               "asserts_move": null,
@@ -207094,6 +207727,7 @@
               "pattern_chart": null,
               "priority": null,
               "programmed_now": null,
+              "rank_note": null,
               "reason": null,
               "recommended": null,
               "regime_end": null,
@@ -207111,6 +207745,7 @@
         }
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -207211,6 +207846,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -209336,6 +209972,7 @@
       },
       "source_findings": [
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -209436,6 +210073,7 @@
           "pattern_chart": null,
           "priority": 28,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -209464,6 +210102,7 @@
           "window_scope": "window"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -209588,6 +210227,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -209602,6 +210242,7 @@
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -209711,6 +210352,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -209725,6 +210367,7 @@
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -209834,6 +210477,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -209862,6 +210506,7 @@
           "window_scope": "window"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -209963,6 +210608,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -209977,6 +210623,7 @@
           "window_scope": "whole_day"
         },
         {
+          "anchored_by": null,
           "annotation": null,
           "appearances": null,
           "asserts_move": null,
@@ -210067,6 +210714,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -297152,6 +297800,7 @@
       "updated_at": "2024-06-02 12:00:00"
     },
     "finding": {
+      "anchored_by": null,
       "annotation": "one cautious step down is supported at this time",
       "appearances": null,
       "asserts_move": null,
@@ -297211,6 +297860,7 @@
       "pattern_chart": null,
       "priority": 97,
       "programmed_now": null,
+      "rank_note": null,
       "reason": null,
       "recommended": null,
       "regime_end": null,
@@ -298075,7 +298725,7 @@
             },
             {
               "before": {
-                "n_nadir": 0,
+                "n_nadir": 1,
                 "n_peak": 1,
                 "nadir": null,
                 "peak": null
@@ -299122,7 +299772,7 @@
             },
             {
               "before": {
-                "n_nadir": 0,
+                "n_nadir": 1,
                 "n_peak": 1,
                 "nadir": null,
                 "peak": null

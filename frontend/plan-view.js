@@ -121,6 +121,18 @@ function evidenceItems(item, analyze) {
   }));
 }
 
+/**
+ * Whether staging an item of Plan item type `type` replaces `draftItems`: a Plan
+ * holds one setting, so a draft of another setting is dropped (ADR 459 point 2).
+ */
+export const replacesDraft = (type, draftItems) => draftItems.some((row) => row.type !== type);
+
+/**
+ * The draft a stage of `type` would replace, or null: the draft the staged marks
+ * read, a Changes pick not yet saved ahead of the saved draft (ADR 459 point 1).
+ */
+export const replacedDraftItems = (type) => (replacesDraft(type, draftItems()) ? draftItems() : null);
+
 /** The shared rail's stage callback reports refusal so its optimistic paint can
  * be undone. Save first; neither this draft nor the rail claims a refused save. */
 export async function stageEvidence(item, desired = true, analyze = {}) {
@@ -131,7 +143,7 @@ export async function stageEvidence(item, desired = true, analyze = {}) {
     const keys = new Set(items.map((row) => `${row.type}:${row.start_min}`));
     const before = memory.plan.items || [];
     const next = desired
-      ? [...before.filter((row) => row.type === items[0].type && !keys.has(`${row.type}:${row.start_min}`)), ...items]
+      ? [...(replacesDraft(items[0].type, before) ? [] : before.filter((row) => !keys.has(`${row.type}:${row.start_min}`))), ...items]
       : before.filter((row) => !keys.has(`${row.type}:${row.start_min}`));
     const saved = await savePlanDraft({ items: next });
     memory.plan = { ...memory.plan, ...saved };
@@ -168,8 +180,9 @@ const pendingRecord = () => {
   return plan && ['pending', 'mismatch'].includes(plan.verdict.state) ? plan : null;
 };
 
-/** The draft the store holds, or the items this page staged and has not saved. */
-const draftItems = () => memory.staged || memory.plan?.items || [];
+/** The draft the store holds, or the items this page staged and has not saved.
+    Diagnose's staged marks read it through `evidenceIsStaged`. */
+export const draftItems = () => memory.staged || memory.plan?.items || [];
 
 /** Whether the store already holds the items this page staged. */
 const draftSaved = () => Boolean(memory.plan?.updated_at) && !memory.staged;

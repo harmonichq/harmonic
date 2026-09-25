@@ -26,7 +26,7 @@ The rows sit in three bands:
   anchors are counted beside it, never added in.
 - **Also checked** lists anchors the engine stayed silent on for a reason worth
   reading, such as falling just under a lever's bar.
-- **Quiet** holds everything else, folded into one stretch and counted: clean,
+- **Quiet** holds everything else, counted together rather than listed: clean,
   explained, and no data.
 
 A **claimed** anchor belongs to an episode another finding owns. Its row names what

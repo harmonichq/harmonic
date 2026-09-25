@@ -254,6 +254,9 @@
 .gf-stage-focus { grid-template-rows:auto auto var(--gf-fig-focus,270px) minmax(0,1fr); }
 .gf-stage-trial { grid-template-rows:auto auto var(--gf-fig-trial,220px) auto minmax(0,1fr); }
 .gf-fig-focus,.gf-fig-trial { display:grid; grid-template-rows:minmax(0,1fr) auto; }
+/* a figure that draws no curve seats no chart: its track is its legend (ADR 463) */
+.gf-stage-focus:has(> .gf-fig:not([data-figure-state="paired"],[data-figure-state="before-only"])) { --gf-fig-focus:auto; }
+.gf-stage-trial:has(> .gf-fig:not([data-figure-state="paired"],[data-figure-state="before-only"])) { --gf-fig-trial:auto; }
 .gf-desk .instrument { min-width:0; }
 /* the source's internal numbers (priority, recurrence, effect, confidence) are
    one disclosure away from the action, never the reading */
@@ -400,6 +403,8 @@
   .gf-stage.gf-stage-table { grid-template-rows:auto auto minmax(0,1fr); }
   /* one seat: the progress figure or the windows table; the Trial hero or its table */
   .gf-stage.gf-stage-focus,.gf-stage.gf-stage-trial { grid-template-rows:auto auto minmax(0,1fr); }
+  .gf-stage.gf-stage-focus:has(> .gf-fig:not([data-figure-state="paired"],[data-figure-state="before-only"])) { grid-template-rows:auto auto auto minmax(0,1fr); }
+  .gf-stage.gf-stage-trial:has(> .gf-fig:not([data-figure-state="paired"],[data-figure-state="before-only"])) { grid-template-rows:auto auto auto auto minmax(0,1fr); }
   .gf .gf-roster-row .text small { white-space:normal; }
   .gf .gf-row { min-height:40px; }
   .gf-members { max-height:none; }

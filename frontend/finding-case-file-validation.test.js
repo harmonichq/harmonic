@@ -291,6 +291,66 @@ test('rejects a cohort with no served band state or an unknown one', () => {
   assert.equal(validFindingCaseFile(unknown), false);
 });
 
+/* #468 — every cohort serves the band states it holds (ADR 468 decision 4). */
+const BAND_ORDER = ['fired', 'near_miss', 'clean', 'outranked', 'no_data'];
+
+test('#468 · accepts the band states served on both comparison kinds', () => {
+  const same = eventCase();
+  const roster = new Map(same.occurrences.map((row) => [row.id, row.verdict]));
+  const [, , comparison] = same.projection.cohorts;
+  const held = new Set(comparison.occurrence_ids.map((id) => roster.get(id)));
+  assert.deepEqual(same.projection.cohorts.map((cohort) => cohort.band_states),
+    [['fired'], ['near_miss'], BAND_ORDER.filter((state) => held.has(state))]);
+  assert.ok(comparison.band_states.length > 1, 'premise: the comparison holds several states');
+  assert.equal(validFindingCaseFile(same), true);
+  const cross = missedMealCase();
+  assert.deepEqual(cross.projection.cohorts.map((cohort) => cohort.band_states),
+    [[], ['near_miss'], []]);
+  assert.equal(validFindingCaseFile(cross), true);
+});
+
+test('#468 · rejects a cohort that serves no band states', () => {
+  for (const index of [0, 1, 2]) {
+    const caseFile = eventCase();
+    delete caseFile.projection.cohorts[index].band_states;
+    assert.equal(validFindingCaseFile(caseFile), false, `cohort ${index}`);
+  }
+});
+
+test('#468 · rejects a cohort naming a band state that serves anything but it', () => {
+  const extra = eventCase();
+  extra.projection.cohorts[1].band_states = ['near_miss', 'clean'];
+  assert.equal(validFindingCaseFile(extra), false);
+  const empty = eventCase();
+  empty.projection.cohorts[0].band_states = [];
+  assert.equal(validFindingCaseFile(empty), false);
+  const other = eventCase();
+  other.projection.cohorts[0].band_states = ['near_miss'];
+  assert.equal(validFindingCaseFile(other), false);
+});
+
+test('#468 · rejects a same-population comparison whose states are not its members\' verdicts in band order', () => {
+  const omitted = eventCase();
+  omitted.projection.cohorts[2].band_states.pop();
+  assert.equal(validFindingCaseFile(omitted), false);
+  const invented = independent(capture.cases['finding:meal_bolus_short'].event);
+  assert.equal(invented.verdict_counts.clean, 0, 'premise: no member is clean');
+  invented.projection.cohorts[2].band_states = ['clean', ...invented.projection.cohorts[2].band_states];
+  assert.equal(validFindingCaseFile(invented), false);
+  const reordered = eventCase();
+  reordered.projection.cohorts[2].band_states.reverse();
+  assert.equal(validFindingCaseFile(reordered), false);
+});
+
+test('#468 · rejects a cross-population comparison that serves a band state', () => {
+  const caseFile = missedMealCase();
+  caseFile.projection.cohorts[2].band_states = ['clean'];
+  assert.equal(validFindingCaseFile(caseFile), false);
+  const matched = missedMealCase();
+  matched.projection.cohorts[0].band_states = ['fired'];
+  assert.equal(validFindingCaseFile(matched), false);
+});
+
 test('accepts the three-cohort fixed-axis missed-meal comparison', () => {
   const caseFile = missedMealCase();
   assert.deepEqual(caseFile.projection.cohorts.map((cohort) => cohort.key),

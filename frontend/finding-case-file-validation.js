@@ -16,6 +16,8 @@ export function inconsistentFindingProjection(message) {
 }
 
 const FINDING_VERDICTS = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
+// The verdict band's printed order: its three segments, then its residue.
+const BAND_ORDER = ['fired', 'near_miss', 'clean', 'outranked', 'no_data'];
 const OCCURRENCE_ID = /^o_[0-9a-f]{32}$/;
 const ANNOUNCED_MEAL_ID = /^m_[0-9a-f]{32}$/;
 const SUPPORT = new Set(['withheld', 'limited', 'supported']);
@@ -140,6 +142,19 @@ export function validFindingCaseFile(caseFile) {
       || (FINDING_VERDICTS.includes(cohort.band_verdict)
         && cohort.occurrence_ids.every((id) => roster.get(id)?.verdict === cohort.band_verdict)
         && cohort.routed_count === caseFile.verdict_counts[cohort.band_verdict]);
+    // ADR 468: each cohort serves the band states it holds, in the band's order:
+    // the one it names; a same-population comparison's members' distinct
+    // verdicts, whose band counts are its count; none elsewhere.
+    const statesHeld = (cohort) => {
+      if (!Array.isArray(cohort.band_states)) return false;
+      const expected = cohort.band_verdict ? [cohort.band_verdict]
+        : cohort === comparison && !crossPopulation
+          ? BAND_ORDER.filter((state) => cohort.occurrence_ids.some((id) => roster.get(id)?.verdict === state))
+          : [];
+      return JSON.stringify(cohort.band_states) === JSON.stringify(expected)
+        && (cohort !== comparison || crossPopulation || cohort.routed_count
+          === expected.reduce((sum, state) => sum + caseFile.verdict_counts[state], 0));
+    };
     // ADR 424: nothing is counted twice. A same-population comparison partitions
     // the roster (checked below), so this total leaves nothing outside it; a
     // cross-population one counts the roster Occurrences in no cohort beside
@@ -163,7 +178,7 @@ export function validFindingCaseFile(caseFile) {
       || counts.matched !== matched.routed_count || counts.nearly_matched !== near.routed_count
       || counts.comparison !== comparison.routed_count
       || reconciled !== caseFile.summary.denominator
-      || !cohorts.every(holdsItsBand)
+      || !cohorts.every(holdsItsBand) || !cohorts.every(statesHeld)
       || (projection.comparison.state === 'unavailable') !== (comparison.support === 'withheld')
       || !hasSharedAxis) return false;
     const memberIds = new Set([...matched.occurrence_ids, ...near.occurrence_ids]);

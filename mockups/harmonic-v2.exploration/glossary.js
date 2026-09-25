@@ -24,6 +24,15 @@ export const glossaryGroups = [
             { term: 'Finding', def: "One behavioral observation and the evidence behind it. On Day, the Findings band lists the anchors of each episode the engine attributed to a Lever: the anchor that drove the episode, marked finding, and any anchor it claimed. Each such episode is one occurrence of its Lever's Finding, so the caption counts distinct Findings, never rows or episodes: two episodes attributed to the same Lever count once. Claimed anchors are counted beside it, never added in." },
             { term: 'Claimed', def: "An anchor that belongs to an episode another Finding owns. That shared fact is the whole meaning of the word. On Day, the row separately names what the anchor matched on its own, then ends with the Finding that owns its episode. On Diagnose, a claimed occurrence is one whose own Finding's criterion was not met while another Lever drove the episode. The two views keep those meanings distinct." },
             { term: 'Also checked', def: 'Anchors the engine judged and stayed silent on for a reason worth reading, such as falling just under a Lever\'s bar. They are not Findings; they stay in view because a near-miss is where a mis-set threshold hides.' },
-            { term: 'Quiet', def: 'The rest of the day\'s anchors, folded into one stretch and counted rather than listed: clean (the behavior plainly did not happen), explained (a recent low or a defensive suspend already explains the move, or the rise is the rebound of an over-treated low) and no data (too little recorded to judge).' },
+            { term: 'Quiet', def: 'The rest of the day\'s anchors, counted together rather than listed: clean (the behavior plainly did not happen), explained (a recent low or a defensive suspend already explains the move, or the rise is the rebound of an over-treated low) and no data (too little recorded to judge).' },
+          ] },
+          // #469: the Diagnose findings queue is one ranking by urgency; these are
+          // the words it prints about that ranking.
+          { title: 'Findings queue', terms: [
+            { term: 'Next in line', def: 'The setting changes at the top of the findings queue, ranked before any cause or Pattern. The words print once, at the first of them.' },
+            { term: 'Worth a look', def: 'Everything else the queue ranks, from the first cause or Pattern down. The words print once, where the setting changes at the top end.' },
+            { term: 'Ranked with its setting', def: 'A Pattern that is in the queue because its setting is ready to change. It sits beneath that setting and shares its place, so it takes no number of its own.' },
+            { term: 'Ranked on all 30 days', def: 'In a time-of-day window, a ranked Pattern or cause prints the counts for that window, but its place in the queue comes from all 30 days.' },
+            { term: 'Not recurring often enough to rank yet', def: 'Findings seen too few times to rank. They are listed after the ranked ones, with no number.' },
           ] },
 ];

@@ -61,6 +61,7 @@ _CALM_REASONS = frozenset({
     SilenceReason.NO_TRIGGER,
     SilenceReason.INSUFFICIENT_DATA,
     SilenceReason.OWNED_BY_ANNOUNCED_MEAL,
+    SilenceReason.STAYED_IN_RANGE,
 })
 
 # Human labels per anchor kind (mirror the frontend KIND_LABEL).
@@ -104,10 +105,12 @@ def _anchor_state(is_driver: bool, verdicts: Sequence[AnchorVerdict]) -> str:
 
 
 def _anchor_facts(anchor: Anchor) -> Tuple[Optional[float], Optional[float], Optional[float]]:
-    """``(bg, insulin, carbs)`` display facts for an anchor."""
+    """``(bg, insulin, carbs)`` display facts for an anchor: a meal's summed dose and
+    carbs (ADR 470), a correction's own bolus, neither for a glucose anchor."""
+    dose = anchor.meal if anchor.meal is not None else anchor.bolus
     bg = anchor.bg
-    insulin = anchor.bolus.insulin if anchor.bolus is not None else None
-    carbs = anchor.bolus.carbs if anchor.bolus is not None else None
+    insulin = dose.insulin if dose is not None else None
+    carbs = dose.carbs if dose is not None else None
     return bg, insulin, carbs
 
 

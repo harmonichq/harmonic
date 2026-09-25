@@ -136,25 +136,39 @@ class ServerConfirmationTest(PlanCase):
         with Store.open_readonly(self.path) as store:
             self.assertEqual(store.follow_up_records("trial"), [])
 
-    def test_a_change_the_dose_stream_detects_still_confirms_from_the_read(self):
-        plan = self.record_plan()
+    def dose_stream(self, plan):
+        """Two days of the delivery feed from the day after the decision, each
+        slot's programmed rate read off the Plan's captured rows."""
         rows = plan["deliverable"]["rows"]
-
-        def rate_at(minute):
-            return [r for r in rows if r["start_min"] <= minute][-1]["basal_rate"]["value"]
         day0 = (at(plan) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        self.feed(day0, range(2), lambda minute: [r for r in rows if r["start_min"] <= minute][-1]["basal_rate"]["value"])
+        return day0
+
+    def feed(self, day0, days, rate_at):
+        """The delivery feed on each of ``days`` after ``day0``, every slot at
+        ``rate_at(its start minute)``."""
         with Store.open(self.path) as store:
             store.upsert_basal([{
-                "seq_num": 9_000_000 + day * 48 + slot,
+                "seq_num": 9_000_000 + (day + 1) * 48 + slot,
                 "time": stamp(day0 + timedelta(days=day, minutes=30 * slot + 2)),
                 "delivery_type": "algorithmDelivery", "duration_mins": 30,
                 "basal_rate": rate_at(30 * slot), "profile_basal_rate": rate_at(30 * slot)}
-                for day in range(2) for slot in range(48)])
+                for day in days for slot in range(48)])
+
+    def trials(self):
+        with Store.open_readonly(self.path) as store:
+            return store.follow_up_records("trial")
+
+    def test_a_change_the_dose_stream_detects_still_confirms_from_the_read(self):
+        plan = self.record_plan()
+        rows = plan["deliverable"]["rows"]
+        day0 = self.dose_stream(plan)
+        # About 46 hours after the Trial's change time: more than a day, so the
+        # Trial stays unlinked (ADR 463 decision 7).
         read_at = day0 + timedelta(days=2, hours=1)
         self.write_read(read_at, rows=rows)
         self.reconcile()
-        with Store.open_readonly(self.path) as store:
-            trials = store.follow_up_records("trial")
+        trials = self.trials()
         self.assertEqual([trial["parameter"] for trial in trials], ["basal_rate"])
         self.assertNotIn(trials[0]["changed_at"], {stamp(read_at)})
         self.assertNotEqual(trials[0]["reconciliation"]["state"], "available")
@@ -162,6 +176,60 @@ class ServerConfirmationTest(PlanCase):
         self.assertEqual(row["reconciliation"]["state"], "available")
         self.assertIsNone(row["reconciliation"]["trial_id"])
         self.assertEqual(row["verdict"], {"state": "confirmed", "confirmed_at": stamp(read_at), "on_pump": True})
+
+    def test_a_trial_detected_within_a_day_of_the_confirming_read_links_to_its_plan(self):
+        plan = self.record_plan()
+        rows = plan["deliverable"]["rows"]
+        day0 = self.dose_stream(plan)
+        read_at = day0 + timedelta(days=1, hours=1)
+        self.write_read(read_at, rows=rows)
+        self.reconcile()
+        (trial,) = self.trials()
+        self.assertEqual(trial["parameter"], "basal_rate")
+        receipt = trial["reconciliation"]
+        self.assertEqual((receipt["state"], receipt.get("applied_at"), receipt.get("trial_id")),
+                         ("available", plan["applied_at"], trial["id"]))
+        self.assertEqual(receipt["observed_snapshot"]["captured_at"], stamp(read_at))
+        row = self.row(plan)
+        self.assertIsNone(row["reconciliation"]["trial_id"], "the Plan's own receipt is never rewritten")
+        self.assertEqual(row["verdict"], {"state": "confirmed", "confirmed_at": stamp(read_at), "on_pump": True})
+        served = self.get(f"/api/verify/trials?selected={trial['id']}")["selected"]
+        self.assertEqual(served["original"]["context"], plan["decision_context"])
+        self.assertEqual(served["original"]["context"]["state"], "available")
+
+    def test_an_ambiguous_or_other_setting_trial_stays_unlinked(self):
+        source_rate = self.current_rate()
+        other = (SLOT + 240) % 1440
+        for label in ("two qualifying Trials", "a Trial of another setting"):
+            with self.subTest(label):
+                self.open_case()
+                if label == "two qualifying Trials":
+                    items = [{"type": "basal", "start_min": minute, "value": round(source_rate + 0.1, 2)}
+                             for minute in (SLOT, other)]
+                    segments = edited_in_place(edited_in_place(self.source, SLOT, items[0]["value"]),
+                                               other, items[1]["value"])
+                    held = segments
+                else:
+                    items = [{"type": "basal", "start_min": SLOT, "value": round(source_rate + 0.1, 2)}]
+                    held = edited_in_place(self.source, SLOT, items[0]["value"])
+                    segments = edited_in_place(self.source, other, round(source_rate + 0.1, 2))
+                with Store.open(self.path) as store:
+                    applied = max(event.t for event in store.basal_events()) + timedelta(days=1)
+                plan = self.record_older_plan(items, applied)
+                # A day at the source rates, then two at the edited ones, so each
+                # edited slot has a value to change from.
+                day0 = (applied + timedelta(days=1)).replace(hour=0, minute=0, second=0)
+                rate = lambda profile: lambda minute: [s for s in profile if s.start_min <= minute][-1].basal_rate
+                self.feed(day0, (-1,), rate(self.source))
+                self.feed(day0, range(2), rate(segments))
+                self.write_read(day0 + timedelta(days=1, hours=1), segments=held)
+                self.reconcile()
+                trials = self.trials()
+                self.assertEqual(sorted(t["slot"] for t in trials),
+                                 ["02:00", "06:00"] if label == "two qualifying Trials" else ["06:00"],
+                                 "premise: the feed detects the edited slots' Trials")
+                self.assertEqual(self.row(plan)["verdict"]["state"], "confirmed", "premise: the read confirms the Plan")
+                self.assertTrue(all(t["reconciliation"]["state"] != "available" for t in trials))
 
     def test_a_read_from_before_the_decision_never_confirms(self):
         plan = self.record_plan()

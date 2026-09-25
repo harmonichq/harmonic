@@ -41,6 +41,7 @@ from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import CgmSeries
+from ..meals import Meal, completed_carb_bolus, group_meals
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -57,7 +58,8 @@ class MealBolusShortVerdict(Verdict):
       when the window was too sparse to judge.
     * ``gate`` — the context-gate result (rebound check), or ``None`` when the
       classifier resolved before reaching the gate.
-    * ``meal_t`` — the counted meal bolus whose dose is judged, once one is found.
+    * ``meal_t`` — the first bolus of the counted meal whose dose is judged, once one
+      is found (ADR 470).
     * ``correction_t`` — the correction bolus that evidences the shortfall, when one
       landed inside the horizon.
     * ``digestion_window_start`` — the start of the ``[anchor − digestion_lookback,
@@ -77,16 +79,13 @@ def _most_recent_meal_in_window(
     window_start: datetime,
     anchor: datetime,
     scenario_config: ScenarioConfig,
-) -> Optional[BolusEvent]:
-    """Most recent carb-tagged bolus in ``[window_start, anchor)``, or ``None``.
+) -> Optional[Meal]:
+    """The meal holding the most recent completed carb bolus in ``[window_start,
+    anchor)``, or ``None`` (ADR 470).
 
     Excludes the anchor itself for the same reason missed-meal does: a bolus at the
     rise onset has not had time to be the dose that fell short.
     """
-    # Local import keeps classifiers dependency-low when their package is imported
-    # before scenario.__init__, which eagerly exposes the engine.
-    from ..scenario.evidence_population import completed_carb_bolus
-
     best: Optional[BolusEvent] = None
     for b in bolus_events:
         # The recurrence policy owns the eligible meal identity.  Keep the
@@ -96,7 +95,10 @@ def _most_recent_meal_in_window(
             continue
         if window_start <= b.t < anchor and (best is None or b.t > best.t):
             best = b
-    return best
+    if best is None:
+        return None
+    return next(meal for meal in group_meals(bolus_events, scenario_config=scenario_config)
+                if any(member is best for member in meal.members))
 
 
 def _first_correction_after(
@@ -112,11 +114,11 @@ def _first_correction_after(
     counted carbs is a new meal story and says nothing about the previous dose. The
     size floor keeps a rounding-scale dose from standing as evidence.
 
-    The window **opens at the meal bolus** (past its dose-split grace), not at the rise
-    onset. A person watching glucose climb corrects while it is still climbing, so the
-    correction routinely lands BEFORE the high run the anchor sits on begins — scanning
-    only forward from the onset would miss the ordinary case and keep the detector
-    silent on exactly the rises it was built for.
+    The window **opens at the meal's first bolus** (past its dose-split grace), not at
+    the rise onset. A person watching glucose climb corrects while it is still
+    climbing, so the correction routinely lands BEFORE the high run the anchor sits on
+    begins — scanning only forward from the onset would miss the ordinary case and
+    keep the detector silent on exactly the rises it was built for.
     """
     best: Optional[BolusEvent] = None
     for b in bolus_events:
@@ -152,9 +154,10 @@ def classify_meal_bolus_short(
        defensive-suspend rebound out (#63 D1).
     4. **No** counted meal bolus in the digestion window → there was no meal dose to
        fall short; that rise is missed-meal's to judge → **not matched** (``OBSERVED``
-       / ``NO_TRIGGER``).
-    5. No carb-free correction between the meal bolus (past its dose-split grace) and
-       ``correction_horizon_min`` past the anchor → the shortfall was never
+       / ``NO_TRIGGER``). Otherwise the meal holding the latest one is implicated, and
+       it is measured from its first bolus (ADR 470).
+    5. No carb-free correction between the meal's first bolus (past its dose-split
+       grace) and ``correction_horizon_min`` past the anchor → the shortfall was never
        corroborated, so it is not claimed → **not matched** (``OBSERVED`` /
        ``HORIZON_EXPIRED``).
     6. All four hold, but ``rebound_owner`` names the fired over-treated low whose

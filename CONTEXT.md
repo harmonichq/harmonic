@@ -151,6 +151,20 @@ bolus event; there is no standalone carb entry *in the pump feed* (the manual
 **Carb log**, #125, is a separate user-entered stream, not pump data).
 _Avoid_: dose (too generic), meal insulin.
 
+**Meal**:
+A first carb bolus of at least 10 g plus its same-meal **top-ups**: every later
+carb bolus of at least 10 g within 30 minutes of that first bolus, measured from
+the first bolus and never chained (ADR 470, promoting ADR 0030's grace). A meal is
+anchored and identified by its first bolus and judged on the carbs and dose summed
+over its members; a cancelled leg's carbs, which its re-issue carries again, count
+once. Carb-free boluses and carb boluses under 10 g are never members. Every
+meal count — Highs and Lows after meals, the meal causes and their recurrence, the
+**Post-meal arc**, Trial and follow-up meal counts, the time-of-day meal count —
+counts meals by this one rule. The eating window that High-carb sequence and Repeat
+eating read is a different grouping (chained, any carbs), and stays one.
+_Avoid_: second meal (for a top-up), split meal as two meals, meal bolus (when the
+meal is meant).
+
 **Carb log**:
 The manual, user-entered stream of *unbolused* carbs (#125) — kept entirely
 separate from pump bolus-carbs. In practice this is a **low-treatment log**: its
@@ -264,7 +278,9 @@ _Avoid_: baseline need, background requirement.
 **Harm signal**:
 A printed low, attributed to one estimator (basal / ISF / I:C) and applied as a
 **gate + capped downward nudge** — forbid a more-insulin move, and nudge toward less
-by at most one step cap — never a precision value that *sets* the number. The layer
+by at most one step cap — never a precision value that *sets* the number. The nudge
+holds, rather than stepping, when its step would be smaller than the noise floor or
+one full step, whichever is smaller (ADR 465). The layer
 that lets the model *act* on the lows the **Maintenance need** estimators are
 structurally blind to; sourced **print-first** (the CGM nadir), with **Rescue carb**
 grams only for the masked residual (ADR 0038, amending ADR 0012 §4). A
@@ -502,8 +518,22 @@ through one shared soft-saturation curve) — and **confidence-adjusted recurren
 it shows up, as a single Wilson lower bound that fuses "how often" and "how sure"
 (splitting them double-counts uncertainty). A Lever with Priority above the active
 threshold is *actionable now*; below it collapses into the "why so few?" tail.
+A Pattern admitted through its setting shares that setting's position: it sits
+beneath the setting's row, "Ranked with its setting", and takes no ranked position
+of its own, so one Priority fills one place in the queue (ADR 469). The
+overnight-lows Pattern shares only the position of a basal row that starts
+inside 00:00–06:00, the row that admits it.
 _Avoid_: score (overloaded — the behavioral `Confidence.score` is one input, not
 this), rank, weight, severity (that is one flavor's impact input, not the whole).
+
+**Ranking tier**:
+A band of the one ranking the findings queue serves, never a separate list.
+`next_in_line` is the leading run of priced setting changes at the top of the
+ranking; `worth_a_look` is every later priced row, from the first behavioral
+Lever or Pattern down; `noted` is every unpriced row. A Pattern ranked with its
+setting takes its setting's tier, and a claimed Lever row keeps its own. Because each band is one run,
+the rail prints each tier word at most once (ADR 469).
+_Avoid_: severity, section, heading (a tier is a band of one order, not a group).
 
 **Recurrence channel**:
 One of the several `k of n` evidence streams a Lever's confidence-adjusted recurrence is measured from, the different ways the same bad setting shows up (e.g. meal-caused low days, correction-rescue days, suggested-side nights or meals). One user's off ratio prints lows; another pre-empts them with rescue carbs so no low prints but the rescue log recurs; another only shows a measurement that disagrees. Recurrence is the **strongest channel** (highest Wilson lower bound) a Lever has, so a fingerprint present in one channel isn't missed for lack of another. A channel counts either days in the analysis window or the nights/meals that actually had clean data; the plain-count line under the Recurrence bar shows that *observed* count, never the window-padded denominator the Wilson bound uses to discount thin data.
@@ -533,14 +563,18 @@ you mean the cross-parameter unit).
 
 **Silence reason**:
 Why the engine withheld a Lever from an episode — the reason it stayed silent. A
-closed set of six: *insufficient-data* (too little CGM to judge), *no-trigger*
+closed set of nine: *insufficient-data* (too little CGM to judge), *no-trigger*
 (the behavior plainly didn't happen), *under-threshold* (it happened but fell
 short of the bar — the near-miss), *upstream-cause* (an observable recent low or
 defensive suspend already explains the move — the context gate — or the rise is
 the rebound of an over-treated low, which owns every High its rebound reaches,
 so that High is never also a missed meal or a meal bolus that fell short), *prior-high-
-baseline* (the rise was from an already-high start, not from-flat), and *horizon-
-expired* (the outcome never arrived inside the classifier's window). The negative
+baseline* (the rise was from an already-high start, not from-flat), *owned-by-prior-
+bolus* (a recent completed carb bolus already owns the rise), *owned-by-announced-
+meal* (a substantial announced meal at the low owns its rebound), *horizon-expired*
+(the outcome never arrived inside the classifier's window), and *stayed-in-range*
+(glucose rose before a meal bolus but the meal's **Arc peak** never went above the
+range line, so there was no spike to blunt; ADR 461). The negative
 complement of a **Lever**: every episode gets either one Lever or one Silence
 reason. Distinct from being **outranked** — an episode whose behavior *did* match
 but lost episode ownership to another Lever and remains retained evidence, decided at
@@ -553,11 +587,12 @@ set), non-finding, null lever, miss.
 **Post-meal arc**:
 The peak BG and subsequent nadir BG for a single meal, treated as one object.
 Peak = highest CGM in (bolus_time, bolus_time + 3 h], truncated at the next
-carb-tagged bolus. Nadir = lowest CGM in (peak_time, bolus_time + 6 h], same
+**Meal**'s first bolus, never at a top-up of its own (ADR 470); bolus_time is the
+meal's first bolus. Nadir = lowest CGM in (peak_time, bolus_time + 6 h], same
 truncation. Both are absolute mg/dL values — no baseline offset. The arc is the
 instrument for "flatten the curve": peaks coming down and nadirs staying up in
-the CLI's outcomes trend. The two halves have split denominators: all carb-tagged
-meals for the peak series; only meals with ≥ 3 h of nadir window remaining for
+the CLI's outcomes trend. The two halves have split denominators: all meals for
+the peak series; only meals with ≥ 3 h of nadir window remaining for
 the nadir series. When rescue carbs arrested a descent, the arc records the
 arrested nadir as-is per ADR 0012 and may carry display-only rescue context on
 the meal point/window. That context means "the user intervened here," not "the app
@@ -565,15 +600,15 @@ guessed the unassisted low" and not "X% of meals needed rescue." See ADR 0018.
 _Avoid_: glucose curve, meal curve, arc score (implies a single composite number).
 
 **Arc peak**:
-The highest CGM reading in a meal's peak window (bolus → bolus + 3 h, truncated
-at the next meal). An absolute mg/dL value. Contributes to the peak trend series
-for all carb-tagged meals. Distinct from the legacy `post_meal_spike` (net-new
+The highest CGM reading in a meal's peak window (first bolus → first bolus + 3 h,
+truncated at the next meal's first bolus, never at a top-up: ADR 470). An absolute
+mg/dL value. Contributes to the peak trend series for all meals. Distinct from the legacy `post_meal_spike` (net-new
 above start BG), which the arc supersedes.
 _Avoid_: post-meal spike (the old metric name), net-new peak.
 
 **Arc nadir**:
-The lowest CGM reading in a meal's nadir window (peak → bolus + 6 h, truncated
-at the next meal). An absolute mg/dL value. Contributes to the nadir trend series
+The lowest CGM reading in a meal's nadir window (peak → first bolus + 6 h,
+truncated at the next meal's first bolus, never at a top-up: ADR 470). An absolute mg/dL value. Contributes to the nadir trend series
 only for meals where ≥ 3 h of the nadir window remained before truncation.
 _Avoid_: post-meal crash (too narrow — a nadir can be 90 without a crash), floor.
 
@@ -674,7 +709,11 @@ pump-programmable value (basal / ISF / I:C / target) flipped at a known instant,
 which the app **auto-detects** from the settings-snapshot diff / setting epoch. An
 active-profile switch starts a trial on its own, at the switch instant — the diff of
 the outgoing vs incoming profile is authoritative, so the trial does not wait for the
-dose stream to re-observe the new value.
+dose stream to re-observe the new value. A change seen only in delivery history —
+the dose-stamped boluses or the basal feed — is dated at the first observation
+carrying its new value on the first day that value settled, not at that day's
+first observation; a record saved under the earlier day-level dating keeps its
+time.
 Because the setting is objectively in effect, *adherence is guaranteed*, so
 Changes shows a clean before-and-Trial comparison anchored to the change date and
 the trial resolves **keep-or-revert**. Each trial carries a **target metric** —
@@ -731,7 +770,10 @@ pending Plan the latest pump read after its decision does not hold — a Plan
 whose recorded items cannot be compared with a read stays pending; confirmed;
 withdrawn; superseded) with when it was confirmed and whether the latest read still holds
 it (on pump). A confirmed Plan stays confirmed when a later read stops holding
-it. Surfaces read the verdict; none decides it.
+it. Surfaces read the verdict; none decides it. A Trial detected within a day of
+the pump read that confirmed its Plan links to that Plan, one Trial to one Plan,
+and a Trial linked or matched to a Plan shows that Plan's recorded decision as
+its original decision; the Plan itself is not rewritten.
 _Avoid_: applied, entered or verified (for confirmed), canceled or deleted (for
 withdrawn), stale, expired or abandoned (for superseded).
 
@@ -807,9 +849,9 @@ drove it and any it **claimed**; its caption counts distinct **Findings**, one p
 served Lever, because each attributed episode is one **Occurrence** of its Lever's
 Finding — so two episodes of one Lever count once — and counts claimed anchors
 beside it, never adding them in. **Also checked** lists anchors the engine stayed
-silent on for a reason worth reading (the near-miss). **Quiet** folds the rest into
-one counted stretch: clean, explained and no data. Each band caption opens the
-Glossary at its Episode Log group. See ADR 423.
+silent on for a reason worth reading (the near-miss). **Quiet** counts the rest
+together rather than listing them: clean, explained and no data, with no time span
+(ADR 468). Each band caption opens the Glossary at its Episode Log group. See ADR 423.
 _Avoid_: episode cards (a row is an anchor, not an episode), rows as a count of
 Findings.
 
@@ -858,9 +900,11 @@ _Avoid_: trigger time, occurrence time, event time.
 A folded cause's served part of its Pattern's own count. Each Occurrence the
 Pattern claims is credited once, to the first of its rate levers that claims it,
 so the shares of a Pattern's causes add up to its count. The fold prints a cause's
-share first; the cause's counts on any other population are **outside the count**
-and sit apart behind those words. A cause that is not a rate lever (a Sequence
-habit), and every cause under a Pattern that serves no count, has no share. A
+share first; the cause's counts on any other population are outside the Pattern's
+count and sit apart behind the words "not in this Pattern's count". A cause that is
+not a rate lever (a Sequence habit), and every cause under a Pattern that serves no
+count, has no share; under a Pattern that serves no count its counts print with no
+such words, because there is no count to be outside of (ADR 468). A
 Pattern with no rate levers, counted from harm-band nights (overnight lows with no
 insulin on board), folds no cause (ADR 424).
 _Avoid_: contribution, portion, breakdown, subtotal.

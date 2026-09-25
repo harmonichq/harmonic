@@ -31,6 +31,8 @@ EXPECTED_ACTIVE_KINDS = {
     "basal-recurring-low-lower": None,
     "basal-recurring-low-no-clean-median": None,
     "basal-recurring-low-gate": None,
+    "basal-recurring-low-within-floor": None,
+    "basal-recurring-low-spread": None,
     "isf-strengthen": None,
     "isf-direction-only-weaken": None,
     "isf-held": None,
@@ -44,6 +46,7 @@ EXPECTED_ACTIVE_KINDS = {
     "ic-history-register": None,
     "behavioral-carb-undercount": None,
     "behavioral-late-bolus": None,
+    "behavioral-split-meal": None,
     "behavioral-uncaused-highs": None,
     "behavioral-false-low-suppressed": None,
     "behavioral-low-no-suppressed": None,
@@ -85,6 +88,8 @@ EXPECTED_ACTIVE_KINDS = {
     "c4-missing": "trial",
     "c4-history": "trial",
     "edit-chain": None,
+    "basal-and-carb-ratio-lower": None,
+    "c4-isf-late-read": None,
 }
 
 

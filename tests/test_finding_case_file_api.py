@@ -785,6 +785,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                 self.assertEqual(set(cohort), {
                     "key", "routed_count", "usable_count", "support",
                     "occurrence_ids", "points", "name", "anchor", "band_verdict",
+                    "band_states",
                 })
                 for point in cohort["points"]:
                     self.assertEqual(set(point), {

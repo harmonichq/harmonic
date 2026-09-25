@@ -37,13 +37,15 @@ EXPECTED_CASE_NAMES = (
     "basal-insufficient-unsupported-sign", "basal-verdict-gallery", "basal-blind",
     "basal-no-baseline", "basal-no-change",
     "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
-    "basal-recurring-low-gate",
+    "basal-recurring-low-gate", "basal-recurring-low-within-floor",
+    "basal-recurring-low-spread",
     "isf-strengthen", "isf-direction-only-weaken", "isf-held",
     "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
     "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
     "ic-history-register",
     "behavioral-carb-undercount",
     "behavioral-late-bolus",
+    "behavioral-split-meal",
     "behavioral-uncaused-highs",
     "behavioral-false-low-suppressed", "behavioral-low-no-suppressed",
     "behavioral-lone-correction-clean",
@@ -73,6 +75,8 @@ EXPECTED_CASE_NAMES = (
     "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
     "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
     "edit-chain",
+    "basal-and-carb-ratio-lower",
+    "c4-isf-late-read",
 )
 
 

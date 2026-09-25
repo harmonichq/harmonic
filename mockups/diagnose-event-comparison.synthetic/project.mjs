@@ -293,7 +293,8 @@ function patternState(occurrence, lever) {
   if (!fact) return occurrence.cause_lever ? 'outranked' : 'no_data';
   if (fact.matched) return 'fired';
   if (fact.silence_reason === 'insufficient_data') return 'no_data';
-  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal'].includes(fact.silence_reason)) {
+  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal', 'stayed_in_range']
+    .includes(fact.silence_reason)) {
     return 'near_miss';
   }
   return occurrence.cause_lever ? 'outranked' : 'clean';
@@ -344,11 +345,19 @@ function patternOccurrence(row, habits, attributedMember) {
   };
 }
 
+// The verdict band's printed order: its three segments, then its residue.
+const BAND_ORDER = ['fired', 'near_miss', 'clean', 'outranked', 'no_data'];
+
+// ADR 468, as the server serves it: a cohort naming a band state holds exactly
+// it; a Pattern's comparison, drawn from its own population, holds its members'
+// verdicts, in band order.
 function patternCohort(key, name, bandVerdict, rows, window) {
   const usable = rows.filter((row) => row.trace.cgm.some((point) => finiteNumber(point.bg)));
   const tier = support(usable.length, usable.length);
+  const held = new Set(rows.map((row) => row.verdict));
   const cohort = {
     key, name, band_verdict: bandVerdict,
+    band_states: bandVerdict ? [bandVerdict] : BAND_ORDER.filter((state) => held.has(state)),
     routed_count: rows.length, usable_count: usable.length, support: tier,
     occurrence_ids: rows.map((row) => row.id),
     points: pointRows(rows, window, usable.length),

@@ -102,6 +102,15 @@ const PATTERN_OUTCOME = {
   lows_after_correcting_highs: 'followed a correction',
   overnight_lows_no_iob: 'ran low overnight',
 };
+// harm.HarmConfig's overnight band: in a scoped window the harm-band Pattern keeps
+// its whole-band counts, so its outcome names the band (ADR 467 decision 3).
+const HARM_BAND = { start_min: 0, end_min: 6 * 60 };
+// outcome_patterns.starts_in_harm_band — the one rule that admits the overnight
+// Pattern through its basal setting and seats it beneath that setting's row.
+const startsInHarmBand = (span) => {
+  const start = span?.start_min ?? -1;
+  return HARM_BAND.start_min <= start && start < HARM_BAND.end_min;
+};
 // Closed over the code-derived cross product (coordinator decision, #413 review
 // round 2): every lever x every family a Cause appearance can be filed under,
 // narrowed off the full four-family set only where the lever's own policy or the
@@ -157,7 +166,10 @@ function patternCountSentences(r) {
   if (!Object.hasOwn(PATTERN_OUTCOME, key)) {
     throw new Error(`no outcome word for pattern ${key}`);
   }
-  return [countSentence(pattern.k, pattern.n, noun, PATTERN_OUTCOME[key])];
+  const outcome = pattern.rate_producer === 'harm_band_source_nights' && r.window_scope === 'window'
+    ? `ran low between ${hhmm(HARM_BAND.start_min)} and ${hhmm(HARM_BAND.end_min)}`
+    : PATTERN_OUTCOME[key];
+  return [countSentence(pattern.k, pattern.n, noun, outcome)];
 }
 
 function causeCountSentences(r) {
@@ -266,6 +278,7 @@ function row(fields) {
     chips: null, window_scope: null, count_sentences: null, fold_sentences: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
     event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
+    anchored_by: null, rank_note: null,
     ...fields,
   };
 }
@@ -309,7 +322,12 @@ function basalKey(slot) {
   if (slot.asserts_move) return ['assert', slot.direction ?? null];
   const status = slot.safety_status;
   if (status === BLIND_STATUS) return ['blind', null];
-  if (HELD_STATUSES.has(status)) return ['held', lean(slot.current, (slot.estimate || {}).value)];
+  if (HELD_STATUSES.has(status)) {
+    const held = lean(slot.current, (slot.estimate || {}).value);
+    // ADR 465: a nudged recurring-lows hold names no lower lean.
+    if (held === 'lower' && ((slot.evidence || {}).harm || {}).nudged) return ['held', null];
+    return ['held', held];
+  }
   return null;
 }
 
@@ -483,7 +501,9 @@ function outcomeMinute(occurrence, anchors) {
 
 // Silence reasons that keep an occurrence "calm" for a lever whose classifier
 // looked and had nothing to flag (mirrors `_CALM_SILENCE_REASONS`).
-const CALM_SILENCE_REASONS = new Set([null, undefined, 'no_trigger', 'owned_by_announced_meal']);
+const CALM_SILENCE_REASONS = new Set([
+  null, undefined, 'no_trigger', 'owned_by_announced_meal', 'stayed_in_range',
+]);
 const NO_DATA_SILENCE_REASON = 'insufficient_data';
 
 /** This finding's own, ROW-RELATIVE verdict on one occurrence (ADR 41, item 2).
@@ -907,25 +927,28 @@ function selection(analysis, query, selectedId) {
   return { id: selectedId, disposition, message };
 }
 
-/** The queue's one order: priced rows by priority desc, then unpriced rows by count
-    desc, then the demoted held and blind registers in clock order. */
-function sortKey(r, patterns = new Map()) {
+/** The queue's one urgency order (ADR 469): priced rows by priority desc, then
+    unpriced asserting rows, then unpriced findings by count desc, then the demoted
+    held and blind registers in clock order; an anchored or claimed row sorts
+    directly after its parent, recursively. */
+function sortKey(r, byId = new Map()) {
   const span = r.span || {};
   const key = [
     REGISTER_RANK[r.register],
-    r.priority != null ? 0 : 1,
+    r.priority != null ? 0 : r.register === 'assert' ? 1 : 2,
     -(r.priority || 0),
     -(r.episodes || 0),
     span.start_min ?? DAY_MINUTES,
     r.register === 'history' && r.regime_end ? -Date.parse(r.regime_end) : 0,
     r.title || '',
   ];
-  if (r.claimed_by && patterns.has(r.claimed_by)) return [...sortKey(patterns.get(r.claimed_by)), 1, ...key];
+  const parent = r.anchored_by || r.claimed_by;
+  if (parent && byId.has(parent)) return [...sortKey(byId.get(parent), byId), 1, ...key];
   return [...key, 0];
 }
-const compare = (a, b, patterns) => {
-  const left = sortKey(a, patterns);
-  const right = sortKey(b, patterns);
+const compare = (a, b, byId) => {
+  const left = sortKey(a, byId);
+  const right = sortKey(b, byId);
   for (let i = 0; i < left.length; i += 1) {
     if (left[i] < right[i]) return -1;
     if (left[i] > right[i]) return 1;
@@ -967,9 +990,6 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of (outcomePatterns || (query.scoped ? [] : inputs.outcome_patterns))) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      if (query.scoped && !patternChartable(pattern, {
-        exposures: { [patternRateFamily(pattern)]: { n: pattern.n } },
-      })) continue;
       const subjects = new Set([...(pattern.rate_levers || []),
         ...(pattern.members || []).filter((member) => member.kind === 'habit')
           .map((member) => member.subject)]);
@@ -983,17 +1003,50 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
         id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
         priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
         pattern: structuredClone(pattern), window_scope: query.scoped ? 'window' : 'whole_day',
-        pattern_chart: (!query.scoped ? patternChartable(pattern, exposures) : pattern.n > 0)
+        // The frozen scoped roster is already membership-filtered (ADR 467), and
+        // its `n` is the window's own family count, so chartability reads it.
+        pattern_chart: patternChartable(pattern, query.scoped
+          ? { exposures: { [patternRateFamily(pattern)]: { n: pattern.n } } } : exposures)
           ? { key: pattern.key, window: structuredClone(query.dict) } : null,
       });
       rows.push(projected); patterns.set(pattern.subject, projected);
     }
   }
-  rows.sort((a, b) => compare(a, b, patterns));
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  // findings_projection._stamp_anchors: a setting-admitted Pattern takes the first
+  // served, priced, asserting row of its setting's parameter as its anchor.
+  for (const projected of patterns.values()) {
+    if (projected.pattern.admission_route !== 'setting_staging') continue;
+    const member = projected.pattern.members.find((item) => item.kind === 'setting');
+    const parameter = member.subject.replace('setting:', '');
+    const inBand = projected.pattern.rate_producer === 'harm_band_source_nights';
+    const anchors = rows.filter((r) => r.register === 'assert' && r.parameter === parameter
+      && r.priority != null && (!inBand || startsInHarmBand(r.span)));
+    if (anchors.length) {
+      projected.anchored_by = anchors.reduce((first, r) => (
+        compare(r, first, byId) < 0 ? r : first)).id;
+    }
+  }
+  rows.sort((a, b) => compare(a, b, byId));
+  // findings_projection._assign_tiers: the tiers are bands of the one order.
+  let leading = true;
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
-    else if (row.register === 'assert') row.tier = 'next_in_line';
-    else row.tier = 'worth_a_look';
+    else if (row.claimed_by) row.tier = 'worth_a_look';
+    else if (row.anchored_by) continue;
+    else if (leading && row.register === 'assert') row.tier = 'next_in_line';
+    else { leading = false; row.tier = 'worth_a_look'; }
+  }
+  for (const row of rows) {
+    if (row.anchored_by) row.tier = byId.get(row.anchored_by).tier;
+  }
+  // findings_projection._stamp_rank_notes
+  for (const row of rows) {
+    if (row.anchored_by) row.rank_note = 'Ranked with its setting';
+    else if (query.scoped && row.priority != null && !row.claimed_by
+      && (row.kind === 'pattern' || row.kind === 'habit')) {
+      row.rank_note = `Ranked on all ${analysis.window_days} days`;
+    }
   }
   for (const row of rows) {
     row.headline = headlineFor(row);

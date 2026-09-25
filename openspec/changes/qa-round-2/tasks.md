@@ -607,14 +607,14 @@ roster or its lane. The reproduction is
   `tests/test_qa_e2e_cases.py` and `tests/test_pattern_replay.py`. Commit this
   task on its own: that commit is the base for tasks 49, 52 and 55's
   failing-first runs.
-- [ ] 49. Backend tests in `tests/test_harm_basal_arm.py`, through
+- [x] 49. Backend tests in `tests/test_harm_basal_arm.py`, through
   `analyze_basal`, failing-first on task 48's commit: with 03:00's setting
   epoch after two band-low nights and before a third, 03:00's
   `evidence["harm"]` serves `band_nights` 3, `recurrence_nights` 1 and
   `recurrence_bar` 2 and is not nudged; with a fourth band-low night after the
   epoch it serves `recurrence_nights` 2 and is nudged; the existing
   median-at-current test gains `recurrence_nights` 2 and `recurrence_bar` 2.
-- [ ] 50. Backend (ADR 466 decisions 1, 2 and 8): in `ciq_autotune/harm.py`,
+- [x] 50. Backend (ADR 466 decisions 1, 2 and 8): in `ciq_autotune/harm.py`,
   replace `_slot_recurs` with a count of the band nights on or after a slot's
   epoch, give `BasalHarm` the per-slot counts and the bar `basal_harm` used
   (defaults keep `BasalHarm() == basal_harm([], [], …)`), decide `nudged_slots`
@@ -625,7 +625,7 @@ roster or its lane. The reproduction is
   most)". Rewrite the headline literals of `basal-recurring-low-lower`,
   `basal-recurring-low-no-clean-median` and `basal-recurring-low-spread` from
   their dumps. In `ciq_autotune/result.py`, correct `asserts_move`'s docstring.
-- [ ] 51. In `scripts/gen_basal_night_evidence_fixtures.py`, add a
+- [x] 51. In `scripts/gen_basal_night_evidence_fixtures.py`, add a
   `recurring_lows` key to the fixture: its synthetic input rows and the served
   `/api/analyze` basal rows for 01:00 (the spread nights, no lows: held, its
   interval reaching the setting), 03:00 (the spread nights plus band lows at
@@ -635,7 +635,7 @@ roster or its lane. The reproduction is
   three served statuses before writing. Regenerate
   `frontend/__fixtures__/basal-night-evidence.json`; its `expected` key is
   unchanged and `--check` passes.
-- [ ] 52. Frontend Node tests in `frontend/diagnose-workstation.test.js`, each
+- [x] 52. Frontend Node tests in `frontend/diagnose-workstation.test.js`, each
   cell built by `buildSlotLane` from task 51's served rows, failing-first on
   task 48's commit with the fixture of task 51 laid over it:
   - `renderSlotLevel` on 03:00 prints ADR 466 decision 3's sentence and not
@@ -663,7 +663,7 @@ roster or its lane. The reproduction is
     values;
   - the recurring-lows lane test reads "suggests a lower because lows keep
     happening overnight" in the cell's title and name.
-- [ ] 53. Frontend (ADR 466 decisions 2–6): in
+- [x] 53. Frontend (ADR 466 decisions 2–6): in
   `frontend/diagnose-workstation.js`, give `renderParamLevel` a spec option for
   the interval sentence's second half and have `renderSlotLevel` set it from
   the served status "lower (recurring lows)" alone; render the lows block after
@@ -674,7 +674,7 @@ roster or its lane. The reproduction is
   the hedge and the roster. In `frontend/diagnose-workstation.css`, style the
   header row and the low rows from the roster's existing tokens. The carb-ratio
   and correction-factor panels do not change.
-- [ ] 54. In `DESIGN.md`, the recurring-lows worked example and the lane-key note
+- [x] 54. In `DESIGN.md`, the recurring-lows worked example and the lane-key note
   say "overnight" and name the cell "suggests a lower because lows keep
   happening overnight".
 - [ ] 55. Add one ledger story (the next unissued S id after task 44's) in a

@@ -2074,7 +2074,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_HARM_LOWER}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most). Delivered 0.54 U/h across 30 steady nights against 0.60 programmed.')},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Lows keep happening overnight, so the rate steps down toward the measured rate (20% at most). Delivered 0.54 U/h across 30 steady nights against 0.60 programmed.')},
             frozenset(), frozenset(), {}, frozenset({
                 ("lows", "2024-05-30 03:00:00", "clean"),
                 ("lows", "2024-05-31 03:00:00", "clean"),
@@ -2091,7 +2091,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "05:00"): _BASAL_HARM_LOWER}),
             _basal_support("05:00", 0),
-            {("whole_day", ("basal", "05:00")): ExpectedQueueRow("assert", "lower", None, 'Lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most). Delivered below the programmed rate across 0 steady nights.')},
+            {("whole_day", ("basal", "05:00")): ExpectedQueueRow("assert", "lower", None, 'Lows keep happening overnight, so the rate steps down toward the measured rate (20% at most). Delivered below the programmed rate across 0 steady nights.')},
             frozenset(), frozenset(), {}, frozenset({
                 ("lows", "2024-05-30 05:00:00", "clean"),
                 ("lows", "2024-05-31 05:00:00", "clean"),
@@ -2148,7 +2148,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_HARM_LOWER}),
             _basal_support("03:00", 30),
-            {('whole_day', ('basal', '03:00')): ExpectedQueueRow('assert', 'lower', None, 'Lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most). Delivered 0.54 U/h across 30 steady nights against 0.60 programmed.')},
+            {('whole_day', ('basal', '03:00')): ExpectedQueueRow('assert', 'lower', None, 'Lows keep happening overnight, so the rate steps down toward the measured rate (20% at most). Delivered 0.54 U/h across 30 steady nights against 0.60 programmed.')},
             frozenset(), frozenset(), {}, frozenset({
                 ("lows", "2024-05-30 03:00:00", "clean"),
                 ("lows", "2024-05-31 03:00:00", "clean"),

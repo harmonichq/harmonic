@@ -145,7 +145,7 @@ def _annotation_for(status: Status, *, recurring_hold: bool = False) -> str:
         Status.LOWER: "one cautious step down is supported at this time",
         Status.CAPPED_RAISE: "a step up, limited to 20% above the set rate",
         Status.CAPPED_LOWER: "a step down, limited to 20% below the set rate",
-        Status.HARM_LOWER: "lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most)",
+        Status.HARM_LOWER: "lows keep happening overnight, so the rate steps down toward the measured rate (20% at most)",
         Status.HARM_GATED: "a low printed at this hour, so a step up is withheld and the rate stays as it is",
     }[status]
 

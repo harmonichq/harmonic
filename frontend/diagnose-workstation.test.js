@@ -566,9 +566,9 @@ test('a recurring-lows lower cell says the lower comes from recurring lows', () 
     assert.equal(measured.getAttribute('aria-label'), '00:30 basal slot, suggests a lower');
     assert.equal(recurring.dataset.verdict, 'down');
     assert.equal(recurring.dataset.reason, 'recurring-lows');
-    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening at this hour');
+    assert.equal(recurring.title, '05:00 · suggests a lower because lows keep happening overnight');
     assert.equal(recurring.getAttribute('aria-label'),
-      '05:00 basal slot, suggests a lower because lows keep happening at this hour');
+      '05:00 basal slot, suggests a lower because lows keep happening overnight');
   } finally { globalThis.document = originalDocument; }
 });
 
@@ -805,8 +805,20 @@ test('each basal night row prints the served date, both rates and the in-slot me
       nightEvidence: nightPayload, shownCount: 5,
     });
     const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
-    const cells = (row) => [...row.innerHTML.matchAll(/<span class="(when|entry|arrow|worst|delta)">([^<]*)<\/span>/g)]
-      .map((match) => match[2].trim());
+    // ADR 466 decision 6: each value's visible text comes first, then its column
+    // and unit in visually hidden text.
+    const cellPattern = /<span class="(when|entry|arrow|worst|delta)">([^<]*)(?:<span class="gf-visually-hidden">([^<]*)<\/span>)?<\/span>/g;
+    const cells = (row) => [...row.innerHTML.matchAll(cellPattern)].map((match) => match[2].trim());
+    const hidden = (row) => [...row.innerHTML.matchAll(cellPattern)].map((match) => match[3]?.trim())
+      .filter(Boolean);
+
+    assert.match(host.html.join('\n'),
+      /<div class="ev-cols" aria-hidden="true">[^]*?Delivered U\/h[^]*?Programmed U\/h[^]*?Night mean mg\/dL[^]*?<\/div>/,
+      'one header row, hidden from assistive technology, names the three columns in order');
+    for (const row of rows) {
+      assert.deepEqual(hidden(row), ['U/h delivered', 'U/h programmed', 'mg/dL night mean'],
+        'each row\'s values carry their column and unit for a screen reader');
+    }
 
     assert.deepEqual(cells(rows[0]), ['Jan 1', '0.80', '·', '0.60', '116'],
       'the ran-above night compares its delivered rate against its programmed rate');
@@ -830,6 +842,118 @@ test('basal night roster preserves a null served roster mean as an em dash', () 
     const host = new RosterElement();
     renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
     assert.match(host.html.join('\n'), /— mg\/dL mean/);
+  } finally { globalThis.document = originalDocument; }
+});
+
+/* ADR 466: the recurring-lows panel reads task 51's served /api/analyze rows —
+   01:00 held on the spread nights, 03:00 a recurring-lows lower on the same
+   nights, 05:00 held within the threshold (ADR 465) — never a hand-set verdict. */
+const recurringLows = JSON.parse(readFileSync(new URL(
+  './__fixtures__/basal-night-evidence.json', import.meta.url), 'utf8')).recurring_lows;
+const recurringCell = (label) => buildSlotLane(recurringLows.analyze_basal).cells
+  .find((cell) => cell.label === label);
+const OWNER_SENTENCE = 'The steady nights alone do not establish this step down. '
+  + 'It comes from the overnight lows listed below.';
+const HEDGE = 'is consistent with this data, not established by it.';
+
+function recurringPanel(label, onDay = () => {}) {
+  const host = new RosterElement();
+  renderSlotLevel(host, recurringCell(label), new Set(), 30, 8, () => {}, {
+    nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 }, onDay,
+  });
+  return {
+    host,
+    panel: sentences({ children: [host.children[0]] }),
+    extra: host.html.join('\n').replace(/<[^>]*>/g, '').replace(/[ \t\n]+/g, ' '),
+    lows: host.children.filter((child) => child.tagName === 'BUTTON'),
+    stage: host.children[0].children.find((child) => child.className === 'slot-foot').children
+      .filter((child) => child.className === 'stagebtn').length,
+  };
+}
+
+const countLine = (harm) => `Overnight lows on ${harm.recurrence_nights} night`
+  + `${harm.recurrence_nights === 1 ? '' : 's'} counted since this rate was set, across the whole night, `
+  + `not this half hour alone. A step down needs lows on ${harm.recurrence_bar} night`
+  + `${harm.recurrence_bar === 1 ? '' : 's'}.`;
+
+test('ADR 466 · a recurring-lows lower says the overnight lows own its step down', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { panel } = recurringPanel('03:00');
+    assert.ok(panel.includes(OWNER_SENTENCE), `the interval sentence names the lows: ${panel}`);
+    assert.ok(!panel.includes(HEDGE), 'the hedge that the data does not establish a move is replaced');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a recurring-lows lower shows the served count and each low, each opening Day', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const opened = [];
+    const { extra, lows } = recurringPanel('03:00', (low) => opened.push(low.t));
+    const harm = recurringCell('03:00').slot.evidence.harm;
+    assert.ok(extra.includes(countLine(harm)), `the count line prints the served count and bar: ${extra}`);
+    assert.ok(extra.includes('Lows in this half hour'));
+    assert.equal(lows.length, harm.lows.length);
+    assert.equal(lows.length, 2, 'premise: the served row carries two lows');
+    lows.forEach((row, index) => {
+      const low = harm.lows[index];
+      const date = new Date(`${low.t.slice(0, 10)}T00:00:00`)
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      assert.equal(row.innerHTML.replace(/<[^>]*>/g, '').trim(),
+        `${date} · ${low.t.slice(11, 16)} · ${Math.round(low.bg)} mg/dL`);
+      assert.ok(!row.className.includes('case-occurrence'), 'a low row is not a roster occurrence');
+      row.click();
+    });
+    assert.deepEqual(opened, harm.lows.map((low) => low.t), 'each row hands its own served low to Day');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a slot held within the threshold lists its lows and stages nothing', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { extra, lows, stage } = recurringPanel('05:00');
+    const harm = recurringCell('05:00').slot.evidence.harm;
+    assert.ok(extra.includes(countLine(harm)), `the held slot prints the count line: ${extra}`);
+    assert.equal(lows.length, harm.lows.length);
+    assert.ok(lows.length > 0);
+    assert.equal(stage, 0, 'a held slot offers no Stage change');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 · a slot with no recurring lows keeps today\'s hedge and no lows list', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const { panel, extra, lows } = recurringPanel('01:00');
+    assert.ok(panel.includes(HEDGE), `the held spread slot keeps the hedge: ${panel}`);
+    assert.ok(!extra.includes('Overnight lows on'));
+    assert.equal(lows.length, 0);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('ADR 466 guard · a plain lower whose interval reaches the setting keeps the hedge', () => {
+  // Hand-built on purpose: this pins the frontend's status-string branch, not a
+  // backend verdict.
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderSlotLevel(host, {
+      i: 6, startMin: 180, endMin: 210, asserts: true, verdict: 'down',
+      slot: {
+        current: 0.6, recommended: 0.54, safety_status: 'lower',
+        annotation: 'one cautious step down is supported at this time',
+        estimate: { value: 0.54, lo: 0.45, hi: 0.66, n: 30, wide: false },
+      },
+    }, new Set(), 30, 8, () => {}, {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
+    const panel = sentences({ children: [host.children[0]] });
+    assert.ok(panel.includes(HEDGE), panel);
+    assert.ok(!panel.includes(OWNER_SENTENCE));
   } finally { globalThis.document = originalDocument; }
 });
 

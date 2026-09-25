@@ -93,6 +93,9 @@ class BasalArmIntegrationTest(unittest.TestCase):
         self.assertEqual(s.evidence["harm"]["band_nights"], 2)
         self.assertEqual(s.evidence["harm"]["slot_nights"], 2)
         self.assertEqual(s.evidence["harm"]["harm_band_source_nights"], 14)
+        # ADR 466: the count the nudge used and the bar it met.
+        self.assertEqual(s.evidence["harm"].get("recurrence_nights"), 2)
+        self.assertEqual(s.evidence["harm"].get("recurrence_bar"), 2)
         analysis = {
             "basal": [s.to_dict()],
             "tuning_levers": [{
@@ -179,6 +182,27 @@ class BasalArmIntegrationTest(unittest.TestCase):
         self.assertNotEqual(s.status, Status.HARM_LOWER)  # no second cut
         self.assertFalse(s.asserts_move)
         self.assertTrue(s.evidence["harm"]["gated"])       # still gated evidence
+
+    def test_the_served_count_is_the_band_nights_since_the_setting_epoch(self):
+        # ADR 466 decision 1: 03:00's rate was set on day 22, after band lows on
+        # days 20 and 21 and before one on day 23. The band counts three nights,
+        # but the nudge counts only the one since the edit, so the slot is not
+        # nudged, and the served count says which it used.
+        epoch = {6: datetime(2022, 6, 22, 3, 0, 0)}
+        basal, cgm = _build(rate=0.72, programmed=0.72, low_nights=(20, 21, 23))
+        s = _slot(analyze_basal(basal, cgm, [], [], harm_config=HarmConfig(),
+                                slot_starts=epoch), "03:00")
+        harm = s.evidence["harm"]
+        self.assertEqual(harm["band_nights"], 3)
+        self.assertEqual(harm.get("recurrence_nights"), 1)
+        self.assertEqual(harm.get("recurrence_bar"), 2)
+        self.assertFalse(harm["nudged"])
+
+        basal, cgm = _build(rate=0.72, programmed=0.72, low_nights=(20, 21, 23, 24))
+        s = _slot(analyze_basal(basal, cgm, [], [], harm_config=HarmConfig(),
+                                slot_starts=epoch), "03:00")
+        self.assertEqual(s.evidence["harm"].get("recurrence_nights"), 2)
+        self.assertTrue(s.evidence["harm"]["nudged"])
 
     def test_disabled_by_default_leaves_slot_no_change(self):
         # harm_config=None (analyze_basal's default) → the clean verdict stands.

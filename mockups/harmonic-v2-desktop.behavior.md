@@ -5767,3 +5767,95 @@ Additional handler inventory for this amendment:
 | Recurring-lows threshold hold | ciq_autotune/safety.py apply_harm | S190 |
 | Recurring-lows hold sentence | ciq_autotune/analyzers/basal.py _annotation_for, analyze_basal | S190 |
 | Held row with no lower lean | ciq_autotune/findings_projection.py _basal_key | backend tests |
+
+## #466 amendment — 2026-09-24, issue #466
+
+S191 is the fail-first obligation of ADR 466 (`openspec/changes/qa-round-2/design.md`):
+a basal slot the recurring lows moved or held says the overnight lows own its
+step, prints the count the nudge used against its bar, and lists each of this
+half hour's lows, each opening its day in Day. It is app-opener-only, runs leg
+1 on the manufactured `basal-recurring-low-spread` case store and leg 2 on
+`basal-recurring-low-within-floor` through `ctx.withCase` (`CASE_STORE_DIR`),
+and fails once, naming each failed leg. As the only story on the spread store
+it joins the fixed PR smoke slice (29 stories). S113 is amended below. No story
+is retired. Browser execution belongs to the coordinator at 1280x720 and
+1440x900. No `★ FROZEN` block and no header inventory line is edited here; the
+release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: when recurrence is counted across the
+overnight band, say so, and show the count the nudge actually used; the copy
+says "overnight". The interval sentence, the count line's words, the held
+slot's list, the roster header's accessibility shape and the lane name are ADR
+466's autonomous decisions. It covers S191, S113's amendment and the behavior
+below, and nothing outside #466.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 199 issued · 180
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+stores `scripts/gen_qa_e2e_db.py --case basal-recurring-low-spread` and
+`--case basal-recurring-low-within-floor` emit.
+
+Changed shipped behavior:
+
+- **The interval sentence names the lows.** On a slot served "lower (recurring
+  lows)" whose interval reaches the setting, the panel keeps the interval fact
+  and reads "The steady nights alone do not establish this step down. It comes
+  from the overnight lows listed below." instead of "A move is consistent with
+  this data, not established by it." Every other slot, and the carb-ratio and
+  correction-factor panels, keep today's words.
+- **The count the nudge used, and each low.** Under the numbers block, a slot
+  that serves harm evidence prints "Overnight lows on N nights counted since
+  this rate was set, across the whole night, not this half hour alone. A step
+  down needs lows on B nights.", then "Lows in this half hour" and one row per
+  served low (date · time · glucose). Pressing a row opens Day on that low's
+  date. A recurring-lows lower, a hold within the threshold and a withheld
+  raise show the same list. The rows are not roster occurrences.
+- **The roster names its columns.** One header row reads "Delivered U/h",
+  "Programmed U/h" and "Night mean mg/dL" in the rows' order, for the eye
+  alone; each row's values carry their column and unit in visually hidden text.
+- **"Overnight", not "at this hour".** The recurring-lows lower's served
+  sentence reads "lows keep happening overnight, so the rate steps down toward
+  the measured rate (20% at most)", and its lane cell is named "suggests a lower
+  because lows keep happening overnight".
+
+```
+S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
+       1: on basal-recurring-low-spread, the 03:00 panel reads "The steady
+       nights alone do not establish this step down. It comes from the
+       overnight lows listed below." and not "not established by it", the
+       count line prints the served count and bar, two low rows print their
+       served dates, times and glucose, pressing the first opens Day on that
+       low's date, and the roster shows its header row. Leg 2: on
+       basal-recurring-low-within-floor, the held 03:00 panel lists its lows
+       under the count line and offers no Stage change.
+  element:  #lane > .lane-cell[data-cell="6"], #level .slot-head,
+            #level .low-count, #level .low-row, #level .ev-cols,
+            #level .stagebtn, .gf-stage-day .gf-nav-col[data-pick]
+  source:   frontend/diagnose-workstation.js renderSlotLevel, renderSlotLows,
+            renderParamLevel; ciq_autotune/harm.py basal_harm,
+            basal_harm_evidence
+  lock:     HV2-17; ADR 466 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-spread: fourteen steady nights at 0.45, two at
+            0.54 and fourteen at 0.66 against a programmed 0.60, lows at 03:00
+            on two nights; basal-recurring-low-within-floor (S190's store)
+  evidence: C4_STORIES.S191; each leg opens the 24 h rail, reads the served
+            03:00 harm evidence from /api/analyze, opens the 03:00 slot and
+            reads the panel, the count line and the low rows against it; leg 1
+            presses the first low and reads Day's held date. Each leg runs;
+            the story fails once, naming each failed leg
+  status:   pending the coordinator's base run on 5377e044 with this harness
+            laid over it (expected to fail both legs) and the branch run at
+            1280x720 and 1440x900
+```
+
+Amended S113 · 2026-09-24 · #466 sanction (Connor Griffin · 2026-09-24 · the copy says "overnight"): the recurring-lows lower cell's accessible name reads "05:00 basal slot, suggests a lower because lows keep happening overnight". Everything else S113 asserts is unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `#level .low-row` click, opening Day on the low's date | diagnose-workstation.js renderSlotLows | S191 |
+| Recurring-lows interval sentence | diagnose-workstation.js renderSlotLevel, renderParamLevel | S191 |
+| Roster header row and hidden value labels | diagnose-workstation.js renderSlotLevel | S191 |
+| Served recurrence count and bar | ciq_autotune/harm.py basal_harm, basal_harm_evidence | S191 |

@@ -177,7 +177,7 @@ and technical documentation keep their established domain terms.
   After: "Recent lows outweigh the trend, so no new number is suggested."
 - Before: "Hold without a replacement. Recurring lows outrank the measured rate in
   this slot."
-  After: "Lows keep happening at this hour, so this rate stays as it is."
+  After: "Lows keep happening overnight, so this rate stays as it is."
 - Before: "One cautious basal step is available. The measured rate supports 1.23 U/h
   for this slot."
   After: "20 nights of steady data support a step from 1.10 to 1.23 U/h."
@@ -391,10 +391,11 @@ lock, 2026-09-14). Every value painted below is served. No token in
     stage keeps a 2 px accent underline.
   - Cells release the shell's button height floor, so every cell sits inside
     the 11 px track.
-  - A lower the backend serves because lows keep recurring at that hour has
-    its own key word, "lower · recurring lows", on the lower paint and glyph.
-    Its cells are named "suggests a lower because lows keep happening at this
-    hour". The word is read from the served status alone (#433).
+  - A lower the backend serves because lows keep recurring overnight has its
+    own key word, "lower · recurring lows", on the lower paint and glyph. Its
+    cells are named "suggests a lower because lows keep happening overnight":
+    the lows are counted across the whole overnight band, not the one half
+    hour (ADR 466). The word is read from the served status alone (#433).
   - The key stands on one line at 1280×720 and 1440×900. Near the narrowest
     split it wraps between whole entries, taking the extra line from the chart
     inside the fixed body, so no entry, cell or chart edge runs past the pane.

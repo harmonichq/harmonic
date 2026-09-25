@@ -252,7 +252,7 @@ const FAMILY_SHORT = {
    the served reason behind it (#433, D6). */
 const VERDICT_KEY = {
   up: 'suggests a raise', down: 'suggests a lower',
-  'down:recurring-lows': 'suggests a lower because lows keep happening at this hour',
+  'down:recurring-lows': 'suggests a lower because lows keep happening overnight',
   hold: 'holds at current', insufficient: 'insufficient evidence', nodata: 'no nights of steady data',
 };
 // short forms for the lane key
@@ -857,13 +857,15 @@ function renderHighCarbStage(host, caseFile, range) {
  * in the same place on a block.
  *
  * spec: { head, headQual, verdict, unit, value, current, estimate, recommended,
- *         recommendedQual, scopeSay, currentNoun, moveWord, support, sentence,
- *         canStage, isStaged, replaces, footNote, onStage }
+ *         recommendedQual, scopeSay, currentNoun, moveWord, intervalSay, support,
+ *         sentence, canStage, isStaged, replaces, footNote, onStage }
  *
  * `value` spells one number; it defaults to the panel's own rounding. A setting
  * whose value carries its unit (the correction factor, ADR 451) passes its own
  * and no `unit`, so no qualifier repeats a unit. `replaces` names the change
  * staged for another setting that a press would replace, or is null (ADR 459).
+ * `intervalSay` replaces the interval sentence's second half when something
+ * other than the steady nights owns the move (ADR 466).
  */
 function renderParamLevel(host, spec) {
   const e = spec.estimate;
@@ -871,7 +873,9 @@ function renderParamLevel(host, spec) {
   const unitThen = (sep) => (spec.unit ? `${spec.unit}${sep}` : '');
   /* Does the interval reach the figure already in the pump? Then the data is
      compatible with changing nothing, and that has to be said in words — two
-     numbers side by side leave the reader to notice it. */
+     numbers side by side leave the reader to notice it. The second half says
+     what that means for the move; a caller whose move the interval does not own
+     names its owner instead (ADR 466). */
   const spansCurrent = e.lo != null && e.hi != null
     && e.lo <= spec.current && spec.current <= e.hi;
   /* A recommendation normally sits between the figure you run and the figure the
@@ -903,8 +907,8 @@ function renderParamLevel(host, spec) {
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
       already run (${value(e.lo)}–${value(e.hi)} includes ${value(spec.current)}), so <b>it includes no
-      change at all</b>. A ${spec.moveWord} is consistent with this data, not established
-      by it.</div>` : ''}
+      change at all</b>. ${spec.intervalSay
+        || `A ${spec.moveWord} is consistent with this data, not established by it.`}</div>` : ''}
     ${between ? '' : `<div class="hedge">The recommended ${value(spec.recommended)} does not sit
       between the ${value(spec.current)} you run now and the ${value(e.value)} the data estimates, so
       <b>something outside the estimate set it</b>: ${spec.sentence}</div>`}
@@ -978,6 +982,30 @@ function renderSlotNightSelection(host, night, span, groupRows, rosterGlucoseMea
   renderOccurrenceFoot(host, night.date, onClear, () => onDay(night));
 }
 
+const hiddenLabel = (words) => `<span class="gf-visually-hidden">${words}</span>`;
+
+/* ADR 466: a slot the harm layer read shows the count its nudge used, and each
+   of this half hour's lows, from the served `evidence.harm` alone — a lower, a
+   hold within the threshold and a withheld raise alike. The count covers the
+   whole overnight band, so it says so. Each row hands its low to Day. */
+function renderSlotLows(host, harm, onDay) {
+  if (!harm) return;
+  const nights = (n) => `${n} night${n === 1 ? '' : 's'}`;
+  host.insertAdjacentHTML('beforeend', `<div class="low-count">Overnight lows on
+    ${nights(harm.recurrence_nights)} counted since this rate was set, across the whole night, not this
+    half hour alone. A step down needs lows on ${nights(harm.recurrence_bar)}.</div>
+    <div class="lvl-cap">Lows in this half hour</div>`);
+  for (const low of harm.lows) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ev-row low-row';
+    button.innerHTML = `<span class="low">${fmtDate(low.t.slice(0, 10))} · ${low.t.slice(11, 16)} · `
+      + `${Math.round(low.bg)} mg/dL</span>`;
+    button.addEventListener('click', () => onDay(low));
+    host.append(button);
+  }
+}
+
 export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage, options = {}) {
   const s = cell.slot;
   const e = s.estimate;
@@ -1007,6 +1035,13 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       : 'no direction asserted, so nothing is recommended',
     currentNoun: 'rate',
     moveWord: /raise/i.test(s.safety_status || '') ? 'raise' : 'move',
+    /* ADR 466: a recurring-lows lower moves whatever its interval, so the
+       interval sentence names the lows as the step's owner. Read from the served
+       status string alone, as the lane key is (#433). */
+    intervalSay: s.safety_status === 'lower (recurring lows)'
+      ? 'The steady nights alone do not establish this step down. It comes from the '
+        + 'overnight lows listed below.'
+      : null,
     support: `${e.n} night${e.n === 1 ? '' : 's'} of steady data <span>·</span> ${windowDays} d basal run`,
     sentence: canStage
       ? (s.annotation || '').replace(/,?\s*capped to one ≤?20% step from current/i, '')
@@ -1023,6 +1058,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
         + 'are shown as measured.',
     onStage: () => onStage(cell),
   });
+  renderSlotLows(host, s.evidence?.harm, options.onDay || (() => {}));
   const evidence = options.nightEvidence;
   if (evidence?.pending) {
     // The pending line says so to assistive tech as well as to the eye; it is
@@ -1049,14 +1085,19 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
       rows: rows.map((night) => ({
         id: night.date,
         html: `<span class="when">${fmtDate(night.date)}</span>
-          <span class="entry">${nightRate(night.delivered_rate)}</span>
-          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}</span>
-          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}</span>`,
+          <span class="entry">${nightRate(night.delivered_rate)}${hiddenLabel('U/h delivered')}</span>
+          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}${hiddenLabel('U/h programmed')}</span>
+          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}${hiddenLabel('mg/dL night mean')}</span>`,
       })),
     };
   }).filter((group) => group.servedCount > 0);
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Nights of steady data
     <span class="meta">${evidence.roster_glucose_mean == null ? '—' : Math.round(evidence.roster_glucose_mean)} mg/dL mean</span></div>`);
+  /* ADR 466: the rows are buttons in a flat list, which cannot own column
+     headers, so this header row is for the eye alone and each value below
+     carries its own column and unit for a screen reader. */
+  host.insertAdjacentHTML('beforeend', `<div class="ev-cols" aria-hidden="true"><span>Delivered U/h</span>
+    <span>Programmed U/h</span><span>Night mean mg/dL</span></div>`);
   renderOccurrenceRoster(host, groups, {
     selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
     onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),

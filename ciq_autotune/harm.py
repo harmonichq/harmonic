@@ -246,6 +246,10 @@ class BasalHarm:
       action targets the slots that actually saw a low).
     * ``nights`` — distinct nights with a basal low anywhere in the band.
     * ``slot_nights`` — per-slot distinct-night counts (evidence for the explainer).
+    * ``recurrence_nights`` — per gated slot, the band nights on or after that
+      slot's setting epoch: the count the nudge reads (ADR 466).
+    * ``recurrence_bar`` — the ``min_recurrence_nights`` that count was held to, so
+      a slot is nudged exactly when its count reaches the bar.
     * ``lows`` — the basal-attributed band lows themselves (print-first evidence).
     """
 
@@ -253,6 +257,8 @@ class BasalHarm:
     nudged_slots: frozenset = field(default_factory=frozenset)
     nights: int = 0
     slot_nights: Dict[int, int] = field(default_factory=dict)
+    recurrence_nights: Dict[int, int] = field(default_factory=dict)
+    recurrence_bar: int = HarmConfig.min_recurrence_nights
     # Nights with an observed CGM point in the harm band whose *minimum* bolus
     # IOB in that band cleared the fasting floor.  This is the overnight outcome
     # pattern's source population, not a count inferred from printed lows.
@@ -423,6 +429,8 @@ def basal_harm_evidence(harm: BasalHarm, slot: int, slot_minutes: int) -> dict:
 
     ``arm_days`` / ``row_days`` are the canonical ADR 0043 row-level keys. The
     older basal names stay as compatibility aliases for existing explainers.
+    ``recurrence_nights`` / ``recurrence_bar`` are the count the nudge read for
+    this slot and the bar it was held to (ADR 466).
     """
     slot_lows = [
         low for low in harm.lows
@@ -439,6 +447,8 @@ def basal_harm_evidence(harm: BasalHarm, slot: int, slot_minutes: int) -> dict:
             "band_nights": harm.nights,
             "slot_nights": harm.slot_nights.get(slot, 0),
             "harm_band_source_nights": harm.harm_band_source_nights,
+            "recurrence_nights": harm.recurrence_nights.get(slot, 0),
+            "recurrence_bar": harm.recurrence_bar,
         },
     )
 
@@ -455,17 +465,13 @@ def _night_key(t: datetime, start_min: int, end_min: int) -> Optional[date]:
     return None
 
 
-def _slot_recurs(
-    band_nights: set, epoch: Optional[datetime], min_recurrence_nights: int
-) -> bool:
-    """Whether a slot cleared the band-level recurrence bar, counting only nights
-    on/after its basal setting epoch (ADR 412). ``epoch`` ``None`` counts every
-    band night (no edit on file), matching the pre-#412 band-pooled behavior."""
+def _recurrence_nights(band_nights: set, epoch: Optional[datetime]) -> int:
+    """The band nights a slot's nudge counts: those on/after its basal setting
+    epoch (ADR 412). ``epoch`` ``None`` counts every band night (no edit on file),
+    matching the pre-#412 band-pooled behavior."""
     if epoch is None:
-        eligible = band_nights
-    else:
-        eligible = {n for n in band_nights if n >= epoch.date()}
-    return len(eligible) >= min_recurrence_nights
+        return len(band_nights)
+    return sum(1 for n in band_nights if n >= epoch.date())
 
 
 def basal_harm(
@@ -532,17 +538,22 @@ def basal_harm(
     # Nudge recurrence is pooled across the band (criterion 5) but reset per slot at
     # that slot's basal setting epoch: a slot recurs only if enough band nights fall
     # on/after its epoch. With no epochs supplied every slot sees the whole band, so
-    # this reduces to the original "band recurred → nudge every gated slot".
+    # this reduces to the original "band recurred → nudge every gated slot". The
+    # count itself is served (ADR 466), so the nudge and its evidence read one number.
+    recurrence = {
+        slot: _recurrence_nights(band_nights, slot_epochs.get(slot)) for slot in gated
+    }
     nudged = frozenset(
-        slot for slot in gated
-        if _slot_recurs(band_nights, slot_epochs.get(slot),
-                        config.min_recurrence_nights)
+        slot for slot, count in recurrence.items()
+        if count >= config.min_recurrence_nights
     )
     return BasalHarm(
         gated_slots=gated,
         nudged_slots=nudged,
         nights=len(band_nights),
         slot_nights={s: len(ns) for s, ns in slot_night_set.items()},
+        recurrence_nights=recurrence,
+        recurrence_bar=config.min_recurrence_nights,
         harm_band_source_nights=len(source_nights),
         lows=tuple(sorted(band_lows, key=lambda l: l.t)),
     )

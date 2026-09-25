@@ -140,6 +140,13 @@ test('S190 is a unique app-only #465 story on the basal-recurring-low-within-flo
   assert.equal(storyCase('S190'), 'basal-recurring-low-within-floor');
 });
 
+test('S191 is a unique app-only #466 story on the basal-recurring-low-spread store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S191');
+  assert.equal(entries.length, 1, 'S191 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 466');
+  assert.equal(storyCase('S191'), 'basal-recurring-low-spread');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;
@@ -1922,7 +1929,7 @@ function qa433RecurringLowsPage({
       count: async () => (selector === '#lane > button.lane-cell' ? 48
         : recurring(selector) ? counts['down:recurring-lows'] || 0 : 0),
       getAttribute: async name => (name === 'aria-label' && recurring(selector)
-        ? '05:00 basal slot, suggests a lower because lows keep happening at this hour' : null),
+        ? '05:00 basal slot, suggests a lower because lows keep happening overnight' : null),
       evaluateAll: async () => [...keyEntries],
       innerText: async () => String(counts[entryOf(selector)]),
       evaluate: async fn => {

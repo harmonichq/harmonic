@@ -3696,6 +3696,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -4295,6 +4298,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -4894,6 +4900,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -5925,6 +5934,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -6236,6 +6248,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -6547,6 +6562,10 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -7086,6 +7105,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -7685,6 +7707,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -8284,6 +8309,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -9222,6 +9250,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -9533,6 +9564,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -9844,6 +9878,10 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -10562,6 +10600,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -11163,6 +11204,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -11762,6 +11806,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -12737,6 +12784,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -13050,6 +13100,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -13361,6 +13414,10 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",

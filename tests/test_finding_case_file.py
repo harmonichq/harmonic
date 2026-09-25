@@ -299,6 +299,17 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert [cohort["band_verdict"] for cohort in case["projection"]["cohorts"]] == [
         None if policy.cross_population else "fired", "near_miss", None,
     ]
+    # ADR 468: a cohort naming a band state serves exactly it; a same-population
+    # comparison serves its members' distinct verdicts in band order; every other
+    # cohort serves none.
+    matched, near, comparison = case["projection"]["cohorts"]
+    verdict_of = {row["id"]: row["verdict"] for row in case["occurrences"]}
+    held = {verdict_of[occurrence_id] for occurrence_id in comparison["occurrence_ids"]}
+    assert matched["band_states"] == ([] if policy.cross_population else ["fired"])
+    assert near["band_states"] == ["near_miss"]
+    assert comparison["band_states"] == ([] if policy.cross_population else [
+        state for state in ("fired", "near_miss", "clean", "outranked", "no_data")
+        if state in held])
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
@@ -786,6 +797,11 @@ def test_pattern_comparison_leaves_nothing_outside_its_own_population():
     assert "not_comparable" not in counts
     no_data = next(row["id"] for row in case["occurrences"] if row["verdict"] == "no_data")
     assert no_data in case["projection"]["cohorts"][2]["occurrence_ids"]
+    # ADR 468: the comparison group serves the band states it holds, so its 2
+    # reconciles with the band's Does not meet and not comparable.
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        ["fired"], ["near_miss"], ["clean", "no_data"],
+    ]
 
 
 def test_same_population_cohorts_name_the_band_state_they_hold():
@@ -799,6 +815,9 @@ def test_same_population_cohorts_name_the_band_state_they_hold():
         ("comparison", "Other meal opportunities", None, 2),
     ]
     assert (case["verdict_counts"]["fired"], case["verdict_counts"]["near_miss"]) == (3, 1)
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        ["fired"], ["near_miss"], ["clean", "no_data"],
+    ]
     assert counts == {"matched": 3, "nearly_matched": 1, "comparison": 2,
                       "outside_comparison": 0}
 
@@ -1176,6 +1195,11 @@ def test_missed_meal_counts_its_highs_outside_the_announced_comparison():
     assert [(cohort["key"], cohort["band_verdict"])
             for cohort in case["projection"]["cohorts"]] == [
         ("matched", None), ("nearly_matched", "near_miss"), ("comparison", None),
+    ]
+    # ADR 468: a cross-population comparison holds no roster Occurrence, so it
+    # serves no band state; neither does the attributed Matched subset.
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        [], ["near_miss"], [],
     ]
 
 

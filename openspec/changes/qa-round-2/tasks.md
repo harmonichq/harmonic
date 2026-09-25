@@ -1195,7 +1195,7 @@ showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`. Every
 browser run below (the sweep, the replays and the renders) is a coordinator-run
 browser leg: the start session hands it back and records the coordinator's output.
 
-- [ ] 93. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 93. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage: port 8765 was reserved during
   triage): replay S115, S124, S125, S126 and S188 against #468's base
   at 1280x720 and 1440x900, re-inventory in the served app the Pattern fold on the
@@ -1204,7 +1204,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
   and the Response comparison caption on `behavioral-carb-undercount` and
   `behavioral-missed-meal`, and record any observed behavior with no story in
   `docs/scope/468-reader-text.md` before designing.
-- [ ] 94. Failing-first backend tests, each seen to fail on #468's base:
+- [x] 94. Failing-first backend tests, each seen to fail on #468's base:
   - in `tests/test_finding_case_file.py`: `_pattern_meal_case(("claimed", "calm",
     "no_data"))` serves `band_states` `["fired"]`, `["near_miss"]` and
     `["clean", "no_data"]` on Matched, Nearly matched and Other meal
@@ -1216,7 +1216,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
     cohort's `band_states` by ADR 468 decision 4's rule;
   - in `tests/test_finding_case_file_api.py` (`:785` at the pinned commit): the
     served cohort key set gains `band_states`.
-- [ ] 95. Backend (ADR 468 decision 4): in `ciq_autotune/finding_case_file.py`
+- [x] 95. Backend (ADR 468 decision 4): in `ciq_autotune/finding_case_file.py`
   `_event`, serve `band_states` on each cohort beside `band_verdict`, in the
   band's order (`fired`, `near_miss`, `clean`, `outranked`, `no_data`), with a
   comment naming ADR 468. In `mockups/diagnose-event-comparison.synthetic/project.mjs`

@@ -531,6 +531,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -1137,6 +1140,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -1738,6 +1744,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -9922,6 +9933,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -10528,6 +10542,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -11129,6 +11146,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -12350,6 +12372,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -12956,6 +12981,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -13557,6 +13585,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -14773,6 +14806,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -15379,6 +15415,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -15980,6 +16019,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -17211,6 +17255,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -17817,6 +17864,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -18418,6 +18468,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -19633,6 +19688,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -20239,6 +20297,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -20840,6 +20901,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -22056,6 +22122,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -22662,6 +22731,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -23263,6 +23335,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -24459,6 +24536,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -25065,6 +25145,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -25666,6 +25749,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -26882,6 +26970,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -27488,6 +27579,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -28089,6 +28183,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -29594,6 +29693,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -30200,6 +30302,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -30801,6 +30906,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -32017,6 +32127,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -32623,6 +32736,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -33224,6 +33340,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -35044,6 +35165,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -35650,6 +35774,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -36251,6 +36378,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -37321,6 +37453,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -37639,6 +37774,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -37952,6 +38090,11 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
@@ -43527,6 +43670,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -43845,6 +43991,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -44158,6 +44307,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -44886,6 +45040,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -45204,6 +45361,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -45517,6 +45677,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -46245,6 +46410,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -46563,6 +46731,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -46876,6 +47047,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -47604,6 +47780,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -47922,6 +48101,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -48235,6 +48417,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -48963,6 +49150,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -49281,6 +49471,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -49594,6 +49787,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -50455,6 +50653,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -50773,6 +50974,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -51086,6 +51290,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -51814,6 +52023,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -52132,6 +52344,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -52445,6 +52660,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -53173,6 +53393,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -53491,6 +53714,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -53804,6 +54030,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -54536,6 +54767,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -54854,6 +55088,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -55167,6 +55404,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -56064,6 +56306,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -56382,6 +56627,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -56695,6 +56943,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -57688,6 +57941,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -58006,6 +58262,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -58319,6 +58578,11 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
@@ -59101,6 +59365,9 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -59611,6 +59878,9 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -60116,6 +60386,11 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other back-to-back correction pairs",
@@ -67184,6 +67459,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -67694,6 +67972,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -68199,6 +68480,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -69245,6 +69531,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -69755,6 +70044,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -70260,6 +70552,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -71291,6 +71588,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -71801,6 +72101,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -72306,6 +72609,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -73337,6 +73645,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -73847,6 +74158,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -74352,6 +74666,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -75387,6 +75706,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -75897,6 +76219,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -76402,6 +76727,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -77682,6 +78012,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -78192,6 +78525,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -78697,6 +79033,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -79728,6 +80069,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -80238,6 +80582,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -80743,6 +81090,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -81774,6 +82126,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -82284,6 +82639,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -82789,6 +83147,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -84069,6 +84432,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -84579,6 +84945,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -85084,6 +85453,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -86115,6 +86489,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -86625,6 +87002,9 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -87130,6 +87510,11 @@
          "kind": "second_correction",
          "label": "Second correction"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other back-to-back correction pairs",
@@ -88406,6 +88791,9 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -88916,6 +89304,9 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -89421,6 +89812,11 @@
         "kind": "second_correction",
         "label": "Second correction"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other back-to-back correction pairs",
@@ -90495,6 +90891,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -91101,6 +91500,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -91702,6 +92104,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -99886,6 +100293,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -100492,6 +100902,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -101093,6 +101506,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -102314,6 +102732,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -102920,6 +103341,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -103521,6 +103945,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -104737,6 +105166,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -105343,6 +105775,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -105944,6 +106379,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -107175,6 +107615,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -107781,6 +108224,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -108382,6 +108828,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -109597,6 +110048,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -110203,6 +110657,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -110804,6 +111261,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -112020,6 +112482,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -112626,6 +113091,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -113227,6 +113695,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -114423,6 +114896,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -115029,6 +115505,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -115630,6 +116109,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -116846,6 +117330,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -117452,6 +117939,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -118053,6 +118543,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -119558,6 +120053,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -120164,6 +120662,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -120765,6 +121266,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -121981,6 +122487,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -122587,6 +123096,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -123188,6 +123700,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -125008,6 +125525,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -125614,6 +126134,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -126215,6 +126738,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -127347,6 +127875,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -127953,6 +128484,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -128554,6 +129088,10 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other completed carb-bolus meals",
@@ -135583,6 +136121,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -136189,6 +136730,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -136790,6 +137334,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -138275,6 +138823,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -138881,6 +139432,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -139482,6 +140036,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -140678,6 +141236,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -141284,6 +141845,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -141885,6 +142449,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -143096,6 +143664,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -143702,6 +144273,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -144303,6 +144877,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -145498,6 +146076,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -146104,6 +146685,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -146705,6 +147289,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -147881,6 +148469,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -148487,6 +149078,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -149088,6 +149682,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -150284,6 +150882,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -150890,6 +151491,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -151491,6 +152095,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -152692,6 +153300,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -153298,6 +153909,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -153899,6 +154513,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -155095,6 +155713,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -155701,6 +156322,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -156302,6 +156926,10 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other completed carb-bolus meals",
@@ -157794,6 +158422,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -158400,6 +159031,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -159001,6 +159635,10 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other completed carb-bolus meals",
@@ -160170,6 +160808,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -160776,6 +161417,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -161377,6 +162021,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -169561,6 +170210,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -170167,6 +170819,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -170768,6 +171423,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -171989,6 +172649,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -172595,6 +173258,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -173196,6 +173862,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -174412,6 +175083,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -175018,6 +175692,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -175619,6 +176296,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -176850,6 +177532,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -177456,6 +178141,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -178057,6 +178745,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -179272,6 +179965,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -179878,6 +180574,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -180479,6 +181178,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -181695,6 +182399,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -182301,6 +183008,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -182902,6 +183612,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -184098,6 +184813,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -184704,6 +185422,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -185305,6 +186026,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -186521,6 +187247,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -187127,6 +187856,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -187728,6 +188460,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -189233,6 +189970,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -189839,6 +190579,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -190440,6 +191183,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -191656,6 +192404,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -192262,6 +193013,9 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -192863,6 +193617,11 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other meal opportunities",
@@ -194683,6 +195442,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -195289,6 +196051,9 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -195890,6 +196655,11 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other meal opportunities",
@@ -197007,6 +197777,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "matched",
        "name": "Matched",
@@ -197606,6 +198377,9 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -198207,6 +198981,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
@@ -199044,6 +199819,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "matched",
        "name": "Matched",
@@ -199645,6 +200421,9 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -200246,6 +201025,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
@@ -207954,6 +208734,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -208555,6 +209336,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -209156,6 +209940,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -210333,6 +211118,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -210934,6 +211720,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -211535,6 +212324,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -212707,6 +213497,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -213308,6 +214099,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -213909,6 +214703,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -215101,6 +215896,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -215702,6 +216498,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -216303,6 +217102,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -217485,6 +218285,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -218086,6 +218887,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -218687,6 +219491,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -219864,6 +220669,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -220465,6 +221271,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -221066,6 +221875,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -222243,6 +223053,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -222844,6 +223655,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -223445,6 +224259,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -224602,6 +225417,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -225203,6 +226019,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -225804,6 +226623,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -226981,6 +227801,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -227582,6 +228403,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -228183,6 +229007,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -229634,6 +230459,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -230235,6 +231061,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -230836,6 +231665,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -232029,6 +232859,7 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "matched",
         "name": "Matched",
@@ -232630,6 +233461,9 @@
          "kind": "detected_rise_onset",
          "label": "Detected rise onset"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -233231,6 +234065,7 @@
          "kind": "completed_carb_bolus",
          "label": "Completed carb bolus"
         },
+        "band_states": [],
         "band_verdict": null,
         "key": "comparison",
         "name": "Completed carb-bolus meals",
@@ -234720,6 +235555,7 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "matched",
        "name": "Matched",
@@ -235321,6 +236157,9 @@
         "kind": "detected_rise_onset",
         "label": "Detected rise onset"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -235922,6 +236761,7 @@
         "kind": "completed_carb_bolus",
         "label": "Completed carb bolus"
        },
+       "band_states": [],
        "band_verdict": null,
        "key": "comparison",
        "name": "Completed carb-bolus meals",
@@ -236998,6 +237838,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -237316,6 +238159,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -237629,6 +238475,11 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",
@@ -243204,6 +244055,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -243522,6 +244376,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -243835,6 +244692,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -244563,6 +245425,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -244881,6 +245746,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -245194,6 +246062,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -245922,6 +246795,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -246240,6 +247116,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -246553,6 +247432,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -247281,6 +248165,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -247599,6 +248486,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -247912,6 +248802,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -248640,6 +249535,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -248958,6 +249856,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -249271,6 +250172,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -250132,6 +251038,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -250450,6 +251359,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -250763,6 +251675,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -251491,6 +252408,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -251809,6 +252729,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -252122,6 +253045,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -252850,6 +253778,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -253168,6 +254099,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -253481,6 +254415,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -254213,6 +255152,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -254531,6 +255473,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -254844,6 +255789,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -255741,6 +256691,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "fired"
+        ],
         "band_verdict": "fired",
         "key": "matched",
         "name": "Matched",
@@ -256059,6 +257012,9 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "near_miss"
+        ],
         "band_verdict": "near_miss",
         "key": "nearly_matched",
         "name": "Nearly matched",
@@ -256372,6 +257328,11 @@
          "kind": "excursion_nadir",
          "label": "Low excursion"
         },
+        "band_states": [
+         "clean",
+         "outranked",
+         "no_data"
+        ],
         "band_verdict": null,
         "key": "comparison",
         "name": "Other low excursions",
@@ -257365,6 +258326,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "fired"
+       ],
        "band_verdict": "fired",
        "key": "matched",
        "name": "Matched",
@@ -257683,6 +258647,9 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "near_miss"
+       ],
        "band_verdict": "near_miss",
        "key": "nearly_matched",
        "name": "Nearly matched",
@@ -257996,6 +258963,11 @@
         "kind": "excursion_nadir",
         "label": "Low excursion"
        },
+       "band_states": [
+        "clean",
+        "outranked",
+        "no_data"
+       ],
        "band_verdict": null,
        "key": "comparison",
        "name": "Other low excursions",

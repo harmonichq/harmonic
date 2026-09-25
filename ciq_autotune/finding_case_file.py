@@ -984,6 +984,10 @@ def _comparison_window(lever, roster):
     return policy_for(lever).comparison_window
 
 
+# The verdict band's printed order: its three segments, then its residue.
+_BAND_ORDER = ("fired", "near_miss", "clean", "outranked", "no_data")
+
+
 def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=()):
     """Build ADR 180's one server-owned three-cohort event comparison.
 
@@ -1035,6 +1039,15 @@ def _event(lever, roster, claimed_ids, cgm, bolus, source_window_days, basal=())
     matched_cohort["band_verdict"] = None if policy.cross_population else "fired"
     near_cohort["band_verdict"] = "near_miss"
     comparison_cohort["band_verdict"] = None
+    # ADR 468: beside it, every cohort serves the band states it holds, in the
+    # band's order. A same-population comparison is the roster less its Meets
+    # criteria and Borderline Occurrences, so it holds exactly its members'
+    # verdicts; a cross-population comparison holds no roster Occurrence.
+    held = set() if policy.cross_population else {member.verdict for member in comparison}
+    for cohort in (matched_cohort, near_cohort, comparison_cohort):
+        cohort["band_states"] = ([cohort["band_verdict"]] if cohort["band_verdict"] else
+                                 [state for state in _BAND_ORDER
+                                  if cohort is comparison_cohort and state in held])
     if policy.cross_population:
         matched_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}
         near_cohort["anchor"] = {"kind": "detected_rise_onset", "label": "Detected rise onset"}

@@ -2,40 +2,36 @@
 
 Preparation receives the active analyzer payload, retains its published run roster,
 and reads CGM once — over the analyzer-owned display bounds and over the block-hours
-meals' own post-meal clocks.  It adds the two facts the block stamper cannot reach,
-because both need the store the stamper never sees: each block-hours meal's outcome
-as the Pattern roster's own credited claims read it, and the pooled comparison of
-those meals.  Projection copies every fact through; it never forms runs, re-counts
-support, or changes a block verdict.
+meals' own post-meal windows.  It adds the one fact the block stamper cannot reach,
+because it needs the store the stamper never sees: each block-hours meal's own plain
+reading — its peak, its nadir, and where they fall against the target band.
+Projection copies every fact through; it never forms runs, re-counts support, or
+changes a block verdict.
 """
 from __future__ import annotations
 
 import bisect
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Sequence, Tuple
 
-from .analyzers.ic import BLOCK_WINDOW_DAYS, IcConfig
-# `_ROSTER` is the Pattern roster's own lever table and the only place the two
-# meal Patterns' rate levers are written down; reading it here is what keeps
-# "ran high" one definition in this app (ADR 464 — credited claims).
-from .analyzers.scenario.outcome_patterns import _ROSTER, credited_claims
-from .event_comparison import project_cohort
-from .explore_exposures import build_exposures
-# The Finding case file's meals-family trace producer, reused so a meal's clock is
-# cut, rounded and filtered exactly as the Pattern comparison chart's is.
-from .finding_case_file import _comparison_trace
+from .analyzers.ic import IcConfig
+from .analyzers.scenario_config import ScenarioConfig
 
 
 SCHEMA = "diagnose-carb-ratio-block-evidence-v2"
-MEAL_COMPARISON_SCHEMA = "diagnose-carb-ratio-meal-comparison-v1"
-# From the run series' own start before the bolus to the end of the post-meal
-# window: the meal's own clock, over the span the run ledger closes over.
-MEAL_WINDOW_MIN = (-IcConfig().bg0_max_gap_min, IcConfig().post_meal_min)
-_MEAL_ANCHOR = {"kind": "completed_carb_bolus", "label": "Completed carb bolus"}
-# The outcomes a meal can be traced under.  An `unread` meal is counted in the
-# tally and traced nowhere — there is no verdict to pool it with.
-_COHORT_NAMES = {"ran-high": "Ran high", "ran-low": "Ran low", "in-range": "In range"}
+# A meal is read from its bolus to the end of the analyzer's post-meal window.
+MEAL_WINDOW_MIN = (0, IcConfig().post_meal_min)
+# The analyzer's own in-range band, served once so no client restates it.
+_BAND = {"low": ScenarioConfig().segment_range_low_mgdl,
+         "high": ScenarioConfig().segment_range_high_mgdl}
+# The per-meal facts the preparation serves; a meal row without them is a hole.
+_MEAL_FACTS = frozenset({
+    "t", "run_id", "offset_min", "peak_bg", "peak_min", "nadir_bg", "nadir_min",
+    "outcome",
+})
+_COUNT_FACTS = frozenset({"above_high", "below_low", "both", "in_range", "unread", "n"})
 # The per-run facts #464 added; a roster row without them is a hole, not a row.
 _RUN_FACTS = frozenset({
     "pool_reason", "side", "meal_carbs", "meal_dose", "post_correction_user",
@@ -55,39 +51,41 @@ _HARM_FACTS = frozenset({
 })
 
 # One reconciling sentence per served key, chosen on the server and printed verbatim
-# (ADR 464 — sentence).  The key is the block's asserted direction and whether its
-# meals ran high more often than they ran low; every sentence names the chain-end
+# (ADR 464 — sentence).  The key is the block's asserted direction and whether more
+# of its meals went above the band than below it; every sentence names the chain-end
 # read, because a reader who sees over-coverage beside a chart of high meals is owed
-# exactly that reconciliation.  Nothing on the client composes a second one.
+# exactly that reconciliation.  The band edges are filled from `_BAND`, and nothing
+# on the client composes a second sentence.
 _SENTENCES = {
     ("raise", True): (
-        "These meals more often ran high than low, and the ledger still reads "
-        "over-coverage: it closes at the end of each meal chain, when the insulin "
-        "is spent, not at the peak in between."
+        "These meals more often went above {high:g} than below {low:g}, and the "
+        "ledger still reads over-coverage: it closes at the end of each meal chain, "
+        "when the insulin is spent, not at the peak in between."
     ),
     ("raise", False): (
-        "These meals did not run high more often than they ran low, and the ledger "
-        "reads over-coverage at the end of each meal chain, when the insulin is "
-        "spent."
+        "These meals did not go above {high:g} more often than below {low:g}, and "
+        "the ledger reads over-coverage at the end of each meal chain, when the "
+        "insulin is spent."
     ),
     ("lower", True): (
-        "These meals more often ran high than low, and the ledger reads "
-        "under-coverage at the end of each meal chain, when the insulin is spent."
+        "These meals more often went above {high:g} than below {low:g}, and the "
+        "ledger reads under-coverage at the end of each meal chain, when the insulin "
+        "is spent."
     ),
     ("lower", False): (
-        "These meals did not run high more often than they ran low, yet the ledger "
-        "reads under-coverage: it closes at the end of each meal chain, when the "
-        "insulin is spent, not at the lowest point in between."
+        "These meals did not go above {high:g} more often than below {low:g}, yet "
+        "the ledger reads under-coverage: it closes at the end of each meal chain, "
+        "when the insulin is spent, not at the lowest point in between."
     ),
     (None, True): (
-        "These meals more often ran high than low, and this block still asserts no "
-        "change: the ledger closes at the end of each meal chain, when the insulin "
-        "is spent, not at the peak in between."
+        "These meals more often went above {high:g} than below {low:g}, and this "
+        "block still asserts no change: the ledger closes at the end of each meal "
+        "chain, when the insulin is spent, not at the peak in between."
     ),
     (None, False): (
-        "These meals did not run high more often than they ran low, and this block "
-        "asserts no change from what the ledger reads at the end of each meal "
-        "chain, when the insulin is spent."
+        "These meals did not go above {high:g} more often than below {low:g}, and "
+        "this block asserts no change from what the ledger reads at the end of each "
+        "meal chain, when the insulin is spent."
     ),
 }
 
@@ -112,90 +110,55 @@ class _CgmWindows:
         return self._readings[start:bisect.bisect_right(self._times, upper)]
 
 
-def _rate_levers(pattern: str) -> Tuple[str, ...]:
-    return next(rate for key, _title, _habit, rate, *_rest in _ROSTER if key == pattern)
+def _meal_reading(point: dict, windows: _CgmWindows) -> dict:
+    """One block-hours meal's own plain reading over its post-meal window.
 
-
-def _meal_outcomes(store, blocks: Sequence[dict]) -> Dict[str, str]:
-    """Each block-hours meal's outcome, keyed by the analyzer's own meal instant.
-
-    The verdict is the Pattern roster's, not a second 70/180 read: one store-level
-    exposure pass over the block's own span, then the same `credited_claims` map the
-    "Highs after meals" and "Lows after meals" counts are formed from (ADR 464 —
-    credited claims).  A meal the exposure feed never emitted is `unread` rather
-    than in range — silence is not a reading.
+    The peak and nadir are the highest and lowest store readings from the bolus to
+    the end of the window, and the outcome is where they fall against the band.  A
+    meal with no reading in its window is `unread` rather than in range — silence
+    is not a reading.
     """
-    exposures = build_exposures(store, window_days=BLOCK_WINDOW_DAYS)
-    high = credited_claims(exposures, "meals", _rate_levers("highs_after_meals"))
-    low = credited_claims(exposures, "meals", _rate_levers("lows_after_meals"))
-    # The exposure feed prints the engine's "%Y-%m-%d %H:%M:%S"; the analyzer prints
-    # `isoformat()`.  Both parse, so the instant is the key and neither spelling is.
-    claimed = {
-        datetime.fromisoformat(item["t"]): item["t"]
-        for item in exposures["exposures"]["meals"]["occurrences"]
+    bolus = datetime.fromisoformat(point["t"])
+    before, after = MEAL_WINDOW_MIN
+    readings = windows.between(bolus + timedelta(minutes=before),
+                               bolus + timedelta(minutes=after))
+    row = {
+        "t": point["t"], "run_id": point["run_id"],
+        "offset_min": (bolus - datetime.fromisoformat(point["run_id"])).total_seconds()
+        / 60.0,
+        "peak_bg": None, "peak_min": None, "nadir_bg": None, "nadir_min": None,
+        "outcome": "unread",
     }
-    outcomes: Dict[str, str] = {}
-    for block in blocks:
-        for point in block["evidence"]["points"]:
-            identity = claimed.get(datetime.fromisoformat(point["t"]))
-            if identity is None:
-                outcomes[point["t"]] = "unread"
-            elif identity in high:
-                outcomes[point["t"]] = "ran-high"
-            elif identity in low:
-                outcomes[point["t"]] = "ran-low"
-            else:
-                outcomes[point["t"]] = "in-range"
-    return outcomes
+    if not readings:
+        return row
+    peak = max(readings, key=lambda reading: reading.bg)
+    nadir = min(readings, key=lambda reading: reading.bg)
+    above, below = peak.bg > _BAND["high"], nadir.bg < _BAND["low"]
+    return {
+        **row,
+        "peak_bg": peak.bg, "peak_min": (peak.t - bolus).total_seconds() / 60.0,
+        "nadir_bg": nadir.bg, "nadir_min": (nadir.t - bolus).total_seconds() / 60.0,
+        "outcome": ("high-and-low" if above and below else "high" if above
+                    else "low" if below else "in-range"),
+    }
 
 
-def _outcome_tally(block: dict, outcomes: Dict[str, str]) -> dict:
-    counts = {"ran_high": 0, "ran_low": 0, "in_range": 0, "unread": 0}
-    for point in block["evidence"]["points"]:
-        counts[outcomes[point["t"]].replace("-", "_")] += 1
-    counts["n"] = sum(counts[key] for key in ("ran_high", "ran_low", "in_range",
-                                              "unread"))
+def _outcome_tally(block: dict, meals: Sequence[dict]) -> dict:
+    tally = Counter(meal["outcome"] for meal in meals)
+    counts = {
+        "above_high": tally["high"] + tally["high-and-low"],
+        "below_low": tally["low"] + tally["high-and-low"],
+        "both": tally["high-and-low"],
+        "in_range": tally["in-range"],
+        "unread": tally["unread"],
+        "n": len(meals),
+    }
     return {
         "counts": counts,
+        "band": dict(_BAND),
         "sentence": _SENTENCES[
-            (block["direction"], counts["ran_high"] > counts["ran_low"])
-        ],
-    }
-
-
-def _meal_comparison(block: dict, outcomes: Dict[str, str],
-                     windows: _CgmWindows) -> dict:
-    """The block-hours meals pooled by outcome, as a Finding case file pools a family.
-
-    One trace per traced meal on its own clock, then one `project_cohort` per served
-    outcome: the same producer, the same five-minute binning and the same
-    finite-sample support the Pattern comparison chart already draws.
-    """
-    before, after = MEAL_WINDOW_MIN
-    traces: Dict[str, List[dict]] = {key: [] for key in _COHORT_NAMES}
-    for point in block["evidence"]["points"]:
-        outcome = outcomes[point["t"]]
-        if outcome not in traces:
-            continue
-        anchor = datetime.fromisoformat(point["t"])
-        # The slice only spares the producer a scan of the whole read; the
-        # producer applies its own window bounds to what it is handed.
-        nearby = windows.between(anchor + timedelta(minutes=before),
-                                 anchor + timedelta(minutes=after))
-        traces[outcome].append(
-            _comparison_trace(point["t"], anchor, nearby, MEAL_WINDOW_MIN))
-    cohorts = []
-    for key, name in _COHORT_NAMES.items():
-        cohort = project_cohort(key, traces[key], MEAL_WINDOW_MIN)
-        cohort["name"] = name
-        cohort["anchor"] = dict(_MEAL_ANCHOR)
-        cohorts.append(cohort)
-    return {
-        "schema": MEAL_COMPARISON_SCHEMA,
-        "alignment": "event",
-        "anchor": dict(_MEAL_ANCHOR),
-        "window_min": list(MEAL_WINDOW_MIN),
-        "cohorts": cohorts,
+            (block["direction"], counts["above_high"] > counts["below_low"])
+        ].format(**_BAND),
     }
 
 
@@ -227,6 +190,17 @@ class IcBlockEvidenceProjection:
             for run in runs:
                 if not _RUN_FACTS <= run.keys():
                     raise KeyError("run row is missing a published fact")
+            # The preparation's own facts are guarded the same way: a sidecar
+            # rebuilt from an older shape is refused, not served with a hole.
+            meals = list(evidence["meals"])
+            for meal in meals:
+                if not _MEAL_FACTS <= meal.keys():
+                    raise KeyError("meal row is missing a served fact")
+            outcomes = evidence["outcomes"]
+            if (not _COUNT_FACTS <= outcomes["counts"].keys()
+                    or not {"low", "high"} <= outcomes["band"].keys()
+                    or "sentence" not in outcomes):
+                raise KeyError("outcome tally is missing a served fact")
             payload = {
                 "schema": SCHEMA,
                 "analysis_generation": analysis_generation,
@@ -253,9 +227,9 @@ class IcBlockEvidenceProjection:
                     "excluded_runs": evidence["n_runs_excluded"],
                 },
                 "ledger": evidence["ledger"],
-                "outcomes": evidence["outcomes"],
+                "outcomes": outcomes,
+                "meals": meals,
                 "harm_evidence": harm_evidence,
-                "meal_comparison": evidence["meal_comparison"],
                 "runs": runs,
             }
         except (KeyError, TypeError) as error:
@@ -289,7 +263,6 @@ def prepare_ic_block_evidence(store, analysis: dict) -> IcBlockEvidenceProjectio
     else:
         readings = []
     windows = _CgmWindows(readings)
-    outcomes = _meal_outcomes(store, blocks)
 
     prepared: List[dict] = []
     series: Dict[int, Tuple[dict, ...]] = {}
@@ -308,11 +281,12 @@ def prepare_ic_block_evidence(store, analysis: dict) -> IcBlockEvidenceProjectio
                 ],
             })
         series[block["block_id"]] = tuple(rows)
-        # The two preparation-owned facts ride beside the analyzer's on a COPY: the
+        # The preparation-owned facts ride beside the analyzer's on a COPY: the
         # analysis payload is shared with every other cached read of this generation.
+        meals = [_meal_reading(point, windows) for point in block["evidence"]["points"]]
         prepared.append({**block, "evidence": {
             **block["evidence"],
-            "outcomes": _outcome_tally(block, outcomes),
-            "meal_comparison": _meal_comparison(block, outcomes, windows),
+            "meals": meals,
+            "outcomes": _outcome_tally(block, meals),
         }})
     return IcBlockEvidenceProjection(tuple(prepared), series)

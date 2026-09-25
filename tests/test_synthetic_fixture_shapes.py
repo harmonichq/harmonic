@@ -130,7 +130,7 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             self.assertEqual(SCHEMA, case["schema"], name)
             self.assertEqual(
                 {"schema", "analysis_generation", "block", "ledger", "outcomes",
-                 "harm_evidence", "meal_comparison", "runs", "series"},
+                 "meals", "harm_evidence", "runs", "series"},
                 set(case), name)
             self.assertEqual({"value", "lo", "hi", "wide"},
                              set(case["block"]["estimate"]), name)
@@ -168,26 +168,34 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 ledger["carbs_covered"] / ledger["effective_insulin"],
                 ledger["pooled_ratio"], places=4, msg=name)
 
-    def test_every_comparison_cohort_is_one_served_outcome(self):
+    def test_every_meal_outcome_is_its_own_peak_and_nadir_against_the_band(self):
         for name, case in self.cases.items():
-            projection = case["meal_comparison"]
-            self.assertEqual("diagnose-carb-ratio-meal-comparison-v1",
-                             projection["schema"], name)
-            self.assertEqual([-10, 315], projection["window_min"], name)
-            self.assertEqual(["ran-high", "ran-low", "in-range"],
-                             [cohort["key"] for cohort in projection["cohorts"]], name)
-            counts = case["outcomes"]["counts"]
-            routed = {cohort["key"]: cohort["routed_count"]
-                      for cohort in projection["cohorts"]}
-            # Every meal that is not `unread` is traced exactly once.
+            band = case["outcomes"]["band"]
+            self.assertEqual({"low", "high"}, set(band), name)
+            for meal in case["meals"]:
+                self.assertEqual({"t", "run_id", "offset_min", "peak_bg", "peak_min",
+                                  "nadir_bg", "nadir_min", "outcome"}, set(meal), name)
+                if meal["peak_bg"] is None:
+                    self.assertEqual("unread", meal["outcome"], (name, meal["t"]))
+                    continue
+                above, below = meal["peak_bg"] > band["high"], meal["nadir_bg"] < band["low"]
+                self.assertEqual(
+                    {(True, True): "high-and-low", (True, False): "high",
+                     (False, True): "low", (False, False): "in-range"}[(above, below)],
+                    meal["outcome"], (name, meal["t"]))
+                self.assertTrue(0 <= meal["peak_min"] <= 315, (name, meal["t"]))
+                self.assertTrue(0 <= meal["nadir_min"] <= 315, (name, meal["t"]))
+
+    def test_the_tally_counts_the_served_meals(self):
+        for name, case in self.cases.items():
+            outcomes = [meal["outcome"] for meal in case["meals"]]
+            both = outcomes.count("high-and-low")
             self.assertEqual(
-                {"ran-high": counts["ran_high"], "ran-low": counts["ran_low"],
-                 "in-range": counts["in_range"]}, routed, name)
-            for cohort in projection["cohorts"]:
-                self.assertEqual(projection["anchor"], cohort["anchor"], name)
-                for point in cohort["points"]:
-                    self.assertEqual({"minute", "n", "support", "median", "p25", "p75"},
-                                     set(point), name)
+                {"above_high": outcomes.count("high") + both,
+                 "below_low": outcomes.count("low") + both, "both": both,
+                 "in_range": outcomes.count("in-range"),
+                 "unread": outcomes.count("unread"), "n": len(outcomes)},
+                case["outcomes"]["counts"], name)
 
     def test_the_published_case_exercises_every_fact_the_panel_reads(self):
         case = self.cases["explained"]
@@ -196,25 +204,26 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             {"counted-whole", "counted-by-share", "earlier-ratio-or-uncurrent-chain",
              "no-outcome-read"},
             {run["pool_reason"] for run in case["runs"]})
-        self.assertGreaterEqual(case["outcomes"]["counts"]["ran_high"], 1)
-        self.assertGreaterEqual(case["outcomes"]["counts"]["ran_low"], 1)
+        self.assertGreaterEqual(case["outcomes"]["counts"]["above_high"], 1)
+        self.assertGreaterEqual(case["outcomes"]["counts"]["below_low"], 1)
+        self.assertGreaterEqual(case["outcomes"]["counts"]["both"], 1)
         self.assertEqual(2, case["harm_evidence"]["row_days"])
         self.assertEqual(2, len(case["harm_evidence"]["lows"]))
         self.assertIsNotNone(case["harm_evidence"]["minutes_after_bolus_median"])
-        # Each low belongs to a pooled chain whose first meal ran high and whose
-        # later meal ran low: the spike and the low are one run's evidence.
-        cohorts = {cohort["key"]: set(cohort["occurrence_ids"])
-                   for cohort in case["meal_comparison"]["cohorts"]}
+        # Each low belongs to a pooled chain whose first meal's window holds both
+        # the spike and the low, and whose later meal's window holds the low: the
+        # spike and the low are one run's evidence.
+        meals = {meal["t"]: meal for meal in case["meals"]}
         runs = {run["run_id"]: run for run in case["runs"]}
         for low in case["harm_evidence"]["lows"]:
             chain = runs[low["dominant_bolus_t"]]
             self.assertTrue(chain["in_pool"], low["t"])
             self.assertGreaterEqual(chain["n_meals"], 2, low["t"])
-            self.assertIn(chain["run_id"], cohorts["ran-high"], low["t"])
+            self.assertEqual("high-and-low", meals[chain["run_id"]]["outcome"], low["t"])
             start = datetime.fromisoformat(chain["run_id"])
-            later = {(start + timedelta(minutes=offset)).isoformat()
-                     for offset in chain["member_offsets_min"][1:]}
-            self.assertTrue(later & cohorts["ran-low"], low["t"])
+            later = [meals[(start + timedelta(minutes=offset)).isoformat()]
+                     for offset in chain["member_offsets_min"][1:]]
+            self.assertTrue(any(meal["outcome"] == "low" for meal in later), low["t"])
         self.assertGreater(case["block"]["support_detail"]["fractional_run_ownership"],
                            0.0)
 

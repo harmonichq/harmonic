@@ -878,11 +878,15 @@ committed fixture at this change's base (`docs/scope/469-queue-rank.repro.mjs`):
    anchor's, and "Next in line" names setting changes, so printing it on a
    Pattern that cannot stage would contradict the Glossary. Its "Ranked with its
    setting" note still prints.
-7. **The overnight Pattern anchors only inside its band.** Decided autonomously
-   during AFK run (coordinator ruling on review round 1, N3). The harm-band
-   Pattern ("Overnight lows with no insulin on board") anchors only to a served,
-   priced, asserting basal row whose span lies inside the Harm signal's
-   00:00–06:00 band. In a window that overlaps the band but serves no such row
+7. **The overnight Pattern anchors only where it is admitted.** Decided
+   autonomously during AFK run (coordinator ruling on review round 1, N3,
+   corrected on review round 2, F1). The harm-band Pattern ("Overnight lows with
+   no insulin on board") anchors only to a served, priced, asserting basal row
+   whose span starts inside the Harm signal's 00:00–06:00 band: the one rule
+   (`outcome_patterns.starts_in_harm_band`) that admits it through its basal
+   setting, read by the admission, the projection and the mirror alike. A basal
+   run that starts in the band and crosses 06:00 therefore both admits and
+   anchors it. In a window that overlaps the band but serves no such row
    (a 05:00–08:00 window whose only asserting basal row is a 06:30 raise), it has
    no anchor and keeps its own ranked position, "Ranked on all 30 days", rather
    than sitting "Ranked with its setting" beneath a daytime basal row.

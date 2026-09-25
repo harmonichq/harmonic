@@ -507,7 +507,8 @@ threshold is *actionable now*; below it collapses into the "why so few?" tail.
 A Pattern admitted through its setting shares that setting's position: it sits
 beneath the setting's row, "Ranked with its setting", and takes no ranked position
 of its own, so one Priority fills one place in the queue (ADR 469). The
-overnight-lows Pattern shares only an overnight basal row's position.
+overnight-lows Pattern shares only the position of a basal row that starts
+inside 00:00–06:00, the row that admits it.
 _Avoid_: score (overloaded — the behavioral `Confidence.score` is one input, not
 this), rank, weight, severity (that is one flavor's impact input, not the whole).
 

@@ -52,7 +52,8 @@ The findings projection SHALL present the one urgency ranking without giving a
 Priority two ranked positions. A Pattern served with admission route
 `setting_staging` SHALL carry `anchored_by`, the id of the first served, priced,
 asserting row of its setting's parameter in queue order (for the harm-band
-Pattern, only such a row whose span lies inside the 00:00–06:00 band), and SHALL
+Pattern, only such a row whose span starts inside the 00:00–06:00 band, the rule
+that admits it), and SHALL
 sort directly after that row, its claimed causes directly after it. With no such
 row served it SHALL carry no anchor. Its Priority SHALL remain the Pattern producer's.
 
@@ -91,6 +92,14 @@ input, Pattern price, support floor, staging predicate or cap SHALL change.
 - **WHEN** the queue is published
 - **THEN** Highs after meals carries no anchor and `rank_note` "Ranked on all 30
   days"
+
+#### Scenario: The overnight Pattern sits beneath the basal run that admitted it
+
+- **GIVEN** the findings-fixture inputs with 00:30–01:30 quiet and a supported
+  basal raise over 05:30–06:30, which starts inside the band and crosses 06:00
+- **WHEN** the whole-day queue is published
+- **THEN** the overnight-lows Pattern carries `anchored_by` "basal:330-390" and
+  `rank_note` "Ranked with its setting"
 
 #### Scenario: The overnight Pattern never anchors beneath a daytime basal row
 

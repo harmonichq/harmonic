@@ -831,6 +831,12 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
     "Ranked on all 30 days" and `ic:720` none;
   - 06:00–11:00: Highs after meals carries no anchor and `rank_note` "Ranked on
     all 30 days";
+  - 05:00–08:00 on the fixture inputs with 05:30 quiet and a supported 06:30
+    raise (ADR 469 decision 7): the overnight Pattern, still admitted through
+    its setting, carries no anchor and `rank_note` "Ranked on all 30 days"; and
+    over the whole day with 00:30–01:30 quiet and a supported raise over
+    05:30–06:30, which starts inside the band and crosses 06:00, it carries
+    `anchored_by` "basal:330-390";
   - the direction-only weaken with no Pattern roster:
     `FindingsProjection(_analysis=analysis(isf=direction_only_isf_rows()),
     _exposures=exposures(), _scenarios=scenarios(), _outcome_patterns=[])`

@@ -138,6 +138,16 @@ def _setting_seriousness(
     return seriousness, segments
 
 
+def starts_in_harm_band(span: dict | None) -> bool:
+    """Whether a basal span starts inside the Harm signal's overnight band.
+
+    The one rule that admits the overnight Pattern through its basal setting and,
+    in the findings queue, seats it beneath that setting's row (ADR 469 decision 7).
+    """
+    start = (span or {}).get("start_min", -1)
+    return _HARM_CONFIG.overnight_start_min <= start < _HARM_CONFIG.overnight_end_min
+
+
 def _setting_member(
     analysis: dict, candidate_rows: Iterable[dict], parameter: str | None,
     *, overnight: bool,
@@ -167,10 +177,7 @@ def _setting_member(
     published_rows = (candidate or {}).get("members") or ()
     if overnight:
         published_rows = [
-            item for item in published_rows
-            if _HARM_CONFIG.overnight_start_min
-            <= (item.get("span") or {}).get("start_min", -1)
-            < _HARM_CONFIG.overnight_end_min
+            item for item in published_rows if starts_in_harm_band(item.get("span"))
         ]
         admitted_row = next((
             item for item in published_rows if item.get("asserts_move")

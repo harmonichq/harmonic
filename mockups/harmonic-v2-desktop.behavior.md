@@ -5989,8 +5989,9 @@ Changed shipped behavior:
   admitted because its setting is ready to change sits directly beneath that
   setting's row, indented on the causes list's rule, with no numeral, caption
   or stripe, and prints "Ranked with its setting" after its count sentence. The
-  overnight-lows Pattern sits only beneath a basal row inside 00:00–06:00; in a
-  window with none it keeps its own rank. When
+  overnight-lows Pattern sits only beneath a basal row that starts inside
+  00:00–06:00, the row that admits it; in a window with none it keeps its own
+  rank. When
   a filter hides that setting row, the Pattern takes a numeral but still no tier
   word, caption or stripe.
 - **Each tier word prints once.** "Next in line" heads the setting changes at

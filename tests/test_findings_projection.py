@@ -1027,6 +1027,32 @@ class QueueOrderTest(unittest.TestCase):
         self.assertIsNone(overnight["anchored_by"])
         self.assertEqual(overnight["rank_note"], "Ranked on all 30 days")
 
+    def test_the_overnight_pattern_anchors_to_the_basal_run_that_admitted_it(self):
+        """ADR 469 decision 7: a basal run that starts inside 00:00–06:00 and
+        crosses 06:00 admits the overnight Pattern, so the Pattern sits beneath it."""
+        whole_day = gen.basal_rows
+
+        def run_across_six():
+            rows = whole_day()
+            for index in (1, 2):
+                rows[index] = gen._slot(index, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
+            for index in (11, 12):
+                rows[index] = gen._slot(index, current=0.80, value=0.998, lo=0.816, hi=1.259,
+                                        n=22, supported=1)
+            return rows
+
+        with patch.object(gen, "basal_rows", run_across_six):
+            analysis = gen.analysis()
+        rows = {row["id"]: row for row in prepare_findings_projection(
+            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
+        ).project(WindowQuery.whole_day())["rows"]}
+        overnight = rows["pattern:overnight_lows_no_iob"]
+        self.assertEqual(rows["basal:330-390"]["register"], "assert")
+        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
+        self.assertEqual(overnight["anchored_by"], "basal:330-390")
+        self.assertEqual(overnight["rank_note"], "Ranked with its setting")
+        self.assertEqual(overnight["tier"], rows["basal:330-390"]["tier"])
+
     def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
         rows = FindingsProjection(
             _analysis=gen.analysis(isf=gen.direction_only_isf_rows()),

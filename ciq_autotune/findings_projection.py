@@ -70,6 +70,7 @@ from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, 
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
+    starts_in_harm_band,
 )
 from .harm import HarmConfig
 from .safety import Status
@@ -1281,8 +1282,9 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
 
     Its anchor is the first served, priced, asserting row of its setting member's
     parameter in queue order; every such row carries the same parameter-level
-    Priority. The harm-band Pattern anchors only to such a row whose span lies
-    inside the Harm signal's overnight band, never beneath a daytime basal row.
+    Priority. The harm-band Pattern anchors only to such a row whose span starts
+    inside the Harm signal's overnight band, by the rule that admitted it
+    (``starts_in_harm_band``), never beneath a daytime basal row.
     With none served (a scoped window without the setting's row) the Pattern keeps
     its own ranked position. Its own ``priority`` stays the roster's price (ADR 391).
     """
@@ -1296,9 +1298,7 @@ def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
         anchors = [row for row in rows
                    if row["register"] == "assert" and row["parameter"] == parameter
                    and row["priority"] is not None
-                   and (not in_band
-                        or (_HARM_CONFIG.overnight_start_min <= row["span"]["start_min"]
-                            and row["span"]["end_min"] <= _HARM_CONFIG.overnight_end_min))]
+                   and (not in_band or starts_in_harm_band(row["span"]))]
         if anchors:
             pattern_row["anchored_by"] = min(
                 anchors, key=lambda row: _sort_key(row, by_id))["id"]

@@ -105,6 +105,12 @@ const PATTERN_OUTCOME = {
 // harm.HarmConfig's overnight band: in a scoped window the harm-band Pattern keeps
 // its whole-band counts, so its outcome names the band (ADR 467 decision 3).
 const HARM_BAND = { start_min: 0, end_min: 6 * 60 };
+// outcome_patterns.starts_in_harm_band — the one rule that admits the overnight
+// Pattern through its basal setting and seats it beneath that setting's row.
+const startsInHarmBand = (span) => {
+  const start = span?.start_min ?? -1;
+  return HARM_BAND.start_min <= start && start < HARM_BAND.end_min;
+};
 // Closed over the code-derived cross product (coordinator decision, #413 review
 // round 2): every lever x every family a Cause appearance can be filed under,
 // narrowed off the full four-family set only where the lever's own policy or the
@@ -1011,11 +1017,9 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     if (projected.pattern.admission_route !== 'setting_staging') continue;
     const member = projected.pattern.members.find((item) => item.kind === 'setting');
     const parameter = member.subject.replace('setting:', '');
-    // The harm-band Pattern anchors only to a row inside the overnight band.
     const inBand = projected.pattern.rate_producer === 'harm_band_source_nights';
     const anchors = rows.filter((r) => r.register === 'assert' && r.parameter === parameter
-      && r.priority != null && (!inBand
-        || (HARM_BAND.start_min <= r.span.start_min && r.span.end_min <= HARM_BAND.end_min)));
+      && r.priority != null && (!inBand || startsInHarmBand(r.span)));
     if (anchors.length) {
       projected.anchored_by = anchors.reduce((first, r) => (
         compare(r, first, byId) < 0 ? r : first)).id;

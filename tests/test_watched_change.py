@@ -664,6 +664,25 @@ class DeliveryDatingTest(unittest.TestCase):
         self.assertEqual((trial["slot"], trial["changed_at"]),
                          ("03:00", (_day(10) + timedelta(hours=3, minutes=10)).strftime(wc._DT_FMT)))
 
+    def test_two_same_day_profile_switches_keep_their_own_records(self):
+        """Only a delivery-detected change keeps an earlier same-day record's
+        time: a pump-read switch is dated at its own read, so a second
+        whole-profile switch that day is a Trial of its own."""
+        profiles = [_profile(idp, [_seg(0, 0.6, isf, ic, 110)])
+                    for idp, isf, ic in ((1, 40, 7.0), (2, 36, 8.0), (3, 32, 9.0))]
+        def read(when, active):
+            self.store.upsert_settings_snapshot(when.strftime(wc._DT_FMT),
+                                                PumpSettings(active_idp=active, profiles=tuple(profiles)))
+        read(_day(0) + timedelta(hours=6), 1)
+        read(_day(10) + timedelta(hours=8), 2)
+        # The 08:00 switch is recorded before the 18:00 one is read.
+        self.reconcile(_day(10) + timedelta(hours=12))
+        read(_day(10) + timedelta(hours=18), 3)
+        self.reconcile(_day(11))
+        records = sorted((r["changed_at"], r["parameter"], r["id"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 8), "profile", "profile-all-20260511080000"),
+                                   (_at(10, 18), "profile", "profile-all-20260511180000")])
+
     def test_a_record_saved_under_the_day_dating_stays_that_record(self):
         from ciq_autotune.follow_up_comparison import capture_comparison_context
         self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(

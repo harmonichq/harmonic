@@ -70,9 +70,10 @@ synthetic case stores.
 - **Revise pre-work (task 18).** #462's touched stories (S49, S54, S54b, S91,
   S92, S94, S95, S96, S105, S110, S111, S112, S142, S143, S157, S180, R18) on the
   unchanged base 9648cdcb: `# executed 17 · failed 0` at 1280x720 and at
-  1440x900. The pre-work ran after the implementation, not before it, but
-  against the unchanged base, so what it recorded is the base's behavior. It
-  found no observed behavior without a story. S188's base run on 578ec3c7 is
+  1440x900. **Deviation:** task 18 asks for this pre-work before any design
+  change; it ran after the implementation. It replayed the unchanged base, so
+  what it recorded is the base's behavior, but the order cannot be recovered
+  (code review round 1, note 3). It found no observed behavior without a story. S188's base run on 578ec3c7 is
   the inventory of the ended record's stage: "Ending snapshot / as saved at the
   ending", an unavailable figure naming the late-context reason, and a stage
   that stays the same after either reassessment is pressed.

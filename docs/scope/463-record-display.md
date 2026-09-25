@@ -85,12 +85,13 @@ Worker-run, sandboxed; every browser leg coordinator-run, unsandboxed, on
 synthetic case stores.
 
 - **Revise pre-work (task 27).** #463's 135 touched stories on its base
-  cfa1ace4 at 1280x720 (the coordinator bounded this leg to one size):
+  cfa1ace4 at 1280x720 only. **Deviation:** task 27 asks for 1280x720 and
+  1440x900 before any design change; the coordinator bounded the leg to one
+  size, and it ran after the implementation (code review round 1, note 3):
   `# executed 132 · failed 3`. S164 and S165 failed on reads that #460's
   retained-return re-read started. That was a slice-1 regression, fixed in this
   slice as an ADR 460 addendum. S188 failed on a story defect, fixed in the
-  same slice. The pre-work found no observed behavior without a story. Like
-  #462's, it ran after the implementation, against the unchanged base.
+  same slice. The pre-work found no observed behavior without a story.
 - **Failing first.** Backend, on cfa1ace4: the Plan decision, clock views,
   basal and dose dating tests failed; the Plan-link test `1 failed, 2 passed`.
   The old-dating record test passes on the base by construction; it fails
@@ -104,6 +105,7 @@ synthetic case stores.
 - **Renders (task 36).** The showcase's Read column and c3-history's finished
   record, at both sizes, before on cfa1ace4 and after on 403cfd67, plus the
   desk-suite collapsed figure after on the branch, are handed to the
-  coordinator uncommitted. The collapsed figure has no before render: its test
-  asserts before it captures, so its failing base run left none. The base
-  render of c3-history's finished record shows the same empty 220px box.
+  coordinator uncommitted. The collapsed figure's before render was owed and
+  missing at review round 1 (note 4): its test asserted before it captured.
+  It now captures first, and its before render is taken on cfa1ace4 with the
+  test laid over it.

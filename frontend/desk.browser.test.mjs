@@ -1002,13 +1002,14 @@ test(`an ended record with no saved curve gives its figure only its legend line 
   const { page } = desk;
   try {
     await page.locator('.gf-stage-trial [data-outcome="tir"]').waitFor({ state: 'visible', timeout: 30000 });
+    // Captured before the assertions, so a failing base run still yields its render.
+    await capture(page, `saved-no-curve-${viewport}`);
     assert.equal(await page.locator('.gf-stage-trial [data-trial-chart]').getAttribute('data-figure-state'), 'saved',
       'premise: the saved ending serves no curve');
     const figure = await box(page, '.gf-stage-trial [data-trial-chart]');
     const legend = await box(page, '.gf-stage-trial [data-trial-chart] .ds-chart-legend');
     assert.ok(figure.h <= legend.h + 1, `the figure (${figure.h}px) is no taller than its legend line (${legend.h}px)`);
     assert.equal(await countOf(page, '.gf-stage-trial [role="img"]'), 0, 'nothing on the stage announces a chart');
-    await capture(page, `saved-no-curve-${viewport}`);
   } finally { await desk.close(); }
 });
 }

@@ -84,12 +84,14 @@ A Trial detected from dose-stamped boluses SHALL start at the first bolus of its
 first settled day that carries the new value, and a basal slot Trial detected
 from the delivery feed SHALL start at the first sample of its first settled day
 that carries the new rate. The settled-day reduction SHALL be unchanged. A
-derived change that an existing retained record already names (same parameter,
-slot, block, and before and after values, with the record's change time on the
-same pump day at or before the derived time) SHALL be that record: it SHALL keep
-the record's change time and id, its comparison SHALL find its setting history,
-and its reversal SHALL still be detected. No retained record SHALL be rewritten.
-The analyzer's setting epochs SHALL be unchanged.
+delivery-detected change that an existing retained record already names (same
+parameter, slot, block, and before and after values, with the record's change
+time on the same pump day at or before the derived time) SHALL be that record:
+it SHALL keep the record's change time and id, its comparison SHALL find its
+setting history, and its reversal SHALL still be detected. A change a pump read
+supplies (an active-profile switch) SHALL keep its read's instant and SHALL NOT
+be matched to an earlier record this way. No retained record SHALL be
+rewritten. The analyzer's setting epochs SHALL be unchanged.
 
 #### Scenario: A mid-morning edit is dated at the first bolus carrying it
 
@@ -97,6 +99,13 @@ The analyzer's setting epochs SHALL be unchanged.
   day's first bolus carries the old values and later boluses the new ones
 - **WHEN** the Trial is read
 - **THEN** its change time is the first bolus carrying the new values
+
+#### Scenario: Two whole-profile switches on one day are two records
+
+- **GIVEN** a whole-profile switch recorded at 08:00 and a second whole-profile
+  switch read at 18:00 the same day
+- **WHEN** a reconcile runs
+- **THEN** there are two records, one at each switch's read
 
 #### Scenario: A record saved under the old dating stays one record
 

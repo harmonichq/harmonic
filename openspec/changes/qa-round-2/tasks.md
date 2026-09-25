@@ -393,8 +393,9 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   slot, block, start, before, after) -> bool`, true when the record's
   parameter, slot, block, before and after equal the given ones and the
   record's change time is on `start`'s pump day at or before `start` (ADR 463
-  decision 5), and make `_reviewable_trials` (existing records keep their time
-  and id), `_reversal_at`, and `ciq_autotune/follow_up_comparison.py`'s
+  decision 5), and make `_reviewable_trials` (existing records of a
+  delivery-detected change keep their time and id; a pump-read switch never
+  matches), `_reversal_at`, and `ciq_autotune/follow_up_comparison.py`'s
   `_setting_period` (which already imports from `watched_change` inside the
   function) all call it rather than restating the rule; keep the clock
   views in `capture_ending`; serve a matched Plan's available decision context

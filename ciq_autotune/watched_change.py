@@ -172,12 +172,15 @@ def basal_slot_regimes(basal_events, slot_minutes: int = 30) -> Dict[int, List[R
 
 
 def same_change(record, *, parameter, slot, block, start, before, after) -> bool:
-    """Whether a retained record names this derived change (ADR 463 decision 5).
+    """Whether a retained record names this delivery-detected change (ADR 463
+    decision 5).
 
     A record saved while a delivery-detected change was dated at its day's first
     observation keeps that time and its id: it is this change when its parameter,
     slot, block and values match and its change time is on ``start``'s pump day,
-    at or before ``start``. A record dated at ``start`` itself matches too.
+    at or before ``start``. A record dated at ``start`` itself matches too. Only
+    changes derived from the dose-stamped boluses or the basal feed ask; a
+    pump-read switch is dated at its read.
     """
     changed = datetime.fromisoformat(record["changed_at"])
     kept = record.get("block")
@@ -510,9 +513,11 @@ def _reviewable_trials(store, now, *, horizon_start=None):
     retained = store.follow_up_records("trial")
     trials = []
     for cand in candidates:
-        # A retained record of this change keeps its own time, and so its id,
-        # whatever the detector dates the change at now (ADR 463).
-        kept = next((record for record in retained if same_change(
+        # A retained record of a delivery-detected change keeps its own time,
+        # and so its id, whatever the detector dates the change at now (ADR 463).
+        # A pump-read switch is dated at its own read and was never re-dated, so
+        # a second switch that day is its own Trial.
+        kept = None if cand.switch else next((record for record in retained if same_change(
             record, parameter=cand.parameter, slot=cand.slot, block=cand.block,
             start=cand.start, before=cand.before, after=cand.after)), None)
         start = datetime.fromisoformat(kept["changed_at"]) if kept else cand.start

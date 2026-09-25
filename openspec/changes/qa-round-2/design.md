@@ -419,12 +419,15 @@ change time.
    picked, so a re-dated start is never earlier and never on another day.
    Epochs, the analyzer's own change point, are unchanged; the `Regime`
    docstring stops claiming it matches them.
-5. **Existing records keep their time and identity (Connor).** A derived change
-   that an existing retained record already names (same parameter, slot, block,
-   before and after values, with the record's change time on the same pump day
-   and at or before the derived time) is that record: it keeps the record's
-   change time and id. The comparison's setting-period lookup and the reversal
-   check accept the same match. Nothing is rewritten or migrated. The spike moved
+5. **Existing records keep their time and identity (Connor).** A
+   delivery-detected change that an existing retained record already names (same
+   parameter, slot, block, before and after values, with the record's change
+   time on the same pump day and at or before the derived time) is that record:
+   it keeps the record's change time and id. A pump-read switch is dated at its
+   own read and was never re-dated, so the match never applies to it: a second
+   whole-profile switch on the same day is a Trial of its own (review round 1).
+   The comparison's setting-period lookup and the reversal check accept the same
+   match; both read delivery history only. Nothing is rewritten or migrated. The spike moved
    no regime start and no derived id on any of 73 committed case stores, so this
    rule acts on real stores only.
 6. **A matched Trial shows its Plan's decision.** A Trial record whose receipt

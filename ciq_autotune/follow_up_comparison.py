@@ -128,11 +128,11 @@ def _setting_period(store, record, cutoff, earliest):
             regimes = basal_slot_regimes([e for e in store.basal_events() if e.t <= cutoff]).get(slot_index, [])
         elif parameter in ("isf", "carb_ratio") and block is None and slot is None:
             regimes = dose_regimes([b for b in store.bolus_events() if b.t <= cutoff], parameter)
-        # A record dated at its change day's first observation still names the
-        # regime that day starts (ADR 463), and keeps its own change time.
-        matching = next((i for i, run in enumerate(regimes) if i and same_change(
-            record, parameter=parameter, slot=slot, block=block, start=run.start,
-            before=regimes[i - 1].value, after=run.value)), None)
+        # A record is dated at its regime's start, or, saved before ADR 463, at
+        # the date that dating gave the regime; it keeps its own change time.
+        matching = next((i for i, run in enumerate(regimes) if i and (run.start == changed or same_change(
+            record, parameter=parameter, slot=slot, block=block, legacy=run.legacy_start,
+            before=regimes[i - 1].value, after=run.value))), None)
         if matching is not None:
             runs = [(r.start, r.value) for r in regimes]
             runs[matching] = (changed, runs[matching][1])

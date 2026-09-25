@@ -90,24 +90,33 @@ class Regime:
     day is the one ``epochs``' change walk picks; ``epochs`` itself still places its
     change point at that day's first observation. The regime list is the value
     history the Trial's change-point and revert rule read off.
+
+    ``legacy_start`` is that day's first observation whatever it carried: the
+    instant the dating before ADR 463 gave this regime, which a record saved then
+    still carries (ADR 463 decision 5).
     """
 
     start: datetime
     value: float
+    legacy_start: datetime
 
 
 def _regimes_from_days(days: List[tuple]) -> List[Regime]:
-    """Collapse ``[(day, rep_value, first_time)]`` (ascending) into value regimes.
+    """Collapse ``[(day, rep_value, first_time, day_first_time)]`` (ascending) into
+    value regimes.
 
     Consecutive days at the same representative value are one regime; the regime's
     ``start`` is the run's first day's ``first_time``, which each caller gives as
-    that day's first observation carrying ``rep_value``. This is the same value
-    history ``epochs``' newest→oldest change walk reads, exposed as a list.
+    that day's first observation carrying ``rep_value``, and its ``legacy_start``
+    that day's first observation of any value. A day given without the fourth
+    element (the #463 triage spike) is its own legacy start. This is the same
+    value history ``epochs``' newest→oldest change walk reads, exposed as a list.
     """
     regimes: List[Regime] = []
-    for _, value, first_t in days:
+    for _, value, first_t, *day_first in days:
         if not regimes or regimes[-1].value != value:
-            regimes.append(Regime(start=first_t, value=value))
+            regimes.append(Regime(start=first_t, value=value,
+                                  legacy_start=day_first[0] if day_first else first_t))
     return regimes
 
 
@@ -127,15 +136,17 @@ def dose_regimes(boluses, parameter: str) -> List[Regime]:
         return []
     by_day: Dict[object, List[float]] = {}
     first_t: Dict[tuple, datetime] = {}
+    day_first: Dict[object, datetime] = {}
     for t, v in obs:
         value = round(float(v), 6)
         by_day.setdefault(t.date(), []).append(value)
         first_t.setdefault((t.date(), value), t)
+        day_first.setdefault(t.date(), t)
     days: List[tuple] = []
     for day, values in by_day.items():
         counts = Counter(values)
         rep = max(counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
-        days.append((day, rep, first_t[(day, rep)]))
+        days.append((day, rep, first_t[(day, rep)], day_first[day]))
     days.sort(key=lambda d: d[0])
     return _regimes_from_days(_settled_days(days, _MIN_EPOCH_DAYS))
 
@@ -162,7 +173,7 @@ def basal_slot_regimes(basal_events, slot_minutes: int = 30) -> Dict[int, List[R
         counts = Counter(round(e.profile_basal_rate, 6) for e in samples)
         rep = max(counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
         first = next(e.t for e in samples if round(e.profile_basal_rate, 6) == rep)
-        by_slot.setdefault(s, []).append((day, rep, first))
+        by_slot.setdefault(s, []).append((day, rep, first, samples[0].t))
 
     out: Dict[int, List[Regime]] = {}
     for s, days in by_slot.items():
@@ -171,25 +182,24 @@ def basal_slot_regimes(basal_events, slot_minutes: int = 30) -> Dict[int, List[R
     return out
 
 
-def same_change(record, *, parameter, slot, block, start, before, after) -> bool:
-    """Whether a retained record names this delivery-detected change (ADR 463
-    decision 5).
+def same_change(record, *, parameter, slot, block, legacy, before, after) -> bool:
+    """Whether a retained record saved under the dating before ADR 463 names this
+    delivery-detected change (ADR 463 decision 5).
 
-    A record saved while a delivery-detected change was dated at its day's first
-    observation keeps that time and its id: it is this change when its parameter,
-    slot, block and values match and its change time is on ``start``'s pump day,
-    at or before ``start``. A record dated at ``start`` itself matches too. Only
-    changes derived from the dose-stamped boluses or the basal feed ask; a
-    pump-read switch is dated at its read. A whole-profile change carries no
-    slot, block or values, so any earlier profile record that day matches it:
-    the caller lets each record be kept by the earliest matching candidate only.
+    That dating put a delivery-detected change at its settled day's first
+    observation, whatever it carried: ``legacy``, computed from the same data.
+    The record is this change only when its parameter, slot and block match, its
+    change time equals ``legacy`` to the second, and its before and after values
+    match wherever it carries them. A whole-profile record carries no values, so
+    it matches on that exact instant alone. Nothing else about the time counts:
+    no window, no ordering.
     """
-    changed = datetime.fromisoformat(record["changed_at"])
     kept = record.get("block")
     return (record["parameter"] == parameter and record.get("slot") == slot
             and (tuple(kept) if kept is not None else None) == (tuple(block) if block is not None else None)
-            and record.get("before") == before and record.get("after") == after
-            and changed.date() == start.date() and changed <= start)
+            and (record.get("before") is None or record.get("before") == before)
+            and (record.get("after") is None or record.get("after") == after)
+            and datetime.fromisoformat(record["changed_at"]) == legacy)
 
 
 # --- Trial detection -------------------------------------------------------
@@ -263,6 +273,10 @@ class _Cand:
     # snapshot feed doesn't produce).
     switch: bool = False
     reverted: bool = False
+    # The instant the dating before ADR 463 gave a delivery-detected candidate:
+    # its settled day's first observation (for a whole-profile one, the latest of
+    # its parts'). ``None`` for a pump-read switch, which that dating never moved.
+    legacy: Optional[datetime] = None
     # A block-scoped I:C candidate bound to one complete annotated applied Plan group
     # (#581) carries that group's captured wrap-aware arc and member list. The arc is
     # Trial-owned identity: later profile repartitions cannot retarget it, because it
@@ -512,19 +526,21 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         basal, bolus, snapshots, plan_history, mature_window=mature_window,
         horizon_start=horizon_start,
     )
-    # A retained record of a delivery-detected change keeps its own time, and so
-    # its id, whatever the detector dates the change at now (ADR 463). Each
-    # record is kept by at most one candidate: the earliest delivery-detected
-    # candidate it names on its pump day, at or after it. A later candidate that
-    # day, such as a second whole-profile change, whose parameter, slot, block
-    # and values all match, is a Trial of its own. A pump-read switch is dated
-    # at its own read and was never re-dated, so it keeps no record.
+    # A record saved under the dating before ADR 463 keeps its own time, and so
+    # its id: a delivery-detected candidate keeps it only when the record's
+    # change time is exactly the date that dating gave the candidate (same_change),
+    # and each record is kept by one candidate at most, the earliest. A record
+    # dated at a pump-read switch, reverted ones included, is never kept: the
+    # switch's own candidate carries it (ADR 463 decision 5).
+    switched = {switch.at for switch in _profile_switches(snapshots)}
     delivered = sorted((cand for cand in candidates if not cand.switch), key=lambda cand: cand.start)
     keeper = {}
     for record in store.follow_up_records("trial"):
+        if datetime.fromisoformat(record["changed_at"]) in switched:
+            continue
         cand = next((cand for cand in delivered if same_change(
             record, parameter=cand.parameter, slot=cand.slot, block=cand.block,
-            start=cand.start, before=cand.before, after=cand.after)), None)
+            legacy=cand.legacy, before=cand.before, after=cand.after)), None)
         if cand is not None:
             keeper.setdefault(id(cand), record)
     trials = []
@@ -785,7 +801,7 @@ def _regime_candidates(parameter: str, slot: Optional[str], regimes: List[Regime
             closed.update((index - 1, index))
     return [
         _Cand(parameter, slot, regime.start, regimes[index - 1].value, regime.value,
-              regimes[:index + 1])
+              regimes[:index + 1], legacy=regime.legacy_start)
         for index, regime in enumerate(regimes)
         if index and index not in closed
     ]
@@ -807,7 +823,7 @@ def _coalesce_profile_changes(candidates: List[_Cand]) -> List[_Cand]:
             consumed.update(other_index for other_index, _ in related)
             out.append(_Cand(
                 "profile", None, max(other.start for _, other in related),
-                None, None, [],
+                None, None, [], legacy=max(other.legacy for _, other in related),
             ))
         else:
             consumed.add(index)
@@ -1558,8 +1574,9 @@ def _reversal_at(store, record, history=None):
     else:
         regimes = history.doses(record["parameter"])
     for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
-        if (same_change(record, parameter=record["parameter"], slot=record.get("slot"), block=None,
-                        start=changed.start, before=previous.value, after=changed.value)
+        if ((changed.start == start
+             or same_change(record, parameter=record["parameter"], slot=record.get("slot"), block=None,
+                            legacy=changed.legacy_start, before=previous.value, after=changed.value))
                 and _is_revert([previous, changed, returned], _MATURE_WINDOW)):
             return returned.start
     return None

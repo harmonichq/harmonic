@@ -84,17 +84,17 @@ A Trial detected from dose-stamped boluses SHALL start at the first bolus of its
 first settled day that carries the new value, and a basal slot Trial detected
 from the delivery feed SHALL start at the first sample of its first settled day
 that carries the new rate. The settled-day reduction SHALL be unchanged. A
-delivery-detected change that an existing retained record already names (same
-parameter, slot, block, and before and after values, with the record's change
-time on the same pump day at or before the derived time) SHALL be that record:
-it SHALL keep the record's change time and id, its comparison SHALL find its
-setting history, and its reversal SHALL still be detected. Each retained record
-SHALL be kept by at most one change: the earliest same-day delivery-detected
-change at or after it, so a second whole-profile change seen only in delivery
-history later that day SHALL be a record of its own. A change a pump read
-supplies (an active-profile switch) SHALL keep its read's instant and SHALL NOT
-be matched to an earlier record this way. No retained record SHALL be
-rewritten. The analyzer's setting epochs SHALL be unchanged.
+delivery-detected change SHALL keep an existing retained record, its change time
+and its id, only when the record's parameter, slot and block match, its before
+and after values match wherever it carries them, and its change time equals, to
+the second, the date the earlier dating gives the change: the first observation
+of its first settled day, or for a whole-profile change the latest of its parts'
+such dates, computed from the same data. Each retained record SHALL be kept by
+one change at most. A record whose change time is a pump-read switch instant,
+reverted switches included, SHALL NOT be kept by a delivery-detected change. A
+kept record's comparison SHALL find its setting history, and its reversal SHALL
+still be detected. A change a pump read supplies (an active-profile switch) SHALL
+keep its read's instant. No retained record SHALL be rewritten. The analyzer's setting epochs SHALL be unchanged.
 
 #### Scenario: A mid-morning edit is dated at the first bolus carrying it
 
@@ -119,10 +119,29 @@ rewritten. The analyzer's setting epochs SHALL be unchanged.
 - **THEN** there are two records, at 06:00 and at 20:00, and the 06:00 record
   keeps its time and id
 
+#### Scenario: An in-place edit after a reverted switch is a record of its own
+
+- **GIVEN** a whole-profile switch recorded at 08:00 and walked back at 10:00, and
+  an in-place edit of basal and target seen only in delivery history at 20:30
+  the same day
+- **WHEN** a later reconcile runs
+- **THEN** the edit is a record of its own at 20:30, and the switch's record keeps
+  its 08:00 time
+
+#### Scenario: A record off the earlier dating's date is not kept
+
+- **GIVEN** a retained correction-factor record dated at 09:00 on a day whose
+  first bolus, at 08:00, still carried the old value, and a change first seen at
+  12:30
+- **WHEN** a reconcile runs
+- **THEN** the change is a record of its own at 12:30, and the 09:00 record is
+  unchanged
+
 #### Scenario: A record saved under the old dating stays one record
 
 - **GIVEN** a retained record dated at the day's first observation of its change
-  day, before this requirement
+  day, before this requirement, which is exactly the date the earlier dating
+  gives the change
 - **WHEN** a reconcile runs and the record is read with a Retained context
   reassessment
 - **THEN** there is still one record for the change, with its id and change time

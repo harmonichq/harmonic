@@ -66,7 +66,8 @@ not-requested: data-figure-state="not-requested", chart seat true, role="img" tr
 - Option 1 for an ended record's curve (the issue's recommendation); one-decimal
   printing in the desk only; no-curve figures take no chart space; a matched
   Trial serves its Plan's decision; the link rule (ADR 431 addendum); first-new-
-  value dating with the same-day rule for existing records. ADR 463, decided
+  value dating with an exact earlier-dating match for existing records (exact
+  since code review round 3). ADR 463, decided
   autonomously during the AFK run.
 - Surface lifecycle `revise`, as for #462; sweep deferred to start (sandbox).
 - Flat order, for the same reason as #462; the nearby reviewer-memory anchors
@@ -95,7 +96,7 @@ synthetic case stores.
 - **Failing first.** Backend, on cfa1ace4: the Plan decision, clock views,
   basal and dose dating tests failed; the Plan-link test `1 failed, 2 passed`.
   The old-dating record test passes on the base by construction; it fails
-  against a same-day match reduced to exact time. Frontend:
+  against a match reduced to the new dating's instant alone. Frontend:
   `ℹ pass 82 / ℹ fail 3`. S189 fails both legs at both sizes on cfa1ace4
   ("difference -3.9000000000000057"; no saved clock bins). The desk suite's
   collapsed-figure test fails at both sizes ("the figure (220px) is no taller

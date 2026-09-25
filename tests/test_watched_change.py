@@ -716,6 +716,70 @@ class DeliveryDatingTest(unittest.TestCase):
         records = sorted((r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial"))
         self.assertEqual(records, [(_at(10, 6), "profile"), (_at(10, 20), "profile")])
 
+    def test_an_in_place_edit_after_a_reverted_switch_keeps_its_own_record(self):
+        """Code review round 3's probe: a whole-profile switch at 08:00, recorded,
+        then walked back at 10:00; an in-place edit of basal and target seen
+        only in delivery history at 20:30 is a record of its own, never the
+        switch's record."""
+        profiles = [_profile(1, [_seg(0, 0.6, 40, 7.0, 110)]), _profile(2, [_seg(0, 0.6, 36, 8.0, 110)])]
+
+        def read(when, active):
+            self.store.upsert_settings_snapshot(when.strftime(wc._DT_FMT),
+                                                PumpSettings(active_idp=active, profiles=tuple(profiles)))
+        read(_day(0) + timedelta(hours=6), 1)
+        read(_day(10) + timedelta(hours=8), 2)
+        self.reconcile(_day(10) + timedelta(hours=9))
+        self.assertEqual([r["changed_at"] for r in self.store.follow_up_records("trial")], [_at(10, 8)],
+                         "premise: the 08:00 switch is recorded")
+        read(_day(10) + timedelta(hours=10), 1)
+        edit = _day(10) + timedelta(hours=20, minutes=30)
+        rows = []
+        for n in range(1, 13):
+            for hour, minute in ((8, 0), (12, 30), (20, 30), (21, 0), (22, 0), (23, 0)):
+                when = _day(n) + timedelta(hours=hour, minutes=minute)
+                rows.append({"seq_num": len(rows) + 1, "request_time": when.strftime(wc._DT_FMT),
+                             "completion_time": when.strftime(wc._DT_FMT), "description": "Bolus",
+                             "completion": "Completed", "insulin": 5.0, "carbs": 40, "isf": 40.0,
+                             "carb_ratio": 7.0, "target_bg": 100 if when >= edit else 110})
+        self.store.upsert_bolus(rows)
+        self.store.upsert_basal([{"seq_num": n, "time": (_day(n) + timedelta(hours=20, minutes=30)).strftime(wc._DT_FMT),
+                                  "delivery_type": "Profile", "duration_mins": 30,
+                                  "basal_rate": 0.7 if n >= 10 else 0.6, "profile_basal_rate": 0.7 if n >= 10 else 0.6}
+                                 for n in range(1, 13)])
+        self.reconcile(_day(12) + timedelta(hours=23))
+        records = sorted((r["changed_at"], r["parameter"]) for r in self.store.follow_up_records("trial"))
+        self.assertEqual(records, [(_at(10, 8), "profile"), (edit.strftime(wc._DT_FMT), "profile")])
+
+    def old_dated_isf_record(self, changed_at):
+        """A correction-factor change edited at 10:00 on day 10, the day's 08:00
+        bolus still carrying the old value, with a retained record saved at
+        ``changed_at``; reconciled on day 15. Answers the records by change time."""
+        from ciq_autotune.follow_up_comparison import capture_comparison_context
+        self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(
+            active_idp=1, profiles=(_profile(1, [_seg(0, 0.6, 30, 7.0, 110)]),)))
+        self.store.upsert_bolus(_meal_day_boluses(1, 15, lambda n, hour: {
+            "isf": 45.0 if n > 10 or (n == 10 and hour >= 10) else 30.0, "carb_ratio": 7.0}))
+        stamp = datetime.fromisoformat(changed_at).strftime("%Y%m%d%H%M%S")
+        with self.store.follow_up_transaction():
+            self.store.save_follow_up_record({
+                "kind": "trial", "id": f"isf-all-{stamp}", "version": "386:1", "parameter": "isf", "slot": None,
+                "changed_at": changed_at, "before": 30.0, "after": 45.0, "block": None, "members": None,
+                "first_observed_at": changed_at, "observed_context": wc._unavailable("not_recorded"),
+                "comparison_context": capture_comparison_context(self.store, at=_day(11), input_revision=0)})
+        self.reconcile(_day(15))
+        return {r["changed_at"]: r["id"] for r in self.store.follow_up_records("trial")}
+
+    def test_a_record_at_the_legacy_date_is_kept_with_its_id(self):
+        # 08:00 is the day's first bolus: the date the old dating gave this change.
+        self.assertEqual(self.old_dated_isf_record(_at(10, 8)), {_at(10, 8): "isf-all-20260511080000"})
+
+    def test_a_record_off_the_legacy_date_is_not_kept(self):
+        # 09:00 is no date either dating gives this change, so the change is a
+        # record of its own at its first bolus carrying the new value.
+        first_new = (_day(10) + timedelta(hours=12, minutes=30)).strftime(wc._DT_FMT)
+        self.assertEqual(self.old_dated_isf_record(_at(10, 9)),
+                         {_at(10, 9): "isf-all-20260511090000", first_new: "isf-all-20260511123000"})
+
     def test_a_record_saved_under_the_day_dating_stays_that_record(self):
         from ciq_autotune.follow_up_comparison import capture_comparison_context
         self.store.upsert_settings_snapshot(_at(0, 6), PumpSettings(

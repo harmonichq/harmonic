@@ -419,20 +419,24 @@ change time.
    picked, so a re-dated start is never earlier and never on another day.
    Epochs, the analyzer's own change point, are unchanged; the `Regime`
    docstring stops claiming it matches them.
-5. **Existing records keep their time and identity (Connor).** A
-   delivery-detected change that an existing retained record already names (same
-   parameter, slot, block, before and after values, with the record's change
-   time on the same pump day and at or before the derived time) is that record:
-   it keeps the record's change time and id. Each record is kept by at most one
-   candidate: the earliest delivery-detected candidate it names on its pump day,
-   at or after it. A whole-profile change seen only in delivery history carries
-   no slot, block or values, so any earlier profile record that day names it; a
-   second such change later that day is therefore a Trial of its own, never the
-   first record (review round 2). A pump-read switch is dated at its own read
-   and was never re-dated, so the match never applies to it: a second
-   whole-profile switch on the same day is a Trial of its own (review round 1).
-   The comparison's setting-period lookup and the reversal check accept the same
-   match; both read delivery history only. Nothing is rewritten or migrated. The spike moved
+5. **Existing records keep their time and identity (Connor).** A record saved
+   before this change carries the date the earlier dating gave its change: the
+   first observation of the change's first settled day (for a whole-profile
+   change, the latest of its parts'). A delivery-detected change keeps an
+   existing record only when all of these hold: the parameter, slot and block
+   match; the record's change time equals, to the second, the date that earlier
+   dating gives this change, computed from the same data; and the record's
+   before and after values match wherever it carries them. A whole-profile
+   record carries no values, so it matches on that exact instant alone. Each
+   record is kept by one change at most, the earliest. A record whose change
+   time is a pump-read switch instant, reverted switches included, is never kept
+   by a delivery-detected change; the switch's own candidate carries it. So an
+   old-dated record keeps its time and id by construction, and any other record
+   — one dated under this change, a switch's, or a later change on the same day
+   — is never taken by a change it does not name exactly (review rounds 1–3).
+   The comparison's setting-period lookup and the reversal check accept a
+   record dated at its regime's start or at that exact earlier date.
+   Nothing is rewritten or migrated. The spike moved
    no regime start and no derived id on any of 73 committed case stores, so this
    rule acts on real stores only.
 6. **A matched Trial shows its Plan's decision.** A Trial record whose receipt
@@ -460,6 +464,19 @@ change time.
    about 46 hours after the Trial's change time, so it stays unlinked and
    becomes the more-than-a-day guard; a sibling test with the read within a
    day proves the link (plan review round 1).
+
+**Decision 5's exact match, decided autonomously during AFK run (coordinator design
+ruling at code review round 3, the review cap).** Three review rounds each found the
+same-change rule taking a record it should not: a second same-day switch (round 1),
+a second same-day delivery-detected whole-profile change (round 2), and a reverted
+switch's record (round 3). The cause was structural. A record does not store what
+created it, and a whole-profile identity carries no values. The former window
+rule, any earlier record on the change's day, therefore inferred identity from time
+order alone. The
+rule is now exact: the record's change time must equal the date the earlier dating
+gives the candidate, to the second, and a switch instant is never kept. An
+old-dated record carries that date by construction, so it still keeps its time and
+id. Every other record is either the candidate's own id or not the candidate at all.
 
 **Decided autonomously during AFK run.** Decisions 1–4, 6 and 7, and their
 words: the ticket offered no option for 1, 2, 4, 6 or 7 beyond its example rule,

@@ -389,15 +389,15 @@ reproduction is `docs/scope/463-record-display.repro.py`,
 - [x] 29. Backend (ADR 463 decisions 3–7): in `ciq_autotune/watched_change.py`,
   date `dose_regimes` and `basal_slot_regimes` at the first observation carrying
   the regime's value and correct the `Regime` and `_regimes_from_days`
-  docstrings; add one helper, `watched_change.same_change(record, *, parameter,
-  slot, block, start, before, after) -> bool`, true when the record's
-  parameter, slot, block, before and after equal the given ones and the
-  record's change time is on `start`'s pump day at or before `start` (ADR 463
-  decision 5), and make `_reviewable_trials` (existing records of a
-  delivery-detected change keep their time and id, each kept by at most one
-  candidate, the earliest same-day candidate at or after it, so a second
-  delivery-detected whole-profile change that day is its own Trial; a pump-read
-  switch never matches), `_reversal_at`, and `ciq_autotune/follow_up_comparison.py`'s
+  docstrings; give each regime the date the earlier dating gave it (its settled
+  day's first observation); add one helper, `watched_change.same_change(record, *,
+  parameter, slot, block, legacy, before, after) -> bool`, true when the record's
+  parameter, slot and block equal the given ones, its before and after equal them
+  wherever it carries them, and its change time equals `legacy` to the second
+  (ADR 463 decision 5, exact since code review round 3); and make
+  `_reviewable_trials` (an old-dated record of a delivery-detected change keeps
+  its time and id, each record kept by one candidate at most, the earliest; a
+  record at a pump-read switch instant is never kept), `_reversal_at`, and `ciq_autotune/follow_up_comparison.py`'s
   `_setting_period` (which already imports from `watched_change` inside the
   function) all call it rather than restating the rule; keep the clock
   views in `capture_ending`; serve a matched Plan's available decision context

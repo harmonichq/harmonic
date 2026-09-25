@@ -166,6 +166,23 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
         self.assertEqual(len(result["runs"]), 1)
         self.assertFalse(result["runs"][0]["in_pool"])
 
+    def test_the_side_the_counted_runs_landed_on_is_copied_through(self):
+        # 60 g on 15 U reads 4.0 g/U against a programmed 5.0.
+        events = [_meal(day, 9, insulin=15.0, bg=110.0) for day in range(12)]
+        outcome_cgm = [
+            CgmReading(event.t + timedelta(minutes=minute), 110, "synthetic")
+            for event in events for minute in (290, 295, 300, 305, 310)
+        ]
+        block = _blocks(events, cgm_readings=outcome_cgm,
+                        isf_effective=50.0)[0].to_dict()
+        result = prepare_ic_block_evidence(
+            self._store(outcome_cgm, events), {"ic_blocks": [block]}).project(0)
+
+        channels = block["evidence"]["recurrence_channels"]
+        self.assertEqual("below", channels["side_direction"])
+        self.assertEqual({"side_k": channels["side_k"], "side_n": channels["side_n"],
+                          "direction": "below"}, result["block"]["side"])
+
     def test_missing_analyzer_evidence_is_not_an_empty_roster(self):
         with self.assertRaises(InconsistentIcBlockEvidence):
             prepare_ic_block_evidence(self._store(), {"ic_blocks": [{"block_id": 0}]})
@@ -178,6 +195,7 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
         for path in (
             ("current_values",), ("estimate", "wide"),
             ("evidence", "recurrence_channels", "side_k"),
+            ("evidence", "recurrence_channels", "side_direction"),
             ("evidence", "eligibility", "whole_runs"),
             ("evidence", "eligibility", "fractional_run_ownership"),
             ("evidence", "ledger"), ("evidence", "ledger", "pooled_ratio"),
@@ -185,6 +203,7 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             ("evidence", "harm_evidence", "gated"),
             ("evidence", "harm_evidence", "evaluated"),
             ("evidence", "runs", 0, "pool_reason"), ("evidence", "runs", 0, "side"),
+            ("evidence", "runs", 0, "member_in_block"),
         ):
             with self.subTest(path=path):
                 broken = deepcopy(block)
@@ -445,7 +464,7 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
             "effective_support": 0.0, "examined_runs": 1, "excluded_runs": 1,
             "current": 5.0,
             "estimate": {"value": None, "lo": None, "hi": None, "wide": True},
-            "side": {"side_k": 0, "side_n": 0},
+            "side": {"side_k": 0, "side_n": 0, "direction": None},
             "support_detail": {"whole_runs": 0, "fractional_run_ownership": 0.0,
                                "effective_run_count": 0.0},
         })

@@ -323,6 +323,25 @@ class PublishedPoolReasonTest(unittest.TestCase):
         self.assertTrue(all(row["in_pool"] for row in shares))
         self.assertAlmostEqual(1.0, sum(row["ownership"] for row in shares))
 
+    def test_a_run_chained_across_two_blocks_marks_which_members_each_block_owns(self):
+        events = [item for day in range(12)
+                  for item in (_meal(day, 11), _meal(day, 13))]
+        fitted, _ = analyze_ic_blocks_fuzzy(
+            events, [(0, 5.0), (720, 6.0)], observed_days=90,
+            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+        )
+        blocks = {block.block_id: block for block in fitted}
+        run_id = _meal(0, 11).t.isoformat()
+        rows = {bid: next(row for row in blocks[bid].evidence["runs"]
+                          if row["run_id"] == run_id) for bid in (0, 720)}
+
+        # The 11:00 meal was dosed in the morning block and the 13:00 meal in the
+        # afternoon one; both rows carry the whole run's members in the same order.
+        self.assertEqual([0.0, 120.0], rows[0]["member_offsets_min"])
+        self.assertEqual([True, False], rows[0]["member_in_block"])
+        self.assertEqual([0.0, 120.0], rows[720]["member_offsets_min"])
+        self.assertEqual([False, True], rows[720]["member_in_block"])
+
     def test_a_shared_blocks_balance_sheet_weights_each_run_by_its_carb_share(self):
         events = [item for day in range(12)
                   for item in (_meal(day, 11), _meal(day, 13))]

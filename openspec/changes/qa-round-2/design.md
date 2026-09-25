@@ -470,6 +470,16 @@ flexible track, so a figure with no curve gets an `auto` track there too, the
 desktop templates' rows otherwise kept, which carries decision 2's "every
 width" to the narrow desk. The new story takes S189, after #462's S188.
 
+**The whole-pytest budget for this slice, decided autonomously during AFK run
+(coordinator ruling after code review round 1).** On one machine in one quiet
+session, back to back, the slice's whole pytest took 421.12 s and the unchanged
+base (origin/main 59fa4737) took 416.74 s (real 417.88 s): the base already
+exceeds the 400 s ceiling of record there, and the slice adds about 4 s (1%).
+For this run the whole-pytest budget is judged against the base measured on the
+same machine in the same session. No limit is raised. Re-baselining the 160 s
+figure the ceiling is 2.5× of is Connor's decision, flagged in the pull request
+body.
+
 **Consequences.** Every ending `capture_ending` saves from now on carries clock
 views, generated case stores included, so c3-history's finished record and a Trial finished in the
 served app draw their saved curves. The showcase's watched record prints

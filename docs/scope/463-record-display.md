@@ -107,5 +107,7 @@ synthetic case stores.
   desk-suite collapsed figure after on the branch, are handed to the
   coordinator uncommitted. The collapsed figure's before render was owed and
   missing at review round 1 (note 4): its test asserted before it captured.
-  It now captures first, and its before render is taken on cfa1ace4 with the
-  test laid over it.
+  It now captures first, and its before render was captured on cfa1ace4 at
+  1280x720 with the test laid over it, where the test fails as expected. At
+  1440x900 on the final app code the desk suite passes 53 of 53, and S188,
+  S189, S164, S165, S108, S137, S138 and S186 pass (`# executed 8 · failed 0`).

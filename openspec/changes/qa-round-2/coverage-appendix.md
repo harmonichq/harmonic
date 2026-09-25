@@ -57,3 +57,24 @@ showcase is unchanged. The five budgets were measured once, by
 The whole-pytest time is within its ceiling by 1.2 s, measured in a sandboxed
 worker; like #459's 372.60 s it is a run-to-run figure, not an isolated code
 cost, and the next change that adds tests should expect to meet this ceiling.
+
+## #463 review round 1: whole pytest against the base — 2026-09-24
+
+The budget leg on the slice head `fbe632d8` breached the whole-pytest ceiling:
+406.50 s in a sandboxed worker, then 421.12 s on a quiet machine. Every test
+passed. The coordinator then timed the unchanged base on the same machine, back
+to back, quiet:
+
+| Run | Commit | Whole pytest | Result |
+| --- | --- | ---: | --- |
+| Base | origin/main 59fa4737 | 416.74 s (real 417.88 s) | 2656 passed, 1 skipped |
+| Slice | fbe632d8 | 421.12 s wall | 2670 passed, 1 skipped (worker run) |
+| Limit of record | — | 400 s | 2.5× the 160 s baseline |
+
+The other four budgets in the quiet run were within their limits: showcase
+1,409,024 bytes, drift 0.285 s, focused QA suite 58.080 s, slowest generated case
+11.82 s (`test_case_c4_profile`). The base already exceeds the ceiling on this
+machine, and the slice adds about 4 s (1%). By the coordinator's ruling (ADR
+463), this run judges the whole-pytest budget against the base on the same
+machine. No limit was raised, and re-baselining the 160 s figure is Connor's
+decision.

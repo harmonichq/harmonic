@@ -996,8 +996,10 @@ the Diagnose workstation demo set it reads. The reproduction is
   - in `tests/test_event_comparison.py`: `completed_carb_boluses` answers one
     meal per split pair, at its first bolus;
   - through each remaining counter's public function: `explore_time_of_day`
-    counts a 10 g bolus and a top-up ten minutes later in one bin as one meal
-    (`tests/test_explore_time_of_day.py`); `outcomes_trend.post_meal_arc` counts a
+    counts a 10 g bolus and a top-up ten minutes later as one meal in both of
+    its served `meal_count` fields, the 15-minute bin's and the pooled
+    envelope's bin's (`tests/test_explore_time_of_day.py`, one assertion on
+    each); `outcomes_trend.post_meal_arc` counts a
     split meal once, its peak read past the top-up (`tests/test_outcomes_trend.py`);
     the Trial evidence's daily meal count counts it once
     (`tests/test_trial_evidence.py`); the follow-up comparison's
@@ -1029,7 +1031,11 @@ the Diagnose workstation demo set it reads. The reproduction is
   (the trend windows' meal sets and the arc docstrings),
   `ciq_autotune/watched_change.py`, `ciq_autotune/trial_evidence.py`,
   `ciq_autotune/follow_up_comparison.py` and `ciq_autotune/explore_time_of_day.py`
-  (`meal_count`) read `group_meals`. The pooled 12 g meal track is unchanged.
+  read `group_meals`. `explore_time_of_day.py` counts meals per bolus in two
+  places, each with its own `carbs >= 10`: the 15-minute bins' `meals` tally
+  served as `meal_count` (`:55-57` at the pinned commit) and the pooled
+  envelope's `meal_count` (`:126-130`); both read the rule. The pooled 12 g meal
+  track is unchanged.
 - [ ] 79. Update deliberately the tests that pin per-bolus meal judgement, each
   named in the commit message:
   - `tests/test_classifier_carb_undercount.py`'s
@@ -1144,8 +1150,12 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   exporting the constant; in `ciq_autotune/analyzers/classifiers/late_bolus.py`,
   add the outcome step and its docstring; add the reason to
   `scenario/model_view.py`'s `_CALM_REASONS`, `findings_projection.py`'s
-  `_CALM_SILENCE_REASONS` and `mockups/findings-projection.mirror.mjs`'s
-  `CALM_SILENCE_REASONS`; add "Stayed in range" to `scenario/guide.py`'s
+  `_CALM_SILENCE_REASONS`, `mockups/findings-projection.mirror.mjs`'s
+  `CALM_SILENCE_REASONS` and the fixture-only Pattern case-file projector's
+  list in `mockups/diagnose-event-comparison.synthetic/project.mjs`'s
+  `patternState` (`:296` at the pinned commit), which feeds
+  `frontend/browser-fixture-population.js`; the event-comparison generator's
+  `--check` then passes. Add "Stayed in range" to `scenario/guide.py`'s
   `_SILENCE_META` and its comment's count.
 - [ ] 89. Rewrite both behavioral cases' literal expectations from their post-fix
   dumps: `behavioral-late-bolus` serves Late bolus 2 / 1 / 1 / 1 / 2 and Carb

@@ -1064,8 +1064,12 @@ HIGH-anchored episode) already require a high.
    `stayed_in_range`, tier Observed, detail "glucose was rising N mg/dL/min before
    the bolus but peaked at P mg/dL, inside the range, so there was no spike to
    blunt". It is calm everywhere calm is listed: `model_view._CALM_REASONS`,
-   `findings_projection._CALM_SILENCE_REASONS` and the fixture mirror's
-   `CALM_SILENCE_REASONS`, so such a meal reads `clean`, never a near miss. The
+   `findings_projection._CALM_SILENCE_REASONS`, the fixture mirror's
+   `CALM_SILENCE_REASONS` and the fixture-only Pattern case-file projector's
+   list in `mockups/diagnose-event-comparison.synthetic/project.mjs`
+   (`patternState`, which the browser fixtures read), so such a meal reads
+   `clean`, never a near miss, on the server and in every fixture (review
+   round 1). The
    Guide lists it as "Stayed in range": "Glucose rose before the bolus but never
    went above the range line afterwards, so there was no spike for an earlier
    bolus to blunt." The closed set now has nine members; the enum, the Guide's

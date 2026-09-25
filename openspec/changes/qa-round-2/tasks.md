@@ -595,7 +595,7 @@ roster or its lane. The reproduction is
   slot panel's interval sentences, its roster groups and excluded-night line,
   and a recurring-lows lower and hold in the served app, and record any
   observed behavior with no story before designing.
-- [ ] 48. Add the manufactured case `basal-recurring-low-spread` to
+- [x] 48. Add the manufactured case `basal-recurring-low-spread` to
   `scripts/qa_e2e_cases.py`: give `_materialize_basal_coverage` a
   `clean_rates` parameter, one rate per informative night in order (default
   `None` keeps `clean_rate` for every night, so no other case moves), and call

@@ -38,6 +38,7 @@ EXPECTED_CASE_NAMES = (
     "basal-no-baseline", "basal-no-change",
     "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
     "basal-recurring-low-gate", "basal-recurring-low-within-floor",
+    "basal-recurring-low-spread",
     "isf-strengthen", "isf-direction-only-weaken", "isf-held",
     "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
     "ic-capped-lower", "ic-held", "ic-quiet-seven-run",

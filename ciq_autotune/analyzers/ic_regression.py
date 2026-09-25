@@ -28,6 +28,7 @@ from .ic import (
     _IcBlockFit,
     _analyze_ic_blocks_shared,
     _block_of,
+    _excluded_run_reason,
     _run_is_numeric_candidate,
     _run_pool,
     _same_ratio,
@@ -184,6 +185,10 @@ def _regression_block_fits(
                 continue
         admitted.append(run)
 
+    # The identity gate above is the only place a run's dose-time regime is judged,
+    # so the reason a rejected run gives has to be captured here rather than re-asked
+    # from the run alone (#464).
+    admitted_ids = {RunIdentity(run.t) for run in admitted}
     fitted = _run_pool(admitted)
     shares_by_run: Dict[RunIdentity, Dict[int, float]] = {}
     for run in runs:
@@ -250,6 +255,17 @@ def _regression_block_fits(
             run for run in fitted
             if shares_by_run.get(RunIdentity(run.t), {}).get(bid, 0.0) > 0.0
         ]
+        pool_ids = {RunIdentity(run.t) for run in pool}
+
+        def pool_reason(run: MealRun) -> str:
+            """This block's verdict on one roster run — consumed in this iteration."""
+            run_id = RunIdentity(run.t)
+            if run_id not in pool_ids:
+                return _excluded_run_reason(
+                    run, identity_proven=run_id in admitted_ids)
+            return ("counted-whole" if blocks_by_run[run_id] == {bid}
+                    else "counted-by-share")
+
         whole = sum(
             1 for run in pool
             if blocks_by_run[RunIdentity(run.t)] == {bid}
@@ -274,6 +290,9 @@ def _regression_block_fits(
             ownership_by_run={
                 RunIdentity(run.t): shares_by_run[RunIdentity(run.t)][bid]
                 for run in roster
+            },
+            pool_reason_by_run={
+                RunIdentity(run.t): pool_reason(run) for run in roster
             },
             effective_run_count=whole + fractional,
             whole_runs=whole,

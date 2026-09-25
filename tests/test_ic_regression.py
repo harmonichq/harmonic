@@ -2,14 +2,14 @@
 
 from copy import deepcopy
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 import unittest
 
 from ciq_autotune.admission import run_synthetic_bar
 from ciq_autotune.analyze import analyze
 from ciq_autotune.analyzers.ic import analyze_ic_blocks
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy
-from ciq_autotune.events import CarbEntry, CgmReading
+from ciq_autotune.events import BolusEvent, CarbEntry, CgmReading
 from ciq_autotune.harm import HarmArm, PrintedLow
 from ciq_autotune.settings import Snapshot
 from ciq_autotune.store import Store
@@ -270,3 +270,77 @@ class ShippedEstimatorTest(unittest.TestCase):
         self.assertLessEqual(
             abs(incumbent.estimate.value - shipped.estimate.value), 0.1,
         )
+
+
+BASE = datetime(2026, 1, 1)
+
+
+def _meal(day, hour, *, carbs=60.0, insulin=12.0, bg=110.0):
+    return BolusEvent(t=BASE + timedelta(days=day, hours=hour), insulin=insulin,
+                      carbs=carbs, carb_ratio=5.0, bg=bg, completion="Completed")
+
+
+def _outcome_cgm(events, bg=110.0):
+    """CGM only at each meal's full-DIA outcome read, so a gap is made by omission."""
+    return [CgmReading(event.t + timedelta(minutes=minute), bg, "synthetic")
+            for event in events for minute in (290, 295, 300, 305, 310)]
+
+
+class PublishedPoolReasonTest(unittest.TestCase):
+    """Every roster run says why it is or is not in its block's numeric pool (#464)."""
+
+    def test_a_lone_meal_read_into_a_cgm_gap_says_so_without_claiming_direction(self):
+        read = [_meal(day, 9) for day in range(8)]
+        gap = _meal(8, 9)
+        blocks, _ = analyze_ic_blocks_fuzzy(
+            read + [gap], [(0, 5.0)], observed_days=90,
+            cgm_readings=_outcome_cgm(read), isf_effective=50.0,
+        )
+        runs = {row["run_id"]: row for row in blocks[0].evidence["runs"]}
+
+        self.assertEqual("no-outcome-read", runs[gap.t.isoformat()]["pool_reason"])
+        self.assertFalse(runs[gap.t.isoformat()]["directional_only"])
+        self.assertFalse(runs[gap.t.isoformat()]["in_pool"])
+        self.assertEqual(
+            {"counted-whole"},
+            {runs[event.t.isoformat()]["pool_reason"] for event in read},
+        )
+
+    def test_a_run_chained_across_two_blocks_is_counted_by_share_in_both(self):
+        events = [item for day in range(12)
+                  for item in (_meal(day, 11), _meal(day, 13))]
+        fitted, _ = analyze_ic_blocks_fuzzy(
+            events, [(0, 5.0), (720, 6.0)], observed_days=90,
+            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+        )
+        blocks = {block.block_id: block for block in fitted}
+        run_id = _meal(0, 11).t.isoformat()
+        shares = [next(row for row in blocks[bid].evidence["runs"]
+                       if row["run_id"] == run_id) for bid in (0, 720)]
+
+        self.assertEqual(["counted-by-share", "counted-by-share"],
+                         [row["pool_reason"] for row in shares])
+        self.assertTrue(all(row["in_pool"] for row in shares))
+        self.assertAlmostEqual(1.0, sum(row["ownership"] for row in shares))
+
+    def test_a_shared_blocks_balance_sheet_weights_each_run_by_its_carb_share(self):
+        events = [item for day in range(12)
+                  for item in (_meal(day, 11), _meal(day, 13))]
+        fitted, _ = analyze_ic_blocks_fuzzy(
+            events, [(0, 5.0), (720, 6.0)], observed_days=90,
+            cgm_readings=_outcome_cgm(events), isf_effective=50.0,
+        )
+        block = next(row for row in fitted if row.block_id == 0)
+
+        pooled = [row for row in block.evidence["runs"] if row["in_pool"]]
+        ledger = block.evidence["ledger"]
+        self.assertTrue(all(row["ownership"] == 0.5 for row in pooled))
+        self.assertAlmostEqual(
+            sum(row["ownership"] * row["carbs"] for row in pooled),
+            ledger["carbs_covered"], places=4)
+        self.assertAlmostEqual(
+            sum(row["ownership"] * row["effective_insulin"] for row in pooled),
+            ledger["effective_insulin"], places=4)
+        self.assertAlmostEqual(
+            ledger["carbs_covered"] / ledger["effective_insulin"],
+            ledger["pooled_ratio"], places=4)

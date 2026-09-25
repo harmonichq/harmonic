@@ -9,18 +9,23 @@ high-anchor threshold.
 """
 import json
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from ciq_autotune.analyzers.classifiers.evidence import SilenceReason
+from ciq_autotune.analyzers.ic import POOL_REASONS, POOLED_REASONS
 from ciq_autotune.analyzers.scenario.anchors import AnchorKind
 from ciq_autotune.analyzers.scenario.levers import Lever
 from ciq_autotune.analyzers.scenario.model_view import _KIND_LABEL
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
+from ciq_autotune.ic_block_evidence import SCHEMA
 
 ROOT = Path(__file__).resolve().parent.parent
 PAYLOAD = ROOT / "mockups/diagnose-workstation.synthetic/payload.json"
 CAPTURE = ROOT / "mockups/diagnose-event-comparison.synthetic/capture.json"
+BLOCK_EVIDENCE = (
+    ROOT / "mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json")
 
 # The classifiers the attribution step judges at each anchor kind
 # (ciq_autotune/analyzers/scenario/attribute.py): `_meal_lever` at a meal, `_low_lever`
@@ -105,6 +110,105 @@ class ManufacturedExposureRowsTest(unittest.TestCase):
         self.assertTrue(highs)
         for row in highs:
             self.assertGreaterEqual(row["bg"], ScenarioConfig().anchor_high_mgdl, row["t"])
+
+
+class IcBlockEvidenceRowsTest(unittest.TestCase):
+    """The committed block-evidence capture speaks only its producers' vocabulary.
+
+    The generator runs the real estimator and the real projection, so this reads the
+    capture back against the closed sets those producers own — a hand-edited case, or
+    one generated before a set moved, fails here rather than in a browser.
+    """
+
+    def setUp(self):
+        self.cases = json.loads(BLOCK_EVIDENCE.read_text())["cases"]
+        # `frontend/desk.browser.test.mjs` serves this case as the endpoint.
+        self.assertIn("cross_midnight", self.cases)
+
+    def test_every_case_carries_the_v2_payload(self):
+        for name, case in self.cases.items():
+            self.assertEqual(SCHEMA, case["schema"], name)
+            self.assertEqual(
+                {"schema", "analysis_generation", "block", "ledger", "outcomes",
+                 "harm_evidence", "meal_comparison", "runs", "series"},
+                set(case), name)
+            self.assertEqual({"value", "lo", "hi", "wide"},
+                             set(case["block"]["estimate"]), name)
+            self.assertEqual({"side_k", "side_n"}, set(case["block"]["side"]), name)
+            self.assertEqual({"whole_runs", "fractional_run_ownership",
+                              "effective_run_count"},
+                             set(case["block"]["support_detail"]), name)
+            self.assertEqual({"arm", "gated", "nudged", "arm_days", "row_days", "lows",
+                              "evaluated", "seriousness", "minutes_after_bolus_median"},
+                             set(case["harm_evidence"]), name)
+
+    def test_every_run_row_names_a_reason_from_the_analyzers_closed_set(self):
+        for name, case in self.cases.items():
+            for run in case["runs"]:
+                self.assertIn(run["pool_reason"], POOL_REASONS, (name, run["run_id"]))
+                self.assertEqual(run["pool_reason"] in POOLED_REASONS, run["in_pool"],
+                                 (name, run["run_id"]))
+                self.assertIn(run["side"], (-1, 0, 1), (name, run["run_id"]))
+
+    def test_the_ledger_quotient_is_the_served_terms_own_arithmetic(self):
+        for name, case in self.cases.items():
+            ledger = case["ledger"]
+            if ledger["effective_insulin"] <= 0:
+                self.assertIsNone(ledger["pooled_ratio"], name)
+                continue
+            self.assertAlmostEqual(
+                ledger["carbs_covered"] / ledger["effective_insulin"],
+                ledger["pooled_ratio"], places=4, msg=name)
+
+    def test_every_comparison_cohort_is_one_served_outcome(self):
+        for name, case in self.cases.items():
+            projection = case["meal_comparison"]
+            self.assertEqual("diagnose-carb-ratio-meal-comparison-v1",
+                             projection["schema"], name)
+            self.assertEqual([-10, 315], projection["window_min"], name)
+            self.assertEqual(["ran-high", "ran-low", "in-range"],
+                             [cohort["key"] for cohort in projection["cohorts"]], name)
+            counts = case["outcomes"]["counts"]
+            routed = {cohort["key"]: cohort["routed_count"]
+                      for cohort in projection["cohorts"]}
+            # Every meal that is not `unread` is traced exactly once.
+            self.assertEqual(
+                {"ran-high": counts["ran_high"], "ran-low": counts["ran_low"],
+                 "in-range": counts["in_range"]}, routed, name)
+            for cohort in projection["cohorts"]:
+                self.assertEqual(projection["anchor"], cohort["anchor"], name)
+                for point in cohort["points"]:
+                    self.assertEqual({"minute", "n", "support", "median", "p25", "p75"},
+                                     set(point), name)
+
+    def test_the_published_case_exercises_every_fact_the_panel_reads(self):
+        case = self.cases["explained"]
+
+        self.assertEqual(
+            {"counted-whole", "counted-by-share", "earlier-ratio-or-uncurrent-chain",
+             "no-outcome-read"},
+            {run["pool_reason"] for run in case["runs"]})
+        self.assertGreaterEqual(case["outcomes"]["counts"]["ran_high"], 1)
+        self.assertGreaterEqual(case["outcomes"]["counts"]["ran_low"], 1)
+        self.assertEqual(2, case["harm_evidence"]["row_days"])
+        self.assertEqual(2, len(case["harm_evidence"]["lows"]))
+        self.assertIsNotNone(case["harm_evidence"]["minutes_after_bolus_median"])
+        # Each low belongs to a pooled chain whose first meal ran high and whose
+        # later meal ran low: the spike and the low are one run's evidence.
+        cohorts = {cohort["key"]: set(cohort["occurrence_ids"])
+                   for cohort in case["meal_comparison"]["cohorts"]}
+        runs = {run["run_id"]: run for run in case["runs"]}
+        for low in case["harm_evidence"]["lows"]:
+            chain = runs[low["dominant_bolus_t"]]
+            self.assertTrue(chain["in_pool"], low["t"])
+            self.assertGreaterEqual(chain["n_meals"], 2, low["t"])
+            self.assertIn(chain["run_id"], cohorts["ran-high"], low["t"])
+            start = datetime.fromisoformat(chain["run_id"])
+            later = {(start + timedelta(minutes=offset)).isoformat()
+                     for offset in chain["member_offsets_min"][1:]}
+            self.assertTrue(later & cohorts["ran-low"], low["t"])
+        self.assertGreater(case["block"]["support_detail"]["fractional_run_ownership"],
+                           0.0)
 
 
 class ComparisonRowsTest(unittest.TestCase):

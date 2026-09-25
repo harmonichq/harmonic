@@ -140,7 +140,7 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 256 dc5139fa6eae9089f1975450f1ff2d582999a6438e61e2763d0576536c9a0383
+dose-ratio-baseline 270 550b37ac73535606afa82bf3ebb221ff842d183a9da293146b835741c5f3ac0f
 dose-ratio-ack CONTEXT.md:545 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U
@@ -269,22 +269,36 @@ dose-ratio-ack frontend/kb.test.js:207 | 0.5 U
 dose-ratio-ack frontend/plan.js:476 | 0.001 U
 dose-ratio-ack frontend/plan.js:478 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
-dose-ratio-ack openspec/specs/behavioral-layer/spec.md:169 | 10 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1125 | 4.5 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1126 | 2 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:1129 | 6.5 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:191 | 10 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:40 | 0.3 U
 dose-ratio-ack openspec/specs/safety/spec.md:30 | 0.1 U
 dose-ratio-ack openspec/specs/safety/spec.md:31 | 3.0 U
+dose-ratio-ack openspec/specs/safety/spec.md:354 | 0.72 U
+dose-ratio-ack openspec/specs/safety/spec.md:355 | 0.71 U
+dose-ratio-ack openspec/specs/safety/spec.md:366 | 0.20 U
+dose-ratio-ack openspec/specs/safety/spec.md:367 | 0.16 U
+dose-ratio-ack openspec/specs/safety/spec.md:369 | 0.19 U
+dose-ratio-ack openspec/specs/safety/spec.md:371 | 0.137 U
+dose-ratio-ack openspec/specs/safety/spec.md:377 | 0.11 U
+dose-ratio-ack openspec/specs/safety/spec.md:381 | 0.1 U
+dose-ratio-ack openspec/specs/safety/spec.md:382 | 0.72 U
 dose-ratio-ack openspec/specs/safety/spec.md:72 | 0.05 U
-dose-ratio-ack openspec/specs/surfaces/spec.md:2992 | 1 U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3017 | 1 U : 32 mg/dL
-dose-ratio-ack openspec/specs/surfaces/spec.md:3023 | 9 g/U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3036 | 1 U : 32 mg/dL
-dose-ratio-ack openspec/specs/surfaces/spec.md:3119 | 1 U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3135 | 1 U : 30.0 mg/dL
-dose-ratio-ack openspec/specs/surfaces/spec.md:3140 | 1 U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3155 | 1 U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3164 | 1 U : 30.0 mg/dL
-dose-ratio-ack openspec/specs/surfaces/spec.md:3171 | 4.8 g/U
-dose-ratio-ack openspec/specs/surfaces/spec.md:3179 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:2974 | 0.71 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3062 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3087 | 1 U : 32 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3093 | 9 g/U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3106 | 1 U : 32 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3189 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3205 | 1 U : 30.0 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3210 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3225 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3234 | 1 U : 30.0 mg/dL
+dose-ratio-ack openspec/specs/surfaces/spec.md:3241 | 4.8 g/U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3249 | 1 U
+dose-ratio-ack openspec/specs/surfaces/spec.md:3570 | 0.60 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:152 | 0.04 U
 dose-ratio-ack tests/test_analyzer_basal.py:1047 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:1048 | 0.80 U

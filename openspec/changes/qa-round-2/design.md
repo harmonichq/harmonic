@@ -372,6 +372,10 @@ change time.
    stage whose figure draws no curve gives the figure's track only its legend's
    height, at every width. This holds for every evidence figure: an open or
    ended record, the watched Trial and a Focus.
+   The baseline figure requirement's scenario "A saved ending keeps its rows
+   and says it kept no curve" narrows to a saved ending with no clock bins,
+   which renders no chart seat and nothing with `role="img"` (plan review
+   round 1).
 3. **New endings save their clock views (the issue's option 1).**
    `capture_ending` keeps `views.before.clock` and `views.after.clock` on the
    saved assessment, and nothing else from the views. An ending with clock bins
@@ -414,6 +418,10 @@ change time.
    confirmed time are unchanged, because nothing rewrites a Plan (R443). The one
    day absorbs a pre-#443 read stamped on a UTC clock. The rule never reads a
    Plan's recorded time.
+   `tests/test_plan_verdict.py`'s dose-stream test puts its confirming read
+   about 46 hours after the Trial's change time, so it stays unlinked and
+   becomes the more-than-a-day guard; a sibling test with the read within a
+   day proves the link (plan review round 1).
 
 **Decided autonomously during AFK run.** Decisions 1–4, 6 and 7, and their
 words: the ticket offered no option for 1, 2, 4, 6 or 7 beyond its example rule,

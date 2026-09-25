@@ -364,13 +364,18 @@ reproduction is `docs/scope/463-record-display.repro.py`,
     available decision context, the matched Trial's served original context is
     that decision context; a guard with the Plan's decision context unavailable
     serves the observed context;
-  - failing-first, in `tests/test_plan_verdict.py`: extend
-    `test_a_change_the_dose_stream_detects_still_confirms_from_the_read` so the
+  - failing-first, in `tests/test_plan_verdict.py`: a sibling of
+    `test_a_change_the_dose_stream_detects_still_confirms_from_the_read` with
+    the same Plan and dose-detected basal Trial, but its confirming read at
+    `day0 + 1 day 01:00`, within a day of the Trial's change time on day0. The
     Trial's receipt names the Plan, the Plan's receipt, verdict and confirmed
     time are unchanged, and the Trial's served original context is the Plan's
-    decision context. Fail-closed guards in the same file: a second qualifying
-    Trial, a Trial more than a day from the confirming read, and a Trial of
-    another setting each leave the Trial unlinked;
+    decision context. The existing test keeps its read at `day0 + 2 days
+    01:00`, about 46 hours after the Trial's change time, and becomes the
+    "more than a day from the confirming read" guard: it gains an assertion
+    that the Trial stays unlinked and is otherwise unchanged. Further
+    fail-closed guards in the same file: a second qualifying Trial and a Trial
+    of another setting each leave the Trial unlinked;
   - failing-first, in `tests/test_watched_change.py`: a correction-factor and
     carb-ratio edit made mid-morning, whose day's first bolus carries the old
     values, is served through `review_trials` with a `changed_at` at the first
@@ -384,9 +389,14 @@ reproduction is `docs/scope/463-record-display.repro.py`,
 - [ ] 29. Backend (ADR 463 decisions 3–7): in `ciq_autotune/watched_change.py`,
   date `dose_regimes` and `basal_slot_regimes` at the first observation carrying
   the regime's value and correct the `Regime` and `_regimes_from_days`
-  docstrings; add one same-change match used by `_reviewable_trials` (existing
-  records keep their time and id), by `_reversal_at`, and by
-  `ciq_autotune/follow_up_comparison.py`'s `_setting_period`; keep the clock
+  docstrings; add one helper, `watched_change.same_change(record, *, parameter,
+  slot, block, start, before, after) -> bool`, true when the record's
+  parameter, slot, block, before and after equal the given ones and the
+  record's change time is on `start`'s pump day at or before `start` (ADR 463
+  decision 5), and make `_reviewable_trials` (existing records keep their time
+  and id), `_reversal_at`, and `ciq_autotune/follow_up_comparison.py`'s
+  `_setting_period` (which already imports from `watched_change` inside the
+  function) all call it rather than restating the rule; keep the clock
   views in `capture_ending`; serve a matched Plan's available decision context
   as a Trial's original context in `review_trials`; add the link pass after
   `_confirm_from_read` in `reconcile_follow_up`. `ciq_autotune/epochs.py` is not

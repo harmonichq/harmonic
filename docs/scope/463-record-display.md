@@ -1,7 +1,7 @@
 # What a change record prints, draws, and knows about its Plan — triage and review ledger
 
 Ticket: #463. Change: `openspec/changes/qa-round-2` (ADR 463; tasks 27–36;
-outcomes requirements 3–6, surfaces requirements 5–7, plan requirement 2).
+outcomes requirements 3–5, surfaces requirements 5–8, plan requirement 2).
 Triage ran unattended (AFK run, 2026-09-24).
 
 ## Reproduction
@@ -77,4 +77,4 @@ not-requested: data-figure-state="not-requested", chart seat true, role="img" tr
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
-| 1 | — | Initial flat draft | pending the coordinator's cold plan review | pending |
+| 1 | — | Initial flat draft pinned f985b3a6 | Blockers (`authoring`): the anchor "outcomes 6" named nothing (the delta has five outcomes requirements); task 28's extended dose-stream test put its confirming read about 46 hours after the Trial, so under the one-day link rule it could never link; the baseline scenario "A saved ending keeps its rows and says it kept no curve" was left contradicting new endings that save bins. Notes (`authoring`): the re-dating spike in Verification asserts nothing after the build; the same-change match had no stated shape. Fixed: anchors drop outcomes 6 and add surfaces 8, a MODIFIED copy of the figure requirement narrowed to endings with no clock bins; task 28 keeps the two-day test as the distant guard and adds a sibling test with the read within a day, the Plan delta's scenario says so; the spike leaves Verification; task 29 names `watched_change.same_change(record, *, parameter, slot, block, start, before, after) -> bool`. | BLOCKED (3 block, 2 note); fixed, no further panel by operator instruction |

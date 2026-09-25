@@ -102,7 +102,8 @@ Plan's recorded time with a change time.
 
 - **GIVEN** a recorded Plan, an in-place edit the dose stream detects as a
   basal-rate Trial whose change time no settings read shares, and a later read
-  that holds the Plan's schedule
+  that holds the Plan's schedule, captured within a day of the Trial's change
+  time
 - **WHEN** ingestion reconciliation runs
 - **THEN** the Plan is confirmed from the read, and its receipt names no Trial
 - **AND** that Trial's receipt names the Plan, and the Trial serves the Plan's

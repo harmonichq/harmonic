@@ -60,4 +60,4 @@ retained : stage "Ending snapshot / as saved at the ending", figure unavailable,
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
-| 1 | — | Initial flat draft | pending the coordinator's cold plan review | pending |
+| 1 | — | Initial flat draft pinned f985b3a6 | Note (`authoring`): Verification ran the whole pytest suite twice, once standalone and once inside the budget leg. Fixed: the standalone pytest line is dropped and the budget leg's pytest is the run of record. | CLEAN (0 block, 1 note) |

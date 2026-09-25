@@ -4306,6 +4306,7 @@ async function readColumn463(page, ctx) {
   await press(page, 'nav.v2-nav [data-destination="changes"]');
   const table = page.locator('.gf-stage-trial [data-table="outcomes"]');
   await table.locator('[data-outcome="tir"]').waitFor({ state: 'visible', timeout: 60000 });
+  await capture(page, ctx, 'S189-read', 'showcase');
   await waitForReplayAssertion(async seen => {
     const printed = seen(await table.locator('[data-outcome="tir"] [data-outcome-state] small').innerText()).trim();
     assert.equal(printed, `difference ${Number(tir.difference.toFixed(1))}`,
@@ -4314,7 +4315,6 @@ async function readColumn463(page, ctx) {
     assert.doesNotMatch(cells, /difference [+-]?\d+\.\d{2,}|\d+\.\d{2,}%/,
       'S189 no printed difference or percent cell may carry more than one decimal');
   }, 'S189 the Read column');
-  await capture(page, ctx, 'S189-read', 'showcase');
 }
 
 // #463 leg 2: c3-history's finished record, whose ending saved its clock bins,
@@ -4324,13 +4324,14 @@ async function savedCurve463(page, ctx) {
     const roster = await read(fresh, '/api/verify/trials');
     const finished = roster.trials.find(trial => (trial.ending || {}).kind);
     assert.ok(finished, 'S189 premise: c3-history serves a finished record');
-    const views = finished.ending.assessment.views || {};
-    assert.ok((views.before || {}).clock?.length && (views.after || {}).clock?.length,
-      'S189 the finished record\'s saved ending must keep its Before and Trial clock bins');
     await fresh.goto(new URL(`/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${finished.id}`)}`,
       fresh.url()).href);
     const stage = fresh.locator('.gf-stage-trial');
     await stage.locator('[data-trial-chart]').waitFor({ state: 'visible', timeout: 30000 });
+    await capture(fresh, ctx, 'S189-saved-curve', 'c3-history');
+    const views = finished.ending.assessment.views || {};
+    assert.ok((views.before || {}).clock?.length && (views.after || {}).clock?.length,
+      'S189 the finished record\'s saved ending must keep its Before and Trial clock bins');
     await waitForReplayAssertion(async seen => {
       const instrument = seen(await stage.locator('.instruments .instrument').first().innerText()).replace(/\s+/g, ' ');
       assert.ok(instrument.includes('as saved at the ending'), 'S189 the stage must read "as saved at the ending"');
@@ -4339,7 +4340,6 @@ async function savedCurve463(page, ctx) {
       assert.equal(seen(await stage.locator('[data-trial-chart] .gf-chart[role="img"]').count()), 1,
         'S189 the paired figure must carry its chart');
     }, 'S189 the saved curve');
-    await capture(fresh, ctx, 'S189-saved-curve', 'c3-history');
   });
 }
 

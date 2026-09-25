@@ -396,3 +396,45 @@ No judgment fires without a verdict grounded in data — either observed (a hard
 - **WHEN** the Guide catalog is served
 - **THEN** it lists exactly the nine silence reasons, stayed in range among them,
   each with its label, tier and body
+
+### Requirement: Each event cohort names the verdict-band state it holds
+
+Every event cohort of a case file SHALL serve the verdict-band state it holds
+exactly, or none. A matched cohort drawn from the Occurrences whose verdict is
+`fired` SHALL name `fired`; a nearly-matched cohort SHALL name `near_miss`; a
+comparison cohort, and a matched cohort limited to the attributed Occurrences of a
+cross-population comparison, SHALL name none. When a cohort names a state, every
+member's verdict SHALL be that state and the cohort's count SHALL equal the verdict
+count for that state. Every event cohort SHALL also serve the list of band states
+it holds, in the band's order (`fired`, `near_miss`, `clean`, `outranked`,
+`no_data`): the one state it names, when it names one; for the comparison cohort
+of a case file whose comparison is drawn from its own population, the distinct
+verdicts of its members; and an empty list otherwise. The comparison cohort's
+count SHALL then equal the sum of the verdict counts of the states it lists. The
+cohort names, memberships and counts SHALL stay as served today.
+
+#### Scenario: Matched is Meets criteria on a same-population case file
+
+- **GIVEN** a synthetic Highs after meals case file with three Meets criteria and
+  one Borderline meal
+- **WHEN** its event projection is served
+- **THEN** the Matched cohort names `fired` and holds three, the Nearly matched
+  cohort names `near_miss` and holds one, and the comparison cohort names none
+
+#### Scenario: Missed meal's Matched cohort names no band state
+
+- **GIVEN** a synthetic Missed / unannounced meal case file
+- **WHEN** its event projection is served
+- **THEN** its attributed Matched cohort names none and its Nearly matched cohort
+  names `near_miss`
+- **AND** its Matched and comparison cohorts list no band states, and its Nearly
+  matched cohort lists `near_miss`
+
+#### Scenario: The comparison cohort lists the states it holds
+
+- **GIVEN** a synthetic Highs after meals case file over one Meets criteria meal,
+  one calm meal and one no-data meal
+- **WHEN** its event projection is served
+- **THEN** the Matched cohort lists `fired`, the Nearly matched cohort lists
+  `near_miss`, and the comparison cohort names no single state and lists `clean`
+  and `no_data`, holding two

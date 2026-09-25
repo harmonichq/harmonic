@@ -1108,3 +1108,120 @@ meals ran high" is true of every meal Late bolus puts in it. Classifier tests
 whose CGM ends at the bolus gain post-bolus readings. The design exploration,
 built on `behavioral-late-bolus` with its meals repeated, and its Guide capture
 are regenerated. No staging predicate, cap, floor or setting Priority moves.
+
+## ADR 468 — Reader text says what the engine means
+
+**Context.** #468 lists four lines that print engine shorthand. Connor's standing
+decision for the AFK run is to skip its fifth item, the Glossary's correction-factor
+unit. Everything below was decided autonomously during AFK run: each decision takes
+the issue's recommended option, and where the issue leaves a detail open, the
+simplest one consistent with ADR 424, ADR 423 and ADR 462. The change is words and
+one served description field. No count a fold sets apart, Pattern credit, cohort
+membership, verdict, attribution, Quiet banding, reassessment computation,
+classifier, cap, floor, ranking or staging rule moves.
+
+Reproduced at this change's base, d22fac7a (`docs/scope/468-reader-text.repro.mjs`,
+`docs/scope/468-reader-text.repro.py`, `docs/scope/468-reader-text.probe.py` and
+`.probe.mjs`; output in `docs/scope/468-reader-text.md`):
+
+- Under `pattern:lows_after_correcting_highs`, which serves no count sentence, each
+  folded cause's line reads "outside the count · 1 of 5 lows": a count the reader
+  never sees.
+- Day's Quiet line prints "18:00–18:00" over one quiet anchor, and "08:00–20:00"
+  over quiet anchors on both sides of a 13:55 Finding. On the committed showcase,
+  26 of its 42 days print one time twice, 2024-06-26 prints "08:00–14:35" across a
+  13:55 Finding, and 2024-06-30 prints a reversed "19:00–08:00".
+- #462 (ADR 462 decision 4) already removed the context hash from the Retained
+  line. It now reads "Stored context recorded ‹time›", and "No stored context was
+  recorded" for both a record kept before contexts were saved (served reason
+  `legacy_not_recorded`) and a record whose context is missing (`not_recorded`).
+- A Highs after meals case file over one Meets criteria, one calm and one no-data
+  meal serves its comparison group, "Other meal opportunities", holding the clean
+  and the no-data meal, with `band_verdict` null. The band beside it reads "Does not
+  meet · 1". The group's count of 2 has nothing on screen reconciling it.
+
+**Decision.**
+
+1. **The fold names the count it sets apart from.** Under a Pattern that serves a
+   count sentence, a folded cause's sentences served outside the Pattern's count
+   sit on the line's second row behind "not in this Pattern's count", replacing
+   "outside the count". Under a Pattern that serves no count sentence, the second
+   row prints the same counts with no lead words and no leading separator: there
+   is no count to be outside of. The desk reads two served facts: each sentence's
+   `scope`, and whether the parent Pattern's `count_sentences` is served. It
+   computes no share and decides no scope (ADR 424 is unchanged). The placement,
+   the ink, the order and the absence of outcome words are unchanged. CONTEXT.md's
+   **Share** entry and DESIGN.md's Pattern-fold bullet say the same.
+2. **The Quiet line prints no span.** The Episode Log's Quiet line reads "‹n›
+   clean · ‹n› explained · ‹n› no data" under its caption, with no time. The chart
+   already rings each quiet anchor. `buildEpisodeLedger` stops serving
+   `quiet.start` and `quiet.end`, whose only shipped reader was that span. The
+   Glossary's Quiet entry, the Guide's "Reading a Day" article and CONTEXT.md's
+   **Episode Log** entry stop calling the band "one stretch": the anchors are
+   "counted together rather than listed". The Glossary entry's three count clauses
+   stay verbatim (#448's pin). The historical Day prototype
+   (`mockups/harmonic-v2-glucose-day.js`), an unlocked exploration that imports the
+   shipped ledger, is left unchanged: its header keeps prototype executable bytes as
+   they were, and with the fields gone its own Quiet line prints a bare dash where
+   the span was. No gate, test or served page loads it.
+3. **The Retained line says what the read reuses.** This amends ADR 462 decision 4
+   and the surfaces requirement "The Retained reassessment names its stored context
+   in words", which this change added under #462. A MODIFIED delta cannot target a
+   requirement the same change ADDs, so that requirement's words are amended in
+   place, keeping its position. When the stored context carries a capture time, the
+   Context line reads "Reuses the settings and rules saved with this record on
+   ‹time›", the time formatted as the desk formats every stamp. When it carries
+   none, the line prints the word table's words for the context's served reason,
+   first letter capitalised: `legacy_not_recorded` reads "This earlier record was
+   kept before Harmonic saved its context", and any other reason reads
+   `missing_comparison_context`'s "No retained comparison context was recorded with
+   this change". No new words are added to the table. No id prints, and the
+   `data-reassessment-context` attribute and the Current policy line are unchanged.
+4. **Every event cohort serves the band states it holds.** Beside `band_verdict`,
+   which is unchanged, each event cohort serves `band_states`, a list of
+   verdict-band states in the band's printed order: `fired` (Meets criteria),
+   `near_miss` (Borderline), `clean` (Does not meet), then the residue, `outranked`
+   (claimed by another finding) and `no_data` (not comparable). A cohort that names
+   a `band_verdict` serves exactly that one state. The comparison cohort of a case
+   file whose comparison is drawn from its own population serves the distinct
+   verdicts of its members. That cohort is the roster less its Meets criteria and
+   Borderline Occurrences, so its members are exactly the Occurrences of those
+   states. Every other cohort serves an empty list: a cross-population Matched
+   cohort, which is only the attributed Meets criteria Occurrences, and a
+   cross-population comparison, which holds no roster Occurrence. `band_states` is
+   one served description field; no cohort's membership or count moves. The
+   fixture-only Pattern case-file projector
+   (`mockups/diagnose-event-comparison.synthetic/project.mjs` `patternCohort`)
+   serves the same field by the same rule, so the browser fixtures agree with the
+   server.
+5. **The caption prints those states once.** The Response comparison caption
+   follows each cohort's served name with its `band_states`' words, once, in served
+   order, lowercased as today's band words are, joined by a comma inside one pair
+   of parentheses, with no count. The band above already prints the counts. The
+   words are the band's own: the band's segment leads for `fired`, `near_miss` and
+   `clean`, and its residue nouns for `outranked` and `no_data`. Matched and Nearly
+   matched read exactly as they do today; the same-population comparison group
+   gains, for example, "(does not meet, not comparable)". The comma, not the
+   caption's " · ", keeps one term per cohort, which the caption replay reads by
+   splitting on " · ". The desk works out no link from counts. The validator
+   (`finding-case-file-validation.js`) refuses a case file whose `band_states` is
+   not the one it names, or, for a same-population comparison, not its members'
+   distinct verdicts in band order with its count equal to those states' verdict
+   counts, or is not empty elsewhere.
+6. **The ledger.** The fold's stories S115 and S126, the caption's S124 and the
+   Retained line's S188 are amended in a dated `## #468 amendment` section of
+   `mockups/harmonic-v2-desktop.behavior.md`. The Day Quiet line has no story, so
+   one new story (the next unissued S id) reads it on the showcase's 2024-06-26,
+   whose quiet anchors fall on both sides of a Finding. The probe chose that day,
+   and it re-runs if the showcase has moved when the story is written. No `★ FROZEN`
+   block is edited. The section's sanction is the AFK run's delegation
+   (2026-09-25), recorded here, as #460's amendment recorded ADR 460, together
+   with Connor's 2026-09-24 decision to leave item 5 out.
+
+**Consequences.** The fold, the Quiet line, the Retained line and the comparison
+caption each print words a reader can decode, and the comparison group's count
+reconciles with the band above it without the desk adding anything up. Every
+committed capture that serializes an event case file gains `band_states` and is
+regenerated through its generator. The historical Day prototype prints a bare dash
+where its span was. The Glossary's correction-factor unit (#468 item 5) is
+unchanged, and waits for the Glossary's planned second pass.

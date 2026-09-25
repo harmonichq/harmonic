@@ -257,3 +257,31 @@ Guide, the shared peak reader, two QA cases and their spec tallies, the design
 exploration's captures, one ledger story, CONTEXT.md. Staging, caps, floors,
 Priority inputs and the frontend are unchanged. Triage record:
 `docs/scope/461-late-bolus-outcome.md`.
+
+## #468
+
+Four desk lines print something the engine understands and the reader cannot
+decode: the Pattern fold's "outside the count", even under a Pattern with no count;
+Day's Quiet line's time span, which repeats one time, covers Findings or runs
+backwards; the Retained reassessment's "Stored context" wording; and a Response
+comparison group whose count the verdict band above it never reconciles.
+
+- The fold names the Pattern's count under a Pattern that serves one ("not in this
+  Pattern's count"), and prints no such words under one that serves none.
+- The Quiet line drops its span, and the Glossary, the Guide and CONTEXT.md stop
+  calling the band one stretch.
+- The Retained line says the read reuses the settings and rules saved with the
+  record, with the saved date, or prints the word table's words when nothing was
+  saved. This amends #462's words for the same line.
+- Every event cohort serves the verdict-band states it holds; the caption prints
+  them once after the group's name, in the band's own words.
+- The Glossary's correction-factor unit (the issue's item 5) is left out (Connor,
+  2026-09-24).
+
+Impact: the case-file projection gains one served description field
+(`band_states`) and its validator; the fold painter, the Day ledger, the Retained
+line, the comparison caption, the Glossary, the Guide, CONTEXT.md and DESIGN.md
+change words; every capture that serializes a case file is regenerated; four
+stories are amended and one Day story is added. No count, credit, membership,
+verdict, ranking, staging predicate, cap or floor moves. Triage record:
+`docs/scope/468-reader-text.md`.

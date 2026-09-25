@@ -1183,3 +1183,154 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   the Guide's silence article on `behavioral-late-bolus` at 1280x720 and
   1440x900 from the no-fetch serve, the before from task 86's commit. The
   coordinator attaches them to the pull request; they are not committed.
+
+## #468 — Reader text says what the engine means
+
+Tasks 1–92 land first on this branch; #468's base is their final commit. Slice s6
+(#464) appends to this file concurrently: if it lands first, the coordinator
+renumbers the tasks below and re-pins #468's lock. #468 changes words and serves
+one description field (`band_states`); it moves no count, credit, membership,
+verdict, ranking or staging rule. Its touched stories are S115 and S126 (the fold),
+S124 and S125 (the caption), S188 (the Retained line) and task 102's new Day story.
+The reproduction is `docs/scope/468-reader-text.repro.mjs` and `.repro.py`; the
+showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`.
+
+- [ ] 93. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage: port 8765 was reserved for a
+  concurrent slice): replay S115, S124, S125, S126 and S188 against #468's base
+  at 1280x720 and 1440x900, re-inventory in the served app the Pattern fold on the
+  showcase and on `behavioral-correction-stacking`, Day's Episode Log on the
+  showcase's 2024-06-26 and 2024-06-30, the Retained line on `c4-isf-late-read`
+  and the Response comparison caption on `behavioral-carb-undercount` and
+  `behavioral-missed-meal`, and record any observed behavior with no story in
+  `docs/scope/468-reader-text.md` before designing.
+- [ ] 94. Failing-first backend tests, each seen to fail on #468's base:
+  - in `tests/test_finding_case_file.py`: `_pattern_meal_case(("claimed", "calm",
+    "no_data"))` serves `band_states` `["fired"]`, `["near_miss"]` and
+    `["clean", "no_data"]` on Matched, Nearly matched and Other meal
+    opportunities; `test_same_population_cohorts_name_the_band_state_they_hold`'s
+    six-meal case serves `["clean", "no_data"]` on its comparison cohort;
+    `test_missed_meal_counts_its_highs_outside_the_announced_comparison`'s case
+    serves `[]`, `["near_miss"]` and `[]`; and
+    `test_all_eight_levers_publish_one_exact_case_file_population` asserts every
+    cohort's `band_states` by ADR 468 decision 4's rule;
+  - in `tests/test_finding_case_file_api.py` (`:785` at the pinned commit): the
+    served cohort key set gains `band_states`.
+- [ ] 95. Backend (ADR 468 decision 4): in `ciq_autotune/finding_case_file.py`
+  `_event`, serve `band_states` on each cohort beside `band_verdict`, in the
+  band's order (`fired`, `near_miss`, `clean`, `outranked`, `no_data`), with a
+  comment naming ADR 468. In `mockups/diagnose-event-comparison.synthetic/project.mjs`
+  `patternCohort`, serve the same field by the same rule. Then regenerate every
+  committed set that serializes an event case file, through its own generator:
+  `node mockups/diagnose-event-comparison.synthetic/generate.mjs --write`, the
+  findings-projection fixtures (`uv run python scripts/gen_findings_projection_fixtures.py`),
+  the missed-meal fixture (`uv run python scripts/gen_missed_meal_comparison_fixtures.py`),
+  the Diagnose workstation demo set (`python3 .claude/qa/gen_synthetic_fixtures.py`,
+  then `uv run python scripts/check_demo_fixtures.py` passes) and the
+  eating-sequence payload (`uv run python scripts/gen_eating_sequence_fixtures.py`;
+  its `--check` and `tests/test_eating_sequence_finding_fixture.py`'s
+  1,000,000-byte limit pass). Each generator's `--check` then passes. Commit this
+  task on its own: that commit is the base for task 96's failing-first runs.
+- [ ] 96. Failing-first Node tests, each seen to fail on task 95's commit:
+  - in `frontend/diagnose-findings-queue.test.js`, rewriting the two #424 fold
+    tests: under `pattern:highs_after_meals`, which serves a count, Carb
+    undercount's second row reads "not in this Pattern's count · 2 of 4 highs";
+    under `pattern:lows_after_correcting_highs`, which serves none, the two
+    second rows read "1 of 5 lows" and "1 of 1 correction clusters", and no
+    cause line contains "outside the count";
+  - in `frontend/day.test.js`: the committed one-quiet-anchor model's Quiet line
+    reads "1 clean · 0 explained · 0 no data" and contains no `HH:MM–HH:MM`; a
+    day with quiet anchors at 08:00 and 20:00 around the 13:55 Finding renders a
+    Quiet line with no span; `buildEpisodeLedger`'s `quiet` serves no `start` or
+    `end`; the Glossary's Quiet entry says "counted together rather than listed"
+    and not "one stretch", keeping its three count clauses;
+  - in `frontend/history.test.js`, rewording the Retained-line test: a context
+    with a capture time reads "Reuses the settings and rules saved with this
+    record on ‹stamp›" with no run of eight or more hex characters; a context
+    served `legacy_not_recorded` reads "This earlier record was kept before
+    Harmonic saved its context"; a context served `not_recorded` reads "No
+    retained comparison context was recorded with this change"; none reads
+    "Stored context" or "unavailable";
+  - in `frontend/finding-case-file-validation.test.js`: the regenerated
+    same-population and missed-meal cases pass; a case file is refused when a
+    cohort's `band_states` is missing, when a cohort naming a `band_verdict`
+    serves anything but that one state, when a same-population comparison omits
+    a member's verdict, lists a state no member holds or breaks band order, or
+    when a cross-population comparison serves a state;
+  - in `frontend/diagnose-workstation.test.js`: the same-population caption
+    (`:1057` at the pinned commit) ends its comparison term with its served
+    `band_states`' words in parentheses, comma-joined and lowercased; the
+    cross-population captions (`:1072`, `:1075`) are unchanged;
+  - in `frontend/c4.replay.test.js`: task 101's fold check passes on "not in
+    this Pattern's count·2 of 4 highs" under a count-serving parent and on a bare
+    "1 of 1 correction clusters" under a count-less one, and fails on "outside
+    the count" under either; its caption check fails on the base caption, whose
+    comparison term carries no states; its served-shape check fails on a case
+    file with no `band_states`.
+- [ ] 97. Frontend (ADR 468 decisions 1, 2, 3 and 5):
+  - `frontend/diagnose-findings-queue.js`: `paintMember` leads the set-apart row
+    with "not in this Pattern's count" only when the parent Pattern serves
+    `count_sentences`, and prints no lead or leading separator otherwise; its doc
+    comment and the fold comment in `frontend/diagnose-workstation.css`
+    (`:1881–1883` at the pinned commit) say so;
+  - `frontend/day.js`: the Quiet line drops its span; `frontend/day-chart.js`:
+    `buildEpisodeLedger` stops serving `quiet.start` and `quiet.end`, and its
+    "one quiet stretch" comment is reworded; `frontend/glossary.js`: the Quiet
+    entry reads "counted together rather than listed";
+  - `frontend/history.js` `reassessmentSection`: the Context line's words per
+    ADR 468 decision 3, reading `comparisonReasonWords` from
+    `frontend/follow-up.js`, whose table is unchanged;
+  - `frontend/finding-case-file-validation.js`: the `band_states` check per ADR
+    468 decision 5; `frontend/diagnose-workstation.js`
+    `renderEventComparisonRoster`: the caption reads `band_states` per decision 5,
+    and its comment says so.
+- [ ] 98. Documents: CONTEXT.md's **Share** entry names "not in this Pattern's
+  count" and says a cause under a Pattern that serves no count prints its counts
+  with no such words; CONTEXT.md's **Episode Log** entry says Quiet counts the
+  rest together, not "one counted stretch"; DESIGN.md's Pattern-fold bullet
+  (`:359–362` at the pinned commit) says the same as the Share entry;
+  `docs/kb/reading-day.md` (`:29`) says Quiet holds everything else, counted
+  together rather than listed.
+- [ ] 99. Regenerate the design exploration
+  (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Glossary
+  extract (`glossary.js`), its Guide capture (`utilities.json`) and its case-file
+  captures (`focus.json`, `journey.json`, `workstation.json`) move; its `--check`
+  then passes.
+- [ ] 100. Pins the regenerated sets move in the Node tests that read them are
+  updated to the regenerated answer and named in the commit message; no pin is
+  changed that the regeneration did not move.
+- [ ] 101. Replay (ADR 468 decision 6), in `frontend/c4.replay.mjs`:
+  `assertFoldLine424` takes the parent Pattern row (its S115 and S126 callers
+  pass it) and asserts decision 1's words from the parent's served
+  `count_sentences`; `assertServedComparison424` also requires `band_states` on
+  every cohort; `assertComparisonCaption424` reads each cohort's `band_states`
+  and the band's rendered words (the `.vband .key .lead` text for `fired`,
+  `near_miss` and `clean`, the `.vband-foot` nouns for `outranked` and
+  `no_data`); S188's Retained check asserts the line reads "Reuses the settings
+  and rules saved with this record on" and the desk stamp of the served
+  context's `captured_at`. The comments that quote "outside the count" (`:1347–1349`
+  and `:3140` at the pinned commit) follow. Amend S115, S124, S126 and S188 in
+  prose in a dated `## #468 amendment` section of
+  `mockups/harmonic-v2-desktop.behavior.md`, carrying the AFK run's delegation
+  (ADR 468) and Connor's 2026-09-24 skip of item 5 as its sanction.
+- [ ] 102. In the same section, add one ledger story (the next unissued S id) on
+  the showcase: Day on 2024-06-26, whose quiet anchors fall on both sides of a
+  Finding (`docs/scope/468-reader-text.probe.py` and `.probe.mjs`; re-run them
+  and take the day they print if the showcase has moved), reads its Quiet caption
+  and line, and the line carries its clean, explained and no-data counts and no
+  `HH:MM–HH:MM`. Its premise reads the served model view for that day and
+  requires a Findings anchor between the first and last quiet anchor. Add its
+  replay function in `frontend/c4.replay.mjs`, registry entry in
+  `frontend/desk-behavior.replay.mjs`, case `showcase` in
+  `frontend/replay-cases.mjs` and story-table row in `frontend/c4.replay.test.js`.
+  Lay the harness (this story and task 101's amendments) over task 95's commit
+  and record those base runs on the status lines: the new story fails at its span
+  assertion, S115 and S126 at the fold words, S124 at its comparison term and
+  S188 at its Retained words. Record the branch runs at both sizes. Raise the story
+  inventory by this one story in the four places task 9 names.
+- [ ] 103. Capture before/after renders at 1280x720 and 1440x900 from the no-fetch
+  serve, the before from task 95's commit: the fold on
+  `behavioral-correction-stacking` and on the showcase, the Episode Log on the
+  showcase's 2024-06-26, the Retained line on `c4-isf-late-read` and the Response
+  comparison on `behavioral-carb-undercount`. The coordinator attaches them to
+  the pull request; they are not committed.

@@ -172,19 +172,31 @@ serves periods SHALL keep drawing that saved ending whichever mode is chosen.
 
 ### Requirement: The Retained reassessment names its stored context in words
 
-The Retained context reassessment's Context line SHALL name the stored context by
-when it was recorded, "Stored context recorded" and the context's capture time,
-or "No stored context was recorded" when it carries none. It SHALL print no part
-of the context's id. The words for `unsupported_retained_execution` SHALL say
-that Current policy is the read left.
+The Retained context reassessment's Context line SHALL say what the read reuses:
+"Reuses the settings and rules saved with this record on" and the stored
+context's capture time. When the context carries no capture time, the line SHALL
+print the comparison-reason words for the context's served reason,
+`legacy_not_recorded` for a record kept before contexts were saved and
+`missing_comparison_context` for any other. It SHALL print no part of the
+context's id. The words for `unsupported_retained_execution` SHALL say that
+Current policy is the read left.
 
-#### Scenario: The Context line prints a time, never an id
+#### Scenario: The Context line prints the saved date, never an id
 
 - **GIVEN** a Retained context reassessment whose context carries an id and a
   capture time
 - **WHEN** the reassessment renders
-- **THEN** its Context line reads "Stored context recorded" with that time and
-  contains no run of hex characters from the id
+- **THEN** its Context line reads "Reuses the settings and rules saved with this
+  record on" with that time and contains no run of hex characters from the id
+
+#### Scenario: A record with no saved context says why in the word table's words
+
+- **GIVEN** a Retained context reassessment whose context carries no capture time
+  and is served `legacy_not_recorded`, and another served `not_recorded`
+- **WHEN** each reassessment renders
+- **THEN** the first Context line reads "This earlier record was kept before
+  Harmonic saved its context" and the second "No retained comparison context was
+  recorded with this change"
 
 #### Scenario: An unsupported retained context points at Current policy
 
@@ -234,6 +246,28 @@ Before-only curve from those bins under "as saved at the ending".
 - **WHEN** the reader opens it
 - **THEN** its stage draws a paired figure with its chart under "as saved at the
   ending"
+
+### Requirement: The Episode Log's Quiet line prints no time span
+
+The Episode Log's Quiet band SHALL print its caption and its clean, explained and
+no-data counts, and no time or time span. The Day ledger SHALL serve no Quiet
+start or end time. The Glossary's Quiet entry, the Guide's "Reading a Day" article
+and CONTEXT.md SHALL describe the Quiet anchors as counted together rather than
+listed, never as one stretch of the day.
+
+#### Scenario: One quiet anchor prints no repeated time
+
+- **GIVEN** a served day with one Finding at 13:55 and one clean anchor at 18:00
+- **WHEN** the Episode Log renders
+- **THEN** the Quiet line reads "1 clean · 0 explained · 0 no data" and contains
+  no time
+
+#### Scenario: Quiet anchors around a Finding print no span across it
+
+- **GIVEN** a served day with clean anchors at 08:00 and 20:00 and a Finding at
+  13:55
+- **WHEN** the Episode Log renders
+- **THEN** the Quiet line prints its counts and no span covering 13:55
 
 ## MODIFIED Requirements
 
@@ -531,3 +565,76 @@ SHALL be the served values; the desk SHALL derive none of them.
 - **GIVEN** the findings-fixture projection's whole day
 - **WHEN** the rail renders
 - **THEN** no striped row follows an unstriped ranked row
+
+### Requirement: A folded cause's count reads on its Pattern's population
+
+Each line the rail's Pattern fold gives a claimed cause SHALL print the count,
+denominator and noun of each of that cause's served fold sentences, in served
+order, never merged, and no outcome word. For the fold, a cause's served count
+sentences are its fold sentences. Under a Pattern that serves a count, a
+rate-lever cause's first fold sentence is its count on the Pattern's own
+population. Every fold sentence the projection marks as outside the Pattern's count
+SHALL be set apart from any Pattern's-scope sentence. Under a Pattern that serves
+a count sentence, the set-apart sentences SHALL follow the words "not in this
+Pattern's count". Under a Pattern that serves no count sentence, they SHALL print
+with no such words, because there is no count to be outside of. The desk SHALL
+choose those words from the served facts alone: each sentence's scope and whether
+the parent Pattern serves a count sentence. The desk SHALL compute no share and
+decide no scope. The fold's toggle, its open and closed states on arrival, its
+keyboard operation, the cause and Pattern drills, and the absence of cause minis
+and of sibling cause rows SHALL be unchanged.
+
+#### Scenario: A folded cause shows its share of the Pattern first
+
+- **GIVEN** the synthetic case where Lows after correcting highs counts 2 of 2 lows
+  and Correction stacking is folded beneath it
+- **WHEN** the fold is open
+- **THEN** Correction stacking's line reads 2 of 2 lows first, then, set apart
+  behind "not in this Pattern's count", its correction-cluster count
+- **AND** the line prints no outcome word
+
+#### Scenario: A cause under a Pattern that serves no count is all outside it
+
+- **GIVEN** the committed findings-projection fixture, where Lows after correcting
+  highs serves no count sentence and folds Correction on insulin on board and
+  Correction stacking
+- **WHEN** that Pattern's fold is opened
+- **THEN** each cause's set-apart row prints its served count, "1 of 5 lows" and
+  "1 of 1 correction clusters", with no lead words
+- **AND** no cause line contains "outside the count" or "not in this Pattern's
+  count"
+
+### Requirement: The Response comparison caption reconciles with its cohorts and the band
+
+An event-aligned case file's Response comparison caption SHALL name every served
+cohort by its served name with its served count, in served order, so each caption
+term matches a cohort section heading and its count. When a cohort serves one or
+more verdict-band states it holds, the caption SHALL follow that cohort's name
+once with the band's own words for those states, in served order, inside one pair
+of parentheses, joined by commas, with no count. The caption SHALL print the served
+count outside the comparison, after the case file's population noun and in the
+words "outside the comparison", only when that count is non-zero. No caption count
+SHALL be labelled "not comparable"; the verdict band's residue line keeps that word
+with its count for no data. The desk SHALL compute no caption count and derive no
+band link.
+
+#### Scenario: A same-population Pattern caption adds up
+
+- **GIVEN** the synthetic Highs after meals case file of 3 of 6 meals with one
+  Borderline, one no-data and one calm meal
+- **WHEN** Diagnose renders its event view
+- **THEN** the caption reads the Matched, Nearly matched and Other meal
+  opportunities counts under those served names, linked once to Meets criteria and
+  Borderline, and they add up to six
+- **AND** Other meal opportunities is followed once by "does not meet" and "not
+  comparable", with no count
+- **AND** nothing outside the comparison is printed, and the only visible count
+  labelled "not comparable" is the band's one no-data meal
+
+#### Scenario: A cross-population comparison names no states for its own meals
+
+- **GIVEN** the synthetic Missed / unannounced meal case file, compared against
+  completed carb-bolus meals
+- **WHEN** Diagnose renders its event view
+- **THEN** its Matched and comparison terms carry no band words and its Nearly
+  matched term reads "(borderline)"

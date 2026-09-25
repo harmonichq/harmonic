@@ -714,7 +714,7 @@ and S191. The reproduction is `docs/scope/467-scoped-pattern-membership.repro.py
 and the rule's spike is `docs/scope/467-scoped-pattern-membership.spike.py`;
 under it no QA expectation moves, so no QA case is added or rewritten.
 
-- [ ] 58. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 58. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #467's touched
   stories against #467's base at 1280x720 and 1440x900 through
   `frontend/desk-behavior.replay.mjs`, re-inventory the 24 h and Overnight
@@ -764,7 +764,7 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   between <start> and <end>" on a `window_scope` "window" row, the minutes
   printed with `_hhmm` from `HarmConfig`'s band; the whole-day outcome word is
   unchanged.
-- [ ] 61. Mirror and fixture (ADR 467 decision 5): in
+- [x] 61. Mirror and fixture (ADR 467 decision 5): in
   `mockups/findings-projection.mirror.mjs`, drop the scoped membership gate,
   stamp the scoped chart coordinate from `patternChartable` over the scoped `n`
   (removing the `pattern.n > 0` stand-in) and transcribe the band sentence. In
@@ -782,7 +782,7 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   `frontend/diagnose-findings-queue.test.js` or
   `frontend/browser-fixture-population.test.js` is updated to the regenerated
   answer and named in the commit message.
-- [ ] 62. Add one ledger story (the next unissued S id, S192 at the pinned
+- [x] 62. Add one ledger story (the next unissued S id, S192 at the pinned
   commit) on `basal-recurring-low-lower`, in a dated `## #467 amendment`
   section of `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's
   2026-09-24 option A as its sanction, with its replay function in
@@ -797,7 +797,7 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   base run, which must fail at the Overnight row, and the branch run at both
   sizes on its status line. Raise the story inventory by this one story in the
   four places task 9 names.
-- [ ] 63. Capture before/after renders of the Overnight queue on
+- [x] 63. Capture before/after renders of the Overnight queue on
   `basal-recurring-low-lower` at 1280x720 and 1440x900 from the no-fetch serve,
   the before from #467's base. The coordinator attaches them to the pull
   request; they are not committed.

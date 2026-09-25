@@ -5940,9 +5940,14 @@ S192 · A scoped window keeps the overnight Pattern its outcomes land in. On
   evidence: C4_STORIES.S192; opens the 24 h rail and reads the row, presses
             Overnight and reads it again, presses Afternoon and reads its
             absence
-  status:   not yet replayed; the base run (0da909bb with this harness laid
-            over it) must fail at the Overnight row, and the branch run pass at
-            1280x720 and 1440x900. Coordinator-run
+  status:   #467's base 0da909bb with this harness (ca2417c4) laid over it
+            fails at 1280x720 at the Overnight row ("S192 Overnight must list
+            the overnight Pattern row", the row count 0). The branch passes at
+            1280x720 and 1440x900 on ca2417c4, beside the fifteen touched
+            stories, which pass at both sizes on the base and on the branch.
+            Renders of the 24 h and Overnight rail, before on 0da909bb and
+            after on ca2417c4, handed to the coordinator uncommitted; the 24 h
+            rail's text is unchanged. Coordinator-run 2026-09-25
 ```
 
 Additional handler inventory for this amendment:

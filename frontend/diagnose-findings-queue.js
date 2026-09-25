@@ -1,9 +1,13 @@
 /* The Diagnose inspector's level 1 — ONE ranked findings queue (lock terms 34–45).
  *
- * Pump settings and behavioural findings interleave in a single list ordered by the
- * backend's unified 0–100 priority. There is no settings tier, no patterns tier and
- * no "Factors" heading: the crumb root is `Findings` and position is the whole
- * ranking statement (no bars, no score numerals, no tint).
+ * Pump settings and behavioural findings interleave in a single list: the one
+ * ranking by urgency the backend's unified 0–100 priority orders (ADR 469). There
+ * is no settings tier, no patterns tier and no "Factors" heading: the crumb root is
+ * `Findings` and position is the whole ranking statement (no bars, no score
+ * numerals, no tint). A Pattern ranked with its setting sits beneath that setting
+ * and takes no position of its own. "Next in line" and "Worth a look" are bands of
+ * the one ranking, so each prints at most once; "Not recurring often enough to
+ * rank yet" heads only the rows unranked for want of recurrence.
  *
  * EVERYTHING THIS MODULE RENDERS IS SERVER-OWNED (terms 39/40, ADR 730). The
  * projection arrives already classified, merged, outcome-anchored, counted and
@@ -19,6 +23,7 @@
  * projection's own frozen output.
  */
 import { settingValue } from './plan.js';
+import { isfStageNote } from './diagnose-workstation-data.js';
 
 /** Term 41 — the empty findings window is a result, not a void. */
 export const EMPTY_LINE = 'No pattern or setting asserts a direction in this window.';
@@ -208,10 +213,19 @@ export function presentedRows(projection) {
  * The seam (term 42) opens before the first unpriced row of the ranked head —
  * `assert` and `finding`, the two registers priority can reach — and only where a
  * priced row precedes it. With nothing priced, the sentence would caption the
- * whole list instead of the tail. The demoted `held` and `blind` registers follow
- * the seam and are not its subject: each owns its own reason line. It uses the
- * server's row facts to place existing markup; it does not classify or infer the
- * row's published tier.
+ * whole list instead of the tail. An asserting row whose served verdict keeps it
+ * from staging is unranked for that reason, not for want of recurrence, so it
+ * never opens the seam and its detail line is its own staging refusal (ADR 469).
+ * The demoted `held` and `blind` registers follow the seam and are not its
+ * subject: each owns its own reason line. It uses the server's row facts to place
+ * existing markup; it does not classify or infer the row's published tier.
+ *
+ * A ROW ANCHORED TO ITS SETTING HOLDS NO POSITION OF ITS OWN (ADR 469). The server
+ * serves `anchored_by` and sorts the row beneath its setting; while that setting
+ * row is shown, the anchored row is weighted `anchored` and carries no numeral,
+ * caption or stripe. When a sift hides the setting row, the anchored row is the one
+ * visible holder of that Priority and takes a numeral, but still no tier word,
+ * caption or stripe, and it stays out of the tier and stripe bookkeeping.
  *
  * A CLAIMED CAUSE IS NOT A ROW OF ITS OWN (#413, "A Pattern owns its causes in
  * the rail") — PROVIDED its named parent is actually served in this
@@ -257,33 +271,40 @@ export function queueRows(projection, selected = null) {
   let firstPricedTier;
   let firstPricedTierSet = false;
   const built = [];
+  const shownIds = new Set();
   for (const { row, hidden, collapsed, claimedBy } of filtered) {
     if (claimedBy) continue; // folded onto its parent below
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
     const shown = !hidden && !collapsed;
+    if (shown) shownIds.add(row.id);
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
-    const pricedRanked = shown && ranked && !unpriced;
-    const seam = shown && unpriced && pricedSeen && !seamOpened;
+    const stageable = row.register === 'assert'
+      && (row.parameter !== 'isf' || row.asserts_move === true);
+    const refused = unpriced && row.register === 'assert' && !stageable;
+    const anchored = Boolean(row.anchored_by) && !unpriced;
+    const anchorShown = anchored && shownIds.has(row.anchored_by);
+    const pricedRanked = shown && ranked && !unpriced && !anchored;
+    const seam = shown && unpriced && !refused && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
     const weight = collapsed ? 'collapsed'
       : !shown ? null
-        : unpriced ? 'tail' : 'priced';
+        : unpriced ? 'tail' : anchorShown ? 'anchored' : 'priced';
     const caption = pricedRanked && pricedSeen && row.tier !== previousPricedTier
       ? TIER[row.tier] || null : null;
     if (pricedRanked) {
       if (!firstPricedTierSet) { firstPricedTier = row.tier; firstPricedTierSet = true; }
-      pricedSeen = true;
       previousPricedTier = row.tier;
     }
+    if (shown && ranked && !unpriced) pricedSeen = true;
     /* The rank NUMERAL prints the row's visible position among priced ranked
        rows — position was already the whole ranking statement (slice-2 ruling:
        no scores), the numeral just spells it. Nothing is re-ranked here: the
        counter walks the server's own order over the rows a reader can see, so a
        sift renumbers exactly as it re-positions. Unpriced tail and Watching
        rows carry no numeral — they hold no rank to state. */
-    const rank = shown && ranked && !unpriced ? ++rankCounter : null;
+    const rank = shown && ranked && !unpriced && !anchorShown ? ++rankCounter : null;
     built.push({
       rank,
       /* Slice 4 — the two-line evidence summary is the projection's own
@@ -306,9 +327,12 @@ export function queueRows(projection, selected = null) {
       /* ISF carries an independent backend staging verdict. Its
          direction-derived register and rank remain untouched when that verdict
          holds the row; exact true alone exposes the stage affordance. */
-      stageable: row.register === 'assert'
-        && (row.parameter !== 'isf' || row.asserts_move === true),
-      detail: detailFor(row),
+      stageable,
+      // The served row carries the analyzer's `evidence.direction` as `direction`.
+      detail: refused ? { kind: 'reason', text: isfStageNote({ ...row, evidence: { direction: row.direction } }) }
+        : detailFor(row),
+      // No tier word is painted in an anchored row: its tier is its setting's.
+      tierWord: rank === 1 && !anchored ? TIER[row.tier] || null : null,
       urgent: pricedRanked && row.tier === firstPricedTier,
       members: null,
       raw: row,
@@ -489,7 +513,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
        legitimately hidden — and the button keeps its own role. The item is also
        the flex child of `.q`, so the tail's spacing rules address it. */
     const item = document.createElement('div');
-    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}`;
+    item.className = `qitem${row.weight === 'tail' || row.weight === 'anchored' ? ` ${row.weight}` : ''}`;
     item.setAttribute('role', 'listitem');
     const node = document.createElement('button');
     node.type = 'button';
@@ -504,7 +528,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       .setAttribute('aria-hidden', 'true');
     // The first served tier word is read before the first row's title; later tier
     // changes use the caption inserted immediately before their first row.
-    if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
+    if (row.tierWord) add(node, 'tier', row.tierWord);
     add(node, 'lab', row.title);
     /* The toggle and the causes it discloses belong to the Pattern's own list
        item, so a cause is announced inside its Pattern, never as a sibling of
@@ -534,7 +558,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       // An unpriced row holds no rank, but it still prints every served count
       // sentence it carries (#413: every count-bearing rail row); its other
       // details stay off the quiet tail, as before.
-      if (['sentences', 'pattern-status'].includes(row.detail?.kind)) paintDetail(node, row.detail);
+      if (['sentences', 'pattern-status', 'reason'].includes(row.detail?.kind)) paintDetail(node, row.detail);
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));
       list.append(item);
@@ -554,7 +578,8 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // to two lines by the stylesheet
     if (row.summary) add(node, 'sum', row.summary);
     const detail = paintDetail(node, row.detail);
-    const note = scopeNote(row.raw);
+    // The served rank note says where the rank does not come from the counts.
+    const note = `${scopeNote(row.raw)}${row.raw.rank_note ? ` · ${row.raw.rank_note}` : ''}`;
     if (detail && note) add(detail, 'scope-note', note);
     /* Chart-backed Watching rows use the same evidence preview as ranked rows
        when the reader expands them. The workstation registry decides whether

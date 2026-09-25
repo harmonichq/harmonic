@@ -183,7 +183,7 @@ test('#395 · settings, Causes, and Patterns interleave in server order', () => 
   // A claimed cause folds under its parent Pattern (#413), so the top-level
   // order carries no `habit` entries for the two claimed causes here.
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'pattern', 'pattern', 'setting', 'setting', 'pattern', 'habit', 'pattern']);
+    ['setting', 'pattern', 'pattern', 'setting', 'pattern', 'setting', 'habit', 'pattern']);
   // the order is the projection's, untouched
   const topLevel = presentedRows(W.global).filter((r) => !r.claimed_by);
   assert.deepEqual(rows.map((r) => r.title), topLevel.map((r) => r.title));
@@ -194,27 +194,95 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   assert.equal(TIER.next_in_line, 'Next in line');
   assert.equal(TIER.worth_a_look, 'Worth a look');
   assert.equal(MIN_ROW_MINI_WIDTH, 120);
-  assert.deepEqual(rows.filter((row) => !row.hidden && !row.collapsed)
-    .map(({ id, weight, caption }) => ({ id, weight, caption })), [
-      { id: 'ic:720', weight: 'priced', caption: null },
-      { id: 'pattern:highs_after_meals', weight: 'priced', caption: 'Worth a look' },
-      { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
-      { id: 'basal:30-90', weight: 'priced', caption: 'Next in line' },
-      { id: 'basal:330-360', weight: 'priced', caption: null },
-      { id: 'pattern:overnight_lows_no_iob', weight: 'priced', caption: 'Worth a look' },
-      { id: 'finding:over_treated_low', weight: 'priced', caption: null },
-      { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
+  // ADR 469: the tiers are bands of the one ranking, so each tier word prints at
+  // most once, in the row (rank one) or as a caption.
+  const shownRows = rows.filter((row) => !row.hidden && !row.collapsed);
+  const words = [
+    ...shownRows.filter((row) => row.rank === 1 && row.weight === 'priced').map((row) => TIER[row.tier]),
+    ...shownRows.map((row) => row.caption),
+  ].filter(Boolean);
+  assert.deepEqual(words, [...new Set(words)], `a tier word repeats: ${JSON.stringify(words)}`);
+  assert.deepEqual(shownRows.map(({ id, weight }) => ({ id, weight })), [
+    { id: 'ic:720', weight: 'priced' },
+    { id: 'pattern:highs_after_meals', weight: 'anchored' },
+    { id: 'pattern:lows_after_meals', weight: 'anchored' },
+    { id: 'basal:30-90', weight: 'priced' },
+    { id: 'pattern:overnight_lows_no_iob', weight: 'anchored' },
+    { id: 'basal:330-360', weight: 'priced' },
+    { id: 'finding:over_treated_low', weight: 'priced' },
+    { id: 'pattern:lows_after_correcting_highs', weight: 'tail' },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   // ADR 465: the quiet window also holds the fixture's recurring-lows hold at 03:00.
   assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['priced', 'collapsed', 'collapsed']);
+  // With their setting sifted out, both meals Patterns rank alone (ADR 469 decision 6).
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
     { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },
     { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
-  assert.deepEqual(morning.map((row) => row.weight), ['priced', 'priced']);
+  assert.deepEqual(morning.map((row) => row.weight), ['priced', 'anchored']);
+});
+
+test('#469 · a Pattern ranked with its setting holds no position of its own', () => {
+  const rows = queueRows(W.global).filter((row) => !row.hidden && !row.collapsed);
+  const ids = rows.map((row) => row.id);
+  for (const id of ['pattern:highs_after_meals', 'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob']) {
+    const row = rows.find((entry) => entry.id === id);
+    const anchor = row.raw.anchored_by;
+    assert.ok(anchor, `${id} is served with an anchor`);
+    assert.deepEqual({ rank: row.rank, caption: row.caption, urgent: row.urgent, weight: row.weight },
+      { rank: null, caption: null, urgent: false, weight: 'anchored' }, id);
+    const between = rows.slice(ids.indexOf(anchor) + 1, ids.indexOf(id));
+    assert.ok(between.every((entry) => entry.raw.anchored_by === anchor),
+      `${id} follows ${anchor} with only its fellow anchored rows between`);
+  }
+  assert.deepEqual(['basal:30-90', 'basal:330-360', 'finding:over_treated_low']
+    .map((id) => rows.find((row) => row.id === id).rank), [2, 3, 4]);
+});
+
+test('#469 · a Pattern whose setting a sift hides ranks alone, with no tier word', () => {
+  // ic:720's only chip is highs, so the meals sift is the one that hides it.
+  const view = { selected: new Set(['meals']) };
+  const shown = queueRows(W.global, view.selected).filter((row) => !row.hidden && !row.collapsed);
+  assert.ok(!shown.some((row) => row.id === 'ic:720'), 'premise: the meals sift hides ic:720');
+  const highs = shown.find((row) => row.id === 'pattern:highs_after_meals');
+  assert.deepEqual({ rank: highs.rank, caption: highs.caption, urgent: highs.urgent },
+    { rank: 1, caption: null, urgent: false });
+  const { host } = paint(W.global, view);
+  const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === highs.id);
+  assert.ok(!button.children.some((child) => child.className === 'tier'),
+    'no tier word is painted in the row');
+});
+
+test('#469 · the served rank note prints after the detail line', () => {
+  const noteOf = (projection, id) => {
+    const { host } = paint(projection);
+    const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === id);
+    return descendants(button).find((node) => node.className === 'scope-note')?.textContent;
+  };
+  const { host } = paint(W.global);
+  const anchored = descendants(host).find((node) => node.children?.some((child) =>
+    child.tag === 'button' && child.dataset.id === 'pattern:overnight_lows_no_iob'));
+  assert.equal(anchored.className, 'qitem anchored');
+  assert.equal(noteOf(W.global, 'pattern:overnight_lows_no_iob'), ' · Ranked with its setting');
+  assert.equal(noteOf(W.afternoon, 'finding:over_treated_low'), ' · Ranked on all 30 days');
+});
+
+test('#469 · a correction factor that cannot stage gives its own reason, not the tail note', () => {
+  const projection = fixture.direction_only_windows.global;
+  const rows = queueRows(projection);
+  const isf = rows.find((row) => row.id === 'isf');
+  assert.equal(isf.seam, false, 'the correction factor opens no tail seam');
+  assert.deepEqual(isf.detail,
+    { kind: 'reason', text: 'No new number is available, so there is nothing to stage.' });
+  assert.deepEqual(rows.filter((row) => row.seam).map((row) => row.id),
+    ['pattern:lows_after_correcting_highs']);
+  const { host } = paint(projection);
+  const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === 'isf');
+  assert.equal(button.children.find((child) => child.className === 'why')?.textContent,
+    'No new number is available, so there is nothing to stage.');
 });
 
 test('#413 · the rail shows served urgency: the first priced tier is urgent, later tiers stay quiet', () => {
@@ -241,8 +309,8 @@ test('#341 · every priced row, including rank one, receives the common mini mou
   assert.equal(result.rows.length, topLevel.length);
   assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
     'ic:720', 'pattern:highs_after_meals',
-    'pattern:lows_after_meals', 'basal:30-90', 'basal:330-360',
-    'pattern:overnight_lows_no_iob', 'finding:over_treated_low',
+    'pattern:lows_after_meals', 'basal:30-90', 'pattern:overnight_lows_no_iob',
+    'basal:330-360', 'finding:over_treated_low',
   ]);
   assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
   // Cause lines carry no mini of their own — the parent's mini stands for the group.
@@ -282,8 +350,8 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
   // once their parent's toggle opens, closed on arrival unless the parent is
   // rank one, so this default paint shows only the top-level rows.
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem tail'],
-    'each shown row is enclosed, and a tail item is marked for the tail spacing');
+    ['qitem', 'qitem anchored', 'qitem anchored', 'qitem', 'qitem anchored', 'qitem', 'qitem', 'qitem tail'],
+    'each shown row is enclosed, and anchored and tail items are marked for their spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
     // A Pattern's fold toggle rides inside its own item, after the row (#413).
@@ -622,7 +690,8 @@ test('a sift computes its priced seam over only visible rows', () => {
 
 test('slice 4 · the rank numeral spells visible position among priced ranked rows only', () => {
   const rows = queueRows(W.global);
-  const priced = rows.filter((row) => !row.hidden && !row.collapsed
+  // A row anchored beneath its shown setting holds no position of its own (ADR 469).
+  const priced = rows.filter((row) => !row.hidden && !row.collapsed && row.weight !== 'anchored'
     && ['assert', 'finding'].includes(row.register) && row.raw.priority != null);
   assert.ok(priced.length > 1);
   assert.deepEqual(priced.map((row) => row.rank), priced.map((_, index) => index + 1),
@@ -658,7 +727,9 @@ test('#223 · direction-only Correction factor stays asserted after priced rows 
   assert.ok(rows.indexOf(isf) > lastPriced, 'the warning follows every priced row in server order');
   assert.equal(isf.rank, null, 'an unpriced warning receives no numeral');
   assert.equal(isf.stageable, false, 'the analyzer staging verdict exposes no stage affordance');
-  assert.equal(isf.detail.kind, 'support', 'the row uses the existing unpriced detail seam');
+  assert.deepEqual(isf.detail, { kind: 'reason',
+    text: 'No new number is available, so there is nothing to stage.' },
+  'the row gives its own staging refusal (ADR 469)');
   assert.equal(isf.summary, isf.raw.annotation, 'the queue transcribes the analyzer explanation');
   assert.match(isf.summary, /fasting data agrees with the set factor/i);
   assert.match(isf.summary, /recurring correction-linked lows call for weaker corrections/i);

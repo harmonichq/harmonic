@@ -4364,7 +4364,84 @@ export const C4_STORIES = {
         'S192 Afternoon must list no overnight Pattern row');
     }, 'S192 Afternoon lists no overnight Pattern');
   },
+  // #469: the rail follows the one urgency ranking. Leg 1 reads the showcase's
+  // 24 h rail, where the overnight Pattern shares its basal row's position; leg 2
+  // opens isf-direction-only-weaken, whose correction factor gives its own reason
+  // it cannot stage rather than sitting under the tail note. Each leg runs; the
+  // story fails once, naming each failed leg.
+  async S193(page, ctx) {
+    const failures = [];
+    for (const [leg, run] of [
+      ['leg 1 · one position per Priority', oneRanking469],
+      ['leg 2 · the correction factor’s own reason', () => ctx.withCase('isf-direction-only-weaken', stageRefusal469)],
+    ]) {
+      try {
+        await run(page, ctx);
+        process.stdout.write(`# S193 ${leg}: pass\n`);
+      } catch (error) {
+        const reason = String(error?.message || error).replace(/\s+/g, ' ').slice(0, 800);
+        failures.push(`${leg}: ${reason}`);
+        process.stdout.write(`# S193 ${leg}: fail — ${reason}\n`);
+      }
+    }
+    failOnce('S193', 'the rail must follow the one urgency ranking', failures);
+  },
 };
+
+// #469: the rail's top-level list in painted order, each list item with its row's
+// numeral, stripe and rank note, and the caption and tail-note lines between them.
+const readRail469 = page => page.evaluate(() => [...document.querySelectorAll('#level .q > *')].map(node => {
+  const row = node.querySelector(':scope > .qrow');
+  if (!row) return { line: node.className, text: node.textContent.replace(/\s+/g, ' ').trim() };
+  return {
+    id: row.dataset.id, item: node.className, numeral: row.querySelector('.n')?.textContent.trim() ?? '',
+    urgent: row.dataset.urgent === 'true', note: row.querySelector('.scope-note')?.textContent ?? '',
+    why: row.querySelector('.why')?.textContent ?? '', tier: row.querySelector(':scope > .tier')?.textContent ?? '',
+  };
+}));
+
+// #469 leg 1: on the showcase at 24 h the overnight Pattern follows the
+// 03:00–04:00 basal row with no numeral and no stripe, "Worth a look" prints once,
+// Over-treated low is numeral 2, and the stripe marks one leading run.
+async function oneRanking469(page) {
+  await openDiagnoseRail(page);
+  await waitForReplayAssertion(async seen => {
+    const rail = seen(await readRail469(page));
+    const items = rail.filter(entry => entry.id);
+    const basal = items.findIndex(entry => entry.id === 'basal:180-240');
+    assert.ok(basal >= 0, 'S193 premise: the showcase must serve the 03:00–04:00 basal row');
+    const pattern = items[basal + 1];
+    assert.equal(pattern?.id, 'pattern:overnight_lows_no_iob',
+      `S193 the overnight Pattern must follow the 03:00–04:00 basal row; ${pattern?.id} does`);
+    assert.equal(pattern.numeral, '', 'S193 the overnight Pattern must carry no numeral');
+    assert.equal(pattern.urgent, false, 'S193 the overnight Pattern must carry no stripe');
+    assert.ok(pattern.note.includes('Ranked with its setting'),
+      `S193 the overnight Pattern must print "Ranked with its setting"; it prints "${pattern.note}"`);
+    const words = rail.filter(entry => entry.line === 'qtier' ? entry.text === 'Worth a look' : entry.tier === 'Worth a look');
+    assert.equal(words.length, 1, `S193 "Worth a look" must print once; it prints ${words.length} times`);
+    assert.equal(items.find(entry => entry.id === 'finding:over_treated_low')?.numeral, '2',
+      'S193 Over-treated low must carry numeral 2');
+    const ranked = items.filter(entry => entry.numeral);
+    const firstQuiet = ranked.findIndex(entry => !entry.urgent);
+    assert.ok(firstQuiet < 0 || ranked.slice(firstQuiet).every(entry => !entry.urgent),
+      `S193 no striped row may follow an unstriped ranked row: ${JSON.stringify(ranked.map(entry => [entry.id, entry.urgent]))}`);
+  }, 'S193 the 24 h rail gives each Priority one position');
+}
+
+// #469 leg 2: the direction-only weaken's row prints its staging refusal, and no
+// tail note stands above it.
+async function stageRefusal469(page) {
+  await openDiagnoseRail(page);
+  await waitForReplayAssertion(async seen => {
+    const rail = seen(await readRail469(page));
+    const isf = rail.findIndex(entry => entry.id === 'isf');
+    assert.ok(isf >= 0, 'S193 premise: the case must serve the correction factor row');
+    assert.equal(rail[isf].why, 'No new number is available, so there is nothing to stage.',
+      `S193 the correction factor row must print its staging refusal; it prints "${rail[isf].why}"`);
+    assert.ok(!rail.slice(0, isf).some(entry => entry.line === 'tailnote'),
+      'S193 no tail note may precede the correction factor row');
+  }, 'S193 the correction factor gives its own reason');
+}
 
 // #467: the overnight Pattern's row in the pressed window prints its served
 // count sentence and draws no mini.

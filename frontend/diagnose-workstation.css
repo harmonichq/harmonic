@@ -1849,6 +1849,16 @@
   margin: 0 var(--ck-pad) 6px calc(var(--ck-pad) + 16px + 9px + 3px);
   padding-left: 12px; border-left: 1px solid var(--wk-rule);
 }
+/* #469 — a Pattern ranked with its setting holds no position of its own, so it
+   hangs beneath that setting's title column on the causes list's rule, its empty
+   numeral column closed up. Its own fold keeps the same offset from that rule. */
+.dw .qitem.anchored {
+  margin-left: calc(var(--ck-pad) + 16px + 9px + 3px);
+  border-left: 1px solid var(--wk-rule);
+}
+.dw .qitem.anchored > .qrow { grid-template-columns: 0 minmax(0, 1fr) var(--tag-col) 12px; padding-left: 3px; }
+.dw .qitem.anchored > .qfold { margin-left: 12px; }
+.dw .qitem.anchored > .qcauses { margin-left: 15px; }
 .dw .qitem.member .qmember {
   display: grid; width: 100%; text-align: left; min-height: 0;
   grid-template-columns: minmax(0, 1fr) auto 12px;

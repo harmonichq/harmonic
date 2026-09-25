@@ -154,6 +154,13 @@ test('S192 is a unique app-only #467 story on the basal-recurring-low-lower stor
   assert.equal(storyCase('S192'), 'basal-recurring-low-lower');
 });
 
+test('S193 is a unique app-only #469 story on the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S193');
+  assert.equal(entries.length, 1, 'S193 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 469');
+  assert.equal(storyCase('S193'), 'showcase');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

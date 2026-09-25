@@ -5956,3 +5956,94 @@ Additional handler inventory for this amendment:
 |---|---|---|
 | Scoped Pattern membership | ciq_autotune/analyzers/scenario/outcome_patterns.py pattern_in_window | S192 |
 | Band count sentence in a scoped window | ciq_autotune/findings_projection.py _pattern_count_sentences | S192 |
+
+## #469 amendment — 2026-09-24, issue #469
+
+S193 is the fail-first obligation of ADR 469 (`openspec/changes/qa-round-2/design.md`):
+the findings rail follows the one urgency ranking. It is app-opener-only, runs
+leg 1 on the showcase and leg 2 on the manufactured `isf-direction-only-weaken`
+case store through `ctx.withCase` (`CASE_STORE_DIR`), and fails once, naming
+each failed leg. As the only story on that store it joins the fixed PR smoke
+slice (31 stories). No story is retired or amended; S115 reads the served tiers
+and holds unchanged. Browser execution belongs to the coordinator at 1280x720
+and 1440x900. No `★ FROZEN` block and no header inventory line is edited here;
+the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: the queue is one ranking by urgency
+(health impact) across settings and habits; fix only the places the rail breaks
+that rule. The anchor beneath the setting, the tiers as bands of the ranking,
+the rank notes' words, the correction factor's own refusal and the Glossary
+entries are ADR 469's autonomous decisions. It covers S193 and the behavior
+below, and nothing outside #469.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 201 issued · 182
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the
+committed showcase, and over the case store
+`scripts/gen_qa_e2e_db.py --case isf-direction-only-weaken` emits.
+
+Changed shipped behavior:
+
+- **A Pattern ranked with its setting holds no position of its own.** A Pattern
+  admitted because its setting is ready to change sits directly beneath that
+  setting's row, indented on the causes list's rule, with no numeral, caption
+  or stripe, and prints "Ranked with its setting" after its count sentence. When
+  a filter hides that setting row, the Pattern takes a numeral but still no tier
+  word, caption or stripe.
+- **Each tier word prints once.** "Next in line" heads the setting changes at
+  the top of the ranking, "Worth a look" heads everything ranked after them, and
+  the urgency stripe marks that top run only.
+- **The 30-day rank is said in a window.** In a time-of-day window, a ranked
+  Pattern or Cause that prints the window's counts prints "Ranked on all 30
+  days" after them.
+- **The correction factor says why it cannot stage.** A correction-factor row
+  whose served verdict keeps it from staging prints its own refusal ("No new
+  number is available, so there is nothing to stage." for the direction-only
+  weaken) and no longer sits under "Not recurring often enough to rank yet",
+  which now heads only rows unranked for want of recurrence.
+- **The Glossary explains the words.** A "Findings queue" group defines "Next in
+  line", "Worth a look", "Ranked with its setting", "Ranked on all 30 days" and
+  "Not recurring often enough to rank yet".
+
+```
+S193 · The rail follows the one urgency ranking. Leg 1: on the showcase at
+       24 h, the overnight Pattern's item follows the 03:00–04:00 basal row
+       with no numeral and no stripe and prints "Ranked with its setting";
+       "Worth a look" appears once; Over-treated low carries numeral 2; no
+       striped row follows an unstriped ranked row. Leg 2: on
+       isf-direction-only-weaken at 24 h, the correction factor row prints
+       "No new number is available, so there is nothing to stage." and no
+       tail note precedes it.
+  element:  #level .q > .qitem, #level .qrow .n, #level .qrow[data-urgent],
+            #level .qrow .scope-note, #level .qtier, #level .tailnote,
+            #level .qrow[data-id="isf"] .why
+  source:   ciq_autotune/findings_projection.py _stamp_anchors, _sort_key,
+            _assign_tiers, _stamp_rank_notes; frontend/diagnose-findings-queue.js
+            queueRows, renderFindingsQueue; frontend/diagnose-workstation-data.js
+            isfStageNote
+  lock:     ADR 469 (openspec/changes/qa-round-2/design.md)
+  data:     the showcase: Basal 03:00–04:00 lower with the overnight Pattern
+            admitted through it, Over-treated low priced below them;
+            isf-direction-only-weaken: a correction factor weaken with no new
+            number
+  evidence: C4_STORIES.S193; leg 1 opens the 24 h rail and reads its items,
+            numerals, stripes, captions and rank notes in painted order; leg 2
+            opens the 24 h rail and reads the correction factor row and the
+            lines above it. Each leg runs; the story fails once, naming each
+            failed leg
+  status:   not yet replayed; the base run (3b1e941a with this harness laid
+            over it) must fail both legs, and the branch run pass at 1280x720
+            and 1440x900. Coordinator-run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Setting-admitted Pattern anchor | ciq_autotune/findings_projection.py _stamp_anchors, _sort_key | S193 |
+| Tiers as bands of the ranking | ciq_autotune/findings_projection.py _assign_tiers | S193 |
+| Rank notes | ciq_autotune/findings_projection.py _stamp_rank_notes; diagnose-findings-queue.js renderFindingsQueue | S193 |
+| Anchored row weight | diagnose-findings-queue.js queueRows | S193 |
+| Staging refusal detail | diagnose-workstation-data.js isfStageNote; diagnose-findings-queue.js queueRows | S193 |
+| Findings queue Glossary group | frontend/glossary.js | utilities.test.js |

@@ -223,7 +223,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 200)
+            self.assertEqual(plan['count'], 201)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -289,11 +289,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 182)] + [f"R{i}" for i in range(1, 20)])
+        self.inventory([f"S{i}" for i in range(1, 183)] + [f"R{i}" for i in range(1, 20)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 183)] + [f"R{i}" for i in range(1, 19)]
-        self.assertEqual(len(ids), 200)
+        ids = [f"S{i}" for i in range(1, 184)] + [f"R{i}" for i in range(1, 19)]
+        self.assertEqual(len(ids), 201)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 
@@ -867,10 +867,11 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         # `c4-isf-late-read`. #465: S190 joins it as the only story on
         # `basal-recurring-low-within-floor`. #466: S191 joins it as the only
         # story on `basal-recurring-low-spread`. #467: S192 joins it as the only
-        # story on `basal-recurring-low-lower`.
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 30)
+        # story on `basal-recurring-low-lower`. #469: S193 joins it as the only
+        # story on `isf-direction-only-weaken` (its second leg's store).
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 31)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '919d72303fa1b2c7dadacbce61f8e4dc6d2e8e245a03685f049f43cf08b5bd39')
+                         '911fea02bda90956dd9271a8f4b2916eca574a77d032d6a48eaf2b6d6fc97050')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

@@ -504,8 +504,20 @@ through one shared soft-saturation curve) — and **confidence-adjusted recurren
 it shows up, as a single Wilson lower bound that fuses "how often" and "how sure"
 (splitting them double-counts uncertainty). A Lever with Priority above the active
 threshold is *actionable now*; below it collapses into the "why so few?" tail.
+A Pattern admitted through its setting shares that setting's position: it sits
+beneath the setting's row, "Ranked with its setting", and takes no ranked position
+of its own, so one Priority fills one place in the queue (ADR 469).
 _Avoid_: score (overloaded — the behavioral `Confidence.score` is one input, not
 this), rank, weight, severity (that is one flavor's impact input, not the whole).
+
+**Ranking tier**:
+A band of the one ranking the findings queue serves, never a separate list.
+`next_in_line` is the leading run of priced setting changes at the top of the
+ranking; `worth_a_look` is every later priced row, from the first habit or Pattern
+down; `noted` is every unpriced row. A Pattern ranked with its setting takes its
+setting's tier, and a claimed cause keeps its own. Because each band is one run,
+the rail prints each tier word at most once (ADR 469).
+_Avoid_: severity, section, heading (a tier is a band of one order, not a group).
 
 **Recurrence channel**:
 One of the several `k of n` evidence streams a Lever's confidence-adjusted recurrence is measured from, the different ways the same bad setting shows up (e.g. meal-caused low days, correction-rescue days, suggested-side nights or meals). One user's off ratio prints lows; another pre-empts them with rescue carbs so no low prints but the rescue log recurs; another only shows a measurement that disagrees. Recurrence is the **strongest channel** (highest Wilson lower bound) a Lever has, so a fingerprint present in one channel isn't missed for lack of another. A channel counts either days in the analysis window or the nights/meals that actually had clean data; the plain-count line under the Recurrence bar shows that *observed* count, never the window-padded denominator the Wilson bound uses to discount thin data.

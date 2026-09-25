@@ -35,7 +35,7 @@ import {
   queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { ANCHOR_STATE_WORD } from './day-chart.js';
-import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { toCaptures, isfVerdict, isfStageNote } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, excludedNightReasons, glucoseRange } from './diagnose-evidence-charts.js';
 import {
@@ -1225,14 +1225,7 @@ export function renderIsfLevel(host, isf, isfStaged, onStage, options = {}) {
     canStage,
     isStaged: isfStaged,
     replaces: options.replaces ?? null,
-    footNote: roundedNoop
-      ? 'The conservative step rounds to the current Correction factor, so there is no settings change to stage.'
-      : direction === 'weaken'
-        ? 'No new number is available, so there is nothing to stage.'
-        : direction === 'strengthen'
-          ? 'This result is held, so there is no settings change to stage; the estimate and interval remain visible.'
-      : `${e.wide ? 'The interval is wide and no' : 'No'} direction is asserted here, so `
-        + 'there is nothing to stage; the number and its interval are shown as measured.',
+    footNote: isfStageNote(isf),
     onStage,
   });
 }

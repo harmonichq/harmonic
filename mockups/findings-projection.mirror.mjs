@@ -272,6 +272,7 @@ function row(fields) {
     chips: null, window_scope: null, count_sentences: null, fold_sentences: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
     event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
+    anchored_by: null, rank_note: null,
     ...fields,
   };
 }
@@ -918,25 +919,28 @@ function selection(analysis, query, selectedId) {
   return { id: selectedId, disposition, message };
 }
 
-/** The queue's one order: priced rows by priority desc, then unpriced rows by count
-    desc, then the demoted held and blind registers in clock order. */
-function sortKey(r, patterns = new Map()) {
+/** The queue's one urgency order (ADR 469): priced rows by priority desc, then
+    unpriced asserting rows, then unpriced findings by count desc, then the demoted
+    held and blind registers in clock order; an anchored or claimed row sorts
+    directly after its parent, recursively. */
+function sortKey(r, byId = new Map()) {
   const span = r.span || {};
   const key = [
     REGISTER_RANK[r.register],
-    r.priority != null ? 0 : 1,
+    r.priority != null ? 0 : r.register === 'assert' ? 1 : 2,
     -(r.priority || 0),
     -(r.episodes || 0),
     span.start_min ?? DAY_MINUTES,
     r.register === 'history' && r.regime_end ? -Date.parse(r.regime_end) : 0,
     r.title || '',
   ];
-  if (r.claimed_by && patterns.has(r.claimed_by)) return [...sortKey(patterns.get(r.claimed_by)), 1, ...key];
+  const parent = r.anchored_by || r.claimed_by;
+  if (parent && byId.has(parent)) return [...sortKey(byId.get(parent), byId), 1, ...key];
   return [...key, 0];
 }
-const compare = (a, b, patterns) => {
-  const left = sortKey(a, patterns);
-  const right = sortKey(b, patterns);
+const compare = (a, b, byId) => {
+  const left = sortKey(a, byId);
+  const right = sortKey(b, byId);
   for (let i = 0; i < left.length; i += 1) {
     if (left[i] < right[i]) return -1;
     if (left[i] > right[i]) return 1;
@@ -1000,11 +1004,40 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
       rows.push(projected); patterns.set(pattern.subject, projected);
     }
   }
-  rows.sort((a, b) => compare(a, b, patterns));
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  // findings_projection._stamp_anchors: a setting-admitted Pattern takes the first
+  // served, priced, asserting row of its setting's parameter as its anchor.
+  for (const projected of patterns.values()) {
+    if (projected.pattern.admission_route !== 'setting_staging') continue;
+    const member = projected.pattern.members.find((item) => item.kind === 'setting');
+    const parameter = member.subject.replace('setting:', '');
+    const anchors = rows.filter((r) => r.register === 'assert' && r.parameter === parameter
+      && r.priority != null);
+    if (anchors.length) {
+      projected.anchored_by = anchors.reduce((first, r) => (
+        compare(r, first, byId) < 0 ? r : first)).id;
+    }
+  }
+  rows.sort((a, b) => compare(a, b, byId));
+  // findings_projection._assign_tiers: the tiers are bands of the one order.
+  let leading = true;
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
-    else if (row.register === 'assert') row.tier = 'next_in_line';
-    else row.tier = 'worth_a_look';
+    else if (row.claimed_by) row.tier = 'worth_a_look';
+    else if (row.anchored_by) continue;
+    else if (leading && row.register === 'assert') row.tier = 'next_in_line';
+    else { leading = false; row.tier = 'worth_a_look'; }
+  }
+  for (const row of rows) {
+    if (row.anchored_by) row.tier = byId.get(row.anchored_by).tier;
+  }
+  // findings_projection._stamp_rank_notes
+  for (const row of rows) {
+    if (row.anchored_by) row.rank_note = 'Ranked with its setting';
+    else if (query.scoped && row.priority != null && !row.claimed_by
+      && (row.kind === 'pattern' || row.kind === 'habit')) {
+      row.rank_note = `Ranked on all ${analysis.window_days} days`;
+    }
   }
   for (const row of rows) {
     row.headline = headlineFor(row);

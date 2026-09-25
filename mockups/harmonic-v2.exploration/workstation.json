@@ -21103,6 +21103,7 @@
         "o_e74704c21bed9d7a9887d1c83cf09981": "ep-016"
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -21293,6 +21294,7 @@
         "pattern_chart": null,
         "priority": 0,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -41367,6 +41369,7 @@
         "o_e74704c21bed9d7a9887d1c83cf09981": "ep-002"
       },
       "finding_row": {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -41477,6 +41480,7 @@
         "pattern_chart": null,
         "priority": 0,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,

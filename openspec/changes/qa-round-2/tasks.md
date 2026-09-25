@@ -816,7 +816,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   numerals, tier words, stripe, tail note and folds on the showcase at 24 h and
   Overnight and on `isf-direction-only-weaken` at 24 h in the served app, and
   record any observed behavior with no story before designing.
-- [ ] 65. Failing-first backend tests in `tests/test_findings_projection.py`
+- [x] 65. Failing-first backend tests in `tests/test_findings_projection.py`
   `QueueOrderTest`, on the generator's `projection()`, each seen to fail on
   #469's base:
   - whole day: `pattern:highs_after_meals` and `pattern:lows_after_meals` carry
@@ -839,7 +839,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   Replace `test_the_sorted_queue_publishes_its_three_closed_ranking_tiers`
   (at the pinned commit `:958`), which pins the tier to the register, with the
   band assertions above.
-- [ ] 66. Backend (ADR 469 decisions 1–4): in `ciq_autotune/findings_projection.py`,
+- [x] 66. Backend (ADR 469 decisions 1–4): in `ciq_autotune/findings_projection.py`,
   `_row` carries `anchored_by` and `rank_note`; `project` stamps each
   `setting_staging` Pattern's anchor after `_pattern_rows`, sorts with a
   `_sort_key` that places an anchored or claimed row after its parent
@@ -848,14 +848,14 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   bands; the rank notes are stamped last, the day count read from the
   analysis. Update the module docstring's ordering paragraph and the
   docstrings of `_assign_tiers`, `_sort_key` and `_RANKING_TIERS`.
-- [ ] 67. Mirror and fixture: make the same changes to
+- [x] 67. Mirror and fixture: make the same changes to
   `mockups/findings-projection.mirror.mjs` (row fields, anchors, sort, tiers,
   rank notes); regenerate `frontend/__fixtures__/findings-projection.json`; its
   `--check` and `frontend/findings-projection-mirror.test.js` pass. Regenerate
   the eating-sequence payload (task 61's command): its rows' field layout, order
   and tiers move (measured under the spike at 979,302 bytes); its `--check` and
   the 1,000,000-byte limit pass.
-- [ ] 68. Frontend Node tests, failing-first on #469's base with task 67's
+- [x] 68. Frontend Node tests, failing-first on #469's base with task 67's
   fixture laid over it:
   - in `frontend/diagnose-findings-queue.test.js`: on `global`, `queueRows`
     paints each tier word at most once (replacing the pinned caption list of
@@ -881,7 +881,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   - in `frontend/utilities.test.js`: the Glossary renders a "Findings queue"
     group defining "Next in line", "Worth a look", "Ranked with its setting",
     "Ranked on all 30 days" and "Not recurring often enough to rank yet".
-- [ ] 69. Frontend (ADR 469 decisions 2, 4 and 5): in
+- [x] 69. Frontend (ADR 469 decisions 2, 4 and 5): in
   `frontend/diagnose-findings-queue.js`, `queueRows` marks a row anchored to a
   shown row (weight `anchored`: no numeral, caption or stripe), gives an
   anchored row whose anchor is hidden a rank numeral but no tier word, caption
@@ -897,7 +897,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   anchored item indents to the title column and draws the causes list's left
   rule, from existing tokens. In `frontend/glossary.js`, add the "Findings
   queue" group.
-- [ ] 70. In `CONTEXT.md`, the **Priority** entry says a Pattern admitted through
+- [x] 70. In `CONTEXT.md`, the **Priority** entry says a Pattern admitted through
   its setting shares that setting's position, and a new **Ranking tier** entry
   defines `next_in_line`, `worth_a_look` and `noted` as bands of the one
   ranking. In `DESIGN.md`, rule 4 says what "Next in line" and "Worth a look"

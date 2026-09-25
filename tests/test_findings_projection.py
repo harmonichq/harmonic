@@ -956,27 +956,65 @@ class QueueOrderTest(unittest.TestCase):
         counts = [row["episodes"] or 0 for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
-    def test_the_sorted_queue_publishes_its_three_closed_ranking_tiers(self):
-        """The public projection names rank without inventing a headline (#41).
+    def test_a_setting_admitted_pattern_sits_in_its_settings_position(self):
+        """ADR 469 decisions 1–3: one Priority fills one ranked position."""
+        rows = self.global_rows
+        ids = [row["id"] for row in rows]
+        by_id = {row["id"]: row for row in rows}
+        anchors = {
+            "pattern:highs_after_meals": "ic:720",
+            "pattern:lows_after_meals": "ic:720",
+            "pattern:overnight_lows_no_iob": "basal:30-90",
+        }
+        for pattern, anchor in anchors.items():
+            with self.subTest(pattern=pattern):
+                row = by_id[pattern]
+                self.assertEqual(row.get("anchored_by"), anchor)
+                self.assertEqual(row.get("rank_note"), "Ranked with its setting")
+                self.assertEqual(row["tier"], by_id[anchor]["tier"])
+                between = rows[ids.index(anchor) + 1:ids.index(pattern)]
+                self.assertTrue(all(
+                    item.get("anchored_by") == anchor
+                    or by_id.get(item.get("claimed_by"), {}).get("anchored_by") == anchor
+                    for item in between
+                ), [item["id"] for item in between])
+        self.assertEqual(ids[ids.index("pattern:highs_after_meals") + 1], "finding:carb_undercount")
+        # A claimed cause keeps its own tier inside its Pattern's fold; the bands
+        # order the top-level rows the rail ranks.
+        tiers = [row["tier"] for row in rows if not row["claimed_by"]
+                 and row["tier"] in ("next_in_line", "worth_a_look")]
+        self.assertEqual(tiers, sorted(tiers, key=["next_in_line", "worth_a_look"].index))
+        for row in rows:
+            if row["id"] not in anchors:
+                self.assertIsNone(row.get("anchored_by"), row["id"])
+                self.assertIsNone(row.get("rank_note"), row["id"])
 
-        Tiers are assigned only after this queue's server-owned sort: priorities
-        decide which rows lead, but no first asserting row receives a stronger
-        claim than the rest.
-        """
-        scoped_rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        rows = self.global_rows + scoped_rows
-        allowed = {"next_in_line", "worth_a_look", "noted"}
-        self.assertEqual({row["tier"] for row in rows}, allowed)
-        self.assertEqual(
-            {row["tier"] for row in rows if row["register"] == "assert"},
-            {"next_in_line"},
-        )
-        self.assertTrue(all(
-            row["tier"] == "noted" if row["priority"] is None
-            else (row["tier"] == "next_in_line" if row["register"] == "assert"
-                  else row["tier"] == "worth_a_look")
-            for row in rows
-        ))
+    def test_a_scoped_window_says_its_rank_comes_from_all_30_days(self):
+        rows = {row["id"]: row for row in
+                self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]}
+        self.assertEqual(rows["finding:over_treated_low"].get("rank_note"), "Ranked on all 30 days")
+        self.assertIsNone(rows["ic:720"].get("rank_note"))
+
+    def test_a_pattern_whose_setting_is_outside_the_window_ranks_alone(self):
+        rows = {row["id"]: row for row in
+                self.projection.project(WindowQuery.clock(6 * 60, 11 * 60))["rows"]}
+        highs = rows["pattern:highs_after_meals"]
+        self.assertIsNone(highs.get("anchored_by"))
+        self.assertEqual(highs.get("rank_note"), "Ranked on all 30 days")
+
+    def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
+        rows = FindingsProjection(
+            _analysis=gen.analysis(isf=gen.direction_only_isf_rows()),
+            _exposures=gen.exposures(), _scenarios=gen.scenarios(), _outcome_patterns=[],
+        ).project(WindowQuery.whole_day())["rows"]
+        ids = [row["id"] for row in rows]
+        by_id = {row["id"]: row for row in rows}
+        for cause in ("finding:correction_on_iob", "finding:correction_stacking"):
+            with self.subTest(cause=cause):
+                self.assertIsNone(by_id[cause]["priority"])
+                self.assertEqual(by_id[cause]["episodes"], 1)
+                self.assertIsNone(by_id["isf"]["priority"])
+                self.assertLess(ids.index("isf"), ids.index(cause))
 
     def test_the_order_is_the_servers_own_priorities_not_a_re_derivation(self):
         levers = {lever["parameter"]: lever["priority"]

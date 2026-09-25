@@ -152,7 +152,9 @@ and technical documentation keep their established domain terms.
 4. Never show the 0–100 urgency number. **Decide now**, **Next in line**, **Worth a
    look**, and **noted** are the complete ranking-tier vocabulary. **Flagged**,
    **Held**, **Held for safety**, and **collecting** are result states, not severity
-   tiers.
+   tiers. In the findings queue the tiers are bands of one ranking: **Next in line**
+   heads the setting changes at the top, **Worth a look** heads everything ranked
+   after them, and each prints at most once.
 5. Charts explain themselves through on-chart legend chips, not caption sentences.
    A chart that requires a paragraph fails the bar.
 6. Direction-only findings name the direction in user terms wherever the trend is

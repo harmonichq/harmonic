@@ -87817,6 +87817,7 @@
           "o_0d9c9210025df65d6afe39adf68dd8e3": "ep-005"
         },
         "finding_row": {
+          "anchored_by": null,
           "annotation": null,
           "appearances": [
             {
@@ -87926,6 +87927,7 @@
           "pattern_chart": null,
           "priority": null,
           "programmed_now": null,
+          "rank_note": null,
           "reason": null,
           "recommended": null,
           "regime_end": null,
@@ -90046,6 +90048,7 @@
         },
         "source_findings": [
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -90146,6 +90149,7 @@
             "pattern_chart": null,
             "priority": 28,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90174,6 +90178,7 @@
             "window_scope": "window"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -90298,6 +90303,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90312,6 +90318,7 @@
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -90421,6 +90428,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90435,6 +90443,7 @@
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": [
               {
@@ -90544,6 +90553,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90572,6 +90582,7 @@
             "window_scope": "window"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -90673,6 +90684,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90687,6 +90699,7 @@
             "window_scope": "whole_day"
           },
           {
+            "anchored_by": null,
             "annotation": null,
             "appearances": null,
             "asserts_move": null,
@@ -90777,6 +90790,7 @@
             "pattern_chart": null,
             "priority": null,
             "programmed_now": null,
+            "rank_note": null,
             "reason": null,
             "recommended": null,
             "regime_end": null,
@@ -90794,6 +90808,7 @@
       }
     },
     "finding_row": {
+      "anchored_by": null,
       "annotation": null,
       "appearances": [
         {
@@ -90894,6 +90909,7 @@
       "pattern_chart": null,
       "priority": 28,
       "programmed_now": null,
+      "rank_note": null,
       "reason": null,
       "recommended": null,
       "regime_end": null,
@@ -93018,6 +93034,7 @@
     },
     "source_findings": [
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -93118,6 +93135,7 @@
         "pattern_chart": null,
         "priority": 28,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -93146,6 +93164,7 @@
         "window_scope": "window"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -93270,6 +93289,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -93284,6 +93304,7 @@
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -93393,6 +93414,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -93407,6 +93429,7 @@
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": [
           {
@@ -93516,6 +93539,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -93544,6 +93568,7 @@
         "window_scope": "window"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -93645,6 +93670,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -93659,6 +93685,7 @@
         "window_scope": "whole_day"
       },
       {
+        "anchored_by": null,
         "annotation": null,
         "appearances": null,
         "asserts_move": null,
@@ -93749,6 +93776,7 @@
         "pattern_chart": null,
         "priority": null,
         "programmed_now": null,
+        "rank_note": null,
         "reason": null,
         "recommended": null,
         "regime_end": null,
@@ -101980,6 +102008,7 @@
       "o_7aa87ba93366d765cc0a86c27d922409": "ep-001"
     },
     "finding_row": {
+      "anchored_by": null,
       "annotation": null,
       "appearances": [
         {
@@ -102080,6 +102109,7 @@
       "pattern_chart": null,
       "priority": 28,
       "programmed_now": null,
+      "rank_note": null,
       "reason": null,
       "recommended": null,
       "regime_end": null,

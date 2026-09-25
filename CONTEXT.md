@@ -513,9 +513,9 @@ this), rank, weight, severity (that is one flavor's impact input, not the whole)
 **Ranking tier**:
 A band of the one ranking the findings queue serves, never a separate list.
 `next_in_line` is the leading run of priced setting changes at the top of the
-ranking; `worth_a_look` is every later priced row, from the first habit or Pattern
-down; `noted` is every unpriced row. A Pattern ranked with its setting takes its
-setting's tier, and a claimed cause keeps its own. Because each band is one run,
+ranking; `worth_a_look` is every later priced row, from the first behavioral
+Lever or Pattern down; `noted` is every unpriced row. A Pattern ranked with its
+setting takes its setting's tier, and a claimed Lever row keeps its own. Because each band is one run,
 the rail prints each tier word at most once (ADR 469).
 _Avoid_: severity, section, heading (a tier is a band of one order, not a group).
 

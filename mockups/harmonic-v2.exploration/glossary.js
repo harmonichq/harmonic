@@ -29,8 +29,8 @@ export const glossaryGroups = [
           // #469: the Diagnose findings queue is one ranking by urgency; these are
           // the words it prints about that ranking.
           { title: 'Findings queue', terms: [
-            { term: 'Next in line', def: 'The setting changes at the top of the findings queue, ranked before any habit or Pattern. The words print once, at the first of them.' },
-            { term: 'Worth a look', def: 'Everything else the queue ranks, from the first habit or Pattern down. The words print once, where the setting changes at the top end.' },
+            { term: 'Next in line', def: 'The setting changes at the top of the findings queue, ranked before any cause or Pattern. The words print once, at the first of them.' },
+            { term: 'Worth a look', def: 'Everything else the queue ranks, from the first cause or Pattern down. The words print once, where the setting changes at the top end.' },
             { term: 'Ranked with its setting', def: 'A Pattern that is in the queue because its setting is ready to change. It sits beneath that setting and shares its place, so it takes no number of its own.' },
             { term: 'Ranked on all 30 days', def: 'In a time-of-day window, a ranked Pattern or cause prints the counts for that window, but its place in the queue comes from all 30 days.' },
             { term: 'Not recurring often enough to rank yet', def: 'Findings seen too few times to rank. They are listed after the ranked ones, with no number.' },

@@ -810,7 +810,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
 `docs/scope/469-queue-rank.repro.mjs` and the server rules' spike is
 `docs/scope/469-queue-rank.spike.py`; under it no QA expectation moves.
 
-- [ ] 64. Before any design change, run UI Craft's revise pre-work on the shipped
+- [x] 64. Before any design change, run UI Craft's revise pre-work on the shipped
   desk (sweep deferred to start from triage, sandbox): replay #469's touched
   stories against #469's base at 1280x720 and 1440x900, re-inventory the rail's
   numerals, tier words, stripe, tail note and folds on the showcase at 24 h and
@@ -906,7 +906,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   extract (`glossary.js`, `utilities.json`) and the queue rows its captures
   carry (`setting.json`, `focus.json`, `journey.json`, `workstation.json`, and
   `evidence.json` if its rows move) are rewritten; its `--check` then passes.
-- [ ] 71. Add one ledger story (the next unissued S id after task 62's, S193 at
+- [x] 71. Add one ledger story (the next unissued S id after task 62's, S193 at
   the pinned commit) in a dated `## #469 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
   one-ranking decision as its sanction, with its replay function, registry
@@ -921,7 +921,7 @@ S193 (task 71) and #467's rail-reading list. The reproduction is
   failed leg. Lay its harness over #469's base and record that base run, where
   both legs fail, and the branch run at both sizes on its status line. Raise
   the story inventory by this one story in the four places task 9 names.
-- [ ] 72. Capture before/after renders of the 24 h rail on the showcase and on
+- [x] 72. Capture before/after renders of the 24 h rail on the showcase and on
   `isf-direction-only-weaken`, and of the Afternoon rail on the showcase, at
   1280x720 and 1440x900, the before from #469's base. The coordinator attaches
   them to the pull request; they are not committed.

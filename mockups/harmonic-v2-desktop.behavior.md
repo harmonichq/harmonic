@@ -6032,9 +6032,17 @@ S193 · The rail follows the one urgency ranking. Leg 1: on the showcase at
             opens the 24 h rail and reads the correction factor row and the
             lines above it. Each leg runs; the story fails once, naming each
             failed leg
-  status:   not yet replayed; the base run (3b1e941a with this harness laid
-            over it) must fail both legs, and the branch run pass at 1280x720
-            and 1440x900. Coordinator-run
+  status:   #469's base 3b1e941a with this harness (bb694f14) laid over it
+            fails both legs at 1280x720: leg 1 at "must carry no numeral" (the
+            overnight Pattern held numeral 2 under a second "Worth a look"),
+            leg 2 at the correction factor's staging refusal (the row printed
+            none, under the tail note). The branch passes both legs at
+            1280x720 and 1440x900 on bb694f14, beside the sixteen touched
+            stories (S115 unamended), which pass at both sizes on the base and
+            the branch. Renders of the showcase's 24 h, Overnight and
+            Afternoon rail and of isf-direction-only-weaken's 24 h rail,
+            before on 3b1e941a and after on bb694f14, handed to the
+            coordinator uncommitted. Coordinator-run 2026-09-25
 ```
 
 Additional handler inventory for this amendment:

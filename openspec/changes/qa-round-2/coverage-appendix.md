@@ -135,3 +135,30 @@ above (d705ac0a carries this case), with no limit raised: showcase 1,409,024
 bytes, drift 0.303 s, focused QA suite 59.909 s, slowest generated case 11.55 s,
 whole pytest 392.41 s against the base's 449.64 s on the same machine. The new
 case's own generated test takes 0.08 s (measured separately in the worker).
+
+## #467 and #469 scoped Pattern membership and the one urgency ranking — 2026-09-25
+
+Neither ticket adds or rewrites a QA case: every `QaExpectation` literal passes
+unchanged under both, as their spikes measured. The committed showcase is
+unchanged. The five budgets were measured by `acceptance.py budget` on the slice
+head `bb694f14` (which carries both tickets). The first run shared the machine
+with other work and breached two limits; the coordinator re-ran it alone, under a
+load average of 3 to 4 from other processes. No limit was raised:
+
+| Budget | Under load (bb694f14) | Alone (bb694f14) | Unchanged limit |
+| --- | ---: | ---: | ---: |
+| Committed showcase size | 1,409,024 bytes | 1,409,024 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.231 s wall | 0.28 s wall | 30 s |
+| Focused QA suite | 77.300 s wall | 64.67 s wall | 90 s |
+| Slowest generated case | 16.133 s (`test_case_c4_profile`), 76 cases | 12.387 s | 15 s |
+| Whole pytest | 498.69 s wall | 460.78 s wall | 400 s |
+
+Alone, only the whole pytest breaches. The base measured 417.88 s (origin/main
+59fa4737, #463's section) and 449.64 s (718fcf77, #465's section) earlier in this
+run on the same machine, so the ceiling of record is already exceeded by the
+base here. By ADR 463's ruling the slice is judged against the base on the same
+machine; no limit was raised, and the breach is flagged for Connor with
+re-baselining the 160 s figure. The slice's worker ran the whole suite once on
+bb694f14 (2693 passed, 1 skipped, 408.54 s reported by pytest), and the
+QA-case files alone at 79.83 s. Both budget receipts are coordinator-run records
+outside this tree.

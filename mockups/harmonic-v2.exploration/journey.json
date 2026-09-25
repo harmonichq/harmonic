@@ -72764,6 +72764,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -73078,6 +73081,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -73391,6 +73397,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -81008,6 +81019,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "fired"
+                  ],
                   "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
@@ -81321,6 +81335,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "near_miss"
+                  ],
                   "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
@@ -81632,6 +81649,10 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "clean",
+                    "outranked"
+                  ],
                   "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",
@@ -95471,6 +95492,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -95785,6 +95809,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -96098,6 +96125,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -126852,6 +126884,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -127166,6 +127201,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -127479,6 +127517,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -188313,6 +188356,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "fired"
+              ],
               "band_verdict": "fired",
               "key": "matched",
               "name": "Matched",
@@ -188627,6 +188673,9 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "near_miss"
+              ],
               "band_verdict": "near_miss",
               "key": "nearly_matched",
               "name": "Nearly matched",
@@ -188940,6 +188989,11 @@
                 "kind": "excursion_nadir",
                 "label": "Low excursion"
               },
+              "band_states": [
+                "clean",
+                "outranked",
+                "no_data"
+              ],
               "band_verdict": null,
               "key": "comparison",
               "name": "Other low excursions",
@@ -196557,6 +196611,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "fired"
+                  ],
                   "band_verdict": "fired",
                   "key": "matched",
                   "name": "Matched",
@@ -196870,6 +196927,9 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "near_miss"
+                  ],
                   "band_verdict": "near_miss",
                   "key": "nearly_matched",
                   "name": "Nearly matched",
@@ -197181,6 +197241,10 @@
                     "kind": "excursion_nadir",
                     "label": "Low excursion"
                   },
+                  "band_states": [
+                    "clean",
+                    "outranked"
+                  ],
                   "band_verdict": null,
                   "key": "comparison",
                   "name": "Other low excursions",

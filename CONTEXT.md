@@ -849,9 +849,9 @@ drove it and any it **claimed**; its caption counts distinct **Findings**, one p
 served Lever, because each attributed episode is one **Occurrence** of its Lever's
 Finding — so two episodes of one Lever count once — and counts claimed anchors
 beside it, never adding them in. **Also checked** lists anchors the engine stayed
-silent on for a reason worth reading (the near-miss). **Quiet** folds the rest into
-one counted stretch: clean, explained and no data. Each band caption opens the
-Glossary at its Episode Log group. See ADR 423.
+silent on for a reason worth reading (the near-miss). **Quiet** counts the rest
+together rather than listing them: clean, explained and no data, with no time span
+(ADR 468). Each band caption opens the Glossary at its Episode Log group. See ADR 423.
 _Avoid_: episode cards (a row is an anchor, not an episode), rows as a count of
 Findings.
 
@@ -900,9 +900,11 @@ _Avoid_: trigger time, occurrence time, event time.
 A folded cause's served part of its Pattern's own count. Each Occurrence the
 Pattern claims is credited once, to the first of its rate levers that claims it,
 so the shares of a Pattern's causes add up to its count. The fold prints a cause's
-share first; the cause's counts on any other population are **outside the count**
-and sit apart behind those words. A cause that is not a rate lever (a Sequence
-habit), and every cause under a Pattern that serves no count, has no share. A
+share first; the cause's counts on any other population are outside the Pattern's
+count and sit apart behind the words "not in this Pattern's count". A cause that is
+not a rate lever (a Sequence habit), and every cause under a Pattern that serves no
+count, has no share; under a Pattern that serves no count its counts print with no
+such words, because there is no count to be outside of (ADR 468). A
 Pattern with no rate levers, counted from harm-band nights (overnight lows with no
 insulin on board), folds no cause (ADR 424).
 _Avoid_: contribution, portion, breakdown, subtotal.

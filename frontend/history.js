@@ -398,12 +398,20 @@ export function reassessmentSection(detail, mode, { kind } = {}) {
   const comparison = reassessment.comparison || {};
   const availability = comparison.availability || {};
   const context = reassessment.comparison_context || {};
+  // #468: the Context line says what a Retained read reuses, and when it was
+  // saved. With nothing saved, it prints the word table's words for why: a
+  // record kept before contexts were saved, or any other missing context.
+  const missing = comparisonReasonWords(context.reason === 'legacy_not_recorded'
+    ? 'legacy_not_recorded' : 'missing_comparison_context');
+  const retained = context.captured_at
+    ? `Reuses the settings and rules saved with this record on ${e(stamp(context.captured_at))}`
+    : e(`${missing[0].toUpperCase()}${missing.slice(1)}`);
   return `<section class="gf-section" data-record-part="reassessment"><h3>Reassessment <span class="meta">${e(MODE_WORD[reassessment.mode] || reassessment.mode)}</span></h3>${controls}
     <dl>
       <dt>Computed</dt><dd>${e(stamp(reassessment.computed_at))}</dd>
       <dt>Context</dt><dd data-reassessment-context="${e(reassessment.mode)}">${reassessment.mode === 'current'
         ? 'Current policy: this is not a like-for-like comparison with the saved ending.'
-        : context.captured_at ? `Stored context recorded ${e(stamp(context.captured_at))}` : 'No stored context was recorded'}</dd>
+        : retained}</dd>
       <dt>Result</dt><dd data-reassessment-state="${e(availability.state || 'unavailable')}">${availability.state === 'available'
         ? e(stateWords((comparison.assessment || {}).state || 'unclear'))
         : `Unavailable · ${e(comparisonReasonWords(availability.reason || 'not_recorded'))}`}</dd>

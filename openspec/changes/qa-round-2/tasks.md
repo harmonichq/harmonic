@@ -1236,7 +1236,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
   narrowed Pattern case equal to the server's. Each generator's `--check` then
   passes. Commit this task on its own: that commit is the base for task 96's
   failing-first runs.
-- [ ] 96. Failing-first Node tests, each seen to fail on task 95's commit:
+- [x] 96. Failing-first Node tests, each seen to fail on task 95's commit:
   - in `frontend/diagnose-findings-queue.test.js`, rewriting the two #424 fold
     tests: under `pattern:highs_after_meals`, which serves a count, Carb
     undercount's second row reads "not in this Pattern's count · 2 of 4 highs";
@@ -1275,7 +1275,7 @@ browser leg: the start session hands it back and records the coordinator's outpu
     the count" under either; its caption check fails on the base caption, whose
     comparison term carries no states; its served-shape check fails on a case
     file with no `band_states`.
-- [ ] 97. Frontend (ADR 468 decisions 1, 2, 3 and 5):
+- [x] 97. Frontend (ADR 468 decisions 1, 2, 3 and 5):
   - `frontend/diagnose-findings-queue.js`: `paintMember` leads the set-apart row
     with "not in this Pattern's count" only when the parent Pattern serves
     `count_sentences`, and prints no lead or leading separator otherwise; its doc
@@ -1292,22 +1292,22 @@ browser leg: the start session hands it back and records the coordinator's outpu
     468 decision 5; `frontend/diagnose-workstation.js`
     `renderEventComparisonRoster`: the caption reads `band_states` per decision 5,
     and its comment says so.
-- [ ] 98. Documents: CONTEXT.md's **Share** entry names "not in this Pattern's
+- [x] 98. Documents: CONTEXT.md's **Share** entry names "not in this Pattern's
   count" and says a cause under a Pattern that serves no count prints its counts
   with no such words; CONTEXT.md's **Episode Log** entry says Quiet counts the
   rest together, not "one counted stretch"; DESIGN.md's Pattern-fold bullet
   (`:359–362` at the pinned commit) says the same as the Share entry;
   `docs/kb/reading-day.md` (`:29`) says Quiet holds everything else, counted
   together rather than listed.
-- [ ] 99. Regenerate the design exploration
+- [x] 99. Regenerate the design exploration
   (`uv run python mockups/harmonic-v2.exploration/generate.py`): its Glossary
   extract (`glossary.js`), its Guide capture (`utilities.json`) and its case-file
   captures (`focus.json`, `journey.json`, `workstation.json`) move; its `--check`
   then passes.
-- [ ] 100. Pins the regenerated sets move in the Node tests that read them are
+- [x] 100. Pins the regenerated sets move in the Node tests that read them are
   updated to the regenerated answer and named in the commit message; no pin is
   changed that the regeneration did not move.
-- [ ] 101. Replay (ADR 468 decision 6), in `frontend/c4.replay.mjs`:
+- [x] 101. Replay (ADR 468 decision 6), in `frontend/c4.replay.mjs`:
   `assertFoldLine424` takes the parent Pattern row (its S115 and S126 callers
   pass it) and asserts decision 1's words from the parent's served
   `count_sentences`; `assertServedComparison424` also requires `band_states` on

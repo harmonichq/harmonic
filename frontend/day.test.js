@@ -239,6 +239,35 @@ test('each Episode Log row renders its served state word and its kind', () => {
   assert.match(focused, /data-day-row="2024-06-26 13:55:00" aria-pressed="true"/);
 });
 
+// #468 — the Quiet line under its caption: its three counts, and no time span.
+const quietLine = (markup) => /<span class="gf-log-title">Quiet · \d+<\/span>.*?<\/div><p class="gf-meta">(.*?)<\/p>/.exec(markup)?.[1];
+const CLOCK_SPAN = /\d\d:\d\d–\d\d:\d\d/;
+
+test('#468 · the Quiet line prints its counts and no span over one quiet anchor', () => {
+  const line = quietLine(dayFrame(state()));
+  assert.equal(line, '1 clean · 0 explained · 0 no data');
+  assert.doesNotMatch(line, CLOCK_SPAN);
+});
+
+test('#468 · quiet anchors on both sides of a Finding print no span that covers it', () => {
+  const clean = (t) => ({ t, kind: 'high', bg: 190, insulin: null, carbs: null, state: 'clean',
+    verdicts: [{ classifier: 'late_bolus', matched: false, silence_reason: 'no_trigger' }] });
+  const [fired] = MODEL.episodes[0].anchors;
+  const model = { ...MODEL, episodes: [{ ...MODEL.episodes[0],
+    anchors: [clean('2024-06-26 08:00:00'), fired, clean('2024-06-26 20:00:00')] }] };
+  const ledger = buildEpisodeLedger(model);
+  assert.deepEqual(ledger.quiet.rows.map((entry) => entry.row.t), ['2024-06-26 08:00:00', '2024-06-26 20:00:00']);
+  const markup = dayFrame(state({ ledger }));
+  assert.equal(quietLine(markup), '2 clean · 0 explained · 0 no data');
+  assert.doesNotMatch(quietLine(markup), CLOCK_SPAN);
+});
+
+test('#468 · the Episode Log ledger serves Quiet\'s counts and no span', () => {
+  const { quiet } = buildEpisodeLedger(MODEL);
+  assert.ok(!('start' in quiet) && !('end' in quiet), 'the ledger still serves a Quiet span');
+  assert.deepEqual([quiet.clean, quiet.explained, quiet.noData], [1, 0, 0]);
+});
+
 test('direct entry invents no prior subject and offers no return', () => {
   const markup = dayFrame(state());
   assert.ok(!markup.includes('Opened from'), 'direct Day entry named a prior subject');
@@ -439,6 +468,16 @@ test('#423 · the Glossary explains the Episode Log bands', () => {
   assert.deepEqual(group.terms.map((t) => t.term), ['Finding', 'Claimed', 'Also checked', 'Quiet']);
   const quiet = group.terms.find((t) => t.term === 'Quiet').def;
   for (const count of ['clean', 'explained', 'no data']) assert.match(quiet, new RegExp(count), `Quiet does not name its ${count} count`);
+});
+
+test('#468 · the Glossary counts Quiet together rather than calling it one stretch', () => {
+  const group = glossaryGroups.find((g) => g.title === 'Episode Log');
+  const quiet = group.terms.find((t) => t.term === 'Quiet').def;
+  assert.match(quiet, /counted together rather than listed/);
+  assert.doesNotMatch(quiet, /one stretch/);
+  for (const clause of ['clean (the behavior plainly did not happen)',
+    'explained (a recent low or a defensive suspend already explains the move, or the rise is the rebound of an over-treated low)',
+    'no data (too little recorded to judge)']) assert.ok(quiet.includes(clause), `Quiet lost its clause: ${clause}`);
 });
 
 test('#448 · the Glossary\'s Quiet "explained" count names both upstream-cause sources', () => {

@@ -1026,10 +1026,11 @@ test('#395 · fixture Pattern cases retain every requested clock and event coord
 });
 
 /* #424 — the Response comparison caption names every served cohort as its section
-   heading does, with its served count, links the band's own words once where a
-   cohort serves the band state it holds, and names the Occurrences outside the
-   comparison only when that served count is non-zero. It computes no count and
-   derives no link; the band keeps "not comparable" for no data. */
+   heading does, with its served count, and names the Occurrences outside the
+   comparison only when that served count is non-zero. #468 — each cohort is
+   followed once by the band's own words for the band states it serves, comma-joined
+   in one pair of parentheses, with no count. It computes no count and derives no
+   link; only the band counts "not comparable". */
 function renderedCaption(caseFile) {
   const originalDocument = globalThis.document;
   try {
@@ -1046,22 +1047,25 @@ function renderedCaption(caseFile) {
   }
 }
 
-test('#424 · a same-population caption names each cohort as its heading does and adds up', () => {
+test('#424, #468 · a same-population caption names each cohort as its heading does, with the band states it holds', () => {
   const captures = JSON.parse(readFileSync(new URL(
     '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
   const caseFile = captures.cases['finding:carb_undercount'].event;
   const { cohorts, counts } = caseFile.projection;
   const { caption, headings } = renderedCaption(caseFile);
 
+  assert.deepEqual(cohorts.map((cohort) => cohort.band_states),
+    [['fired'], ['near_miss'], ['clean', 'outranked', 'no_data']], 'premise: the served band states');
   assert.equal(caption,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities');
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities'
+    + ' (does not meet, claimed by another finding, not comparable)');
   for (const cohort of cohorts) {
     assert.ok(headings.some((html) => html.includes(`<b>${cohort.name}</b>`)
       && html.includes(`· ${counts[cohort.key]} occurrence`)), `${cohort.name} heading matches`);
   }
   assert.equal(cohorts.reduce((sum, cohort) => sum + counts[cohort.key], 0),
     caseFile.summary.denominator);
-  assert.doesNotMatch(caption, /not comparable|outside the comparison/);
+  assert.doesNotMatch(caption, /\d+ not comparable|outside the comparison/);
 });
 
 test('#424 · a cross-population caption names its Highs outside the comparison', () => {

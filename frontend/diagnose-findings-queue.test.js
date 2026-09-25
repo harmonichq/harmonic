@@ -453,8 +453,11 @@ test('term 35 · a claimed cause keeps EVERY served fold sentence, never a merge
 
 /* #424 — a folded cause's line reads its served fold sentences, never its own
    count sentences: its share of the Pattern's count first, then every count
-   outside that count, set apart behind those words. The desk computes no share
-   and decides no scope; the words are the painter's only addition. */
+   outside that count, set apart on a second row. #468 — that row leads with
+   "not in this Pattern's count" only under a Pattern that serves a count; under
+   one that serves none there is no count to be outside of, so it prints the
+   counts alone. The desk computes no share and decides no scope; the words are
+   the painter's only addition. */
 const lineText = (node) => (typeof node === 'string' ? node
   : node.className === 'sep' ? ' · '
     : `${node.textContent || ''}${(node.children || []).map(lineText).join('')}`);
@@ -466,7 +469,7 @@ const openFold = (parentId) => {
   return descendants(host).filter((node) => node.className === 'qmember');
 };
 
-test('#424 · a folded cause leads with its share of the Pattern and sets the rest apart', () => {
+test('#424, #468 · a folded cause leads with its share of the Pattern and names the count it sets the rest apart from', () => {
   const parent = queueRows(W.global).find((row) => row.id === 'pattern:highs_after_meals');
   const carb = parent.members.find((member) => member.id === 'finding:carb_undercount');
   assert.deepEqual(carb.sentences, [
@@ -477,11 +480,12 @@ test('#424 · a folded cause leads with its share of the Pattern and sets the re
   const [line] = openFold('pattern:highs_after_meals');
   const part = (cls) => line.children.find((child) => child.className === cls);
   assert.equal(lineText(part('den')), '1 of 3 meals');
-  assert.equal(lineText(part('out')), 'outside the count · 2 of 4 highs');
+  assert.ok(parent.raw.count_sentences?.length, 'premise: this Pattern serves a count');
+  assert.equal(lineText(part('out')), 'not in this Pattern\'s count · 2 of 4 highs');
   assert.doesNotMatch(lineText(line), /ran high|undercounted/, 'the line prints no outcome word');
 });
 
-test('#424 · under a Pattern that serves no count, every cause line leads with "outside the count"', () => {
+test('#468 · under a Pattern that serves no count, a cause line sets its counts apart with no lead words', () => {
   const parent = queueRows(W.global).find((row) => row.id === 'pattern:lows_after_correcting_highs');
   assert.equal(parent.raw.count_sentences, null, 'premise: this Pattern serves no count');
   assert.deepEqual(parent.members.map((member) => member.id),
@@ -494,9 +498,10 @@ test('#424 · under a Pattern that serves no count, every cause line leads with 
   assert.deepEqual(lines.map((line) => lineText(line.children.find((child) => child.className === 'den'))),
     ['', '']);
   assert.deepEqual(lines.map((line) => lineText(line.children.find((child) => child.className === 'out'))), [
-    'outside the count · 1 of 5 lows',
-    'outside the count · 1 of 1 correction clusters',
+    '1 of 5 lows',
+    '1 of 1 correction clusters',
   ]);
+  for (const line of lines) assert.doesNotMatch(lineText(line), /outside the count|this Pattern's count/);
 });
 
 test('term 42 · the seam opens once, before the first UNPRICED ranked row', () => {

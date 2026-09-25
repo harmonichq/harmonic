@@ -1879,8 +1879,9 @@
 .dw .qmember .den .sep,
 .dw .qmember .out .sep { margin: 0 6px; opacity: .6; }
 /* #424 — a cause's counts outside its Pattern's count sit on their own row
-   beneath its share, behind the words "outside the count", so the name and the
-   share keep the line's first row on the narrow rail. */
+   beneath its share, so the name and the share keep the line's first row on the
+   narrow rail. #468 — the row leads with "not in this Pattern's count" only under
+   a Pattern that serves a count. */
 .dw .qmember .out { grid-column: 1 / 3; grid-row: 2; font-size: var(--ck-micro); color: var(--mk-muted); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 

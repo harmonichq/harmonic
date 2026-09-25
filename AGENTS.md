@@ -175,7 +175,7 @@ Do not shrink that list to zero: it is asserted non-empty, because an empty list
 is itself a green step that ran zero assertions.
 
 **Run only what a change touches; run the whole ledger once, before the push.**
-A full frozen-ledger replay is the whole registry — 203 stories — at each of two
+A full frozen-ledger replay is the whole registry — 204 stories — at each of two
 sizes, each story on a fresh synthetic store and a fresh server. Running that
 after every commit turns a one-line story fix into an hour, and running it in
 parallel with itself on one machine only collides on the case-store port. So,

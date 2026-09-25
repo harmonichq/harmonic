@@ -689,17 +689,19 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
 /* Event comparison is its own served population. Members remain opaque until
    selection requests their server-owned detail and trace.
    #424 — the caption names every served cohort as its section heading does, with
-   its served count, in served order, and follows a cohort that holds a verdict-band
-   state with the band's own words once. The Occurrences outside the comparison are
+   its served count, in served order. The Occurrences outside the comparison are
    named only when their served count is non-zero; only a cross-population
-   comparison can leave any. The band keeps "not comparable" for no data. */
+   comparison can leave any. #468 — each cohort is followed once by the band's own
+   words for its served `band_states`, lowercased and comma-joined in one pair of
+   parentheses, with no count: the band above already counts them. */
 export function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMore, shownCount) {
   const { cohorts = [], counts = {} } = caseFile.projection;
   const roster = new Map(caseFile.occurrences.map((row) => [row.id, row]));
   const outside = counts.outside_comparison;
   const terms = cohorts.map((cohort) => {
-    const band = VERDICT_BAND_KEY[cohort.band_verdict];
-    return `${counts[cohort.key]} ${cohort.name}${band ? ` (${band.toLowerCase()})` : ''}`;
+    const words = cohort.band_states
+      .map((state) => (VERDICT_BAND_KEY[state] || VERDICT_RESIDUE_KEY[state]).toLowerCase());
+    return `${counts[cohort.key]} ${cohort.name}${words.length ? ` (${words.join(', ')})` : ''}`;
   });
   if (outside) {
     const noun = outside === 1 ? caseFile.summary.noun.replace(/s$/, '') : caseFile.summary.noun;

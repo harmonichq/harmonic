@@ -359,9 +359,10 @@ lock, 2026-09-14). Every value painted below is served. No token in
   one spine, a rule down the title column in the rule ink, one line per cause:
   the name, its share of the Pattern's count, then the drill.
   - The cause's other served counts sit on the line's second row in the muted
-    ink, behind the words "outside the count" (#424, Connor's "Q2 A",
-    2026-09-23). A cause under a Pattern that serves no count has no share, so
-    its line leads with those words. No outcome word prints.
+    ink (#424), behind the words "not in this Pattern's count" (#468). A cause
+    under a Pattern that serves no count has no share, and there is no count to
+    be outside of, so its second row prints those counts with no lead words. No
+    outcome word prints.
   - The fold's toggle names the cause count and sits inside the Pattern's own
     list item, with a triangle caret.
   - The causes are a nested list the toggle controls.

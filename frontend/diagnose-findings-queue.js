@@ -423,10 +423,12 @@ function paintDetail(node, detail) {
 /** A folded cause's own line: name, its share of the Pattern's count, then the
     drill — never its outcome word, which the parent Pattern's own line already
     carries (#413, "A Pattern owns its causes in the rail"). Its counts outside
-    the Pattern's count sit beneath, set apart behind "outside the count" (#424),
-    so the name and share keep the rail's one row. The parent's spine is the
-    causes list's own rule, so a line carries no gutter mark of its own. */
-function paintMember(list, member, onDrill) {
+    the Pattern's count sit beneath (#424), so the name and share keep the rail's
+    one row. They lead with "not in this Pattern's count" only when the parent
+    serves a count; under one that serves none there is no count to be outside
+    of, so they print alone (#468). The parent's spine is the causes list's own
+    rule, so a line carries no gutter mark of its own. */
+function paintMember(list, member, onDrill, parentCounts) {
   const item = document.createElement('div');
   item.className = 'qitem member';
   item.setAttribute('role', 'listitem');
@@ -446,8 +448,10 @@ function paintMember(list, member, onDrill) {
   const outside = member.sentences.filter((sentence) => sentence.scope === 'outside');
   if (outside.length) {
     const out = add(node, 'out');
-    add(out, 'lead', 'outside the count');
-    add(out, 'sep', '·');
+    if (parentCounts) {
+      add(out, 'lead', 'not in this Pattern\'s count');
+      add(out, 'sep', '·');
+    }
     counts(out, outside);
   }
   node.addEventListener('click', () => onDrill(member.raw));
@@ -551,7 +555,8 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       causes.id = `causes-${row.id}`;
       causes.setAttribute('role', 'list');
       toggle.setAttribute('aria-controls', causes.id);
-      for (const member of row.members) paintMember(causes, member, onDrill);
+      const parentCounts = Boolean(row.raw.count_sentences?.length);
+      for (const member of row.members) paintMember(causes, member, onDrill, parentCounts);
       item.append(causes);
     };
     if (row.weight === 'tail' || row.detail?.kind === 'pattern-status') {

@@ -6213,3 +6213,90 @@ Additional handler inventory for this amendment:
 | One Arc peak reader | ciq_autotune/analyzers/meals.py meal_peak; ciq_autotune/outcomes_trend.py _meal_arc | S195 |
 | Stayed in range is calm | model_view._CALM_REASONS; findings_projection._CALM_SILENCE_REASONS | S195 |
 | Guide silence article | ciq_autotune/analyzers/scenario/guide.py _SILENCE_META | S195 |
+
+## #468 amendment — 2026-09-25, issue #468
+
+S196 is the fail-first obligation of ADR 468 decision 2
+(`openspec/changes/qa-round-2/design.md`): Day's Quiet line prints its counts and
+no time span. It is app-opener-only and runs on the committed showcase, whose
+2024-06-26 serves quiet anchors on both sides of a Finding (the showcase probe,
+`docs/scope/468-reader-text.probe.py` and `.probe.mjs`, re-run on task 95's
+commit, printed that day). S115, S124, S126 and S188 are amended in prose below;
+S125's cross-population caption reads as it did, and no story is retired. The
+showcase is already covered, so the fixed PR smoke slice is unchanged. Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+reconciles them.
+
+Sanction: the AFK run's delegation, 2026-09-25, recorded as ADR 468: every
+wording and the served `band_states` field are ADR 468's autonomous decisions,
+each taking #468's recommended option. Connor Griffin, 2026-09-24: #468's item 5,
+the Glossary's correction-factor unit, waits for the Glossary's second pass and
+is not part of this amendment. It covers S196 and the four amendments below, and
+nothing outside #468.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 204 issued · 185
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command, over the
+committed showcase for S115 and S196 and over the case store
+`scripts/gen_qa_e2e_db.py --case <name>` emits for S124, S126 and S188.
+
+Changed shipped behavior:
+
+- **A folded cause names the count it sets apart from.** Under a Pattern that
+  serves a count, a cause's counts on other populations sit on its second row
+  behind "not in this Pattern's count", where they sat behind "outside the
+  count". Under a Pattern that serves no count, the row prints those counts with
+  no lead words.
+- **Day's Quiet line prints no time span.** It reads "‹n› clean · ‹n› explained ·
+  ‹n› no data" under its caption. The span it replaced repeated one time over one
+  quiet anchor, stretched across Findings, and on one showcase day ran backwards.
+  The Glossary, the Guide and CONTEXT.md say Quiet's anchors are "counted
+  together rather than listed".
+- **The Retained line says what the read reuses.** It reads "Reuses the settings
+  and rules saved with this record on ‹time›"; with nothing saved, the word
+  table's words for the served reason.
+- **The comparison group names the band states it holds.** Each event cohort
+  serves `band_states`, and the Response comparison caption follows each cohort's
+  name with those states' band words, once, comma-joined in one pair of
+  parentheses, with no count: "3 Other meal opportunities (does not meet,
+  claimed by another finding, not comparable)".
+
+Amended S115 · 2026-09-25 · #468 / ADR 468 (the delegation above): a folded member's set-apart row leads with "not in this Pattern's count" only when the parent Pattern serves `count_sentences`; under a Pattern that serves none it prints its counts with no lead words and no leading separator. Everything else S115 and its #424 amendment state is unchanged. The replay's fold check now takes the parent row (C4_STORIES.S115 → assertFoldLine424(id, parent, member, line)). The preceding wording and results are the attributed pre-amendment record. Status: pending coordinator run (handback 2).
+
+Amended S126 · 2026-09-25 · #468 / ADR 468 (the delegation above): on behavioral-correction-stacking, Lows after correcting highs serves its own count, so Correction stacking's correction-cluster count sits behind "not in this Pattern's count", where it sat behind "outside the count". The shares still add up to the Pattern's served count. The preceding wording and results are the attributed pre-amendment record. Status: pending coordinator run (handback 2).
+
+Amended S124 · 2026-09-25 · #468 / ADR 468 (the delegation above): the case file's served shape also carries every cohort's `band_states` (assertServedComparison424), and each caption term follows its cohort's name with the band's own words for those states, once, lowercased and comma-joined inside one pair of parentheses, with no count: the band keys' leads for Meets criteria, Borderline and Does not meet, and the band foot's nouns for claimed and no data (assertComparisonCaption424). On behavioral-carb-undercount the comparison term reads "Other meal opportunities (does not meet, claimed by another finding, not comparable)" after its served count. Only the band's own no-data count still reads "‹n› not comparable". The preceding wording and results are the attributed pre-amendment record. Status: pending coordinator run (handback 2).
+
+Amended S188 · 2026-09-25 · #468 / ADR 468 (the delegation above), amending ADR 462 decision 4: after Retained context is pressed, the Retained line reads "Reuses the settings and rules saved with this record on ‹time›", ‹time› the desk's stamp of the served stored context's `captured_at`, which the story reads from the Retained read of the record; it still prints no id characters. The preceding wording and results are the attributed pre-amendment record. Status: pending coordinator run (handback 2).
+
+```
+S196 · The Quiet line prints its counts and no time span. On the showcase's
+       2024-06-26, whose quiet anchors fall on both sides of its 13:55 Finding,
+       the Episode Log's Quiet caption counts its quiet anchors and the line
+       under it reads "‹n› clean · ‹n› explained · ‹n› no data" with the served
+       counts, and no HH:MM–HH:MM span.
+  element:  .gf-reading .gf-log-cap .gf-log-title, the Quiet caption's
+            following .gf-meta line
+  source:   frontend/day.js reading; frontend/day-chart.js buildEpisodeLedger
+  lock:     ADR 468 (openspec/changes/qa-round-2/design.md)
+  data:     showcase, 2024-06-26: one Finding at 13:55 and quiet anchors at
+            08:00 and 14:35
+  evidence: C4_STORIES.S196; reads the day's served model view through the
+            shipped ledger and requires a Finding anchor between the first and
+            last quiet anchor, opens Day on that day through the Month calendar,
+            and reads the Quiet caption and line (readQuietLine468) against the
+            ledger's counts (assertQuietLine468)
+  status:   pending coordinator run (handback 2)
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| The fold's set-apart row | frontend/diagnose-findings-queue.js paintMember | S115, S126 |
+| The Quiet line | frontend/day.js reading; frontend/day-chart.js buildEpisodeLedger | S196 |
+| The Retained line | frontend/history.js reassessmentSection | S188 |
+| Served cohort band states | ciq_autotune/finding_case_file.py _event | S124 |
+| The comparison caption's band states | frontend/diagnose-workstation.js renderEventComparisonRoster | S124 |

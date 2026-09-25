@@ -7,6 +7,7 @@ import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
 import { parseRoute } from './tab-routing.js';
 import { stamp } from './frame.js';
+import { buildEpisodeLedger } from './day-chart.js';
 
 const read = async (page, path, params = {}, timeout = 30000) => {
   const url = new URL(path, page.url());
@@ -1304,19 +1305,31 @@ export function assertServedComparison424(id, file) {
   assert.ok(Object.hasOwn(counts, 'outside_comparison') && !Object.hasOwn(counts, 'not_comparable')
     && cohorts.length > 0 && cohorts.every(cohort => Object.hasOwn(cohort, 'band_verdict')),
   `${id} the case file must serve its count outside the comparison and each cohort's band state`);
+  // #468: beside it, the band states each cohort holds (ADR 468 decision 4).
+  assert.ok(cohorts.every(cohort => Array.isArray(cohort.band_states)),
+    `${id} every cohort must serve the band states it holds`);
 }
 
 /* The Response comparison caption, read against its served case file: every
    cohort under its served name and count, in served order, matching its section
-   heading; the band's own words once after a cohort that holds a band state; the
+   heading; the band's own words once for the band states a cohort serves (#468:
+   its segment leads, and its residue nouns read off the band's foot); the
    Occurrences outside the comparison only when their served count is non-zero;
    and no visible count but the band's no-data one labelled "not comparable". */
 export function assertComparisonCaption424(id, file, view) {
   const { cohorts, counts } = file.projection;
   const terms = view.caption ? view.caption.split(' · ') : [];
+  // The foot prints each non-zero residue count and its noun, claimed before no data.
+  const residue = ['outranked', 'no_data'].filter(state => file.verdict_counts[state]);
+  const footTerms = view.foot ? view.foot.split(' · ') : [];
+  const words = Object.fromEntries([...Object.entries(view.bandLeads), ...residue.map((state, index) => {
+    const prefix = `${file.verdict_counts[state]} `;
+    assert.ok(footTerms[index]?.startsWith(prefix), `${id} the band's foot must count ${state}: ${view.foot}`);
+    return [state, footTerms[index].slice(prefix.length)];
+  })]);
   cohorts.forEach((cohort, index) => {
-    const lead = cohort.band_verdict ? view.bandLeads[cohort.band_verdict] : null;
-    const expected = `${counts[cohort.key]} ${cohort.name}${lead ? ` (${lead.toLowerCase()})` : ''}`;
+    const held = cohort.band_states.map(state => words[state]?.toLowerCase());
+    const expected = `${counts[cohort.key]} ${cohort.name}${held.length ? ` (${held.join(', ')})` : ''}`;
     assert.equal(terms[index], expected, `${id} caption term ${index + 1} must read "${expected}"`);
     assert.deepEqual(view.headings[index], { name: cohort.name, count: counts[cohort.key] },
       `${id} the caption's ${cohort.name} must match its section heading`);
@@ -1345,9 +1358,12 @@ export function assertServedFold424(id, members) {
 }
 
 /* A folded cause's line, read against its served fold sentences: its share of
-   the Pattern's count beside its name, every outside sentence set apart behind
-   "outside the count", and never an outcome word. */
-export function assertFoldLine424(id, member, line) {
+   the Pattern's count beside its name, every outside sentence set apart on its
+   second row, and never an outcome word. #468 — that row leads with "not in this
+   Pattern's count" only when the parent Pattern serves a count; otherwise it
+   prints the counts with no lead words. */
+export function assertFoldLine424(id, parent, member, line) {
+  const lead = parent.count_sentences?.length ? "not in this Pattern's count" : null;
   const counted = (text, sentence) => text.includes(`${sentence.count} of ${sentence.denominator} ${sentence.noun}`);
   const share = member.fold_sentences.filter(sentence => sentence.scope === 'pattern');
   const outside = member.fold_sentences.filter(sentence => sentence.scope === 'outside');
@@ -1356,8 +1372,14 @@ export function assertFoldLine424(id, member, line) {
       `${id} ${member.id} must print its share of the Pattern beside its name: "${line.den}"`);
   }
   for (const sentence of outside) {
-    assert.ok(line.out.startsWith('outside the count') && counted(line.out, sentence) && !counted(line.den, sentence),
-      `${id} ${member.id} must set its other counts apart behind "outside the count": "${line.den}" / "${line.out}"`);
+    const setApart = counted(line.out, sentence) && !counted(line.den, sentence);
+    if (lead) {
+      assert.ok(line.out.startsWith(`${lead}·`) && setApart,
+        `${id} ${member.id} must set its other counts apart behind "${lead}": "${line.den}" / "${line.out}"`);
+    } else {
+      assert.ok(/^\d/.test(line.out) && setApart,
+        `${id} ${member.id} must print its counts with no lead words under a Pattern that serves no count: "${line.den}" / "${line.out}"`);
+    }
   }
   if (!outside.length) {
     assert.equal(line.out, '', `${id} ${member.id} serves nothing outside the count, so prints no such row`);
@@ -3137,7 +3159,9 @@ export const C4_STORIES = {
   // served count sentence prints in served order, count and denominator
   // emphasised, and the first served tier's rows carry the urgency stripe.
   // Amended by #424: a member line prints its served fold sentences — its
-  // share beside its name, the rest behind "outside the count".
+  // share beside its name, the rest set apart on a second row. Amended by #468:
+  // that row leads with "not in this Pattern's count" only under a Pattern that
+  // serves a count.
   async S115(page) {
     await openDiagnoseRail(page);
     const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
@@ -3177,7 +3201,7 @@ export const C4_STORIES = {
           assert.ok(Math.abs(name.y - share.y) < name.height,
             `S115 ${member.id} must read as one line, name and share side by side`);
         }
-        assertFoldLine424('S115', member, lines[member.id]);
+        assertFoldLine424('S115', parent, member, lines[member.id]);
       }
     }, 'S115 every served fold sentence prints, in served order, never merged');
 
@@ -3789,7 +3813,7 @@ export const C4_STORIES = {
     await openPatternFold(page, parent.id);
     await waitForReplayAssertion(async seen => {
       const lines = seen(await foldLines424(page, parent.id, members));
-      for (const member of members) assertFoldLine424('S126', member, lines[member.id]);
+      for (const member of members) assertFoldLine424('S126', parent, member, lines[member.id]);
       const shares = members
         .map(member => /^(\d+) of (\d+) (.+)$/.exec(lines[member.id].den.split('·')[0].trim()))
         .filter(Boolean);
@@ -4262,6 +4286,11 @@ export const C4_STORIES = {
     }, 'S188 Current policy');
     await capture(page, ctx, 'S188-current', 'c4-isf-late-read');
 
+    // #468: the Retained line says what the read reuses, stamped with the served
+    // context's capture time.
+    const retained = (await read(page, '/api/verify/trials', { selected: id, assessment: 'retained' }, 120000))
+      .selected.reassessment.comparison_context;
+    assert.ok(retained?.captured_at, 'S188 premise: the Retained read serves its stored context\'s capture time');
     await press(page, '[data-assessment="retained"]');
     await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 120000 });
     await check(async seen => {
@@ -4273,6 +4302,8 @@ export const C4_STORIES = {
         'S188 the Retained read must name the same late-context reason');
       const context = seen(await page.locator('[data-reassessment-context="retained"]').innerText());
       assert.doesNotMatch(context, /[0-9a-f]{8,}/, `S188 the Retained line must print no id characters: ${context}`);
+      assert.equal(context.trim(), `Reuses the settings and rules saved with this record on ${stamp(retained.captured_at)}`,
+        'S188 the Retained line must say it reuses the settings and rules saved with this record, and when');
     }, 'S188 Retained context');
     failOnce('S188', 'an ended record whose saved ending has no periods must draw the reassessment the reader presses', failures);
   },
@@ -4459,7 +4490,42 @@ export const C4_STORIES = {
       assert.ok(article.includes('Stayed in range'), 'S195 the Guide\'s silence article must list "Stayed in range"');
     }, 'S195 the Guide lists the new silence reason');
   },
+  // #468: on the showcase's 2024-06-26, whose quiet anchors fall on both sides of
+  // a Finding, the Episode Log's Quiet line prints its three counts and no time
+  // span (ADR 468 decision 2). The premise reads the served model view through
+  // the shipped ledger; `assertQuietLine468` is the feature check.
+  async S196(page) {
+    const iso = '2024-06-26';
+    const ledger = buildEpisodeLedger(await read(page, '/api/model-view', { date: iso }));
+    const quiet = ledger.quiet.rows.map(entry => entry.row.t);
+    assert.ok(quiet.length > 1 && ledger.findings.some(entry => entry.row.t > quiet[0] && entry.row.t < quiet.at(-1)),
+      `S196 premise: ${iso} must serve a Finding anchor between its first and last quiet anchor`);
+    await openDay423(page, 'S196', iso);
+    await waitForReplayAssertion(async seen => {
+      assertQuietLine468('S196', ledger, seen(await page.evaluate(readQuietLine468)));
+    }, 'S196 the Quiet line prints its counts and no span');
+  },
 };
+
+// #468: the held Day's Quiet caption and the line under it. Runs in the page.
+export function readQuietLine468() {
+  const cap = [...document.querySelectorAll('.gf-reading .gf-log-cap')]
+    .find(node => (node.querySelector('.gf-log-title')?.textContent || '').startsWith('Quiet'));
+  return cap ? { caption: cap.querySelector('.gf-log-title').textContent.trim(),
+    line: (cap.nextElementSibling?.textContent || '').replace(/\s+/g, ' ').trim() } : null;
+}
+
+// #468: the Quiet line, read against the day's ledger: its caption counts the
+// quiet anchors, and its line prints their clean, explained and no-data counts
+// and no `HH:MM–HH:MM` span.
+export function assertQuietLine468(id, ledger, view) {
+  const { quiet } = ledger;
+  assert.ok(view, `${id} premise: the Episode Log must render its Quiet caption`);
+  assert.equal(view.caption, `Quiet · ${quiet.rows.length}`, `${id} the Quiet caption must count its anchors`);
+  assert.doesNotMatch(view.line, /\d\d:\d\d–\d\d:\d\d/, `${id} the Quiet line must print no time span: "${view.line}"`);
+  assert.equal(view.line, `${quiet.clean} clean · ${quiet.explained} explained · ${quiet.noData} no data`,
+    `${id} the Quiet line must print its clean, explained and no-data counts`);
+}
 
 // #461: the Late bolus Finding, drilled from All charts to its event case; returns
 // that case's coordinate.

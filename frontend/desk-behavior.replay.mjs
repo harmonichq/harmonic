@@ -3298,6 +3298,9 @@ export const S194 = appOnly('ADR 470',
 export const S195 = appOnly('ADR 461',
   '#461 Late bolus claims a meal only when it ran above the range line: Highs after meals counts only meals that ran high, each fired Late bolus row prints a peak above 180, and the Guide lists "Stayed in range"',
   C4_STORIES.S195);
+// STORY:harmonic-v2-desktop:S196
+export const S196 = appOnly('ADR 468',
+  '#468 the Quiet line prints its counts and no time span across a Finding', C4_STORIES.S196);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3367,7 +3370,7 @@ export const REGISTRY = [
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
   ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
-  ['S193', S193, J()], ['S194', S194, J()], ['S195', S195, J()],
+  ['S193', S193, J()], ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

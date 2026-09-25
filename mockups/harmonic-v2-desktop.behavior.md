@@ -5755,9 +5755,12 @@ S190 · A recurring-lows step down within the threshold holds. On
   evidence: C4_STORIES.S190; opens the 24 h rail, waits for all 48 slots,
             reads the 03:00 cell and the key, opens the 03:00 panel and reads
             its verdict, sentence and Stage change count
-  status:   pending the coordinator's base run on cc87c41c with this harness
-            laid over it (expected to fail at the lane-cell assertion) and the
-            branch run at 1280x720 and 1440x900
+  status:   #465's task-38 commit cc87c41c with this harness (d705ac0a)
+            laid over it fails at "S190 the 03:00 lane cell must read a hold,
+            not a recurring-lows lower"; the branch passes at 1280x720 and
+            1440x900 on d705ac0a. Renders of the 03:00 lane and panel, before
+            on cc87c41c and after on d705ac0a, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
 ```
 
 Additional handler inventory for this amendment:
@@ -5844,9 +5847,14 @@ S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
             reads the panel, the count line and the low rows against it; leg 1
             presses the first low and reads Day's held date. Each leg runs;
             the story fails once, naming each failed leg
-  status:   pending the coordinator's base run on 5377e044 with this harness
-            laid over it (expected to fail both legs) and the branch run at
-            1280x720 and 1440x900
+  status:   #466's task-48 commit 5377e044 with this harness (d705ac0a)
+            laid over it fails both legs at 1280x720. On d705ac0a leg 2 passed
+            and leg 1 timed out at both sizes: the header check read the row's
+            whole text, which runs its last two column names together; the
+            harness now reads each header cell. Branch run of the corrected
+            harness pending. Renders of the 03:00 panel, before on 5377e044
+            and after on d705ac0a, handed to the coordinator uncommitted.
+            Coordinator-run 2026-09-24
 ```
 
 Amended S113 · 2026-09-24 · #466 sanction (Connor Griffin · 2026-09-24 · the copy says "overnight"): the recurring-lows lower cell's accessible name reads "05:00 basal slot, suggests a lower because lows keep happening overnight". Everything else S113 asserts is unchanged.

@@ -4378,7 +4378,7 @@ const readLows466 = page => page.evaluate(() => ({
   count: document.querySelector('#level .low-count')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
   rows: [...document.querySelectorAll('#level .low-row')].map(row => row.textContent.replace(/\s+/g, ' ').trim()),
   occurrences: document.querySelectorAll('#level .low-row.case-occurrence').length,
-  header: document.querySelector('#level .ev-cols')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+  header: [...document.querySelectorAll('#level .ev-cols > span')].map(cell => cell.textContent.trim()),
 }));
 
 // #466 leg 1: the spread lower names the lows as its step's owner, prints the
@@ -4395,7 +4395,8 @@ async function recurringLowsLower466(page) {
     assert.equal(lows.count, lowsCountLine466(harm), 'S191 the count line must print the served count and bar');
     assert.deepEqual(lows.rows, harm.lows.map(lowRowText466), 'S191 each low row must print its served date, time and glucose');
     assert.equal(lows.occurrences, 0, 'S191 a low row must not be a roster occurrence');
-    assert.equal(lows.header, 'Delivered U/h Programmed U/h Night mean mg/dL', 'S191 the roster must show its header row');
+    assert.deepEqual(lows.header, ['Delivered U/h', 'Programmed U/h', 'Night mean mg/dL'],
+      'S191 the roster must show its header row, its columns in order');
   }, 'S191 the spread lower explains its step and lists its lows');
   const iso = harm.lows[0].t.slice(0, 10);
   await page.locator('#level .low-row').first().click();

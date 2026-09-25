@@ -30,7 +30,8 @@ from functools import cached_property
 from typing import Dict, List, Optional
 
 from .epochs import _DOSE_ATTR, _MIN_EPOCH_DAYS, _settled_days
-from .analyzers.scenario.anchors import _is_meal
+from .analyzers.meals import group_meals
+from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.levers import (
     Exposure,
     Lever,
@@ -521,6 +522,8 @@ def _reviewable_trials(store, now, *, horizon_start=None):
     plan_history = store.plan_history()
     horizon_start = horizon_start if horizon_start is not None else now - _WATCH_HORIZON
     mature_window = _MATURE_WINDOW
+    # One arc datum per meal, at its first bolus (ADR 470).
+    meal_times = [meal.t for meal in group_meals(bolus)]
 
     candidates = _review_candidates(
         basal, bolus, snapshots, plan_history, mature_window=mature_window,
@@ -552,9 +555,9 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         # (#581): out-of-block meals never mature it, fill its gaps, or feed its
         # evidence — the same one wrap-aware cohort the detail and breakdown read.
         if cand.block is not None:
-            data_times = [b.t for b in bolus if _is_meal(b) and _in_block(b.t, cand.block)]
+            data_times = [t for t in meal_times if _in_block(t, cand.block)]
         elif target[0] == "arc":
-            data_times = [b.t for b in bolus if _is_meal(b)]
+            data_times = meal_times
         else:
             data_times = [r.t for r in cgm]
         # Maturity accrues only from the same bounded Trial period displayed in
@@ -1179,12 +1182,16 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
     before_cgm = [reading for reading in cgm if before_start <= reading.t < changed_at]
     trial_cgm = [reading for reading in cgm if changed_at < reading.t <= trial_end]
 
-    def in_cohort(dose) -> bool:
-        return _is_meal(dose) and (block is None or _in_block(dose.t, block))
+    # Each meal is read at its first bolus, and only a meal's first bolus ends an
+    # earlier meal's arc (ADR 470).
+    meals = [meal.first for meal in group_meals(bolus)]
 
-    before_meals = [dose for dose in bolus
+    def in_cohort(dose) -> bool:
+        return block is None or _in_block(dose.t, block)
+
+    before_meals = [dose for dose in meals
                     if before_start <= dose.t < changed_at and in_cohort(dose)]
-    trial_meals = [dose for dose in bolus
+    trial_meals = [dose for dose in meals
                    if changed_at < dose.t <= trial_end and in_cohort(dose)]
     before_metrics = compute_metrics(before_cgm)
     trial_metrics = compute_metrics(trial_cgm)
@@ -1203,14 +1210,14 @@ def _trial_evidence(store, view: TrialView, changed_at: datetime, now: datetime,
         }
         for key, attr in (("tir", "tir"), ("tbr", "tbr_lvl1"))
     ]
-    before_arc = post_meal_arc(before_meals, before_cgm, ctx_meals=bolus)
-    trial_arc = post_meal_arc(trial_meals, trial_cgm, ctx_meals=bolus)
+    before_arc = post_meal_arc(before_meals, before_cgm, ctx_meals=meals)
+    trial_arc = post_meal_arc(trial_meals, trial_cgm, ctx_meals=meals)
     rescue = post_meal_rescue_context(
         trial_meals,
         [entry for entry in eligible_carb_entries(carbs, trial_end)
          if changed_at < entry.t <= trial_end],
         trial_cgm,
-        ctx_meals=bolus,
+        ctx_meals=meals,
     )
     evidence.append({
         "key": "arc",
@@ -1306,8 +1313,12 @@ def _retained_trial(store, record, now):
     read_start = start.strftime(_DT_FMT)
     read_end = (end + timedelta(seconds=1)).strftime(_DT_FMT)
     if target[0] == "arc":
-        times = [b.t for b in store.bolus_events(start=read_start, end=read_end)
-                 if _is_meal(b) and (block is None or _in_block(b.t, block))]
+        # Meals form from a grace before the start, so a top-up of a meal begun just
+        # before the change joins that meal rather than opening one (ADR 470).
+        grace = timedelta(minutes=ScenarioConfig().carb_undercount_same_meal_grace_min)
+        times = [meal.t for meal in group_meals(store.bolus_events(
+                     start=(start - grace).strftime(_DT_FMT), end=read_end))
+                 if block is None or _in_block(meal.t, block)]
     else:
         times = [r.t for r in store.cgm_readings(start=read_start, end=read_end)]
     return _ReviewTrial(TrialView(parameter, record["changed_at"], target,

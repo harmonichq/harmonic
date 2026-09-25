@@ -3,7 +3,9 @@
 import unittest
 from datetime import datetime, timedelta
 
+from ciq_autotune.analyzers.scenario.levers import Exposure
 from ciq_autotune.analyzers.scenario.meal_suspend import classify_meal_owned_suspend
+from ciq_autotune.analyzers.scenario.opportunities import build_opportunities
 from ciq_autotune.analyzers.classifiers.evidence import EvidenceTier, SilenceReason
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
 from ciq_autotune.events import BasalEvent, BolusEvent
@@ -25,7 +27,9 @@ class ExactTimestampMealOwnershipTest(unittest.TestCase):
         self.assertTrue(verdict.matched)
         self.assertEqual(verdict.suspend_start, meal.t)
 
-    def test_higher_seq_num_owns_even_when_input_order_is_reversed(self):
+    def test_same_instant_meal_boluses_are_one_meal_owned_by_its_first(self):
+        # ADR 470: two meal boluses at one instant are one meal, ordered by seq_num,
+        # so its first bolus owns the suspend whatever the input order.
         at = datetime(2026, 6, 15, 11, 30)
         earlier = BolusEvent(
             t=at, insulin=4.0, carbs=40.0, completion="Completed", seq_num=5
@@ -47,8 +51,8 @@ class ExactTimestampMealOwnershipTest(unittest.TestCase):
             later, reversed_rows, cgm, basal
         )
 
-        self.assertFalse(earlier_verdict.matched)
-        self.assertTrue(later_verdict.matched)
+        self.assertTrue(earlier_verdict.matched)
+        self.assertFalse(later_verdict.matched)
 
     def test_latest_eligible_atomic_meal_owns_shared_suspend(self):
         earlier = BolusEvent(
@@ -88,12 +92,42 @@ class ExactTimestampMealOwnershipTest(unittest.TestCase):
         basal = suspend_run(15, 12, 0, rows=12)
         cgm = cgm_ramp(15, 12, 55, 110.0, -1.4, 30)
 
-        first = classify_meal_owned_suspend(first_read[1], first_read, cgm, basal)
-        second = classify_meal_owned_suspend(second_read[0], second_read, cgm, basal)
+        # ADR 470: the pair is one meal whose first bolus is seq 5, in either read.
+        first = classify_meal_owned_suspend(first_read[0], first_read, cgm, basal)
+        second = classify_meal_owned_suspend(second_read[1], second_read, cgm, basal)
 
         self.assertTrue(first.matched)
         self.assertTrue(second.matched)
         self.assertEqual(first.suspend_start, second.suspend_start)
+
+
+class SplitMealOwnershipTest(unittest.TestCase):
+    """ADR 470: a top-up ten minutes after the meal is part of it, so the meal owns
+    the later suspend and the meals population holds one opportunity."""
+
+    def test_the_meal_not_its_top_up_owns_the_suspend(self):
+        first = BolusEvent(
+            t=datetime(2026, 6, 15, 11, 30), insulin=4.5, carbs=45.0,
+            completion="Completed", seq_num=5,
+        )
+        top_up = BolusEvent(
+            t=datetime(2026, 6, 15, 11, 40), insulin=2.0, carbs=20.0,
+            completion="Completed", seq_num=9,
+        )
+        basal = suspend_run(15, 12, 0, rows=12)
+        cgm = (
+            cgm_flat(15, 11, 30, 110.0, 80)
+            + cgm_ramp(15, 12, 55, 110.0, -1.4, 30)
+        )
+
+        meal_verdict = classify_meal_owned_suspend(first, [first, top_up], cgm, basal)
+        top_up_verdict = classify_meal_owned_suspend(top_up, [first, top_up], cgm, basal)
+        meals = build_opportunities([first, top_up], cgm, basal)[Exposure.MEALS]
+
+        self.assertTrue(meal_verdict.matched)
+        self.assertEqual(meal_verdict.suspend_start, datetime(2026, 6, 15, 12, 0))
+        self.assertFalse(top_up_verdict.matched)
+        self.assertEqual([meal.members for meal in meals], [(first, top_up)])
 
 
 class OwnershipBoundaryTest(unittest.TestCase):

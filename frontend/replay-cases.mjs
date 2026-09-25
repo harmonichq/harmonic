@@ -37,6 +37,7 @@ export const STORY_CASES = Object.freeze({
   S191: 'basal-recurring-low-spread',
   S192: 'basal-recurring-low-lower',
   S193: 'showcase',
+  S194: 'behavioral-split-meal',
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

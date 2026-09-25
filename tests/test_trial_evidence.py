@@ -194,6 +194,19 @@ class TrialBreakdownTest(unittest.TestCase):
         # roster's single answer (#273's lesson applied to display).
         self.assertNotIn("covered", detail["day_rows"]["before_period"][0])
 
+    def test_a_top_up_ten_minutes_after_a_meal_is_no_second_meal_that_day(self):
+        # ADR 470: each trial day's 08:10 top-up joins its 08:00 meal.
+        def seed(path):
+            _seed_profile_switch(path)
+            with Store.open(path) as store:
+                _meals(store, [(SWITCH + timedelta(days=d)).date() for d in range(1, 4)],
+                       [8 + 10 / 60], 3000, carbs=20.0)
+
+        detail = self._selected(seed)
+
+        self.assertEqual([row["meals"] for row in detail["day_rows"]["trial_period"]
+                          if row["meals"]], [2, 2, 2])
+
     def test_a_block_scoped_trial_anchors_only_on_meals_inside_its_block(self):
         detail = self._selected(_seed_block_ic_switch,
                                 lambda trial: trial["slot"] is not None)

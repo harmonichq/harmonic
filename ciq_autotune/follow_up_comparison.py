@@ -16,7 +16,8 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 
 from .analyzers.scenario import low_prompt_answers
-from .analyzers.scenario.anchors import _is_meal, collect_anchors
+from .analyzers.meals import group_meals
+from .analyzers.scenario.anchors import collect_anchors
 from .analyzers.scenario.outcome_patterns import opportunity_readiness
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_spans
@@ -359,7 +360,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         groups.append(day_groups)
         coverages.append(coverage)
         owned_cgm = [r for r in arm_cgm if lo <= r.t < hi]
-        ctx_meals = [b for b in arm_bolus if _is_meal(b)]
+        ctx_meals = [meal.first for meal in group_meals(arm_bolus)]
         measurements = meal_measurements(population["meals"], owned_cgm, ctx_meals=ctx_meals)
         observations.append(measurements)
         comparison["views"][name] = {**population["view"], "period": periods[name]}

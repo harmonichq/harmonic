@@ -119,7 +119,7 @@ test('#432 · a case row names its Occurrence from its served anchor facts', () 
   const bolusRows = Object.values(cases).flatMap((file) => [file.clock, file.event])
     .flatMap((file) => file.occurrences)
     .filter((row) => row.anchor.carbs != null || row.anchor.insulin != null);
-  assert.equal(bolusRows.length, 100, 'the capture serves meal and correction rows to describe');
+  assert.equal(bolusRows.length, 98, 'the capture serves meal and correction rows to describe');
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   for (const owner of ['renderCaseRoster', 'renderEventComparisonRoster']) {
     const body = source.slice(source.indexOf(`function ${owner}`));

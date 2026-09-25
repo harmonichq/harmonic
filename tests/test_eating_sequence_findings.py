@@ -217,15 +217,18 @@ class SharedSequenceEvaluationTest(unittest.TestCase):
 
 
 def _ordinary_competition_stream():
-    """Three undercount owners, three late owners, and one sequence contest."""
+    """Three undercount owners, three late owners, and one sequence contest.
+
+    Each late day and the contest carry a second, stamped dose at the same instant.
+    Under ADR 470 it is part of the same meal, judged at the first dose's missing
+    stamp, so it adds no undercount candidate of its own."""
     from ciq_autotune.events import BolusEvent
     bolus, cgm, _, basal = sequence_episode_stream(
         "high_carb_sequence", covered=True, competitor=None,
     )
     t = bolus[-1].t
     bolus[-1] = replace(bolus[-1], carbs=80)
-    # Two distinct same-time doses: the first matches late bolus, the stamped
-    # second also matches undercount. Both stay inside the same bounded episode.
+    # A second, stamped dose at the same instant: one meal with the first (ADR 470).
     bolus.append(BolusEvent(t, carbs=20, insulin=.5, carb_ratio=200,
                             completion="Completed", seq_num=999))
     for index, reading in enumerate(cgm):
@@ -303,11 +306,13 @@ class ReviewRegressionTest(unittest.TestCase):
             evaluated = evaluate(b, c, basal, isf=40, carb_entries=log)
             matched = [e for e in evaluated.episodes
                        if any(x.lever == "carb_undercount" for x in e.candidates)]
-            self.assertEqual(len(matched), 7)
-            self.assertEqual(sum(e.attribution.lever == "late_bolus" for e in matched),
+            # ADR 470: each same-time pair is one meal, judged at its first bolus's
+            # stamp, which the late days and the contest lack, so only the three
+            # undercount owners carry an undercount candidate.
+            self.assertEqual(len(matched), 3)
+            self.assertEqual({e.attribution.lever for e in matched}, {"carb_undercount"})
+            self.assertEqual(sum(e.attribution.lever == "late_bolus" for e in evaluated.episodes),
                              3 if enabled else 4)
-            if enabled:
-                self.assertEqual(matched[-1].attribution.lever, "high_carb_sequence")
             owners.append([(e.start, e.end, e.severity) for e in matched
                            if e.attribution.lever == "carb_undercount"])
             report = assemble(b, c, basal, isf=40, carb_entries=log)

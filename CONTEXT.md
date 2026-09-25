@@ -151,6 +151,20 @@ bolus event; there is no standalone carb entry *in the pump feed* (the manual
 **Carb log**, #125, is a separate user-entered stream, not pump data).
 _Avoid_: dose (too generic), meal insulin.
 
+**Meal**:
+A first carb bolus of at least 10 g plus its same-meal **top-ups**: every later
+carb bolus of at least 10 g within 30 minutes of that first bolus, measured from
+the first bolus and never chained (ADR 470, promoting ADR 0030's grace). A meal is
+anchored and identified by its first bolus and judged on the carbs and dose summed
+over its members; a cancelled leg's carbs, which its re-issue carries again, count
+once. Carb-free boluses and carb boluses under 10 g are never members. Every
+meal count — Highs and Lows after meals, the meal causes and their recurrence, the
+**Post-meal arc**, Trial and follow-up meal counts, the time-of-day meal count —
+counts meals by this one rule. The eating window that High-carb sequence and Repeat
+eating read is a different grouping (chained, any carbs), and stays one.
+_Avoid_: second meal (for a top-up), split meal as two meals, meal bolus (when the
+meal is meant).
+
 **Carb log**:
 The manual, user-entered stream of *unbolused* carbs (#125) — kept entirely
 separate from pump bolus-carbs. In practice this is a **low-treatment log**: its
@@ -569,11 +583,12 @@ set), non-finding, null lever, miss.
 **Post-meal arc**:
 The peak BG and subsequent nadir BG for a single meal, treated as one object.
 Peak = highest CGM in (bolus_time, bolus_time + 3 h], truncated at the next
-carb-tagged bolus. Nadir = lowest CGM in (peak_time, bolus_time + 6 h], same
+**Meal**'s first bolus, never at a top-up of its own (ADR 470); bolus_time is the
+meal's first bolus. Nadir = lowest CGM in (peak_time, bolus_time + 6 h], same
 truncation. Both are absolute mg/dL values — no baseline offset. The arc is the
 instrument for "flatten the curve": peaks coming down and nadirs staying up in
-the CLI's outcomes trend. The two halves have split denominators: all carb-tagged
-meals for the peak series; only meals with ≥ 3 h of nadir window remaining for
+the CLI's outcomes trend. The two halves have split denominators: all meals for
+the peak series; only meals with ≥ 3 h of nadir window remaining for
 the nadir series. When rescue carbs arrested a descent, the arc records the
 arrested nadir as-is per ADR 0012 and may carry display-only rescue context on
 the meal point/window. That context means "the user intervened here," not "the app
@@ -581,15 +596,15 @@ guessed the unassisted low" and not "X% of meals needed rescue." See ADR 0018.
 _Avoid_: glucose curve, meal curve, arc score (implies a single composite number).
 
 **Arc peak**:
-The highest CGM reading in a meal's peak window (bolus → bolus + 3 h, truncated
-at the next meal). An absolute mg/dL value. Contributes to the peak trend series
-for all carb-tagged meals. Distinct from the legacy `post_meal_spike` (net-new
+The highest CGM reading in a meal's peak window (first bolus → first bolus + 3 h,
+truncated at the next meal's first bolus, never at a top-up: ADR 470). An absolute
+mg/dL value. Contributes to the peak trend series for all meals. Distinct from the legacy `post_meal_spike` (net-new
 above start BG), which the arc supersedes.
 _Avoid_: post-meal spike (the old metric name), net-new peak.
 
 **Arc nadir**:
-The lowest CGM reading in a meal's nadir window (peak → bolus + 6 h, truncated
-at the next meal). An absolute mg/dL value. Contributes to the nadir trend series
+The lowest CGM reading in a meal's nadir window (peak → first bolus + 6 h,
+truncated at the next meal's first bolus, never at a top-up: ADR 470). An absolute mg/dL value. Contributes to the nadir trend series
 only for meals where ≥ 3 h of the nadir window remained before truncation.
 _Avoid_: post-meal crash (too narrow — a nadir can be 90 without a crash), floor.
 

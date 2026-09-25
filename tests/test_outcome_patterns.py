@@ -1,7 +1,7 @@
 """Sequence habit admission cannot change the Pattern's meals rate (#342)."""
 import unittest
 from types import SimpleNamespace
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ciq_autotune.analyzers.scenario.engine import assemble
 from ciq_autotune.analyzers.scenario.evaluation import evaluate
@@ -10,6 +10,43 @@ from ciq_autotune.analyzers.scenario.outcome_patterns import outcome_window_popu
 from ciq_autotune.explore_exposures import build_exposures
 from ciq_autotune.window_membership import WindowQuery
 from tests.eating_sequence_streams import sequence_episode_stream
+
+
+SPLIT_MEAL_NOON = datetime(2024, 5, 3, 12, 0)
+FMT = "%Y-%m-%d %H:%M:%S"
+
+
+def write_split_meals(store, *, gap, peak=360.0, days=14):
+    """Write ``days`` synthetic noon meals from 2024-05-03 into a real ``Store``.
+
+    Each meal is a 45 g / 4.5 U bolus, plus a 20 g / 2 U top-up ``gap`` minutes later
+    unless ``gap`` is None. Glucose is flat at 110, climbs 2 mg/dL/min from the first
+    bolus to ``peak``, then falls; the settings snapshot and flat background are the
+    behavioral QA lane's.
+    """
+    from scripts.qa_e2e_cases import _materialize_behavioral_background
+
+    _materialize_behavioral_background(store, span_days=30)
+    for day in range(days):
+        noon = SPLIT_MEAL_NOON + timedelta(days=day)
+        rows, bg, t, climbing = [], 110.0, noon - timedelta(minutes=30), True
+        while t <= noon + timedelta(hours=5):
+            if t > noon:
+                bg = min(peak, bg + 10.0) if climbing else max(110.0, bg - 5.0)
+                climbing = climbing and bg < peak
+            rows.append({"EventDateTime": t.strftime(FMT), "Readings (CGM / BGM)": bg,
+                         "Description": "Synthetic EGV"})
+            t += timedelta(minutes=5)
+        store.upsert_cgm(rows)
+        doses = [(200_000 + day, noon, 4.5, 45.0)]
+        if gap is not None:
+            doses.append((300_000 + day, noon + timedelta(minutes=gap), 2.0, 20.0))
+        store.upsert_bolus([{
+            "seq_num": seq_num, "request_time": at.strftime(FMT),
+            "description": "Synthetic meal bolus", "completion": "Completed",
+            "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+            "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
+        } for seq_num, at, insulin, carbs in doses])
 
 
 class SequenceHabitPatternTest(unittest.TestCase):
@@ -256,3 +293,51 @@ class ScopedPatternMembershipTest(unittest.TestCase):
         self.assertEqual(inside["highs_after_treating_lows"]["n"], 1)
         self.assertNotIn("highs_after_treating_lows",
                          self._roster({}, exposures, (16 * 60, 18 * 60)))
+
+
+class SplitMealIdentityTest(unittest.TestCase):
+    """ADR 470: a top-up within the same-meal grace is part of the meal, not a second one."""
+
+    def _serve(self, **shape):
+        import tempfile
+
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.store import Store
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                write_split_meals(store, **shape)
+                exposures = build_exposures(store)
+                scenarios = build_scenarios(store).to_dict()
+        patterns = {p["key"]: p for p in build_outcome_patterns({}, exposures, scenarios)}
+        undercount = next((p for p in scenarios["patterns"] + scenarios["low_confidence"]
+                           if p["lever"] == "carb_undercount"), None)
+        return exposures["exposures"]["meals"], patterns["highs_after_meals"], undercount
+
+    def test_a_top_up_ten_minutes_after_the_meal_is_one_meal(self):
+        meals, highs, undercount = self._serve(gap=10)
+
+        self.assertEqual(meals["n"], 14)
+        self.assertEqual({(o["t"][11:], o["carbs"], o["insulin"])
+                          for o in meals["occurrences"]}, {("12:00:00", 65.0, 6.5)})
+        self.assertEqual((highs["k"], highs["n"]), (14, 14))
+        self.assertEqual(undercount["confidence"]["n"], 14)
+
+    def test_a_split_meal_is_judged_on_its_summed_carbs_and_dose(self):
+        meals, highs, _ = self._serve(gap=10, peak=210.0)
+
+        self.assertEqual((highs["k"], highs["n"]), (0, 14))
+        self.assertFalse([o for o in meals["occurrences"]
+                          if "carb_undercount" in o["attributed_levers"]])
+
+    def test_a_top_up_exactly_at_the_grace_is_the_same_meal(self):
+        meals, _, _ = self._serve(gap=30)
+
+        self.assertEqual(meals["n"], 14)
+
+    def test_a_top_up_past_the_grace_stays_a_separate_meal(self):
+        meals, highs, undercount = self._serve(gap=35)
+
+        self.assertEqual(meals["n"], 28)
+        self.assertEqual((highs["k"], highs["n"]), (14, 28))
+        self.assertEqual(undercount["confidence"]["n"], 28)

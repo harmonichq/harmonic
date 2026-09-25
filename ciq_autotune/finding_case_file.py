@@ -10,7 +10,8 @@ import time
 import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
-from .analyzers.scenario.anchors import Anchor, AnchorKind, _is_meal
+from .analyzers.meals import group_meals
+from .analyzers.scenario.anchors import Anchor, AnchorKind
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import credited_claims, outcome_window_population
@@ -114,12 +115,11 @@ class PreparedCases:
 
         ADR 432: the Arc peak for a high outcome, the Arc nadir for a low one, read by
         the Outcomes trend over the readings the analyzer judged and truncated at the
-        next meal among the window's boluses.
+        next meal's first bolus among the window's boluses, never at a top-up (ADR 470).
         """
         kind = _ARC_READINGS[outcome_kind(lever)]
-        truncators = [row.t for row in _window_bolus(self.bolus, self.cgm, self.basal,
-                                                     self.source_window_days)
-                      if _is_meal(row)]
+        truncators = [meal.t for meal in group_meals(_window_bolus(
+            self.bolus, self.cgm, self.basal, self.source_window_days))]
         arcs = outcomes_trend.meal_arcs(anchors, self.sequence_cgm, ctx_meal_times=truncators)
         return [_arc_outcome(kind, anchor, arc) for anchor, arc in zip(anchors, arcs)]
 
@@ -803,12 +803,11 @@ def _arc_outcome(kind, anchor, arc):
 
 
 def _anchor_dose(opportunity):
-    """A roster opportunity's anchor bolus dose and carbs (ADR 432): a meal's own
-    bolus, a correction cluster's second correction without carbs, and neither for a
-    glucose anchor."""
+    """A roster opportunity's anchor bolus dose and carbs (ADR 432): a meal's summed
+    dose and carbs over its members (ADR 470), a correction cluster's second
+    correction without carbs, and neither for a glucose anchor."""
     if opportunity.family is Exposure.MEALS:
-        meal = opportunity.members[0]
-        return meal.insulin, meal.carbs
+        return opportunity.meal.insulin, opportunity.meal.carbs
     if opportunity.family is Exposure.CORRECTION_CLUSTERS:
         return opportunity.members[1].insulin, None
     return None, None

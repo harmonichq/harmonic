@@ -20,7 +20,8 @@ retired the quartile bands), and the day rows drop the capture's ``covered``
 flag — a display-side 70%-coverage floor that contradicted the backend's own
 ``gap_count``. Gaps come from ``maturing.gap_count``, once.
 
-PORT DEVIATION: a meal is :func:`_is_meal` here — the engine's own definition,
+PORT DEVIATION: a meal is :func:`~.analyzers.meals.group_meals`'s here — the
+engine's own definition (ADR 470: a first carb bolus plus its same-meal top-ups),
 already used by this same detail's arc evidence and by the roster's ``arc``
 maturity accrual — where the capture counted any bolus carrying carbs at all.
 Two meal definitions inside one payload is the defect; the ``MEALS a → b`` meta
@@ -32,7 +33,7 @@ import statistics
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from .analyzers.scenario.anchors import _is_meal
+from .analyzers.meals import group_meals
 from .settings import changelog, diff_profiles, resample_schedule
 
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
@@ -197,9 +198,8 @@ def _meal_envelope(cgm, bolus, span: Tuple[datetime, datetime],
     block, so a slot-scoped Trial reads the meals its change could have touched.
     """
     start, end = span
-    meals = [dose.t for dose in bolus
-             if start <= dose.t < end and _is_meal(dose)
-             and (block is None or _in_block(dose.t, block))]
+    meals = [meal.t for meal in group_meals(bolus)
+             if start <= meal.t < end and (block is None or _in_block(meal.t, block))]
     readings = [(r.t, r.bg) for r in cgm if r.bg is not None and start <= r.t < end]
     bins: List[List[float]] = [[] for _ in range(_ARC_BINS)]
     for meal in meals:
@@ -300,9 +300,9 @@ def _day_rows(cgm, bolus, span: Tuple[datetime, datetime]) -> List[dict]:
             row["n_in_range"] += 1
         elif reading.bg < 70:
             row["n_below"] += 1
-    for dose in bolus:
-        row = rows.get(dose.t.date().isoformat())
-        if row is not None and start <= dose.t < end and _is_meal(dose):
+    for meal in group_meals(bolus):
+        row = rows.get(meal.t.date().isoformat())
+        if row is not None and start <= meal.t < end:
             row["meals"] += 1
     for row in rows.values():
         n = row["n_readings"]
@@ -330,8 +330,9 @@ def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
     from .rest_window import detect_rest_windows
 
     owned_cgm = [r for r in cgm if start <= r.t < end and r.bg is not None]
-    meals = [b for b in bolus if start <= b.t < end and _is_meal(b)
-             and (block is None or _in_block(b.t, block))]
+    # Each meal as its first bolus (ADR 470), so a top-up is never a meal of its own.
+    meals = [meal.first for meal in group_meals(bolus) if start <= meal.t < end
+             and (block is None or _in_block(meal.t, block))]
     intervals = []
     occurrences = []
     steps = []

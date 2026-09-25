@@ -6058,3 +6058,75 @@ Additional handler inventory for this amendment:
 | Anchored row weight | diagnose-findings-queue.js queueRows | S193 |
 | Staging refusal detail | diagnose-workstation-data.js isfStageNote; diagnose-findings-queue.js queueRows | S193 |
 | Findings queue Glossary group | frontend/glossary.js | utilities.test.js |
+
+## #470 amendment — 2026-09-25, issue #470
+
+S194 is the fail-first obligation of ADR 470 (`openspec/changes/qa-round-2/design.md`):
+a meal is its first carb bolus plus its same-meal top-ups. It is app-opener-only
+and runs on the manufactured `behavioral-split-meal` case store
+(`CASE_STORE_DIR`). As the only story on that store it joins the fixed PR smoke
+slice (32 stories). No story is retired or amended: no committed QA case holds a
+same-meal pair, so every other story's store serves what it served. Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: "I don't think those should count as a
+second meal. I thought we had logic about that." Settled 2026-09-24/25 as ADR
+0030's 30-minute grace becoming the single meal-identity rule, used everywhere
+meals are counted: anchored and identified by the first bolus, judged on the
+members' summed carbs and dose, the Post-meal arc cut only at the next separate
+meal. The edge cases and the unmoved configuration are ADR 470's autonomous
+decisions. It covers S194 and the behavior below, and nothing outside #470.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 202 issued · 183
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case behavioral-split-meal` emits.
+
+Changed shipped behavior:
+
+- **A top-up is part of its meal.** A carb bolus of 10 g or more within 30
+  minutes of a meal's first bolus is one meal with it. Highs after meals, Lows
+  after meals and every meal cause count it once, at its first bolus, so the
+  Pattern row's "k of n meals" no longer counts the top-up as a second meal.
+- **A meal's row reads the whole meal.** Its case-file row lists the meal once,
+  at its first bolus, with the carbs and dose summed over its boluses, and its
+  Arc peak reads past its own top-up up to the next separate meal, rather than
+  stopping minutes after the first bolus.
+- **A top-up past the grace is still its own meal.** A bolus 35 minutes after
+  the first opens a meal of its own, as before.
+
+```
+S194 · A top-up is part of its meal. On behavioral-split-meal at 24 h, the
+       Highs after meals row prints its served "12 of 15 meals ran high" (the
+       base served 24 meals); its case file lists 15 rows; the 2024-05-03 meal,
+       topped up ten minutes after its first bolus, serves 65 g, 6.5 U and a
+       peak of 360 at minute 125 and reads "65 g · 6.5 U · peak 360".
+  element:  #level .qrow[data-id="pattern:highs_after_meals"] .den,
+            #level .case-occurrence .only
+  source:   ciq_autotune/analyzers/meals.py group_meals, Meal;
+            ciq_autotune/analyzers/scenario/anchors.py collect_anchors;
+            ciq_autotune/analyzers/scenario/opportunities.py build_opportunities;
+            ciq_autotune/finding_case_file.py _arc_outcomes, _anchor_dose
+  lock:     ADR 470 (openspec/changes/qa-round-2/design.md)
+  data:     behavioral-split-meal: twelve noon meals of 45 g / 4.5 U, each
+            topped up with 20 g / 2 U at +10 minutes on six days, exactly +30
+            on three and +35 on three, under a climb to 360
+  evidence: C4_STORIES.S194; opens the 24 h rail, reads the served count
+            sentence and the row that prints it, drills the Highs after meals
+            case file, and reads its served and rendered rows
+  status:   not yet replayed; the base run (task 74's commit with this harness
+            laid over it) must fail at the count sentence (24 meals), and the
+            branch run pass at 1280x720 and 1440x900. Coordinator-run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Meal identity | ciq_autotune/analyzers/meals.py group_meals, Meal | S194 |
+| One meal anchor and opportunity per meal | ciq_autotune/analyzers/scenario/anchors.py collect_anchors; opportunities.py build_opportunities | S194 |
+| A meal row's summed dose and carbs | ciq_autotune/analyzers/scenario/model_view.py _anchor_facts; ciq_autotune/finding_case_file.py _anchor_dose | S194 |
+| The Arc cut at the next separate meal | ciq_autotune/finding_case_file.py _arc_outcomes; ciq_autotune/outcomes_trend.py | S194 |

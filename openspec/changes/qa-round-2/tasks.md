@@ -961,7 +961,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   `tests/test_qa_e2e_cases.py`'s expected case names and to
   `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
   commit is the base for tasks 75 and 83's failing-first runs.
-- [ ] 75. Failing-first backend tests, each seen to fail on task 74's commit:
+- [x] 75. Failing-first backend tests, each seen to fail on task 74's commit:
   - in a new `tests/test_meals.py`, through `group_meals`: boluses at 0, +10 and
     +30 minutes form one meal and one at +31 opens another; 0, +20 and +40 form
     {0, +20} and {+40} (never chained); a 9.9 g and a carb-free bolus inside the
@@ -1004,11 +1004,11 @@ the Diagnose workstation demo set it reads. The reproduction is
     the Trial evidence's daily meal count counts it once
     (`tests/test_trial_evidence.py`); the follow-up comparison's
     `contributing_meals` counts it once (`tests/test_follow_up_comparison.py`).
-- [ ] 76. `ciq_autotune/analyzers/meals.py` (ADR 470 decisions 1 and 2): move
+- [x] 76. `ciq_autotune/analyzers/meals.py` (ADR 470 decisions 1 and 2): move
   `_is_meal` from `scenario/anchors.py` and `completed_carb_bolus` from
   `scenario/evidence_population.py` into it unchanged, and add `Meal` and
   `group_meals`. Every importer of either moved name imports it from `meals`.
-- [ ] 77. The scenario engine and classifiers (ADR 470 decision 3): in
+- [x] 77. The scenario engine and classifiers (ADR 470 decision 3): in
   `scenario/anchors.py`, `collect_anchors` emits one MEAL anchor per meal and
   `Anchor` gains `meal`; `scenario/opportunities.py` emits one meals opportunity
   per meal with every member; `scenario/model_view.py`'s `_anchor_facts` serves
@@ -1023,7 +1023,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   the `scenario_config.py` comments on `anchor_meal_min_carbs` and
   `carb_undercount_same_meal_grace_min` (ADR 470 decision 4: no field or value
   changes).
-- [ ] 78. The other meal counters (ADR 470 decision 3): in
+- [x] 78. The other meal counters (ADR 470 decision 3): in
   `ciq_autotune/event_comparison.py`, `completed_carb_boluses`,
   `_completed_meal_at` and `_route_meal` read meals; in
   `ciq_autotune/finding_case_file.py`, `_arc_outcomes` truncates at meals' first
@@ -1036,7 +1036,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   served as `meal_count` (`:55-57` at the pinned commit) and the pooled
   envelope's `meal_count` (`:126-130`); both read the rule. The pooled 12 g meal
   track is unchanged.
-- [ ] 79. Update deliberately the tests that pin per-bolus meal judgement, each
+- [x] 79. Update deliberately the tests that pin per-bolus meal judgement, each
   named in the commit message:
   - `tests/test_classifier_carb_undercount.py`'s
     `test_dose_split_within_grace_is_not_a_separate_meal` classifies the grouped
@@ -1049,7 +1049,7 @@ the Diagnose workstation demo set it reads. The reproduction is
     ends the noon arc. Rename the test for what it now pins;
   - any other pin the rule moves in the test files `docs/scope/470-meal-identity.md`
     lists as holding same-meal pairs, set to the analyzer's answer.
-- [ ] 80. Regenerate the generated sets whose inputs hold same-meal pairs: the
+- [x] 80. Regenerate the generated sets whose inputs hold same-meal pairs: the
   Diagnose workstation demo set (`python3 .claude/qa/gen_synthetic_fixtures.py`,
   then `uv run python scripts/check_demo_fixtures.py` passes), the
   event-comparison capture (`node mockups/diagnose-event-comparison.synthetic/generate.mjs --write`
@@ -1065,7 +1065,7 @@ the Diagnose workstation demo set it reads. The reproduction is
   without raising any, judging the whole-pytest budget against the base on the
   same machine as ADR 463's ruling does, and record them as a dated `#470` section
   of `openspec/changes/qa-round-2/coverage-appendix.md`.
-- [ ] 82. In `CONTEXT.md`, add a **Meal** entry (a first carb bolus plus its
+- [x] 82. In `CONTEXT.md`, add a **Meal** entry (a first carb bolus plus its
   same-meal top-ups; _Avoid_: second meal, split meal as two meals) and make the
   **Post-meal arc**, **Arc peak** and **Arc nadir** entries say the windows stop
   at the next meal's first bolus, never at a top-up.

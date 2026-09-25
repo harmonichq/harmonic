@@ -458,11 +458,14 @@ def _meal_lever(
     ``((lever, driver_step), None)`` when one fires, else ``(None, cu)`` — the
     carb-undercount verdict is the meal's most-specific non-firing reason.
 
+    The classifiers judge the anchor's :class:`~..meals.Meal` (ADR 470): its first
+    bolus plus its same-meal top-ups, on their summed carbs and dose.
+
     ``bolus`` is the day's bolus sequence, passed to the late-bolus classifier so it
     can suppress a meal dosed into a rise already owned by a recent completed carb
     bolus (#167); it never changes which lever fires above late-bolus.
     """
-    meal = anchor.bolus
+    meal = anchor.meal
     assert meal is not None
 
     results = []

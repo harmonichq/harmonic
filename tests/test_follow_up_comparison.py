@@ -727,6 +727,22 @@ class PracticalComparisonTest(unittest.TestCase):
         self.assertEqual(result['denominators']['after']['contributing_meals'],1)
         self.assertGreater(result['denominators']['after']['readings'],0)
 
+    def test_a_top_up_ten_minutes_after_a_meal_contributes_no_second_meal(self):
+        # ADR 470: the 23:10 top-up joins the 23:00 meal.
+        from ciq_autotune.settings import ProfileSegment,ProfileSettings,PumpSettings,Snapshot
+        start=datetime(2026,6,1)
+        def snapshot(day, ic):
+            return Snapshot(start+timedelta(days=day),PumpSettings(1,(ProfileSettings(
+                1,'synthetic',300,True,15,(ProfileSegment(0,1,40,ic,110),)),)))
+        cgm=[CgmReading(start+timedelta(hours=i),120) for i in range(96)]
+        store=self.store(cgm,[meal(2,23,0,carbs=40,dose=4),meal(2,23,10,carbs=20,dose=2)])
+        store._snaps=[snapshot(0,10),snapshot(1,9)]
+        pin=start+timedelta(days=1)
+        record={'kind':'trial','parameter':'carb_ratio','block':None,'members':[0],'detected_at':str(pin),
+                'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
+        result=self.compare(store,record,start+timedelta(days=4))
+        self.assertEqual(result['denominators']['after']['contributing_meals'],1)
+
     def test_profile_progress_withholds_direction_before_thirty_days(self):
         helper=SupportedComparisonTest()
         store,record,end=helper.dense_profile()

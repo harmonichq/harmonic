@@ -1,10 +1,10 @@
 """Carb-undercount instance classifier (#76, epic #70) — a NEW signal.
 
-Judges **one** meal bolus that ran away high *despite* being dosed: were the carbs
-badly undercounted? This is the single highest-value insight of the real-data pass
-(#70) and the one shape **no existing detector emits** — the case where BG ran
-away high on a modest logged carb count for a heavily underestimated restaurant
-meal had no wire to fire on.
+Judges **one** meal (ADR 470: its first bolus plus its same-meal top-ups) that ran
+away high *despite* being dosed: were the carbs badly undercounted? This is the
+single highest-value insight of the real-data pass (#70) and the one shape **no
+existing detector emits** — the case where BG ran away high on a modest logged carb
+count for a heavily underestimated restaurant meal had no wire to fire on.
 
 The judgment, per the epic's lever taxonomy: a meal that ran away high with an
 **implied I:C far looser than the programmed one** is a carb undercount. We infer
@@ -43,6 +43,7 @@ from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import CgmSeries
+from ..meals import Meal, next_meal_t
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -82,43 +83,30 @@ def _peak_after(series: CgmSeries, start, end) -> Optional[float]:
 
 
 def _owned_window_end(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     bolus_events: Sequence[BolusEvent],
     *,
     scenario_config: ScenarioConfig,
 ) -> datetime:
     """When the excursion this meal *owns* ends — where its peak search must stop.
 
-    The meal owns the excursion from its bolus up to
-    ``min(carb_undercount_peak_lookahead_min, the next separate meal)``. A "separate
-    meal" is a carb-tagged bolus of at least ``anchor_meal_min_carbs`` landing **more
-    than** ``carb_undercount_same_meal_grace_min`` after ``meal``'s own bolus time —
-    the grace keeps a dose-split (pre-bolus + top-up, dual-wave, a forgotten side)
-    from self-capping the window. Grace is measured from ``meal.t``, never chained
-    (ADR 0030).
+    The meal owns the excursion from its first bolus up to
+    ``min(carb_undercount_peak_lookahead_min, the next meal's first bolus)``, the next
+    meal as :func:`~..meals.group_meals` forms it (ADR 470). Its own top-ups inside the
+    same-meal grace are members, so they never self-cap the window (ADR 0030).
 
     Capping here — not on the CGM shape — keeps the read to observable logged carb
     boluses (ADR 0008): where a later meal owns the peak, the cap truncates only the
-    part of the excursion that belongs to someone else. With no separate meal after it
-    (the common case, and an empty ``bolus_events``), the window is the full
-    look-ahead, exactly the pre-ADR-0030 behavior but wider.
+    part of the excursion that belongs to someone else. With no meal after it (the
+    common case, and an empty ``bolus_events``), the window is the full look-ahead.
     """
-    lookahead_end = meal.t + timedelta(minutes=scenario_config.carb_undercount_peak_lookahead_min)
-    grace_end = meal.t + timedelta(minutes=scenario_config.carb_undercount_same_meal_grace_min)
-    min_carbs = scenario_config.anchor_meal_min_carbs
-    end = lookahead_end
-    for b in bolus_events:
-        if b is meal:
-            continue
-        if b.carbs is None or b.carbs < min_carbs:
-            continue
-        if grace_end < b.t < end:
-            end = b.t
-    return end
+    end = meal.t + timedelta(minutes=scenario_config.carb_undercount_peak_lookahead_min)
+    following = next_meal_t(meal.t, bolus_events, scenario_config=scenario_config)
+    return end if following is None else min(end, following)
 
 
 def classify_carb_undercount(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
     bolus_events: Sequence[BolusEvent] = (),
@@ -128,13 +116,15 @@ def classify_carb_undercount(
 ) -> CarbUndercountVerdict:
     """Did ``meal`` run away high because the carbs were badly undercounted?
 
-    ``isf`` is the effective correction factor. I:C comes only from
-    ``meal.carb_ratio``: the setting the pump stamped on this historical dose.
-    ``meal.carbs`` and ``meal.insulin`` are the logged carbs and delivered dose.
+    ``meal`` is the :class:`~..meals.Meal` the engine passes (ADR 470); a unit test
+    that hands one bolus gets a one-member meal's judgement. ``isf`` is the effective
+    correction factor. I:C comes only from ``meal.carb_ratio``: the setting the pump
+    stamped on the meal's first bolus. ``meal.carbs`` and ``meal.insulin`` are the
+    logged carbs and delivered dose, summed over the meal's members.
 
     ``bolus_events`` is the day's bolus sequence (the engine's padded slice). It only
-    bounds the peak search: the excursion read stops at the next *separate* meal so a
-    meal never claims the next meal's spike (:func:`_owned_window_end`, ADR 0030). An
+    bounds the peak search: the excursion read stops at the next meal so a meal never
+    claims the next meal's spike (:func:`_owned_window_end`, ADR 0030, ADR 470). An
     empty sequence reads the full look-ahead — the common, no-later-meal case.
 
     The judgment:
@@ -173,8 +163,8 @@ def classify_carb_undercount(
     series = CgmSeries(cgm_readings, timedelta(minutes=scenario_config.cgm_max_stale_min))
     baseline = series.nearest(meal.t)
     # Read only the excursion this meal owns: from the bolus to the look-ahead horizon,
-    # capped at the next *separate* meal so a meal never claims the next meal's spike
-    # (ADR 0030).
+    # capped at the next meal so a meal never claims the next meal's spike (ADR 0030,
+    # ADR 470).
     window_end = _owned_window_end(meal, bolus_events, scenario_config=scenario_config)
     peak = _peak_after(series, meal.t, window_end)
     if baseline is None or peak is None:

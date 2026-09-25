@@ -10,6 +10,7 @@ from __future__ import annotations
 import statistics
 from datetime import date, datetime, time, timedelta
 
+from .analyzers.meals import group_meals
 from .events import format_t
 from .false_low import drop_readings, false_low_spans
 
@@ -53,9 +54,10 @@ def build_time_of_day(store) -> dict:
         if reading.bg is not None:
             values[_bin_index(reading.t)].append(reading.bg)
     boluses = store.bolus_events(format_t(start), format_t(end))
-    for bolus in boluses:
-        if bolus.carbs is not None and bolus.carbs >= 10:
-            meals[_bin_index(bolus.t)] += 1
+    # One meal per first carb bolus; a same-meal top-up is part of it (ADR 470).
+    meal_times = [meal.t for meal in group_meals(boluses)]
+    for t in meal_times:
+        meals[_bin_index(t)] += 1
 
     return {
         "window": {"start": format_t(start), "end": format_t(end), "data_days": _DATA_DAYS},
@@ -63,7 +65,7 @@ def build_time_of_day(store) -> dict:
         "target_range": _TARGET_RANGE,
         "bins": [_bin(minute, values[index], meals[index])
                  for index, minute in enumerate(range(0, 24 * 60, _BIN_MINUTES))],
-        "pooled": _pooled_envelope(retained, boluses),
+        "pooled": _pooled_envelope(retained, boluses, meal_times),
     }
 
 
@@ -107,7 +109,7 @@ def _pooled_night(t: datetime, center_minute: float) -> date:
     return (t - timedelta(minutes=offset)).date()
 
 
-def _pooled_envelope(readings: list, boluses: list) -> dict:
+def _pooled_envelope(readings: list, boluses: list, meal_times: list) -> dict:
     """Return the workstation's exact pooled canvas, computed before serialization."""
     bins = []
     meals = []
@@ -124,10 +126,8 @@ def _pooled_envelope(readings: list, boluses: list) -> dict:
         values = [reading.bg for reading in pooled]
         support_days = len({_pooled_night(reading.t, center_minute) for reading in pooled})
         meal_count = sum(
-            1 for bolus in boluses
-            if bolus.carbs is not None and bolus.carbs >= 10
-            and _minute_of_day(bolus.t) // _POOLED_BIN_MINUTES
-            == minute // _POOLED_BIN_MINUTES
+            1 for t in meal_times
+            if _minute_of_day(t) // _POOLED_BIN_MINUTES == minute // _POOLED_BIN_MINUTES
         )
         bins.append({
             "minute": minute,

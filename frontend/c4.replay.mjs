@@ -4386,6 +4386,41 @@ export const C4_STORIES = {
     }
     failOnce('S193', 'the rail must follow the one urgency ranking', failures);
   },
+  // #470: a top-up minutes after a meal is part of that meal. On
+  // behavioral-split-meal at 24 h the Highs after meals row counts one meal per
+  // first bolus (15), its case file lists 15 rows, and a +10 minute day's row
+  // serves the meal's summed carbs and dose and the Arc peak read past its top-up.
+  async S194(page) {
+    await openDiagnoseRail(page);
+    const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+    const pattern = preparation.rendered_rows.find(row => row.id === 'pattern:highs_after_meals');
+    assert.ok(pattern?.count_sentences?.length, 'S194 premise: the case store must serve a counted Highs after meals Pattern');
+    const [sentence] = pattern.count_sentences;
+    assert.equal(sentence.denominator, 15,
+      `S194 Highs after meals must count 15 meals, one per first bolus; it counts ${sentence.denominator}`);
+    await waitForReplayAssertion(async seen => {
+      const text = seen(await page.locator('#level .qrow[data-id="pattern:highs_after_meals"] .den').innerText())
+        .replace(/\s+/g, ' ').trim();
+      assert.ok(text.includes(`${sentence.count} of 15 meals ran high`),
+        `S194 the Highs after meals row must print "${sentence.count} of 15 meals ran high"; it prints "${text}"`);
+    }, 'S194 the Highs after meals row counts one meal per first bolus');
+
+    const coordinate = await highsAfterMealsCase432(page, 'S194');
+    const served = await read(page, '/api/diagnose/finding-case-file', coordinate);
+    assert.equal(served.occurrences.length, 15, `S194 the case file must list 15 meals; it lists ${served.occurrences.length}`);
+    const split = served.occurrences.find(row => row.anchor.t === '2024-05-03 12:00:00');
+    assert.deepEqual([split?.anchor.carbs, split?.anchor.insulin, split?.outcome?.kind, split?.outcome?.bg, split?.outcome?.minute],
+      [65, 6.5, 'peak', 360, 125],
+      `S194 the 2024-05-03 meal must serve 65 g, 6.5 U and its peak of 360 at minute 125; it serves ${JSON.stringify(split)}`);
+    await expandRoster432(page);
+    await waitForReplayAssertion(async seen => {
+      const rows = seen(await renderedRows432(page));
+      assert.equal(rows.length, 15, `S194 the case file must render 15 rows; it renders ${rows.length}`);
+      const row = rows.find(entry => entry.occurrenceId === split.id);
+      assert.equal(row?.text, '65 g · 6.5 U · peak 360',
+        `S194 the 2024-05-03 row must read "65 g · 6.5 U · peak 360"; it reads "${row?.text}"`);
+    }, 'S194 the case file lists one row per meal');
+  },
 };
 
 // #469: the rail's top-level list in painted order, each list item with its row's

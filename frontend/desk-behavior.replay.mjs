@@ -3290,6 +3290,10 @@ export const S192 = appOnly('ADR 467',
 export const S193 = appOnly('ADR 469',
   '#469 the rail follows the one urgency ranking: a setting-admitted Pattern shares its setting\'s position and a correction factor that cannot stage says why',
   C4_STORIES.S193);
+// STORY:harmonic-v2-desktop:S194
+export const S194 = appOnly('ADR 470',
+  '#470 a top-up minutes after a meal is part of that meal: Highs after meals counts one meal per first bolus, and its case file lists each meal once with its summed dose and the peak past its top-up',
+  C4_STORIES.S194);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3359,7 +3363,7 @@ export const REGISTRY = [
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
   ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
-  ['S193', S193, J()],
+  ['S193', S193, J()], ['S194', S194, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

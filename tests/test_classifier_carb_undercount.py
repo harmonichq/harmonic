@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from ciq_autotune.analyzers.classifiers import EvidenceTier, SilenceReason, UpstreamCause
 from ciq_autotune.analyzers.classifiers.carb_undercount import classify_carb_undercount
 from ciq_autotune.analyzers.classifiers.context_gate import CIQ_SUSPEND_TYPE
+from ciq_autotune.analyzers.meals import group_meals
 from ciq_autotune.analyzers.scenario_config import ScenarioConfig
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
 
@@ -286,16 +287,19 @@ class OwnedExcursionWindowTest(unittest.TestCase):
 
     def test_dose_split_within_grace_is_not_a_separate_meal(self):
         # A top-up bolus 20 min after the meal (within the 30-min grace) is a dose-split,
-        # not a separate meal — it must NOT cap the window. The combined meal's late
+        # not a separate meal — it must NOT cap the window. ADR 470: the two boluses
+        # are one meal, judged on their summed carbs, and the combined meal's late
         # runaway (360 at 220 min) is still read to the full 300-min horizon.
         cgm = cgm_arc(15, 12, 0,
                       [140, 145, 150, 150, 150, 150, 150, 150, 150,
                        190, 300, 360, 350, 340], cadence=20)
         m1 = meal(15, 12, 0, carbs=30.0, dose=20.0 / IC)
         topup = meal(15, 12, 20, carbs=15.0)    # +20 min: within grace, same meal
-        v = classify(m1, cgm, bolus=[m1, topup])
+        (grouped,) = group_meals([m1, topup])
+        v = classify(grouped, cgm, bolus=[m1, topup])
         self.assertTrue(v.matched)
         self.assertEqual(v.peak_bg, 360.0)      # read past the top-up, not capped at it
+        self.assertEqual(v.logged_carbs, 45.0)  # the meal's summed carbs
 
 
 def rise_after(low_reading, flat_from_min):

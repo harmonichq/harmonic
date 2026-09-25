@@ -1,9 +1,10 @@
 """Late-bolus instance classifier (#71) — the foundation classifier of epic #70.
 
-Judges **one** meal bolus: was it given *late* — into a real, from-flat meal rise
-that a pre-bolus would have blunted — or was the pre-bolus rise actually the tail
-of an observable upstream event (a rescued low, a defensive suspend) that a bolus
-could not and should not have pre-empted?
+Judges **one** meal (ADR 470: its first bolus plus its same-meal top-ups), at its
+first bolus: was it given *late* — into a real, from-flat meal rise that a
+pre-bolus would have blunted — or was the pre-bolus rise actually the tail of an
+observable upstream event (a rescued low, a defensive suspend) that a bolus could
+not and should not have pre-empted?
 
 The old ``not_pre_bolusing`` detector flagged *any* meal bolus given while the
 20-min pre-bolus CGM slope cleared ~1 mg/dL/min, with **no notion of why** BG was
@@ -24,6 +25,7 @@ from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...model import CgmSeries
+from ..meals import Meal
 from ..scenario_config import ScenarioConfig
 from .context_gate import GateResult, upstream_cause
 from .evidence import EvidenceTier, SilenceReason, Verdict
@@ -37,7 +39,7 @@ from .evidence import EvidenceTier, SilenceReason, Verdict
 
 
 def _owning_prior_carb_bolus(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     bolus_events: Sequence[BolusEvent],
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
@@ -91,7 +93,7 @@ class LateBolusVerdict(Verdict):
 
 
 def classify_late_bolus(
-    meal: BolusEvent,
+    meal: Meal | BolusEvent,
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
     bolus_events: Sequence[BolusEvent] = (),
@@ -100,7 +102,9 @@ def classify_late_bolus(
 ) -> LateBolusVerdict:
     """Was ``meal`` bolused late into a real meal rise?
 
-    Judges a single meal bolus against its CGM/basal context:
+    ``meal`` is the :class:`~..meals.Meal` the engine passes (ADR 470), judged at its
+    first bolus; a unit test that hands one bolus gets a one-member meal's judgement.
+    Judges it against its CGM/basal context:
 
     1. Fit the pre-bolus CGM slope over the ``slope_lookback_min`` window ending at
        the bolus. Too sparse to fit → **not late** (can't judge; ``NOT_IN_DATA``).

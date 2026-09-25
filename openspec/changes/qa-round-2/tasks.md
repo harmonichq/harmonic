@@ -317,9 +317,9 @@ and `docs/scope/462-stage.repro.mjs`.
   in a dated `## #462 amendment` section of
   `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
   decisions as its sanction, with its replay function, registry entry, case
-  mapping and story-table row in the files task 8 names, and the case in the
-  smoke slice list in `mockups/sweep/harmonic-v2-desktop/acceptance.py` and its
-  test, as S187 joined it. The story opens the ended record: the stage reads
+  mapping and story-table row in the files task 8 names. The story joins the PR
+  smoke slice in `mockups/sweep/harmonic-v2-desktop/acceptance.py` and its test
+  as the only story on its store, as S187 did. The story opens the ended record: the stage reads
   "as saved at the ending" with the unavailable figure naming the late-context
   reason; pressing Current policy draws a paired figure and outcome rows under
   "Current policy reassessment", with its Trial period ending at or before the

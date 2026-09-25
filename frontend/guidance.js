@@ -43,6 +43,14 @@ export const guidanceWriteError = () => memory.writeError;
 /** True once a read has either answered or failed, so a frame can stop loading. */
 export const guidanceSettled = () => memory.read !== null || memory.error !== null;
 
+// How many times a surface has asked for a guidance read, a call joined to a
+// read already in flight included. A parked Diagnose compares it at its return:
+// only Changes and the Plan surface ask while Diagnose is away (ADR 460 addendum).
+let asks = 0;
+
+/** The number of guidance asks so far. */
+export const guidanceAsks = () => asks;
+
 /**
  * Read `/api/guidance`, at most one read in flight.
  *
@@ -50,6 +58,7 @@ export const guidanceSettled = () => memory.read !== null || memory.error !== nu
  * ask again. `force` is the re-read every write owes, and the Retry control.
  */
 export function loadGuidance({ force = false } = {}) {
+  asks += 1;
   if (pending) return pending;
   if (memory.read && !force && !memory.error) return;
   pending = fetchGuidance().then((payload) => {

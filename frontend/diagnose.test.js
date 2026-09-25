@@ -1417,12 +1417,17 @@ test('#460 · a cold seat whose Plan read lands after the payload hands the view
 // input revision unchanged. `between` runs (and is awaited) while Diagnose is
 // parked. Answers the events the reads and the view's refreshes logged after
 // the return.
-async function retainedReturn460(between = () => {}) {
+async function retainedReturn460(between = () => {}, { guidanceGate = null } = {}) {
   const previous = globalThis.window;
   const previousFetch = fetchReply;
   const events = [];
   const served = { draft: DRAFT_460 };
-  const transport = log => async (url) => draftTransport(served.draft, { log })(url);
+  const transport = log => async (url) => {
+    // A gated guidance read stays in flight until the gate opens, as a slow
+    // cold read's does while the reader has already left for Day.
+    if (guidanceGate && new URL(url, 'http://desk.invalid').pathname === '/api/guidance') await guidanceGate;
+    return draftTransport(served.draft, { log })(url);
+  };
   fetchReply = transport(events);
   const page = browser();
   globalThis.window = page;
@@ -1492,6 +1497,17 @@ test('#460 · a top-nav return with no guidance read since Diagnose parked re-re
   assert.deepEqual(events.filter(path => path === '/api/plan' || path === '/api/guidance'), [],
     `no Plan or guidance read: ${events.join(', ')}`);
   assert.equal(events.filter(event => event === 'refresh').length, 1, `one refresh, at the re-seat: ${events.join(', ')}`);
+});
+
+test('#460 · a cold read whose guidance answers while Diagnose is parked does not make the return re-read', async () => {
+  // S164 after its reload: the cold seat's own guidance read is still in flight
+  // when the reader leaves for Day, and answers while Diagnose is away. No
+  // other surface asked, so the return reads the held status check alone.
+  let release;
+  const guidanceGate = new Promise(resolve => { release = resolve; });
+  const events = await retainedReturn460(async () => { release(); await afterHandlers(); }, { guidanceGate });
+  assert.deepEqual(events.filter(path => path === '/api/plan' || path === '/api/guidance'), [],
+    `no Plan or guidance read: ${events.join(', ')}`);
 });
 
 test('#460 · a Day return to the held case re-reads neither Plan state nor guidance', async () => {

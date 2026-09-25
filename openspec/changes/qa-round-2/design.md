@@ -130,20 +130,27 @@ Each was taken as the simplest option consistent with the settled decisions:
 
 **Addendum (#462/#463 slice, 2026-09-24), decided autonomously during AFK run,
 under the coordinator's authorization to reconcile point 7 with S164 and S165.**
-Point 7's re-read runs only when a guidance read has answered since Diagnose
-parked. Every Changes arrival forces a guidance read, and so does every Plan
-write; Day and the utilities over Diagnose read none. So the re-read follows
-exactly the returns that can have seen the draft move — through Changes, where
-the Plan surface writes it and where a route or another tab's write is picked
-up — and every other retained return (a Day or utility return, a top-nav press
-straight back) reads the held status check alone, as S164, S165, S108, S137 and
-S138 require. The slice's touched-story replay caught the contradiction: S164
-and S165 failed on the Plan, guidance, Focus and Pump settings reads the re-read
-started. A first narrowing to top-nav returns missed them, because a return from
-a Day that a utility opened carries no Diagnose case in its context and so reads
-as a top-nav return. A draft another tab writes while the reader never visits
-Changes is picked up by the next fresh read. Every S186 leg visits Changes and
-keeps its re-read.
+Point 7's re-read runs only when another surface asked for a guidance read while
+Diagnose was parked. The guidance module counts every ask, one joined to a read
+already in flight included; Diagnose records the count when it parks and
+compares it at the return. Every Changes arrival and every Plan write asks, and
+Day and the utilities over Diagnose never do. So the re-read follows exactly the
+returns that can have seen the draft move — through Changes, where the Plan
+surface writes it and where a route or another tab's write is picked up — and
+every other retained return (a Day or utility return, a top-nav press straight
+back) reads the held status check alone, as S164, S165, S108, S137 and S138
+require. A guidance read Diagnose itself started before it parked is not an ask
+made while it was away, whenever it answers.
+
+The slice's touched-story replays found this in three steps. S164 and S165
+failed on the Plan, guidance, Focus and Pump settings reads the re-read started.
+Narrowing to top-nav returns missed them, because a return from a Day that a
+utility opened carries no Diagnose case in its context and reads as a top-nav
+return. Narrowing to "a guidance read answered while parked" still failed
+S164's second half: after its reload, the cold seat's own guidance read was
+still in flight when the reader left for Day and answered while Diagnose was
+away. A draft another tab writes while the reader never visits Changes is picked
+up by the next fresh read. Every S186 leg visits Changes and keeps its re-read.
 
 **Consequences.** A partially admitted draft (some items the analysis still
 admits, some it no longer does) is named by the admitted part, because the

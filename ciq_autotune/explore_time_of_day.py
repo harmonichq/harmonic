@@ -11,6 +11,7 @@ import statistics
 from datetime import date, datetime, time, timedelta
 
 from .analyzers.meals import group_meals
+from .analyzers.scenario_config import ScenarioConfig
 from .events import format_t
 from .false_low import drop_readings, false_low_spans
 
@@ -53,9 +54,13 @@ def build_time_of_day(store) -> dict:
     for reading in retained:
         if reading.bg is not None:
             values[_bin_index(reading.t)].append(reading.bg)
-    boluses = store.bolus_events(format_t(start), format_t(end))
     # One meal per first carb bolus; a same-meal top-up is part of it (ADR 470).
-    meal_times = [meal.t for meal in group_meals(boluses)]
+    # Meals form from a grace before the window, so a top-up of a meal begun just
+    # before it joins that meal rather than opening one.
+    grace = timedelta(minutes=ScenarioConfig().carb_undercount_same_meal_grace_min)
+    padded = store.bolus_events(format_t(start - grace), format_t(end))
+    boluses = [bolus for bolus in padded if bolus.t >= start]
+    meal_times = [meal.t for meal in group_meals(padded) if meal.t >= start]
     for t in meal_times:
         meals[_bin_index(t)] += 1
 

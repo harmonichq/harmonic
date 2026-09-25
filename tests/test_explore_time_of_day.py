@@ -183,6 +183,20 @@ class ExploreTimeOfDayTest(unittest.TestCase):
         pooled = self._body()["pooled"]["bins"]
         self.assertEqual([pooled[index]["meal_count"] for index in (27, 28)], [1, 0])
 
+    def test_a_top_up_of_a_meal_begun_before_the_window_is_no_meal(self):
+        # ADR 470: the 00:05 top-up joins the 23:55 meal before the 30-day window.
+        self._seed(
+            cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],
+            bolus=[
+                _bolus(1, datetime(2026, 5, 31, 23, 55), 45),
+                _bolus(2, datetime(2026, 6, 1, 0, 5), 20),
+            ],
+        )
+
+        body = self._body()
+        self.assertEqual(body["bins"][1]["meal_count"], 0)
+        self.assertEqual(body["pooled"]["bins"][0]["meal_count"], 0)
+
     def test_pooled_meals_use_the_workstation_12_gram_floor(self):
         self._seed(
             cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],

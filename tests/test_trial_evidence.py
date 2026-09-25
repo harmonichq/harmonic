@@ -354,3 +354,32 @@ class PracticalReadinessTest(unittest.TestCase):
         self.assertAlmostEqual(result['readiness']['observed'],8)
         self.assertEqual(len(result['readiness']['contributing_dates']),13)
         self.assertTrue(result['readiness']['criterion_met'])
+
+
+class PeriodEdgeMealTest(unittest.TestCase):
+    def test_a_top_up_after_the_period_start_joins_the_meal_before_it(self):
+        # ADR 470: a 45 g meal at 11:55 and its 20 g top-up at 12:05 are one meal
+        # that began before a period starting at 12:00, so the period holds none.
+        from ciq_autotune.trial_evidence import trial_breakdown
+
+        start = datetime(2026, 6, 10, 12, 0)
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                _cgm(store, start - timedelta(hours=2), start + timedelta(days=2), lambda t: 120)
+                store.upsert_bolus([{
+                    "seq_num": seq, "request_time": at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "description": "Bolus", "completion": "Completed", "insulin": insulin,
+                    "carbs": carbs, "carb_ratio": 10.0,
+                } for seq, at, insulin, carbs in (
+                    (1, start - timedelta(minutes=5), 4.5, 45.0),
+                    (2, start + timedelta(minutes=5), 2.0, 20.0))])
+                period = lambda a, b: {"start": a.strftime("%Y-%m-%d %H:%M:%S"),
+                                       "end": b.strftime("%Y-%m-%d %H:%M:%S")}
+                breakdown = trial_breakdown(
+                    store, parameter="carb_ratio", slot=None, changed_at=start + timedelta(days=1),
+                    target_metrics=["arc"],
+                    before_period=period(start, start + timedelta(days=1)),
+                    trial_period=period(start + timedelta(days=1), start + timedelta(days=2)))
+
+        self.assertEqual(sum(row["meals"] for row in breakdown["day_rows"]["before_period"]), 0)
+        self.assertEqual(breakdown["meal_arcs"]["before_period"]["n_meals"], 0)

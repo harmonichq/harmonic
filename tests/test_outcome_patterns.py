@@ -54,7 +54,9 @@ def write_late_meals(store, *, post_peak, top_up=False):
 
     Each meal climbs 2 mg/dL/min from 120 to 160 at a 45 g / 4.5 U bolus. With a
     ``post_peak`` of 165 or less glucose reads 165 once after the bolus and falls to
-    80; above it, it climbs on to ``post_peak`` and falls. No low, suspend or earlier
+    80; above it, it holds at or under 180 for forty minutes, climbs on to
+    ``post_peak`` sixty minutes after the bolus and falls, so only an arc read past
+    a +10 top-up's grace finds the high. No low, suspend or earlier
     carb bolus explains the climb. ``top_up`` adds a 20 g / 2 U top-up ten minutes
     after each bolus.
     """
@@ -65,7 +67,8 @@ def write_late_meals(store, *, post_peak, top_up=False):
     for day in range(2, 30, 2):
         noon = lane + timedelta(days=day, hours=12)
         after = ([165.0, 150.0, 130.0, 110.0, 95.0, 85.0, 80.0] if post_peak <= 165
-                 else [180.0, 210.0, post_peak, 220.0, 190.0, 160.0, 130.0, 110.0, 95.0, 80.0])
+                 else [165.0, 170.0, 170.0, 175.0, 175.0, 180.0, 180.0, 180.0, 190.0, 210.0,
+                       230.0, post_peak, 220.0, 190.0, 160.0, 130.0, 110.0, 95.0, 80.0])
         values = [120.0, 130.0, 140.0, 150.0, 160.0] + after
         store.upsert_cgm([{
             "EventDateTime": (noon + timedelta(minutes=5 * (i - 4))).strftime(FMT),

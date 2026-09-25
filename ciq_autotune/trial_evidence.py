@@ -34,6 +34,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .analyzers.meals import group_meals
+from .analyzers.scenario_config import ScenarioConfig
 from .settings import changelog, diff_profiles, resample_schedule
 
 _DT_FMT = "%Y-%m-%d %H:%M:%S"
@@ -82,7 +83,11 @@ def trial_breakdown(store, *, parameter: str, slot: Optional[str],
     outer_end = max(end for _, end in spans.values())
 
     cgm = store.cgm_readings(start=outer_start, end=outer_end)
-    bolus = store.bolus_events(start=outer_start, end=outer_end)
+    # Meals form from a grace before the start, so a top-up of a meal begun just
+    # before a period joins that meal rather than opening one (ADR 470); each
+    # reader still keeps only the meals whose first bolus lands in its span.
+    grace = timedelta(minutes=ScenarioConfig().carb_undercount_same_meal_grace_min)
+    bolus = store.bolus_events(start=outer_start - grace, end=outer_end)
     carbs = store.carb_entries(start=outer_start, end=outer_end)
     snapshots = store.settings_snapshots()
 

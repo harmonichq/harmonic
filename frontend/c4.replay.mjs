@@ -3794,8 +3794,9 @@ export const C4_STORIES = {
     }, 'S125 the cross-population caption names its Highs outside the comparison');
   },
   // #424: the open fold prints Correction stacking's share of Lows after
-  // correcting highs first and its correction-cluster count behind "outside the
-  // count"; the cause lines' shares add up to the Pattern's served count.
+  // correcting highs first and its correction-cluster count set apart on a
+  // second row, behind "not in this Pattern's count" (#468); the cause lines'
+  // shares add up to the Pattern's served count.
   async S126(page) {
     await openDiagnoseRail(page);
     const rows = (await read(page, '/api/diagnose/finding-case-file-preparation')).rendered_rows;

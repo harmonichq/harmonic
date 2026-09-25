@@ -3215,7 +3215,7 @@ export const S125 = appOnly('HV2-18',
   '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
 // STORY:harmonic-v2-desktop:S126
 export const S126 = appOnly('#413 design lock',
-  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
+  '#424 a folded cause shows its share of its Pattern first, the rest set apart on a second row', C4_STORIES.S126);
 // STORY:harmonic-v2-desktop:S148
 export const S148 = appOnly('ADR 432',
   '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);

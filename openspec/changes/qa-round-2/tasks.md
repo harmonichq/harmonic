@@ -492,7 +492,9 @@ replays open recurring-lows rows. The reproduction is
   setting 0.72 with median 0.66 is `HARM_LOWER` at 0.66; setting 0.20 with
   median 0.16 is `HARM_LOWER` at 0.16; setting 0.72 with median 0.576 (exactly
   one step) is `HARM_LOWER` at 0.576; setting 0.72 with no median is
-  `HARM_LOWER` at 0.576; the gate-only cases are unchanged.
+  `HARM_LOWER` at 0.576; setting 0.137 with no median, and setting 0.137 with
+  median 0.10, are each `HARM_LOWER` at 0.11 (the check reads the target before
+  rounding, ADR 465 decision 1); the gate-only cases are unchanged.
 - [ ] 40. Failing-first analyzer tests, each seen to fail on task 38's commit:
   - in `tests/test_harm_basal_arm.py`, through `analyze_basal` on
     `_build(rate=0.71, programmed=0.72, low_nights=(20, 21))`: 03:00 is
@@ -513,16 +515,19 @@ replays open recurring-lows rows. The reproduction is
     (`basal_lower`, 9 of 9) as with 01:30 delivering 0.72.
 - [ ] 41. Backend (ADR 465 decisions 1 and 2): in `ciq_autotune/safety.py`,
   `apply_harm` passes every nudge target through one threshold check,
-  `min(noise_floor, current * max_step_frac)` with a 1e-9 tolerance, and holds
-  at `current` as `HARM_GATED` below it; update its docstring and the module
+  `min(noise_floor, current * max_step_frac)` with a 1e-9 tolerance, comparing
+  `current` against the clamped target before `round(…, 3)`, and holds at
+  `current` as `HARM_GATED` below it; update its docstring and the module
   docstring's list if it names the harm rules. In
   `ciq_autotune/analyzers/basal.py`, `_annotation_for(status, *,
-  recurring_hold=False)` serves "lows keep happening overnight, but a step down
-  from this rate would be too small to make, so it stays as it is" for
-  `HARM_GATED` when `recurring_hold` is true; `analyze_basal` passes
+  recurring_hold=False)` serves "lows keep happening overnight, but the step
+  down is smaller than the smallest change worth making, so the rate stays as it
+  is" for `HARM_GATED` when `recurring_hold` is true; `analyze_basal` passes
   `recurring_hold` true for a `HARM_GATED` slot that is nudged and whose clean
   median is `None` or at most its current rate. The threshold is computed
-  nowhere else.
+  nowhere else. In `tests/test_annotation_register.py`, `basal_annotations()`
+  also catalogs `_annotation_for(Status.HARM_GATED, recurring_hold=True)`, so
+  the register guard covers the new sentence.
 - [ ] 42. Findings projection (ADR 465 decision 3). Failing-first, seen to fail
   on task 38's commit: in `tests/test_findings_projection.py`, an analysis whose
   basal rows are `analyze_basal`'s output for `_build(rate=0.71,
@@ -647,10 +652,15 @@ roster or its lane. The reproduction is
     reaches the setting prints "not established by it" (a hand-built row is
     admitted here: it pins the frontend's status-string branch, not a backend
     verdict);
-  - the existing roster test gains one header row, hidden from assistive
-    technology, reading "Delivered U/h", "Programmed U/h", "Night mean mg/dL" in
-    that order, and each night row's values carrying "U/h delivered",
-    "U/h programmed" and "mg/dL night mean" in visually hidden text;
+  - the roster test "each basal night row prints the served date, both rates
+    and the in-slot mean" (`frontend/diagnose-workstation.test.js:799` at the
+    pinned commit) gains one header row, hidden from assistive technology,
+    reading "Delivered U/h", "Programmed U/h", "Night mean mg/dL" in that
+    order, and each night row's values carrying "U/h delivered",
+    "U/h programmed" and "mg/dL night mean" in visually hidden text; its cell
+    regex (`:808`, `[^<]*` inside each cell span) is adapted to read each
+    cell's visible value past the hidden-label span, with the same expected
+    values;
   - the recurring-lows lane test reads "suggests a lower because lows keep
     happening overnight" in the cell's title and name.
 - [ ] 53. Frontend (ADR 466 decisions 2–6): in

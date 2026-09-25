@@ -50,8 +50,8 @@ blind spot, and it is directional by design:
   step, whichever is smaller, is not taken: the slot holds at current under the
   recurring-low gate, with its own served sentence naming the recurring lows. No
   minimum step is invented to reach that threshold. This one check applies to the
-  median-deferred target and to the no-median full step alike, and it lives in the
-  harm layer alone.
+  median-deferred target and to the no-median full step alike, measures the step to
+  the target before it is rounded, and lives in the harm layer alone.
 
 `HARM_LOWER` is actionable and moves the deliverable schedule exactly as a clean
 lowering verdict does. `HARM_GATED` is not actionable — it only withholds, so the slot
@@ -83,8 +83,9 @@ is the point.
 - **WHEN** the basal analyzer applies the harm layer
 - **THEN** the slot is `HARM_GATED` at 0.72, does not assert a move, and carries no
   setting action
-- **AND** its served sentence says the lows keep happening overnight and a step down
-  would be too small to make, and its guidance keeps the recurring-low seriousness
+- **AND** its served sentence says the lows keep happening overnight and the step down
+  is smaller than the smallest change worth making, and its guidance keeps the
+  recurring-low seriousness
 - **AND** the consolidated profile carries 0.72 through the overnight run
 
 #### Scenario: The threshold is one full step at low settings
@@ -94,6 +95,9 @@ is the point.
 - **THEN** the slot is `HARM_LOWER` at 0.16
 - **WHEN** its clean median is instead 0.19 U/h
 - **THEN** the slot holds at 0.20 under the recurring-low gate
+- **AND** a slot programmed at 0.137 U/h in the same state with no clean median, or
+  with a clean median of 0.10, is `HARM_LOWER` at 0.11: the step is measured
+  against the target before it is rounded
 
 #### Scenario: A no-median step near the minimum rate follows the same threshold
 

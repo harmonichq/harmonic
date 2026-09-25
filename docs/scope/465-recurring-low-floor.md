@@ -61,8 +61,9 @@ committed synthetic store, then the proposed case's recipe):
   inputs borrow, so no browser leg moves.
 - No QA case pins a held basal title: held rows live in clock windows, and the
   finding-title literals are whole-day only.
-- #435's text was not available in this sandbox (no `gh`). The coordinator can
-  check its guard wording against ADR 465 decision 5.
+- #435's text was not available in this sandbox (no `gh`). At plan review the
+  coordinator read its guard register from the issue (a plain verdict, the value
+  against the bar, what would change it); ADR 465 decision 5 applies it.
 - OpenSpec validates a second `## ADDED Requirements` section in one delta file
   but silently drops it (probed on a scratch copy), so #465's projection rule is
   a MODIFIED requirement appended after #463's.
@@ -90,3 +91,4 @@ committed synthetic store, then the proposed case's recipe):
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial flat draft pinned 2988a569 | Blockers (`authoring`): the threshold check did not say it reads the target before rounding, so settings such as 0.137 U/h would hold instead of taking their full step (reproduced: 0.137 steps to 0.11, 0.027 against 0.0274); Verification ran the complete ledger through `replay --base` on a commit that is not pushed; Verification omitted `acceptance.test.py` and `case-cache --check`. Note (`authoring`): the new sentence escaped the register guard. Coordinator ruling: #435's guard register (verdict, value against the bar). Fixed: ADR 465 decisions 1, 2 and 5 and task 41 compare before rounding, task 39 adds the 0.137 guards and safety 2 its scenario; the sentence now reads as a measured verdict; task 41 adds it to `basal_annotations()`; Verification names an ONLY= replay and both acceptance checks, and leaves the complete ledger to the coordinator's final commit. | BLOCKED (3 block, 1 note); fixed, no further panel by operator instruction |

@@ -90,3 +90,4 @@ recurring-lows lower after #465.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial flat draft pinned 2988a569 | Blocker (`authoring`): Verification omitted `acceptance.test.py` and `case-cache --check`, which CI gates and which task 55's inventory and case map edit. Note (`authoring`): task 52 did not name the roster test at `:799` or its `:808` cell regex, which the hidden labels break. Coordinator ruling: ONLY= replay and a filtered desk suite per push rule. Fixed: both checks join Verification and Expectation; the replay is ONLY= on the new story, S113 and the touched stories, the desk suite filtered to `basal|#460`; task 52 names both lines. | BLOCKED (1 block, 1 note); fixed, no further panel by operator instruction |

@@ -566,18 +566,21 @@ change's base (`docs/scope/465-recurring-low-floor.repro.py`):
    floor or one full step, whichever is smaller:
    `min(noise_floor, current * max_step_frac)`. Every nudge target, the
    median-deferred one and the no-median full step alike, passes through one
-   check: when `current - target` is below the threshold, with a 1e-9
-   tolerance so that a target exactly one full step away still moves (the
-   repro shows `0.72 - 0.576` lands at 0.14400000000000002), the slot holds at
-   `current` as `HARM_GATED`. The check lives nowhere else: not in `cap()`, the
+   check: when `current - target` is below the threshold, the slot holds at
+   `current` as `HARM_GATED`. `target` is the clamped target before
+   `round(…, 3)`: against the rounded target, settings of 0.137, 0.131 and
+   0.126 U/h would hold instead of taking their full step (0.137 steps to 0.11,
+   0.027 against a threshold of 0.0274; plan review round 1). The comparison
+   carries a 1e-9 tolerance so that a target exactly one full step away still
+   moves in floating point. The check lives nowhere else: not in `cap()`, the
    projection, the lever or the frontend.
 2. **The hold keeps its status and gets its own served sentence.** The status
    stays `HARM_GATED`, so staging, the deliverable schedule, consolidation, the
    priority tally, the lane and the queue register all read it as the hold they
    already handle. The analyzer chooses the sentence: a `HARM_GATED` slot that
    is nudged and whose clean median is absent or at or below its setting reads
-   "lows keep happening overnight, but a step down from this rate would be too
-   small to make, so it stays as it is"; every other `HARM_GATED` slot (a raise
+   "lows keep happening overnight, but the step down is smaller than the
+   smallest change worth making, so the rate stays as it is"; every other `HARM_GATED` slot (a raise
    withheld, whether nudged with a median above the setting or gated by a
    single low) keeps "a low printed at this hour, so a step up is withheld and
    the rate stays as it is". The median-at-setting hold of ADR 412 reads the new
@@ -596,11 +599,16 @@ change's base (`docs/scope/465-recurring-low-floor.repro.py`):
    `seriousness: "recurring_low"` and its full `evidence.harm`; only the
    direction, the action and the staging verdict go.
 5. **#435's wording.** Connor asked for the held wording to use #435's guard
-   wording. #435's text was not readable in this run; the only #435 guard
-   wording in reach is the example #466 quotes, "Lows at this hour — N in 30
-   days", which Connor's #466 decision turns to "overnight". The sentence above
-   names the recurring lows in that register. #435 (out of scope here) owns
-   adding this case to its staging test.
+   wording. #435 shows guards as measurements: a plain verdict, the value
+   against the bar, and what would change it ("Enough nights — 11 of 8 ✓",
+   "Lows at this hour — 3 in 30 days"; read from the issue by the coordinator
+   at plan review). The sentence above follows that register: the verdict (the
+   rate stays), the measured step against its bar (smaller than the smallest
+   change worth making), and, by implication, what would change it (a larger
+   gap). The served headline appends the measured rate against the setting
+   ("Delivered 0.71 U/h across 12 steady nights against 0.72 programmed."). It
+   says "overnight", per Connor's #466 decision, and never "leaning lower".
+   #435 (out of scope here) owns adding this case to its staging test.
 
 **Consequences.** A slot whose steady nights already run within the threshold of
 its setting gets a warning, not a move to stage; a one-hundredth cut can no

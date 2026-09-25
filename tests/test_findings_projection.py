@@ -27,7 +27,7 @@ from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.evaluation import SEQUENCE_LEVERS
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
-from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
+from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER, outcome_window_population
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
 from ciq_autotune.findings_projection import (
@@ -41,6 +41,7 @@ from ciq_autotune.findings_projection import (
     FindingsProjection,
     PATTERN_SUBJECTS,
     WindowQuery,
+    pattern_chartable,
     prepare_findings_projection,
 )
 from ciq_autotune.event_comparison import FACTOR_LABELS
@@ -524,7 +525,7 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
                          ["lows", "corrections"])
         self.assertEqual(afternoon["chip_counts"], {
-            "highs": 3, "lows": 1, "meals": 1, "corrections": 1,
+            "highs": 3, "lows": 2, "meals": 2, "corrections": 1,
         })
 
         global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
@@ -1060,15 +1061,28 @@ class PatternProjectionTest(unittest.TestCase):
                     self.result["rows"].index(pattern_row) + 1 + len(claimed),
                 )))
 
-        scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
+        query = WindowQuery.clock(*AFTERNOON)
+        scoped = self.projection.project(query)
+        scoped_exposures, _roster = outcome_window_population(
+            self.projection._analysis, self.projection._exposures,
+            self.projection._scenarios, query,
+        )
         scoped_patterns = [row for row in scoped["rows"] if row["kind"] == "pattern"]
         self.assertTrue(scoped_patterns)
         for pattern_row in scoped_patterns:
             self.assertEqual(pattern_row["window_scope"], "window")
-            self.assertEqual(pattern_row["pattern_chart"]["window"],
-                             WindowQuery.clock(*AFTERNOON).to_dict())
+            # Chartability decides the chart coordinate alone, never membership
+            # (ADR 467 decision 2).
+            self.assertEqual(
+                pattern_row["pattern_chart"],
+                {"key": pattern_row["pattern"]["key"], "window": query.to_dict()}
+                if pattern_chartable(pattern_row["pattern"], scoped_exposures) else None,
+            )
             self.assertLessEqual(pattern_row["pattern"]["k"], pattern_row["pattern"]["n"])
-        self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
+        served = {row["id"] for row in scoped_patterns}
+        for row in scoped["rows"]:
+            if row.get("claimed_by"):
+                self.assertIn(row["claimed_by"], served)
 
     def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
         rows = [row for row in self.result["rows"] if not row.get("claimed_by")]
@@ -1210,6 +1224,76 @@ class PatternProjectionTest(unittest.TestCase):
                 "no_data": 0, "clean": 0,
             },
         })
+
+
+class ScopedPatternMembershipTest(unittest.TestCase):
+    """#467: a scoped window serves a Pattern when its outcomes land in it, whether or
+    not it owns a chart (ADR 467)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        case = next(item for item in QA_CASES if item.name == "basal-recurring-low-lower")
+        with Store.open(":memory:") as store:
+            materialize_case(store, case)
+            execution = execute_case(store, case)
+        cls.prepared = prepare_findings_projection(
+            analysis=execution.analysis, exposures=execution.exposures,
+            scenarios=execution.scenarios,
+        )
+
+    def _overnight(self, query):
+        body = self.prepared.project(query)
+        row = next((item for item in body["rows"]
+                    if item["id"] == "pattern:overnight_lows_no_iob"), None)
+        return body, row
+
+    def test_the_whole_day_says_overnight(self):
+        _body, row = self._overnight(WindowQuery.whole_day())
+        self.assertEqual([item["sentence"] for item in row["count_sentences"]],
+                         ["2 of 30 nights ran low overnight"])
+
+    def test_a_window_overlapping_the_band_serves_the_overnight_pattern(self):
+        _body, whole = self._overnight(WindowQuery.whole_day())
+        for bounds in ((0, 360), (120, 300)):
+            with self.subTest(bounds=bounds):
+                _body, row = self._overnight(WindowQuery.clock(*bounds))
+                self.assertIsNotNone(row)
+                self.assertEqual(
+                    (row["pattern"]["k"], row["pattern"]["n"],
+                     row["pattern"]["admission_route"], row["priority"]),
+                    (whole["pattern"]["k"], whole["pattern"]["n"],
+                     whole["pattern"]["admission_route"], whole["priority"]),
+                )
+                self.assertEqual(row["window_scope"], "window")
+                self.assertIsNone(row["pattern_chart"])
+                self.assertEqual([item["sentence"] for item in row["count_sentences"]],
+                                 ["2 of 30 nights ran low between 00:00 and 06:00"])
+
+    def test_a_window_clear_of_the_band_serves_no_overnight_pattern(self):
+        body, row = self._overnight(WindowQuery.clock(840, 1260))
+        self.assertIsNone(row)
+        self.assertNotIn("overnight_lows_no_iob",
+                         [pattern["key"] for pattern in body["outcome_patterns"]])
+
+    def test_the_explicit_whole_day_scope_folds_causes_under_served_patterns(self):
+        projection = gen.projection()
+        whole = {row["id"]: row for row in projection.project(WindowQuery.whole_day())["rows"]}
+        scoped = projection.project(WindowQuery.clock(0, DAY_MINUTES))["rows"]
+        by_id = {row["id"]: row for row in scoped}
+        self.assertIn("pattern:lows_after_meals", by_id)
+        self.assertIn("pattern:lows_after_correcting_highs", by_id)
+        for lever in ("correction_stacking", "correction_on_iob"):
+            with self.subTest(lever=lever):
+                self.assertEqual(by_id[f"finding:{lever}"]["claimed_by"],
+                                 "pattern:lows_after_correcting_highs")
+                self.assertEqual(whole[f"finding:{lever}"]["claimed_by"],
+                                 "pattern:lows_after_correcting_highs")
+        served = {row["id"] for row in scoped if row["kind"] == "pattern"}
+        for row in scoped:
+            if row.get("claimed_by"):
+                self.assertIn(row["claimed_by"], served)
 
 
 class FoldSentenceTest(unittest.TestCase):
@@ -2495,7 +2579,13 @@ class SequenceProducerProjectionTest(unittest.TestCase):
             self.assertLessEqual(cause["episodes"], 8)
             self.assertGreater(cause["episodes"], 0)
             self.assertIsNone(cause["claimed_by"])
-            self.assertFalse(any(r["kind"] == "pattern" for r in scoped["rows"]))
+            # A Pattern whose outcomes land in the window may be served (ADR 467),
+            # but none rosters this cause as its member.
+            self.assertFalse(any(
+                member["subject"] == f"habit:{lever}"
+                for r in scoped["rows"] if r["kind"] == "pattern"
+                for member in r["pattern"]["members"]
+            ))
             for evidence in projection._exposures["sequence_evidence"][lever]["occurrences"]:
                 evidence.pop("outcome_minute", None)
             self.assertNotIn(source["id"], {r["id"] for r in projection.project(query)["rows"]})

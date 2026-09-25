@@ -5880,3 +5880,74 @@ Additional handler inventory for this amendment:
 | Recurring-lows interval sentence | diagnose-workstation.js renderSlotLevel, renderParamLevel | S191 |
 | Roster header row and hidden value labels | diagnose-workstation.js renderSlotLevel | S191 |
 | Served recurrence count and bar | ciq_autotune/harm.py basal_harm, basal_harm_evidence | S191 |
+
+## #467 amendment — 2026-09-24, issue #467
+
+S192 is the fail-first obligation of ADR 467 (`openspec/changes/qa-round-2/design.md`):
+a scoped window serves a Pattern when its outcomes land in it, whether or not
+the Pattern owns a chart. It is app-opener-only on the manufactured
+`basal-recurring-low-lower` case store (`CASE_STORE_DIR`). As the only story on
+that store it joins the fixed PR smoke slice (30 stories). It asserts no rank
+numeral, tier or position, which #469 moves. No story is retired or amended.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24, option A: the overnight-lows Pattern
+joins any window overlapping the 00:00–06:00 band, with its band counts and a
+sentence naming the band. Where membership is decided, a Pattern with no
+population, the sentence's words and the fixture's band evidence are ADR 467's
+autonomous decisions. It covers S192 and the behavior below, and nothing
+outside #467.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 200 issued · 181
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-recurring-low-lower` emits.
+
+Changed shipped behavior:
+
+- **A window lists the Patterns whose outcomes land in it.** A pressed preset
+  or drawn window lists every Pattern with an outcome there, admitted through a
+  habit, through a setting, or not yet admitted, and folds its causes under it
+  as the 24 h rail does. Before, a window listed only Patterns that own a chart.
+  A Pattern with no outcome in the window is not listed.
+- **The overnight Pattern in any window reaching the band.** "Overnight lows
+  with no insulin on board" is listed in any window that overlaps 00:00–06:00,
+  with its whole-band counts; its count sentence there reads "k of n nights ran
+  low between 00:00 and 06:00". The 24 h rail keeps "ran low overnight". Its
+  headline, its Priority and its chart (none) are unchanged.
+- **The chart no longer decides the listing.** Whether a Pattern row draws a
+  mini and opens a case file is decided as before.
+
+```
+S192 · A scoped window keeps the overnight Pattern its outcomes land in. On
+       basal-recurring-low-lower, the 24 h rail's overnight Pattern row
+       prints "2 of 30 nights ran low overnight" and draws no mini; pressing
+       Overnight keeps the row, printing "2 of 30 nights ran low between
+       00:00 and 06:00", with no mini; pressing Afternoon lists no overnight
+       Pattern row. No rank numeral, tier or position is asserted.
+  element:  #level .qrow[data-id="pattern:overnight_lows_no_iob"] .den,
+            #level .qrow .mini canvas, #seg-window [aria-pressed="true"]
+  source:   ciq_autotune/analyzers/scenario/outcome_patterns.py
+            pattern_in_window, outcome_window_population;
+            ciq_autotune/findings_projection.py _pattern_rows,
+            _pattern_count_sentences
+  lock:     ADR 467 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-lower: lows on 2 of 30 overnight source
+            nights, the Pattern admitted through the basal setting
+  evidence: C4_STORIES.S192; opens the 24 h rail and reads the row, presses
+            Overnight and reads it again, presses Afternoon and reads its
+            absence
+  status:   not yet replayed; the base run (0da909bb with this harness laid
+            over it) must fail at the Overnight row, and the branch run pass at
+            1280x720 and 1440x900. Coordinator-run
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Scoped Pattern membership | ciq_autotune/analyzers/scenario/outcome_patterns.py pattern_in_window | S192 |
+| Band count sentence in a scoped window | ciq_autotune/findings_projection.py _pattern_count_sentences | S192 |

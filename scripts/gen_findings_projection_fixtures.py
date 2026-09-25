@@ -134,7 +134,8 @@ def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0,
     The clean-night points are the same shelf the priority builder counts its
     on-suggested-side nights from, so the Lever score this fixture freezes is the one
     the real builder computes rather than a floor of 0. ``recurring_lows`` runs the
-    verdict through the real harm nudge and serves the held sentence it earns.
+    verdict through the real harm nudge and serves the held sentence it earns, with
+    the band evidence the analyzer publishes beside it (ADR 467 decision 5).
     """
     estimate = Estimate(value=value, lo=lo, hi=hi, n=n, method="bootstrap-median")
     recommended, status = cap(current, value, _SAFETY, estimate,
@@ -148,7 +149,8 @@ def _slot(index, *, current, value=None, lo=None, hi=None, n=0, supported=0,
     if recurring_lows:
         recommended, status = apply_harm(current, recommended, status, _SAFETY,
                                          nudge=True, median=value)
-        evidence["harm"] = {"gated": True, "nudged": True}
+        evidence["harm"] = {"gated": True, "nudged": True, "band_nights": 2}
+        evidence["harm_band_source_nights"] = 20
     return SlotEstimate(
         slot=index, label=_slot_label(index, SLOT_MINUTES), current=current,
         estimate=estimate, recommended=recommended,

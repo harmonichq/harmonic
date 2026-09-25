@@ -4346,7 +4346,40 @@ export const C4_STORIES = {
     }
     failOnce('S191', 'a recurring-lows slot must say what owns its move and show its lows', failures);
   },
+  // #467: a scoped window serves a Pattern when its outcomes land in it. The
+  // overnight Pattern owns no chart, so it draws no mini at 24 h, and Overnight
+  // keeps it with the band's counts; Afternoon, clear of the band, lists none.
+  // It asserts no rank numeral, tier or position (#469 moves those).
+  async S192(page) {
+    const id = 'pattern:overnight_lows_no_iob';
+    await openDiagnoseRail(page);
+    await patternRow467(page, id, '2 of 30 nights ran low overnight', '24 h');
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click(); await settled(page);
+    await patternRow467(page, id, '2 of 30 nights ran low between 00:00 and 06:00', 'Overnight');
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click(); await settled(page);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), 'Afternoon',
+        'S192 premise: the Afternoon preset must be pressed');
+      assert.equal(seen(await page.locator(`#level .qrow[data-id="${id}"]`).count()), 0,
+        'S192 Afternoon must list no overnight Pattern row');
+    }, 'S192 Afternoon lists no overnight Pattern');
+  },
 };
+
+// #467: the overnight Pattern's row in the pressed window prints its served
+// count sentence and draws no mini.
+async function patternRow467(page, id, sentence, preset) {
+  await waitForReplayAssertion(async seen => {
+    assert.equal(seen(await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), preset,
+      `S192 premise: the ${preset} preset must be pressed`);
+    const row = page.locator(`#level .qrow[data-id="${id}"]`);
+    assert.equal(seen(await row.count()), 1, `S192 ${preset} must list the overnight Pattern row`);
+    const text = seen(await row.locator('.den').innerText()).replace(/\s+/g, ' ').trim();
+    assert.ok(text.includes(sentence), `S192 ${preset}'s overnight Pattern row must print "${sentence}"; it prints "${text}"`);
+    assert.equal(seen(await row.locator('.mini canvas').count()), 0,
+      `S192 ${preset}'s overnight Pattern row must draw no mini`);
+  }, `S192 the ${preset} overnight Pattern row`);
+}
 
 // #466: open the 24 h rail's 03:00 slot and read the served harm evidence it
 // lists, as S190 opens its lane.

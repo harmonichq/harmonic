@@ -3282,6 +3282,10 @@ export const S190 = appOnly('ADR 465',
 export const S191 = appOnly('ADR 466',
   '#466 a recurring-lows slot says the overnight lows own its move, counts them and lists each one',
   C4_STORIES.S191);
+// STORY:harmonic-v2-desktop:S192
+export const S192 = appOnly('ADR 467',
+  '#467 a scoped window keeps the overnight Pattern its outcomes land in, with the band counts',
+  C4_STORIES.S192);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3350,7 +3354,7 @@ export const REGISTRY = [
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
-  ['S190', S190, J()], ['S191', S191, J()],
+  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

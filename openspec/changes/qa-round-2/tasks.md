@@ -721,7 +721,7 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   queues on `basal-recurring-low-lower` in the served app (the Pattern rows,
   their count sentences, which rows carry a mini), and record any observed
   behavior with no story before designing.
-- [ ] 59. Failing-first backend tests, each seen to fail on #467's base:
+- [x] 59. Failing-first backend tests, each seen to fail on #467's base:
   - in `tests/test_findings_projection.py`, through `materialize_case` then
     `execute_case` (`scripts/qa_e2e_cases.py`) then
     `prepare_findings_projection(...).project` on `basal-recurring-low-lower`:
@@ -753,7 +753,7 @@ under it no QA expectation moves, so no QA case is added or rewritten.
   the 14:00–18:00 scoped roster (at the pinned commit `:193`–`:198`), which
   pins it at k 0, n 0 and readiness `withheld`: under decision 4 it now asserts
   that zero-n Pattern is absent from that roster.
-- [ ] 60. Backend (ADR 467 decisions 1–4): in
+- [x] 60. Backend (ADR 467 decisions 1–4): in
   `ciq_autotune/analyzers/scenario/outcome_patterns.py`, add
   `pattern_in_window(pattern, query)` and have `outcome_window_population`
   return only member Patterns for a scoped query; update the module and

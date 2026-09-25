@@ -191,18 +191,14 @@ class ScopedPatternPopulationTest(unittest.TestCase):
         evening_population, evening_patterns = outcome_window_population(
             {}, exposures, scenarios, WindowQuery.clock(18 * 60, 21 * 60),
         )
-        afternoon = next(
-            row for row in afternoon_patterns if row["key"] == "highs_after_treating_lows"
-        )
         evening = next(
             row for row in evening_patterns if row["key"] == "highs_after_treating_lows"
         )
 
         self.assertEqual(afternoon_population["exposures"]["lows"]["occurrences"], [])
-        self.assertEqual((afternoon["k"], afternoon["n"]), (0, 0))
-        self.assertEqual(afternoon["readiness"], {
-            "count": 0, "gate": 12, "verdict": "withheld",
-        })
+        # No outcome of it lands in the window, so the Pattern joins none (ADR 467).
+        self.assertNotIn("highs_after_treating_lows",
+                         [row["key"] for row in afternoon_patterns])
         self.assertEqual(
             [row["ep_id"] for row in evening_population["exposures"]["lows"]["occurrences"]],
             ["attributed-low", "unattributed-low"],
@@ -211,3 +207,52 @@ class ScopedPatternPopulationTest(unittest.TestCase):
         self.assertEqual(evening["readiness"], {
             "count": 2, "gate": 12, "verdict": "withheld",
         })
+
+
+class ScopedPatternMembershipTest(unittest.TestCase):
+    """A scoped window carries a Pattern when its outcomes land in it (ADR 467)."""
+
+    SCENARIOS = {"patterns": [], "low_confidence": []}
+
+    @staticmethod
+    def _analysis(source_nights):
+        return {
+            "basal": [{"evidence": {"harm_band_source_nights": source_nights,
+                                    "harm": {"band_nights": 2}}}],
+            "tuning_levers": [{"parameter": "basal_rate", "priority": 39}],
+        }
+
+    def _roster(self, analysis, exposures, bounds):
+        _population, roster = outcome_window_population(
+            analysis, exposures, self.SCENARIOS, WindowQuery.clock(*bounds),
+        )
+        return {row["key"]: row for row in roster}
+
+    def test_the_overnight_pattern_joins_windows_overlapping_its_band(self):
+        analysis = self._analysis(8)
+        for bounds in ((0, 360), (300, 420)):
+            with self.subTest(bounds=bounds):
+                pattern = self._roster(analysis, {"exposures": {}}, bounds)[
+                    "overnight_lows_no_iob"]
+                self.assertEqual((pattern["k"], pattern["n"]), (2, 8))
+        self.assertNotIn("overnight_lows_no_iob",
+                         self._roster(analysis, {"exposures": {}}, (360, 1440)))
+
+    def test_the_overnight_pattern_with_no_source_nights_joins_no_window(self):
+        self.assertNotIn("overnight_lows_no_iob",
+                         self._roster(self._analysis(0), {"exposures": {}}, (0, 360)))
+
+    def test_an_unadmitted_pattern_joins_the_window_its_outcome_lands_in(self):
+        low = {
+            "ep_id": "afternoon-low", "t": "2026-08-01 15:00:00", "kind": "low",
+            "attributed": False, "attributed_levers": [], "cause_lever": None,
+            "cause_title": None, "outcome_minute": 15 * 60,
+        }
+        exposures = {"exposures": {"lows": {
+            "n": 1, "attributed": 0, "clean": 1, "occurrences": [low],
+        }}}
+        inside = self._roster({}, exposures, (14 * 60, 16 * 60))
+        self.assertEqual(inside["highs_after_treating_lows"]["admission_route"], "none")
+        self.assertEqual(inside["highs_after_treating_lows"]["n"], 1)
+        self.assertNotIn("highs_after_treating_lows",
+                         self._roster({}, exposures, (16 * 60, 18 * 60)))

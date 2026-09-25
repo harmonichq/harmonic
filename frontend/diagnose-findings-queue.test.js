@@ -79,7 +79,7 @@ test('#413 · no frontend Pattern word list remains (PATTERN_COPY and its reader
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
   assert.equal(queueMeta(W.global), '8 findings · 30 days');
-  assert.equal(queueMeta(W.afternoon), '4 in this window');
+  assert.equal(queueMeta(W.afternoon), '5 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
   for (const projection of [W.global, W.afternoon, W.overnight, fixture.no_data.morning]) {
@@ -124,11 +124,19 @@ test('Watching still holds the held and blind reads it always did', () => {
   }
   assert.ok(queueRows(W.morning).some((row) => row.collapsed),
     'a current-setting held read is still reachable through its disclosure');
+  // ADR 467: 03:00–04:00 overlaps the overnight band, so the overnight Pattern is
+  // its one shown row and every other read there stays in Watching.
   const quiet = queueRows(W.quiet);
-  assert.ok(quiet.length > 0 && quiet.every((row) => row.collapsed), 'quiet is all Watching');
-  assert.equal(quiet.filter((row) => !row.hidden && !row.collapsed).length, 0,
-    'quiet has no shown row and takes the empty-copy state');
+  assert.deepEqual(quiet.filter((row) => !row.hidden && !row.collapsed).map((row) => row.id),
+    ['pattern:overnight_lows_no_iob']);
+  assert.ok(quiet.filter((row) => row.id !== 'pattern:overnight_lows_no_iob').every((row) => row.collapsed),
+    'quiet collapses every read that is not its Pattern');
 });
+
+/* The served quiet window without its one Pattern row: the fixture's only stretch of
+   Watching reads, so the all-Watching state paints from served rows (ADR 467 put the
+   overnight Pattern into 03:00–04:00). */
+const WATCHING_ONLY = { ...W.quiet, rows: W.quiet.rows.filter((row) => row.kind !== 'pattern') };
 
 test('Watching rows stay in their disclosure while Sift is active', () => {
   const selected = new Set(['highs']);
@@ -139,7 +147,9 @@ test('Watching rows stay in their disclosure while Sift is active', () => {
 });
 
 test('all-Watching queue keeps its empty line compact above the disclosure', () => {
-  const { host } = paint(W.quiet);
+  const quiet = queueRows(WATCHING_ONLY);
+  assert.ok(quiet.length > 0 && quiet.every((row) => row.collapsed), 'the window is all Watching');
+  const { host } = paint(WATCHING_ONLY);
   assert.equal(host.children[0].textContent, EMPTY_LINE);
   assert.equal(host.children[0].className, 'quiet-line sift-empty',
     'the empty line is compact when the Watching disclosure follows');
@@ -197,14 +207,14 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   // ADR 465: the quiet window also holds the fixture's recurring-lows hold at 03:00.
-  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
+  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['priced', 'collapsed', 'collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
     { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },
     { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
-  assert.deepEqual(morning.map((row) => row.weight), ['priced']);
+  assert.deepEqual(morning.map((row) => row.weight), ['priced', 'priced']);
 });
 
 test('#413 · the rail shows served urgency: the first priced tier is urgent, later tiers stay quiet', () => {
@@ -341,9 +351,12 @@ test('#413 · a Pattern folds its causes: closed on arrival unless it is rank on
 });
 
 test('#413 · an unpriced row prints its served count sentence under its title', () => {
-  const tail = queueRows(W.afternoon).find((row) => row.weight === 'tail' && row.detail?.kind === 'sentences');
+  // ADR 467 folds the fixture windows' unpriced Causes under their Pattern, so the
+  // premise is read from the desk suite's served 12:00–18:00 window.
+  const window = fixture.browser_windows['720-1080'];
+  const tail = queueRows(window).find((row) => row.weight === 'tail' && row.detail?.kind === 'sentences');
   assert.ok(tail, 'premise: the fixture serves an unpriced row with a count sentence');
-  const { host } = paint(W.afternoon);
+  const { host } = paint(window);
   const button = descendants(host).find((node) => node.tag === 'button' && node.dataset.id === tail.id);
   const den = button.children.find((child) => child.className === 'den');
   assert.ok(den, `${tail.id} must print its served count sentence`);
@@ -435,12 +448,12 @@ test('term 42 · fixture windows never caption a held or blind row as the tail',
   // demoted, but it is not the unpriced ranked row the tail sentence describes.
   const expected = {
     global: ['Lows after correcting highs'],
-    afternoon: ['Correction stacking'],
-    low_block: [],
+    afternoon: ['Lows after correcting highs'],
+    low_block: ['Lows after correcting highs'],
     morning: [],
-    overnight: ['Correction on active insulin'],
+    overnight: ['Lows after correcting highs'],
     quiet: [],
-    rebound: ['Correction stacking'],
+    rebound: ['Lows after correcting highs'],
   };
   for (const [window, titles] of Object.entries(expected)) {
     assert.deepEqual(queueRows(W[window]).filter((row) => row.seam).map((row) => row.title),
@@ -678,7 +691,7 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
 
 test('metadata and empty copy describe Sift, the only root filter', () => {
   assert.equal(queueMeta(W.global, new Set(['meals'])), '2 findings · 30 days');
-  assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '1 in this window');
+  assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '2 in this window');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 

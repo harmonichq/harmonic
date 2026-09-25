@@ -147,6 +147,13 @@ test('S191 is a unique app-only #466 story on the basal-recurring-low-spread sto
   assert.equal(storyCase('S191'), 'basal-recurring-low-spread');
 });
 
+test('S192 is a unique app-only #467 story on the basal-recurring-low-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S192');
+  assert.equal(entries.length, 1, 'S192 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 467');
+  assert.equal(storyCase('S192'), 'basal-recurring-low-lower');
+});
+
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
   const projection = JSON.parse(readFileSync(new URL('./__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .windows.low_block;

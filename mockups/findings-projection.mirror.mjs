@@ -102,6 +102,9 @@ const PATTERN_OUTCOME = {
   lows_after_correcting_highs: 'followed a correction',
   overnight_lows_no_iob: 'ran low overnight',
 };
+// harm.HarmConfig's overnight band: in a scoped window the harm-band Pattern keeps
+// its whole-band counts, so its outcome names the band (ADR 467 decision 3).
+const HARM_BAND = { start_min: 0, end_min: 6 * 60 };
 // Closed over the code-derived cross product (coordinator decision, #413 review
 // round 2): every lever x every family a Cause appearance can be filed under,
 // narrowed off the full four-family set only where the lever's own policy or the
@@ -157,7 +160,10 @@ function patternCountSentences(r) {
   if (!Object.hasOwn(PATTERN_OUTCOME, key)) {
     throw new Error(`no outcome word for pattern ${key}`);
   }
-  return [countSentence(pattern.k, pattern.n, noun, PATTERN_OUTCOME[key])];
+  const outcome = pattern.rate_producer === 'harm_band_source_nights' && r.window_scope === 'window'
+    ? `ran low between ${hhmm(HARM_BAND.start_min)} and ${hhmm(HARM_BAND.end_min)}`
+    : PATTERN_OUTCOME[key];
+  return [countSentence(pattern.k, pattern.n, noun, outcome)];
 }
 
 function causeCountSentences(r) {
@@ -972,9 +978,6 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of (outcomePatterns || (query.scoped ? [] : inputs.outcome_patterns))) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      if (query.scoped && !patternChartable(pattern, {
-        exposures: { [patternRateFamily(pattern)]: { n: pattern.n } },
-      })) continue;
       const subjects = new Set([...(pattern.rate_levers || []),
         ...(pattern.members || []).filter((member) => member.kind === 'habit')
           .map((member) => member.subject)]);
@@ -988,7 +991,10 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
         id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
         priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
         pattern: structuredClone(pattern), window_scope: query.scoped ? 'window' : 'whole_day',
-        pattern_chart: (!query.scoped ? patternChartable(pattern, exposures) : pattern.n > 0)
+        // The frozen scoped roster is already membership-filtered (ADR 467), and
+        // its `n` is the window's own family count, so chartability reads it.
+        pattern_chart: patternChartable(pattern, query.scoped
+          ? { exposures: { [patternRateFamily(pattern)]: { n: pattern.n } } } : exposures)
           ? { key: pattern.key, window: structuredClone(query.dict) } : null,
       });
       rows.push(projected); patterns.set(pattern.subject, projected);

@@ -67,6 +67,7 @@ from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
 )
+from .harm import HarmConfig
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -77,6 +78,8 @@ class UnknownHistorySelection(KeyError):
     """A canonical selection absent from the analyzer-published catalog."""
 
 _SLOT_MINUTES = 30
+# The Harm signal's overnight band, which the harm-band Pattern's counts cover.
+_HARM_CONFIG = HarmConfig()
 
 # The basal verdicts that WITHHOLD a move: the analyzer had something to say and
 # declined to name a direction from it. `NO_CHANGE` is deliberately not among them —
@@ -150,7 +153,12 @@ def pattern_rate_family(pattern: dict) -> Exposure | None:
 
 
 def pattern_chartable(pattern: dict, exposures: dict) -> bool:
-    """One server predicate for whether a Pattern owns inspectable evidence."""
+    """One server predicate for whether a Pattern owns inspectable evidence.
+
+    It decides the Pattern row's chart coordinate and, through it, its case file.
+    It never decides whether a scoped window serves the Pattern: the scoped
+    roster's producer owns that (ADR 467).
+    """
     family = pattern_rate_family(pattern)
     has_admitted_habit = any(
         member.get("kind") == "habit" and member.get("admitted")
@@ -265,7 +273,11 @@ class FindingsProjection:
     def _pattern_rows(self, rows: List[dict], query: WindowQuery,
                       outcome_patterns: list[dict] | None = None,
                       pattern_exposures: dict | None = None):
-        """Place the prepared roster in the queue without re-deciding its policy."""
+        """Place the prepared roster in the queue without re-deciding its policy.
+
+        A scoped roster arrives membership-filtered, so every ``remain_pattern``
+        Pattern in it is served; chartability decides only ``pattern_chart``.
+        """
         by_id = {row["id"]: row for row in rows}
         pattern_rows, pattern_by_subject = [], {}
         outcome_patterns = self._outcome_patterns if outcome_patterns is None else outcome_patterns
@@ -274,8 +286,6 @@ class FindingsProjection:
             # Partial rosters occur in the producer-isolation tests; they remain
             # additive evidence, but are not renderable Pattern contracts.
             if pattern.get("collapse") != "remain_pattern":
-                continue
-            if query.scoped and not pattern_chartable(pattern, pattern_exposures):
                 continue
             subject = pattern["subject"]
             subjects = dict.fromkeys([
@@ -1118,7 +1128,10 @@ def _count_sentence(count: int, denominator: int, noun: str, outcome: str) -> di
 def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     """A count-bearing Pattern's one served sentence, or ``None`` — counts under
     review and a Pattern with no admitted k/n serve none, matching ``_headline_for``'s
-    own gating so the two fields never disagree about which rows carry counts."""
+    own gating so the two fields never disagree about which rows carry counts.
+
+    In a scoped window the harm-band Pattern keeps its whole-band counts, so its
+    outcome names the band rather than the window (ADR 467 decision 3)."""
     pattern = row["pattern"]
     if pattern.get("count_status") or pattern["admission_route"] == "none":
         return None
@@ -1126,7 +1139,12 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     key = pattern["key"]
     if key not in _PATTERN_OUTCOME:
         raise ValueError(f"no outcome word for pattern {key!r}")
-    return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
+    outcome = _PATTERN_OUTCOME[key]
+    if (pattern["rate_producer"] == "harm_band_source_nights"
+            and row["window_scope"] == "window"):
+        outcome = (f"ran low between {_hhmm(_HARM_CONFIG.overnight_start_min)} "
+                   f"and {_hhmm(_HARM_CONFIG.overnight_end_min)}")
+    return [_count_sentence(pattern["k"], pattern["n"], noun, outcome)]
 
 
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:

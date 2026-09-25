@@ -2,8 +2,7 @@
 
 Ticket: #468. Change: `openspec/changes/qa-round-2` (ADR 468; tasks 93–103;
 surfaces requirements 4, 8, 14 and 15, behavioral-layer requirement 9). Triage ran
-unattended (AFK run, 2026-09-25) at d22fac7a, concurrently with slice s6 (#464):
-if s6 lands first, the coordinator renumbers #468's tasks and re-pins its lock.
+unattended (AFK run, 2026-09-25) at d22fac7a.
 Item 5 (the Glossary's correction-factor unit) is left out (Connor, 2026-09-24).
 
 ## Reproduction
@@ -126,7 +125,7 @@ The last day adds a case the issue missed: a span that runs backwards.
   S188's section in `mockups/harmonic-v2-desktop.behavior.md:5551`, which is
   amended by a new line rather than edited.
 - The caption's band words: `frontend/diagnose-workstation.js:690–702`,
-  `frontend/diagnose-workstation.test.js:1057,1072,1075`,
+  `frontend/diagnose-workstation.test.js:1057,1064,1072,1075`,
   `frontend/c4.replay.mjs:1297–1320`, `frontend/c4.replay.test.js:2383–2441`,
   `openspec/specs/surfaces/spec.md:1125–1145` and
   `openspec/specs/behavioral-layer/spec.md:437–459` (both MODIFIED here).
@@ -141,8 +140,9 @@ The last day adds a case the issue missed: a span that runs backwards.
   table's words for a missing context, amending ADR 462 decision 4 in place;
   `band_states` on every event cohort, in band order; the caption's comma-joined,
   uncounted states; four stories amended and one Day story added on the showcase.
-- Surface lifecycle `revise`; the behavior sweep is deferred to start (concurrency:
-  port 8765 was reserved for the other slice during this triage).
+- Surface lifecycle `revise`; the behavior sweep is deferred to start (port 8765
+  was reserved during this triage). Every browser run is a coordinator-run leg the
+  start session hands back through `.afk/out/browser-legs.md` (review round 1).
 - Flat order, one start session, per the coordinator's slice plan. Three rubric
   traits fire (lockstep copies of the band states across the server, the fixture
   projector, the validator and the captures; a live replay inside the ticket; a
@@ -155,3 +155,4 @@ The last day adds a case the issue missed: a span that runs backwards.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial flat draft pinned cf06ffb3 | Blocker (`authoring`): tasks 93, 102 and 103 need Chromium, yet the fence named no handback and `Done when` required every task ticked, inviting status lines about runs the worker never made. Notes (`authoring`): `frontend/diagnose-workstation.test.js:1064` bans "not comparable" from the whole caption, which decision 5's caption now carries; the showcase probe reads `quiet.start`/`quiet.end`, so after task 97 it prints no day rather than failing; the drafting-conventions path did not resolve in the checkout. Refuted: none; each reproduced against the tree. Fixed: the fence names three browser-leg handbacks through `.afk/out/browser-legs.md` and `Done when` names the coordinator-evidenced ticks (93, 102's status lines, 103); task 96 narrows `:1064` to a count-labelled "not comparable"; task 102 runs the probes on task 95's commit, before task 97; the path is absolute. Slice s6 was dropped from the run, so the renumbering note is removed. | BLOCKED (1 block, 3 notes); fixed, no further panel by operator instruction |

@@ -1186,18 +1186,18 @@ Guide). #461's touched stories are S13, S124 and R8, which open
 
 ## #468 — Reader text says what the engine means
 
-Tasks 1–92 land first on this branch; #468's base is their final commit. Slice s6
-(#464) appends to this file concurrently: if it lands first, the coordinator
-renumbers the tasks below and re-pins #468's lock. #468 changes words and serves
-one description field (`band_states`); it moves no count, credit, membership,
+Tasks 1–92 land first on this branch; #468's base is their final commit. #468
+changes words and serves one description field (`band_states`); it moves no count, credit, membership,
 verdict, ranking or staging rule. Its touched stories are S115 and S126 (the fold),
 S124 and S125 (the caption), S188 (the Retained line) and task 102's new Day story.
 The reproduction is `docs/scope/468-reader-text.repro.mjs` and `.repro.py`; the
-showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`.
+showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`. Every
+browser run below (the sweep, the replays and the renders) is a coordinator-run
+browser leg: the start session hands it back and records the coordinator's output.
 
 - [ ] 93. Before any design change, run UI Craft's revise pre-work on the shipped
-  desk (sweep deferred to start from triage: port 8765 was reserved for a
-  concurrent slice): replay S115, S124, S125, S126 and S188 against #468's base
+  desk (sweep deferred to start from triage: port 8765 was reserved during
+  triage): replay S115, S124, S125, S126 and S188 against #468's base
   at 1280x720 and 1440x900, re-inventory in the served app the Pattern fold on the
   showcase and on `behavioral-correction-stacking`, Day's Episode Log on the
   showcase's 2024-06-26 and 2024-06-30, the Retained line on `c4-isf-late-read`
@@ -1264,8 +1264,11 @@ showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`.
     when a cross-population comparison serves a state;
   - in `frontend/diagnose-workstation.test.js`: the same-population caption
     (`:1057` at the pinned commit) ends its comparison term with its served
-    `band_states`' words in parentheses, comma-joined and lowercased; the
-    cross-population captions (`:1072`, `:1075`) are unchanged;
+    `band_states`' words in parentheses, comma-joined and lowercased; that test's
+    ban on "not comparable" (`:1064`) narrows to a count so labelled
+    (`/\d+ not comparable|outside the comparison/`), as surfaces requirement 15
+    words it and the caption replay counts it; the cross-population captions
+    (`:1072`, `:1075`) are unchanged;
   - in `frontend/c4.replay.test.js`: task 101's fold check passes on "not in
     this Pattern's count·2 of 4 highs" under a count-serving parent and on a bare
     "1 of 1 correction clusters" under a count-less one, and fails on "outside
@@ -1320,22 +1323,26 @@ showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`.
   (ADR 468) and Connor's 2026-09-24 skip of item 5 as its sanction.
 - [ ] 102. In the same section, add one ledger story (the next unissued S id) on
   the showcase: Day on 2024-06-26, whose quiet anchors fall on both sides of a
-  Finding (`docs/scope/468-reader-text.probe.py` and `.probe.mjs`; re-run them
-  and take the day they print if the showcase has moved), reads its Quiet caption
-  and line, and the line carries its clean, explained and no-data counts and no
-  `HH:MM–HH:MM`. Its premise reads the served model view for that day and
-  requires a Findings anchor between the first and last quiet anchor. Add its
-  replay function in `frontend/c4.replay.mjs`, registry entry in
+  Finding. Confirm the day by running `docs/scope/468-reader-text.probe.py` and
+  `.probe.mjs` on task 95's commit, before task 97 removes the `quiet.start` and
+  `quiet.end` the probe reads (after task 97 it prints no day rather than
+  failing); take the day they print if the showcase has moved. The story reads
+  its Quiet caption and line, and the line carries its clean, explained and
+  no-data counts and no `HH:MM–HH:MM`. Its premise reads the served model view
+  for that day and requires a Findings anchor between the first and last quiet
+  anchor. Add its replay function in `frontend/c4.replay.mjs`, registry entry in
   `frontend/desk-behavior.replay.mjs`, case `showcase` in
   `frontend/replay-cases.mjs` and story-table row in `frontend/c4.replay.test.js`.
-  Lay the harness (this story and task 101's amendments) over task 95's commit
-  and record those base runs on the status lines: the new story fails at its span
-  assertion, S115 and S126 at the fold words, S124 at its comparison term and
-  S188 at its Retained words. Record the branch runs at both sizes. Raise the story
-  inventory by this one story in the four places task 9 names.
+  The coordinator lays the harness (this story and task 101's amendments) over
+  task 95's commit and runs the base and the branch; the status lines record
+  those coordinator-run results: the new story fails at its span assertion on
+  the base, S115 and S126 at the fold words, S124 at its comparison term and
+  S188 at its Retained words, and all pass on the branch at both sizes. Raise the
+  story inventory by this one story in the four places task 9 names.
 - [ ] 103. Capture before/after renders at 1280x720 and 1440x900 from the no-fetch
   serve, the before from task 95's commit: the fold on
   `behavioral-correction-stacking` and on the showcase, the Episode Log on the
   showcase's 2024-06-26, the Retained line on `c4-isf-late-read` and the Response
-  comparison on `behavioral-carb-undercount`. The coordinator attaches them to
-  the pull request; they are not committed.
+  comparison on `behavioral-carb-undercount`. The coordinator captures them into
+  `.afk/out/renders/` and attaches them to the pull request; they are not
+  committed.

@@ -82,7 +82,7 @@ def _block(record):
 
 
 def _setting_period(store, record, cutoff, earliest):
-    from .watched_change import basal_slot_regimes, dose_regimes
+    from .watched_change import basal_slot_regimes, dose_regimes, same_change
 
     changed = _time(record.get("detected_at") or record["changed_at"])
     parameter, slot = record["parameter"], record.get("slot")
@@ -128,9 +128,14 @@ def _setting_period(store, record, cutoff, earliest):
             regimes = basal_slot_regimes([e for e in store.basal_events() if e.t <= cutoff]).get(slot_index, [])
         elif parameter in ("isf", "carb_ratio") and block is None and slot is None:
             regimes = dose_regimes([b for b in store.bolus_events() if b.t <= cutoff], parameter)
-        matching = next((i for i, run in enumerate(regimes) if run.start == changed), None)
+        # A record dated at its change day's first observation still names the
+        # regime that day starts (ADR 463), and keeps its own change time.
+        matching = next((i for i, run in enumerate(regimes) if i and same_change(
+            record, parameter=parameter, slot=slot, block=block, start=run.start,
+            before=regimes[i - 1].value, after=run.value)), None)
         if matching is not None:
             runs = [(r.start, r.value) for r in regimes]
+            runs[matching] = (changed, runs[matching][1])
             index = matching
     if (index is None or index == 0 or runs[index][0] != changed
             or runs[index][1] is None or runs[index - 1][1] is None):

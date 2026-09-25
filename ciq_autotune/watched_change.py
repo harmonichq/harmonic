@@ -85,8 +85,10 @@ _PLAN_TYPE = {"basal_rate": "basal", "isf": "isf", "carb_ratio": "ic"}
 class Regime:
     """One settled stretch of a parameter at a constant ``value``, starting ``start``.
 
-    ``start`` is the conservative boundary instant (the first observation back at this
-    value), matching ``epochs``' change-point placement. The regime list is the value
+    ``start`` is the first observation carrying this value on the run's first day, so
+    a change made mid-day is dated when the new value was first seen (ADR 463). The
+    day is the one ``epochs``' change walk picks; ``epochs`` itself still places its
+    change point at that day's first observation. The regime list is the value
     history the Trial's change-point and revert rule read off.
     """
 
@@ -98,8 +100,9 @@ def _regimes_from_days(days: List[tuple]) -> List[Regime]:
     """Collapse ``[(day, rep_value, first_time)]`` (ascending) into value regimes.
 
     Consecutive days at the same representative value are one regime; the regime's
-    ``start`` is that run's first observation. This is the same value history
-    ``epochs``' newest→oldest change walk reads, exposed as a list.
+    ``start`` is the run's first day's ``first_time``, which each caller gives as
+    that day's first observation carrying ``rep_value``. This is the same value
+    history ``epochs``' newest→oldest change walk reads, exposed as a list.
     """
     regimes: List[Regime] = []
     for _, value, first_t in days:
@@ -123,15 +126,16 @@ def dose_regimes(boluses, parameter: str) -> List[Regime]:
     if not obs:
         return []
     by_day: Dict[object, List[float]] = {}
-    first_t: Dict[object, datetime] = {}
+    first_t: Dict[tuple, datetime] = {}
     for t, v in obs:
-        by_day.setdefault(t.date(), []).append(round(float(v), 6))
-        first_t.setdefault(t.date(), t)
+        value = round(float(v), 6)
+        by_day.setdefault(t.date(), []).append(value)
+        first_t.setdefault((t.date(), value), t)
     days: List[tuple] = []
     for day, values in by_day.items():
         counts = Counter(values)
         rep = max(counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
-        days.append((day, rep, first_t[day]))
+        days.append((day, rep, first_t[(day, rep)]))
     days.sort(key=lambda d: d[0])
     return _regimes_from_days(_settled_days(days, _MIN_EPOCH_DAYS))
 
@@ -157,13 +161,30 @@ def basal_slot_regimes(basal_events, slot_minutes: int = 30) -> Dict[int, List[R
     for (s, day), samples in by_slot_day.items():
         counts = Counter(round(e.profile_basal_rate, 6) for e in samples)
         rep = max(counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
-        by_slot.setdefault(s, []).append((day, rep, samples[0].t))
+        first = next(e.t for e in samples if round(e.profile_basal_rate, 6) == rep)
+        by_slot.setdefault(s, []).append((day, rep, first))
 
     out: Dict[int, List[Regime]] = {}
     for s, days in by_slot.items():
         days.sort(key=lambda d: d[0])
         out[s] = _regimes_from_days(days)
     return out
+
+
+def same_change(record, *, parameter, slot, block, start, before, after) -> bool:
+    """Whether a retained record names this derived change (ADR 463 decision 5).
+
+    A record saved while a delivery-detected change was dated at its day's first
+    observation keeps that time and its id: it is this change when its parameter,
+    slot, block and values match and its change time is on ``start``'s pump day,
+    at or before ``start``. A record dated at ``start`` itself matches too.
+    """
+    changed = datetime.fromisoformat(record["changed_at"])
+    kept = record.get("block")
+    return (record["parameter"] == parameter and record.get("slot") == slot
+            and (tuple(kept) if kept is not None else None) == (tuple(block) if block is not None else None)
+            and record.get("before") == before and record.get("after") == after
+            and changed.date() == start.date() and changed <= start)
 
 
 # --- Trial detection -------------------------------------------------------
@@ -486,8 +507,15 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         basal, bolus, snapshots, plan_history, mature_window=mature_window,
         horizon_start=horizon_start,
     )
+    retained = store.follow_up_records("trial")
     trials = []
     for cand in candidates:
+        # A retained record of this change keeps its own time, and so its id,
+        # whatever the detector dates the change at now (ADR 463).
+        kept = next((record for record in retained if same_change(
+            record, parameter=cand.parameter, slot=cand.slot, block=cand.block,
+            start=cand.start, before=cand.before, after=cand.after)), None)
+        start = datetime.fromisoformat(kept["changed_at"]) if kept else cand.start
         target = _PROFILE_TARGET if cand.parameter == "profile" else _TARGET_METRIC[cand.parameter]
         # A block-bound I:C Trial accrues only from meals inside its captured arc
         # (#581): out-of-block meals never mature it, fill its gaps, or feed its
@@ -501,20 +529,20 @@ def _reviewable_trials(store, now, *, horizon_start=None):
         # Maturity accrues only from the same bounded Trial period displayed in
         # the selected detail.  Later observations cannot complete an otherwise
         # empty Trial or make its ready-to-judge state imply unavailable evidence.
-        trial_end = min(now, cand.start + mature_window)
-        maturing = _maturing(cand.start, trial_end, TRIAL_WINDOW_DAYS, data_times)
+        trial_end = min(now, start + mature_window)
+        maturing = _maturing(start, trial_end, TRIAL_WINDOW_DAYS, data_times)
         trials.append(_ReviewTrial(
             view=TrialView(
                 parameter=cand.parameter,
-                changed_at=cand.start.strftime(_DT_FMT),
+                changed_at=start.strftime(_DT_FMT),
                 target_metrics=target,
                 maturing=maturing,
                 slot=cand.slot,
                 before=cand.before,
                 after=cand.after,
-                deliberate=_deliberate(cand.parameter, cand.start, plan_history),
+                deliberate=_deliberate(cand.parameter, start, plan_history),
             ),
-            gap_count=_data_gaps(cand.start, trial_end, data_times),
+            gap_count=_data_gaps(start, trial_end, data_times),
             block=cand.block,
             members=list(cand.members) if cand.members else None,
         ))
@@ -619,9 +647,15 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
             raise KeyError(identity)
         detail = {"id": identity, "lever": record["lever"], "status": record["status"],
                   "title": _review_focus_title(record), "lever_title": _review_lever_title(record["lever"])}
+    context = (record.get("observed_context", record.get("decision_context"))
+               if record else _unavailable("not_recorded"))
+    receipt = record["reconciliation"] if record and kind == "trial" else {}
+    if receipt.get("state") == "available":
+        # A Trial matched to a Plan shows the decision that Plan recorded (ADR 463).
+        decision = store.follow_up_record("plan", receipt["applied_at"])["decision_context"]
+        context = decision if decision.get("state") == "available" else context
     detail.update(kind=kind, admission=admission,
-                  original={"context": (record.get("observed_context", record.get("decision_context"))
-                                        if record else _unavailable("not_recorded")),
+                  original={"context": context,
                             "ending": record["ending"] if record else _unavailable("not_recorded"),
                             "late_conclusion": record.get("late_conclusion", _unavailable("not_recorded"))
                                                if record else _unavailable("not_recorded"),
@@ -1318,6 +1352,52 @@ def _confirm_from_read(store, recorded_at):
         "matched_schedule": schedule}})
 
 
+def _link_from_read(store, recorded_at):
+    """Link a Trial detected after its Plan's pump-read confirmation to that Plan
+    (ADR 463 decision 7, an addendum to ADR 431).
+
+    A Trial with no receipt and no captured carb-ratio block links to a Plan
+    confirmed from a pump read with no Trial when the Trial is of the Plan's
+    setting (a slotted Trial's slot being one of its item start minutes) or is
+    whole-profile, its change time is within a day of the confirming read, and
+    the match is one-to-one both ways with no Trial already naming the Plan. It
+    never compares the Plan's recorded time. Only the Trial's receipt is written;
+    nothing rewrites a Plan.
+    """
+    trials = store.follow_up_records("trial")
+    named = {trial["reconciliation"].get("applied_at") for trial in trials
+             if trial["reconciliation"].get("state") == "available"}
+    plans = [plan for plan in store.follow_up_records("plan")
+             if plan["reconciliation"].get("state") == "available"
+             and plan["reconciliation"].get("trial_id") is None and plan["id"] not in named]
+    unlinked = [trial for trial in trials
+                if trial["reconciliation"].get("state") != "available" and not trial.get("block")]
+
+    def qualifies(trial, plan):
+        read = datetime.fromisoformat(plan["reconciliation"]["observed_snapshot"]["captured_at"])
+        if abs(datetime.fromisoformat(trial["changed_at"]) - read) > timedelta(days=1):
+            return False
+        if trial["parameter"] == "profile":
+            return True
+        starts = {item.get("start_min") for item in plan["items"]
+                  if item.get("type") == _PLAN_TYPE.get(trial["parameter"])}
+        if trial.get("slot") is None:
+            return bool(starts)
+        hour, minute = map(int, trial["slot"].split(":"))
+        return hour * 60 + minute in starts
+
+    for plan in plans:
+        matches = [trial for trial in unlinked if qualifies(trial, plan)]
+        if len(matches) != 1 or sum(qualifies(matches[0], other) for other in plans) != 1:
+            continue
+        trial, confirmed = matches[0], plan["reconciliation"]
+        store.save_follow_up_record({**trial, "reconciliation": {
+            "version": "386:1", "state": "available", "applied_at": plan["id"], "trial_id": trial["id"],
+            "established_at": recorded_at.strftime(_DT_FMT),
+            "observed_snapshot": confirmed["observed_snapshot"],
+            "matched_schedule": confirmed["matched_schedule"]}})
+
+
 def with_plan_verdicts(store, records):
     """Each recorded Plan with its one served verdict (ADR 431), computed at read
     time without writing; the Plan history and guidance reads both serve it here.
@@ -1407,6 +1487,10 @@ def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutof
                             "comparison_context": compared["comparison_context"],
                             "input_revision": store.input_data_revision(),
                             "data_cutoff": data_cutoff.strftime(_DT_FMT)}
+    # The clock envelopes alone, so the saved ending can draw its curve (ADR 463).
+    clocks = {arm: {"clock": view["clock"]} for arm, view in comparison["views"].items() if "clock" in view}
+    if clocks:
+        ending["assessment"]["views"] = clocks
     # Adherence carries metadata as well as rows; Store's bounded row validator
     # consumes only its displayed Before/After/assessment rows.
     if "adherence" in comparison:
@@ -1459,7 +1543,9 @@ def _reversal_at(store, record, history=None):
     else:
         regimes = history.doses(record["parameter"])
     for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
-        if changed.start == start and _is_revert([previous, changed, returned], _MATURE_WINDOW):
+        if (same_change(record, parameter=record["parameter"], slot=record.get("slot"), block=None,
+                        start=changed.start, before=previous.value, after=changed.value)
+                and _is_revert([previous, changed, returned], _MATURE_WINDOW)):
             return returned.start
     return None
 
@@ -1523,6 +1609,7 @@ def reconcile_follow_up(store, *, now, recorded_at):
                 "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
         _reconcile_plan(store, record, recorded_at)
     _confirm_from_read(store, recorded_at)
+    _link_from_read(store, recorded_at)
     _end_open_records(store, trials, now=now, recorded_at=recorded_at)
     newest = trials[0] if trials else None
     later = newest is not None and (not frontier or frontier["detected_at"] is None or newest.view.changed_at > frontier["detected_at"])

@@ -1221,16 +1221,21 @@ showcase probe is `docs/scope/468-reader-text.probe.py` and `.probe.mjs`.
   band's order (`fired`, `near_miss`, `clean`, `outranked`, `no_data`), with a
   comment naming ADR 468. In `mockups/diagnose-event-comparison.synthetic/project.mjs`
   `patternCohort`, serve the same field by the same rule. Then regenerate every
-  committed set that serializes an event case file, through its own generator:
-  `node mockups/diagnose-event-comparison.synthetic/generate.mjs --write`, the
-  findings-projection fixtures (`uv run python scripts/gen_findings_projection_fixtures.py`),
-  the missed-meal fixture (`uv run python scripts/gen_missed_meal_comparison_fixtures.py`),
-  the Diagnose workstation demo set (`python3 .claude/qa/gen_synthetic_fixtures.py`,
-  then `uv run python scripts/check_demo_fixtures.py` passes) and the
-  eating-sequence payload (`uv run python scripts/gen_eating_sequence_fixtures.py`;
-  its `--check` and `tests/test_eating_sequence_finding_fixture.py`'s
-  1,000,000-byte limit pass). Each generator's `--check` then passes. Commit this
-  task on its own: that commit is the base for task 96's failing-first runs.
+  committed set that serializes an event case file, through its own generator,
+  in this order: the findings-projection fixtures
+  (`uv run python scripts/gen_findings_projection_fixtures.py`), the missed-meal
+  fixture (`uv run python scripts/gen_missed_meal_comparison_fixtures.py`), the
+  Diagnose workstation demo set (`python3 .claude/qa/gen_synthetic_fixtures.py`,
+  then `uv run python scripts/check_demo_fixtures.py` passes), the eating-sequence
+  payload (`uv run python scripts/gen_eating_sequence_fixtures.py`; its `--check`
+  and `tests/test_eating_sequence_finding_fixture.py`'s 1,000,000-byte limit
+  pass), and last the event-comparison capture
+  (`node mockups/diagnose-event-comparison.synthetic/generate.mjs --write`),
+  which is built from the findings-projection fixture's frozen Pattern case files.
+  `frontend/browser-fixture-population.test.js` then finds the projector's
+  narrowed Pattern case equal to the server's. Each generator's `--check` then
+  passes. Commit this task on its own: that commit is the base for task 96's
+  failing-first runs.
 - [ ] 96. Failing-first Node tests, each seen to fail on task 95's commit:
   - in `frontend/diagnose-findings-queue.test.js`, rewriting the two #424 fold
     tests: under `pattern:highs_after_meals`, which serves a count, Carb

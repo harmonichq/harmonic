@@ -114,3 +114,43 @@ in the desk; one ledger story and one desk-suite test. The analyzers' epochs,
 every classifier, cap, floor, staging predicate and assessment rule, and every
 saved ending and Plan receipt are unchanged. Triage record:
 `docs/scope/463-record-display.md`.
+
+## #465
+
+A slot with recurring overnight lows whose steady nights already run within a
+hundredth of its setting stages a one-hundredth-of-a-U/h cut, below the noise
+floor every other basal move respects. It stages like a real move, nudges the
+consolidated profile, and can take the Basal lever's headline.
+
+- A recurring-lows cut smaller than the noise floor or one full step, whichever
+  is smaller, is not taken: the slot holds at its setting under the
+  recurring-low gate, with its own served sentence naming the lows (Connor,
+  2026-09-24: no invented minimum step, never "leaning lower").
+- The one check lives in the harm layer, for the median-deferred cut and the
+  no-median full step alike. Cuts at or above the threshold are unchanged.
+- The held queue row names no lower lean; the served sentence names the lows.
+- A manufactured case, `basal-recurring-low-within-floor`, reproduces it.
+
+Impact: the harm layer, the basal sentence, the findings projection's held-row
+title with its JS mirror and generated fixture, one QA case and one ledger
+story. No committed case store's verdict moves. Triage record:
+`docs/scope/465-recurring-low-floor.md`.
+
+## #466
+
+A basal slot lowered for recurring lows tells the reader the data does not
+establish a move, shows none of the lows behind it, and says "at this hour"
+although recurrence is counted across the whole night.
+
+- The interval sentence on a recurring-lows lower says the steady nights alone
+  do not establish the step and that it comes from the overnight lows listed.
+- The backend serves the recurrence count the nudge actually used and its bar;
+  the slot lists that count and each of its half hour's lows, each opening its
+  day in Day. Held slots with lows list them too.
+- The copy says "overnight", not "at this hour" (Connor, 2026-09-24).
+- The nights roster gains column headers.
+
+Impact: the harm evidence, the recurring-lows sentence, the basal slot panel
+and its roster, the lane cell's name, one QA case, one generated fixture key,
+one ledger story and S113's amendment. The Recommended value, staging and every
+harm rule are unchanged. Triage record: `docs/scope/466-recurring-low-explain.md`.

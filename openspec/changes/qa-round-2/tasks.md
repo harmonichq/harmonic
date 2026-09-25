@@ -452,3 +452,244 @@ reproduction is `docs/scope/463-record-display.repro.py`,
   watched Trial Read column, c3-history's finished record stage, and the
   desk-suite collapsed figure of task 32, the before from #463's base. The
   coordinator attaches them to the pull request; they are not committed.
+
+## #465 — A recurring-lows basal cut within the threshold holds
+
+Tasks 1–36 (#460, #459, #462, #463) land first on this branch; #465's base is
+their final commit. #465 changes no frontend source: its surface change is
+served (a held lane cell and panel, and a held queue row with its own sentence).
+Across the 74 committed synthetic stores no recurring-lows verdict moves
+(`uv run python docs/scope/465-recurring-low-floor.repro.py --stores`). #465's
+touched stories are S113, S151, S152, S153, S183, S184 and S185: every story
+`frontend/replay-cases.mjs` maps to `basal-verdict-gallery`, the store whose
+replays open recurring-lows rows. The reproduction is
+`docs/scope/465-recurring-low-floor.repro.py`.
+
+- [ ] 37. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #465's touched
+  stories against #465's base at 1280x720 and 1440x900 through
+  `frontend/desk-behavior.replay.mjs`, re-inventory a recurring-lows lower and a
+  recurring-low hold (lane cell, panel verdict and sentence, stage control,
+  queue row) in the served app on `basal-recurring-low-lower` and
+  `basal-recurring-low-gate`, and record any observed behavior with no story
+  before designing.
+- [ ] 38. Add the manufactured case `basal-recurring-low-within-floor` to
+  `scripts/qa_e2e_cases.py`: `_materialize_basal_coverage` with
+  `clean_rate=0.59` and `recurring_lows=True` against the default programmed
+  0.60, with the scoped window `(180, 240)`. Follow AGENTS.md "Maintaining QA
+  coverage eras" steps 1–3 on #465's base: copy its complete `execute_case` row
+  dump, which serves 03:00 as "lower (recurring lows)" at 0.59, into literal
+  `QaExpectation` values and run its generated
+  `test_case_basal_recurring_low_within_floor`. Add the name to
+  `tests/test_qa_e2e_cases.py`'s expected case names and to
+  `tests/test_pattern_replay.py`'s case map. Commit this task on its own: that
+  commit is the base for tasks 39, 40, 42 and 44's failing-first runs.
+- [ ] 39. Failing-first unit tests in `tests/test_harm.py` `ApplyHarmTest`, each
+  `nudge=True` and seen to fail on task 38's commit: setting 0.72 with median
+  0.71 is `HARM_GATED` at 0.72; setting 0.20 with median 0.19 is `HARM_GATED`
+  at 0.20; setting 0.11 with no median is `HARM_GATED` at 0.11; setting 0.10
+  with no median is `HARM_GATED` at 0.10. Guards, passing before and after:
+  setting 0.72 with median 0.66 is `HARM_LOWER` at 0.66; setting 0.20 with
+  median 0.16 is `HARM_LOWER` at 0.16; setting 0.72 with median 0.576 (exactly
+  one step) is `HARM_LOWER` at 0.576; setting 0.72 with no median is
+  `HARM_LOWER` at 0.576; the gate-only cases are unchanged.
+- [ ] 40. Failing-first analyzer tests, each seen to fail on task 38's commit:
+  - in `tests/test_harm_basal_arm.py`, through `analyze_basal` on
+    `_build(rate=0.71, programmed=0.72, low_nights=(20, 21))`: 03:00 is
+    `HARM_GATED` at 0.72, `asserts_move` is false, the guidance action is
+    `None`, the guidance seriousness is still `"recurring_low"`,
+    `evidence["harm"]["nudged"]` is still true, and the annotation is ADR 465
+    decision 2's recurring-lows hold sentence; the existing median-at-current
+    test (`_build(rate=0.72, …)`) gains the same sentence assertion; guards,
+    passing before and after: the single-low raise gate and the recurring-lows
+    median-above case keep "a low printed at this hour, so a step up is
+    withheld and the rate stays as it is";
+  - in `tests/test_analyzer_basal.py`: `consolidate_profile` over that
+    analysis carries 0.72 in every segment starting before 06:00;
+  - in `tests/test_tuning_priority.py`: two nudged slots built as item 4 of the
+    reproduction builds them (01:30 on 14 nights, 03:00 on 9 nights at 0.60,
+    programmed 0.72, lows at both on two nights). `basal_lever` with 01:30
+    delivering 0.71 returns the same priority and recurrence channel
+    (`basal_lower`, 9 of 9) as with 01:30 delivering 0.72.
+- [ ] 41. Backend (ADR 465 decisions 1 and 2): in `ciq_autotune/safety.py`,
+  `apply_harm` passes every nudge target through one threshold check,
+  `min(noise_floor, current * max_step_frac)` with a 1e-9 tolerance, and holds
+  at `current` as `HARM_GATED` below it; update its docstring and the module
+  docstring's list if it names the harm rules. In
+  `ciq_autotune/analyzers/basal.py`, `_annotation_for(status, *,
+  recurring_hold=False)` serves "lows keep happening overnight, but a step down
+  from this rate would be too small to make, so it stays as it is" for
+  `HARM_GATED` when `recurring_hold` is true; `analyze_basal` passes
+  `recurring_hold` true for a `HARM_GATED` slot that is nudged and whose clean
+  median is `None` or at most its current rate. The threshold is computed
+  nowhere else.
+- [ ] 42. Findings projection (ADR 465 decision 3). Failing-first, seen to fail
+  on task 38's commit: in `tests/test_findings_projection.py`, an analysis whose
+  basal rows are `analyze_basal`'s output for `_build(rate=0.71,
+  programmed=0.72, low_nights=(20, 21))` projects, in the clock window
+  `(180, 240)`, a held 03:00 row titled "Basal 03:00" with no priority whose
+  headline opens with the recurring-lows hold sentence, capitalised; guard: the
+  existing "Basal 12:30 to 14:00 · leaning lower" and "Basal 06:30 · leaning
+  raise" titles hold. Then: in `ciq_autotune/findings_projection.py`,
+  `_basal_key` drops a `"lower"` lean for a held slot whose served
+  `evidence.harm.nudged` is true, with `_lean`'s docstring updated; make the
+  same change to `basalKey` in `mockups/findings-projection.mirror.mjs`; in
+  `scripts/gen_findings_projection_fixtures.py`, `basal_rows()` serves slot 6
+  (03:00) at current 1.00 with a 0.99 estimate (interval 0.97–1.01, 20 nights),
+  its verdict from the real `cap()` then `apply_harm(..., nudge=True,
+  median=0.99)`, its sentence from `_annotation_for(status,
+  recurring_hold=True)`, and `evidence["harm"]` carrying `nudged` and `gated`
+  true; regenerate `frontend/__fixtures__/findings-projection.json`. The
+  generator's `--check`, `frontend/findings-projection-mirror.test.js` and
+  `tests/test_guidance.py` pass; any `tests/test_findings_projection.py`
+  count the new held row moves is updated to the regenerated answer and named
+  in the commit message.
+- [ ] 43. Rewrite `basal-recurring-low-within-floor`'s literal expectation from
+  its post-fix `execute_case` dump (AGENTS.md step 2): 03:00 `HARM_GATED`, no
+  whole-day assert row, a held `(180, 240)` row whose headline opens with the
+  recurring-lows hold sentence. The expectations of `basal-recurring-low-lower`,
+  `basal-recurring-low-no-clean-median` and `basal-recurring-low-gate` do not
+  move. Re-measure the five budgets (step 4) against the limits of record in
+  `openspec/changes/archive/2026-09-24-harmonic-v2/coverage-appendix.md`
+  without raising any, judging the whole-pytest budget against the base on the
+  same machine as ADR 463's ruling does, and record them as a dated `#465`
+  section of `openspec/changes/qa-round-2/coverage-appendix.md`.
+- [ ] 44. Add one ledger story (the next unissued S id) on
+  `basal-recurring-low-within-floor`, in a dated `## #465 amendment` section of
+  `mockups/harmonic-v2-desktop.behavior.md` carrying Connor's 2026-09-24
+  decision as its sanction, with its replay function, registry entry, case
+  mapping and story-table row in the files task 8 names. The story opens
+  Diagnose at 24 h, finds the 03:00 lane cell `data-verdict="hold"` with no
+  `data-reason`, the key with no "lower · recurring lows" entry, and the
+  opened panel reading "holds at current" and the recurring-lows hold sentence,
+  with no Stage change control. Lay its harness over task 38's commit and
+  record that base run, which must fail at the lane-cell assertion, and the
+  branch run at both sizes on its status line. Raise the story inventory by
+  this one story in the four places task 9 names.
+- [ ] 45. In `CONTEXT.md`, the **Harm signal** entry says the nudge holds, rather
+  than stepping, when its step would be smaller than the noise floor or one full
+  step, whichever is smaller (ADR 465).
+- [ ] 46. Capture before/after renders of the 03:00 panel and lane on
+  `basal-recurring-low-within-floor` at 1280x720 and 1440x900 from the no-fetch
+  serve, the before from task 38's commit. The coordinator attaches them to the
+  pull request; they are not committed.
+
+## #466 — A recurring-lows slot says what owns its move and shows its lows
+
+Tasks 37–46 (#465) land first on this branch; #466's base is their final
+commit, and its lows list reads the harm evidence #465 leaves in place. #466's
+touched stories are every story `frontend/replay-cases.mjs` maps to a case
+whose name starts with `basal-`, plus R5: each opens a basal slot panel, its
+roster or its lane. The reproduction is
+`docs/scope/466-recurring-low-explain.repro.py` and
+`docs/scope/466-slot-panel.repro.mjs`.
+
+- [ ] 47. Before any design change, run UI Craft's revise pre-work on the shipped
+  desk (sweep deferred to start from triage, sandbox): replay #466's touched
+  stories against #466's base at 1280x720 and 1440x900, re-inventory the basal
+  slot panel's interval sentences, its roster groups and excluded-night line,
+  and a recurring-lows lower and hold in the served app, and record any
+  observed behavior with no story before designing.
+- [ ] 48. Add the manufactured case `basal-recurring-low-spread` to
+  `scripts/qa_e2e_cases.py`: give `_materialize_basal_coverage` a
+  `clean_rates` parameter, one rate per informative night in order (default
+  `None` keeps `clean_rate` for every night, so no other case moves), and call
+  it with fourteen nights at 0.45, two at 0.54 and fourteen at 0.66 and
+  `recurring_lows=True`, as `docs/scope/466-recurring-low-explain.repro.py
+  --case` spikes it. Follow AGENTS.md "Maintaining QA coverage eras" steps 1–3
+  on #466's base: its dump serves 03:00 as "lower (recurring lows)" at 0.54
+  with an interval of 0.45–0.66. Add the name to
+  `tests/test_qa_e2e_cases.py` and `tests/test_pattern_replay.py`. Commit this
+  task on its own: that commit is the base for tasks 49, 52 and 55's
+  failing-first runs.
+- [ ] 49. Backend tests in `tests/test_harm_basal_arm.py`, through
+  `analyze_basal`, failing-first on task 48's commit: with 03:00's setting
+  epoch after two band-low nights and before a third, 03:00's
+  `evidence["harm"]` serves `band_nights` 3, `recurrence_nights` 1 and
+  `recurrence_bar` 2 and is not nudged; with a fourth band-low night after the
+  epoch it serves `recurrence_nights` 2 and is nudged; the existing
+  median-at-current test gains `recurrence_nights` 2 and `recurrence_bar` 2.
+- [ ] 50. Backend (ADR 466 decisions 1, 2 and 8): in `ciq_autotune/harm.py`,
+  replace `_slot_recurs` with a count of the band nights on or after a slot's
+  epoch, give `BasalHarm` the per-slot counts and the bar `basal_harm` used
+  (defaults keep `BasalHarm() == basal_harm([], [], …)`), decide `nudged_slots`
+  from those counts, and serve `recurrence_nights` and `recurrence_bar` from
+  `basal_harm_evidence` on every gated slot; update the docstrings. In
+  `ciq_autotune/analyzers/basal.py`, the `HARM_LOWER` sentence reads "lows keep
+  happening overnight, so the rate steps down toward the measured rate (20% at
+  most)". Rewrite the headline literals of `basal-recurring-low-lower`,
+  `basal-recurring-low-no-clean-median` and `basal-recurring-low-spread` from
+  their dumps. In `ciq_autotune/result.py`, correct `asserts_move`'s docstring.
+- [ ] 51. In `scripts/gen_basal_night_evidence_fixtures.py`, add a
+  `recurring_lows` key to the fixture: its synthetic input rows and the served
+  `/api/analyze` basal rows for 01:00 (the spread nights, no lows: held, its
+  interval reaching the setting), 03:00 (the spread nights plus band lows at
+  03:00 on two nights: "lower (recurring lows)", its interval reaching the
+  setting) and 05:00 (nights at 0.59 against 0.60 plus lows at 05:00 on the same
+  two nights: `HARM_GATED` under ADR 465). The generator asserts each of those
+  three served statuses before writing. Regenerate
+  `frontend/__fixtures__/basal-night-evidence.json`; its `expected` key is
+  unchanged and `--check` passes.
+- [ ] 52. Frontend Node tests in `frontend/diagnose-workstation.test.js`, each
+  cell built by `buildSlotLane` from task 51's served rows, failing-first on
+  task 48's commit with the fixture of task 51 laid over it:
+  - `renderSlotLevel` on 03:00 prints ADR 466 decision 3's sentence and not
+    "not established by it";
+  - on 03:00 the count line prints the served `recurrence_nights` and
+    `recurrence_bar` and says the count covers the whole night; one row per
+    served low prints its date, nadir time and nadir glucose; pressing a row
+    calls `onDay` with that low's served `t`; no low row carries the
+    `case-occurrence` class;
+  - on 05:00 the count line and rows render and no Stage change control does;
+  - on 01:00 the panel prints today's "not established by it" and no count
+    line or low row;
+  - guard, passing before and after: a plain "lower" row whose interval
+    reaches the setting prints "not established by it" (a hand-built row is
+    admitted here: it pins the frontend's status-string branch, not a backend
+    verdict);
+  - the existing roster test gains one header row, hidden from assistive
+    technology, reading "Delivered U/h", "Programmed U/h", "Night mean mg/dL" in
+    that order, and each night row's values carrying "U/h delivered",
+    "U/h programmed" and "mg/dL night mean" in visually hidden text;
+  - the recurring-lows lane test reads "suggests a lower because lows keep
+    happening overnight" in the cell's title and name.
+- [ ] 53. Frontend (ADR 466 decisions 2–6): in
+  `frontend/diagnose-workstation.js`, give `renderParamLevel` a spec option for
+  the interval sentence's second half and have `renderSlotLevel` set it from
+  the served status "lower (recurring lows)" alone; render the lows block after
+  the numbers block and before the nights read's pending, failed or stale
+  lines, from the served `evidence.harm` only, handing each low to
+  `options.onDay`; add the roster header row and the hidden labels in the row
+  markup; change `VERDICT_KEY['down:recurring-lows']`; update the comments at
+  the hedge and the roster. In `frontend/diagnose-workstation.css`, style the
+  header row and the low rows from the roster's existing tokens. The carb-ratio
+  and correction-factor panels do not change.
+- [ ] 54. In `DESIGN.md`, the recurring-lows worked example and the lane-key note
+  say "overnight" and name the cell "suggests a lower because lows keep
+  happening overnight".
+- [ ] 55. Add one ledger story (the next unissued S id after task 44's) in a
+  dated `## #466 amendment` section of `mockups/harmonic-v2-desktop.behavior.md`
+  carrying Connor's 2026-09-24 decision as its sanction, with its replay
+  function, registry entry, case mapping and story-table row in the files task
+  8 names. Leg 1, on `basal-recurring-low-spread`: open the 03:00 slot; the
+  panel reads ADR 466 decision 3's sentence and not "not established by it";
+  the count line prints the served count and bar; two low rows print their
+  served dates, times and glucose; pressing the first opens Day on that low's
+  date; the roster shows its header row. Leg 2, on
+  `basal-recurring-low-within-floor` through `ctx.withCase`: the held 03:00
+  panel lists its lows with the count line and offers no Stage change. The
+  story fails once, naming each failed leg. Lay its harness over task 48's
+  commit and record that base run, where both legs fail, and the branch run at
+  both sizes on its status line. In the same section, amend S113: its
+  recurring-lows cell's name now reads "05:00 basal slot, suggests a lower
+  because lows keep happening overnight", in `frontend/c4.replay.mjs` and its
+  fake page in `frontend/c4.replay.test.js`. Raise the story inventory by this
+  one story in the four places task 9 names.
+- [ ] 56. Re-measure the five QA budgets for `basal-recurring-low-spread` as task
+  43 does and record them as a dated `#466` section of
+  `openspec/changes/qa-round-2/coverage-appendix.md`.
+- [ ] 57. Capture before/after renders of the 03:00 slot panel on
+  `basal-recurring-low-spread` at 1280x720 and 1440x900, the before from task
+  48's commit, and an after render of the held 03:00 panel on
+  `basal-recurring-low-within-floor`. The coordinator attaches them to the pull
+  request; they are not committed.

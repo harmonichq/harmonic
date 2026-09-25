@@ -303,3 +303,135 @@ not know SHALL print as served.
 - **WHEN** the reader opens it
 - **THEN** the outcome rows show, the figure says the snapshot retains no clock
   envelope, and it renders no chart seat and nothing with `role="img"`
+
+### Requirement: Diagnose's setting findings are titled by their user labels
+
+The findings projection SHALL title a correction-factor row "Correction factor"
+and a carb-ratio block "Carb ratio <span>". Each carries the same direction
+suffix as today (" · <direction>" or " · leaning <direction>"). A basal row
+keeps "Basal <span>". A held basal slot whose served harm evidence says its
+overnight lows recur (`evidence.harm.nudged`) SHALL carry no " · leaning lower"
+suffix: its served sentence names the recurring lows instead. The JS mirror, the
+regenerated fixtures and the QA finding-title literals SHALL carry the same
+titles.
+
+The projection's ordering is unchanged except for its final title tiebreak,
+which now orders rows tied on every earlier key by their new titles.
+
+#### Scenario: A correction-factor finding reads as Correction factor
+
+- **GIVEN** the manufactured case isf-strengthen
+- **WHEN** the findings projection publishes its correction-factor row
+- **THEN** the row is titled "Correction factor · strengthen"
+- **AND** no setting row's title contains "ISF" or "I:C"
+
+#### Scenario: A recurring-lows hold within the threshold is not titled as leaning lower
+
+- **GIVEN** the basal analyzer's output for a synthetic slot programmed at 0.72
+  U/h whose twelve clean nights deliver 0.71 U/h, with attributed overnight lows
+  on two nights
+- **WHEN** the findings projection publishes a clock window holding 03:00
+- **THEN** 03:00 is a held row titled "Basal 03:00", with no priority
+- **AND** its headline opens with the served sentence naming the recurring lows
+- **AND** a held slot leaning lower with no served harm evidence keeps
+  " · leaning lower"
+
+### Requirement: The basal slot panel drills into its steady nights
+
+The Diagnose basal slot panel SHALL render, beneath its numbers-and-staging
+block, a roster of the slot's steady nights through the shared occurrence-roster
+mechanism: groups keyed on the served per-night facts — ran above the
+programmed rate, ran below it, ran as set, and, only when such nights exist, no
+programmed rate on file — each header carrying its served count, the
+mechanism's row cap and show-more control honoured, one button row per night printing that night's date, delivered against
+programmed rate, and in-slot glucose mean, and one count line for the served
+excluded-night count. One header row above the roster SHALL name the rows'
+columns in order, "Delivered U/h", "Programmed U/h" and "Night mean mg/dL", and
+each night row SHALL expose each value's column and unit to assistive
+technology. Excluded nights SHALL NOT render as rows, and a night
+with no served programmed rate SHALL NOT read as ran-as-set. The roster SHALL
+read the served night-evidence payload for that slot — the basal evidence
+tile's own copy when the findings publish a tile for the slot, otherwise one
+request through the same fetch the tile uses — so a slot opened from the lane
+and a slot opened from its findings row render the same roster.
+
+A slot whose served analyzer row carries harm evidence SHALL render, between
+the numbers-and-staging block and the roster, the overnight lows behind it: one
+count line printing the served `recurrence_nights` and `recurrence_bar` and
+saying the count covers the whole night since the rate was set, not this half
+hour alone; then one button row per served low of this half hour printing its
+date, nadir time and nadir glucose, each opening that low's day in Day with the
+low's served time. The list SHALL render whatever the served status, so a
+recurring-lows lower, a recurring-lows hold and a withheld raise show it alike,
+and SHALL render before the night-evidence payload arrives. A slot with no
+served harm evidence SHALL render no list.
+
+The panel SHALL derive no direction, count, floor, threshold or safety verdict.
+The numbers-and-staging block SHALL render exactly as shipped, with one
+exception: on a slot served "lower (recurring lows)" whose interval reaches the
+programmed rate, the interval sentence keeps the interval fact and says the
+steady nights alone do not establish this step down and that it comes from the
+overnight lows listed below, in place of "A move is consistent with this data,
+not established by it." That choice SHALL read the served status string alone.
+The panel SHALL NOT repeat the served headline. Correction factor and carb ratio
+panels SHALL be unchanged.
+
+#### Scenario: The roster groups nights by the served sign
+
+- **WHEN** the reader opens a basal slot whose night-evidence payload carries
+  nights with signs `1`, `-1` and `null` and a nonzero excluded-night count
+- **THEN** the panel renders three group headers whose counts equal the served
+  number of nights of each sign
+- **AND** each night row prints the served date, delivered and programmed rate,
+  and in-slot glucose mean, with a null served value printed as `—`
+- **AND** one header row above the roster names "Delivered U/h",
+  "Programmed U/h" and "Night mean mg/dL" in that order
+- **AND** one line prints the served excluded-night count and no excluded night
+  renders as a row
+- **AND** the Current / Estimate / Recommended block, its hedges, the support
+  count and the staging control render exactly as before the roster existed
+
+#### Scenario: The roster waits for its payload and renders from either entry
+
+- **WHEN** the reader opens a basal slot from a lane cell that publishes no
+  findings tile
+- **THEN** the panel requests that slot's night evidence once through the
+  tile's own fetch and renders the same roster the findings-row entry renders
+- **WHEN** the payload has not arrived
+- **THEN** the roster area prints one line, "Loading nights…", in the
+  inspector's shipped empty-state element
+- **WHEN** the request fails or the payload is marked stale
+- **THEN** the roster area prints one line, "Night evidence unavailable.", in
+  that same element, and no roster
+
+#### Scenario: A recurring-lows lower says what owns the move and lists its lows
+
+- **GIVEN** the analyzer's served 03:00 row for thirty steady nights either side
+  of a programmed 0.60 U/h, fourteen at 0.45, two at 0.54 and fourteen at 0.66,
+  with attributed overnight lows at 03:00 on two nights
+- **WHEN** the reader opens 03:00
+- **THEN** the panel reads "lower (recurring lows)" with its interval fact, says
+  the steady nights alone do not establish this step down and that it comes
+  from the overnight lows listed below, and does not say "not established by it"
+- **AND** the count line prints the served count 2 against the served bar 2 and
+  says it covers the whole night
+- **AND** two low rows print their served dates, nadir times and nadir glucose,
+  and pressing one opens that day in Day
+
+#### Scenario: A hold and a plain lower keep today's interval sentence
+
+- **GIVEN** a basal slot served as held, or as a plain "lower", whose interval
+  reaches the programmed rate
+- **WHEN** the reader opens it
+- **THEN** the panel says a move is consistent with this data, not established
+  by it
+
+#### Scenario: A held slot with overnight lows lists them too
+
+- **GIVEN** the analyzer's served row for a slot held under the recurring-low
+  gate
+- **WHEN** the reader opens it
+- **THEN** it renders the count line and one row per served low of its half
+  hour, and no Stage change control
+- **AND** a slot with no served harm evidence renders no count line and no low
+  rows

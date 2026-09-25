@@ -533,3 +533,157 @@ desk reads it. No committed case records a Plan, so the Plan-linked decision is
 evidenced by backend tests only; the ledger amendment names that limit. Trial
 dating now differs from the analyzer's epoch change point by up to a day's
 hours on a mid-day edit.
+
+## ADR 465 — A recurring-lows basal cut within the threshold holds
+
+**Context.** Connor decided the shape on 2026-09-24 (the issue's option 1, no
+rounding up): below the threshold the slot holds, no minimum step is invented,
+the held reason names the recurring lows, and the phrase "leaning lower" is not
+used. The held state's words, the sentence mechanism and the title rule below
+were decided autonomously during AFK run. Reproduced on synthetic data at this
+change's base (`docs/scope/465-recurring-low-floor.repro.py`):
+
+- twelve in-range nights delivering 0.71 against a programmed 0.72, with lows
+  at 03:00 on two nights, serve 03:00 as `HARM_LOWER` at 0.71 with
+  `asserts_move` true and a `lower` action; without the harm layer the same
+  slot is `NO_CHANGE`;
+- the consolidated profile then moves 00:00–06:00 from 0.72 to 0.719, while the
+  Plan would stage 0.71 at one half hour;
+- `apply_harm` returns `HARM_LOWER` for setting 0.72 with median 0.71, setting
+  0.20 with median 0.19, setting 0.11 with no median (to 0.10), and setting
+  0.10 with no median (to 0.10, no move at all);
+- a trivial nudged slot on more clean nights takes the Basal lever's headline:
+  priority 15 and "14 of 14", against priority 11 and "9 of 9" with that slot
+  at its setting;
+- across the 74 committed synthetic stores, the only recurring-lows cuts are
+  `basal-recurring-low-lower` (0.06 U/h) and
+  `basal-recurring-low-no-clean-median` (0.12 U/h), both at or above the
+  threshold, so no committed verdict moves.
+
+**Decision.**
+
+1. **One threshold, one check, in `apply_harm`.** The threshold is the noise
+   floor or one full step, whichever is smaller:
+   `min(noise_floor, current * max_step_frac)`. Every nudge target, the
+   median-deferred one and the no-median full step alike, passes through one
+   check: when `current - target` is below the threshold, with a 1e-9
+   tolerance so that a target exactly one full step away still moves (the
+   repro shows `0.72 - 0.576` lands at 0.14400000000000002), the slot holds at
+   `current` as `HARM_GATED`. The check lives nowhere else: not in `cap()`, the
+   projection, the lever or the frontend.
+2. **The hold keeps its status and gets its own served sentence.** The status
+   stays `HARM_GATED`, so staging, the deliverable schedule, consolidation, the
+   priority tally, the lane and the queue register all read it as the hold they
+   already handle. The analyzer chooses the sentence: a `HARM_GATED` slot that
+   is nudged and whose clean median is absent or at or below its setting reads
+   "lows keep happening overnight, but a step down from this rate would be too
+   small to make, so it stays as it is"; every other `HARM_GATED` slot (a raise
+   withheld, whether nudged with a median above the setting or gated by a
+   single low) keeps "a low printed at this hour, so a step up is withheld and
+   the rate stays as it is". The median-at-setting hold of ADR 412 reads the new
+   sentence too: it is the same reader situation. `_annotation_for` takes the
+   choice as a keyword that defaults to the raise-gate sentence, so its other
+   caller, the findings-fixture generator, is unchanged unless it asks.
+3. **The held row names no lower lean.** A held basal slot whose served
+   `evidence.harm.nudged` is true prints no "leaning lower" suffix: its title is
+   the setting name alone ("Basal 03:00"), and the served sentence names the
+   recurring lows. A raise lean and every other held slot keep their titles.
+   The projection's `_basal_key` and the fixture-only JS mirror's `basalKey`
+   change together, and the findings-fixture generator gains one nudged
+   within-threshold slot at 03:00, built through the real `apply_harm` and
+   `_annotation_for`, so the mirror's deep comparison exercises the rule.
+4. **Guidance and evidence are unchanged.** The slot keeps
+   `seriousness: "recurring_low"` and its full `evidence.harm`; only the
+   direction, the action and the staging verdict go.
+5. **#435's wording.** Connor asked for the held wording to use #435's guard
+   wording. #435's text was not readable in this run; the only #435 guard
+   wording in reach is the example #466 quotes, "Lows at this hour — N in 30
+   days", which Connor's #466 decision turns to "overnight". The sentence above
+   names the recurring lows in that register. #435 (out of scope here) owns
+   adding this case to its staging test.
+
+**Consequences.** A slot whose steady nights already run within the threshold of
+its setting gets a warning, not a move to stage; a one-hundredth cut can no
+longer take the lever's headline or nudge the consolidated profile. At settings
+below 0.125 U/h with no clean median, recurring lows no longer "lower" to the
+0.1 U/h minimum they already sit near. Every harm cut at or above the threshold,
+and every committed case store, is unchanged.
+
+## ADR 466 — A recurring-lows slot says what owns its move and shows its lows
+
+**Context.** Connor decided on 2026-09-24 that when recurrence is counted across
+the overnight band the copy says so and shows the count the nudge actually
+used; that answers the issue's open question, so the copy says "overnight", not
+"at this hour". The words below, the held-slot list, and the roster headers'
+accessibility shape were decided autonomously during AFK run. Reproduced on
+synthetic data at this change's base
+(`docs/scope/466-recurring-low-explain.repro.py`,
+`docs/scope/466-slot-panel.repro.mjs`):
+
+- thirty steady nights either side of a programmed 0.60 (fourteen at 0.45, two
+  at 0.54, fourteen at 0.66) with lows at 03:00 on two nights serve 03:00 as
+  "lower (recurring lows)" at 0.54, `asserts_move` true, with an interval of
+  0.45–0.66 that contains 0.60; the same shape through the store and
+  `analyze()` serves the same;
+- the slot panel on that served row prints Stage change and "not established by
+  it", never "something outside the estimate set it", and no low's date;
+- one low at 03:00 on one night and one at 04:00 on another nudge both half
+  hours, each with `slot_nights` 1 and one served low;
+- with 03:00's rate edited mid-window and band lows on two nights before the
+  edit and one after, 03:00 serves `band_nights` 3 against a bar of 2 and is not
+  nudged, and nothing served says the nudge counted one night.
+
+**Decision.**
+
+1. **The served count.** A basal slot's `evidence.harm` gains
+   `recurrence_nights`, the band nights `basal_harm` counted for that slot on or
+   after its setting epoch, and `recurrence_bar`, `min_recurrence_nights`. The
+   nudge reads the same count (`nudged` is exactly
+   `recurrence_nights >= recurrence_bar`), so the two cannot disagree. Every
+   gated slot serves both. This is the one count; #435's guard list reads it.
+2. **"Overnight" copy.** The `HARM_LOWER` sentence reads "lows keep happening
+   overnight, so the rate steps down toward the measured rate (20% at most)",
+   and the lane cell's name "suggests a lower because lows keep happening
+   overnight". The gate's "a low printed at this hour" stays: a gated slot
+   printed its own low.
+3. **The interval sentence names the owner.** On a slot served
+   "lower (recurring lows)" whose interval reaches the setting, the panel keeps
+   the interval fact and replaces "A move is consistent with this data, not
+   established by it." with "The steady nights alone do not establish this
+   step down. It comes from the overnight lows listed below." The choice reads
+   the served status string alone, as the lane key does (#433). Every other
+   slot, and the carb-ratio and correction-factor panels, keep today's words.
+4. **The lows list.** Under the numbers block, a slot whose served
+   `evidence.harm` exists shows one count line, "Overnight lows on N night(s)
+   counted since this rate was set, across the whole night, not this half hour
+   alone. A step down needs lows on B nights.", then a caption "Lows in this half hour" and
+   one button row per served low of this half hour, printing its date, nadir
+   time and nadir glucose ("Jul 11 · 03:00 · 50 mg/dL") and opening that day in
+   Day through the panel's existing hand-off with the low's served `t`. The
+   rows and the count read served fields only. The list renders before, and
+   independently of, the nights read.
+5. **Held slots get the list too.** The issue left open whether a slot held by
+   the recurring-low gate lists its lows. It does: the list keys on the served
+   `evidence.harm` alone, which every gated slot carries, so a raise withheld,
+   ADR 465's within-threshold hold and a recurring-lows lower all show the same
+   list, and the frontend branches on nothing else.
+6. **Roster headers.** One header row above the roster names "Delivered U/h",
+   "Programmed U/h" and "Night mean mg/dL" in the rows' column order. The rows
+   are buttons in a flat list, not table cells, so ARIA column headers would
+   have no table to belong to; the header row is hidden from assistive
+   technology, and each row's three values carry their column name and unit in
+   visually hidden text (the desk's `.gf-visually-hidden`), so a screen reader
+   hears "0.80 U/h delivered", "0.60 U/h programmed" and "116 mg/dL night mean".
+7. **The drill requirement is amended, not bypassed.** The basal-drill
+   requirement that the numbers-and-staging block "render exactly as shipped"
+   now excepts the interval sentence of decision 3, and the lows list and
+   roster headers join its roster description.
+8. **`result.py`'s claim is corrected.** `asserts_move`'s docstring says a slot
+   whose interval spans current is held everywhere except a recurring-lows
+   lower, which the harm layer moves whatever its interval.
+
+**Consequences.** A reader opening a recurring-lows lower sees why it moves and
+which nights it moved on, and can open each in Day. S113's lane-name assertion
+changes with decision 2, by a dated amendment. The excluded-night line and #434's
+reasons, #290's deferral, the Recommended value, `asserts_move` and every harm
+rule are unchanged.

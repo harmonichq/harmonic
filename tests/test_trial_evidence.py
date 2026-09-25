@@ -357,9 +357,10 @@ class PracticalReadinessTest(unittest.TestCase):
 
 
 class PeriodEdgeMealTest(unittest.TestCase):
-    def test_a_top_up_after_the_period_start_joins_the_meal_before_it(self):
-        # ADR 470: a 45 g meal at 11:55 and its 20 g top-up at 12:05 are one meal
-        # that began before a period starting at 12:00, so the period holds none.
+    """ADR 470: a period's meals are the ones the whole history forms, so a meal
+    begun before the period, and every top-up of it, stays out of the period."""
+
+    def _before_period(self, doses):
         from ciq_autotune.trial_evidence import trial_breakdown
 
         start = datetime(2026, 6, 10, 12, 0)
@@ -367,12 +368,11 @@ class PeriodEdgeMealTest(unittest.TestCase):
             with Store.open(db.name) as store:
                 _cgm(store, start - timedelta(hours=2), start + timedelta(days=2), lambda t: 120)
                 store.upsert_bolus([{
-                    "seq_num": seq, "request_time": at.strftime("%Y-%m-%d %H:%M:%S"),
-                    "description": "Bolus", "completion": "Completed", "insulin": insulin,
+                    "seq_num": seq, "request_time": (start + timedelta(minutes=minute))
+                    .strftime("%Y-%m-%d %H:%M:%S"),
+                    "description": "Bolus", "completion": "Completed", "insulin": carbs / 10,
                     "carbs": carbs, "carb_ratio": 10.0,
-                } for seq, at, insulin, carbs in (
-                    (1, start - timedelta(minutes=5), 4.5, 45.0),
-                    (2, start + timedelta(minutes=5), 2.0, 20.0))])
+                } for seq, (minute, carbs) in enumerate(doses, start=1)])
                 period = lambda a, b: {"start": a.strftime("%Y-%m-%d %H:%M:%S"),
                                        "end": b.strftime("%Y-%m-%d %H:%M:%S")}
                 breakdown = trial_breakdown(
@@ -380,6 +380,15 @@ class PeriodEdgeMealTest(unittest.TestCase):
                     target_metrics=["arc"],
                     before_period=period(start, start + timedelta(days=1)),
                     trial_period=period(start + timedelta(days=1), start + timedelta(days=2)))
+        return (sum(row["meals"] for row in breakdown["day_rows"]["before_period"]),
+                breakdown["meal_arcs"]["before_period"]["n_meals"])
 
-        self.assertEqual(sum(row["meals"] for row in breakdown["day_rows"]["before_period"]), 0)
-        self.assertEqual(breakdown["meal_arcs"]["before_period"]["n_meals"], 0)
+    def test_a_top_up_after_the_period_start_joins_the_meal_before_it(self):
+        # A 45 g meal at 11:55 and its 20 g top-up at 12:05.
+        self.assertEqual(self._before_period([(-5, 45.0), (5, 20.0)]), (0, 0))
+
+    def test_a_meal_opened_more_than_a_grace_before_the_period_still_decides(self):
+        # {11:20, 11:30} and {11:55, 12:20}: the 11:20 opener, a whole grace before
+        # 11:55, is what makes 11:55 open a meal that 12:20 then joins.
+        self.assertEqual(self._before_period([(-40, 45.0), (-30, 20.0), (-5, 30.0), (20, 20.0)]),
+                         (0, 0))

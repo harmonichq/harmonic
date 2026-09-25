@@ -255,6 +255,31 @@ class BoundedRetainedReadTest(unittest.TestCase):
         self.assertEqual(row["maturing"]["gap_count"], 14)
 
 
+class RetainedTrialMealEdgeTest(unittest.TestCase):
+    """ADR 470: a retained carb-ratio Trial matures on the meals the whole history
+    forms, so a top-up of a meal begun before the change is no meal after it."""
+
+    def test_a_meal_opened_more_than_a_grace_before_the_change_still_decides(self):
+        changed = datetime(2024, 1, 1, 12, 0)
+        record_id = f"carb_ratio-all-{changed.strftime('%Y%m%d%H%M%S')}"
+        with Store.open(":memory:") as store:
+            _save_retained_trial(store, record_id=record_id, parameter="carb_ratio",
+                                 slot=None, changed_at=changed.strftime(wc._DT_FMT),
+                                 before=10.0, after=9.0)
+            # {11:20, 11:30} and {11:55, 12:20}: no meal starts after the change.
+            store.upsert_bolus([{
+                "seq_num": seq, "request_time": (changed + timedelta(minutes=minute))
+                .strftime(wc._DT_FMT), "description": "Bolus", "completion": "Completed",
+                "insulin": carbs / 10, "carbs": carbs, "carb_ratio": 10.0,
+            } for seq, (minute, carbs) in enumerate(
+                [(-40, 45.0), (-30, 20.0), (-5, 30.0), (20, 20.0)], start=1)])
+
+            result = wc.review_trials(store, now=changed + timedelta(days=2))
+
+        row = next(r for r in result["trials"] if r["id"] == record_id)
+        self.assertEqual(row["maturing"]["days_elapsed"], 0)
+
+
 def _at(n, hour=8):
     """``_day(n)`` at ``hour`` o'clock, as a stored record time."""
     return (_day(n) + timedelta(hours=hour)).strftime(wc._DT_FMT)

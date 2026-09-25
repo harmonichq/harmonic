@@ -31,7 +31,6 @@ from typing import Dict, List, Optional
 
 from .epochs import _DOSE_ATTR, _MIN_EPOCH_DAYS, _settled_days
 from .analyzers.meals import group_meals
-from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.levers import (
     Exposure,
     Lever,
@@ -1313,11 +1312,10 @@ def _retained_trial(store, record, now):
     read_start = start.strftime(_DT_FMT)
     read_end = (end + timedelta(seconds=1)).strftime(_DT_FMT)
     if target[0] == "arc":
-        # Meals form from a grace before the start, so a top-up of a meal begun just
-        # before the change joins that meal rather than opening one (ADR 470).
-        grace = timedelta(minutes=ScenarioConfig().carb_undercount_same_meal_grace_min)
-        times = [meal.t for meal in group_meals(store.bolus_events(
-                     start=(start - grace).strftime(_DT_FMT), end=read_end))
+        # Meals form over the whole bolus history, as the roster's do, so which
+        # bolus opened a meal never depends on the change instant (ADR 470);
+        # `_maturing` keeps only the meals after the change.
+        times = [meal.t for meal in group_meals(store.bolus_events(end=read_end))
                  if block is None or _in_block(meal.t, block)]
     else:
         times = [r.t for r in store.cgm_readings(start=read_start, end=read_end)]

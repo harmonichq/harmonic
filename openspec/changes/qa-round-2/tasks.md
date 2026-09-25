@@ -1102,7 +1102,7 @@ Guide). #461's touched stories are S13, S124 and R8, which open
   after meals row, the Late bolus Finding's case file and the Guide's silence
   article on `behavioral-late-bolus` in the served app, and record any observed
   behavior with no story before designing.
-- [ ] 86. Re-shape the two behavioral cases (ADR 461 decision 5) in
+- [x] 86. Re-shape the two behavioral cases (ADR 461 decision 5) in
   `scripts/qa_e2e_cases.py`, as the spike does: `behavioral-late-bolus`'s days 23
   and 24 and `behavioral-carb-undercount`'s day 25 carry the late rise with a
   post-bolus peak of 195 (`RISE_195`), and `behavioral-late-bolus` gains day 22,

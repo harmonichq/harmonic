@@ -935,39 +935,56 @@ const lowReadout = (low) => `low ${Math.round(low.bg)} mg/dL`
    at event time, because the host is initialised after the option is built —
    so the click handler is attached on the pointer's way down, ahead of the
    click it answers. The arrows walk the counted runs by date, reading each out
-   as its hover does, and Enter selects the one being read. */
+   as its hover does, and Enter selects the one being read.
+
+   THE BINDING LIVES ONLY AS LONG AS THE CHART. A tile that leaves its chart
+   state — a failed or pending request, a repaint — disposes the chart and
+   keeps the host. Every handler reads the chart first, and a host whose chart
+   is absent or disposed drops all of its handlers there and then, without
+   calling into the dead instance, so nothing here ever reaches a chart that
+   is gone. */
 const runBindings = new WeakMap();
+const liveChart = (instance) => (instance && !instance.isDisposed?.() ? instance : null);
 function bindRunSelection(surface, { stops, onSelectRun }) {
   if (typeof surface?.addEventListener !== 'function') return;
   runBindings.get(surface)?.();
   const controller = new AbortController();
   const { signal } = controller;
-  const chart = () => globalThis.echarts?.getInstanceByDom?.(surface) ?? null;
   const select = (runId) => { if (runId && onSelectRun) onSelectRun(runId); };
   const onClick = (params) => select(params?.data?.runId);
   let bound = null;
-  runBindings.set(surface, () => {
+  const detach = () => {
     controller.abort();
-    bound?.off('click', onClick);
-  });
+    liveChart(bound)?.off('click', onClick);
+    bound = null;
+    if (runBindings.get(surface) === detach) runBindings.delete(surface);
+  };
+  runBindings.set(surface, detach);
+  const chart = () => {
+    const current = liveChart(globalThis.echarts?.getInstanceByDom?.(surface));
+    if (!current) detach();
+    return current;
+  };
   surface.tabIndex = 0;
   surface.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Home End Enter');
   surface.addEventListener('pointerdown', () => {
     const current = chart();
     if (!current || current === bound) return;
+    liveChart(bound)?.off('click', onClick);
     current.on('click', onClick);
     bound = current;
   }, { signal });
   let cursor = -1;
   surface.addEventListener('keydown', (event) => {
-    if (!stops.length) return;
+    const current = chart();
+    if (!current || !stops.length) return;
     const last = stops.length - 1;
     const step = { ArrowRight: Math.min(last, cursor + 1), ArrowLeft: Math.max(0, cursor - 1),
       Home: 0, End: last }[event.key];
     if (step !== undefined) {
       event.preventDefault();
       cursor = step;
-      chart()?.dispatchAction({ type: 'showTip',
+      current.dispatchAction({ type: 'showTip',
         seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
     } else if (event.key === 'Enter' && cursor >= 0) {
       event.preventDefault();

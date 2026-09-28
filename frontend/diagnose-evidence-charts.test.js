@@ -1973,6 +1973,73 @@ test('#464 · a selected run is ringed on both lanes, and a click or Enter selec
   }
 });
 
+/* A tile whose request fails, or that repaints, disposes its chart and keeps
+   its host. The host's handlers must then do nothing — never call into a chart
+   that is absent or disposed — and drop themselves. */
+test('#464 · the tile host handlers are inert and detach once the chart is absent or disposed', () => {
+  const data = icCases().explained;
+  const host = () => {
+    const listeners = new Map();
+    return {
+      listeners, clientWidth: 966, clientHeight: 459, tabIndex: -1,
+      setAttribute(key, value) { this[key] = value; },
+      addEventListener(type, handler, { signal } = {}) {
+        listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+      },
+      live: () => [...listeners.values()].flat().filter(({ signal }) => !signal?.aborted).length,
+      fire(type, event = {}) {
+        (listeners.get(type) || []).filter(({ signal }) => !signal?.aborted)
+          .forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+      },
+    };
+  };
+  const everything = (surface) => {
+    surface.fire('pointerdown');
+    for (const key of ['ArrowRight', 'Enter', 'End', 'ArrowLeft', 'Home']) surface.fire('keydown', { key });
+    surface.fire('blur');
+  };
+  const refusing = () => { throw new TypeError("Cannot read properties of null (reading 'getComponent')"); };
+  const disposedChart = { isDisposed: () => true, on: refusing, off: refusing, dispatchAction: refusing };
+  const prior = globalThis.echarts;
+  try {
+    for (const [name, chartFor] of [['absent', () => null], ['disposed', () => disposedChart]]) {
+      const surface = host();
+      const chosen = [];
+      globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chartFor() : undefined) };
+      overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
+      assert.ok(surface.live() > 0, 'premise: the build bound its handlers');
+      assert.doesNotThrow(() => everything(surface), `${name}: no call reaches the chart`);
+      assert.deepEqual(chosen, [], `${name}: nothing is selected without a chart`);
+      assert.equal(surface.live(), 0, `${name}: the host dropped every handler`);
+    }
+
+    /* A chart that was live when the click was bound, then disposed by the
+       tile leaving its chart state. */
+    const surface = host();
+    const handlers = [];
+    let disposed = false;
+    const chart = {
+      isDisposed: () => disposed,
+      on: (type, handler) => (disposed ? refusing() : handlers.push([type, handler])),
+      off: (type, handler) => (disposed ? refusing()
+        : handlers.splice(handlers.findIndex((row) => row[1] === handler), 1)),
+      dispatchAction: () => (disposed ? refusing() : undefined),
+    };
+    globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+    overview(data, { surface, onSelectRun: () => {} });
+    surface.fire('pointerdown');
+    surface.fire('keydown', { key: 'ArrowRight' });
+    assert.equal(handlers.length, 1, 'premise: the live chart took the click binding');
+    disposed = true;
+    assert.doesNotThrow(() => everything(surface), 'a disposed chart is never called');
+    assert.equal(surface.live(), 0, 'the host dropped every handler');
+    assert.doesNotThrow(() => overview(data, { surface, onSelectRun: () => {} }),
+      'a rebuild over the disposed chart does not call into it either');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
 test('#464 · the tile reads aloud only the counts the block serves', () => {
   const data = icCases().explained;
   const { run_ends: ends, support_detail: detail } = data.block;

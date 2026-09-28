@@ -5426,8 +5426,9 @@ S186 · The block opens on its one view. The block's tile offers no view or
             no .tile-modes, one dot per counted run at its served ratio, the
             rules in order at the served values with their line types, and one
             band at the served range
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5442,8 +5443,9 @@ S187 · On the ratio strip, a run counted whole is a filled dot and a run counte
   evidence: S187 compares each series' runs with the served pool reasons, the
             fill and ring styles, and every pair of dots' sizes against their
             served weights
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5463,8 +5465,9 @@ S188 · The lower lane draws each counted run on its date as a stem from its
             triangles with the served lows by group, time, glucose and date,
             reads their symbol and fill, and compares the band hairlines with
             the served band
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5485,13 +5488,15 @@ S189 · A run's readout is its served balance sheet in six lines: date, time,
             its served terms. It calls the option's own tooltip formatter on a
             ring and on a low (the pointer path) and compares both. It then
             presses Enter and requires the selected ring on that run
-  status:   passes at 1440x900 and fails at 1280x720 in the coordinator's run
-            on bdc6de49 (2026-09-27). At 1280x720 the first ArrowRight reads
-            out 2024-05-07 while the tile's cursor holds 2024-05-03, the first
-            counted run by date; both are counted whole at 5.56 g/U, in the
-            same tenth of the strip. The story asserts the tile's own rule (the
-            arrows walk the counted runs by date) and is not changed. The
-            failure is reported to the tile's owner as a tile defect
+  status:   final: passes at 1280x720 and 1440x900 after the tile's
+            keyboard-readout fixes, taken onto this branch in 77ca4f7f and
+            15e11f96. Coordinator-run 2026-09-27; evidence/replay-S189-1280x720.txt
+            and evidence/replay-S189-1440x900.txt. The story itself is
+            unchanged. Before those fixes it failed at 1280x720 only, on
+            bdc6de49 (evidence/replay-1280x720.txt): the first ArrowRight read
+            out 2024-05-07 while the tile's cursor held 2024-05-03, two runs
+            counted whole at 5.56 g/U in the same stack of the strip. That was
+            a tile defect, fixed in the tile
 ```
 
 ```
@@ -5513,8 +5518,9 @@ S190 · Below the numbers block the panel prints "Why this move", "The case
   evidence: S190 builds each expected line from the served fields and
             compares the printed lines exactly, section by section, with their
             order
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5535,8 +5541,9 @@ S191 · The lows print as one roster in their served groups ("On counted runs",
   evidence: S191 compares the printed groups and rows with the served lows. It
             focuses the first low on a run, then reads the tile's selected-run
             series and every row's pressed state
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5560,12 +5567,15 @@ S192 · A low's row opens Day at that low's own moment. The address names the
             chart's own conversion of the low's time; and the listed, pressed
             and ringed log rows at the low's instant, comparing instants
             whichever printer wrote them
-  status:   amended 2026-09-27 after the coordinator's run on bdc6de49. That
-            version required a pressed Episode Log row and failed at both
-            sizes with the address correct and "pressed []": Day lists no row
-            for a harm-listed low. The coordinator verified in a browser that
-            Day opens at the low's moment with the hairline standing there.
-            The amended story is owed its rerun at both sizes
+  status:   final: the amended story passes at 1280x720 and 1440x900.
+            Coordinator-run 2026-09-27; evidence/replay-S192-S193-1280x720.txt
+            and evidence/replay-S192-S193-1440x900.txt. It was amended on
+            2026-09-27 (4cd5a0d2) after the coordinator's run on bdc6de49,
+            where the first version required a pressed Episode Log row and
+            failed at both sizes with the address correct and "pressed []"
+            (evidence/replay-1280x720.txt, evidence/replay-1440x900.txt). Day
+            lists no row for a harm-listed low, which the coordinator
+            confirmed in a browser. That was a replay defect
 ```
 
 ```
@@ -5584,10 +5594,13 @@ S193 · The same Day hop works when the block was opened from a clock case
             head's peak line to name the served block. It then presses View
             segment, requires the crumb to name that block, and runs S192's
             Day-hop assertions, as amended there
-  status:   amended with S192 on 2026-09-27. The coordinator's run on bdc6de49
-            reached the block through View segment and failed only at S192's
-            pressed-row assertion, at both sizes. The amended story is owed
-            its rerun at both sizes
+  status:   final: the amended story passes at 1280x720 and 1440x900.
+            Coordinator-run 2026-09-27; evidence/replay-S192-S193-1280x720.txt
+            and evidence/replay-S192-S193-1440x900.txt. It was amended with
+            S192 (4cd5a0d2). The first version reached the block through View
+            segment and failed only at S192's pressed-row assertion, at both
+            sizes, on bdc6de49 (evidence/replay-1280x720.txt,
+            evidence/replay-1440x900.txt)
 ```
 
 ```
@@ -5604,8 +5617,9 @@ S194 · While the block's run evidence is in flight, the panel prints the one
             block and reads the loading line, then answers the held reads 503
             and reads the unavailable line. Both times it requires the numbers
             block to stand and no Why this move section to print
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5619,8 +5633,9 @@ S195 · The block's queue row draws the ratio strip alone: every served counted
   evidence: S195 requires the row's mini to be mounted. It compares the mini's
             series set, its dots' runs and ratios, and its rules' values with
             the served block
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 ```
@@ -5640,8 +5655,9 @@ S196 · Changed: the block's run evidence still ships on its tile, rebuilt. The
   evidence: S196 reads every series on the tile, checking the retired trace
             names and data-bearing lines, each counted run's appearances per
             lane, and every run id drawn against the runs not counted
-  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
-            bdc6de49 (2026-09-27); raw output in the change's evidence record
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
 ```
 
 Additional handler inventory for this amendment:

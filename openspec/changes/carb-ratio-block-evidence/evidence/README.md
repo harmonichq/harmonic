@@ -31,14 +31,34 @@ Each file keeps the runner's summary line (`# executed … · failed … · sele
 
 | File | Run |
 |---|---|
-| `replay-1280x720.txt` | the coordinator's run of the eleven stories on bdc6de49, `VIEWPORT=1280x720`: 8 of 11 passed; S189, S192 and S193 failed |
+| `replay-1280x720.txt` | the first run of all eleven stories, on bdc6de49, `VIEWPORT=1280x720`: 8 of 11 passed; S189, S192 and S193 failed |
 | `replay-1440x900.txt` | the same run at `VIEWPORT=1440x900`: 9 of 11 passed; S192 and S193 failed |
+| `replay-S189-1280x720.txt` | S189 after the tile's keyboard-readout fixes, `VIEWPORT=1280x720`: 1 of 1 passed |
+| `replay-S189-1440x900.txt` | the same at `VIEWPORT=1440x900`: 1 of 1 passed |
+| `replay-S192-S193-1280x720.txt` | S192 and S193 as amended, `VIEWPORT=1280x720`: 2 of 2 passed |
+| `replay-S192-S193-1440x900.txt` | the same at `VIEWPORT=1440x900`: 2 of 2 passed |
 
-S192 and S193 failed for a replay reason. They required a pressed Episode Log
-row, and Day lists none for a harm-listed low. Both stories have since been
-amended and are owed a rerun. S189 fails at 1280x720 only, and that failure is
-a tile defect; the ledger's S189 entry records it. Base runs with this
-branch's harness laid over the base are not captured yet.
+Final outcome: all eleven stories pass at both viewports. S186–S188, S190,
+S191 and S194–S196 pass in the first run. S189 passes in its own run.
+
+S189's first-run failure at 1280x720 was a tile defect, and the tile was fixed.
+The first ArrowRight read out 2024-05-07 while the cursor held 2024-05-03.
+
+S192 and S193 pass in their own run. Their first-run failures were a replay
+defect: the first version required a pressed Episode Log row, and Day lists
+none for a harm-listed low. Both stories were amended, and the amended stories
+pass. The ledger's status line on each story names the file that shows its
+final result.
+
+## Browser suites
+
+These are the two hand-listed suites, run exactly as CI runs them, with the
+raw output unedited.
+
+| File | Suite | Result |
+|---|---|---|
+| `browser-runner.browser.txt` | `frontend/browser-runner.browser.test.mjs` | 1 of 1 passed |
+| `desk.browser.txt` | `frontend/desk.browser.test.mjs` | 46 of 46 passed |
 
 The complete ledger runs once per viewport on the pushed commit. That run's
 output belongs to the release evidence, not to this directory.

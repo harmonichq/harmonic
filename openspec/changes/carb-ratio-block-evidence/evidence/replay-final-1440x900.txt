@@ -1,0 +1,52 @@
+(node:93443) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/464-c5/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/464-c5/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S186 case=ic-block-evidence milliseconds=259.410
+# S186 synthetic case=ic-block-evidence (fresh copy)
+PASS S186
+# story-time S186 milliseconds=2137.302
+# case-copy S187 case=ic-block-evidence milliseconds=0.996
+# S187 synthetic case=ic-block-evidence (fresh copy)
+PASS S187
+# story-time S187 milliseconds=2008.445
+# case-copy S188 case=ic-block-evidence milliseconds=1.989
+# S188 synthetic case=ic-block-evidence (fresh copy)
+PASS S188
+# story-time S188 milliseconds=1928.123
+# case-copy S189 case=ic-block-evidence milliseconds=1.500
+# S189 synthetic case=ic-block-evidence (fresh copy)
+PASS S189
+# story-time S189 milliseconds=1921.021
+# case-copy S190 case=ic-block-evidence milliseconds=1.783
+# S190 synthetic case=ic-block-evidence (fresh copy)
+PASS S190
+# story-time S190 milliseconds=1985.144
+# case-copy S191 case=ic-block-evidence milliseconds=1.821
+# S191 synthetic case=ic-block-evidence (fresh copy)
+PASS S191
+# story-time S191 milliseconds=1805.936
+# case-copy S192 case=ic-block-evidence milliseconds=1.448
+# S192 synthetic case=ic-block-evidence (fresh copy)
+PASS S192
+# story-time S192 milliseconds=2218.538
+# case-copy S193 case=ic-block-evidence milliseconds=0.580
+# S193 synthetic case=ic-block-evidence (fresh copy)
+PASS S193
+# story-time S193 milliseconds=2007.250
+# case-copy S194 case=ic-block-evidence milliseconds=0.702
+# S194 synthetic case=ic-block-evidence (fresh copy)
+PASS S194
+# story-time S194 milliseconds=1973.764
+# case-copy S195 case=ic-block-evidence milliseconds=0.795
+# S195 synthetic case=ic-block-evidence (fresh copy)
+PASS S195
+# story-time S195 milliseconds=1653.492
+# case-copy S196 case=ic-block-evidence milliseconds=0.694
+# S196 synthetic case=ic-block-evidence (fresh copy)
+PASS S196
+# story-time S196 milliseconds=1990.476
+
+# executed 11 · failed 0 · deferred 0 · selected 11 · chromium launches 1

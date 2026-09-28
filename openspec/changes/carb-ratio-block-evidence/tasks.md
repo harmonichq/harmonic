@@ -172,7 +172,7 @@ implemented and verified, never attempted; the coordinator ticks.
   entry), and regenerate the block with
   `python3 scripts/scan_public_tree.py "$t" --accept-dose-ratio-baseline`. Node
   test that the glossary names each term.
-- [ ] 16. **Amend the frozen behavior ledger.** In
+- [x] 16. **Amend the frozen behavior ledger.** In
   `mockups/harmonic-v2-desktop.behavior.md`, under a dated `## #464 amendment`
   header: one STORY per added or changed behavior — By meal default on block
   open; Runs view order, dimming and readout; By clock rule and band; scope line;
@@ -185,7 +185,7 @@ implemented and verified, never attempted; the coordinator ticks.
   behavior — the block's run evidence on the tile — still ships, rebuilt), not a
   retirement; `mockups/sweep/harmonic-v2-desktop/acceptance.py`'s pinned
   `issued/active/retired` counts move to the new totals in the same commit.
-- [ ] 17. **Replay on the built app, and run the hand-listed browser suites.**
+- [x] 17. **Replay on the built app, and run the hand-listed browser suites.**
   `npm ci && npm run build`; the QA copy-then-serve command with `--no-fetch
   --token ''` on the `ic-block-evidence` case store emitted by
   `scripts/gen_qa_e2e_db.py --case`; the new stories and every story the
@@ -200,11 +200,11 @@ implemented and verified, never attempted; the coordinator ticks.
   test name, the served projection and the rendered DOM; the owning sub-order's
   worker fixes it. The complete ledger runs exactly once, on the commit to be
   pushed.
-- [ ] 18. **Before/after renders.** Synthetic renders of the block panel and each
+- [x] 18. **Before/after renders.** Synthetic renders of the block panel and each
   of the three views at both viewports from the base worktree and the revision,
   after console, request, accessibility and overflow checks pass, retained under
   `evidence/`. No real data; no snapshot-derived value.
-- [ ] 19. **Design record.** `DESIGN.md` gains a `### #464 carb-ratio block evidence
+- [x] 19. **Design record.** `DESIGN.md` gains a `### #464 carb-ratio block evidence
   amendment` appended after the `### #404 desk revise amendment` section (past
   the scan's pinned acknowledgements at `DESIGN.md:163`, `:181`, `:183`, which
   therefore do not move; if the public-tree scan still reports a shifted

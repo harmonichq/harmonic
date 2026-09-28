@@ -37,7 +37,7 @@ sentence composed on the client from the same counts is the two-predicate drift
 
 ## ADR 464 — The panel's balance sheet is a labelled pooled quotient beside the fit
 
-**Status:** accepted, 2026-09-24.
+**Status:** superseded on 2026-09-27 by "ADR 464 — Why this move is four sentences, then the case against, then the lows" — the panel prints no balance sheet; each run's balance sheet is its dot's hover on the tile, and `pooled_ratio` stays served but unprinted.
 
 The shipped estimator is a carb-weighted joint fit of inverse ratios on per-block
 share (ADR 117), so a block's number is not the quotient of any summed terms. The

@@ -942,8 +942,19 @@ const lowReadout = (low) => `low ${Math.round(low.bg)} mg/dL`
    keeps the host. Every handler reads the chart first, and a host whose chart
    is absent or disposed drops all of its handlers there and then, without
    calling into the dead instance, so nothing here ever reaches a chart that
-   is gone. */
+   is gone.
+
+   THE KEYS' RUN IS ON TOP WHILE THEY HOLD IT. ECharts shows a keyed tip on
+   the run's own dot, but re-shows it by pixel on every later render — and a
+   relayout is a rebuild — so where counted runs stack at one ratio a
+   neighbouring dot would answer. The run the keys are reading is kept per
+   host, across rebuilds, and carried by a clear cursor mark drawn over the
+   stack, so the pixel lands on that run; a rebuild re-shows the tip where the
+   run now sits. The tooltip itself only ever reads the datum it is handed. A
+   moving pointer — caught before the chart sees it — or focus leaving lifts
+   the mark, so a hover always reads the dot under the pointer. */
 const runBindings = new WeakMap();
+const keyedRuns = new WeakMap();
 const liveChart = (instance) => (instance && !instance.isDisposed?.() ? instance : null);
 function bindRunSelection(surface, { stops, onSelectRun }) {
   if (typeof surface?.addEventListener !== 'function') return;
@@ -974,7 +985,32 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     current.on('click', onClick);
     bound = current;
   }, { signal });
-  let cursor = -1;
+  let cursor = stops.findIndex(({ runId }) => runId === keyedRuns.get(surface));
+  /* The run is read out twice, in the tooltip's own words: on the canvas, and
+     in the focused host's label, as the comparison chart's `inspect` does for
+     its cursor. The label is set after the chart renders, since every render
+     writes the resting description back — which is also how a released cursor
+     leaves the host. */
+  const readOut = (current) => {
+    current.dispatchAction({ type: 'showTip',
+      seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+    surface.setAttribute('aria-label', stops[cursor].label);
+  };
+  if (cursor < 0) keyedRuns.delete(surface);
+  else {
+    /* A rebuild moves the run's dot, and the tip follows it once the host has
+       set the option. The chart is read without dropping the binding: a host
+       being mounted initialises its chart only after this build. */
+    queueMicrotask(() => {
+      const current = liveChart(globalThis.echarts?.getInstanceByDom?.(surface));
+      if (current && cursor >= 0) readOut(current);
+    });
+  }
+  const release = () => {
+    cursor = -1;
+    if (keyedRuns.delete(surface)) chart()?.setOption({ series: [{ id: 'ic:cursor', data: [] }] });
+  };
+  surface.addEventListener('pointermove', release, { signal, capture: true });
   surface.addEventListener('keydown', (event) => {
     const current = chart();
     if (!current || !stops.length) return;
@@ -984,15 +1020,16 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     if (step !== undefined) {
       event.preventDefault();
       cursor = step;
-      current.dispatchAction({ type: 'showTip',
-        seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+      keyedRuns.set(surface, stops[cursor].runId);
+      current.setOption({ series: [{ id: 'ic:cursor', data: [stops[cursor].dot] }] });
+      readOut(current);
     } else if (event.key === 'Enter' && cursor >= 0) {
       event.preventDefault();
       select(stops[cursor].runId);
     }
   }, { signal });
   surface.addEventListener('blur', () => {
-    cursor = -1;
+    release();
     chart()?.dispatchAction({ type: 'hideTip' });
   }, { signal });
 }
@@ -1044,8 +1081,10 @@ function carbRatioOption(_mode, {
   const onA = (series) => ({ ...series, xAxisIndex: 0, yAxisIndex: 0 });
   const onB = (series) => ({ ...series, xAxisIndex: 1, yAxisIndex: 1 });
   const selected = byRun.get(selectedRunId);
-  const selectedDot = strip.series.filter(({ id }) => id.startsWith('ic:dots:'))
-    .flatMap((series) => series.data).find(({ runId }) => runId === selectedRunId);
+  const dotOf = (runId) => strip.series.filter(({ id }) => id.startsWith('ic:dots:'))
+    .flatMap((series) => series.data).find((dot) => dot.runId === runId);
+  const selectedDot = dotOf(selectedRunId);
+  const keyedDot = dotOf(keyedRuns.get(surface));
   const ring = { symbol: 'circle', silent: true, animation: false, z: 7,
     itemStyle: { color: 'transparent', borderColor: colors.text, borderWidth: 1.5 } };
   const lowMarks = (counted) => ({ type: 'scatter', symbol: 'triangle', symbolRotate: 180,
@@ -1058,6 +1097,11 @@ function carbRatioOption(_mode, {
     ...strip.series.map(onA),
     onA({ id: 'ic:selected:dot', type: 'scatter', ...ring,
       data: selectedDot ? [{ value: selectedDot.value, symbolSize: selectedDot.symbolSize + 8 }] : [] }),
+    /* The keys' cursor: a clear copy of the run's dot, drawn over the stack so
+       a tip re-shown by pixel lands on the run being read. */
+    onA({ id: 'ic:cursor', type: 'scatter', symbol: 'circle', animation: false, z: 8,
+      emphasis: { disabled: true }, itemStyle: { color: 'transparent' },
+      data: keyedDot ? [keyedDot] : [] }),
     onB({ id: 'ic:band', type: 'line', data: [], silent: true, animation: false,
       markLine: { symbol: 'none', silent: true, animation: false,
         lineStyle: { type: 'solid', color: colors.line, width: 1 },
@@ -1097,8 +1141,9 @@ function carbRatioOption(_mode, {
   bindRunSelection(surface, {
     onSelectRun,
     stops: series.flatMap((item, seriesIndex) => (item.id.startsWith('ic:dots:')
-      ? item.data.map(({ runId }, dataIndex) => ({ runId, seriesIndex, dataIndex,
-        t: byRun.get(runId).t })) : []))
+      ? item.data.map((dot, dataIndex) => ({ runId: dot.runId, dot, seriesIndex, dataIndex,
+        t: byRun.get(dot.runId).t, label: `${runReadout(byRun.get(dot.runId)).split('<br>').join('. ')}.` }))
+      : []))
       .sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0)),
   });
   const key = (name, icon, ink) => ({ name, icon, itemStyle: { color: ink, borderWidth: 0 } });

@@ -1942,7 +1942,7 @@ test('#464 · a selected run is ringed on both lanes, and a click or Enter selec
   const actions = [];
   const chart = { on: (type, handler) => handlers.push([type, handler]),
     off: (type, handler) => handlers.splice(handlers.findIndex((row) => row[1] === handler), 1),
-    dispatchAction: (action) => actions.push(action) };
+    setOption() {}, dispatchAction: (action) => actions.push(action) };
   const prior = globalThis.echarts;
   globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
   try {
@@ -1968,6 +1968,189 @@ test('#464 · a selected run is ringed on both lanes, and a click or Enter selec
     overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
     fire('pointerdown');
     assert.equal(handlers.length, 1, 'one click binding per host');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
+/* The keyed tip lands on the run's own dot, but ECharts re-shows a tip by pixel
+   on every later render, and a relayout is a rebuild — so in a column of runs
+   sharing one ratio the re-show lands on whichever hit-testable mark is on top
+   there. ECharts' manual tip is a no-op under node, so the re-show is modelled
+   as that pick: the topmost scatter mark in the cursor run's column (highest
+   z, then last drawn), handed to the tile's own tooltip formatter. */
+test('#464 · the keyboard readout names the run under the cursor, even where its dot is stacked', async () => {
+  const data = icCases().explained;
+  const [first, second] = [...countedRuns(data)].sort((a, b) => (a.t < b.t ? -1 : 1));
+  const dots = (option) => [...byId(option, 'ic:dots:whole').data, ...byId(option, 'ic:dots:share').data];
+  const xOf = (option, run) => dots(option).find(({ runId }) => runId === run.run_id).value[0];
+  const column = (option, run) => dots(option).filter(({ value }) => value[0] === xOf(option, run));
+  const topmost = (option, run) => {
+    let best = null;
+    for (const series of option.series) {
+      if (series.xAxisIndex !== 0 || series.silent || series.type !== 'scatter') continue;
+      for (const dot of series.data) {
+        if (dot.value[0] === xOf(option, run) && (!best || (series.z ?? 0) >= best.z)) best = { z: series.z ?? 0, dot };
+      }
+    }
+    return best.dot;
+  };
+  const read = (option, dot) => option.tooltip.formatter({ data: dot }).split('<br>').slice(0, 2).join(' ');
+  const named = (run) => `${run.t.slice(0, 10)} ${run.t.slice(11, 16)}`;
+  const namedById = new Map(countedRuns(data).map((run) => [run.run_id, named(run)]));
+  const everyDotReadsItsOwnRun = (option, why) => assert.deepEqual(
+    dots(option).map((dot) => read(option, dot)), dots(option).map(({ runId }) => namedById.get(runId)), why);
+  const prior = globalThis.echarts;
+  try {
+    for (const [size, relaid] of [[[966, 459], [806, 240]], [[806, 240], [966, 459]]]) {
+      const listeners = new Map();
+      const surface = { clientWidth: size[0], clientHeight: size[1], tabIndex: -1,
+        setAttribute(key, value) { this[key] = value; },
+        addEventListener(type, handler, { signal, capture = false } = {}) {
+          listeners.set(type, [...(listeners.get(type) || []), { handler, signal, capture }]);
+        } };
+      const fire = (type, event = {}) => (listeners.get(type) || [])
+        .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+      const actions = [];
+      /* The chart keeps what the host and the tile set on it: the host a whole
+         option, the tile a series merged by id. */
+      const chart = { option: null, on() {}, off() {}, dispatchAction: (action) => actions.push(action),
+        setOption(next, notMerge) {
+          if (notMerge) this.option = next;
+          else for (const part of next.series) Object.assign(this.option.series.find(({ id }) => id === part.id), part);
+        } };
+      globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+      const chosen = [];
+      const relayout = () => chart.setOption(overview(data,
+        { surface, onSelectRun: (runId) => chosen.push(runId) }), true);
+      const tipRun = () => chart.option.series[actions.at(-1).seriesIndex].data[actions.at(-1).dataIndex].runId;
+      const at = `${size.join('×')}`;
+
+      relayout();
+      for (const run of [first, second]) {
+        assert.ok(column(chart.option, run).length > 1, `premise: ${named(run)} shares its ratio column (${at})`);
+      }
+      fire('keydown', { key: 'ArrowRight' });
+      assert.equal(tipRun(), first.run_id, `the tip is keyed to the first run by date (${at})`);
+      assert.equal(read(chart.option, topmost(chart.option, first)), named(first),
+        `a re-show by pixel reads out the first run (${at})`);
+
+      [surface.clientWidth, surface.clientHeight] = relaid;
+      const shown = actions.length;
+      relayout();
+      await Promise.resolve();
+      assert.equal(actions.length, shown + 1, `a relayout re-shows the tip (${at})`);
+      assert.equal(tipRun(), first.run_id, `the re-shown tip sits on the first run's new dot (${at})`);
+      assert.equal(read(chart.option, topmost(chart.option, first)), named(first),
+        `after a relayout to ${relaid.join('×')} a re-show by pixel still reads out the first run (${at})`);
+
+      fire('keydown', { key: 'ArrowRight' });
+      assert.equal(tipRun(), second.run_id, `the next arrow keys the second run (${at})`);
+      assert.equal(read(chart.option, topmost(chart.option, second)), named(second),
+        `a re-show by pixel reads out the second run (${at})`);
+      fire('keydown', { key: 'Enter' });
+      assert.deepEqual(chosen, [second.run_id], `Enter selects the run being read (${at})`);
+    }
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
+/* The keyboard cursor yields to the pointer. ECharts reads a hover out through
+   the same formatter, synchronously, on its own pointer handler — so the
+   formatter must read out the dot it is handed while the keys still hold a
+   run, and the pointer must lift the cursor mark before the chart sees it. */
+test('#464 · a hover after the keys reads out the hovered run, a ring counted by share included', () => {
+  const data = icCases().explained;
+  const named = (run) => `${run.t.slice(0, 10)} ${run.t.slice(11, 16)}`;
+  const namedById = new Map(countedRuns(data).map((run) => [run.run_id, named(run)]));
+  const dots = (option) => [...byId(option, 'ic:dots:whole').data, ...byId(option, 'ic:dots:share').data];
+  const everyDotReadsItsOwnRun = (option, why) => assert.deepEqual(
+    dots(option).map((dot) => option.tooltip.formatter({ data: dot }).split('<br>').slice(0, 2).join(' ')),
+    dots(option).map(({ runId }) => namedById.get(runId)), why);
+  const listeners = new Map();
+  const surface = { clientWidth: 966, clientHeight: 459, tabIndex: -1,
+    setAttribute(key, value) { this[key] = value; },
+    addEventListener(type, handler, { signal, capture = false } = {}) {
+      listeners.set(type, [...(listeners.get(type) || []), { handler, signal, capture }]);
+    } };
+  const fire = (type, event = {}) => (listeners.get(type) || [])
+    .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+  const chart = { option: null, on() {}, off() {}, dispatchAction() {},
+    setOption(next, notMerge) {
+      if (notMerge) this.option = next;
+      else for (const part of next.series) Object.assign(this.option.series.find(({ id }) => id === part.id), part);
+    } };
+  const prior = globalThis.echarts;
+  globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+  try {
+    chart.setOption(overview(data, { surface, onSelectRun: () => {} }), true);
+    for (const key of ['ArrowRight', 'ArrowRight', 'ArrowRight']) fire('keydown', { key });
+    everyDotReadsItsOwnRun(chart.option, 'every dot reads out its own run while the keys hold one');
+    assert.ok(byId(chart.option, 'ic:dots:share').data.length > 0, 'premise: the block has rings');
+    assert.ok(listeners.get('pointermove').every(({ capture }) => capture),
+      'the pointer is caught on its way down, before the chart handles it');
+    fire('pointermove');
+    assert.equal(byId(chart.option, 'ic:cursor').data.length, 0, 'a moving pointer lifts the cursor mark');
+    everyDotReadsItsOwnRun(chart.option, 'every dot reads out its own run after the pointer moves');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
+/* The keys' run is announced the way the comparison chart announces its cursor:
+   the focused host's label carries the reading. ECharts writes the option's
+   resting description onto the host on every render, and the fake chart here
+   does the same. */
+test('#464 · stepping the cursor labels the tile with the cursor run, in the tooltip\'s own words', async () => {
+  const data = icCases().explained;
+  const [first, second] = [...countedRuns(data)].sort((a, b) => (a.t < b.t ? -1 : 1));
+  const listeners = new Map();
+  const surface = { clientWidth: 966, clientHeight: 459, tabIndex: -1,
+    setAttribute(key, value) { this[key] = value; },
+    addEventListener(type, handler, { signal } = {}) {
+      listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+    } };
+  const fire = (type, event = {}) => (listeners.get(type) || [])
+    .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+  const chart = { option: null, on() {}, off() {}, dispatchAction() {},
+    setOption(next, notMerge) {
+      if (notMerge) this.option = next;
+      else for (const part of next.series) Object.assign(this.option.series.find(({ id }) => id === part.id), part);
+      surface.setAttribute('aria-label', this.option.aria.description);
+    } };
+  const words = (run) => {
+    const dot = [...byId(chart.option, 'ic:dots:whole').data, ...byId(chart.option, 'ic:dots:share').data]
+      .find(({ runId }) => runId === run.run_id);
+    return `${chart.option.tooltip.formatter({ data: dot }).split('<br>').join('. ')}.`;
+  };
+  const prior = globalThis.echarts;
+  globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+  try {
+    const relayout = () => chart.setOption(overview(data, { surface, onSelectRun: () => {} }), true);
+    relayout();
+    const resting = chart.option.aria.description;
+    assert.equal(surface['aria-label'], resting, 'premise: at rest the tile carries its description');
+
+    fire('keydown', { key: 'ArrowRight' });
+    assert.equal(surface['aria-label'], words(first), 'the first step reads out the first run by date');
+    assert.ok(surface['aria-label'].startsWith(`${first.t.slice(0, 10)}. ${first.t.slice(11, 16)}. `),
+      'the reading opens on the run\'s date and time');
+    fire('keydown', { key: 'ArrowRight' });
+    assert.equal(surface['aria-label'], words(second), 'the next step reads out the second run');
+
+    relayout();
+    await Promise.resolve();
+    assert.equal(surface['aria-label'], words(second), 'a relayout keeps the reading on the cursor run');
+
+    const hovered = byId(chart.option, 'ic:dots:share').data.find(({ runId }) => runId !== second.run_id);
+    chart.option.tooltip.formatter({ data: hovered });
+    assert.equal(surface['aria-label'], words(second), 'a hover leaves the reading alone');
+    fire('pointermove');
+    assert.equal(surface['aria-label'], resting, 'a released cursor leaves the tile at rest');
+    fire('keydown', { key: 'ArrowRight' });
+    fire('blur');
+    assert.equal(surface['aria-label'], resting, 'focus leaving puts the tile at rest');
   } finally {
     globalThis.echarts = prior;
   }
@@ -2023,6 +2206,7 @@ test('#464 · the tile host handlers are inert and detach once the chart is abse
       on: (type, handler) => (disposed ? refusing() : handlers.push([type, handler])),
       off: (type, handler) => (disposed ? refusing()
         : handlers.splice(handlers.findIndex((row) => row[1] === handler), 1)),
+      setOption: () => (disposed ? refusing() : undefined),
       dispatchAction: () => (disposed ? refusing() : undefined),
     };
     globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };

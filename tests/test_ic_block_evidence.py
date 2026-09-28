@@ -54,6 +54,28 @@ def _spike(minute):
     return 120.0
 
 
+def _dip(minute):
+    """A low without a high: down to 60 at +150, back to 120 by +210."""
+    if minute <= 90:
+        return 120.0
+    if minute <= 150:
+        return 120.0 - (minute - 90)
+    if minute <= 210:
+        return 60.0 + (minute - 150)
+    return 120.0
+
+
+def _spike_then_dip(minute):
+    """The spike, then a low of 60 at +150 inside the same meal's window."""
+    if minute <= 100:
+        return _spike(minute)
+    if minute <= 150:
+        return 120.0 - 1.2 * (minute - 100)
+    if minute <= 210:
+        return 60.0 + (minute - 150)
+    return 120.0
+
+
 def _spike_then_low(minute):
     """A two-meal chain from its first bolus: the spike, then a low at +210."""
     if minute <= 30:
@@ -217,14 +239,14 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
 
 
 class IcBlockMealOutcomeTest(unittest.TestCase):
-    """The block's meal outcomes are the Pattern roster's own credited claims (#464).
+    """Each block-hours meal is read plainly against the band over its own window.
 
-    Every fixture here is manufactured through the scenario engine's own recipes, so
-    the verdict under test is the one the Patterns publish rather than a second
-    in-range rule written for this payload.
+    The reading is the meal's own: its highest and lowest store readings from the
+    bolus to the end of the analyzer's post-meal window (#464).  Every fixture is
+    analyzer output built from synthetic runs.
     """
 
-    def _prepared(self, events, cgm, basal=(), isf=40.0, harm_lows=None):
+    def _prepared(self, events, cgm, basal=(), harm_lows=None):
         store = Store.open(":memory:")
         self.addCleanup(store.close)
         write_set_to_store(store, {"events": events, "cgm_readings": cgm,
@@ -240,15 +262,53 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
                         basal_events=list(basal),
                         harm_config=HarmConfig() if harm_lows is not None else None,
                         harm_lows=harm_lows)[0].to_dict()
-        with patch("ciq_autotune.explore_exposures._effective_isf", return_value=isf):
-            prepared = prepare_ic_block_evidence(store, {"ic_blocks": [block]})
-        return store, prepared.project(0)
+        return block, prepare_ic_block_evidence(store, {"ic_blocks": [block]})
 
-    def test_a_pooled_chain_that_spikes_then_prints_a_low_is_tallied_both_ways(self):
+    def test_each_meal_is_read_against_the_band_over_its_own_window(self):
+        # Eight lone morning meals: one spikes to 300, one dips to 60, one does
+        # both, one has CGM only just outside its window, and four stay flat.
+        events = [_meal(day, 9) for day in range(8)]
+        high, low, both, unread = events[:4]
+        cgm = (_trace(high.t, _spike) + _trace(low.t, _dip)
+               + _trace(both.t, _spike_then_dip))
+        cgm += [reading for reading in _trace(unread.t, _flat, until=400)
+                if not 0 <= (reading.t - unread.t).total_seconds() / 60 <= 315]
+        cgm += [reading for event in events[4:] for reading in _trace(event.t, _flat)]
+        block, prepared = self._prepared(events, cgm)
+        result = prepared.project(0)
+
+        points = block["evidence"]["points"]
+        self.assertEqual([point["t"] for point in points],
+                         [meal["t"] for meal in result["meals"]])
+        by_t = {meal["t"]: meal for meal in result["meals"]}
+        self.assertEqual(
+            ["high", "low", "high-and-low", "unread"],
+            [by_t[event.t.isoformat()]["outcome"] for event in (high, low, both, unread)])
+        self.assertTrue(all(by_t[event.t.isoformat()]["outcome"] == "in-range"
+                            for event in events[4:]))
+        self.assertEqual(
+            {"t": high.t.isoformat(), "run_id": high.t.isoformat(), "offset_min": 0.0,
+             "peak_bg": 300.0, "peak_min": 30.0, "nadir_bg": 120.0, "nadir_min": 100.0,
+             "outcome": "high"},
+            by_t[high.t.isoformat()])
+        self.assertEqual((60.0, 150.0), (by_t[low.t.isoformat()]["nadir_bg"],
+                                         by_t[low.t.isoformat()]["nadir_min"]))
+        self.assertEqual((None, None, None, None),
+                         tuple(by_t[unread.t.isoformat()][key]
+                               for key in ("peak_bg", "peak_min", "nadir_bg",
+                                           "nadir_min")))
+        self.assertEqual(
+            {"above_high": 2, "below_low": 2, "both": 1, "in_range": 4, "unread": 1,
+             "n": len(points)},
+            result["outcomes"]["counts"])
+        self.assertEqual({"low": 70.0, "high": 180.0}, result["outcomes"]["band"])
+
+    def test_a_pooled_chain_reads_each_of_its_meals_on_its_own_window(self):
         # Eight flat lone runs, then one two-meal chain: glucose is already rising
         # into its first bolus and peaks at 300, then Control-IQ suspends under its
         # second meal until a low prints — a low the harm arm attributes to the
-        # chain's first meal.
+        # chain's first meal.  The first meal's window holds both the peak and the
+        # low; the second's, starting two hours later, holds only the low.
         lone = [_meal(day, 9) for day in range(8)]
         first, second = _meal(10, 9), _meal(10, 11, carbs=50.0, insulin=10.0)
         cgm = [reading for event in lone for reading in _trace(event.t, _flat)]
@@ -257,19 +317,27 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
         low = PrintedLow(t=first.t + timedelta(minutes=210), bg=68.0, iob_u=2.2,
                          arm=HarmArm.IC, dominant_bolus_t=first.t,
                          attribution_reason="meal-bolus")
-        _store, result = self._prepared(lone + [first, second], cgm, basal,
-                                        harm_lows=[low])
+        _block, prepared = self._prepared(lone + [first, second], cgm, basal,
+                                          harm_lows=[low])
+        result = prepared.project(0)
 
         chain = next(run for run in result["runs"]
                      if run["run_id"] == first.t.isoformat())
         self.assertEqual((2, "counted-whole"), (chain["n_meals"], chain["pool_reason"]))
-        counts = result["outcomes"]["counts"]
-        self.assertEqual((1, 1, 8, 0), (counts["ran_high"], counts["ran_low"],
-                                        counts["in_range"], counts["unread"]))
-        cohorts = {cohort["key"]: cohort["occurrence_ids"]
-                   for cohort in result["meal_comparison"]["cohorts"]}
-        self.assertEqual([first.t.isoformat()], cohorts["ran-high"])
-        self.assertEqual([second.t.isoformat()], cohorts["ran-low"])
+        by_t = {meal["t"]: meal for meal in result["meals"]}
+        self.assertEqual(
+            (first.t.isoformat(), 0.0, "high-and-low", 30.0, 210.0),
+            tuple(by_t[first.t.isoformat()][key]
+                  for key in ("run_id", "offset_min", "outcome", "peak_min",
+                              "nadir_min")))
+        self.assertEqual(
+            (first.t.isoformat(), 120.0, "low", 90.0),
+            tuple(by_t[second.t.isoformat()][key]
+                  for key in ("run_id", "offset_min", "outcome", "nadir_min")))
+        self.assertEqual(
+            {"above_high": 1, "below_low": 2, "both": 1, "in_range": 8, "unread": 0,
+             "n": 10},
+            result["outcomes"]["counts"])
         self.assertEqual([low.t.isoformat()],
                          [row["t"] for row in result["harm_evidence"]["lows"]])
         self.assertEqual(210.0, result["harm_evidence"]["minutes_after_bolus_median"])
@@ -278,13 +346,13 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
     def test_each_direction_and_balance_serves_its_own_sentence(self):
         # Ten runs dosed away from the programmed 5.0 make the block assert a raise
         # or a lower; five dosed at it leave the block below the floor, asserting
-        # nothing. Late-bolus spikes on alternate meals make highs outnumber lows;
-        # flat traces leave the two tied at zero.
+        # nothing. Spikes on alternate meals put more meals above the band than
+        # below it; flat traces leave the two tied at zero.
         doses = {"raise": (10, 8.0), "lower": (10, 16.0), None: (5, 12.0)}
         wording = {"raise": "over-coverage", "lower": "under-coverage",
                    None: "asserts no change"}
-        more_high, not_more_high = ("more often ran high than low",
-                                    "did not run high more often")
+        more_high, not_more_high = ("more often went above 180 than below 70",
+                                    "did not go above 180 more often than below 70")
         served = set()
         for direction, (count, insulin) in doses.items():
             for spikes in (True, False):
@@ -293,36 +361,50 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
                     cgm = [reading for day, event in enumerate(events)
                            for reading in _trace(
                                event.t, _spike if spikes and day % 2 else _flat)]
-                    _store, result = self._prepared(events, cgm)
+                    _block, prepared = self._prepared(events, cgm)
+                    result = prepared.project(0)
                     counts = result["outcomes"]["counts"]
                     sentence = result["outcomes"]["sentence"]
                     self.assertEqual(direction is not None,
                                      result["block"]["asserts_move"])
-                    self.assertEqual(spikes, counts["ran_high"] > counts["ran_low"])
+                    self.assertEqual(spikes, counts["above_high"] > counts["below_low"])
                     self.assertIn(wording[direction], sentence)
                     self.assertIn(more_high if spikes else not_more_high, sentence)
                     self.assertNotIn(not_more_high if spikes else more_high, sentence)
                     served.add(sentence)
         self.assertEqual(6, len(served))
 
-    def test_a_meal_the_pattern_credits_to_late_bolus_ran_high_here_too(self):
-        from ciq_autotune.explore_exposures import build_exposures
-        from tests.test_scenario_engine import cgm_flat, cgm_ramp, meal
-
-        late = meal(15, 12, 40, carbs=45.0, dose=10.0)
-        cgm = (
-            cgm_flat(15, 11, 40, 120, 30)
-            + cgm_ramp(15, 12, 10, 120, 2.0, 60)
-            + cgm_ramp(15, 13, 10, 360, -2.0, 120)
+    def test_a_rebuilt_preparation_missing_a_served_fact_is_refused(self):
+        # The preparation's facts survive as a durable sidecar; one rebuilt from an
+        # older or damaged shape is refused rather than served with a hole.
+        from ciq_autotune.derived_artifacts import (
+            dump_ic_block_evidence, rebuild_ic_block_evidence,
         )
-        store, result = self._prepared([late], cgm, isf=None)
 
-        with patch("ciq_autotune.explore_exposures._effective_isf", return_value=None):
-            exposures = build_exposures(store, window_days=90)
-        [occurrence] = exposures["exposures"]["meals"]["occurrences"]
-        self.assertIn("late_bolus", occurrence["attributed_levers"])
-        self.assertEqual(1, result["outcomes"]["counts"]["ran_high"])
-        self.assertEqual(0, result["outcomes"]["counts"]["unread"])
+        events = [_meal(day, 9) for day in range(8)]
+        cgm = [reading for event in events for reading in _trace(event.t, _flat)]
+        _block, prepared = self._prepared(events, cgm)
+        # The sidecar is stored as JSON, so the rebuild reads what JSON gives back.
+        dumped = json.loads(json.dumps(dump_ic_block_evidence(prepared)))
+        rebuild_ic_block_evidence(deepcopy(dumped)).project(0)
+
+        for path in (
+            ("evidence", "meals"), ("evidence", "meals", 0, "outcome"),
+            ("evidence", "meals", 0, "peak_min"), ("evidence", "meals", 0, "offset_min"),
+            ("evidence", "outcomes"), ("evidence", "outcomes", "band"),
+            ("evidence", "outcomes", "band", "high"),
+            ("evidence", "outcomes", "counts", "both"),
+            ("evidence", "outcomes", "counts", "n"),
+            ("evidence", "outcomes", "sentence"),
+        ):
+            with self.subTest(path=path):
+                broken = deepcopy(dumped)
+                holder = broken["blocks"][0]
+                for key in path[:-1]:
+                    holder = holder[key]
+                del holder[path[-1]]
+                with self.assertRaises(InconsistentIcBlockEvidence):
+                    rebuild_ic_block_evidence(broken).project(0)
 
 
 class IcBlockEvidenceEndpointTest(unittest.TestCase):
@@ -510,20 +592,14 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         body = response.json()
-        for key in ("schema", "block", "runs", "ledger", "outcomes", "harm_evidence",
-                    "meal_comparison", "series"):
+        for key in ("schema", "block", "runs", "ledger", "outcomes", "meals",
+                    "harm_evidence", "series"):
             self.assertEqual(committed[key], body[key], key)
         self.assertEqual("diagnose-carb-ratio-block-evidence-v2", body["schema"])
         self.assertTrue(body["runs"])
         self.assertTrue(all(run["pool_reason"] in POOL_REASONS for run in body["runs"]))
         self.assertTrue(body["harm_evidence"]["lows"])
-        counts = body["outcomes"]["counts"]
-        self.assertEqual(
-            [("ran-high", "Ran high", counts["ran_high"]),
-             ("ran-low", "Ran low", counts["ran_low"]),
-             ("in-range", "In range", counts["in_range"])],
-            [(cohort["key"], cohort["name"], cohort["routed_count"])
-             for cohort in body["meal_comparison"]["cohorts"]])
+        self.assertEqual(len(body["meals"]), body["outcomes"]["counts"]["n"])
 
     def test_public_route_serves_the_v2_explainability_facts(self):
         # The same pooled spike-then-low chain as the outcome test, now answered by
@@ -554,8 +630,7 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
                              harm_lows=[low])[0].to_dict()
         self.analysis = {"ic_blocks": [self.block]}
         app, products = self._app()
-        with products, patch("ciq_autotune.explore_exposures._effective_isf",
-                             return_value=40.0):
+        with products:
             response = TestClient(app).get(
                 "/api/diagnose/carb-ratio-block-evidence", params={
                     "block_id": 0,
@@ -573,16 +648,15 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
         self.assertEqual([low.t.isoformat()],
                          [row["t"] for row in body["harm_evidence"]["lows"]])
         self.assertEqual(
-            {"ran_high": 1, "ran_low": 1, "in_range": 8, "unread": 0, "n": 10},
+            {"above_high": 1, "below_low": 2, "both": 1, "in_range": 8, "unread": 0,
+             "n": 10},
             body["outcomes"]["counts"])
+        self.assertEqual({"low": 70.0, "high": 180.0}, body["outcomes"]["band"])
         self.assertIn("at the end of each meal chain", body["outcomes"]["sentence"])
-        comparison = body["meal_comparison"]
-        self.assertEqual("diagnose-carb-ratio-meal-comparison-v1", comparison["schema"])
         self.assertEqual(
-            [("ran-high", "Ran high", 1), ("ran-low", "Ran low", 1),
-             ("in-range", "In range", 8)],
-            [(cohort["key"], cohort["name"], cohort["routed_count"])
-             for cohort in comparison["cohorts"]])
+            [point["t"] for point in evidence["points"]],
+            [meal["t"] for meal in body["meals"]])
+        self.assertNotIn("meal_comparison", body)
 
 
 if __name__ == "__main__":

@@ -41,8 +41,8 @@ _COUNT_FACTS = frozenset({
 _RUN_FACTS = frozenset({
     "pool_reason", "side", "meal_carbs", "meal_dose", "post_correction_user",
     "post_correction_ciq", "post_correction_unknown", "ciq_basal_delta_acted_u",
-    "rescue_carbs", "member_in_block", "end_class", "ended_after_later_meal",
-    "fit_weight",
+    "post_correction_total", "rescue_carbs", "member_in_block", "end_class",
+    "ended_after_later_meal", "fit_weight",
 })
 _RUN_END_FACTS = frozenset({"lower", "flat", "higher", "after_later_meal", "n"})
 _RECOMMENDATION_FACTS = frozenset({"value", "rule", "sentence"})
@@ -60,47 +60,8 @@ _HARM_FACTS = frozenset({
 })
 _LOW_FACTS = frozenset({"run_id", "group", "minutes_after_bolus", "bolus_carbs"})
 _LOW_GROUP_FACTS = frozenset({
-    "counted_run", "counted_runs_distinct", "uncounted_run", "not_a_meal_run",
+    "counted_run", "counted_runs_distinct", "uncounted_run", "not_a_meal_run", "total",
 })
-
-# One reconciling sentence per served key, chosen on the server and printed verbatim
-# (ADR 464 — sentence).  The key is the block's asserted direction and whether more
-# of its meals went above the band than below it; every sentence names the chain-end
-# read, because a reader who sees over-coverage beside a chart of high meals is owed
-# exactly that reconciliation.  The band edges are filled from `_BAND`, and nothing
-# on the client composes a second sentence.
-_SENTENCES = {
-    ("raise", True): (
-        "These meals more often went above {high:g} than below {low:g}, and the "
-        "ledger still reads over-coverage: it closes at the end of each meal chain, "
-        "when the insulin is spent, not at the peak in between."
-    ),
-    ("raise", False): (
-        "These meals did not go above {high:g} more often than below {low:g}, and "
-        "the ledger reads over-coverage at the end of each meal chain, when the "
-        "insulin is spent."
-    ),
-    ("lower", True): (
-        "These meals more often went above {high:g} than below {low:g}, and the "
-        "ledger reads under-coverage at the end of each meal chain, when the insulin "
-        "is spent."
-    ),
-    ("lower", False): (
-        "These meals did not go above {high:g} more often than below {low:g}, yet "
-        "the ledger reads under-coverage: it closes at the end of each meal chain, "
-        "when the insulin is spent, not at the lowest point in between."
-    ),
-    (None, True): (
-        "These meals more often went above {high:g} than below {low:g}, and this "
-        "block still asserts no change: the ledger closes at the end of each meal "
-        "chain, when the insulin is spent, not at the peak in between."
-    ),
-    (None, False): (
-        "These meals did not go above {high:g} more often than below {low:g}, and "
-        "this block asserts no change from what the ledger reads at the end of each "
-        "meal chain, when the insulin is spent."
-    ),
-}
 
 
 class UnknownIcBlockId(KeyError):
@@ -174,7 +135,7 @@ def _meal_reading(point: dict, windows: _CgmWindows) -> dict:
     }
 
 
-def _outcome_tally(block: dict, meals: Sequence[dict]) -> dict:
+def _outcome_tally(meals: Sequence[dict]) -> dict:
     tally = Counter(meal["outcome"] for meal in meals)
     counted = [meal for meal in meals if meal["on_counted_run"]]
     counts = {
@@ -194,13 +155,8 @@ def _outcome_tally(block: dict, meals: Sequence[dict]) -> dict:
         "peaked_above_high_in_window": sum(
             1 for meal in counted if meal["outcome"] in ("high", "high-and-low")),
     }
-    return {
-        "counts": counts,
-        "band": dict(_BAND),
-        "sentence": _SENTENCES[
-            (block["direction"], counts["above_high"] > counts["below_low"])
-        ].format(**_BAND),
-    }
+    # The window every meal was read over, served so no client restates it.
+    return {"counts": counts, "band": dict(_BAND), "window_min": MEAL_WINDOW_MIN[1]}
 
 
 @dataclass(frozen=True)
@@ -249,7 +205,7 @@ class IcBlockEvidenceProjection:
             outcomes = evidence["outcomes"]
             if (not _COUNT_FACTS <= outcomes["counts"].keys()
                     or not {"low", "high"} <= outcomes["band"].keys()
-                    or "sentence" not in outcomes):
+                    or "window_min" not in outcomes):
                 raise KeyError("outcome tally is missing a served fact")
             payload = {
                 "schema": SCHEMA,
@@ -258,6 +214,9 @@ class IcBlockEvidenceProjection:
                     "block_id": block["block_id"], "start_min": block["start_min"],
                     "end_min": block["end_min"], "label": block["label"],
                     "state": block["state"], "asserts_move": block["asserts_move"],
+                    # The analyzer's own direction of the asserted move; null when
+                    # the block asserts none.
+                    "direction": block["direction"],
                     "current": (block["current_values"] or [None])[0],
                     "estimate": {"value": estimate["value"], "lo": estimate["lo"],
                                  "hi": estimate["hi"], "wide": estimate["wide"]},
@@ -340,6 +299,6 @@ def prepare_ic_block_evidence(store, analysis: dict) -> IcBlockEvidenceProjectio
         prepared.append({**block, "evidence": {
             **block["evidence"],
             "meals": meals,
-            "outcomes": _outcome_tally(block, meals),
+            "outcomes": _outcome_tally(meals),
         }})
     return IcBlockEvidenceProjection(tuple(prepared), series)

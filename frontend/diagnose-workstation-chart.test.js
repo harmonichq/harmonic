@@ -38,7 +38,7 @@ test('#341 · queue previews carry a purpose-built grammar for every evidence fa
     basal.nights.length, 'basal draws every served night around its programmed rate');
   assert.equal(options.isf.series.find(({ id }) => id === 'queue:isf:steps').data.length,
     isf.steps.length, 'correction factor draws every served dose/response step');
-  const counted = ic.runs.filter((run) => ['counted-whole', 'counted-by-share'].includes(run.pool_reason));
+  const counted = ic.runs.filter((run) => run.in_pool === true);
   assert.deepEqual(options.ic.series.filter(({ id }) => id.startsWith('ic:dots:'))
     .flatMap(({ data }) => data.map(({ runId, value }) => [runId, value[0]])),
   counted.map((run) => [run.run_id, run.true_ic]),

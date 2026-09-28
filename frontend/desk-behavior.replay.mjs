@@ -3265,7 +3265,6 @@ export const S179 = appOnly('ADR 451',
    lows. Each story reads the served block evidence first and compares what the
    desk draws or prints against it. A missing row, block or fact is a premise
    failure; what the desk draws or prints wrong is the feature failure. */
-const COUNTED_464 = ['counted-whole', 'counted-by-share'];
 const LOW_GROUPS_464 = [
   ['counted-run', 'counted_run', 'On counted runs'],
   ['uncounted-run', 'uncounted_run', 'On runs not counted'],
@@ -3299,7 +3298,7 @@ async function served464(page, id) {
     analysis_generation: preparation.findings.analysis_generation });
   const evidence = await read(`/api/diagnose/carb-ratio-block-evidence?${query}`);
   ok(evidence.block?.state === 'numeric', `${id} premise: the served block is measured, not ${evidence.block?.state}`);
-  const counted = evidence.runs.filter((run) => COUNTED_464.includes(run.pool_reason));
+  const counted = evidence.runs.filter((run) => run.in_pool === true);
   ok(counted.length > 0, `${id} premise: the served block counts no meal run`);
   return { row, evidence, counted };
 }
@@ -3547,8 +3546,8 @@ function runReadout464(run) {
   return [
     run.t.slice(0, 10), run.t.slice(11, 16), `${run.n_meals} meal${run.n_meals === 1 ? '' : 's'}`,
     `carbs ${Number(run.carbs.toFixed(1))} g ÷ insulin ${g2(run.effective_insulin)} U = ${g2(run.true_ic)} g/U`,
-    `insulin: bolus ${g2(run.meal_dose)} · corrections ${g2(run.post_correction_user + run.post_correction_ciq
-      + run.post_correction_unknown)} · Control-IQ basal ${g2(run.ciq_basal_delta_acted_u)} · glucose change ${g2(run.bg_outcome_u)}`,
+    `insulin: bolus ${g2(run.meal_dose)} · corrections ${g2(run.post_correction_total)} · Control-IQ basal `
+      + `${g2(run.ciq_basal_delta_acted_u)} · glucose change ${g2(run.bg_outcome_u)}`,
     `ended ${Math.round(run.outcome_bg)} mg/dL after ${Number((run.outcome_min / 60).toFixed(1))} h${end ? ` (${end})` : ''}`,
   ];
 }
@@ -3618,16 +3617,18 @@ export const S190 = appOnly('ADR 464',
       side && `${block.side.side_k} of ${block.side.side_n} counted runs measured ${side} than ${g2(block.current)} g/U; `
         + `the estimate's range ${g2(block.estimate.lo)}–${g2(block.estimate.hi)} leaves ${g2(block.current)} out.`,
       MECHANISM_464,
-      ends.n > 0 && `For ${ends.after_later_meal} of ${ends.n} runs that end came after a later meal past ${blockEnd}; `
-        + `there ${ends.lower} ended lower, ${ends.flat} about flat, ${ends.higher} higher.`,
+      ends.n > 0 && `Of the ${ends.n} counted runs, ${ends.lower} ended lower than they started, ${ends.flat} `
+        + `about flat and ${ends.higher} higher, where they ended; for ${ends.after_later_meal} of them that end `
+        + `came after a later meal past ${blockEnd}.`,
       block.recommendation.sentence,
     ].filter(Boolean);
     const counts = outcomes.counts;
     const noun = block.label.toLowerCase();
     const against = `${counts.peaked_above_high_before_next} of the ${counts.meals_on_counted_runs} ${noun} meals on `
       + `counted runs peaked above ${outcomes.band.high} before their next bolus (${counts.peaked_above_high_in_window} `
-      + `counting later meals within 5 h 15 min)${block.side.direction === 'above' ? '; a looser ratio can raise peaks' : ''}.`;
-    const total = LOW_GROUPS_464.reduce((sum, [, key]) => sum + harm.groups[key], 0);
+      + `counting later meals within ${minutes464(outcomes.window_min)} of the bolus)`
+      + `${block.direction === 'raise' ? '; a looser ratio can raise peaks' : ''}.`;
+    const total = harm.groups.total;
     const bearing = harm.bearing_sentence;
     const lowsLine = `${total} low${total === 1 ? '' : 's'}, ${minutes464(harm.minutes_after_bolus_min)} to `
       + `${minutes464(harm.minutes_after_bolus_max)} after the bolus`
@@ -3816,7 +3817,7 @@ export const S196 = appOnly('ADR 464',
   '#464 changed: the block\'s run evidence still ships on its tile, rebuilt — every counted run once per lane, no per-run glucose trace',
   async (page) => {
     const { row, evidence, counted } = await served464(page, 'S196');
-    const excluded = evidence.runs.filter((run) => !COUNTED_464.includes(run.pool_reason));
+    const excluded = evidence.runs.filter((run) => run.in_pool !== true);
     ok(excluded.length > 0, 'S196 premise: the served block examines runs it does not count');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {

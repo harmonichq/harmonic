@@ -11,7 +11,7 @@ import {
 } from './diagnose-event-comparison.js';
 import { validFindingCaseFile } from './finding-case-file-validation.js';
 import {
-  COUNTED_POOL_REASONS, GRID, queuePreviewOption, ratioStrip,
+  GRID, queuePreviewOption, ratioStrip,
 } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
@@ -902,19 +902,18 @@ function carbRatioDescription(data) {
 }
 
 /* A run's hover, line for line in the settled words: when, how many meals, the
-   served quotient, the served insulin terms behind it, and where it ended. The
-   one sum is the three served correction terms, printed as one. */
+   served quotient, the served insulin terms behind it — the corrections as the
+   run's served total — and where it ended. */
 const END_CLASS_WORDS = Object.freeze({ lower: 'lower', flat: 'about flat', higher: 'higher' });
 const units = (value) => (finite(value) ? value.toFixed(2) : '—');
 function runReadout(run) {
-  const corrections = run.post_correction_user + run.post_correction_ciq + run.post_correction_unknown;
   const end = END_CLASS_WORDS[run.end_class];
   return [
     run.t.slice(0, 10),
     run.t.slice(11, 16),
     `${run.n_meals} meal${run.n_meals === 1 ? '' : 's'}`,
     `carbs ${finite(run.carbs) ? Number(run.carbs.toFixed(1)) : '—'} g ÷ insulin ${units(run.effective_insulin)} U = ${units(run.true_ic)} g/U`,
-    `insulin: bolus ${units(run.meal_dose)} · corrections ${units(corrections)} · Control-IQ basal ${units(run.ciq_basal_delta_acted_u)} · glucose change ${units(run.bg_outcome_u)}`,
+    `insulin: bolus ${units(run.meal_dose)} · corrections ${units(run.post_correction_total)} · Control-IQ basal ${units(run.ciq_basal_delta_acted_u)} · glucose change ${units(run.bg_outcome_u)}`,
     ...(finite(run.outcome_bg) && finite(run.outcome_min)
       ? [`ended ${Math.round(run.outcome_bg)} mg/dL after ${Number((run.outcome_min / 60).toFixed(1))} h${end ? ` (${end})` : ''}`]
       : []),
@@ -1061,7 +1060,7 @@ function carbRatioOption(_mode, {
       tooltip: { show: false }, xAxis: { ...strip.xAxis, show: false },
       yAxis: { ...strip.yAxis, show: false }, series: strip.series };
   }
-  const runs = (data?.runs || []).filter((run) => COUNTED_POOL_REASONS.includes(run.pool_reason));
+  const runs = (data?.runs || []).filter((run) => run.in_pool === true);
   const byRun = new Map(runs.map((run) => [run.run_id, run]));
   const stemmed = runs.filter((run) => finite(run.start_bg) && finite(run.outcome_bg));
   /* A low row is guaranteed its run, group and delay by the server's own

@@ -252,8 +252,9 @@ block-evidence projection refuses a block missing any of them:
   and the flat band, served once on the block; whether the run ended after a later
   meal outside the block's hours; the weight the fit gave it; the total correction
   insulin its ledger counted, summed once on the server.
-- **Per block:** how its counted runs ended (lower, flat, higher, after a later
-  meal, of how many); the block's asserted direction (raise, lower, or none); the
+- **Per block:** how its counted runs ended (lower, flat, higher, unread for a
+  counted run with no outcome read — every run of a block pooling the no-outcome
+  fallback — after a later meal, of how many); the block's asserted direction (raise, lower, or none); the
   recommendation with its rule, whose value and reason sentence are served only
   when the block asserts a move and are null on a hold, so the tile draws no
   recommended rule for a block that recommends nothing; the side's direction

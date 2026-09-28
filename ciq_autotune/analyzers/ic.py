@@ -2131,11 +2131,17 @@ def _next_bolus_min(meal: RunMeal, run: MealRun) -> Optional[float]:
 
 
 def _run_ends(run_rows: Sequence[Dict]) -> Dict:
-    """How the block's counted runs ended, tallied over exactly the counted rows."""
+    """How the block's counted runs ended, tallied over exactly the counted rows.
+
+    A block whose pool is :func:`_run_pool`'s fallback counts runs with no outcome
+    read, which have no end class; ``unread`` counts them, so the four classes always
+    sum to ``n``.
+    """
     counted = [row for row in run_rows if row["in_pool"]]
     return {
         **{end: sum(1 for row in counted if row["end_class"] == end)
            for end in ("lower", "flat", "higher")},
+        "unread": sum(1 for row in counted if row["end_class"] is None),
         "after_later_meal": sum(1 for row in counted if row["ended_after_later_meal"]),
         "n": len(counted),
     }

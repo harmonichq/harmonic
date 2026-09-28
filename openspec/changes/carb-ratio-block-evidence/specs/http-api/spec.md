@@ -7,7 +7,8 @@ The carb-ratio block evidence endpoint SHALL serve, under schema
 today, the analyzer's published facts copied verbatim — the block's state, the
 programmed ratio, the estimate and its band, the recurrence side counts and
 direction, the block's asserted direction (raise, lower, or none), the whole and
-fractional support, how the counted runs ended with the flat band, the
+fractional support, how the counted runs ended with the flat band (lower, flat,
+higher, and unread for a counted run with no outcome read), the
 recommendation with its rule — its value and reason sentence served only when the
 block asserts a move and null when it holds, so no consumer draws a recommended
 rule for a hold — every run's pool reason, side, in-block members, fit weight, end
@@ -25,7 +26,8 @@ with a hole.
 - **WHEN** the endpoint is asked for a block on the committed block-evidence
   fixture with its current analysis generation
 - **THEN** the response carries schema v2, every run row's pool reason, end and fit
-  weight, the block's run ends, direction and recommendation, its ledger, the
+  weight, the block's run ends with their unread count, direction and
+  recommendation, its ledger, the
   meals' plain readings and tally with its window, and the harm evidence with its
   grouped lows and their total
 

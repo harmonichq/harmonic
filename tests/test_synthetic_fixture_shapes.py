@@ -200,9 +200,14 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 {"lower": sum(run["end_class"] == "lower" for run in counted),
                  "flat": sum(run["end_class"] == "flat" for run in counted),
                  "higher": sum(run["end_class"] == "higher" for run in counted),
+                 "unread": sum(run["end_class"] is None for run in counted),
                  "after_later_meal": sum(run["ended_after_later_meal"] for run in counted),
                  "n": len(counted)},
                 case["block"]["run_ends"], name)
+            # A pool never mixes outcome-read runs with fallbacks, so either none of
+            # its runs is unread or all are (`below_floor` pools fallbacks only).
+            ends = case["block"]["run_ends"]
+            self.assertIn(ends["unread"], (0, ends["n"]), name)
 
     def test_every_low_is_grouped_by_the_served_roster(self):
         for name, case in self.cases.items():

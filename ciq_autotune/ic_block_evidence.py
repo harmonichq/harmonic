@@ -44,7 +44,7 @@ _RUN_FACTS = frozenset({
     "post_correction_total", "rescue_carbs", "member_in_block", "end_class",
     "ended_after_later_meal", "fit_weight",
 })
-_RUN_END_FACTS = frozenset({"lower", "flat", "higher", "after_later_meal", "n"})
+_RUN_END_FACTS = frozenset({"lower", "flat", "higher", "unread", "after_later_meal", "n"})
 _RECOMMENDATION_FACTS = frozenset({"value", "rule", "sentence"})
 # The pooled balance sheet's terms and the quotient they make.
 _LEDGER_FACTS = frozenset({

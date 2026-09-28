@@ -31,7 +31,8 @@
      "flat": 0,
      "higher": 0,
      "lower": 0,
-     "n": 0
+     "n": 0,
+     "unread": 0
     },
     "side": {
      "direction": null,
@@ -211,7 +212,8 @@
      "flat": 0,
      "higher": 0,
      "lower": 0,
-     "n": 4
+     "n": 4,
+     "unread": 4
     },
     "side": {
      "direction": null,
@@ -587,7 +589,8 @@
      "flat": 9,
      "higher": 0,
      "lower": 0,
-     "n": 9
+     "n": 9,
+     "unread": 0
     },
     "side": {
      "direction": null,
@@ -1699,7 +1702,8 @@
      "flat": 8,
      "higher": 0,
      "lower": 0,
-     "n": 8
+     "n": 8,
+     "unread": 0
     },
     "side": {
      "direction": null,
@@ -2487,7 +2491,8 @@
      "flat": 16,
      "higher": 0,
      "lower": 8,
-     "n": 24
+     "n": 24,
+     "unread": 0
     },
     "side": {
      "direction": "above",

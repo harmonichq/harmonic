@@ -235,7 +235,8 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             ("evidence", "runs", 0, "fit_weight"),
             ("evidence", "runs", 0, "post_correction_total"),
             ("evidence", "end_band_mgdl"), ("evidence", "run_ends", "after_later_meal"),
-            ("evidence", "run_ends", "n"), ("evidence", "recommendation", "sentence"),
+            ("evidence", "run_ends", "n"), ("evidence", "run_ends", "unread"),
+            ("evidence", "recommendation", "sentence"),
             ("evidence", "harm_evidence", "groups"),
             ("evidence", "harm_evidence", "groups", "counted_runs_distinct"),
             ("evidence", "harm_evidence", "groups", "total"),
@@ -502,8 +503,23 @@ class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
                          [runs[event.t.isoformat()]["end_class"] for event in events[:4]])
         self.assertTrue(all(run["in_pool"] for run in result["runs"]))
         self.assertEqual(
-            {"lower": 1, "flat": 8, "higher": 1, "after_later_meal": 0, "n": 10},
+            {"lower": 1, "flat": 8, "higher": 1, "unread": 0, "after_later_meal": 0,
+             "n": 10},
             result["block"]["run_ends"])
+
+    def test_a_fallback_pool_counts_its_runs_with_no_end_as_unread(self):
+        # No run has CGM at its full-DIA read, so the block pools the fallback runs:
+        # each is counted, and none has an end to classify.
+        events = [_meal(day, 9, bg=110.0) for day in range(10)]
+        result = self._prepared(events, []).project(0)
+
+        counted = [run for run in result["runs"] if run["in_pool"]]
+        self.assertTrue(counted)
+        self.assertTrue(all(run["end_class"] is None for run in counted))
+        ends = result["block"]["run_ends"]
+        self.assertEqual(ends["n"], ends["unread"])
+        self.assertGreater(ends["unread"], 0)
+        self.assertEqual(0, ends["lower"] + ends["flat"] + ends["higher"])
 
     def test_a_chain_whose_last_meal_is_after_the_block_end_says_so(self):
         lone = [_meal(day, 9, bg=110.0) for day in range(10)]
@@ -845,8 +861,8 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
             "support_detail": {"whole_runs": 0, "fractional_run_ownership": 0.0,
                                "effective_run_count": 0.0},
             "end_band_mgdl": 10.0,
-            "run_ends": {"lower": 0, "flat": 0, "higher": 0, "after_later_meal": 0,
-                         "n": 0},
+            "run_ends": {"lower": 0, "flat": 0, "higher": 0, "unread": 0,
+                         "after_later_meal": 0, "n": 0},
             "recommendation": {"value": None, "rule": "half-gap-capped-rounded",
                                "sentence": None},
         })

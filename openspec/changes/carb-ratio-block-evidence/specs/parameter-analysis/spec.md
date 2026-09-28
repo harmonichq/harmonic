@@ -15,7 +15,9 @@ block's hours, the weight the fit gave it, how it ended against where it started
 (lower, flat or higher, by a flat band published once on the block), and whether
 it ended after a later meal outside the block's hours. The block publishes its
 whole-run count, its fractional carb-share ownership and their effective sum; the
-side's direction beside its side counts; how its counted runs ended; a
+side's direction beside its side counts; how its counted runs ended, with an
+unread count for the counted runs that have no outcome read and so no end (a block
+pooling the no-outcome fallback counts every run there); a
 carb-share-weighted pooled balance sheet whose quotient is published beside, and
 labelled distinctly from, the fitted estimate; its asserted direction; and its
 recommendation with the analyzer's own rule stated in words — half the gap from

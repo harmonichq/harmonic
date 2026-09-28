@@ -112,10 +112,16 @@ class InconsistentIcBlockEvidence(RuntimeError):
 
 
 class _CgmWindows:
-    """The preparation's single CGM read, sliced by window without re-scanning it."""
+    """The preparation's single CGM read, sliced by window without re-scanning it.
+
+    A store reading with no glucose value (a sensor gap, or a HIGH/LOW the sensor
+    could not number) is dropped here, once, so no window a meal or a series is read
+    from ever holds one.
+    """
 
     def __init__(self, readings: Sequence):
-        self._readings = sorted(readings, key=lambda reading: reading.t)
+        self._readings = sorted((reading for reading in readings if reading.bg is not None),
+                                key=lambda reading: reading.t)
         self._times = [reading.t for reading in self._readings]
 
     def between(self, lower: datetime, upper: datetime) -> Sequence:
@@ -128,8 +134,8 @@ def _meal_reading(point: dict, windows: _CgmWindows) -> dict:
 
     The peak and nadir are the highest and lowest store readings from the bolus to
     the end of the window, and the outcome is where they fall against the band.  A
-    meal with no reading in its window is `unread` rather than in range — silence
-    is not a reading.  The peak before next is the highest reading from the bolus
+    meal with no reading in its window, or only a sensor gap, is `unread` rather
+    than in range — silence is not a reading.  The peak before next is the highest reading from the bolus
     until the run's next member bolus the analyzer served, or the window's end.
     """
     bolus = datetime.fromisoformat(point["t"])

@@ -321,6 +321,47 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
             result["outcomes"]["counts"])
         self.assertEqual({"low": 70.0, "high": 180.0}, result["outcomes"]["band"])
 
+    def test_a_sensor_gap_inside_a_meals_window_is_not_a_reading(self):
+        # Eight lone meals, one spiking to 300 at +30 and dipping to 60 at +150.  A
+        # store carries a gap as readings with no glucose value; sitting beside the
+        # peak and the nadir, they change nothing the meal or its series serves.
+        events = [_meal(day, 9) for day in range(8)]
+        spiked = events[0]
+        cgm = _trace(spiked.t, _spike_then_dip)
+        cgm += [reading for event in events[1:] for reading in _trace(event.t, _flat)]
+        gap = [CgmReading(spiked.t + timedelta(minutes=minute), None, "EGV")
+               for minute in (-2, 31, 32, 151, 152)]
+        _block, clean = self._prepared(events, cgm)
+        _block, gapped = self._prepared(events, cgm + gap)
+        clean, gapped = clean.project(0), gapped.project(0)
+
+        self.assertEqual(clean["meals"], gapped["meals"])
+        self.assertEqual(clean["series"], gapped["series"])
+        meal = next(meal for meal in gapped["meals"] if meal["t"] == spiked.t.isoformat())
+        self.assertEqual(
+            (300.0, 30.0, 60.0, 150.0, 300.0, 30.0, "high-and-low"),
+            tuple(meal[key] for key in ("peak_bg", "peak_min", "nadir_bg", "nadir_min",
+                                        "peak_before_next_bg", "peak_before_next_min",
+                                        "outcome")))
+
+    def test_a_meal_whose_window_holds_only_a_sensor_gap_is_unread(self):
+        events = [_meal(day, 9) for day in range(8)]
+        gapped = events[0]
+        cgm = [reading if not 0 <= (reading.t - gapped.t).total_seconds() / 60 <= 315
+               else CgmReading(reading.t, None, "EGV")
+               for reading in _trace(gapped.t, _flat, until=400)]
+        cgm += [reading for event in events[1:] for reading in _trace(event.t, _flat)]
+        _block, prepared = self._prepared(events, cgm)
+        result = prepared.project(0)
+
+        meal = next(meal for meal in result["meals"] if meal["t"] == gapped.t.isoformat())
+        self.assertEqual(
+            ("unread", None, None, None, None, None, None),
+            tuple(meal[key] for key in ("outcome", "peak_bg", "peak_min", "nadir_bg",
+                                        "nadir_min", "peak_before_next_bg",
+                                        "peak_before_next_min")))
+        self.assertEqual(1, result["outcomes"]["counts"]["unread"])
+
     def test_a_pooled_chain_reads_each_of_its_meals_on_its_own_window(self):
         # Eight flat lone runs, then one two-meal chain: glucose is already rising
         # into its first bolus and peaks at 300, then Control-IQ suspends under its
@@ -824,6 +865,9 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
 
         committed = json.loads(OUT.read_text())["cases"]["explained"]
         self.analysis, rows = explained_case()
+        # The case's store carries a sensor gap inside a counted meal's window, the
+        # way a real store does, so the route is answered over one.
+        self.assertTrue(any(reading.bg is None for reading in rows[1]))
         self.tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
         self.addCleanup(self.tmp.close)
         with Store.open(self.tmp.name) as store:

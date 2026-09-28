@@ -8,6 +8,7 @@
     "asserts_move": false,
     "block_id": 0,
     "current": 5.0,
+    "direction": null,
     "effective_support": 0.0,
     "end_band_mgdl": 10.0,
     "end_min": 1440,
@@ -56,6 +57,7 @@
      "counted_run": 0,
      "counted_runs_distinct": 0,
      "not_a_meal_run": 0,
+     "total": 0,
      "uncounted_run": 0
     },
     "lows": [],
@@ -110,7 +112,7 @@
      "peaked_above_high_in_window": 0,
      "unread": 0
     },
-    "sentence": "These meals did not go above 180 more often than below 70, and this block asserts no change from what the ledger reads at the end of each meal chain, when the insulin is spent."
+    "window_min": 315
    },
    "runs": [
     {
@@ -140,6 +142,7 @@
      "ownership": 1.0,
      "pool_reason": "directional-only",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -185,6 +188,7 @@
     "asserts_move": false,
     "block_id": 0,
     "current": 5.0,
+    "direction": null,
     "effective_support": 4.0,
     "end_band_mgdl": 10.0,
     "end_min": 1440,
@@ -200,7 +204,7 @@
     "recommendation": {
      "rule": "half-gap-capped-rounded",
      "sentence": null,
-     "value": 5.0
+     "value": null
     },
     "run_ends": {
      "after_later_meal": 0,
@@ -233,6 +237,7 @@
      "counted_run": 0,
      "counted_runs_distinct": 0,
      "not_a_meal_run": 0,
+     "total": 0,
      "uncounted_run": 0
     },
     "lows": [],
@@ -329,7 +334,7 @@
      "peaked_above_high_in_window": 4,
      "unread": 0
     },
-    "sentence": "These meals more often went above 180 than below 70, and this block still asserts no change: the ledger closes at the end of each meal chain, when the insulin is spent, not at the peak in between."
+    "window_min": 315
    },
    "runs": [
     {
@@ -359,6 +364,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -395,6 +401,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -431,6 +438,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -467,6 +475,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -555,6 +564,7 @@
     "asserts_move": false,
     "block_id": 1200,
     "current": 5.0,
+    "direction": null,
     "effective_support": 9.0,
     "end_band_mgdl": 10.0,
     "end_min": 420,
@@ -570,7 +580,7 @@
     "recommendation": {
      "rule": "half-gap-capped-rounded",
      "sentence": null,
-     "value": 5.0
+     "value": null
     },
     "run_ends": {
      "after_later_meal": 0,
@@ -603,6 +613,7 @@
      "counted_run": 0,
      "counted_runs_distinct": 0,
      "not_a_meal_run": 0,
+     "total": 0,
      "uncounted_run": 0
     },
     "lows": [],
@@ -895,7 +906,7 @@
      "peaked_above_high_in_window": 0,
      "unread": 0
     },
-    "sentence": "These meals did not go above 180 more often than below 70, and this block asserts no change from what the ledger reads at the end of each meal chain, when the insulin is spent."
+    "window_min": 315
    },
    "runs": [
     {
@@ -927,6 +938,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -965,6 +977,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1003,6 +1016,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1041,6 +1055,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1079,6 +1094,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1117,6 +1133,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1155,6 +1172,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1193,6 +1211,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1231,6 +1250,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1656,6 +1676,7 @@
     "asserts_move": false,
     "block_id": 0,
     "current": 5.0,
+    "direction": null,
     "effective_support": 8.0,
     "end_band_mgdl": 10.0,
     "end_min": 1440,
@@ -1671,7 +1692,7 @@
     "recommendation": {
      "rule": "half-gap-capped-rounded",
      "sentence": null,
-     "value": 5.0
+     "value": null
     },
     "run_ends": {
      "after_later_meal": 0,
@@ -1704,6 +1725,7 @@
      "counted_run": 0,
      "counted_runs_distinct": 0,
      "not_a_meal_run": 0,
+     "total": 0,
      "uncounted_run": 0
     },
     "lows": [],
@@ -1870,7 +1892,7 @@
      "peaked_above_high_in_window": 0,
      "unread": 0
     },
-    "sentence": "These meals did not go above 180 more often than below 70, and this block asserts no change from what the ledger reads at the end of each meal chain, when the insulin is spent."
+    "window_min": 315
    },
    "runs": [
     {
@@ -1900,6 +1922,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1936,6 +1959,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -1972,6 +1996,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2008,6 +2033,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2044,6 +2070,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2080,6 +2107,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2116,6 +2144,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2152,6 +2181,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2188,6 +2218,7 @@
      "ownership": 1.0,
      "pool_reason": "directional-only",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -2433,6 +2464,7 @@
     "asserts_move": true,
     "block_id": 0,
     "current": 5.0,
+    "direction": "raise",
     "effective_support": 18.0,
     "end_band_mgdl": 10.0,
     "end_min": 720,
@@ -2481,6 +2513,7 @@
      "counted_run": 2,
      "counted_runs_distinct": 2,
      "not_a_meal_run": 0,
+     "total": 2,
      "uncounted_run": 0
     },
     "lows": [
@@ -2970,7 +3003,7 @@
      "peaked_above_high_in_window": 13,
      "unread": 1
     },
-    "sentence": "These meals more often went above 180 than below 70, and the ledger still reads over-coverage: it closes at the end of each meal chain, when the insulin is spent, not at the peak in between."
+    "window_min": 315
    },
    "runs": [
     {
@@ -3000,6 +3033,7 @@
      "ownership": 1.0,
      "pool_reason": "earlier-ratio-or-uncurrent-chain",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3036,6 +3070,7 @@
      "ownership": 1.0,
      "pool_reason": "earlier-ratio-or-uncurrent-chain",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3072,6 +3107,7 @@
      "ownership": 1.0,
      "pool_reason": "earlier-ratio-or-uncurrent-chain",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3108,6 +3144,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3144,6 +3181,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3180,6 +3218,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3216,6 +3255,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3252,6 +3292,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3288,6 +3329,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3324,6 +3366,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3360,6 +3403,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3396,6 +3440,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3432,6 +3477,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3468,6 +3514,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3504,6 +3551,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3542,6 +3590,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3580,6 +3629,7 @@
      "ownership": 1.0,
      "pool_reason": "counted-whole",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3618,6 +3668,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3656,6 +3707,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3694,6 +3746,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3732,6 +3785,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3770,6 +3824,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3808,6 +3863,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3846,6 +3902,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3884,6 +3941,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3922,6 +3980,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3960,6 +4019,7 @@
      "ownership": 0.4,
      "pool_reason": "counted-by-share",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,
@@ -3996,6 +4056,7 @@
      "ownership": 1.0,
      "pool_reason": "no-outcome-read",
      "post_correction_ciq": 0,
+     "post_correction_total": 0,
      "post_correction_unknown": 0,
      "post_correction_user": 0,
      "rescue_carbs": 0,

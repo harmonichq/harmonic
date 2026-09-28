@@ -2145,8 +2145,9 @@ def _recommendation(block: IcBlock, measured: Optional[float], direction: Option
                     cfg: IcConfig) -> Dict:
     """The block's recommended value and the analyzer's rule for it, in words.
 
-    The sentence is written only when the block asserts a move; a held or unmeasured
-    block has no rule to explain.
+    The value and the sentence are served only when the block asserts a move; a held
+    or unmeasured block recommends nothing, so it has no value to draw and no rule to
+    explain.  ``block.recommended`` itself is untouched.
     """
     sentence = None
     if direction is not None:
@@ -2158,8 +2159,8 @@ def _recommendation(block: IcBlock, measured: Optional[float], direction: Option
                if capped else "")
             + "rounded to the pump's 0.1 g/U step."
         )
-    return {"value": block.recommended, "rule": "half-gap-capped-rounded",
-            "sentence": sentence}
+    return {"value": block.recommended if block.asserts_move else None,
+            "rule": "half-gap-capped-rounded", "sentence": sentence}
 
 
 def _harm_low_rows(lows: Sequence[Dict], roster: Sequence[MealRun],
@@ -2830,6 +2831,9 @@ def _analyze_ic_blocks_shared(
                 "post_correction_user": r.post_correction_user,
                 "post_correction_ciq": r.post_correction_ciq,
                 "post_correction_unknown": r.post_correction_unknown,
+                "post_correction_total": round(
+                    r.post_correction_user + r.post_correction_ciq
+                    + r.post_correction_unknown, 3),
                 "ciq_basal_delta_acted_u": r.ciq_basal_delta_acted_u,
                 "rescue_carbs": r.rescue_carbs,
                 # The current-block evidence canvas consumes these analyzer-owned
@@ -2946,6 +2950,7 @@ def _analyze_ic_blocks_shared(
                                          if low["group"] == "uncounted-run"),
                     "not_a_meal_run": sum(1 for low in lows
                                           if low["group"] == "not-a-meal-run"),
+                    "total": len(lows),
                 },
                 "minutes_after_bolus_min": min(low_minutes, default=None),
                 "minutes_after_bolus_max": max(low_minutes, default=None),

@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from ciq_autotune.analyzers.classifiers.evidence import SilenceReason
-from ciq_autotune.analyzers.ic import POOL_REASONS, POOLED_REASONS
+from ciq_autotune.analyzers.ic import POOL_REASONS, POOLED_REASONS, IcConfig
 from ciq_autotune.analyzers.scenario.anchors import AnchorKind
 from ciq_autotune.analyzers.scenario.levers import Lever
 from ciq_autotune.analyzers.scenario.model_view import _KIND_LABEL
@@ -149,6 +149,19 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             self.assertEqual(10.0, case["block"]["end_band_mgdl"], name)
             self.assertEqual("half-gap-capped-rounded",
                              case["block"]["recommendation"]["rule"], name)
+            # A block that asserts no move serves no recommended value, rule sentence
+            # or direction.
+            if not case["block"]["asserts_move"]:
+                self.assertEqual((None, None, None),
+                                 (case["block"]["recommendation"]["value"],
+                                  case["block"]["recommendation"]["sentence"],
+                                  case["block"]["direction"]), name)
+            else:
+                self.assertIn(case["block"]["direction"], ("raise", "lower"), name)
+            self.assertEqual({"counts", "band", "window_min"}, set(case["outcomes"]),
+                             name)
+            self.assertEqual(IcConfig().post_meal_min,
+                             case["outcomes"]["window_min"], name)
 
     def test_every_run_row_names_a_reason_from_the_analyzers_closed_set(self):
         for name, case in self.cases.items():
@@ -166,6 +179,10 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                                  run["ended_after_later_meal"], (name, run["run_id"]))
                 self.assertEqual(run["in_pool"], run["fit_weight"] is not None,
                                  (name, run["run_id"]))
+                self.assertAlmostEqual(
+                    run["post_correction_user"] + run["post_correction_ciq"]
+                    + run["post_correction_unknown"], run["post_correction_total"],
+                    msg=(name, run["run_id"]))
 
     def test_every_run_end_is_its_travel_against_the_served_band(self):
         for name, case in self.cases.items():
@@ -208,7 +225,8 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                  "counted_runs_distinct": len({low["run_id"] for low in harm["lows"]
                                                if low["group"] == "counted-run"}),
                  "uncounted_run": groups.count("uncounted-run"),
-                 "not_a_meal_run": groups.count("not-a-meal-run")},
+                 "not_a_meal_run": groups.count("not-a-meal-run"),
+                 "total": len(harm["lows"])},
                 harm["groups"], name)
 
     def test_the_ledger_quotient_is_the_served_terms_own_arithmetic(self):

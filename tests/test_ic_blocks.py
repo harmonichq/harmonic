@@ -412,7 +412,8 @@ class BlockHarmEvidenceTest(unittest.TestCase):
         self.assertEqual(["counted-run", "counted-run"],
                          [row["group"] for row in evidence["lows"]])
         self.assertEqual({"counted_run": 2, "counted_runs_distinct": 2,
-                          "uncounted_run": 0, "not_a_meal_run": 0}, evidence["groups"])
+                          "uncounted_run": 0, "not_a_meal_run": 0, "total": 2},
+                         evidence["groups"])
         self.assertEqual((90.0, 150.0), (evidence["minutes_after_bolus_min"],
                                          evidence["minutes_after_bolus_max"]))
         self.assertFalse(block.asserts_move)

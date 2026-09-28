@@ -219,7 +219,7 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
         prepare_ic_block_evidence(self._store(), {"ic_blocks": [block]}).project(0)
 
         for path in (
-            ("current_values",), ("estimate", "wide"),
+            ("current_values",), ("estimate", "wide"), ("direction",),
             ("evidence", "recurrence_channels", "side_k"),
             ("evidence", "recurrence_channels", "side_direction"),
             ("evidence", "eligibility", "whole_runs"),
@@ -233,10 +233,12 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             ("evidence", "runs", 0, "end_class"),
             ("evidence", "runs", 0, "ended_after_later_meal"),
             ("evidence", "runs", 0, "fit_weight"),
+            ("evidence", "runs", 0, "post_correction_total"),
             ("evidence", "end_band_mgdl"), ("evidence", "run_ends", "after_later_meal"),
             ("evidence", "run_ends", "n"), ("evidence", "recommendation", "sentence"),
             ("evidence", "harm_evidence", "groups"),
             ("evidence", "harm_evidence", "groups", "counted_runs_distinct"),
+            ("evidence", "harm_evidence", "groups", "total"),
             ("evidence", "harm_evidence", "minutes_after_bolus_max"),
             ("evidence", "harm_evidence", "bearing_sentence"),
             ("evidence", "harm_evidence", "lows", 0, "group"),
@@ -320,6 +322,10 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
              "peaked_above_high_before_next": 2, "peaked_above_high_in_window": 2},
             result["outcomes"]["counts"])
         self.assertEqual({"low": 70.0, "high": 180.0}, result["outcomes"]["band"])
+        # The window each meal was read over is served, and no sentence rides beside
+        # the tally.
+        self.assertEqual({"counts", "band", "window_min"}, set(result["outcomes"]))
+        self.assertEqual(IcConfig().post_meal_min, result["outcomes"]["window_min"])
 
     def test_a_sensor_gap_inside_a_meals_window_is_not_a_reading(self):
         # Eight lone meals, one spiking to 300 at +30 and dipping to 60 at +150.  A
@@ -401,38 +407,6 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
         self.assertEqual([low.t.isoformat()],
                          [row["t"] for row in result["harm_evidence"]["lows"]])
         self.assertEqual(210.0, result["harm_evidence"]["minutes_after_bolus_median"])
-        self.assertIn("at the end of each meal chain", result["outcomes"]["sentence"])
-
-    def test_each_direction_and_balance_serves_its_own_sentence(self):
-        # Ten runs dosed away from the programmed 5.0 make the block assert a raise
-        # or a lower; five dosed at it leave the block below the floor, asserting
-        # nothing. Spikes on alternate meals put more meals above the band than
-        # below it; flat traces leave the two tied at zero.
-        doses = {"raise": (10, 8.0), "lower": (10, 16.0), None: (5, 12.0)}
-        wording = {"raise": "over-coverage", "lower": "under-coverage",
-                   None: "asserts no change"}
-        more_high, not_more_high = ("more often went above 180 than below 70",
-                                    "did not go above 180 more often than below 70")
-        served = set()
-        for direction, (count, insulin) in doses.items():
-            for spikes in (True, False):
-                with self.subTest(direction=direction, spikes=spikes):
-                    events = [_meal(day, 9, insulin=insulin) for day in range(count)]
-                    cgm = [reading for day, event in enumerate(events)
-                           for reading in _trace(
-                               event.t, _spike if spikes and day % 2 else _flat)]
-                    _block, prepared = self._prepared(events, cgm)
-                    result = prepared.project(0)
-                    counts = result["outcomes"]["counts"]
-                    sentence = result["outcomes"]["sentence"]
-                    self.assertEqual(direction is not None,
-                                     result["block"]["asserts_move"])
-                    self.assertEqual(spikes, counts["above_high"] > counts["below_low"])
-                    self.assertIn(wording[direction], sentence)
-                    self.assertIn(more_high if spikes else not_more_high, sentence)
-                    self.assertNotIn(not_more_high if spikes else more_high, sentence)
-                    served.add(sentence)
-        self.assertEqual(6, len(served))
 
     def test_a_rebuilt_preparation_missing_a_served_fact_is_refused(self):
         # The preparation's facts survive as a durable sidecar; one rebuilt from an
@@ -455,7 +429,7 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
             ("evidence", "outcomes", "band", "high"),
             ("evidence", "outcomes", "counts", "both"),
             ("evidence", "outcomes", "counts", "n"),
-            ("evidence", "outcomes", "sentence"),
+            ("evidence", "outcomes", "window_min"),
             ("evidence", "meals", 0, "next_bolus_min"),
             ("evidence", "meals", 0, "peak_before_next_bg"),
             ("evidence", "meals", 0, "on_counted_run"),
@@ -647,7 +621,9 @@ class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
             [(low["group"], low["run_id"], low["minutes_after_bolus"], low["bolus_carbs"])
              for low in harm["lows"]])
         self.assertEqual({"counted_run": 2, "counted_runs_distinct": 1,
-                          "uncounted_run": 1, "not_a_meal_run": 1}, harm["groups"])
+                          "uncounted_run": 1, "not_a_meal_run": 1, "total": 4},
+                         harm["groups"])
+        self.assertEqual(len(harm["lows"]), harm["groups"]["total"])
         self.assertEqual((90.0, 200.0), (harm["minutes_after_bolus_min"],
                                          harm["minutes_after_bolus_max"]))
         # This block asserts no move, so the lows have nothing to bear on.
@@ -669,24 +645,61 @@ class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
             "the suggestion.", with_low["harm_evidence"]["bearing_sentence"])
         self.assertIsNone(without["harm_evidence"]["bearing_sentence"])
 
-    def test_the_recommendation_states_the_analyzers_own_rule(self):
+    def test_only_a_block_that_asserts_a_move_serves_a_recommendation(self):
+        # Twelve runs of 60 g against a programmed 5.0 g/U.  11 U, 8 U and 16 U read
+        # 5.45, 7.50 and 3.75 g/U: two raises and a lower.  12 U reads the programmed
+        # value itself; alternating 9 U and 14 U read a band that holds 5.0 while
+        # its half-gap value is 5.1.  Both of those are numeric and assert no move,
+        # so they serve no value, no rule sentence and no direction — while the
+        # analyzer's own recommended value stays exactly what it was.
         cases = {
-            11.0: (5.2, "Recommended 5.20 is half the gap from the programmed 5.00 "
-                        "toward the 5.45 estimate, rounded to the pump's 0.1 g/U step."),
-            8.0: (6.0, "Recommended 6.00 is half the gap from the programmed 5.00 "
-                       "toward the 7.50 estimate, capped at 20 % of the programmed "
-                       "value, rounded to the pump's 0.1 g/U step."),
-            12.0: (5.0, None),
+            "raise": ((11.0,), 5.2, 5.2, "raise",
+                      "Recommended 5.20 is half the gap from the programmed 5.00 toward "
+                      "the 5.45 estimate, rounded to the pump's 0.1 g/U step."),
+            "capped raise": ((8.0,), 6.0, 6.0, "raise",
+                             "Recommended 6.00 is half the gap from the programmed 5.00 "
+                             "toward the 7.50 estimate, capped at 20 % of the programmed "
+                             "value, rounded to the pump's 0.1 g/U step."),
+            "lower": ((16.0,), 4.4, 4.4, "lower",
+                      "Recommended 4.40 is half the gap from the programmed 5.00 toward "
+                      "the 3.75 estimate, rounded to the pump's 0.1 g/U step."),
+            "at the programmed value": ((12.0,), 5.0, None, None, None),
+            "band holds the programmed value": ((9.0, 14.0), 5.1, None, None, None),
         }
-        for insulin, (value, sentence) in cases.items():
-            with self.subTest(insulin=insulin):
-                events = [_meal(day, 9, insulin=insulin) for day in range(10)]
+        for name, (doses, recommended, value, direction, sentence) in cases.items():
+            with self.subTest(name):
+                events = [_meal(day, 9, insulin=doses[day % len(doses)])
+                          for day in range(12)]
                 cgm = [reading for event in events for reading in _trace(event.t, _flat)]
-                result = self._prepared(events, cgm).project(0)
+                analyzed = _blocks(events, cgm_readings=cgm, isf_effective=50.0)[0]
+                block = self._prepared(events, cgm).project(0)["block"]
+                self.assertEqual(recommended, analyzed.recommended)
+                self.assertEqual(("numeric", direction is not None),
+                                 (block["state"], block["asserts_move"]))
                 self.assertEqual(
                     {"value": value, "rule": "half-gap-capped-rounded",
                      "sentence": sentence},
-                    result["block"]["recommendation"])
+                    block["recommendation"])
+                self.assertEqual(direction, block["direction"])
+
+    def test_each_run_serves_its_post_correction_total(self):
+        # Ten lone meals; the first three take a 1.5 U correction ninety minutes in.
+        meals = [_meal(day, 9) for day in range(10)]
+        corrections = [BolusEvent(t=meal.t + timedelta(minutes=90), insulin=1.5,
+                                  carbs=0.0, carb_ratio=5.0, completion="Completed")
+                       for meal in meals[:3]]
+        cgm = [reading for meal in meals for reading in _trace(meal.t, _flat)]
+        result = self._prepared(meals + corrections, cgm).project(0)
+
+        runs = {run["run_id"]: run for run in result["runs"]}
+        self.assertEqual([1.5] * 3 + [0.0] * 7,
+                         [runs[meal.t.isoformat()]["post_correction_total"]
+                          for meal in meals])
+        for run in result["runs"]:
+            self.assertAlmostEqual(
+                run["post_correction_user"] + run["post_correction_ciq"]
+                + run["post_correction_unknown"], run["post_correction_total"],
+                msg=run["run_id"])
 
 
 class IcBlockEvidenceEndpointTest(unittest.TestCase):
@@ -824,7 +837,7 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["block"], {
             "block_id": 0, "start_min": 0, "end_min": 1440, "label": "All day",
-            "state": "collecting", "asserts_move": False, "support": 0,
+            "state": "collecting", "asserts_move": False, "direction": None, "support": 0,
             "effective_support": 0.0, "examined_runs": 1, "excluded_runs": 1,
             "current": 5.0,
             "estimate": {"value": None, "lo": None, "hi": None, "wide": True},
@@ -943,7 +956,8 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
              "peaked_above_high_in_window": 1},
             body["outcomes"]["counts"])
         self.assertEqual({"low": 70.0, "high": 180.0}, body["outcomes"]["band"])
-        self.assertIn("at the end of each meal chain", body["outcomes"]["sentence"])
+        self.assertEqual(IcConfig().post_meal_min, body["outcomes"]["window_min"])
+        self.assertNotIn("sentence", body["outcomes"])
         self.assertEqual(
             [point["t"] for point in evidence["points"]],
             [meal["t"] for meal in body["meals"]])

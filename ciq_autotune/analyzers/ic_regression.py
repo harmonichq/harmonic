@@ -294,6 +294,11 @@ def _regression_block_fits(
             pool_reason_by_run={
                 RunIdentity(run.t): pool_reason(run) for run in roster
             },
+            # The fit weighs each run's row by its covered carbs; its carb shares
+            # are the regressors, not weights, so a chained run carries one weight.
+            fit_weight_by_run={
+                RunIdentity(run.t): row_by_run[RunIdentity(run.t)][0] for run in pool
+            },
             effective_run_count=whole + fractional,
             whole_runs=whole,
             fractional_run_ownership=fractional,

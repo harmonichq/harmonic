@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
 import json
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -211,7 +212,10 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
 
     def test_a_block_missing_any_published_fact_is_refused_not_served_with_a_hole(self):
         events = [_meal(day, 9, bg=110.0) for day in range(10)]
-        block = _blocks(events, harm_config=HarmConfig(), harm_lows=[])[0].to_dict()
+        low = PrintedLow(t=events[0].t + timedelta(minutes=150), bg=62.0, iob_u=1.5,
+                         arm=HarmArm.IC, dominant_bolus_t=events[0].t,
+                         attribution_reason="meal-bolus")
+        block = _blocks(events, harm_config=HarmConfig(), harm_lows=[low])[0].to_dict()
         prepare_ic_block_evidence(self._store(), {"ic_blocks": [block]}).project(0)
 
         for path in (
@@ -226,6 +230,18 @@ class IcBlockEvidenceProjectionTest(unittest.TestCase):
             ("evidence", "harm_evidence", "evaluated"),
             ("evidence", "runs", 0, "pool_reason"), ("evidence", "runs", 0, "side"),
             ("evidence", "runs", 0, "member_in_block"),
+            ("evidence", "runs", 0, "end_class"),
+            ("evidence", "runs", 0, "ended_after_later_meal"),
+            ("evidence", "runs", 0, "fit_weight"),
+            ("evidence", "end_band_mgdl"), ("evidence", "run_ends", "after_later_meal"),
+            ("evidence", "run_ends", "n"), ("evidence", "recommendation", "sentence"),
+            ("evidence", "harm_evidence", "groups"),
+            ("evidence", "harm_evidence", "groups", "counted_runs_distinct"),
+            ("evidence", "harm_evidence", "minutes_after_bolus_max"),
+            ("evidence", "harm_evidence", "bearing_sentence"),
+            ("evidence", "harm_evidence", "lows", 0, "group"),
+            ("evidence", "harm_evidence", "lows", 0, "run_id"),
+            ("evidence", "harm_evidence", "lows", 0, "minutes_after_bolus"),
         ):
             with self.subTest(path=path):
                 broken = deepcopy(block)
@@ -289,7 +305,8 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
         self.assertEqual(
             {"t": high.t.isoformat(), "run_id": high.t.isoformat(), "offset_min": 0.0,
              "peak_bg": 300.0, "peak_min": 30.0, "nadir_bg": 120.0, "nadir_min": 100.0,
-             "outcome": "high"},
+             "outcome": "high", "next_bolus_min": None, "peak_before_next_bg": 300.0,
+             "peak_before_next_min": 30.0, "on_counted_run": True},
             by_t[high.t.isoformat()])
         self.assertEqual((60.0, 150.0), (by_t[low.t.isoformat()]["nadir_bg"],
                                          by_t[low.t.isoformat()]["nadir_min"]))
@@ -299,7 +316,8 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
                                            "nadir_min")))
         self.assertEqual(
             {"above_high": 2, "below_low": 2, "both": 1, "in_range": 4, "unread": 1,
-             "n": len(points)},
+             "n": len(points), "meals_on_counted_runs": 7,
+             "peaked_above_high_before_next": 2, "peaked_above_high_in_window": 2},
             result["outcomes"]["counts"])
         self.assertEqual({"low": 70.0, "high": 180.0}, result["outcomes"]["band"])
 
@@ -336,7 +354,8 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
                   for key in ("run_id", "offset_min", "outcome", "nadir_min")))
         self.assertEqual(
             {"above_high": 1, "below_low": 2, "both": 1, "in_range": 8, "unread": 0,
-             "n": 10},
+             "n": 10, "meals_on_counted_runs": 10, "peaked_above_high_before_next": 1,
+             "peaked_above_high_in_window": 1},
             result["outcomes"]["counts"])
         self.assertEqual([low.t.isoformat()],
                          [row["t"] for row in result["harm_evidence"]["lows"]])
@@ -396,6 +415,12 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
             ("evidence", "outcomes", "counts", "both"),
             ("evidence", "outcomes", "counts", "n"),
             ("evidence", "outcomes", "sentence"),
+            ("evidence", "meals", 0, "next_bolus_min"),
+            ("evidence", "meals", 0, "peak_before_next_bg"),
+            ("evidence", "meals", 0, "on_counted_run"),
+            ("evidence", "outcomes", "counts", "meals_on_counted_runs"),
+            ("evidence", "outcomes", "counts", "peaked_above_high_before_next"),
+            ("evidence", "outcomes", "counts", "peaked_above_high_in_window"),
         ):
             with self.subTest(path=path):
                 broken = deepcopy(dumped)
@@ -405,6 +430,222 @@ class IcBlockMealOutcomeTest(unittest.TestCase):
                 del holder[path[-1]]
                 with self.assertRaises(InconsistentIcBlockEvidence):
                     rebuild_ic_block_evidence(broken).project(0)
+
+
+def _outcome_cgm(events, end=110.0):
+    """CGM only at each meal's full-DIA read, so a run's end is exactly ``end``."""
+    return [CgmReading(event.t + timedelta(minutes=minute), end, "synthetic")
+            for event in events for minute in (290, 295, 300, 305, 310)]
+
+
+def _late_spike(minute):
+    """Flat until +95, up to 250 at +150, and back to 120 by +210."""
+    if minute <= 95:
+        return 120.0
+    if minute <= 150:
+        return 120.0 + 130.0 * (minute - 95) / 55.0
+    if minute <= 210:
+        return 250.0 - 130.0 * (minute - 150) / 60.0
+    return 120.0
+
+
+def _low(bolus, minutes, carbs=60.0):
+    """A printed low the harm layer attributed to ``bolus``, ``minutes`` after it."""
+    return PrintedLow(t=bolus.t + timedelta(minutes=minutes), bg=62.0, iob_u=1.5,
+                      arm=HarmArm.IC, dominant_bolus_t=bolus.t,
+                      dominant_bolus_carbs=carbs, attribution_reason="meal-bolus")
+
+
+class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
+    """The facts the settled block surface prints are served, never derived (#464).
+
+    Every case is preparation output over analyzer runs built from synthetic meals.
+    """
+
+    def _prepared(self, events, cgm, *, segments=((0, 5.0),), harm_lows=None):
+        store = Store.open(":memory:")
+        self.addCleanup(store.close)
+        write_set_to_store(store, {"events": list(events), "cgm_readings": list(cgm),
+                                   "snapshots": []})
+        blocks = _blocks(events, segments, cgm_readings=cgm, isf_effective=50.0,
+                         harm_config=HarmConfig() if harm_lows is not None else None,
+                         harm_lows=harm_lows)
+        return prepare_ic_block_evidence(
+            store, {"ic_blocks": [block.to_dict() for block in blocks]})
+
+    def test_a_run_ending_exactly_the_band_from_its_start_ended_flat(self):
+        # Every run starts at its bolus BG of 110 and is read at +300 min.
+        ends = [120.0, 100.0, 121.0, 99.0] + [110.0] * 6
+        events = [_meal(day, 9, bg=110.0) for day in range(len(ends))]
+        cgm = [reading for event, end in zip(events, ends)
+               for reading in _outcome_cgm([event], end)]
+        result = self._prepared(events, cgm).project(0)
+
+        runs = {run["run_id"]: run for run in result["runs"]}
+        self.assertEqual(10.0, result["block"]["end_band_mgdl"])
+        self.assertEqual(["flat", "flat", "higher", "lower"],
+                         [runs[event.t.isoformat()]["end_class"] for event in events[:4]])
+        self.assertTrue(all(run["in_pool"] for run in result["runs"]))
+        self.assertEqual(
+            {"lower": 1, "flat": 8, "higher": 1, "after_later_meal": 0, "n": 10},
+            result["block"]["run_ends"])
+
+    def test_a_chain_whose_last_meal_is_after_the_block_end_says_so(self):
+        lone = [_meal(day, 9, bg=110.0) for day in range(10)]
+        chains = [item for day in range(10, 20)
+                  for item in (_meal(day, 11, bg=110.0), _meal(day, 13, bg=110.0))]
+        events = lone + chains
+        prepared = self._prepared(events, _outcome_cgm(events),
+                                  segments=((0, 5.0), (720, 6.0)))
+        morning, afternoon = prepared.project(0), prepared.project(720)
+
+        runs = {run["run_id"]: run for run in morning["runs"]}
+        self.assertFalse(runs[lone[0].t.isoformat()]["ended_after_later_meal"])
+        self.assertEqual("counted-by-share", runs[chains[0].t.isoformat()]["pool_reason"])
+        self.assertTrue(runs[chains[0].t.isoformat()]["ended_after_later_meal"])
+        self.assertEqual(10, morning["block"]["run_ends"]["after_later_meal"])
+        # The afternoon block owns the chain's last meal, so it ended in its hours.
+        self.assertFalse(next(run for run in afternoon["runs"]
+                              if run["run_id"] == chains[0].t.isoformat())
+                         ["ended_after_later_meal"])
+
+    def test_each_counted_run_serves_the_weight_the_regression_gave_it(self):
+        from ciq_autotune.analyzers import ic_regression
+
+        real, fits = ic_regression._regression_estimates, []
+
+        def spy(rows):
+            # The fit's own per-run rows, keyed by run, as it hands them to the
+            # estimator: (weight, 1/ratio, shares).
+            fits.append({run_id.started_at.isoformat(): row for run_id, row
+                         in sys._getframe(1).f_locals["row_by_run"].items()})
+            return real(rows)
+
+        lone = [_meal(day, 9, carbs=40.0 + 2 * day, insulin=(40.0 + 2 * day) / 5,
+                      bg=110.0) for day in range(10)]
+        chains = [item for day in range(10, 20)
+                  for item in (_meal(day, 11, carbs=30.0 + day, insulin=6.0, bg=110.0),
+                               _meal(day, 13, carbs=50.0, insulin=9.0, bg=110.0))]
+        gap = _meal(30, 9, carbs=55.0, insulin=11.0, bg=110.0)
+        events = lone + chains + [gap]
+        with patch.object(ic_regression, "_regression_estimates", spy):
+            prepared = self._prepared(events, _outcome_cgm(lone + chains),
+                                      segments=((0, 5.0), (720, 6.0)))
+
+        # The first estimate call is the full fit.
+        fit_rows = fits[0]
+        counted = set()
+        for block_id in (0, 720):
+            for run in prepared.project(block_id)["runs"]:
+                if not run["in_pool"]:
+                    self.assertIsNone(run["fit_weight"], run["run_id"])
+                    continue
+                # A chained run is one row of the fit, so both blocks serve its weight.
+                counted.add(run["run_id"])
+                self.assertEqual(fit_rows[run["run_id"]][0], run["fit_weight"],
+                                 (block_id, run["run_id"]))
+        self.assertIn(gap.t.isoformat(),
+                      {run["run_id"] for run in prepared.project(0)["runs"]})
+        self.assertEqual(set(fit_rows), counted)
+
+    def test_the_next_bolus_skips_one_under_thirty_minutes_later(self):
+        # A lone flat morning run per day, then one chain: a bolus topped up twenty
+        # minutes later, and a third bolus ninety minutes after the first.  Glucose
+        # stays flat until after the third bolus, then spikes to 250.
+        lone = [_meal(day, 9) for day in range(8)]
+        first = _meal(10, 9)
+        topped = _meal(10, 9, minute=20, carbs=20.0, insulin=4.0)
+        later = _meal(10, 10, minute=30, carbs=40.0, insulin=8.0)
+        cgm = [reading for event in lone for reading in _trace(event.t, _flat)]
+        cgm += _trace(first.t, _late_spike, until=450)
+        result = self._prepared(lone + [first, topped, later], cgm).project(0)
+
+        chain = next(run for run in result["runs"] if run["run_id"] == first.t.isoformat())
+        self.assertEqual((3, True), (chain["n_meals"], chain["in_pool"]))
+        by_t = {meal["t"]: meal for meal in result["meals"]}
+        self.assertEqual([90.0, 70.0, None],
+                         [by_t[event.t.isoformat()]["next_bolus_min"]
+                          for event in (first, topped, later)])
+        # The first meal's window is cut at the third bolus, before the spike.
+        self.assertEqual((120.0, 0.0, 250.0),
+                         tuple(by_t[first.t.isoformat()][key] for key in (
+                             "peak_before_next_bg", "peak_before_next_min", "peak_bg")))
+        # The last meal has no next bolus, so its window runs whole.
+        self.assertEqual((250.0, 60.0),
+                         tuple(by_t[later.t.isoformat()][key] for key in (
+                             "peak_before_next_bg", "peak_before_next_min")))
+        self.assertTrue(all(meal["on_counted_run"] for meal in result["meals"]))
+        counts = result["outcomes"]["counts"]
+        self.assertEqual(
+            (11, 1, 3),
+            (counts["meals_on_counted_runs"], counts["peaked_above_high_before_next"],
+             counts["peaked_above_high_in_window"]))
+        self.assertLessEqual(counts["peaked_above_high_before_next"],
+                             counts["peaked_above_high_in_window"])
+
+    def test_each_low_names_the_group_of_the_run_its_bolus_belongs_to(self):
+        # The day-12 run has no outcome read, so the fit leaves it uncounted.
+        counted = [_meal(day, 9, bg=110.0) for day in range(10)]
+        uncounted = _meal(12, 9, bg=110.0)
+        correction = BolusEvent(t=BASE + timedelta(days=14, hours=9), insulin=2.0,
+                                carbs=0.0, carb_ratio=5.0, completion="Completed")
+        lows = [_low(counted[0], 150), _low(counted[0], 200), _low(uncounted, 120),
+                _low(correction, 90, carbs=0.0)]
+        result = self._prepared(counted + [uncounted, correction],
+                                _outcome_cgm(counted), harm_lows=lows).project(0)
+
+        runs = {run["run_id"]: run for run in result["runs"]}
+        self.assertFalse(runs[uncounted.t.isoformat()]["in_pool"])
+        self.assertNotIn(correction.t.isoformat(), runs)
+        harm = result["harm_evidence"]
+        self.assertEqual(
+            [("counted-run", counted[0].t.isoformat(), 150.0, 60.0),
+             ("counted-run", counted[0].t.isoformat(), 200.0, 60.0),
+             ("uncounted-run", uncounted.t.isoformat(), 120.0, 60.0),
+             ("not-a-meal-run", None, 90.0, 0.0)],
+            [(low["group"], low["run_id"], low["minutes_after_bolus"], low["bolus_carbs"])
+             for low in harm["lows"]])
+        self.assertEqual({"counted_run": 2, "counted_runs_distinct": 1,
+                          "uncounted_run": 1, "not_a_meal_run": 1}, harm["groups"])
+        self.assertEqual((90.0, 200.0), (harm["minutes_after_bolus_min"],
+                                         harm["minutes_after_bolus_max"]))
+        # This block asserts no move, so the lows have nothing to bear on.
+        self.assertFalse(result["block"]["asserts_move"])
+        self.assertIsNone(harm["bearing_sentence"])
+
+    def test_a_raise_blocks_counted_run_low_bears_the_same_way(self):
+        # 60 g on 8 U reads 7.5 g/U against a programmed 5.0: a raise.
+        events = [_meal(day, 9, insulin=8.0) for day in range(10)]
+        cgm = [reading for event in events for reading in _trace(event.t, _flat)]
+        with_low = self._prepared(events, cgm, harm_lows=[_low(events[0], 150)]).project(0)
+        without = self._prepared(events, cgm, harm_lows=[]).project(0)
+
+        block = with_low["block"]
+        self.assertEqual((True, 5.0, 6.0), (block["asserts_move"], block["current"],
+                                            block["recommendation"]["value"]))
+        self.assertEqual(
+            "The 1 low on a counted run points toward less insulin, the same way as "
+            "the suggestion.", with_low["harm_evidence"]["bearing_sentence"])
+        self.assertIsNone(without["harm_evidence"]["bearing_sentence"])
+
+    def test_the_recommendation_states_the_analyzers_own_rule(self):
+        cases = {
+            11.0: (5.2, "Recommended 5.20 is half the gap from the programmed 5.00 "
+                        "toward the 5.45 estimate, rounded to the pump's 0.1 g/U step."),
+            8.0: (6.0, "Recommended 6.00 is half the gap from the programmed 5.00 "
+                       "toward the 7.50 estimate, capped at 20 % of the programmed "
+                       "value, rounded to the pump's 0.1 g/U step."),
+            12.0: (5.0, None),
+        }
+        for insulin, (value, sentence) in cases.items():
+            with self.subTest(insulin=insulin):
+                events = [_meal(day, 9, insulin=insulin) for day in range(10)]
+                cgm = [reading for event in events for reading in _trace(event.t, _flat)]
+                result = self._prepared(events, cgm).project(0)
+                self.assertEqual(
+                    {"value": value, "rule": "half-gap-capped-rounded",
+                     "sentence": sentence},
+                    result["block"]["recommendation"])
 
 
 class IcBlockEvidenceEndpointTest(unittest.TestCase):
@@ -549,6 +790,11 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
             "side": {"side_k": 0, "side_n": 0, "direction": None},
             "support_detail": {"whole_runs": 0, "fractional_run_ownership": 0.0,
                                "effective_run_count": 0.0},
+            "end_band_mgdl": 10.0,
+            "run_ends": {"lower": 0, "flat": 0, "higher": 0, "after_later_meal": 0,
+                         "n": 0},
+            "recommendation": {"value": None, "rule": "half-gap-capped-rounded",
+                               "sentence": None},
         })
         self.assertEqual(len(response.json()["runs"]), 1)
         self.assertFalse(response.json()["runs"][0]["in_pool"])
@@ -649,7 +895,8 @@ class IcBlockEvidenceEndpointTest(unittest.TestCase):
                          [row["t"] for row in body["harm_evidence"]["lows"]])
         self.assertEqual(
             {"above_high": 1, "below_low": 2, "both": 1, "in_range": 8, "unread": 0,
-             "n": 10},
+             "n": 10, "meals_on_counted_runs": 10, "peaked_above_high_before_next": 1,
+             "peaked_above_high_in_window": 1},
             body["outcomes"]["counts"])
         self.assertEqual({"low": 70.0, "high": 180.0}, body["outcomes"]["band"])
         self.assertIn("at the end of each meal chain", body["outcomes"]["sentence"])

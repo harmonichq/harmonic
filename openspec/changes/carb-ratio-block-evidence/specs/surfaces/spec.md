@@ -38,8 +38,8 @@ tile SHALL derive no ratio, weight, side, end, group, band, count or direction.
 
 - **GIVEN** a listed low whose served group is a run not counted
 - **WHEN** the run timeline renders
-- **THEN** that low is an outlined triangle and the key names it as a low on a run
-  not counted
+- **THEN** that low is an outlined triangle and the key names it as a low not on a
+  counted run, the key a low after a bolus on no meal run shares
 
 ### Requirement: The carb-ratio block panel explains its move
 

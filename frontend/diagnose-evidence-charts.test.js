@@ -1876,6 +1876,8 @@ test('#464 · every listed low is a ▼ at its glucose on its date, filled only 
   }
   assert.equal(byId(overview(regrouped), 'ic:lows:other').data.length, 2,
     'premise: the regrouped payload lists lows off counted runs');
+  // The hollow ▼ holds a low on an uncounted run and one on no meal run alike.
+  assert.equal(byId(overview(regrouped), 'ic:lows:other').name, 'not on a counted run');
 });
 
 test('#464 · the tile keys itself in two legend rows, in the settled words, and nothing else', () => {
@@ -1885,7 +1887,7 @@ test('#464 · the tile keys itself in two legend rows, in the settled words, and
   assert.deepEqual(words(option.legend[0]), ['whole run',
     'counted by share · size = carbs counted · hover a dot for the insulin behind its ratio']);
   assert.deepEqual(words(option.legend[1]), ['at the bolus', 'where the run ended', 'listed low',
-    'on a run not counted']);
+    'not on a counted run']);
   const named = new Set(option.series.map(({ name }) => name));
   for (const legend of option.legend) {
     assert.ok(legend.data.every(({ name }) => named.has(name)), 'every chip keys a drawn series');
@@ -2307,10 +2309,10 @@ test('#464 · each legend key is filled or hollow as its mark is', () => {
   const option = overview(icCases().explained);
   const keys = Object.fromEntries(option.legend.flatMap(({ data }) => data)
     .map(({ name, icon, itemStyle }) => [name, { icon, ink: itemStyle.color }]));
-  const hollow = ['counted by share', 'at the bolus', 'on a run not counted'];
+  const hollow = ['counted by share', 'at the bolus', 'not on a counted run'];
   const filled = ['whole run', 'where the run ended', 'listed low'];
   for (const [solid, open] of [['whole run', 'counted by share'], ['where the run ended', 'at the bolus'],
-    ['listed low', 'on a run not counted']]) {
+    ['listed low', 'not on a counted run']]) {
     assert.notEqual(keys[solid].icon, keys[open].icon, `${solid} and ${open} key differently`);
   }
   assert.ok(hollow.every((name) => keys[name].icon.startsWith('path://')

@@ -1132,7 +1132,7 @@ function carbRatioOption(_mode, {
       data: stemmed.map((run) => ({ value: [day(run.t), run.outcome_bg], runId: run.run_id })),
       itemStyle: { color: colors.text } }),
     onB({ id: 'ic:lows:counted', name: 'listed low', ...lowMarks(true) }),
-    onB({ id: 'ic:lows:other', name: 'on a run not counted', ...lowMarks(false) }),
+    onB({ id: 'ic:lows:other', name: 'not on a counted run', ...lowMarks(false) }),
     onB({ id: 'ic:selected:end', type: 'scatter', ...ring,
       data: selected && stemmed.includes(selected)
         ? [{ value: [day(selected.t), selected.outcome_bg], symbolSize: 13 }] : [] }),
@@ -1160,7 +1160,7 @@ function carbRatioOption(_mode, {
       { ...legendChips([key('at the bolus', RING, colors.text),
         key('where the run ended', 'circle', colors.text),
         key('listed low', DOWN_TRIANGLE, colors.low),
-        key('on a run not counted', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
+        key('not on a counted run', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
       left: GRID.left, top: laneB + 6 },
     ],
     /* A dot, a stem or its markers read out their run; a ▼ reads out its low. */

@@ -17,10 +17,13 @@ it ended after a later meal outside the block's hours. The block publishes its
 whole-run count, its fractional carb-share ownership and their effective sum; the
 side's direction beside its side counts; how its counted runs ended; a
 carb-share-weighted pooled balance sheet whose quotient is published beside, and
-labelled distinctly from, the fitted estimate; and its recommendation with the
-analyzer's own rule stated in words — half the gap from the programmed ratio
-toward the estimate, capped when the step cap bound it, rounded to the pump's
-step. No consumer reconstructs a reason, a side, an end, a weight, a term or a
+labelled distinctly from, the fitted estimate; its asserted direction; and its
+recommendation with the analyzer's own rule stated in words — half the gap from
+the programmed ratio toward the estimate, capped when the step cap bound it,
+rounded to the pump's step. A block that asserts no move publishes no
+recommended value, no rule sentence and no direction: the analyzer's own
+recommendation is unchanged, but a hold serves nothing a consumer could draw as a
+move. No consumer reconstructs a reason, a side, an end, a weight, a term or a
 count from the estimate, the bounds or the run identity.
 
 #### Scenario: A lone meal whose outcome read falls in a CGM gap
@@ -44,7 +47,7 @@ count from the estimate, the bounds or the run identity.
 - **THEN** each counted run's published fit weight equals the weight the fit gave
   that same run, and the fit's runs are exactly the counted runs
 
-### Requirement: A carb-ratio block publishes its meals' plain readings and one reconciling sentence
+### Requirement: A carb-ratio block publishes its meals' plain readings
 
 The system SHALL satisfy the following:
 
@@ -57,16 +60,15 @@ the window holds no reading. It also publishes the minutes to the run's next bol
 before that next bolus, and whether the meal is on a counted run. The band is the
 analyzer's own in-range band, published once. The tally counts those outcomes, the
 meals on counted runs, and how many of those peaked above the band before their
-next bolus and anywhere in their window; one sentence is chosen on the server from
-a closed set on the block's asserted direction and whether more meals went above
-the band than below it. A store reading with no glucose value is dropped once,
+next bolus and anywhere in their window, and publishes the length of the window
+every meal was read over, so no client restates it. A store reading with no glucose value is dropped once,
 where every window is sliced, so a sensor gap is never read as a glucose value.
 The projection layer publishes the readings and tally, because it holds the store;
 the block stamper publishes neither. The block's harm arm publishes its listed
 lows, gate, nudge, day count and seriousness, and each low's run, its group (on a
 counted run, on a run not counted, or after a bolus that is not one of these
 meals), its minutes after its bolus and that bolus's carbs; the harm row adds the
-group counts, the median, least and greatest minutes after the bolus over exactly
+group counts and their total, the median, least and greatest minutes after the bolus over exactly
 those lows, and one sentence on how the lows on counted runs bear on the move. The
 surface prints every sentence verbatim and composes none.
 
@@ -76,8 +78,8 @@ surface prints every sentence verbatim and composes none.
   block-hours meal and later prints a low attributed to that meal
 - **WHEN** the block evidence is published
 - **THEN** its tally counts at least one meal above the band, its harm evidence
-  lists the low on a counted run with its minutes after its bolus, and its sentence
-  names the chain-end read
+  lists the low on a counted run with its minutes after its bolus, and its group
+  total counts it
 
 #### Scenario: A sensor gap is not a reading
 

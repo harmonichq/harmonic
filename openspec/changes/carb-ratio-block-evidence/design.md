@@ -152,10 +152,10 @@ stayed in range, or had no reading. A meal whose window holds no reading is
 unread, never in range. Each meal also carries its peak before the run's next
 bolus (a bolus under thirty minutes later is the same meal and is skipped), since
 a later meal's rise is not this meal's outcome. The band is the analyzer's own
-in-range band, served once on the tally so no client restates it. The block's
-tally counts those readings, and the reconciling sentence (ADR 464 — The backend
-serves the reconciling sentence from a closed set) now keys on whether more meals
-went above the band than below it.
+in-range band, served once on the tally so no client restates it, and so is the
+length of the post-meal window. The block's tally counts those readings; the
+reconciling sentence it once keyed is retired (ADR 464 — The backend serves the
+reconciling sentence from a closed set, superseded).
 
 The 90-day exposure pass the credited claims needed is gone from the block
 evidence, and so is the pooled meal comparison built on its cohorts. The tally no
@@ -250,18 +250,23 @@ block-evidence projection refuses a block missing any of them:
 
 - **Per run:** how the run ended against where it started (lower, flat or higher)
   and the flat band, served once on the block; whether the run ended after a later
-  meal outside the block's hours; the weight the fit gave it.
+  meal outside the block's hours; the weight the fit gave it; the total correction
+  insulin its ledger counted, summed once on the server.
 - **Per block:** how its counted runs ended (lower, flat, higher, after a later
-  meal, of how many); the recommendation with its rule and its reason sentence;
-  the side's direction beside the side counts.
+  meal, of how many); the block's asserted direction (raise, lower, or none); the
+  recommendation with its rule, whose value and reason sentence are served only
+  when the block asserts a move and are null on a hold, so the tile draws no
+  recommended rule for a block that recommends nothing; the side's direction
+  beside the side counts.
 - **Per meal:** peak and nadir with their minutes after the bolus, the plain
   outcome, minutes to the run's next bolus, the peak before that next bolus, and
-  whether the meal is on a counted run; on the tally, the band and the counts of
-  meals on counted runs that peaked above the band before the next bolus and
-  anywhere in the window.
+  whether the meal is on a counted run; on the tally, the band, the length of the
+  post-meal window every meal was read over, and the counts of meals on counted
+  runs that peaked above the band before the next bolus and anywhere in the window.
 - **Per low:** the run its bolus belongs to, its group (counted run, uncounted run,
   not one of these meals), its minutes after the bolus and that bolus's carbs; on
-  the harm row, the group counts, the minutes range, and the bearing sentence.
+  the harm row, the group counts and their total, the minutes range, and the
+  bearing sentence.
 - **Sensor gaps.** A store reading with no glucose value is dropped once, where
   the preparation slices every meal and run window, so no window holds one; a meal
   window holding only a gap reads as unread.

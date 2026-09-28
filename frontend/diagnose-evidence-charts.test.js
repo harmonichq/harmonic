@@ -2098,6 +2098,64 @@ test('#464 · a hover after the keys reads out the hovered run, a ring counted b
   }
 });
 
+/* The keys' run is announced the way the comparison chart announces its cursor:
+   the focused host's label carries the reading. ECharts writes the option's
+   resting description onto the host on every render, and the fake chart here
+   does the same. */
+test('#464 · stepping the cursor labels the tile with the cursor run, in the tooltip\'s own words', async () => {
+  const data = icCases().explained;
+  const [first, second] = [...countedRuns(data)].sort((a, b) => (a.t < b.t ? -1 : 1));
+  const listeners = new Map();
+  const surface = { clientWidth: 966, clientHeight: 459, tabIndex: -1,
+    setAttribute(key, value) { this[key] = value; },
+    addEventListener(type, handler, { signal } = {}) {
+      listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+    } };
+  const fire = (type, event = {}) => (listeners.get(type) || [])
+    .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+  const chart = { option: null, on() {}, off() {}, dispatchAction() {},
+    setOption(next, notMerge) {
+      if (notMerge) this.option = next;
+      else for (const part of next.series) Object.assign(this.option.series.find(({ id }) => id === part.id), part);
+      surface.setAttribute('aria-label', this.option.aria.description);
+    } };
+  const words = (run) => {
+    const dot = [...byId(chart.option, 'ic:dots:whole').data, ...byId(chart.option, 'ic:dots:share').data]
+      .find(({ runId }) => runId === run.run_id);
+    return `${chart.option.tooltip.formatter({ data: dot }).split('<br>').join('. ')}.`;
+  };
+  const prior = globalThis.echarts;
+  globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+  try {
+    const relayout = () => chart.setOption(overview(data, { surface, onSelectRun: () => {} }), true);
+    relayout();
+    const resting = chart.option.aria.description;
+    assert.equal(surface['aria-label'], resting, 'premise: at rest the tile carries its description');
+
+    fire('keydown', { key: 'ArrowRight' });
+    assert.equal(surface['aria-label'], words(first), 'the first step reads out the first run by date');
+    assert.ok(surface['aria-label'].startsWith(`${first.t.slice(0, 10)}. ${first.t.slice(11, 16)}. `),
+      'the reading opens on the run\'s date and time');
+    fire('keydown', { key: 'ArrowRight' });
+    assert.equal(surface['aria-label'], words(second), 'the next step reads out the second run');
+
+    relayout();
+    await Promise.resolve();
+    assert.equal(surface['aria-label'], words(second), 'a relayout keeps the reading on the cursor run');
+
+    const hovered = byId(chart.option, 'ic:dots:share').data.find(({ runId }) => runId !== second.run_id);
+    chart.option.tooltip.formatter({ data: hovered });
+    assert.equal(surface['aria-label'], words(second), 'a hover leaves the reading alone');
+    fire('pointermove');
+    assert.equal(surface['aria-label'], resting, 'a released cursor leaves the tile at rest');
+    fire('keydown', { key: 'ArrowRight' });
+    fire('blur');
+    assert.equal(surface['aria-label'], resting, 'focus leaving puts the tile at rest');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
 /* A tile whose request fails, or that repaints, disposes its chart and keeps
    its host. The host's handlers must then do nothing — never call into a chart
    that is absent or disposed — and drop themselves. */

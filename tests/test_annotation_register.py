@@ -73,8 +73,12 @@ def _ch(*, night_median=None, fits=None, corr_low_days=0, rescue_days=0,
 
 
 def basal_annotations() -> dict:
-    """Every basal status's sentence, keyed by the status string the API emits."""
-    return {status.value: _annotation_for(status) for status in Status}
+    """Every basal status's sentence, keyed by the status string the API emits,
+    plus the recurring-lows hold sentence a gated slot serves (ADR 465)."""
+    sentences = {status.value: _annotation_for(status) for status in Status}
+    sentences[f"{Status.HARM_GATED.value} (recurring hold)"] = _annotation_for(
+        Status.HARM_GATED, recurring_hold=True)
+    return sentences
 
 
 # One entry per reachable `_recommend` branch. The `direction` each case is expected
@@ -356,11 +360,11 @@ class RegisterTest(unittest.TestCase):
 
     def test_every_basal_status_annotation_is_in_register(self):
         catalog = basal_annotations()
-        self.assertEqual(len(catalog), len(Status),
-                         "every status must carry a sentence")
-        for status in Status:
-            with self.subTest(status=status.value):
-                self._check(f"basal {status.value}", _annotation_for(status))
+        self.assertLessEqual({status.value for status in Status}, set(catalog),
+                             "every status must carry a sentence")
+        for key, sentence in catalog.items():
+            with self.subTest(status=key):
+                self._check(f"basal {key}", sentence)
 
     def test_every_correction_strength_branch_is_in_register(self):
         for branch, sentence in isf_annotations().items():

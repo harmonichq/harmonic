@@ -105,6 +105,12 @@ class LateBolusSilenceTest(unittest.TestCase):
         v = classify_late_bolus(m, cgm)
         self.assertEqual(v.silence_reason, SilenceReason.PRIOR_HIGH_BASELINE)
 
+    def test_in_range_meal_is_stayed_in_range(self):
+        # ADR 461: a from-flat late climb whose post-bolus peak is 165 never ran high.
+        cgm = cgm_ramp(15, 12, 10, 100, 2.0, 30) + cgm_ramp(15, 12, 45, 165, -2.0, 30)
+        v = classify_late_bolus(meal(15, 12, 40), cgm)
+        self.assertEqual(v.silence_reason, SilenceReason.STAYED_IN_RANGE)
+
 
 class CarbUndercountSilenceTest(unittest.TestCase):
     def _classify(self, m, cgm, basal=()):

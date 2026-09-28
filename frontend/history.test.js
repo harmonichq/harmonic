@@ -329,9 +329,29 @@ test('a reassessment is offered beside the original and never in place of it', (
     },
   }, 'retained');
   assert.match(retained, /data-reassessment-context="retained"/);
-  assert.match(retained, /Stored context dcbc2e96d98a/);
   assert.match(retained, /data-reassessment-state="available"/);
   assert.match(retained, /never replaces the saved ending/);
+});
+
+test('#468 · the Retained line says it reuses the settings and rules saved with the record, never its id', () => {
+  const read = (context) => reassessmentSection({ reassessment: {
+    mode: 'retained', computed_at: '2026-09-08 15:15:44', comparison_context: context,
+    comparison: { availability: { state: 'available', reason: null }, assessment: { state: 'unclear' } },
+  } }, 'retained');
+  const line = (html) => /data-reassessment-context="retained">([^<]*)</.exec(html)[1];
+  const recorded = read({ id: 'dcbc2e96d98ac06a3369dccc5fcdd4f2876c7c0f', captured_at: '2024-06-01 00:00:00' });
+  assert.equal(line(recorded), `Reuses the settings and rules saved with this record on ${stamp('2024-06-01 00:00:00')}`);
+  assert.doesNotMatch(recorded, /[0-9a-f]{8,}/, 'no run of the context id prints');
+  // A context with nothing saved is served unavailable with a reason, and the
+  // line prints the word table's words for it.
+  const legacy = read({ state: 'unavailable', reason: 'legacy_not_recorded' });
+  assert.equal(line(legacy), 'This earlier record was kept before Harmonic saved its context');
+  const missing = read({ state: 'unavailable', reason: 'not_recorded' });
+  assert.equal(line(missing), 'No retained comparison context was recorded with this change');
+  for (const html of [recorded, legacy, missing]) {
+    assert.doesNotMatch(line(html), /Stored context|unavailable/);
+    assert.doesNotMatch(html, /[0-9a-f]{8,}/);
+  }
 });
 
 test('a current-policy reassessment labels its context and claims no like-for-like read', () => {

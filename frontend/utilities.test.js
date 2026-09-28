@@ -59,6 +59,16 @@ test('#423 · the Glossary keys each group section by its title, and calls no de
   assert.doesNotMatch(source, /v1 definitions/);
 });
 
+test('#469 · the Glossary explains the findings queue\'s tier words and rank notes', () => {
+  const group = glossaryGroups.find((item) => item.title === 'Findings queue');
+  assert.ok(group, 'the Glossary renders a Findings queue group');
+  assert.deepEqual(group.terms.map((term) => term.term), [
+    'Next in line', 'Worth a look', 'Ranked with its setting', 'Ranked on all 30 days',
+    'Not recurring often enough to rank yet',
+  ]);
+  assert.ok(group.terms.every((term) => term.def), 'every term carries its definition');
+});
+
 // ADR 451: the Glossary's definitions are sentences a reader reads, so none joins
 // its clauses with an em dash (DESIGN.md, Voice and user-copy register, rule 1).
 // A term's unit label is a short label, not a sentence, and is not read here.

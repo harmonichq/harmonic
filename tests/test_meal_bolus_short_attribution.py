@@ -381,6 +381,30 @@ class WilsonSupportTest(unittest.TestCase):
         self.assertEqual(group["hero_episode"], worst.id)
         self.assertEqual(pattern.hero_episode, worst.id)
 
+    def test_a_split_meal_is_one_implicated_meal_named_by_its_first_bolus(self):
+        # ADR 470: the under-dosed evening, bolused as 45 g and a 40 g top-up ten
+        # minutes later, is one meal of 85 g / 5 U. The rise implicates that meal by
+        # its first bolus, and the recurrence counts one meal a day.
+        bolus = []
+        for day, seq in ((0, 8001), (1, 8101)):
+            shift = timedelta(days=day)
+            bolus += [
+                BolusEvent(t=at(12) + shift, completion="Completed", insulin=3.0,
+                           carbs=45.0, carb_ratio=12.0, seq_num=seq),
+                BolusEvent(t=at(12, 10) + shift, completion="Completed", insulin=2.0,
+                           carbs=40.0, carb_ratio=12.0, seq_num=seq + 1),
+                BolusEvent(t=at(13, 40) + shift, insulin=2.5, carbs=None, seq_num=seq + 2),
+            ]
+
+        report = self._assembled(bolus, RECURRING_CGM)
+
+        patterns = {p.lever: p for p in list(report.patterns) + list(report.low_confidence)}
+        self.assertIn(Lever.MEAL_BOLUS_SHORT, patterns)
+        pattern = patterns[Lever.MEAL_BOLUS_SHORT]
+        self.assertEqual((pattern.confidence.k, pattern.confidence.n), (2, 2))
+        self.assertEqual(sorted(group["id"] for group in pattern.occurrence_groups),
+                         ["meal-8001", "meal-8101"])
+
     def test_it_uses_no_floor_of_its_own(self):
         # `safety.py` owns the basal and I:C support floors. A scenario lever that
         # invented a third one would be a second source of truth for support.

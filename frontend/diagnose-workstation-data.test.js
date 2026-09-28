@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { blockKey } from './diagnose-workspaces.js';
 import { envelopeFromPooled, isfVerdict, toCaptures } from './diagnose-workstation-data.js';
+import * as workstationData from './diagnose-workstation-data.js';
 
 const pooled = {
   reading_count: 12,
@@ -52,6 +53,32 @@ test('isfVerdict answers direction and stageability separately', () => {
   }).canStage, true);
   // No direction is no direction, whatever the numbers look like.
   assert.equal(isfVerdict({ recommended: null, evidence: {} }).direction, null);
+});
+
+test('#469 · isfStageNote gives the correction-factor panel\'s own reason a row cannot stage', () => {
+  const { isfStageNote } = workstationData;
+  assert.equal(typeof isfStageNote, 'function', 'isfStageNote is exported beside isfVerdict');
+  const estimate = { value: 29.4, lo: 16.8, hi: 43.6, n: 5, wide: true };
+  assert.equal(isfStageNote({ current: 36, recommended: null, asserts_move: false, estimate,
+    evidence: { direction: 'weaken' } }), 'No new number is available, so there is nothing to stage.');
+  assert.equal(isfStageNote({ current: 40, recommended: 40, asserts_move: false, estimate,
+    evidence: { direction: 'strengthen' } }),
+  'The conservative step rounds to the current Correction factor, so there is no settings change to stage.');
+  assert.equal(isfStageNote({ current: 40, recommended: null, asserts_move: false, estimate,
+    evidence: { direction: 'strengthen' } }),
+  'This result is held, so there is no settings change to stage; the estimate and interval remain visible.');
+  assert.equal(isfStageNote({ current: 40, recommended: 32, asserts_move: true, estimate,
+    evidence: { direction: 'strengthen' } }), null);
+});
+
+test('#469 · isfRoundsToCurrent is the one rounded no-op predicate the panel and the note read', () => {
+  const { isfRoundsToCurrent } = workstationData;
+  const strengthen = { asserts_move: false, evidence: { direction: 'strengthen' } };
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: 40 }), true);
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: null }), false);
+  assert.equal(isfRoundsToCurrent({ ...strengthen, current: 40, recommended: 40, asserts_move: true }), false);
+  assert.equal(isfRoundsToCurrent({ asserts_move: false, evidence: { direction: 'weaken' },
+    current: 40, recommended: 40 }), false);
 });
 
 test('isfVerdict fails closed for false, missing, and malformed carried verdicts', () => {

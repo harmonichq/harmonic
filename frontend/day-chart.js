@@ -59,8 +59,9 @@ export function buildRows(day) {
 
 /* ================= Episode Log ledger =================
    The interface is a three-band view of the day. It keeps disclosure policy out of Vue:
-   findings lead, actionable near-misses are also checked, and silent anchors become one quiet
-   stretch. An episode's midnight marker is emitted once with its first visible ledger entry,
+   findings lead, actionable near-misses are also checked, and silent anchors are counted
+   together as Quiet rather than listed (#468: no span, which repeated one time and stretched
+   across Findings). An episode's midnight marker is emitted once with its first visible ledger entry,
    never copied onto every anchor. */
 const QUIET_SILENCE_REASONS = new Set(['no_trigger', 'insufficient_data', 'upstream_cause']);
 
@@ -122,8 +123,6 @@ export function buildEpisodeLedger(day, { selectedLever = null, focusT = null } 
     alsoChecked: ledgerEntries(alsoChecked, episodeById, markedEpisodes),
     quiet: {
       rows: ledgerEntries(quietRows, episodeById, markedEpisodes),
-      start: quietRows[0]?.t || null,
-      end: quietRows[quietRows.length - 1]?.t || null,
       ...quietCounts,
     },
     total: rows.length,

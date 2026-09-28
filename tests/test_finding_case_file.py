@@ -11,6 +11,7 @@ import time
 import pytest
 
 from ciq_autotune import event_comparison, finding_case_file, findings_projection, outcomes_trend
+from ciq_autotune.analyzers.meals import group_meals
 from ciq_autotune.analyzers.scenario.levers import Exposure, Lever, exposure, title
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario import evidence_population
@@ -23,12 +24,18 @@ from ciq_autotune.window_membership import WindowQuery
 from ciq_autotune.store import Store
 
 
+def _meal_opportunity(bolus):
+    """A one-bolus meals opportunity, formed as ``build_opportunities`` forms one."""
+    (meal,) = group_meals([bolus])
+    return Opportunity(Exposure.MEALS, (bolus.seq_num,), bolus.t, "meal",
+                       members=meal.members, meal=meal)
+
+
 def _opportunity(lever, *, anchor=None):
     anchor = anchor or datetime(2026, 8, 1, 12, 30)
     family = exposure(lever)
     if family is Exposure.MEALS:
-        meal = BolusEvent(t=anchor, insulin=4, carbs=40, seq_num=11)
-        return Opportunity(family, (11,), anchor, "meal", members=(meal,))
+        return _meal_opportunity(BolusEvent(t=anchor, insulin=4, carbs=40, seq_num=11))
     if family is Exposure.LOWS:
         return Opportunity(family, (anchor - timedelta(minutes=20),
                                     anchor + timedelta(minutes=10), anchor),
@@ -292,6 +299,17 @@ def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     assert [cohort["band_verdict"] for cohort in case["projection"]["cohorts"]] == [
         None if policy.cross_population else "fired", "near_miss", None,
     ]
+    # ADR 468: a cohort naming a band state serves exactly it; a same-population
+    # comparison serves its members' distinct verdicts in band order; every other
+    # cohort serves none.
+    matched, near, comparison = case["projection"]["cohorts"]
+    verdict_of = {row["id"]: row["verdict"] for row in case["occurrences"]}
+    held = {verdict_of[occurrence_id] for occurrence_id in comparison["occurrence_ids"]}
+    assert matched["band_states"] == ([] if policy.cross_population else ["fired"])
+    assert near["band_states"] == ["near_miss"]
+    assert comparison["band_states"] == ([] if policy.cross_population else [
+        state for state in ("fired", "near_miss", "clean", "outranked", "no_data")
+        if state in held])
     assert case["selection"] == {"state": "none", "requested_id": None, "detail": None}
 
 
@@ -333,9 +351,7 @@ def test_event_comparison_consumes_the_policy_membership_predicate():
         t=second_anchor, insulin=4, carbs=40, seq_num=12,
         completion="Completed",
     )
-    second = Opportunity(
-        Exposure.MEALS, (12,), second_anchor, "meal", members=(second_bolus,),
-    )
+    second = _meal_opportunity(second_bolus)
     members = (
         Member(first, first.anchor_t, "fired"),
         Member(second, second.anchor_t, "clean"),
@@ -537,9 +553,8 @@ def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
 def test_claimed_can_be_strictly_less_than_fired_and_clock_counts_only_claims():
     lever = Lever.LATE_BOLUS
     first = _opportunity(lever)
-    second = Opportunity(Exposure.MEALS, (12,), first.anchor_t + timedelta(hours=1),
-                         "meal", members=(BolusEvent(t=first.anchor_t + timedelta(hours=1),
-                                                     insulin=3, carbs=30, seq_num=12),))
+    second = _meal_opportunity(BolusEvent(t=first.anchor_t + timedelta(hours=1),
+                                          insulin=3, carbs=30, seq_num=12))
     members = (Member(first, first.anchor_t, "fired"),
                Member(second, second.anchor_t, "fired"))
     prepared = _prepared(lever, members, frozenset({members[0].id}),
@@ -782,6 +797,11 @@ def test_pattern_comparison_leaves_nothing_outside_its_own_population():
     assert "not_comparable" not in counts
     no_data = next(row["id"] for row in case["occurrences"] if row["verdict"] == "no_data")
     assert no_data in case["projection"]["cohorts"][2]["occurrence_ids"]
+    # ADR 468: the comparison group serves the band states it holds, so its 2
+    # reconciles with the band's Does not meet and not comparable.
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        ["fired"], ["near_miss"], ["clean", "no_data"],
+    ]
 
 
 def test_same_population_cohorts_name_the_band_state_they_hold():
@@ -795,6 +815,9 @@ def test_same_population_cohorts_name_the_band_state_they_hold():
         ("comparison", "Other meal opportunities", None, 2),
     ]
     assert (case["verdict_counts"]["fired"], case["verdict_counts"]["near_miss"]) == (3, 1)
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        ["fired"], ["near_miss"], ["clean", "no_data"],
+    ]
     assert counts == {"matched": 3, "nearly_matched": 1, "comparison": 2,
                       "outside_comparison": 0}
 
@@ -1172,6 +1195,11 @@ def test_missed_meal_counts_its_highs_outside_the_announced_comparison():
     assert [(cohort["key"], cohort["band_verdict"])
             for cohort in case["projection"]["cohorts"]] == [
         ("matched", None), ("nearly_matched", "near_miss"), ("comparison", None),
+    ]
+    # ADR 468: a cross-population comparison holds no roster Occurrence, so it
+    # serves no band state; neither does the attributed Matched subset.
+    assert [cohort["band_states"] for cohort in case["projection"]["cohorts"]] == [
+        [], ["near_miss"], [],
     ]
 
 
@@ -1787,32 +1815,25 @@ def test_meal_claimed_by_meal_bolus_short_inside_highs_after_meals(meal_facts):
     assert detail["anchor"] == row["anchor"] and detail["outcome"] == row["outcome"]
 
 
-def test_an_arc_ends_at_any_carb_tagged_bolus_and_a_cluster_reads_its_second_dose():
+def test_a_cancelled_bolus_inside_the_grace_joins_its_meal_and_a_cluster_reads_its_second_dose():
     prepared = _analyzer_prepared(_edge_facts_recipe)
 
-    # The bolus that never completed is no completed carb-bolus meal, so Meal bolus
-    # short does not count it; it still ends the noon meal's arc, as a meal does.
-    [meal] = _case(prepared, Lever.MEAL_BOLUS_SHORT)["occurrences"]
-    assert (meal["anchor"]["t"], meal["anchor"].get("insulin"), meal["anchor"].get("carbs")) == (
-        "2024-05-02 12:00:00", 4.0, 40.0)
-    assert meal.get("outcome") == {
-        "kind": "peak", "bg": 150.0, "t": "2024-05-02 12:30:00", "minute": 30.0}
-    rows = {row["anchor"]["t"]: row.get("outcome")
-            for row in _case(prepared, Lever.CARB_UNDERCOUNT)["occurrences"]}
-    assert rows == {
-        "2024-05-02 12:00:00": meal.get("outcome"),
-        "2024-05-02 12:30:00": {"kind": "peak", "bg": 170.0, "t": "2024-05-02 12:50:00",
-                                "minute": 20.0},
-    }
+    # ADR 470: the bolus that never completed lands exactly 30 minutes after the noon
+    # meal, inside the inclusive grace, so it is part of that meal. The meal counts its
+    # completed carbs once and every dose delivered, lists as one row, and its arc
+    # reads past the cancelled leg rather than ending at it.
+    noon = ("2024-05-02 12:00:00", 6.0, 40.0)
+    peak = {"kind": "peak", "bg": 170.0, "t": "2024-05-02 12:50:00", "minute": 50.0}
+    for lever in (Lever.MEAL_BOLUS_SHORT, Lever.CARB_UNDERCOUNT):
+        [meal] = _case(prepared, lever)["occurrences"]
+        assert (meal["anchor"]["t"], meal["anchor"].get("insulin"),
+                meal["anchor"].get("carbs")) == noon
+        assert meal.get("outcome") == peak
     # The nadir reads the readings the analyzer judged, so the confirmed false low
-    # after the half-hour meal is never its Arc nadir.
-    nadirs = {row["anchor"]["t"]: row.get("outcome")
-              for row in _case(prepared, Lever.MEAL_OVER_DELIVERY)["occurrences"]}
-    assert nadirs == {
-        "2024-05-02 12:00:00": None,
-        "2024-05-02 12:30:00": {"kind": "nadir", "bg": 120.0, "t": "2024-05-02 13:35:00",
-                                "minute": 65.0},
-    }
+    # after the meal is never its Arc nadir.
+    [meal] = _case(prepared, Lever.MEAL_OVER_DELIVERY)["occurrences"]
+    assert meal.get("outcome") == {"kind": "nadir", "bg": 120.0, "t": "2024-05-02 13:35:00",
+                                   "minute": 95.0}
     [cluster] = _case(prepared, Lever.CORRECTION_STACKING)["occurrences"]
     assert (cluster["anchor"]["t"], cluster["anchor"].get("insulin"),
             cluster["anchor"].get("carbs", "absent")) == ("2024-05-02 16:30:00", 2.5, None)
@@ -1820,12 +1841,47 @@ def test_an_arc_ends_at_any_carb_tagged_bolus_and_a_cluster_reads_its_second_dos
     assert [row["insulin"] for row in detail["source_corrections"]] == [1.5, 2.5]
 
 
+def test_a_split_meal_is_one_row_with_its_summed_dose_and_the_peak_past_its_top_up():
+    """ADR 470: a top-up ten minutes after the meal joins it, so the Highs after meals
+    case file lists one row per meal, and that row's Arc peak reads past the top-up."""
+    from tests.test_outcome_patterns import write_split_meals
+
+    prepared = _analyzer_prepared(lambda store: write_split_meals(store, gap=10))
+    case = prepared.case("pattern:highs_after_meals", "event", None)
+
+    assert case["summary"] == {"claimed": 14, "denominator": 14, "noun": "meals"}
+    assert len(case["occurrences"]) == 14
+    assert {(row["anchor"]["t"][11:], row["anchor"]["insulin"], row["anchor"]["carbs"])
+            for row in case["occurrences"]} == {("12:00:00", 6.5, 65.0)}
+    assert {(row["outcome"]["kind"], row["outcome"]["bg"], row["outcome"]["minute"])
+            for row in case["occurrences"]} == {("peak", 360.0, 125.0)}
+
+
+def test_every_meal_counted_as_running_high_prints_a_peak_above_the_line():
+    """ADR 461: a fired Highs after meals row is a meal that ran above 180, and the
+    Arc peak it prints is the reading its verdict judged."""
+    from tests.test_outcome_patterns import write_late_meals, write_split_meals
+
+    for label, recipe in (
+        ("split meals", lambda store: write_split_meals(store, gap=10)),
+        ("late meals with a top-up", lambda store: write_late_meals(
+            store, post_peak=240.0, top_up=True)),
+        ("late meals that stayed in range", lambda store: write_late_meals(
+            store, post_peak=165.0)),
+    ):
+        case = _analyzer_prepared(recipe).case("pattern:highs_after_meals", "event", None)
+        # A store where no meal ran high serves no Highs after meals case at all.
+        fired = [row for row in (case or {"occurrences": []})["occurrences"]
+                 if row["verdict"] == "fired"]
+        assert all(row["outcome"]["bg"] > 180 for row in fired), (
+            label, [row["outcome"] for row in fired])
+
+
 def test_a_reason_never_shows_a_sentence_its_row_contradicts():
     lever = Lever.LATE_BOLUS
     first = _opportunity(lever)
     second_anchor = first.anchor_t + timedelta(hours=3)
-    second = Opportunity(Exposure.MEALS, (12,), second_anchor, "meal", members=(
-        BolusEvent(t=second_anchor, insulin=4, carbs=40, seq_num=12),))
+    second = _meal_opportunity(BolusEvent(t=second_anchor, insulin=4, carbs=40, seq_num=12))
     calm = {"classifier": "late_bolus", "matched": False, "silence_reason": "no_trigger",
             "detail": "Synthetic calm sentence."}
     near = {"classifier": "late_bolus", "matched": False,

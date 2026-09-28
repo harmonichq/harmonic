@@ -26,7 +26,7 @@ from .analyzers.scenario.meal_suspend import (
     classify_meal_owned_suspend,
 )
 from .analyzers.scenario_config import ScenarioConfig
-from .analyzers.scenario.evidence_population import completed_carb_bolus
+from .analyzers.meals import group_meals
 from .insulin import ACCOUNTING_DIA_MIN
 from .window_membership import WindowQuery, outcome_timestamp
 
@@ -162,32 +162,20 @@ def _late_near(verdict) -> dict | None:
 def _completed_meal_at(
     bolus,
     anchor: datetime,
-    ordinal: int = 0,
     *,
     scenario_config: ScenarioConfig = CONFIG,
 ):
-    """The ADR 679 comparison identity at one timestamp and stable ordinal."""
-    candidates = [
-        item
-        for item in bolus
-        if item.t == anchor
-        and completed_carb_bolus(item, scenario_config=scenario_config)
-    ]
-    candidates.sort(key=lambda item: item.seq_num)
-    return candidates[ordinal] if ordinal < len(candidates) else None
+    """The ADR 679 comparison identity at one timestamp: the completed meal whose first
+    bolus it is (ADR 470), or ``None``."""
+    return next((meal for meal in completed_carb_boluses(bolus, scenario_config=scenario_config)
+                 if meal.t == anchor), None)
 
 
 def completed_carb_boluses(bolus, *, scenario_config: ScenarioConfig = CONFIG):
-    """Return the ADR 679 completed carb-bolus population in stable order."""
-    meals = []
-    for anchor in sorted({item.t for item in bolus}):
-        ordinal = 0
-        while (meal := _completed_meal_at(
-            bolus, anchor, ordinal, scenario_config=scenario_config,
-        )) is not None:
-            meals.append(meal)
-            ordinal += 1
-    return tuple(meals)
+    """Return the ADR 679 completed carb-bolus population, in meals (ADR 470), in time
+    order: a meal is in it when any member is a completed carb bolus."""
+    return tuple(meal for meal in group_meals(bolus, scenario_config=scenario_config)
+                 if meal.completed)
 
 
 def _meal_over_delivery_near(meal, bolus, cgm, basal, ownership) -> dict | None:
@@ -441,13 +429,12 @@ def _validate_capture(capture: dict) -> None:
         raise AssertionError("event comparison capture schema is stale")
     meals = capture["views"]["meals"]
     for occurrence in meals["occurrences"]:
+        # The anchor row is the meal's first bolus (ADR 470); the meal's completion may
+        # rest on a later member, as a cancelled leg's re-issue does.
         anchor_rows = [
             item
             for item in occurrence["trace"]["boluses"]
             if item["minute"] == 0
-            and item["completion"] == "Completed"
-            and item["insulin"] is not None
-            and item["insulin"] > 0
             and item["carbs"] is not None
             and item["carbs"] >= CONFIG.anchor_meal_min_carbs
         ]
@@ -540,7 +527,6 @@ def _build_catalog_capture(
     for view_name, config in VIEW_CONFIG.items():
         source_family = families[view_name]
         occurrences = []
-        meal_ordinals: dict[datetime, int] = {}
         before, after = config["window"]
         for index, source in enumerate(source_family["occurrences"]):
             anchor = _dt(source["t"])
@@ -550,9 +536,7 @@ def _build_catalog_capture(
             outcome_at = _dt(outcome_at)
             meal = None
             if view_name == "meals":
-                ordinal = meal_ordinals.get(anchor, 0)
-                meal_ordinals[anchor] = ordinal + 1
-                meal = _completed_meal_at(bolus, anchor, ordinal)
+                meal = _completed_meal_at(bolus, anchor)
                 if meal is None:
                     continue
             start = anchor + timedelta(minutes=before)

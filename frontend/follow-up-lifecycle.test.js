@@ -657,6 +657,86 @@ test('a first save that succeeds after the reader left keeps the next record’s
   });
 });
 
+/* ------------------- ADR 462: an ended record answers a requested reassessment */
+
+// A saved ending the reconcile could not compare, because its context read a
+// pump read after the change ended: unavailable, and no period served.
+const LATE_CONTEXT_ENDING = { version: '386:1', state: 'unavailable', reason: 'context_after_ending',
+  periods: {}, views: {}, outcomes: [], availability: { state: 'unavailable', reason: 'context_after_ending' } };
+// A Current policy read of such a record: both periods, a clock bin each, one row.
+const CURRENT_READ = { ...PAIRED, assessment: { state: 'context' }, outcomes: [{ key: 'tir', label: 'Time in range',
+  unit: '%', before: 100, after: 96, difference: -4, denominator: 'observed CGM readings in eligible windows',
+  denominators: { before: 12, after: 12 }, assessment: { state: 'context' } }] };
+// A Retained read the comparison refused for another version's context.
+const REFUSED_READ = { ...comparison, readiness: undefined, assessment: undefined,
+  availability: { state: 'unavailable', reason: 'unsupported_retained_execution' } };
+// A saved ending that serves both periods and its own row, and no clock bins.
+const SAVED_WITH_PERIODS = { version: '386:1', state: 'available', reason: null, availability: { state: 'available' },
+  periods: PAIRED.periods, assessment: { state: 'unclear' }, outcomes: [{ key: 'tbr', label: 'Time below range',
+    unit: '%', before: 1, after: 2, difference: 1, denominator: 'observed CGM readings in eligible windows',
+    denominators: { before: 12, after: 12 }, assessment: { state: 'unclear' } }] };
+const stageAndReading = (seat) => seat.innerHTML.split('<aside');
+
+test('an ended record whose saved ending kept its clock bins draws its saved curve', async () => {
+  kind = 'trial'; identity = 'saved-curve-synthetic'; expired = true;
+  expiredAssessment = { ...SAVED_WITH_PERIODS, views: PAIRED.views };
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    const [stage] = stageAndReading(seat);
+    assert.match(stage, /<span class="cap">Ending snapshot<\/span><span class="meta">as saved at the ending<\/span>/);
+    assert.match(stage, /data-figure-state="paired"/);
+    assert.match(stage, /role="img"/);
+  } finally { expired = false; expiredAssessment = { state: 'unavailable' }; }
+});
+
+test('an ended record whose saved ending serves no periods draws the reassessment the reader presses', async () => {
+  const { comparisonReasonWords } = await import('./follow-up.js');
+  kind = 'trial'; identity = 'late-context-synthetic'; expired = true; expiredAssessment = LATE_CONTEXT_ENDING;
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    let [stage, reading] = stageAndReading(seat);
+    assert.match(stage, /as saved at the ending/, 'premise: the record opens on its saved ending');
+    assert.match(stage, /data-figure-state="unavailable"/);
+
+    served = CURRENT_READ;
+    seat.assessment.current.onclick();
+    await openHistoryRecord(seat, identity, 3);
+    [stage, reading] = stageAndReading(seat);
+    assert.match(stage, /data-figure-state="paired"/);
+    assert.match(stage, /data-outcome="tir"/);
+    assert.match(stage, /<span class="cap">Current policy reassessment<\/span><span class="meta">recomputed now<\/span>/);
+    assert.doesNotMatch(stage, /as saved at the ending|Ending snapshot/);
+    assert.match(reading, new RegExp(`data-ending-assessment="unavailable">Unavailable · ${comparisonReasonWords('context_after_ending')}<`),
+      'the saved-ending part still reads unavailable in words');
+
+    served = REFUSED_READ;
+    seat.assessment.retained.onclick();
+    await openHistoryRecord(seat, identity, 3);
+    [stage] = stageAndReading(seat);
+    assert.match(stage, /data-figure-state="unavailable"/);
+    assert.match(stage, new RegExp(`data-figure-reason>${comparisonReasonWords('unsupported_retained_execution')}<`));
+    assert.match(stage, /<span class="cap">Retained context reassessment<\/span><span class="meta">recomputed now<\/span>/);
+    assert.doesNotMatch(stage, /as saved at the ending|data-outcome="tir"/);
+  } finally { expired = false; expiredAssessment = { state: 'unavailable' }; served = comparison; }
+});
+
+test('an ended record whose saved ending serves periods keeps that ending on its stage after every press', async () => {
+  kind = 'trial'; identity = 'saved-periods-synthetic'; expired = true; expiredAssessment = SAVED_WITH_PERIODS;
+  served = CURRENT_READ;
+  try {
+    const seat = host(); await openHistoryRecord(seat, identity);
+    for (const mode of ['original', 'retained', 'current']) {
+      seat.assessment[mode].onclick();
+      await openHistoryRecord(seat, identity, 3);
+      const [stage] = stageAndReading(seat);
+      assert.match(stage, /<span class="cap">Ending snapshot<\/span><span class="meta">as saved at the ending<\/span>/, mode);
+      assert.match(stage, /data-outcome="tbr"/, `${mode}: the saved ending's own row`);
+      assert.doesNotMatch(stage, /data-outcome="tir"|reassessment<\/span>/, `${mode}: never the reassessment's`);
+      assert.match(stage, /data-figure-state="saved"/, mode);
+    }
+  } finally { expired = false; expiredAssessment = { state: 'unavailable' }; served = comparison; }
+});
+
 /* ------------------------------ ADR 445: a supporting date's Day round trip */
 
 // A retained comparison that lists contributing dates in both evidence periods.

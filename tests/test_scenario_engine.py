@@ -2360,8 +2360,9 @@ class FollowUpObservationTest(unittest.TestCase):
         from ciq_autotune.analyzers.scenario import recurrence_observations, tally_attributions, Lever
         from ciq_autotune.analyzers.scenario_config import ScenarioConfig
         dose=meal(15,12,40,carbs=45,dose=10)
+        # A late climb that runs above the range line after the bolus (ADR 461).
         cgm=[CgmReading(datetime(2026,6,15,12,15)+timedelta(minutes=5*i),value)
-             for i,value in enumerate((100,110,120,130,140,150,160,170,180,175,165,150,135))]
+             for i,value in enumerate((100,110,120,130,140,150,165,180,195,190,175,160,140))]
         rows=recurrence_observations([dose],cgm,lever='late_bolus',isf=40)
         self.assertEqual(sum(r['k'] for r in rows),1)
         self.assertEqual(sum(r['k'] for r in rows),tally_attributions([dose],cgm,isf=40)[1][Lever.LATE_BOLUS])

@@ -42,8 +42,12 @@ and its family's denominator, so a window can never read "3 of 0 lows".
 
 The projection composes no scores. Priority is read from the two places that already
 ship it — scenario ``Pattern.priority`` for behaviors, ``tuning_levers[]`` for
-settings — and rows are ordered priced-first (priority desc), then unpriced by count,
-then the demoted held and blind registers.
+settings — and rows are ordered as one urgency ranking (ADR 469): priced rows by
+priority desc, then unpriced asserting rows, then unpriced findings by count, then the
+demoted held and blind registers. A Pattern admitted through its setting shares that
+setting's position (``anchored_by``) and sorts directly after it, as a claimed cause
+sorts after its Pattern; the tiers are bands of that one order, and ``rank_note`` says
+where a row's rank does not come from what it prints.
 
 It reads the published payload dicts (``/api/analyze``, ``/api/explore/exposures``,
 ``/api/scenarios``), not analyzer internals, so a fixture generator can drive the very
@@ -66,7 +70,9 @@ from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, 
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import (
     _ROSTER, build_outcome_patterns, credited_claims, outcome_window_population,
+    starts_in_harm_band,
 )
+from .harm import HarmConfig
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -77,6 +83,8 @@ class UnknownHistorySelection(KeyError):
     """A canonical selection absent from the analyzer-published catalog."""
 
 _SLOT_MINUTES = 30
+# The Harm signal's overnight band, which the harm-band Pattern's counts cover.
+_HARM_CONFIG = HarmConfig()
 
 # The basal verdicts that WITHHOLD a move: the analyzer had something to say and
 # declined to name a direction from it. `NO_CHANGE` is deliberately not among them —
@@ -150,7 +158,12 @@ def pattern_rate_family(pattern: dict) -> Exposure | None:
 
 
 def pattern_chartable(pattern: dict, exposures: dict) -> bool:
-    """One server predicate for whether a Pattern owns inspectable evidence."""
+    """One server predicate for whether a Pattern owns inspectable evidence.
+
+    It decides the Pattern row's chart coordinate and, through it, its case file.
+    It never decides whether a scoped window serves the Pattern: the scoped
+    roster's producer owns that (ADR 467).
+    """
     family = pattern_rate_family(pattern)
     has_admitted_habit = any(
         member.get("kind") == "habit" and member.get("admitted")
@@ -223,8 +236,11 @@ class FindingsProjection:
             rows, query, outcome_patterns, pattern_exposures,
         )
         rows += pattern_rows
-        rows.sort(key=lambda row: _sort_key(row, pattern_by_subject))
-        _assign_tiers(rows)
+        by_id = {row["id"]: row for row in rows}
+        _stamp_anchors(pattern_rows, rows, by_id)
+        rows.sort(key=lambda row: _sort_key(row, by_id))
+        _assign_tiers(rows, by_id)
+        _stamp_rank_notes(rows, query, self._analysis.get("window_days"))
         for row in rows:
             row["headline"] = _headline_for(row)
             row["count_sentences"] = _count_sentences_for(row)
@@ -265,7 +281,11 @@ class FindingsProjection:
     def _pattern_rows(self, rows: List[dict], query: WindowQuery,
                       outcome_patterns: list[dict] | None = None,
                       pattern_exposures: dict | None = None):
-        """Place the prepared roster in the queue without re-deciding its policy."""
+        """Place the prepared roster in the queue without re-deciding its policy.
+
+        A scoped roster arrives membership-filtered, so every ``remain_pattern``
+        Pattern in it is served; chartability decides only ``pattern_chart``.
+        """
         by_id = {row["id"]: row for row in rows}
         pattern_rows, pattern_by_subject = [], {}
         outcome_patterns = self._outcome_patterns if outcome_patterns is None else outcome_patterns
@@ -274,8 +294,6 @@ class FindingsProjection:
             # Partial rosters occur in the producer-isolation tests; they remain
             # additive evidence, but are not renderable Pattern contracts.
             if pattern.get("collapse") != "remain_pattern":
-                continue
-            if query.scoped and not pattern_chartable(pattern, pattern_exposures):
                 continue
             subject = pattern["subject"]
             subjects = dict.fromkeys([
@@ -720,7 +738,9 @@ def sequence_population(exposures: dict, lever: str, query: WindowQuery) -> List
 # looked and had nothing to flag (ADR 0019 §2's `_CALM_REASONS`, mirrored here
 # because this module reads the published `verdicts[]` contract, not the
 # model-view internals that own the enum).
-_CALM_SILENCE_REASONS = frozenset({None, "no_trigger", "owned_by_announced_meal"})
+_CALM_SILENCE_REASONS = frozenset({
+    None, "no_trigger", "owned_by_announced_meal", "stayed_in_range",
+})
 _NO_DATA_SILENCE_REASON = "insufficient_data"
 
 
@@ -819,8 +839,13 @@ def _basal_key(slot: dict) -> Optional[Tuple[str, Optional[str]]]:
     if status == _BLIND_STATUS:
         return "blind", None
     if status in _HELD_STATUSES:
-        return "held", _lean(slot.get("current"),
-                             (slot.get("estimate") or {}).get("value"))
+        lean = _lean(slot.get("current"), (slot.get("estimate") or {}).get("value"))
+        if lean == "lower" and ((slot.get("evidence") or {}).get("harm")
+                                or {}).get("nudged"):
+            # ADR 465: recurring lows held a step down too small to take; the
+            # served sentence names the lows, so the title names no lean.
+            lean = None
+        return "held", lean
     return None
 
 
@@ -829,7 +854,9 @@ def _lean(current: Optional[float], value: Optional[float]) -> Optional[str]:
 
     A lean is not a direction: nothing asserts here, and the queue prints it as
     "leaning raise" (term 14). It is computed on the server for the same reason the
-    direction is — the frontend derives neither (#273/#465).
+    direction is — the frontend derives neither (#273/#465). A held basal slot the
+    recurring lows nudged drops a "lower" lean (``_basal_key``, ADR 465): its
+    served sentence already names the lows, and it never reads "leaning lower".
     """
     if current is None or value is None or value == current:
         return None
@@ -862,9 +889,9 @@ _BASAL_BLIND_HEADLINE = (
 _HELD_AT_CURRENT_SUFFIX = "; held at current"
 
 # The ranked-queue tiers whose event-comparison rows earn the "ranks among this
-# window's findings" verdict (ADR 41's closed tier vocabulary: every priced
-# asserting row is `next_in_line`, every other counted row is `worth_a_look`;
-# only `noted` sits below the line). The sentence states only the published
+# window's findings" verdict (ADR 41's closed tier vocabulary, banded by ADR 469:
+# the leading run of priced asserting rows is `next_in_line`, every other priced
+# row is `worth_a_look`; only `noted` sits below the line). The sentence states only the published
 # rank, never a recurrence frequency the analyzer does not publish.
 _RANKING_TIERS = frozenset({"next_in_line", "worth_a_look"})
 
@@ -1111,7 +1138,10 @@ def _count_sentence(count: int, denominator: int, noun: str, outcome: str) -> di
 def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     """A count-bearing Pattern's one served sentence, or ``None`` — counts under
     review and a Pattern with no admitted k/n serve none, matching ``_headline_for``'s
-    own gating so the two fields never disagree about which rows carry counts."""
+    own gating so the two fields never disagree about which rows carry counts.
+
+    In a scoped window the harm-band Pattern keeps its whole-band counts, so its
+    outcome names the band rather than the window (ADR 467 decision 3)."""
     pattern = row["pattern"]
     if pattern.get("count_status") or pattern["admission_route"] == "none":
         return None
@@ -1119,7 +1149,12 @@ def _pattern_count_sentences(row: dict) -> Optional[List[dict]]:
     key = pattern["key"]
     if key not in _PATTERN_OUTCOME:
         raise ValueError(f"no outcome word for pattern {key!r}")
-    return [_count_sentence(pattern["k"], pattern["n"], noun, _PATTERN_OUTCOME[key])]
+    outcome = _PATTERN_OUTCOME[key]
+    if (pattern["rate_producer"] == "harm_band_source_nights"
+            and row["window_scope"] == "window"):
+        outcome = (f"ran low between {_hhmm(_HARM_CONFIG.overnight_start_min)} "
+                   f"and {_hhmm(_HARM_CONFIG.overnight_end_min)}")
+    return [_count_sentence(pattern["k"], pattern["n"], noun, outcome)]
 
 
 def _cause_count_sentences(row: dict) -> Optional[List[dict]]:
@@ -1234,6 +1269,7 @@ def _row(**fields) -> dict:
         "past_setting": None, "programmed_now": None, "regime_end": None,
         "run_ids": None, "event_chart": None,
         "pattern": None, "pattern_chart": None, "claimed_by": None,
+        "anchored_by": None, "rank_note": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)
@@ -1242,27 +1278,85 @@ def _row(**fields) -> dict:
     return row
 
 
-def _assign_tiers(rows: Sequence[dict]) -> None:
-    """Stamp the sorted queue's closed ranking vocabulary onto every row (#41).
+def _stamp_anchors(pattern_rows: Sequence[dict], rows: Sequence[dict],
+                   by_id: Dict[str, dict]) -> None:
+    """Seat each setting-admitted Pattern in its setting's position (ADR 469).
 
-    ``next_in_line`` is deliberately shared by every priced asserting row. The
-    server has no cross-parameter headline, so selecting the first such row would
-    claim more than its independent assertion establishes.
+    Its anchor is the first served, priced, asserting row of its setting member's
+    parameter in queue order; every such row carries the same parameter-level
+    Priority. The harm-band Pattern anchors only to such a row whose span starts
+    inside the Harm signal's overnight band, by the rule that admitted it
+    (``starts_in_harm_band``), never beneath a daytime basal row.
+    With none served (a scoped window without the setting's row) the Pattern keeps
+    its own ranked position. Its own ``priority`` stays the roster's price (ADR 391).
     """
+    for pattern_row in pattern_rows:
+        pattern = pattern_row["pattern"]
+        if pattern["admission_route"] != "setting_staging":
+            continue
+        member = next(item for item in pattern["members"] if item["kind"] == "setting")
+        parameter = member["subject"].removeprefix("setting:")
+        in_band = pattern["rate_producer"] == "harm_band_source_nights"
+        anchors = [row for row in rows
+                   if row["register"] == "assert" and row["parameter"] == parameter
+                   and row["priority"] is not None
+                   and (not in_band or starts_in_harm_band(row["span"]))]
+        if anchors:
+            pattern_row["anchored_by"] = min(
+                anchors, key=lambda row: _sort_key(row, by_id))["id"]
+
+
+def _assign_tiers(rows: Sequence[dict], by_id: Dict[str, dict]) -> None:
+    """Stamp the sorted queue's closed ranking vocabulary as bands of its one order.
+
+    The leading run of priced, top-level asserting rows is ``next_in_line``; every
+    later priced top-level row is ``worth_a_look``; an anchored Pattern takes its
+    anchor's tier; a priced claimed cause is ``worth_a_look``; every unpriced row is
+    ``noted`` (ADR 469). A caption where the tier changes therefore prints each tier
+    word at most once, and the first tier is one leading run.
+    """
+    leading = True
     for row in rows:
         if row["priority"] is None:
             row["tier"] = "noted"
-        elif row["register"] == "assert":
+        elif row["claimed_by"]:
+            row["tier"] = "worth_a_look"
+        elif row["anchored_by"]:
+            continue
+        elif leading and row["register"] == "assert":
             row["tier"] = "next_in_line"
         else:
+            leading = False
             row["tier"] = "worth_a_look"
+    for row in rows:
+        if row["anchored_by"]:
+            row["tier"] = by_id[row["anchored_by"]]["tier"]
 
 
-def _sort_key(row: dict, patterns: Optional[Dict[str, dict]] = None):
-    """The queue's one order: priced rows by priority desc, then unpriced rows by
-    count desc, then the demoted held and blind registers in clock order (terms
-    22 / 38). Every tie falls through to a stable, data-derived key so two runs of
-    the same window always return the same list."""
+def _stamp_rank_notes(rows: Sequence[dict], query: WindowQuery,
+                      days: Optional[int]) -> None:
+    """Say where a row's rank does not come from the counts it prints (ADR 469).
+
+    An anchored Pattern is "Ranked with its setting". In a scoped window a priced,
+    top-level Pattern or Cause prints the window's counts but ranks on its 30-day
+    Priority, so it says so; a setting row prints its whole span and says nothing.
+    """
+    for row in rows:
+        if row["anchored_by"]:
+            row["rank_note"] = "Ranked with its setting"
+        elif (query.scoped and row["priority"] is not None and not row["claimed_by"]
+              and row["kind"] in ("pattern", "habit")):
+            row["rank_note"] = f"Ranked on all {days} days"
+
+
+def _sort_key(row: dict, by_id: Optional[Dict[str, dict]] = None):
+    """The queue's one urgency order (ADR 469): priced rows by priority desc, then
+    unpriced asserting rows, then unpriced findings by count desc, then the demoted
+    held and blind registers in clock order (terms 22 / 38). A row anchored to a
+    setting, or claimed by a Pattern, sorts directly after its parent, recursively,
+    so a claimed cause follows its anchored Pattern. Every tie falls through to a
+    stable, data-derived key so two runs of the same window always return the same
+    list."""
     span = row.get("span") or {}
     history_recency = 0.0
     if row["register"] == "history" and row.get("regime_end"):
@@ -1272,16 +1366,16 @@ def _sort_key(row: dict, patterns: Optional[Dict[str, dict]] = None):
             pass
     key = (
         _REGISTER_RANK[row["register"]],
-        0 if row["priority"] is not None else 1,
+        0 if row["priority"] is not None else 1 if row["register"] == "assert" else 2,
         -(row["priority"] or 0),
         -(row["episodes"] or 0),
         span.get("start_min", DAY_MINUTES),
         -history_recency,
         row["title"] or "",
     )
-    if row.get("claimed_by") and patterns and row["claimed_by"] in patterns:
-        parent = patterns[row["claimed_by"]]
-        return _sort_key(parent) + (1, *key)
+    parent = row.get("anchored_by") or row.get("claimed_by")
+    if parent and by_id and parent in by_id:
+        return _sort_key(by_id[parent], by_id) + (1, *key)
     return key + (0,)
 
 

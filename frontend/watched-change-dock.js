@@ -14,13 +14,17 @@
  * blocked under a Trial and dropped when a setting change preempts it (ADR 0029).
  * This module only fills the slot: the watched object if there is one, else the
  * recorded Plan awaiting the pump (the guidance read's served pending Plan, #431),
- * else the Plan draft staged on this surface, else idle. The pending Plan's
- * verdict is the server's; a confirmed Plan is never served as pending, so it
- * holds no state here.
+ * else the staged Plan, else idle. The staged Plan is the change this surface
+ * marks as staged when it names one, and otherwise the guidance read's served
+ * Plan draft, named from its own items (ADR 460) — so a draft saved in Changes,
+ * or read after this surface seeded its marks, never reads as nothing watched.
+ * The pending Plan's verdict is the server's; a confirmed Plan is never served as
+ * pending, so it holds no state here.
  */
 import { trialDayCount } from './follow-up.js';
+import { hhmm, windowSpanText } from './diagnose-workstation-chart.js';
 import { SETTING_NAME } from './plan-view.js';
-import { PLAN_PARAMS, settingValue } from './plan.js';
+import { formatStartMin, PLAN_PARAMS, settingValue } from './plan.js';
 
 /** Term 47 — the kind labels, byte for byte. */
 export const KIND = {
@@ -47,8 +51,47 @@ const num = (value) => {
 /** `2026-08-11 07:00:00` -> `08-11`. The year is noise at this size. */
 const monthDay = (stamp) => (typeof stamp === 'string' ? stamp.slice(5, 10) : '');
 
+/** A Plan item family's setting parameter, e.g. `ic` -> `carb_ratio`. */
+const paramOf = (type) => PLAN_PARAMS.find((row) => row.type === type)?.param;
+
 /** A recorded Plan's setting in the wearer's words, from its recorded item family. */
-const planSetting = (plan) => SETTING_NAME[PLAN_PARAMS.find(({ type }) => type === plan.items[0]?.type)?.param];
+const planSetting = (plan) => SETTING_NAME[paramOf(plan.items[0]?.type)];
+
+/**
+ * A Plan draft's own name: its setting in the wearer's words and the span its
+ * items cover, spelled as this surface spells the same change (ADR 460 point 3).
+ * A draft serves no direction, so the name carries none.
+ */
+export function draftName(draft) {
+  const items = [...(draft?.items || [])].sort((a, b) => a.start_min - b.start_min);
+  const type = items[0]?.type;
+  const name = SETTING_NAME[paramOf(type)] || type;
+  const first = items[0]?.start_min;
+  const last = items[items.length - 1]?.start_min;
+  if (type === 'basal') {
+    return items.length === 1 ? `${name} ${formatStartMin(first)}` : `${name} ${formatStartMin(first)} to ${hhmm(last + 30)}`;
+  }
+  if (type === 'ic') {
+    const head = items[0].ic_block_provenance;
+    const tail = items[items.length - 1].ic_block_provenance;
+    return head && tail ? `${name} ${windowSpanText([head.block_start_min, tail.block_end_min])}`
+      : `${name} ${formatStartMin(first)}`;
+  }
+  return name;
+}
+
+/** A draft's current→proposed pair in the wearer's form, only where every item
+    carries the same pair; the panel's own two-place rounding. */
+function draftValues(draft) {
+  const [head, ...rest] = draft.items;
+  if (head.current == null || head.value == null
+    || rest.some((item) => item.current !== head.current || item.value !== head.value)) return '';
+  const param = paramOf(head.type);
+  const two = (value) => Number(value).toFixed(2);
+  if (param === 'isf') return `${settingValue('isf', two(head.current))} → ${settingValue('isf', two(head.value))}`;
+  const unit = UNIT[param];
+  return unit ? `${two(head.current)} → ${two(head.value)} ${unit}` : '';
+}
 
 /** A Trial's own name for the change it is watching: its setting and slot. A
     Trial serves no direction, and the dock derives none (ADR 451). */
@@ -76,9 +119,12 @@ const leading = (values) => (values ? [{ text: `${values} · ` }] : []);
  * `detail` is a list of `{ text }` / `{ strong }` parts rather than markup, so the
  * painter can emphasise a count without this module writing HTML. `staged` is the
  * surface's `{ count, title, values }`: the one-line title names the change, and
- * its values lead the wrapping detail, where they are never cut off.
+ * its values lead the wrapping detail, where they are never cut off. `draft` is
+ * the guidance read's served Plan draft, read only when `staged` names nothing and
+ * no stage save the surface issued is in flight (`saving`): mid-save, the served
+ * draft is the one read before the press.
  */
-export function watchDockView({ watched = null, pendingPlan = null, staged = null } = {}) {
+export function watchDockView({ watched = null, pendingPlan = null, staged = null, draft = null, saving = false } = {}) {
   if (watched && watched.kind === 'trial') {
     const maturing = watched.maturing || {};
     // "Maturing" and "ready to judge" are the domain's own words for a Trial's
@@ -128,12 +174,14 @@ export function watchDockView({ watched = null, pendingPlan = null, staged = nul
       route: { label: 'Open Changes', to: 'plan' },
     };
   }
-  if (staged && staged.count > 0) {
+  const plan = staged && staged.count > 0 ? staged
+    : !saving && draft?.items?.length ? { title: draftName(draft), values: draftValues(draft) } : null;
+  if (plan) {
     return {
       state: 'plan',
       kind: KIND.plan,
-      title: staged.title,
-      detail: [...leading(staged.values), { text: PLAN_DETAIL }],
+      title: plan.title,
+      detail: [...leading(plan.values), { text: PLAN_DETAIL }],
       route: { label: 'Open Changes', to: 'plan' },
     };
   }

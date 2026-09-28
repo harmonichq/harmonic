@@ -706,16 +706,16 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
         verdict = None
         if lv is Lever.LATE_BOLUS:
             verdict = classify_late_bolus(
-                item.members[0], cgm, basal, bolus, scenario_config=scenario_config,
+                item.meal, cgm, basal, bolus, scenario_config=scenario_config,
             )
         elif lv is Lever.CARB_UNDERCOUNT:
             verdict = classify_carb_undercount(
-                item.members[0], cgm, basal, bolus, isf=isf,
+                item.meal, cgm, basal, bolus, isf=isf,
                 scenario_config=scenario_config,
             )
         elif lv is Lever.MEAL_OVER_DELIVERY:
             verdict = classify_meal_owned_suspend(
-                item.members[0], bolus, cgm, basal, scenario_config=scenario_config,
+                item.meal, bolus, cgm, basal, scenario_config=scenario_config,
             )
         elif lv is Lever.MISSED_MEAL:
             verdict = classify_missed_meal(

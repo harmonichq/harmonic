@@ -396,7 +396,9 @@ class DurableApiTest(unittest.TestCase):
         original = response.json()
         self.assertEqual(original["record"]["ending"]["kind"], "user_finished")
         self.assertEqual(original["record"]["ending"]["assessment"]["state"], "available")
-        self.assertNotIn("views", original["record"]["ending"]["assessment"])
+        # A saved ending keeps its clock envelopes and no other view (ADR 463).
+        self.assertEqual({arm: set(view) for arm, view in original["record"]["ending"]["assessment"]["views"].items()},
+                         {"before": {"clock"}, "after": {"clock"}})
         self.assertIsNone(original["admission"]["active_id"])
         self.assertEqual(self.client.post(path, headers=self.headers, json=body).json(), original)
         changed = {**body, "request_id": "again", "conclusion": "Different"}

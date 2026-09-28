@@ -180,6 +180,71 @@ test('no dock state names Verify, the destination the desk no longer has', () =>
   }
 });
 
+/* #460 — the guidance read's served Plan draft (ADR 460 points 2 and 3). */
+const basalRow = (start_min, extra = {}) => ({ type: 'basal', start_min, label: '', current: 0.9, value: 0.8, ...extra });
+const DRAFT = { items: [basalRow(180), basalRow(210)], updated_at: '2026-09-20 21:14:00' };
+const NO_MARKS = { count: 0, title: '', values: '' };
+
+test('#460 · a served draft with no marks on this surface reads staged, named from its own items', () => {
+  const view = watchDockView({ watched: null, pendingPlan: null, staged: NO_MARKS, draft: DRAFT, saving: false });
+  assert.equal(view.state, 'plan');
+  assert.equal(view.kind, 'Plan · staged');
+  assert.equal(view.title, 'Basal 03:00 to 04:00');
+  assert.deepEqual(view.route, { label: 'Open Changes', to: 'plan' });
+  const one = watchDockView({ staged: NO_MARKS, draft: { items: [basalRow(180)] }, saving: false });
+  assert.equal(one.title, 'Basal 03:00');
+  const carbRatio = watchDockView({ staged: NO_MARKS, saving: false, draft: { items: [360, 480].map((start_min) => ({
+    type: 'ic', start_min, current: 10, value: 9,
+    ic_block_provenance: { block_start_min: 360, block_end_min: 660, block_member_start_mins: [360, 480] } })) } });
+  assert.equal(carbRatio.title, 'Carb ratio 06:00–11:00');
+  const isf = watchDockView({ staged: NO_MARKS, saving: false, draft: { items: [{ type: 'isf', start_min: 0, value: 45 }] } });
+  assert.equal(isf.title, 'Correction factor');
+});
+
+test('#460 · a draft whose slot the analysis no longer admits still reads staged and names its setting', () => {
+  // A row written through the Plan route: no mark on this surface can name it.
+  const view = watchDockView({ staged: NO_MARKS, saving: false,
+    draft: { items: [{ type: 'basal', start_min: 1410, key: 47, label: '23:30', value: 0.7 }] } });
+  assert.equal(view.state, 'plan');
+  assert.equal(view.kind, KIND.plan);
+  assert.match(view.title, /^Basal\b/);
+});
+
+test('#460 · a draft prints values only where every item carries one pair, and never a direction', () => {
+  const agreed = watchDockView({ staged: NO_MARKS, saving: false, draft: DRAFT });
+  assert.equal(flat(agreed), `0.90 → 0.80 U/hr · ${PLAN_DETAIL}`);
+  const disagreeing = { items: [basalRow(180), basalRow(210, { current: 1.0 })] };
+  const unrecorded = { items: [basalRow(180, { current: undefined }), basalRow(210, { current: undefined })] };
+  for (const draft of [disagreeing, unrecorded]) {
+    assert.equal(flat(watchDockView({ staged: NO_MARKS, saving: false, draft })), PLAN_DETAIL);
+  }
+  for (const draft of [DRAFT, disagreeing, unrecorded]) {
+    const { title } = watchDockView({ staged: NO_MARKS, saving: false, draft });
+    assert.doesNotMatch(title, /·|lower|raise|higher|stronger|weaker|tighter|looser/, title);
+  }
+});
+
+test('#460 guard · while this surface\'s stage save is in flight, the served draft is not read', () => {
+  const view = watchDockView({ staged: NO_MARKS, draft: DRAFT, saving: true });
+  assert.equal(view.state, 'idle');
+  assert.equal(view.kind, KIND.idle);
+});
+
+test('#460 guard · the surface\'s own marks keep today\'s title, direction and values over the draft', () => {
+  for (const saving of [false, true]) {
+    const view = watchDockView({ staged: STAGED, draft: DRAFT, saving });
+    assert.equal(view.state, 'plan');
+    assert.equal(view.title, STAGED.title);
+    assert.equal(flat(view), `${STAGED.values} · ${PLAN_DETAIL}`);
+  }
+});
+
+test('#460 guard · a watched Trial, a watched Focus and a recorded Plan each outrank a served draft', () => {
+  assert.equal(watchDockView({ watched: TRIAL, staged: NO_MARKS, draft: DRAFT, saving: false }).state, 'trial');
+  assert.equal(watchDockView({ watched: FOCUS, staged: NO_MARKS, draft: DRAFT, saving: false }).state, 'focus');
+  assert.equal(watchDockView({ pendingPlan: PENDING, staged: NO_MARKS, draft: DRAFT, saving: false }).state, 'recorded');
+});
+
 test('a whole-profile Trial names itself without inventing a number', () => {
   const view = watchDockView({
     watched: { ...TRIAL, parameter: 'profile', slot: null, before: null, after: null },

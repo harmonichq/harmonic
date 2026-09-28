@@ -65,7 +65,7 @@ from .analyzers.scenario import (
     low_prompt_answers,
     tally_attributions,
 )
-from .analyzers.scenario.anchors import _is_meal
+from .analyzers.meals import ARC_PEAK_HORIZON_MIN, group_meals, meal_peak
 from .false_low import drop_readings, false_low_spans
 from .analyzers.scenario.levers import recommendation, title
 from .analyzers.scenario.evidence_population import policy_for
@@ -119,11 +119,12 @@ SCHEMA_VERSION = 10
 # horizon (360 min) — mirrors ``engine._CONTEXT_PAD_MIN``.
 _CONTEXT_PAD_MIN = 300.0
 
-# Post-meal arc windows (ADR 0018), both anchored at the meal bolus and both truncated
-# at the next carb-tagged bolus:
+# Post-meal arc windows (ADR 0018), both anchored at the meal's first bolus and both
+# truncated at the next meal's first bolus, never at a same-meal top-up (ADR 470):
 #   peak  = max CGM in (bolus, bolus + 3 h]
 #   nadir = min CGM in (peak_time, bolus + 6 h]
-ARC_PEAK_HORIZON_MIN = 180.0
+# The peak half is ``meals.meal_peak``, the one Arc peak reader Late bolus also judges
+# (ADR 461); its ``ARC_PEAK_HORIZON_MIN`` is re-exported here.
 ARC_NADIR_HORIZON_MIN = 360.0
 # A meal whose arc was truncated to under 3 h cannot tell a crash story — it is dropped
 # from the NADIR series (its peak half is still valid). The peak series keeps all meals.
@@ -428,7 +429,7 @@ class ArcTrend:
     window with fewer than :data:`ARC_MIN_MEALS` qualifying meals (a gap, never a
     fabricated value). The narrowing gap between the lines is the "flatten the curve"
     signal. The two series carry **different denominators** — the peak half counts all
-    carb-tagged meals, the nadir half only meals whose arc spanned ≥ 3 h before
+    meals, the nadir half only meals whose arc spanned ≥ 3 h before
     truncation — so ``n_peak`` and ``n_nadir`` are exposed per window (they can differ).
 
     ``preempted`` is the per-window aggregate pre-empted-low **count** (ADR 0012) — the
@@ -484,7 +485,7 @@ class PreMealTrend:
     """The pre-meal starting-BG trend: the meals-start-high signal as a rolling read (#302).
 
     ``series`` is the per-window **median starting BG** (``bg0``, absolute mg/dL) across
-    that window's carb-tagged meals that had a readable start, index-aligned to
+    that window's meals that had a readable start, index-aligned to
     ``windows`` — each ``None`` for a window with fewer than :data:`ARC_MIN_MEALS`
     such meals (a gap, never a fabricated value, mirroring the arc's thin-window gate).
     ``n`` is the per-window count of meals with a known start — the honest denominator,
@@ -623,18 +624,15 @@ def _meal_arc(meal_t: datetime, next_meal_t: Optional[datetime], cgm: Sequence) 
     """Compute one meal's post-meal arc from ``cgm`` (ADR 0018).
 
     Peak window is ``(meal_t, meal_t + 3 h]``; nadir window is ``(peak_time, meal_t + 6 h]``.
-    Both truncate at ``next_meal_t`` (the next carb-tagged bolus) when it lands earlier —
-    a second meal ends the first's arc at that boundary rather than reading into its
-    insulin activity. Values are absolute mg/dL, no baseline offset. Pure function of its
+    Both truncate at ``next_meal_t`` (the next meal's first bolus, never a same-meal
+    top-up: ADR 470) when it lands earlier — a second meal ends the first's arc at that
+    boundary rather than reading into its insulin activity. Values are absolute mg/dL, no baseline offset. Pure function of its
     inputs, so it is unit-testable on a synthetic series.
     """
-    peak_end = meal_t + timedelta(minutes=ARC_PEAK_HORIZON_MIN)
-    if next_meal_t is not None and next_meal_t < peak_end:
-        peak_end = next_meal_t
-    peak_pts = [(r.t, r.bg) for r in cgm if r.bg is not None and meal_t < r.t <= peak_end]
-    if not peak_pts:
+    peak_point = meal_peak(meal_t, next_meal_t, cgm)
+    if peak_point is None:
         return _MealArc(None, None, False)
-    peak_t, peak = max(peak_pts, key=lambda tv: tv[1])
+    peak_t, peak = peak_point
 
     nadir_end = meal_t + timedelta(minutes=ARC_NADIR_HORIZON_MIN)
     if next_meal_t is not None and next_meal_t < nadir_end:
@@ -666,8 +664,9 @@ def meal_arcs(meal_times: Sequence[datetime], cgm: Sequence, *,
               ctx_meal_times: Optional[Sequence[datetime]] = None) -> List[MealArc]:
     """Each meal's :class:`MealArc`, index-aligned with ``meal_times``.
 
-    ``ctx_meal_times`` are the carb-tagged bolus times that may truncate an arc; they
-    default to ``meal_times``. The series is time-sorted once, and each meal's
+    ``meal_times`` and ``ctx_meal_times`` are meals' first-bolus times (ADR 470), so a
+    top-up never truncates its own meal's arc; ``ctx_meal_times`` are the ones that may
+    truncate an arc, and default to ``meal_times``. The series is time-sorted once, and each meal's
     :func:`_meal_arc` reads only its ``(meal_t, meal_t + 6 h]`` slice, found by bisection.
     Both arc windows sit inside that span, so the slice moves no value, and a window of
     meals costs a slice per meal rather than a scan of the whole series.
@@ -703,14 +702,15 @@ def post_meal_arc(meals: Sequence, cgm: Sequence, *, ctx_meals: Optional[Sequenc
     Returns ``(peak_median, nadir_median, n_peak, n_nadir)`` — absolute mg/dL medians
     (rounded), each ``None`` when fewer than :data:`ARC_MIN_MEALS` meals qualify (a gap,
     never a fabricated value). The two halves have **different denominators**: the peak
-    series counts every carb-tagged meal with a peak reading; the nadir series only meals
+    series counts every meal with a peak reading; the nadir series only meals
     whose arc spanned ≥ 3 h before truncation (``nadir_qualifies``) and had a nadir
     reading. ``n_peak`` / ``n_nadir`` are the raw qualifying counts (reported even below
     the gate, so the caller can surface how thin each series is).
 
-    ``meals`` are the window's carb-tagged boluses (the aggregation set). ``ctx_meals``
-    is the wider context-padded meal slice used only to find each meal's *truncating*
-    next bolus — which may sit just past the window edge; it defaults to ``meals``. Pure
+    ``meals`` are the window's meals, each as its first bolus (the aggregation set,
+    ADR 470). ``ctx_meals`` is the wider context-padded meal slice used only to find
+    each meal's *truncating* next meal — which may sit just past the window edge; it
+    defaults to ``meals``. Pure
     function of its inputs, so it is unit-testable on a synthetic series.
     """
     measurements = meal_measurements(meals, cgm, ctx_meals=ctx_meals)
@@ -948,11 +948,12 @@ def summarize_trend(
         for key, val in by_key.items():
             metric_series[key].append(val)
 
-        # Post-meal arc (#196, ADR 0018): peak + subsequent nadir per carb-tagged meal,
-        # trended. Truncation looks at the padded meal slice so a meal near the window
-        # edge still sees its next bolus; the aggregation set is this window's meals.
-        w_meals = [b for b in w_bolus if _is_meal(b)]
-        ctx_meals = [b for b in ctx_bolus if _is_meal(b)]
+        # Post-meal arc (#196, ADR 0018): peak + subsequent nadir per meal, trended, each
+        # meal read at its first bolus (ADR 470). Meals form over the padded slice so a
+        # meal near the window edge keeps its top-ups and still sees the next meal; the
+        # aggregation set is this window's meals.
+        ctx_meals = [meal.first for meal in group_meals(ctx_bolus)]
+        w_meals = [b for b in ctx_meals if start <= b.t <= end]
         peak_med, nadir_med, n_peak, n_nadir = post_meal_arc(
             w_meals, ctx_cgm, ctx_meals=ctx_meals
         )

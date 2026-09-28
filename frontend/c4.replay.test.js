@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import {
   historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry, assertBasalLaneGallery, assertRankedMinis,
   assertBasalLaneReachable, LANE_REACH_SIZES, assertRecurringLowsVariant, assertClaimedEpisodeLog, assertBandGlossary,
-  assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424,
+  assertServedComparison424, assertComparisonCaption424, assertServedFold424, assertFoldLine424, assertQuietLine468,
   assertServedRowDescriptions432, assertSelectedFacts432, assertSentenceOnce454, queueNumbers451,
   OVERVIEW_PRESETS, overviewTextFailures, assertOverviewText, spotlightVerdictFailures, assertSpotlightVerdict,
   canvasHeadFailures, assertCanvasHead, readSettled,
@@ -103,6 +103,97 @@ test('S177–S179 are unique app-only #451 stories on the isf-strengthen store',
     assert.equal(entries[0][1].deferred.term, 'ADR 451');
     assert.equal(storyCase(id), 'isf-strengthen');
   }
+});
+
+test('S186 is a unique app-only #460 story on the basal-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S186');
+  assert.equal(entries.length, 1, 'S186 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 460');
+  assert.equal(storyCase('S186'), 'basal-lower');
+});
+
+test('S187 is a unique app-only #459 story on the basal-and-carb-ratio-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S187');
+  assert.equal(entries.length, 1, 'S187 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 459');
+  assert.equal(storyCase('S187'), 'basal-and-carb-ratio-lower');
+});
+
+test('S188 is a unique app-only #462 story on the c4-isf-late-read store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S188');
+  assert.equal(entries.length, 1, 'S188 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 462');
+  assert.equal(storyCase('S188'), 'c4-isf-late-read');
+});
+
+test('S189 is a unique app-only #463 story on the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S189');
+  assert.equal(entries.length, 1, 'S189 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 463');
+  assert.equal(storyCase('S189'), 'showcase');
+});
+
+test('S190 is a unique app-only #465 story on the basal-recurring-low-within-floor store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S190');
+  assert.equal(entries.length, 1, 'S190 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 465');
+  assert.equal(storyCase('S190'), 'basal-recurring-low-within-floor');
+});
+
+test('S191 is a unique app-only #466 story on the basal-recurring-low-spread store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S191');
+  assert.equal(entries.length, 1, 'S191 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 466');
+  assert.equal(storyCase('S191'), 'basal-recurring-low-spread');
+});
+
+test('S192 is a unique app-only #467 story on the basal-recurring-low-lower store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S192');
+  assert.equal(entries.length, 1, 'S192 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 467');
+  assert.equal(storyCase('S192'), 'basal-recurring-low-lower');
+});
+
+test('S193 is a unique app-only #469 story on the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S193');
+  assert.equal(entries.length, 1, 'S193 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 469');
+  assert.equal(storyCase('S193'), 'showcase');
+});
+
+test('S194 is a unique app-only #470 story on the behavioral-split-meal store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S194');
+  assert.equal(entries.length, 1, 'S194 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 470');
+  assert.equal(storyCase('S194'), 'behavioral-split-meal');
+});
+
+test('S195 is a unique app-only #461 story on the behavioral-late-bolus store', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S195');
+  assert.equal(entries.length, 1, 'S195 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 461');
+  assert.equal(storyCase('S195'), 'behavioral-late-bolus');
+});
+
+test('S196 is a unique app-only #468 story on the showcase', () => {
+  const entries = REGISTRY.filter(([entry]) => entry === 'S196');
+  assert.equal(entries.length, 1, 'S196 is registered once');
+  assert.equal(entries[0][1].deferred.term, 'ADR 468');
+  assert.equal(storyCase('S196'), 'showcase');
+});
+
+// #468: S196's Quiet check, against a ledger shaped like the showcase's 2024-06-26.
+const QUIET_468 = { quiet: { rows: [{}, {}], clean: 0, explained: 1, noData: 1 } };
+test('#468 the Quiet check passes on the counts alone and fails at the span on the base line', () => {
+  assert.doesNotThrow(() => assertQuietLine468('S196', QUIET_468,
+    { caption: 'Quiet · 2', line: '0 clean · 1 explained · 1 no data' }));
+  assert.throws(() => assertQuietLine468('S196', QUIET_468,
+    { caption: 'Quiet · 2', line: '08:00–14:35 · 0 clean · 1 explained · 1 no data' }),
+  /S196 the Quiet line must print no time span/);
+  assert.throws(() => assertQuietLine468('S196', QUIET_468,
+    { caption: 'Quiet · 2', line: '1 clean · 1 explained · 0 no data' }),
+  /S196 the Quiet line must print its clean, explained and no-data counts/);
+  assert.throws(() => assertQuietLine468('S196', QUIET_468, null), /S196 premise: the Episode Log must render its Quiet caption/);
 });
 
 test('S178 expects the numbers line the queue prints, served scope note included', () => {
@@ -1063,14 +1154,16 @@ test('S157 fails when the periods note reads data past the saved ending', async 
 });
 
 // #442: S91's c4 readiness helper over an ended record whose saved ending read
-// its evidence to the ending while the retained read runs to the data tail, as
-// c4-isf serves them. `lines` is the readiness the page prints.
-function qa442ReadinessPage(lines, { rawReason = false } = {}) {
+// its evidence to the ending while the retained read runs to the data tail.
+// `lines` is the readiness the page prints; `periods: false` serves a saved
+// ending with no periods, whose stage shows the pressed read instead (ADR 462).
+function qa442ReadinessPage(lines, { rawReason = false, periods = true } = {}) {
   let url = 'http://synthetic.invalid/?to=diagnose';
   const arm = (observed, met, reason = null) => ({ unit: 'qualifying fasting Rest windows', required: 30,
     observed, criterion_met: met, reason, elapsed_days: 31 });
   const retained = { readiness: { before: arm(31, true), after: arm(30, true) }, assessment: { state: 'unclear' } };
-  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') } };
+  const saved = { readiness: { before: arm(31, true), after: arm(27, false, 'collecting') },
+    periods: periods ? { before: {}, after: {} } : {} };
   const detail = { original: { ending: { kind: 'expired_unreviewed', assessment: saved } },
     reassessment: { comparison: retained } };
   const roster = { trials: [{ id: 'isf-all-20240601000000', parameter: 'isf' }],
@@ -1102,9 +1195,17 @@ function qa442ReadinessPage(lines, { rawReason = false } = {}) {
 
 test('S91 readiness compares an ended record’s lines with its saved ending, and returns the retained read', async () => {
   const { readiness } = await import('./c4.replay.mjs');
-  const comparison = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
-  assert.equal(comparison.readiness.after.observed, 30);
-  assert.equal(comparison.readiness.after.criterion_met, true);
+  const detail = await readiness(qa442ReadinessPage('saved'), 'qualifying fasting Rest windows', 30);
+  assert.equal(detail.reassessment.comparison.readiness.after.observed, 30);
+  assert.equal(detail.reassessment.comparison.readiness.after.criterion_met, true);
+  assert.equal(detail.original.ending.assessment.readiness.after.observed, 27);
+});
+
+test('S91 readiness compares a saved ending with no periods against the retained read the page draws', async () => {
+  const { readiness } = await import('./c4.replay.mjs');
+  await readiness(qa442ReadinessPage('retained', { periods: false }), 'qualifying fasting Rest windows', 30);
+  await assert.rejects(withReplayAssertionTimeout(100, () => readiness(qa442ReadinessPage('saved', { periods: false }),
+    'qualifying fasting Rest windows', 30)), /the after readiness line must print the criterion of the comparison the page shows/);
 });
 
 test('S91 readiness rejects an arm that prints its served reason code instead of words', async () => {
@@ -1877,7 +1978,7 @@ function qa433RecurringLowsPage({
       count: async () => (selector === '#lane > button.lane-cell' ? 48
         : recurring(selector) ? counts['down:recurring-lows'] || 0 : 0),
       getAttribute: async name => (name === 'aria-label' && recurring(selector)
-        ? '05:00 basal slot, suggests a lower because lows keep happening at this hour' : null),
+        ? '05:00 basal slot, suggests a lower because lows keep happening overnight' : null),
       evaluateAll: async () => [...keyEntries],
       innerText: async () => String(counts[entryOf(selector)]),
       evaluate: async fn => {
@@ -2245,12 +2346,16 @@ function baseShaped424(file) {
   for (const cohort of copy.projection.cohorts) delete cohort.band_verdict;
   return copy;
 }
+// The band's residue as the desk renders it: each non-zero count and its noun, in
+// the band's order.
+const RESIDUE_424 = [['outranked', 'claimed by another finding'], ['no_data', 'not comparable']];
 const captionView424 = (file, caption, extra = {}) => ({
   caption,
   headings: file.projection.cohorts.map(cohort => ({ name: cohort.name, count: cohort.routed_count })),
   bandLeads: BAND_LEADS_424,
   notComparable: file.verdict_counts.no_data ? [`${file.verdict_counts.no_data} not comparable`] : [],
-  foot: file.verdict_counts.no_data ? `${file.verdict_counts.no_data} not comparable` : '',
+  foot: RESIDUE_424.filter(([state]) => file.verdict_counts[state])
+    .map(([state, noun]) => `${file.verdict_counts[state]} ${noun}`).join(' · '),
   denominator: file.summary.denominator,
   ...extra,
 });
@@ -2291,16 +2396,27 @@ test('S124–S126 are unique app-only #424 stories on their manufactured case st
   }
 });
 
-test('#424 the served-shape check passes on the branch shape and fails on the base shape', () => {
+test('#424, #468 the served-shape check passes on the branch shape and fails on the base shape', () => {
   assert.doesNotThrow(() => assertServedComparison424('S125', missedMealCase()));
   assert.throws(() => assertServedComparison424('S125', baseShaped424(missedMealCase())),
     /S125 the case file must serve its count outside the comparison and each cohort's band state/);
+  const stateless = samePopulationCase();
+  for (const cohort of stateless.projection.cohorts) delete cohort.band_states;
+  assert.throws(() => assertServedComparison424('S124', stateless),
+    /S124 every cohort must serve the band states it holds/);
 });
 
-test('#424 a same-population caption passes as the branch renders it and fails as the base did', () => {
+// #468: the same-population comparison term carries its served band states' words.
+const SAME_CAPTION_468 = '6 Matched (meets criteria) · 1 Nearly matched (borderline)'
+  + ' · 3 Other meal opportunities (does not meet, claimed by another finding, not comparable)';
+
+test('#424, #468 a same-population caption passes as the branch renders it and fails as the base did', () => {
   const file = samePopulationCase();
-  assert.doesNotThrow(() => assertComparisonCaption424('S124', file, captionView424(file,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities')));
+  assert.doesNotThrow(() => assertComparisonCaption424('S124', file, captionView424(file, SAME_CAPTION_468)));
+  // #468's base: the comparison term carries no band states.
+  assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
+    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities')),
+  /S124 caption term 3 must read "3 Other meal opportunities \(does not meet, claimed by another finding, not comparable\)"/);
   assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
     '6 matched · 1 nearly matched · 3 comparison · 3 not comparable',
     { notComparable: ['1 not comparable', '3 not comparable'] })), /S124 caption term 1 must read/);
@@ -2308,15 +2424,15 @@ test('#424 a same-population caption passes as the branch renders it and fails a
     '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities (does not meet)')),
   /S124 caption term 3 must read/);
   assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    SAME_CAPTION_468,
     { headings: [{ name: 'Matched', count: 6 }, { name: 'Nearly matched', count: 1 }, { name: 'Comparison', count: 3 }] })),
   /S124 the caption's Other meal opportunities must match its section heading/);
   assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities',
+    SAME_CAPTION_468,
     { notComparable: ['1 not comparable', '3 not comparable'] })),
   /S124 only the band's no-data count may read "not comparable"/);
   assert.throws(() => assertComparisonCaption424('S124', file, captionView424(file,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities · 0 meals outside the comparison')),
+    `${SAME_CAPTION_468} · 0 meals outside the comparison`)),
   /S124 nothing outside the comparison may print when none is served/);
 });
 
@@ -2354,7 +2470,7 @@ test('S124 and S125 reach their caption assertions on a served branch case file'
   same.verdict_counts = { ...same.verdict_counts };
   const stories = await C4_STORIES_424();
   await withReplayAssertionTimeout(10, () => stories.S124(comparisonStoryPage(same, captionView424(same,
-    '6 Matched (meets criteria) · 1 Nearly matched (borderline) · 3 Other meal opportunities'))));
+    SAME_CAPTION_468))));
   const missed = missedMealCase();
   missed.verdict_counts = { ...missed.verdict_counts, no_data: 1 };
   await withReplayAssertionTimeout(10, () => stories.S125(comparisonStoryPage(missed, captionView424(missed,
@@ -2364,21 +2480,31 @@ test('S124 and S125 reach their caption assertions on a served branch case file'
       { notComparable: ['1 not comparable', '1 not comparable'] }))), /S125 caption term 1 must read/));
 });
 
-test('#424 a folded cause line passes on its share and set-apart counts, and fails on the base line', () => {
+test('#424, #468 a folded cause line names the count it sets apart from, and only under a Pattern that serves one', () => {
   const rows = fixtureJson('./__fixtures__/findings-projection.json').windows.global.rows;
+  const highs = rows.find(row => row.id === 'pattern:highs_after_meals');
+  const lows = rows.find(row => row.id === 'pattern:lows_after_correcting_highs');
+  assert.ok(highs.count_sentences?.length && lows.count_sentences === null,
+    'premise: one parent serves a count, the other none');
   const carb = rows.find(row => row.id === 'finding:carb_undercount');
-  assert.doesNotThrow(() => assertFoldLine424('S126', carb,
-    { den: '1 of 3 meals', out: 'outside the count·2 of 4 highs' }));
-  assert.throws(() => assertFoldLine424('S126', carb, { den: '2 of 4 highs·1 of 3 meals', out: '' }),
-    /S126 finding:carb_undercount must set its other counts apart behind "outside the count"/);
-  assert.throws(() => assertFoldLine424('S126', carb,
-    { den: '1 of 3 meals ran high', out: 'outside the count·2 of 4 highs' }), /must not print an outcome word/);
-  assert.throws(() => assertFoldLine424('S126', carb,
-    { den: '', out: 'outside the count·2 of 4 highs' }), /must print its share of the Pattern beside its name/);
-  // Under a Pattern that serves no count, every sentence is outside and the line leads with the words.
+  assert.doesNotThrow(() => assertFoldLine424('S126', highs, carb,
+    { den: '1 of 3 meals', out: "not in this Pattern's count·2 of 4 highs" }));
+  assert.throws(() => assertFoldLine424('S126', highs, carb,
+    { den: '1 of 3 meals', out: 'outside the count·2 of 4 highs' }),
+  /S126 finding:carb_undercount must set its other counts apart behind "not in this Pattern's count"/);
+  assert.throws(() => assertFoldLine424('S126', highs, carb, { den: '2 of 4 highs·1 of 3 meals', out: '' }),
+    /S126 finding:carb_undercount must set its other counts apart behind "not in this Pattern's count"/);
+  assert.throws(() => assertFoldLine424('S126', highs, carb,
+    { den: '1 of 3 meals ran high', out: "not in this Pattern's count·2 of 4 highs" }), /must not print an outcome word/);
+  assert.throws(() => assertFoldLine424('S126', highs, carb,
+    { den: '', out: "not in this Pattern's count·2 of 4 highs" }), /must print its share of the Pattern beside its name/);
+  // Under a Pattern that serves no count, every sentence is set apart with no lead words.
   const stacking = rows.find(row => row.id === 'finding:correction_stacking');
-  assert.doesNotThrow(() => assertFoldLine424('S115', stacking,
-    { den: '', out: 'outside the count·1 of 1 correction clusters' }));
+  assert.doesNotThrow(() => assertFoldLine424('S115', lows, stacking, { den: '', out: '1 of 1 correction clusters' }));
+  for (const out of ['outside the count·1 of 1 correction clusters', "not in this Pattern's count·1 of 1 correction clusters"]) {
+    assert.throws(() => assertFoldLine424('S115', lows, stacking, { den: '', out }),
+      /S115 finding:correction_stacking must print its counts with no lead words/);
+  }
 });
 
 test('#424 a folded cause without served fold sentences fails the served-shape check', () => {

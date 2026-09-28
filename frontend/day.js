@@ -273,7 +273,7 @@ function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
   // claimed anchors apart, never adding them in (ADR 423).
   const findingsTally = ledger && `${ledger.findingCount}${ledger.claimedCount ? ` · ${ledger.claimedCount} claimed` : ''}`;
   const quiet = ledger && ledger.quiet.rows.length
-    ? `${cap('quiet', 'Quiet', ledger.quiet.rows.length)}<p class="gf-meta">${e(clock(ledger.quiet.start))}–${e(clock(ledger.quiet.end))} · ${ledger.quiet.clean} clean · ${ledger.quiet.explained} explained · ${ledger.quiet.noData} no data</p>`
+    ? `${cap('quiet', 'Quiet', ledger.quiet.rows.length)}<p class="gf-meta">${ledger.quiet.clean} clean · ${ledger.quiet.explained} explained · ${ledger.quiet.noData} no data</p>`
     : '';
   const log = ledger && ledger.total
     ? `${band('findings', 'Findings', ledger.findings, findingsTally)}${band('also-checked', 'Also checked', ledger.alsoChecked)}${quiet}`

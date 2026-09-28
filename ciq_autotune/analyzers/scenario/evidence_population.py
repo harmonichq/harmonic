@@ -11,17 +11,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Sequence
 
+from ..meals import group_meals
 from ..scenario_config import ScenarioConfig
 from .levers import Exposure, Lever, exposure
 
 
-def completed_carb_bolus(item, *, scenario_config: ScenarioConfig = ScenarioConfig()) -> bool:
-    """ADR 679's eligible completed carb-bolus identity, shared by all consumers."""
-    return (
-        item.completion == "Completed"
-        and item.insulin is not None and item.insulin > 0
-        and item.carbs is not None and item.carbs >= scenario_config.anchor_meal_min_carbs
-    )
+def _completed_meal(meal, *, scenario_config: ScenarioConfig = ScenarioConfig()) -> bool:
+    """ADR 679's completed carb-bolus population, counted in meals (ADR 470): a meal is
+    in it when any member is a completed carb bolus."""
+    return meal.completed
 
 
 def _event_identity(item) -> str:
@@ -73,8 +71,8 @@ class EvidencePopulationPolicy:
             return tuple((sequence_populations or {}).get(self.sequence_lever, ()))
         if self.recurrence_family is None:
             return tuple(
-                item for item in bolus
-                if self.recurrence_members(item, scenario_config=scenario_config)
+                meal for meal in group_meals(bolus, scenario_config=scenario_config)
+                if self.recurrence_members(meal, scenario_config=scenario_config)
             )
         return tuple(item for item in families.get(self.recurrence_family, ())
                      if self.recurrence_members(
@@ -94,9 +92,9 @@ class EvidencePopulationPolicy:
             raise ValueError("sequence occurrence identity must come from the shared evaluation")
         if self.recurrence_family is not None:
             return episode_id
-        members = [item for item in bolus
-                   if item.t < before and self.recurrence_members(
-                       item, scenario_config=scenario_config,
+        members = [meal for meal in group_meals(bolus, scenario_config=scenario_config)
+                   if meal.t < before and self.recurrence_members(
+                       meal, scenario_config=scenario_config,
                    )]
         if not members:
             raise ValueError("attributed episode has no recurrence-population occurrence")
@@ -116,8 +114,8 @@ class EvidencePopulationPolicy:
                          if not row.candidate)
         if self.cross_population:
             return tuple(
-                item for item in bolus
-                if self.comparison_members(item, scenario_config=scenario_config)
+                meal for meal in group_meals(bolus, scenario_config=scenario_config)
+                if self.comparison_members(meal, scenario_config=scenario_config)
             )
 
         def eligible(member) -> bool:
@@ -126,9 +124,9 @@ class EvidencePopulationPolicy:
                 return self.comparison_members(
                     opportunity, scenario_config=scenario_config,
                 )
-            return any(
-                self.comparison_members(item, scenario_config=scenario_config)
-                for item in opportunity.members
+            # Only a meals opportunity carries a meal to be completed.
+            return opportunity.meal is not None and self.comparison_members(
+                opportunity.meal, scenario_config=scenario_config,
             )
 
         return tuple(member for member in roster if eligible(member))
@@ -192,11 +190,11 @@ def _ordinary(lever: Lever) -> EvidencePopulationPolicy:
 _POLICIES = {lever: _ordinary(lever) for lever in Lever}
 _POLICIES[Lever.MISSED_MEAL] = EvidencePopulationPolicy(
     Exposure.HIGHS, "highs", _family_member(Exposure.HIGHS), None,
-    completed_carb_bolus, "Completed carb-bolus meals",
+    _completed_meal, "Completed carb-bolus meals",
     "completed_carb_bolus", (-60, 300), True, _episode_identity,
 )
 _POLICIES[Lever.MEAL_BOLUS_SHORT] = EvidencePopulationPolicy(
-    None, "meals", completed_carb_bolus, None, completed_carb_bolus,
+    None, "meals", _completed_meal, None, _completed_meal,
     "Other completed carb-bolus meals",
     "completed_carb_bolus", (-60, 300), False, _event_identity,
 )

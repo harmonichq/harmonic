@@ -21,6 +21,7 @@ from typing import List, Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ..classifiers.context_gate import _is_suspend
+from ..meals import Meal, group_meals
 from ..scenario_config import ScenarioConfig
 
 # The meal floor, user-correction floor, near-low anchor line, high line, run gap, and
@@ -49,7 +50,11 @@ class Anchor:
       for a bolus, the episode start for a suspend).
     * ``kind`` — which :class:`AnchorKind`.
     * ``bolus`` — the originating :class:`~ciq_autotune.events.BolusEvent` for a
-      meal / correction anchor, else ``None``.
+      meal / correction anchor, else ``None``. A meal anchor's is the meal's first
+      bolus.
+    * ``meal`` — the :class:`~..meals.Meal` a meal anchor stands for (ADR 470): its
+      first bolus plus its same-meal top-ups, which the meal classifiers judge.
+      ``None`` for every other anchor.
     * ``bg`` — the CGM value at the anchor for a low/high anchor (the nadir/peak),
       else ``None``.
     * ``end`` — the end instant for a suspend episode, else ``None``.
@@ -80,6 +85,7 @@ class Anchor:
     t: datetime
     kind: AnchorKind
     bolus: Optional[BolusEvent] = None
+    meal: Optional[Meal] = None
     bg: Optional[float] = None
     end: Optional[datetime] = None
     span_start: Optional[datetime] = None
@@ -97,10 +103,6 @@ class Anchor:
         return self.span_end or self.end or self.t
 
 
-def _is_meal(b: BolusEvent, *, scenario_config: ScenarioConfig = ScenarioConfig()) -> bool:
-    return b.carbs is not None and b.carbs >= scenario_config.anchor_meal_min_carbs
-
-
 def _is_user_correction(
     b: BolusEvent, *, scenario_config: ScenarioConfig = ScenarioConfig()
 ) -> bool:
@@ -116,7 +118,7 @@ def _is_user_correction(
         # None) -> meal-only, today's behavior. Scoring the floor on the component
         # (not the total delivered dose) keeps a food-only bolus with a trivial
         # pump-folded correction below the line while admitting a real one. A mixed
-        # bolus is also still a meal (see _is_meal) — one dose, two opportunities,
+        # bolus is also still a meal (see meals._is_meal) — one dose, two opportunities,
         # so collect_anchors dual-emits a MEAL and a CORRECTION anchor.
         if b.correction_insulin is None or auto:
             return False
@@ -258,18 +260,23 @@ def collect_anchors(
     anchors: List[Anchor] = []
 
     meal_reach = timedelta(minutes=scenario_config.anchor_meal_reach_min)
+    # One MEAL anchor per meal, at its first bolus (ADR 470): a same-meal top-up is
+    # part of the meal it tops up, never an anchor of its own.
+    meals = {id(meal.first): meal
+             for meal in group_meals(bolus_events, scenario_config=scenario_config)}
     for b in bolus_events:
         # A mixed food+correction bolus is BOTH a meal and a correction (#160): the
         # predicates are no longer exclusive, so this dual-emits a MEAL and a
         # CORRECTION anchor off the one dose rather than picking one. Each is a real,
         # independent opportunity (see engine._exposure_counts' two denominators).
-        if _is_meal(b, scenario_config=scenario_config):
+        meal = meals.get(id(b))
+        if meal is not None:
             # A meal reaches forward over its judgement horizon (#78) so an episode
             # anchored only by the meal still spans the excursion it's scored on,
             # never collapsing to a zero-duration window. reach_start stays the dose
             # time (the meal has no pre-history to reach back to).
             anchors.append(Anchor(
-                t=b.t, kind=AnchorKind.MEAL, bolus=b,
+                t=b.t, kind=AnchorKind.MEAL, bolus=b, meal=meal,
                 span_start=b.t, span_end=b.t + meal_reach,
             ))
         if _is_user_correction(b, scenario_config=scenario_config):

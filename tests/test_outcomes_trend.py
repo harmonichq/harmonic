@@ -318,6 +318,25 @@ class PostMealArcTest(unittest.TestCase):
         self.assertEqual(n_peak, ARC_MIN_MEALS - 1)       # counts still reported
         self.assertEqual(n_nadir, ARC_MIN_MEALS - 1)
 
+    def test_the_trend_counts_a_split_meal_once_and_reads_its_peak_past_the_top_up(self):
+        # ADR 470: six noon meals, each topped up ten minutes later. The trend's arc
+        # counts six meals, and each meal's peak reads past its own top-up.
+        now = datetime(2026, 6, 15, 0, 0, 0)
+        cgm = _cgm([120] * (288 * 14), start=now - timedelta(days=14))
+        bolus, climbs = [], {}
+        for day in range(1, 7):
+            noon = now - timedelta(days=14) + timedelta(days=day, hours=12)
+            bolus += [_meal(noon), BolusEvent(noon + timedelta(minutes=10),
+                                              insulin=2.0, carbs=20.0)]
+            climbs.update({noon + timedelta(minutes=5 * k): 120.0 + 10.0 * min(k, 13)
+                           for k in range(1, 25)})
+        cgm = [CgmReading(r.t, climbs.get(r.t, r.bg)) for r in cgm]
+
+        arc = summarize_trend(_FakeStore(cgm=cgm, bolus=bolus), window_days=14,
+                              now=now).to_dict()["arc"]
+
+        self.assertEqual((arc["n_peak"][-1], arc["peak"][-1]), (6, 250.0))
+
     def test_no_meals_is_none_with_zero_counts(self):
         peak, nadir, n_peak, n_nadir = post_meal_arc([], _cgm([100] * 10, start=self.START))
         self.assertIsNone(peak)

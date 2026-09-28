@@ -63,6 +63,61 @@ def suspend_run(day, hh, mm, rows=6, cadence=5):
     ]
 
 
+def late_meal_cgm(after, day=15):
+    """A from-flat 2 mg/dL/min climb from 120 to 160 at a 12:40 bolus, then the
+    ``after`` readings 5 min apart from 12:45."""
+    bolus_t = datetime(2026, 6, day, 12, 40, 0)
+    return cgm_ramp(day, 12, 20, 120, 2.0, 20) + [
+        CgmReading(t=bolus_t + timedelta(minutes=5 * (k + 1)), bg=float(bg), type="EGV")
+        for k, bg in enumerate(after)
+    ]
+
+
+class LateBolusOutcomeTest(unittest.TestCase):
+    """ADR 461: a late bolus is claimed only when the meal's Arc peak — the highest
+    reading in (bolus, bolus + 3 h], cut at the next meal — is above 180."""
+
+    def test_a_meal_that_stayed_in_range_is_not_claimed(self):
+        cgm = late_meal_cgm([165, 150, 130, 110, 95, 85, 80])
+        v = classify_late_bolus(meal(15, 12, 40), cgm)
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.STAYED_IN_RANGE)
+        self.assertEqual(v.evidence_tier, EvidenceTier.OBSERVED)
+        self.assertIn("peaked at 165 mg/dL", v.detail)
+
+    def test_a_peak_of_exactly_180_is_not_claimed(self):
+        cgm = late_meal_cgm([170, 180, 170, 150, 130])
+        v = classify_late_bolus(meal(15, 12, 40), cgm)
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.STAYED_IN_RANGE)
+
+    def test_a_peak_of_181_is_claimed(self):
+        cgm = late_meal_cgm([170, 181, 170, 150, 130])
+        self.assertTrue(classify_late_bolus(meal(15, 12, 40), cgm).matched)
+
+    def test_no_reading_after_the_bolus_cannot_be_judged(self):
+        v = classify_late_bolus(meal(15, 12, 40), late_meal_cgm([]))
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.INSUFFICIENT_DATA)
+        self.assertEqual(v.evidence_tier, EvidenceTier.NOT_IN_DATA)
+
+    def test_the_peak_window_reads_past_the_meals_own_top_up(self):
+        # A +10 top-up is part of the meal (ADR 470), so the 240 at +60 is its peak.
+        cgm = late_meal_cgm([165, 170, 175, 180, 180, 180, 180, 180, 190, 200, 220, 240, 200])
+        m = meal(15, 12, 40)
+        top_up = meal(15, 12, 50, carbs=20.0, dose=2.0)
+        self.assertTrue(classify_late_bolus(m, cgm, bolus_events=[m, top_up]).matched)
+
+    def test_the_peak_window_ends_at_the_next_meal(self):
+        # A separate meal at +40 ends the window, so the 240 at +60 is not this meal's.
+        cgm = late_meal_cgm([165, 170, 170, 170, 170, 170, 170, 170, 190, 200, 220, 240, 200])
+        m = meal(15, 12, 40)
+        later = meal(15, 13, 20, carbs=30.0, dose=3.0)
+        v = classify_late_bolus(m, cgm, bolus_events=[m, later])
+        self.assertFalse(v.matched)
+        self.assertEqual(v.silence_reason, SilenceReason.STAYED_IN_RANGE)
+
+
 class LateBolusFlatVsRiseTest(unittest.TestCase):
     """The core `flat -> late` vs `low->rebound -> not late` contrast."""
 
@@ -134,8 +189,9 @@ class PostSuspendLunchAcceptanceTest(unittest.TestCase):
     def test_same_rise_from_flat_with_no_low_would_flag(self):
         # Control: steep rise into 15:48, no preceding low or suspend, BG starts and
         # stays in range at bolus time (so the high-start gate doesn't fire — only
-        # the slope gate does). 120 + 1.5*20 = 150 at 15:48.
-        cgm = cgm_ramp(30, 15, 28, 120, 1.5, 20)
+        # the slope gate does). 120 + 1.5*20 = 150 at 15:48, climbing on to 210
+        # after the bolus, so the meal ran high (ADR 461).
+        cgm = cgm_ramp(30, 15, 28, 120, 1.5, 60)
         m = BolusEvent(t=datetime(2026, 6, 30, 15, 48, 0), insulin=10.0, carbs=45.0)
         v = classify_late_bolus(m, cgm)
         self.assertTrue(v.matched)                         # WOULD be late
@@ -214,8 +270,9 @@ class HighStartGateTest(unittest.TestCase):
 
     def test_in_range_start_still_flags_as_late(self):
         # BG starts at 100 (in range), rises steeply — genuine late bolus.
-        # 100 + 3.0*20 = 160 at bolus time, well within range.
-        cgm = cgm_ramp(11, 5, 27, 100, 3.0, 25)
+        # 100 + 3.0*20 = 160 at bolus time, well within range, and it runs on to 205
+        # after the bolus, above the range line (ADR 461).
+        cgm = cgm_ramp(11, 5, 27, 100, 3.0, 35)
         m = BolusEvent(t=datetime(2026, 6, 11, 5, 47, 0), insulin=3.0, carbs=15.0)
         v = classify_late_bolus(m, cgm)
         self.assertTrue(v.matched)
@@ -235,15 +292,19 @@ class HighStartGateTest(unittest.TestCase):
 
     def test_exactly_at_high_threshold_does_not_gate(self):
         # BG of exactly 250 at bolus time is at-but-not-over the threshold; the
-        # high-start gate suppresses only > 250, so the verdict depends on slope.
+        # high-start gate suppresses only > 250, so the verdict depends on slope —
+        # and, after the bolus, on the meal running above the range line (ADR 461).
         from ciq_autotune.events import CgmReading
         cgm = cgm_ramp(11, 5, 27, 220, 2.0, 25)    # rising, passes the slope gate
         t_bolus = datetime(2026, 6, 11, 5, 47, 0)
-        cgm_at_250 = cgm[:-1] + [CgmReading(t=t_bolus, bg=250.0, type="EGV")]
+        cgm_at_250 = [r for r in cgm if r.t < t_bolus] + [
+            CgmReading(t=t_bolus, bg=250.0, type="EGV"),
+            CgmReading(t=t_bolus + timedelta(minutes=5), bg=260.0, type="EGV")]
         m = BolusEvent(t=t_bolus, insulin=3.0, carbs=15.0)
         v = classify_late_bolus(m, cgm_at_250)
         self.assertAlmostEqual(v.pre_bolus_bg, 250.0, places=0)
         self.assertNotIn("clearly high", v.detail)  # gate did not fire at 250
+        self.assertTrue(v.matched)
 
     def test_high_start_gate_sets_pre_bolus_bg(self):
         cgm = cgm_ramp(11, 5, 27, 250, 4.7, 25)

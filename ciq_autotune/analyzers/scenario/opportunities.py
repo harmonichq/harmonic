@@ -7,14 +7,19 @@ from datetime import datetime
 from typing import Mapping, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
+from ..meals import Meal, group_meals
 from ..scenario_config import ScenarioConfig
-from .anchors import Anchor, AnchorKind, _is_meal, _is_user_correction, collect_anchors
+from .anchors import Anchor, AnchorKind, _is_user_correction, collect_anchors
 from .levers import Exposure
 
 
 @dataclass(frozen=True)
 class Opportunity:
-    """One stable member of an Exposure population."""
+    """One stable member of an Exposure population.
+
+    A meals opportunity is one :class:`~..meals.Meal` (ADR 470): ``members`` holds
+    every member bolus, first bolus first, and ``meal`` the meal they form.
+    """
 
     family: Exposure
     source_key: tuple
@@ -23,6 +28,7 @@ class Opportunity:
     anchor_bg: float | None = None
     reach_start: datetime | None = None
     members: tuple[BolusEvent, ...] = ()
+    meal: Meal | None = None
 
 
 def canonical_anchor_key(anchor: Anchor) -> tuple[Exposure | None, tuple | None]:
@@ -50,11 +56,11 @@ def build_opportunities(
         low_mgdl=scenario_config.gate_low_mgdl,
     )
     families: dict[Exposure, list[Opportunity]] = {item: [] for item in Exposure}
-    for item in bolus:
-        if _is_meal(item, scenario_config=scenario_config):
-            families[Exposure.MEALS].append(Opportunity(
-                Exposure.MEALS, (item.seq_num,), item.t, "meal", members=(item,),
-            ))
+    for meal in group_meals(bolus, scenario_config=scenario_config):
+        families[Exposure.MEALS].append(Opportunity(
+            Exposure.MEALS, (meal.seq_num,), meal.t, "meal", members=meal.members,
+            meal=meal,
+        ))
     for anchor in anchors:
         if anchor.kind is AnchorKind.LOW:
             _, source_key = canonical_anchor_key(anchor)

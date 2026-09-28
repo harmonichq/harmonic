@@ -286,7 +286,7 @@ test('the cockpit exposure population produces its event-comparison Finding row'
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
 });
 
-test('the Afternoon fixture retains all four published behavioral Findings', () => {
+test('the Afternoon fixture retains every published behavioral Finding and Pattern', () => {
   const projection = projectFindings(populateFindingsProjectionInput({ exposures: payload.exposures }), { start_min: 720, end_min: 1080 });
   const selected = new Set(['highs', 'meals', 'corrections']);
   const shown = queueRows(projection, selected)
@@ -299,8 +299,10 @@ test('the Afternoon fixture retains all four published behavioral Findings', () 
     'pattern:highs_after_meals',
     'pattern:lows_after_correcting_highs',
     'finding:missed_meal',
+    // ADR 467: its meals land in this window, so Lows after meals is served here.
+    'pattern:lows_after_meals',
   ]);
-  assert.equal(queueMeta(projection, selected, true), '4 in this window');
+  assert.equal(queueMeta(projection, selected, true), '5 in this window');
 });
 
 const browserProjection = (bounds) => projectFindings(

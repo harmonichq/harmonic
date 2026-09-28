@@ -5356,9 +5356,964 @@ Amended S4 · 2026-09-24 · #451 / Q3 delegation, Connor Griffin, 2026-09-23 ("f
 
 No other story's asserted text moved under this widening. S42 reads "Re-key the flagged values on your pump" and "rechecks on the next fetch", and both remain. S142 counts the open ending's `[data-unavailable="ending"]` element, not its words. S153 reads "no direction asserted" in the basal panel, which remains. The findings queue's held-row prefix now reads "no direction asserted: <served reason>"; no story, replay or browser suite reads a held row's reason line. S178 reads only the values that lead the dock's detail line; the staged sentence after them now reads "Staged, not applied: nothing has changed on the pump", one character shorter.
 
+## #460 amendment — 2026-09-24, issue #460
+
+S186 is the fail-first obligation of ADR 460 (`openspec/changes/qa-round-2/design.md`):
+the Diagnose watch dock reads the guidance read's served Plan draft when the
+surface marks nothing as staged, and the surface's staged marks follow the Plan
+draft after a return, a reload and a draft replaced elsewhere. It is
+app-opener-only, like S177–S179, and runs on the manufactured `basal-lower` case
+store (`CASE_STORE_DIR`). Browser execution belongs to the coordinator at
+1280x720 and 1440x900. No existing story is amended or retired. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+writes the one release freeze block and reconciles the count line.
+
+Sanction: the AFK run's delegation (2026-09-24), recorded in ADR 460 ("decided
+autonomously during AFK run") rather than a quoted operator sentence. It covers
+S186 and nothing outside #460. The dock's precedence, its five kind labels, its
+"Open Changes ›" route and the staged title, direction and values S178 reads are
+unchanged.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 194 issued · 175
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-lower` emits.
+
+```
+S186 · The watch dock and Diagnose's staged marks follow the Plan draft. Leg 1:
+       after Diagnose is opened, the leading concern's action is staged and
+       saved in Changes, the change records are opened, and Diagnose is pressed
+       in the top nav; the dock reads "Plan · staged" and "Open Changes ›" lands
+       on the Plan. Leg 2: the basal run staged from Diagnose still reads
+       "Plan · staged" after the same round trip. Leg 3: as leg 2 with a reload
+       on the change records and the Plan read held until the Diagnose payload
+       has settled; the dock reads "Plan · staged". Leg 4: the staged run's
+       draft is replaced through the Plan route by one basal row at a slot the
+       analysis does not let stage; on return the run's lane cells carry
+       data-staged="false", its control reads "Stage change", and the dock
+       reads "Plan · staged" named "Basal ‹that slot›".
+  element:  .inspector > .watch .kind, .what, .go; #lane > .lane-cell[data-staged];
+            #level .stagebtn
+  source:   frontend/watched-change-dock.js watchDockView, draftName;
+            frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh;
+            frontend/diagnose.js readPlan, the retained return;
+            frontend/guidance.js planDraft
+  lock:     none (revise; ADR 460 in openspec/changes/qa-round-2/design.md)
+  data:     basal-lower; guidance leads with the lower basal run, which the
+            analysis lets stage, beside basal slots it does not
+  evidence: C4_STORIES.S186 → LEGS460; each leg clears the draft through
+            PUT /api/plan and reloads before it starts. Leg 1 stages through
+            [data-set="stage"], [data-set="open-plan"] and [data-set="save-draft"];
+            legs 2–4 stage through the lane's lower cell and its .stagebtn,
+            waiting for the save and its guidance read; the change records open
+            in place as a history step (a saved draft seats Changes on the Plan,
+            whose draft has no record door), and on basal-lower, which holds no
+            record, they draw their empty frame. Leg 3 holds GET /api/plan from the
+            Diagnose press until the desk has settled. Leg 4 reads /api/analyze
+            for a basal slot that does not assert. The story runs every leg and
+            fails once, naming each failed leg
+  status:   base e4862000 with this harness (be5f6abc) laid over it fails
+            legs 1, 3 and 4 at their dock or mark assertion ("S186 leg 1: the
+            staged dock", "S186 leg 3: the staged dock", "S186 leg 4: the
+            replaced run's lane cells must drop their staged mark") and passes
+            leg 2, at both sizes; branch be5f6abc passes all four legs at
+            1280x720 and 1440x900, as do S97, S98, S99, S113, S139, S140, S147,
+            S152, S153, S169 and S178. Renders of leg 3's endpoint, before on
+            e4862000 and after on be5f6abc, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Watch dock staged line from the served draft | frontend/watched-change-dock.js watchDockView, draftName | S186 |
+| Staged marks asked again on refresh and after a settled save | frontend/diagnose-workstation.js seedMarks, stageAndSettle, refresh | S186 |
+| Retained return re-reads Plan state and guidance | frontend/diagnose.js readPlan, mount | S186 |
+
+Addendum · 2026-09-24 · #462/#463 slice (ADR 460 addendum, decided
+autonomously under the coordinator's authorization): the retained return's Plan
+and guidance re-read runs only when another surface asked for a guidance read
+while Diagnose was parked, which a Changes arrival or a Plan write always does.
+Any other retained return, a Day return from a utility and the first return
+after a reload included, reads the held status check alone, which S164 and S165
+assert; both failed on the re-read in the slice's touched-story replay. No story
+text changes, and S186's legs, which each visit Changes, keep the re-read.
+
+## #459 amendment — 2026-09-24, issue #459
+
+S187 is the fail-first obligation of ADR 459 (`openspec/changes/qa-round-2/design.md`):
+before a stage press on Diagnose replaces the change staged for a different
+setting, the stage control says so and names the change it will replace. It is
+app-opener-only and runs on the manufactured `basal-and-carb-ratio-lower` case
+store (`CASE_STORE_DIR`), where a basal slot and the carb ratio both assert a
+move. S187 joins the PR smoke slice, as the only story on that store. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+existing story is amended or retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: one setting per Plan stays; warn before
+the press, naming the change it will replace (the issue's option 1). The words
+and the button geometry are ADR 459's autonomous decisions. It covers S187 and
+nothing outside #459.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 195 issued · 176
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-and-carb-ratio-lower` emits.
+
+```
+S187 · With the carb ratio's change staged from Diagnose, the basal slot's stage
+       control reads "Replace staged change" with the sub-line "replaces
+       ‹the dock's name for the carb-ratio change›" before any press. Pressing
+       it leaves the served Plan draft holding only basal rows and the dock
+       reading "Plan · staged" named for the basal change. Opened again in the
+       same visit, the carb ratio's control carries data-staged="false" and
+       reads "Replace staged change" naming the basal change, never
+       "Staged · Undo".
+  element:  #level .stagebtn, #level .stagebtn .sub; .inspector > .watch .kind, .what
+  source:   frontend/diagnose-workstation.js renderParamLevel, replacing;
+            frontend/diagnose.js replacing; frontend/plan-view.js replacesDraft,
+            replacedDraftItems, stageEvidence; frontend/watched-change-dock.js draftName
+  lock:     none (revise; ADR 459 in openspec/changes/qa-round-2/design.md)
+  data:     basal-and-carb-ratio-lower; basal 03:00 and the all-day carb ratio
+            both assert a lower move
+  evidence: C4_STORIES.S187; at 24 h opens the carb-ratio queue row and stages
+            it through its .stagebtn, waiting for the save and its guidance
+            read, and reads the dock's name for it; opens the lane's lower cell
+            and compares its control's words and sub-line; presses it, reads
+            /api/plan and the dock; reopens the carb-ratio row and compares its
+            control. The checks are gathered and the story fails once
+  status:   task 11's commit 6c47967f with this harness (f0e807b1) laid over
+            it fails at its feature assertions at both sizes, first "S187
+            before the press, the basal control must read "Replace staged
+            change"" (it read "Stage change"), then "S187 the carb-ratio
+            control must read "Replace staged change""; branch f0e807b1 passes
+            at 1280x720 and 1440x900, as do S186, S97, S98, S99, S113, S139,
+            S140, S147, S152, S153, S169 and S178. Renders of the basal control
+            before the press and of the dock after the replacement, before on
+            6c47967f and after on f0e807b1, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Stage control replace state | frontend/diagnose-workstation.js renderParamLevel, replacing | S187 |
+| Replaced-draft verdict | frontend/plan-view.js replacesDraft, replacedDraftItems; frontend/diagnose.js replacing | S187 |
+
+## #462 amendment — 2026-09-24, issue #462
+
+S188 is the fail-first obligation of ADR 462 (`openspec/changes/qa-round-2/design.md`):
+an ended change record whose saved ending serves no periods draws the
+reassessment the reader presses, cut at its ending, under that read's own mode.
+It is app-opener-only and runs on the manufactured `c4-isf-late-read` case store
+(`CASE_STORE_DIR`): c4-isf's recipe plus one unchanged pump read at 2024-06-30
+12:00 before its one reconcile, so its record's retained context was read after
+the record ended and its saved ending is unavailable `context_after_ending` with
+no periods. S188 joins the PR smoke slice, as the only story on that store.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900. S91 is
+amended in prose below; no story is retired. No `★ FROZEN` block and no header
+inventory line is edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: keep it as simple as possible; draw a
+requested reassessment when the saved ending has none; cut reassessment periods
+at the ending instant; drop or narrow the version gate, whichever is less code,
+with no migration. The stage words, the Retained line's words and the choice of
+option (a) over a default open on Current policy are ADR 462's autonomous
+decisions. It covers S188 and the S91 amendment, and nothing outside #462.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 196 issued · 177
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case c4-isf-late-read` emits.
+
+Changed shipped behavior:
+
+- **A requested reassessment reaches an ended record's stage when its saved
+  ending serves no periods.** The record still opens on its saved ending. After
+  Retained context or Current policy is pressed, the stage draws that read's
+  figure, periods and outcome rows under "Retained context reassessment" or
+  "Current policy reassessment" and "recomputed now", never "Ending snapshot" or
+  "as saved at the ending". A saved ending that serves periods keeps the stage
+  after every press (S96, S157).
+- **A reassessment of an ended Trial reads only up to its ending instant.**
+  Current policy reads the pump settings in force at the ending, and a Retained
+  read of a context recorded after the ending answers the saved ending's own
+  late-context reason. An open record still reads to the data tail.
+- **An update no longer voids a retained comparison.** Only a changed
+  comparison policy or scenario configuration refuses one; its words now say
+  that Current policy is the read left.
+- **The Retained line names the stored context by when it was recorded**,
+  "Stored context recorded ‹time›", never by characters of its id.
+
+```
+S188 · An ended record whose saved ending serves no periods opens on that saved
+       ending, whose figure reads unavailable naming its late-context reason in
+       words. Pressing Current policy draws a paired figure and outcome rows
+       under "Current policy reassessment" and "recomputed now", never "as saved
+       at the ending", with its Trial period ending at or before the record's
+       Finished time. Pressing Retained context reads unavailable under
+       "Retained context reassessment", naming the same late-context reason,
+       and its Retained line prints no id characters.
+  element:  .gf-stage-trial .instruments .instrument, [data-trial-chart]
+            [data-figure-state], [data-figure-reason], [data-table="outcomes"]
+            [data-outcome], [data-part="periods"] [data-period="after"],
+            [data-reassessment-context="retained"]
+  source:   frontend/history.js shownComparison, recordFrame,
+            reassessmentSection; ciq_autotune/watched_change.py review_trials;
+            ciq_autotune/follow_up_comparison.py compare_follow_up
+  lock:     HV2-28; ADR 462 (openspec/changes/qa-round-2/design.md)
+  data:     c4-isf-late-read; one correction-factor record changed 06-01,
+            expired unreviewed at 06-29, its context read from the 06-30 12:00
+            pump read
+  evidence: C4_STORIES.S188; reads the served roster and requires the record's
+            served late-context ending, opens the record by its address, reads
+            the stage, presses Current policy and compares the stage with the
+            served Current policy read, then presses Retained context. The
+            checks are gathered and the story fails once
+  status:   task 19's commit 578ec3c7 with this harness (403cfd67) laid over
+            it fails at both sizes at its Current policy stage assertion
+            ("S188 after pressing Current policy, the stage must name
+            \"Current policy reassessment\"", the stage still reading "Ending
+            snapshot / as saved at the ending"), then at its Retained context
+            one; the branch passes at 1280x720 and 1440x900 on a700330b, after
+            a story defect (a case-sensitive read of the capitalised caption)
+            failed the first branch run on 403cfd67. Renders of the record on
+            Original and after Current policy, before on 578ec3c7 and after on
+            a700330b, handed to the coordinator uncommitted. Coordinator-run
+            2026-09-24
+```
+
+Amended S91 · 2026-09-24 · #462 / Connor Griffin's decisions above: The story's text is unchanged. Its c4 part reads the Retained read of each case's watched, else first, record. c4-isf's and c4-profile's records are ended, and a reassessment of an ended Trial now reads only up to its ending (ADR 462), so their Retained reads count what their saved endings count: 27 and 28 Trial-arm dates, criterion not met, where they counted 30 and 31 and were met. For those two cases the story now asserts that the Retained read's readiness arms equal the saved ending's arms, and that the read stays `unclear`, instead of criterion met. c4-ic's watched record is open and is unchanged. The readiness helper's "comparison the page shows" follows ADR 462's rule: the saved ending when it serves periods, else the retained read the helper pressed; it now returns the record read. Pinned by node tests in `frontend/c4.replay.test.js`; the replay run is the coordinator's.
+The preceding wording and results are the attributed pre-amendment record.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Requested reassessment on an ended record's stage | frontend/history.js shownComparison, recordFrame | S188 |
+| Reassessment cut at the ending | ciq_autotune/watched_change.py review_trials | S188, S91 |
+| Retained line in words | frontend/history.js reassessmentSection | S188 |
+
+## #463 amendment — 2026-09-24, issue #463
+
+S189 is the fail-first obligation of ADR 463 (`openspec/changes/qa-round-2/design.md`):
+a change record prints its differences and percent cells at one decimal, and an
+ending saved with its clock bins draws its curve. It is app-opener-only, runs
+leg 1 on the committed `showcase` store and leg 2 on the manufactured
+`c3-history` case store (`CASE_STORE_DIR`), and fails once, naming each failed
+leg. Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+story is amended or retired. No `★ FROZEN` block and no header inventory line is
+edited here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: if re-dating delivery-detected changes
+moves Trial ids, existing records keep their time and identity. The one-decimal
+rule, the collapsed figure, new endings saving their clock views, the served
+Plan decision and the Plan link rule are ADR 463's autonomous decisions. It
+covers S189 and the behavior below, and nothing outside #463.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 197 issued · 178
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the
+committed showcase and the case store `scripts/gen_qa_e2e_db.py --case
+c3-history` emits.
+
+Changed shipped behavior:
+
+- **Differences and percent cells print at one decimal.** A served difference
+  prints rounded to one decimal with "+" before a positive value, and "0" when
+  it rounds to zero; a percent cell prints at most one decimal. The served
+  values stay unrounded, so no assessment moves, and saved endings print the
+  same way.
+- **A figure with no curve takes no chart space.** A figure that draws no
+  curve (saved with no clock bins, unavailable, no readings, not requested)
+  renders no chart seat and nothing with `role="img"`, and its stage track is
+  its legend line, on a record, the watched Trial and a Focus. The desk browser
+  suite's hand-built ended record with rows and no curve holds the figure to its
+  legend line at both sizes.
+- **New endings keep their curve.** An ending saved from now on keeps its
+  comparison's Before and Trial clock bins, and the record draws that curve
+  under "as saved at the ending". Older endings keep the collapsed figure.
+- **A Trial matched or linked to a Plan shows that Plan's decision.** Its
+  reading pane's original part reads the Plan's recorded decision ("Original
+  decision", "Recorded with this change") instead of "Not recorded". A Trial
+  detected within a day of the pump read that confirmed a Plan with no Trial
+  links to that Plan, one to one, writing only the Trial's receipt. No
+  committed case records a Plan, so this is evidenced by backend tests only:
+  `tests/test_watched_change.py` `test_j_a_matched_trial_serves_its_plans_decision`
+  and `tests/test_plan_verdict.py`
+  `test_a_trial_detected_within_a_day_of_the_confirming_read_links_to_its_plan`,
+  with the unlinked guards beside it.
+- **A delivery-detected change is dated at its new value's first
+  observation.** A Trial seen only in dose-stamped boluses or the basal feed
+  reads its Detected time at the first observation carrying the new value, not
+  its day's first observation; a record saved under the day-level dating keeps
+  its time and id. Evidenced by `tests/test_watched_change.py`
+  `DeliveryDatingTest`; no committed case store moves (73 stores checked in
+  `docs/scope/463-redate.spike.py`).
+
+```
+S189 · A change record prints one decimal and draws a saved curve. Leg 1: on
+       the showcase, Changes' watched Trial reads "difference -3.9" on its Time
+       in range row, and no printed difference or percent cell carries more
+       than one decimal. Leg 2: c3-history's finished record, whose saved
+       ending kept its Before and Trial clock bins, draws a paired figure with
+       its chart under "as saved at the ending".
+  element:  .gf-stage-trial [data-table="outcomes"] [data-outcome="tir"]
+            [data-outcome-state] small, .gf-stage-trial [data-trial-chart]
+            [data-figure-state], .gf-chart[role="img"],
+            .gf-stage-trial .instruments .instrument
+  source:   frontend/follow-up.js outcomesTable, percent, signed,
+            evidenceFigure; ciq_autotune/watched_change.py capture_ending
+  lock:     HV2-28; ADR 463 (openspec/changes/qa-round-2/design.md)
+  data:     showcase, whose watched carb-ratio Trial serves a Time in range
+            difference of -3.9000000000000057; c3-history, whose finished
+            record's ending the case server's reconcile saves
+  evidence: C4_STORIES.S189; leg 1 reads the served retained read and
+            requires the binary tail, opens Changes and reads the Read column;
+            leg 2 reads the served roster, requires the finished record's
+            saved clock bins, opens the record by its address and reads the
+            stage. Each leg runs; the story fails once, naming each failed leg
+  status:   #463's base cfa1ace4 with this harness (403cfd67) laid over it
+            fails both legs at both sizes: leg 1 reads "difference
+            -3.9000000000000057", leg 2 finds no saved clock bins; the branch
+            passes both legs at 1280x720 and 1440x900 on 403cfd67. Renders of
+            the Read column and the finished record's stage, before on
+            cfa1ace4 and after on 403cfd67, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| One-decimal Read column and percent cells | frontend/follow-up.js outcomesTable, percent, signed | S189 |
+| No chart seat without a curve | frontend/follow-up.js evidenceFigure; frontend/desk.css | S189 (desk suite) |
+| Saved ending clock envelopes | ciq_autotune/watched_change.py capture_ending | S189 |
+| Matched Plan decision; Plan link from a pump read | ciq_autotune/watched_change.py review_trials, _link_from_read | backend tests |
+| Delivery-detected dating; existing records kept | ciq_autotune/watched_change.py dose_regimes, basal_slot_regimes, same_change | backend tests |
+
+## #465 amendment — 2026-09-24, issue #465
+
+S190 is the fail-first obligation of ADR 465 (`openspec/changes/qa-round-2/design.md`):
+a basal slot whose recurring overnight lows point to a step down smaller than
+the noise floor or one full step, whichever is smaller, holds at its setting and
+names the lows. It is app-opener-only and runs on the manufactured
+`basal-recurring-low-within-floor` case store (`CASE_STORE_DIR`). As the only
+story on that store it joins the fixed PR smoke slice (28 stories). Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No story is
+amended or retired. No `★ FROZEN` block and no header inventory line is edited
+here; the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24, option 1: below the threshold the slot
+holds and names the recurring lows; no minimum step is invented, and it never
+reads "leaning lower". The held sentence, its tolerance, the kept held status
+and the held row's title are ADR 465's autonomous decisions. It covers S190 and
+the behavior below, and nothing outside #465.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 198 issued · 179
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-recurring-low-within-floor` emits.
+
+Changed shipped behavior:
+
+- **A recurring-lows step down within the threshold holds.** The slot serves
+  "held (recurring-low gate)" at its setting, so it paints a hold in the lane,
+  opens a panel reading "holds at current" with no Stage change, and stages
+  nothing, moves nothing in the pump profile and takes no priority. Every
+  recurring-lows step at or above the threshold is unchanged; no committed
+  case's verdict moves.
+- **The held slot names the lows.** Its served sentence reads "lows keep
+  happening overnight, but the step down is smaller than the smallest change
+  worth making, so the rate stays as it is", in the panel and as its queue
+  row's headline. A withheld raise keeps "a low printed at this hour".
+- **The held row names no lean.** A held row the recurring lows nudged is
+  titled with the setting alone ("Basal 03:00"), never "leaning lower".
+
+```
+S190 · A recurring-lows step down within the threshold holds. On
+       basal-recurring-low-within-floor, Diagnose at 24 h paints the 03:00
+       lane cell a hold with no recurring-lows reason, the key counts no
+       "lower · recurring lows", and the opened 03:00 panel reads "holds at
+       current" and the served recurring-lows hold sentence, with no Stage
+       change.
+  element:  #lane > .lane-cell[data-cell="6"][data-verdict],
+            #lane-key > span, #level .slot-head .verdict, #level .stagebtn
+  source:   ciq_autotune/safety.py apply_harm; ciq_autotune/analyzers/basal.py
+            _annotation_for; frontend/diagnose-workstation.js renderLane,
+            renderSlotLevel
+  lock:     HV2-17; ADR 465 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-within-floor: thirty steady nights delivering
+            0.59 U/h against a programmed 0.60, lows at 03:00 on two nights
+  evidence: C4_STORIES.S190; opens the 24 h rail, waits for all 48 slots,
+            reads the 03:00 cell and the key, opens the 03:00 panel and reads
+            its verdict, sentence and Stage change count
+  status:   #465's task-38 commit cc87c41c with this harness (d705ac0a)
+            laid over it fails at "S190 the 03:00 lane cell must read a hold,
+            not a recurring-lows lower"; the branch passes at 1280x720 and
+            1440x900 on d705ac0a. Renders of the 03:00 lane and panel, before
+            on cc87c41c and after on d705ac0a, handed to the coordinator
+            uncommitted. Coordinator-run 2026-09-24
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Recurring-lows threshold hold | ciq_autotune/safety.py apply_harm | S190 |
+| Recurring-lows hold sentence | ciq_autotune/analyzers/basal.py _annotation_for, analyze_basal | S190 |
+| Held row with no lower lean | ciq_autotune/findings_projection.py _basal_key | backend tests |
+
+## #466 amendment — 2026-09-24, issue #466
+
+S191 is the fail-first obligation of ADR 466 (`openspec/changes/qa-round-2/design.md`):
+a basal slot the recurring lows moved or held says the overnight lows own its
+step, prints the count the nudge used against its bar, and lists each of this
+half hour's lows, each opening its day in Day. It is app-opener-only, runs leg
+1 on the manufactured `basal-recurring-low-spread` case store and leg 2 on
+`basal-recurring-low-within-floor` through `ctx.withCase` (`CASE_STORE_DIR`),
+and fails once, naming each failed leg. As the only story on the spread store
+it joins the fixed PR smoke slice (29 stories). S113 is amended below. No story
+is retired. Browser execution belongs to the coordinator at 1280x720 and
+1440x900. No `★ FROZEN` block and no header inventory line is edited here; the
+release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: when recurrence is counted across the
+overnight band, say so, and show the count the nudge actually used; the copy
+says "overnight". The interval sentence, the count line's words, the held
+slot's list, the roster header's accessibility shape and the lane name are ADR
+466's autonomous decisions. It covers S191, S113's amendment and the behavior
+below, and nothing outside #466.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 199 issued · 180
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+stores `scripts/gen_qa_e2e_db.py --case basal-recurring-low-spread` and
+`--case basal-recurring-low-within-floor` emit.
+
+Changed shipped behavior:
+
+- **The interval sentence names the lows.** On a slot served "lower (recurring
+  lows)" whose interval reaches the setting, the panel keeps the interval fact
+  and reads "The steady nights alone do not establish this step down. It comes
+  from the overnight lows listed below." instead of "A move is consistent with
+  this data, not established by it." Every other slot, and the carb-ratio and
+  correction-factor panels, keep today's words.
+- **The count the nudge used, and each low.** Under the numbers block, a slot
+  that serves harm evidence prints "Overnight lows on N nights counted since
+  this rate was set, across the whole night, not this half hour alone. A step
+  down needs lows on B nights.", then "Lows in this half hour" and one row per
+  served low (date · time · glucose). Pressing a row opens Day on that low's
+  date. A recurring-lows lower, a hold within the threshold and a withheld
+  raise show the same list. The rows are not roster occurrences.
+- **The roster names its columns.** One header row names "Delivered U/h",
+  "Programmed U/h" and "Night mean mg/dL" in the rows' order, for the eye
+  alone. Each name stands in its value's track on the rows' own grid,
+  abbreviated over two lines ("Deliv. U/h", "Prog. U/h", "Mean mg/dL") with its
+  full name on hover; each row's values carry their column and unit in visually
+  hidden text.
+- **"Overnight", not "at this hour".** The recurring-lows lower's served
+  sentence reads "lows keep happening overnight, so the rate steps down toward
+  the measured rate (20% at most)", and its lane cell is named "suggests a lower
+  because lows keep happening overnight".
+
+```
+S191 · A recurring-lows slot says what owns its move and shows its lows. Leg
+       1: on basal-recurring-low-spread, the 03:00 panel reads "The steady
+       nights alone do not establish this step down. It comes from the
+       overnight lows listed below." and not "not established by it", the
+       count line prints the served count and bar, two low rows print their
+       served dates, times and glucose, pressing the first opens Day on that
+       low's date, and the roster shows its header row, each name over
+       its own values. Leg 2: on
+       basal-recurring-low-within-floor, the held 03:00 panel lists its lows
+       under the count line and offers no Stage change.
+  element:  #lane > .lane-cell[data-cell="6"], #level .slot-head,
+            #level .low-count, #level .low-row, #level .ev-cols,
+            #level .stagebtn, .gf-stage-day .gf-nav-col[data-pick]
+  source:   frontend/diagnose-workstation.js renderSlotLevel, renderSlotLows,
+            renderParamLevel; ciq_autotune/harm.py basal_harm,
+            basal_harm_evidence
+  lock:     HV2-17; ADR 466 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-spread: fourteen steady nights at 0.45, two at
+            0.54 and fourteen at 0.66 against a programmed 0.60, lows at 03:00
+            on two nights; basal-recurring-low-within-floor (S190's store)
+  evidence: C4_STORIES.S191; each leg opens the 24 h rail, reads the served
+            03:00 harm evidence from /api/analyze, opens the 03:00 slot and
+            reads the panel, the count line and the low rows against it; leg 1
+            presses the first low and reads Day's held date. Each leg runs;
+            the story fails once, naming each failed leg
+  status:   #466's task-48 commit 5377e044 with this harness (d705ac0a)
+            laid over it fails both legs at 1280x720. On d705ac0a leg 2 passed
+            and leg 1 timed out at both sizes: the header check read the row's
+            whole text, which runs its last two column names together; the
+            harness now reads each header cell. The branch passes both legs
+            at 1280x720 and 1440x900 on 431de418. Review round 1 (note N1):
+            the header now stands on the rows' grid, and the harness also
+            requires each name's right edge to meet its value's. On 5eb9906b
+            that check failed at both sizes while the 1440x900 render showed
+            the names over their columns and "Deliv." overhanging its track by
+            a few pixels. Each label line now ends on its track's right edge
+            (a wider line spills left), and the check allows 2 px for a row's
+            own border and logs every offset. The branch passes both legs at
+            1280x720 and 1440x900 on bf78c680, and its 1440x900 render shows
+            each name over its own values. Coordinator-run 2026-09-24 Renders of the 03:00 panel, before on 5377e044
+            and after on d705ac0a, handed to the coordinator uncommitted.
+            Coordinator-run 2026-09-24
+```
+
+Amended S113 · 2026-09-24 · #466 sanction (Connor Griffin · 2026-09-24 · the copy says "overnight"): the recurring-lows lower cell's accessible name reads "05:00 basal slot, suggests a lower because lows keep happening overnight". Everything else S113 asserts is unchanged.
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| `#level .low-row` click, opening Day on the low's date | diagnose-workstation.js renderSlotLows | S191 |
+| Recurring-lows interval sentence | diagnose-workstation.js renderSlotLevel, renderParamLevel | S191 |
+| Roster header row and hidden value labels | diagnose-workstation.js renderSlotLevel | S191 |
+| Served recurrence count and bar | ciq_autotune/harm.py basal_harm, basal_harm_evidence | S191 |
+
+## #467 amendment — 2026-09-24, issue #467
+
+S192 is the fail-first obligation of ADR 467 (`openspec/changes/qa-round-2/design.md`):
+a scoped window serves a Pattern when its outcomes land in it, whether or not
+the Pattern owns a chart. It is app-opener-only on the manufactured
+`basal-recurring-low-lower` case store (`CASE_STORE_DIR`). As the only story on
+that store it joins the fixed PR smoke slice (30 stories). It asserts no rank
+numeral, tier or position, which #469 moves. No story is retired or amended.
+Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24, option A: the overnight-lows Pattern
+joins any window overlapping the 00:00–06:00 band, with its band counts and a
+sentence naming the band. Where membership is decided, a Pattern with no
+population, the sentence's words and the fixture's band evidence are ADR 467's
+autonomous decisions. It covers S192 and the behavior below, and nothing
+outside #467.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 200 issued · 181
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case basal-recurring-low-lower` emits.
+
+Changed shipped behavior:
+
+- **A window lists the Patterns whose outcomes land in it.** A pressed preset
+  or drawn window lists every Pattern with an outcome there, admitted through a
+  habit, through a setting, or not yet admitted, and folds its causes under it
+  as the 24 h rail does. Before, a window listed only Patterns that own a chart.
+  A Pattern with no outcome in the window is not listed.
+- **The overnight Pattern in any window reaching the band.** "Overnight lows
+  with no insulin on board" is listed in any window that overlaps 00:00–06:00,
+  with its whole-band counts; its count sentence there reads "k of n nights ran
+  low between 00:00 and 06:00". The 24 h rail keeps "ran low overnight". Its
+  headline, its Priority and its chart (none) are unchanged.
+- **The chart no longer decides the listing.** Whether a Pattern row draws a
+  mini and opens a case file is decided as before.
+
+```
+S192 · A scoped window keeps the overnight Pattern its outcomes land in. On
+       basal-recurring-low-lower, the 24 h rail's overnight Pattern row
+       prints "2 of 30 nights ran low overnight" and draws no mini; pressing
+       Overnight keeps the row, printing "2 of 30 nights ran low between
+       00:00 and 06:00", with no mini; pressing Afternoon lists no overnight
+       Pattern row. No rank numeral, tier or position is asserted.
+  element:  #level .qrow[data-id="pattern:overnight_lows_no_iob"] .den,
+            #level .qrow .mini canvas, #seg-window [aria-pressed="true"]
+  source:   ciq_autotune/analyzers/scenario/outcome_patterns.py
+            pattern_in_window, outcome_window_population;
+            ciq_autotune/findings_projection.py _pattern_rows,
+            _pattern_count_sentences
+  lock:     ADR 467 (openspec/changes/qa-round-2/design.md)
+  data:     basal-recurring-low-lower: lows on 2 of 30 overnight source
+            nights, the Pattern admitted through the basal setting
+  evidence: C4_STORIES.S192; opens the 24 h rail and reads the row, presses
+            Overnight and reads it again, presses Afternoon and reads its
+            absence
+  status:   #467's base 0da909bb with this harness (ca2417c4) laid over it
+            fails at 1280x720 at the Overnight row ("S192 Overnight must list
+            the overnight Pattern row", the row count 0). The branch passes at
+            1280x720 and 1440x900 on ca2417c4, beside the fifteen touched
+            stories, which pass at both sizes on the base and on the branch.
+            Renders of the 24 h and Overnight rail, before on 0da909bb and
+            after on ca2417c4, handed to the coordinator uncommitted; the 24 h
+            rail's text is unchanged. Coordinator-run 2026-09-25
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Scoped Pattern membership | ciq_autotune/analyzers/scenario/outcome_patterns.py pattern_in_window | S192 |
+| Band count sentence in a scoped window | ciq_autotune/findings_projection.py _pattern_count_sentences | S192 |
+
+## #469 amendment — 2026-09-24, issue #469
+
+S193 is the fail-first obligation of ADR 469 (`openspec/changes/qa-round-2/design.md`):
+the findings rail follows the one urgency ranking. It is app-opener-only, runs
+leg 1 on the showcase and leg 2 on the manufactured `isf-direction-only-weaken`
+case store through `ctx.withCase` (`CASE_STORE_DIR`), and fails once, naming
+each failed leg. As the only story on that store it joins the fixed PR smoke
+slice (31 stories). No story is retired or amended; S115 reads the served tiers
+and holds unchanged. Browser execution belongs to the coordinator at 1280x720
+and 1440x900. No `★ FROZEN` block and no header inventory line is edited here;
+the release coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: the queue is one ranking by urgency
+(health impact) across settings and habits; fix only the places the rail breaks
+that rule. The anchor beneath the setting, the tiers as bands of the ranking,
+the rank notes' words, the correction factor's own refusal and the Glossary
+entries are ADR 469's autonomous decisions. It covers S193 and the behavior
+below, and nothing outside #469.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 201 issued · 182
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the
+committed showcase, and over the case store
+`scripts/gen_qa_e2e_db.py --case isf-direction-only-weaken` emits.
+
+Changed shipped behavior:
+
+- **A Pattern ranked with its setting holds no position of its own.** A Pattern
+  admitted because its setting is ready to change sits directly beneath that
+  setting's row, indented on the causes list's rule, with no numeral, caption
+  or stripe, and prints "Ranked with its setting" after its count sentence. The
+  overnight-lows Pattern sits only beneath a basal row that starts inside
+  00:00–06:00, the row that admits it; in a window with none it keeps its own
+  rank. When
+  a filter hides that setting row, the Pattern takes a numeral but still no tier
+  word, caption or stripe.
+- **Each tier word prints once.** "Next in line" heads the setting changes at
+  the top of the ranking, "Worth a look" heads everything ranked after them, and
+  the urgency stripe marks that top run only.
+- **The 30-day rank is said in a window.** In a time-of-day window, a ranked
+  Pattern or Cause that prints the window's counts prints "Ranked on all 30
+  days" after them.
+- **The correction factor says why it cannot stage.** A correction-factor row
+  whose served verdict keeps it from staging prints its own refusal ("No new
+  number is available, so there is nothing to stage." for the direction-only
+  weaken) and no longer sits under "Not recurring often enough to rank yet",
+  which now heads only rows unranked for want of recurrence.
+- **The Glossary explains the words.** A "Findings queue" group defines "Next in
+  line", "Worth a look", "Ranked with its setting", "Ranked on all 30 days" and
+  "Not recurring often enough to rank yet".
+
+```
+S193 · The rail follows the one urgency ranking. Leg 1: on the showcase at
+       24 h, the overnight Pattern's item follows the 03:00–04:00 basal row
+       with no numeral and no stripe and prints "Ranked with its setting";
+       "Worth a look" appears once; Over-treated low carries numeral 2; no
+       striped row follows an unstriped ranked row. Leg 2: on
+       isf-direction-only-weaken at 24 h, the correction factor row prints
+       "No new number is available, so there is nothing to stage." and no
+       tail note precedes it.
+  element:  #level .q > .qitem, #level .qrow .n, #level .qrow[data-urgent],
+            #level .qrow .scope-note, #level .qtier, #level .tailnote,
+            #level .qrow[data-id="isf"] .why
+  source:   ciq_autotune/findings_projection.py _stamp_anchors, _sort_key,
+            _assign_tiers, _stamp_rank_notes; frontend/diagnose-findings-queue.js
+            queueRows, renderFindingsQueue; frontend/diagnose-workstation-data.js
+            isfStageNote
+  lock:     ADR 469 (openspec/changes/qa-round-2/design.md)
+  data:     the showcase: Basal 03:00–04:00 lower with the overnight Pattern
+            admitted through it, Over-treated low priced below them;
+            isf-direction-only-weaken: a correction factor weaken with no new
+            number
+  evidence: C4_STORIES.S193; leg 1 opens the 24 h rail and reads its items,
+            numerals, stripes, captions and rank notes in painted order; leg 2
+            opens the 24 h rail and reads the correction factor row and the
+            lines above it. Each leg runs; the story fails once, naming each
+            failed leg
+  status:   #469's base 3b1e941a with this harness (bb694f14) laid over it
+            fails both legs at 1280x720: leg 1 at "must carry no numeral" (the
+            overnight Pattern held numeral 2 under a second "Worth a look"),
+            leg 2 at the correction factor's staging refusal (the row printed
+            none, under the tail note). The branch passes both legs at
+            1280x720 and 1440x900 on bb694f14, beside the sixteen touched
+            stories (S115 unamended), which pass at both sizes on the base and
+            the branch. Renders of the showcase's 24 h, Overnight and
+            Afternoon rail and of isf-direction-only-weaken's 24 h rail,
+            before on 3b1e941a and after on bb694f14, handed to the
+            coordinator uncommitted. Coordinator-run 2026-09-25
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Setting-admitted Pattern anchor | ciq_autotune/findings_projection.py _stamp_anchors, _sort_key | S193 |
+| Tiers as bands of the ranking | ciq_autotune/findings_projection.py _assign_tiers | S193 |
+| Rank notes | ciq_autotune/findings_projection.py _stamp_rank_notes; diagnose-findings-queue.js renderFindingsQueue | S193 |
+| Anchored row weight | diagnose-findings-queue.js queueRows | S193 |
+| Staging refusal detail | diagnose-workstation-data.js isfStageNote; diagnose-findings-queue.js queueRows | S193 |
+| Findings queue Glossary group | frontend/glossary.js | utilities.test.js |
+
+## #470 amendment — 2026-09-25, issue #470
+
+S194 is the fail-first obligation of ADR 470 (`openspec/changes/qa-round-2/design.md`):
+a meal is its first carb bolus plus its same-meal top-ups. It is app-opener-only
+and runs on the manufactured `behavioral-split-meal` case store
+(`CASE_STORE_DIR`). As the only story on that store it joins the fixed PR smoke
+slice (32 stories). No story is retired or amended: no committed QA case holds a
+same-meal pair, so every other story's store serves what it served. Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24: "I don't think those should count as a
+second meal. I thought we had logic about that." Settled 2026-09-24/25 as ADR
+0030's 30-minute grace becoming the single meal-identity rule, used everywhere
+meals are counted: anchored and identified by the first bolus, judged on the
+members' summed carbs and dose, the Post-meal arc cut only at the next separate
+meal. The edge cases and the unmoved configuration are ADR 470's autonomous
+decisions. It covers S194 and the behavior below, and nothing outside #470.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 202 issued · 183
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case behavioral-split-meal` emits.
+
+Changed shipped behavior:
+
+- **A top-up is part of its meal.** A carb bolus of 10 g or more within 30
+  minutes of a meal's first bolus is one meal with it. Highs after meals, Lows
+  after meals and every meal cause count it once, at its first bolus, so the
+  Pattern row's "k of n meals" no longer counts the top-up as a second meal.
+- **A meal's row reads the whole meal.** Its case-file row lists the meal once,
+  at its first bolus, with the carbs and dose summed over its boluses, and its
+  Arc peak reads past its own top-up up to the next separate meal, rather than
+  stopping minutes after the first bolus.
+- **A top-up past the grace is still its own meal.** A bolus 35 minutes after
+  the first opens a meal of its own, as before.
+
+```
+S194 · A top-up is part of its meal. On behavioral-split-meal at 24 h, the
+       Highs after meals row prints its served "12 of 15 meals ran high" (the
+       base served 24 meals); its case file lists 15 rows; the 2024-05-03 meal,
+       topped up ten minutes after its first bolus, serves 65 g, 6.5 U and a
+       peak of 360 at minute 125 and reads "65 g · 6.5 U · peak 360".
+  element:  #level .qrow[data-id="pattern:highs_after_meals"] .den,
+            #level .case-occurrence .only
+  source:   ciq_autotune/analyzers/meals.py group_meals, Meal;
+            ciq_autotune/analyzers/scenario/anchors.py collect_anchors;
+            ciq_autotune/analyzers/scenario/opportunities.py build_opportunities;
+            ciq_autotune/finding_case_file.py _arc_outcomes, _anchor_dose
+  lock:     ADR 470 (openspec/changes/qa-round-2/design.md)
+  data:     behavioral-split-meal: twelve noon meals of 45 g / 4.5 U, each
+            topped up with 20 g / 2 U at +10 minutes on six days, exactly +30
+            on three and +35 on three, under a climb to 360
+  evidence: C4_STORIES.S194; opens the 24 h rail, reads the served count
+            sentence and the row that prints it, drills the Highs after meals
+            case file, and reads its served and rendered rows
+  status:   #470's base c225183a (task 74's commit) with this harness laid
+            over it fails at 1280x720 at the count sentence ("it counts 24").
+            The branch passes at 1280x720 and 1440x900 on 4f62a3e0. The
+            pre-work inventory on the base served "21 of 24 meals ran high"
+            and 24 case-file rows for Highs after meals and Carb undercount,
+            each top-up its own row; the branch serves "12 of 15" and 15 rows.
+            No observed behavior lacked a story: the Cause rows fold under
+            the Pattern as S115 holds. Renders of the rail and both case
+            files, before on c225183a and after on 4f62a3e0, at both sizes,
+            handed to the coordinator uncommitted. Coordinator-run 2026-09-25
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Meal identity | ciq_autotune/analyzers/meals.py group_meals, Meal | S194 |
+| One meal anchor and opportunity per meal | ciq_autotune/analyzers/scenario/anchors.py collect_anchors; opportunities.py build_opportunities | S194 |
+| A meal row's summed dose and carbs | ciq_autotune/analyzers/scenario/model_view.py _anchor_facts; ciq_autotune/finding_case_file.py _anchor_dose | S194 |
+| The Arc cut at the next separate meal | ciq_autotune/finding_case_file.py _arc_outcomes; ciq_autotune/outcomes_trend.py | S194 |
+
+## #461 amendment — 2026-09-25, issue #461
+
+S195 is the fail-first obligation of ADR 461 (`openspec/changes/qa-round-2/design.md`):
+Late bolus claims a meal only when it ran above the range line. It is
+app-opener-only and runs on the manufactured `behavioral-late-bolus` case store
+(`CASE_STORE_DIR`). As the only story on that store it joins the fixed PR smoke
+slice (33 stories). No story is retired or amended: S13, S124 and R8 open
+`behavioral-carb-undercount`, whose reshaped Late bolus meal keeps every served
+tally. Browser execution belongs to the coordinator at 1280x720 and 1440x900.
+No `★ FROZEN` block and no header inventory line is edited here; the release
+coordinator reconciles them.
+
+Sanction: Connor Griffin, 2026-09-24/25, option A: Late bolus matches only when
+the meal's post-bolus peak is above the 180 range line, otherwise it returns a new
+calm silence reason, and the one peak definition is shared between the verdict and
+the row. The window, the reason's name and words, the second case's reshape and
+the in-range band are ADR 461's autonomous decisions. It covers S195 and the
+behavior below, and nothing outside #461.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 203 issued · 184
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command over the case
+store `scripts/gen_qa_e2e_db.py --case behavioral-late-bolus` emits.
+
+Changed shipped behavior:
+
+- **A late meal that stayed in range is not claimed.** Late bolus puts a meal in
+  "k of n meals ran high" only when its Arc peak went above 180. A meal that
+  climbed before the bolus but peaked at or under the line reads clean, is never a
+  near miss, and is not told to blunt a spike.
+- **A claimed row prints the peak its verdict judged.** Each fired Late bolus row's
+  peak is the Arc peak the verdict read, above 180, read past its own top-up up to
+  the next separate meal.
+- **The Guide names the new reason.** The silence article lists "Stayed in range"
+  with the Observed tier.
+
+```
+S195 · Late bolus claims only meals that ran high. On behavioral-late-bolus at
+       24 h the Highs after meals row prints "3 of 7 meals ran high" (the base
+       served 4 of 7); the Late bolus case file serves two fired meals, each
+       printing a peak above 180; the Guide's silence article lists "Stayed in
+       range".
+  element:  #level .qrow[data-id="pattern:highs_after_meals"] .den,
+            #level .case-occurrence .only, .gf-article
+  source:   ciq_autotune/analyzers/classifiers/late_bolus.py
+            classify_late_bolus; ciq_autotune/analyzers/meals.py meal_peak;
+            ciq_autotune/analyzers/scenario/guide.py _SILENCE_META
+  lock:     ADR 461 (openspec/changes/qa-round-2/design.md)
+  data:     behavioral-late-bolus: two late climbs peaking at 195 after the
+            bolus, one peaking at exactly 180, beside the case's other bands
+  evidence: C4_STORIES.S195; opens the 24 h rail and reads the Pattern row,
+            drills the Late bolus Finding's event case and reads its served and
+            rendered fired rows, and opens the Guide's silence article
+  status:   #461's base c098e9dd (task 86's commit) with this harness laid
+            over it fails at 1280x720 at the count sentence (it prints "4 of 7
+            meals ran high"). The branch passes at 1280x720 and 1440x900 on
+            4f62a3e0, beside S13, S124 and R8, which pass at both sizes on
+            the pre-work base b4e20c30 and on the branch. The pre-work
+            inventory on b4e20c30 served "3 of 6" with two fired Late bolus
+            meals and a Guide silence article without "Stayed in range"; no
+            observed behavior lacked a story. Renders of the rail, the Late
+            bolus case file and the Guide's silence article, before on
+            c098e9dd and after on 4f62a3e0, at both sizes, handed to the
+            coordinator uncommitted. Coordinator-run 2026-09-25
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Late bolus outcome step | ciq_autotune/analyzers/classifiers/late_bolus.py classify_late_bolus | S195 |
+| One Arc peak reader | ciq_autotune/analyzers/meals.py meal_peak; ciq_autotune/outcomes_trend.py _meal_arc | S195 |
+| Stayed in range is calm | model_view._CALM_REASONS; findings_projection._CALM_SILENCE_REASONS | S195 |
+| Guide silence article | ciq_autotune/analyzers/scenario/guide.py _SILENCE_META | S195 |
+
+## #468 amendment — 2026-09-25, issue #468
+
+S196 is the fail-first obligation of ADR 468 decision 2
+(`openspec/changes/qa-round-2/design.md`): Day's Quiet line prints its counts and
+no time span. It is app-opener-only and runs on the committed showcase, whose
+2024-06-26 serves quiet anchors on both sides of a Finding (the showcase probe,
+`docs/scope/468-reader-text.probe.py` and `.probe.mjs`, re-run on task 95's
+commit, printed that day). S115, S124, S126 and S188 are amended in prose below;
+S125's cross-population caption reads as it did, and no story is retired. The
+showcase is already covered, so the fixed PR smoke slice is unchanged. Browser
+execution belongs to the coordinator at 1280x720 and 1440x900. No `★ FROZEN`
+block and no header inventory line is edited here; the release coordinator
+reconciles them.
+
+Sanction: the AFK run's delegation, 2026-09-25, recorded as ADR 468: every
+wording and the served `band_states` field are ADR 468's autonomous decisions,
+each taking #468's recommended option. Connor Griffin, 2026-09-24: #468's item 5,
+the Glossary's correction-factor unit, waits for the Glossary's second pass and
+is not part of this amendment. It covers S196 and the four amendments below, and
+nothing outside #468.
+
+The pinned inventory in `acceptance.py` `inventory()` moves to 204 issued · 185
+active · 19 retired on this branch.
+
+Safe start is unchanged: AGENTS.md's QA copy-then-serve command, over the
+committed showcase for S115 and S196 and over the case store
+`scripts/gen_qa_e2e_db.py --case <name>` emits for S124, S126 and S188.
+
+Changed shipped behavior:
+
+- **A folded cause names the count it sets apart from.** Under a Pattern that
+  serves a count, a cause's counts on other populations sit on its second row
+  behind "not in this Pattern's count", where they sat behind "outside the
+  count". Under a Pattern that serves no count, the row prints those counts with
+  no lead words.
+- **Day's Quiet line prints no time span.** It reads "‹n› clean · ‹n› explained ·
+  ‹n› no data" under its caption. The span it replaced repeated one time over one
+  quiet anchor, stretched across Findings, and on one showcase day ran backwards.
+  The Glossary, the Guide and CONTEXT.md say Quiet's anchors are "counted
+  together rather than listed".
+- **The Retained line says what the read reuses.** It reads "Reuses the settings
+  and rules saved with this record on ‹time›"; with nothing saved, the word
+  table's words for the served reason.
+- **The comparison group names the band states it holds.** Each event cohort
+  serves `band_states`, and the Response comparison caption follows each cohort's
+  name with those states' band words, once, comma-joined in one pair of
+  parentheses, with no count: on behavioral-carb-undercount, "2 Other meal
+  opportunities (does not meet, not comparable)".
+
+Amended S115 · 2026-09-25 · #468 / ADR 468 (the delegation above): a folded member's set-apart row leads with "not in this Pattern's count" only when the parent Pattern serves `count_sentences`; under a Pattern that serves none it prints its counts with no lead words and no leading separator. Everything else S115 and its #424 amendment state is unchanged. The replay's fold check now takes the parent row (C4_STORIES.S115 → assertFoldLine424(id, parent, member, line)). The preceding wording and results are the attributed pre-amendment record. Status: 16e77e82 (task 95's commit), with the branch harness (frontend/c4.replay.mjs, frontend/desk-behavior.replay.mjs, frontend/replay-cases.mjs from aa2e00f1) laid over it, fails at both sizes at its fold line: the showcase's Highs after meals serves no count, and Meal bolus fell short's row reads "outside the count·1 of 32 meals" where the branch prints "1 of 32 meals". The branch passes at 1280x720 and 1440x900 on aa2e00f1. Coordinator-run 2026-09-25.
+
+Amended S126 · 2026-09-25 · #468 / ADR 468 (the delegation above): on behavioral-correction-stacking, Lows after correcting highs serves its own count, so Correction stacking's correction-cluster count sits behind "not in this Pattern's count", where it sat behind "outside the count". The shares still add up to the Pattern's served count. The preceding wording and results are the attributed pre-amendment record. Status: 16e77e82 (task 95's commit), with the branch harness (frontend/c4.replay.mjs, frontend/desk-behavior.replay.mjs, frontend/replay-cases.mjs from aa2e00f1) laid over it, fails at both sizes at its fold line ("outside the count·2 of 8 correction clusters", where "not in this Pattern's count" leads on the branch). The branch passes at 1280x720 and 1440x900 on aa2e00f1. Coordinator-run 2026-09-25.
+
+Amended S124 · 2026-09-25 · #468 / ADR 468 (the delegation above): the case file's served shape also carries every cohort's `band_states` (assertServedComparison424), and each caption term follows its cohort's name with the band's own words for those states, once, lowercased and comma-joined inside one pair of parentheses, with no count: the band keys' leads for Meets criteria, Borderline and Does not meet, and the band foot's nouns for claimed and no data (assertComparisonCaption424). On behavioral-carb-undercount the comparison term reads "2 Other meal opportunities (does not meet, not comparable)". Only the band's own no-data count still reads "‹n› not comparable". The preceding wording and results are the attributed pre-amendment record. Status: 16e77e82 (task 95's commit), with the branch harness (frontend/c4.replay.mjs, frontend/desk-behavior.replay.mjs, frontend/replay-cases.mjs from aa2e00f1) laid over it, fails at both sizes at its comparison term ("S124 caption term 3 must read \"2 Other meal opportunities (does not meet, not comparable)\"", the base printing "2 Other meal opportunities"). The branch passes at 1280x720 and 1440x900 on aa2e00f1, beside S125, which passes at both sizes unchanged. Coordinator-run 2026-09-25.
+
+Amended S188 · 2026-09-25 · #468 / ADR 468 (the delegation above), amending ADR 462 decision 4: after Retained context is pressed, the Retained line reads "Reuses the settings and rules saved with this record on ‹time›", ‹time› the desk's stamp of the served stored context's `captured_at`, which the story reads from the Retained read of the record; it still prints no id characters. The preceding wording and results are the attributed pre-amendment record. Status: 16e77e82 (task 95's commit), with the branch harness (frontend/c4.replay.mjs, frontend/desk-behavior.replay.mjs, frontend/replay-cases.mjs from aa2e00f1) laid over it, fails at both sizes in its Retained context check, whose only assertion the base's own harness lacks is the Retained words (the base passes that story with its own harness; the story's failure summary keeps each failure's first line). The branch passes at 1280x720 and 1440x900 on aa2e00f1 and prints "Reuses the settings and rules saved with this record on Jul 1, 2024 · 23:55". Coordinator-run 2026-09-25.
+
+```
+S196 · The Quiet line prints its counts and no time span. On the showcase's
+       2024-06-26, whose quiet anchors fall on both sides of its 13:55 Finding,
+       the Episode Log's Quiet caption counts its quiet anchors and the line
+       under it reads "‹n› clean · ‹n› explained · ‹n› no data" with the served
+       counts, and no HH:MM–HH:MM span.
+  element:  .gf-reading .gf-log-cap .gf-log-title, the Quiet caption's
+            following .gf-meta line
+  source:   frontend/day.js reading; frontend/day-chart.js buildEpisodeLedger
+  lock:     ADR 468 (openspec/changes/qa-round-2/design.md)
+  data:     showcase, 2024-06-26: one Finding at 13:55 and quiet anchors at
+            08:00 and 14:35
+  evidence: C4_STORIES.S196; reads the day's served model view through the
+            shipped ledger and requires a Finding anchor between the first and
+            last quiet anchor, opens Day on that day through the Month calendar,
+            and reads the Quiet caption and line (readQuietLine468) against the
+            ledger's counts (assertQuietLine468)
+  status:   16e77e82 (task 95's commit), with the branch harness from
+            aa2e00f1 laid over it, fails at both sizes at its span assertion
+            ("S196 the Quiet line must print no time span: \"08:00–14:35 · 0
+            clean · 1 explained · 1 no data\""). The branch passes at 1280x720
+            and 1440x900 on aa2e00f1, reading "Quiet · 2" over "0 clean · 1
+            explained · 1 no data". Renders of the folds (showcase and
+            behavioral-correction-stacking), the Episode Log on 2024-06-26, the
+            Retained line on c4-isf-late-read and the Response comparison on
+            behavioral-carb-undercount, before on 16e77e82 and after on
+            aa2e00f1, at both sizes, handed to the coordinator uncommitted.
+            Coordinator-run 2026-09-25
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| The fold's set-apart row | frontend/diagnose-findings-queue.js paintMember | S115, S126 |
+| The Quiet line | frontend/day.js reading; frontend/day-chart.js buildEpisodeLedger | S196 |
+| The Retained line | frontend/history.js reassessmentSection | S188 |
+| Served cohort band states | ciq_autotune/finding_case_file.py _event | S124 |
+| The comparison caption's band states | frontend/diagnose-workstation.js renderEventComparisonRoster | S124 |
+
 ## #464 amendment — 2026-09-27, issue #464
 
-S186–S196 are the obligations of #464's settled carb-ratio block design. The
+S197–S207 are the obligations of #464's settled carb-ratio block design. The
 operator settled it on 2026-09-27; the coordinator's #464 build spec records the
 ruling as "Settled by the operator on 2026-09-27 ("ship it")". The block's tile
 has one view in two lanes: a ratio strip of the counted meal runs against the
@@ -5369,13 +6324,13 @@ lines, "The case against" in one, and the lows after the block's boluses as one
 line and one grouped roster. Every figure is served by the block-evidence
 payload.
 
-S186–S195 are added. S196 is changed: it records the block's run evidence
+S197–S206 are added. S207 is changed: it records the block's run evidence
 leaving the per-run glucose traces the tile used to draw. Before this revision
 the tile had an Event and a Clock view. Event drew each run's glucose from its
 first meal ("Support run" and "Directional-only run" traces), and Clock drew each
 run's ratio at its meal start. The settled design replaces both views with the
 two-lane view, so no retirement is recorded. The behavior, the block's run
-evidence on its tile, still ships in rebuilt form, and S196 holds it: every
+evidence on its tile, still ships in rebuilt form, and S207 holds it: every
 counted run appears once on each lane, and no per-run trace is drawn. No sanction
 is owed for a change of this kind (the `revise` rule for a behavior that still
 ships).
@@ -5389,7 +6344,7 @@ All eleven stories are app-opener-only. Each runs on the manufactured
 Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
 `★ FROZEN` block and no header inventory line is edited here; the release
 coordinator writes the one release freeze block and reconciles the count line.
-The pinned inventory in `acceptance.py` `inventory()` moves to 204 issued · 185
+The pinned inventory in `acceptance.py` `inventory()` moves to 215 issued · 196
 active · 19 retired on this branch.
 
 Safe start is AGENTS.md's QA copy-then-serve command over the case store that
@@ -5400,15 +6355,15 @@ The case serves one Morning block (00:00–12:00) that asserts a raise, with 25
 counted meal runs: 15 counted whole and 10 counted by share. It also examines 6
 runs it does not count, and lists 2 lows, both on counted runs. It serves every
 optional fact: the side, the recommendation sentence and the lows' bearing
-sentence. S190 therefore asserts that the panel prints exactly the lines those
+sentence. S201 therefore asserts that the panel prints exactly the lines those
 served facts produce. It cannot show the omission of a line served null, because
-no QA case serves one. S191 prints the groups the case serves: one group, "On
-counted runs", with two rows. The two empty groups print nothing, and S191
-asserts that absence too. S188 asserts the hollow-low series is empty, as
+no QA case serves one. S202 prints the groups the case serves: one group, "On
+counted runs", with two rows. The two empty groups print nothing, and S202
+asserts that absence too. S199 asserts the hollow-low series is empty, as
 served.
 
 ```
-S186 · The block opens on its one view. The block's tile offers no view or
+S197 · The block opens on its one view. The block's tile offers no view or
        alignment toggle. Its ratio strip draws one dot per served counted run
        at its served ratio, and three rules: programmed at the served current
        value (solid), recommended at the served recommendation (dotted) and
@@ -5421,7 +6376,7 @@ S186 · The block opens on its one view. The block's tile offers no view or
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; 25 counted runs, programmed 5.00, recommended
             5.20, estimate 5.35 (5.23–5.47)
-  evidence: S186 reads the served preparation and block evidence. It opens the
+  evidence: S197 reads the served preparation and block evidence. It opens the
             block from its whole-day queue row, then requires the tile to have
             no .tile-modes, one dot per counted run at its served ratio, the
             rules in order at the served values with their line types, and one
@@ -5435,7 +6390,7 @@ S186 · The block opens on its one view. The block's tile offers no view or
 ```
 
 ```
-S187 · On the ratio strip, a run counted whole is a filled dot and a run counted
+S198 · On the ratio strip, a run counted whole is a filled dot and a run counted
        by share is a 2 px ring in the same ink. Each dot is 8–14 px across, and
        its size follows its served fit weight: a heavier run is never drawn
        smaller.
@@ -5443,7 +6398,7 @@ S187 · On the ratio strip, a run counted whole is a filled dot and a run counte
   source:   frontend/diagnose-workstation-chart.js ratioStrip
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; fit weights 55, 60, 100 and 110
-  evidence: S187 compares each series' runs with the served pool reasons, the
+  evidence: S198 compares each series' runs with the served pool reasons, the
             fill and ring styles, and every pair of dots' sizes against their
             served weights
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
@@ -5455,7 +6410,7 @@ S187 · On the ratio strip, a run counted whole is a filled dot and a run counte
 ```
 
 ```
-S188 · The lower lane draws each counted run on its date as a stem from its
+S199 · The lower lane draws each counted run on its date as a stem from its
        served start glucose (○) to its served end glucose (●). Each served low
        is a downward triangle at its glucose on its date: filled when it is on
        a counted run, hollow in the same ink otherwise. The served band's two
@@ -5466,7 +6421,7 @@ S188 · The lower lane draws each counted run on its date as a stem from its
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; 25 stems and 2 lows on counted runs; the hollow
             series is empty, as served
-  evidence: S188 compares every stem, start and end with its run's served date,
+  evidence: S199 compares every stem, start and end with its run's served date,
             start glucose and end glucose. It compares the filled and the hollow
             triangles with the served lows by group, time, glucose and date,
             reads their symbol and fill, and compares the band hairlines with
@@ -5480,7 +6435,7 @@ S188 · The lower lane draws each counted run on its date as a stem from its
 ```
 
 ```
-S189 · A run's readout is its served balance sheet in six lines: date, time,
+S200 · A run's readout is its served balance sheet in six lines: date, time,
        meals, "carbs ‹c› g ÷ insulin ‹e› U = ‹ratio› g/U", the insulin terms
        behind it (bolus · corrections · Control-IQ basal · glucose change), and
        where it ended. The arrows walk the counted runs by date and read each
@@ -5492,7 +6447,7 @@ S189 · A run's readout is its served balance sheet in six lines: date, time,
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; the first counted run by date is 2024-05-03,
             counted whole; the case also has runs counted by share and two lows
-  evidence: S189 focuses the chart host and presses ArrowRight. It requires the
+  evidence: S200 focuses the chart host and presses ArrowRight. It requires the
             tooltip to read the first counted run by date, line for line from
             its served terms. It calls the option's own tooltip formatter on a
             ring and on a low (the pointer path) and compares both. It then
@@ -5512,7 +6467,7 @@ S189 · A run's readout is its served balance sheet in six lines: date, time,
 ```
 
 ```
-S190 · Below the numbers block the panel prints "Why this move", "The case
+S201 · Below the numbers block the panel prints "Why this move", "The case
        against" and "Lows after ‹block› boluses", in that order. Why this move
        prints four lines: the served side count against the programmed value
        and the estimate's range; the fixed mechanism sentence; the served
@@ -5527,7 +6482,7 @@ S190 · Below the numbers block the panel prints "Why this move", "The case
   data:     ic-block-evidence; every optional fact is served, so all four
             lines print; the omitted-line branch is not reachable on any QA
             case
-  evidence: S190 builds each expected line from the served fields and
+  evidence: S201 builds each expected line from the served fields and
             compares the printed lines exactly, section by section, with their
             order
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
@@ -5539,7 +6494,7 @@ S190 · Below the numbers block the panel prints "Why this move", "The case
 ```
 
 ```
-S191 · The lows print as one roster in their served groups ("On counted runs",
+S202 · The lows print as one roster in their served groups ("On counted runs",
        "On runs not counted", "After a bolus that is not one of these
        meals"). Each group's header carries its served count, and a group
        with no low prints nothing. Each row reads "‹date› · bolus ‹HH:MM› →
@@ -5553,7 +6508,7 @@ S191 · The lows print as one roster in their served groups ("On counted runs",
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; one group, On counted runs · 2, on runs of
             ratio 5.75
-  evidence: S191 compares the printed groups and rows with the served lows. It
+  evidence: S202 compares the printed groups and rows with the served lows. It
             focuses the first low on a run, then reads the tile's selected-run
             series and every row's pressed state
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
@@ -5565,7 +6520,7 @@ S191 · The lows print as one roster in their served groups ("On counted runs",
 ```
 
 ```
-S192 · A low's row opens Day at that low's own moment. The address names the
+S203 · A low's row opens Day at that low's own moment. The address names the
        block, the low's date, its moment and the carb-ratio lever. Day marks
        the moment with its one hairline, standing at the low's time on the
        evidence strip. A harm-listed low is not an Episode Log entry, so a log
@@ -5580,7 +6535,7 @@ S192 · A low's row opens Day at that low's own moment. The address names the
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; the low at 2024-05-15 12:30, 68 mg/dL; Day
             lists no Episode Log row at that instant
-  evidence: S192 opens the block from its queue row, then presses the low's
+  evidence: S203 opens the block from its queue row, then presses the low's
             row. It reads the Day address; the hairline's x against the
             chart's own conversion of the low's time; and the listed, pressed
             and ringed log rows at the low's instant, comparing instants
@@ -5600,26 +6555,26 @@ S192 · A low's row opens Day at that low's own moment. The address names the
 ```
 
 ```
-S193 · The same Day hop works when the block was opened from a clock case
+S204 · The same Day hop works when the block was opened from a clock case
        head's "View segment", a route that carries no row id.
-  element:  #level .slotlink .linkbtn (View segment); then S192's elements
+  element:  #level .slotlink .linkbtn (View segment); then S203's elements
   source:   frontend/diagnose-workstation.js renderCaseHead, pickBlock,
             frameSubject
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; the Highs after meals clock case peaks at
             08:00–10:00, in the Morning block
-  evidence: S193 opens the desk's retained drill-all address, the only route
+  evidence: S204 opens the desk's retained drill-all address, the only route
             on this store that opens a Finding by clock. Every served Finding
             row carries its event chart in every window, so no reader control
             opens a clock case here. The story first requires the clock case
             head's peak line to name the served block. It then presses View
-            segment, requires the crumb to name that block, and runs S192's
+            segment, requires the crumb to name that block, and runs S203's
             Day-hop assertions, as amended there
   status:   final: the amended story passes at 1280x720 and 1440x900.
             Coordinator-run 2026-09-27; evidence/replay-S192-S193-1280x720.txt
             and evidence/replay-S192-S193-1440x900.txt. It was amended with
-            S192 (4cd5a0d2). The first version reached the block through View
-            segment and failed only at S192's pressed-row assertion, at both
+            S203 (4cd5a0d2). The first version reached the block through View
+            segment and failed only at S203's pressed-row assertion, at both
             sizes, on bdc6de49 (evidence/replay-1280x720.txt,
             evidence/replay-1440x900.txt)
             Final run on 8ccd68cf, every #464 story at both sizes:
@@ -5628,7 +6583,7 @@ S193 · The same Day hop works when the block was opened from a clock case
 ```
 
 ```
-S194 · While the block's run evidence is in flight, the panel prints the one
+S205 · While the block's run evidence is in flight, the panel prints the one
        line "Loading run evidence…" (busy) beneath an intact numbers block.
        When the read fails, it prints "Run evidence unavailable.". Neither
        state renders a section.
@@ -5637,7 +6592,7 @@ S194 · While the block's run evidence is in flight, the panel prints the one
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; the story holds the block-evidence read, then
             answers it 503
-  evidence: S194 holds every block-evidence request and reloads. It opens the
+  evidence: S205 holds every block-evidence request and reloads. It opens the
             block and reads the loading line, then answers the held reads 503
             and reads the unavailable line. Both times it requires the numbers
             block to stand and no Why this move section to print
@@ -5650,14 +6605,14 @@ S194 · While the block's run evidence is in flight, the panel prints the one
 ```
 
 ```
-S195 · The block's queue row draws the ratio strip alone: every served counted
+S206 · The block's queue row draws the ratio strip alone: every served counted
        run at its ratio against the three served rules, with no labels and no
        lower lane.
   element:  #level .qrow[data-id="ic:…"] .mini[data-preview-kind="carb-ratio"]
   source:   frontend/diagnose-workstation-chart.js queuePreviewOption, ratioStrip
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; the whole-day queue
-  evidence: S195 requires the row's mini to be mounted. It compares the mini's
+  evidence: S206 requires the row's mini to be mounted. It compares the mini's
             series set, its dots' runs and ratios, and its rules' values with
             the served block
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
@@ -5669,7 +6624,7 @@ S195 · The block's queue row draws the ratio strip alone: every served counted
 ```
 
 ```
-S196 · Changed: the block's run evidence still ships on its tile, rebuilt. The
+S207 · Changed: the block's run evidence still ships on its tile, rebuilt. The
        tile draws no per-run glucose trace: no "Support run", no
        "Directional-only run", no "Target range" and no line series carrying
        data. Every served counted run appears exactly once on the ratio strip,
@@ -5682,7 +6637,7 @@ S196 · Changed: the block's run evidence still ships on its tile, rebuilt. The
   changed:  the pre-#464 tile's Event view drew each run's glucose from its
             first meal, and its Clock view drew each run's ratio at its meal
             start. The settled design replaces both with the two-lane view
-  evidence: S196 reads every series on the tile, checking the retired trace
+  evidence: S207 reads every series on the tile, checking the retired trace
             names and data-bearing lines, each counted run's appearances per
             lane, and every run id drawn against the runs not counted
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
@@ -5697,17 +6652,17 @@ Additional handler inventory for this amendment:
 
 | Handler / registration | Source | Story |
 |---|---|---|
-| Block tile, one view in two lanes | frontend/diagnose-evidence-charts.js carbRatioOption; frontend/diagnose-workstation-chart.js ratioStrip | S186, S187, S188, S196 |
-| Tile tooltip formatter (run and low readouts) | frontend/diagnose-evidence-charts.js runReadout, lowReadout | S189 |
-| Tile keydown (ArrowLeft/ArrowRight/Home/End, Enter), pointerdown-bound click, blur | frontend/diagnose-evidence-charts.js bindRunSelection | S189 |
-| Panel sections and lows line | frontend/diagnose-workstation.js readIcBlockEvidence | S190 |
-| Lows roster rows: click, mouseenter, focus | frontend/occurrence-roster.js renderOccurrenceRoster; frontend/diagnose-workstation.js renderIcBlockEvidence, selectRun | S191, S192 |
-| Day adoption of a contextual moment and its hairline | frontend/day.js adopt; frontend/day-chart.js focusUpdate, buildAnchorOverlay | S192, S193 |
-| Case head View segment | frontend/diagnose-workstation.js renderCaseHead, pickBlock, frameSubject | S193 |
-| Block run-evidence loading and failure lines | frontend/diagnose-workstation.js renderIcBlockLevel, blockEvidence | S194 |
-| Queue row mini | frontend/diagnose-workstation.js mountRowMinis; frontend/diagnose-workstation-chart.js queuePreviewOption | S195 |
+| Block tile, one view in two lanes | frontend/diagnose-evidence-charts.js carbRatioOption; frontend/diagnose-workstation-chart.js ratioStrip | S197, S198, S199, S207 |
+| Tile tooltip formatter (run and low readouts) | frontend/diagnose-evidence-charts.js runReadout, lowReadout | S200 |
+| Tile keydown (ArrowLeft/ArrowRight/Home/End, Enter), pointerdown-bound click, blur | frontend/diagnose-evidence-charts.js bindRunSelection | S200 |
+| Panel sections and lows line | frontend/diagnose-workstation.js readIcBlockEvidence | S201 |
+| Lows roster rows: click, mouseenter, focus | frontend/occurrence-roster.js renderOccurrenceRoster; frontend/diagnose-workstation.js renderIcBlockEvidence, selectRun | S202, S203 |
+| Day adoption of a contextual moment and its hairline | frontend/day.js adopt; frontend/day-chart.js focusUpdate, buildAnchorOverlay | S203, S204 |
+| Case head View segment | frontend/diagnose-workstation.js renderCaseHead, pickBlock, frameSubject | S204 |
+| Block run-evidence loading and failure lines | frontend/diagnose-workstation.js renderIcBlockLevel, blockEvidence | S205 |
+| Queue row mini | frontend/diagnose-workstation.js mountRowMinis; frontend/diagnose-workstation-chart.js queuePreviewOption | S206 |
 
-To run the new stories alone, set `ONLY=S186,S187,S188,S189,S190,S191,S192,S193,S194,S195,S196`.
+To run the new stories alone, set `ONLY=S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207`.
 Each binds to `ic-block-evidence` through the replay's case map. Raw output
 lands under `openspec/changes/carb-ratio-block-evidence/evidence/` (its README
 names the files).

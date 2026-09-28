@@ -44,8 +44,10 @@ class ScenarioConfig:
     """
 
     # --- anchors (anchors.py) ---------------------------------------------------
-    #: A carb-tagged bolus is a "meal"; below this, carbs are noise. Mirrors the
-    #: classifiers' meal floor so the same boluses are meals everywhere.
+    #: A carb-tagged bolus at or over this is a meal bolus; below this, carbs are
+    #: noise. A meal is its first meal bolus plus the meal boluses within
+    #: ``carb_undercount_same_meal_grace_min`` of it (ADR 470, ``meals.group_meals``),
+    #: so the same meals are counted everywhere.
     anchor_meal_min_carbs: float = 10.0
     #: The user-correction floor (U) for anchoring — the provenance-less fallback for a
     #: pure correction and the admission floor on a mixed bolus's correction component.
@@ -188,10 +190,12 @@ class ScenarioConfig:
     #: undercounts; the read is capped at the next *separate* meal so a meal never
     #: claims the next meal's spike (ADR 0030).
     carb_undercount_peak_lookahead_min: int = 300
-    #: Same-meal grace (min): a later carb bolus within this of the meal's OWN bolus
-    #: time is a dose-split (pre-bolus + top-up, dual-wave), not a separate meal, so it
-    #: does NOT cap the peak-search window. Measured from the meal's own bolus, never
-    #: chained (ADR 0030). The separate-meal floor reuses ``anchor_meal_min_carbs``.
+    #: Same-meal grace (min), the meal-identity grace (ADR 470): a later meal bolus
+    #: within this of a meal's first bolus is a dose-split (pre-bolus + top-up,
+    #: dual-wave), a member of that meal rather than a separate one, so it neither
+    #: counts as a meal nor caps the meal's peak-search window. Measured from the first
+    #: bolus, never chained (ADR 0030); ``meals.group_meals`` reads it. The name keeps
+    #: its Carb undercount origin because a retained comparison stores this config.
     carb_undercount_same_meal_grace_min: float = 30.0
 
     # --- correction-stacking classifier (classifiers/correction_stacking.py) ----
@@ -263,10 +267,10 @@ class ScenarioConfig:
     #: Smallest carb-free bolus (U) that stands as the corroborating correction; below
     #: this a rounding-scale dose would be enough to claim a shortfall.
     meal_bolus_short_correction_floor_u: float = 1.0
-    #: A carb-free bolus within this of the meal's OWN bolus is a dose-split (pre-bolus
-    #: + top-up, dual-wave), not a correction the meal dose earned. Mirrors
-    #: ``carb_undercount_same_meal_grace_min``, which draws the same line for the same
-    #: reason, and measured from the meal bolus, never chained.
+    #: A carb-free bolus within this of the meal's first bolus is a dose-split
+    #: (pre-bolus + top-up, dual-wave), not a correction the meal dose earned. Mirrors
+    #: ``carb_undercount_same_meal_grace_min``, which draws the same line for carb
+    #: top-ups, and measured from the first bolus, never chained.
     meal_bolus_short_dose_split_grace_min: float = 30.0
 
     # --- user-override provenance (classifiers/user_override.py) ------------------

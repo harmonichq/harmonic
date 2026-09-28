@@ -120,7 +120,7 @@ def programmed_basal_by_slot(basal_events: List[BasalEvent],
     return {s: rate for s, (_, rate) in latest.items()}
 
 
-def _annotation_for(status: Status) -> str:
+def _annotation_for(status: Status, *, recurring_hold: bool = False) -> str:
     """The one sentence each status prints, in the canonical user register.
 
     These strings are *user copy*, not engine vocabulary: they surface verbatim in
@@ -128,7 +128,14 @@ def _annotation_for(status: Status) -> str:
     follow ``DESIGN.md``'s voice and user-copy register (no prose em dashes, no
     engine jargon, no "clean", no user-facing "ISF" or "slot"). The engine's own
     terms stay in the code around them.
+
+    ``recurring_hold`` picks the held sentence for a :attr:`Status.HARM_GATED` slot
+    whose recurring lows argue down but whose step down is too small to take
+    (ADR 465); every other gated slot withholds a raise and keeps that sentence.
     """
+    if status is Status.HARM_GATED and recurring_hold:
+        return ("lows keep happening overnight, but the step down is smaller than "
+                "the smallest change worth making, so the rate stays as it is")
     return {
         Status.NO_DATA: "no nights of steady data at this time yet",
         Status.NO_BASELINE: "no set rate to step from, so only the measured range is shown",
@@ -138,7 +145,7 @@ def _annotation_for(status: Status) -> str:
         Status.LOWER: "one cautious step down is supported at this time",
         Status.CAPPED_RAISE: "a step up, limited to 20% above the set rate",
         Status.CAPPED_LOWER: "a step down, limited to 20% below the set rate",
-        Status.HARM_LOWER: "lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most)",
+        Status.HARM_LOWER: "lows keep happening overnight, so the rate steps down toward the measured rate (20% at most)",
         Status.HARM_GATED: "a low printed at this hour, so a step up is withheld and the rate stays as it is",
     }[status]
 
@@ -530,13 +537,21 @@ def analyze_basal(
         # the clean-window sufficiency gate on purpose — an observed recurring low is
         # direct evidence, independent of how many *clean* nights the slot has.
         harm_verdict: Optional[dict] = None
+        recurring_hold = False
         if s in harm.gated_slots:
+            nudged = s in harm.nudged_slots
             recommended, status = apply_harm(
                 current, recommended, status, safety,
-                nudge=(s in harm.nudged_slots),
+                nudge=nudged,
                 median=est.value,
             )
             harm_verdict = basal_harm_evidence(harm, s, cfg.slot_minutes)
+            # ADR 465: a nudged hold whose median does not argue up is the lows'
+            # own step down held as too small, not a withheld raise.
+            recurring_hold = (
+                status is Status.HARM_GATED and nudged
+                and (est.value is None or est.value <= current)
+            )
         evidence: Dict = {"points": [
             {"date": d.isoformat(),
              "t": datetime.combine(d, datetime.min.time())
@@ -637,7 +652,7 @@ def analyze_basal(
             current=current,
             estimate=est,
             recommended=recommended,
-            annotation=_annotation_for(status),
+            annotation=_annotation_for(status, recurring_hold=recurring_hold),
             days=len(per_day),
             evidence=evidence,
             status=status,

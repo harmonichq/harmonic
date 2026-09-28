@@ -223,7 +223,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 204)
+            self.assertEqual(plan['count'], 215)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -289,11 +289,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 186)] + [f"R{i}" for i in range(1, 20)])
+        self.inventory([f"S{i}" for i in range(1, 197)] + [f"R{i}" for i in range(1, 20)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 187)] + [f"R{i}" for i in range(1, 19)]
-        self.assertEqual(len(ids), 204)
+        ids = [f"S{i}" for i in range(1, 198)] + [f"R{i}" for i in range(1, 19)]
+        self.assertEqual(len(ids), 215)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 
@@ -862,11 +862,20 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         # real replay case. #424: S125 and S126 join it for the same reason, as
         # the only stories on `behavioral-missed-meal` and
         # `behavioral-correction-stacking`. #451: S177 joins it as the only
-        # story on `isf-strengthen`. #464: S190 joins it as the panel story on
-        # `ic-block-evidence`, the only case the slice did not yet reach.
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 26)
+        # story on `isf-strengthen`. #459: S187 joins it as the only story on
+        # `basal-and-carb-ratio-lower`. #462: S188 joins it as the only story on
+        # `c4-isf-late-read`. #465: S190 joins it as the only story on
+        # `basal-recurring-low-within-floor`. #466: S191 joins it as the only
+        # story on `basal-recurring-low-spread`. #467: S192 joins it as the only
+        # story on `basal-recurring-low-lower`. #469: S193 joins it as the only
+        # story on `isf-direction-only-weaken` (its second leg's store). #470: S194
+        # joins it as the only story on `behavioral-split-meal`. #461: S195 joins it
+        # as the only story on `behavioral-late-bolus`. #464: S201 joins it as the
+        # panel story on `ic-block-evidence`, the only case the slice did not yet
+        # reach, making 34.
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 34)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '0f321a5c27005f95995f180174b1a46a3c3626b775c65b8922bac06b04b927ca')
+                         '2e53326bfcacc80d0a6a89f8aedd6d662c7b1de03c08bdab3037560f45f87f7b')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

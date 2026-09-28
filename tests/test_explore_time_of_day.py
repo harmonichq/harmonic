@@ -160,6 +160,60 @@ class ExploreTimeOfDayTest(unittest.TestCase):
 
         self.assertEqual(self._body()["bins"][84]["meal_count"], 2)
 
+    def _seed_top_up(self):
+        # ADR 470: the 07:05 top-up joins the 06:55 meal, so the bins it lands in
+        # count no second meal.
+        self._seed(
+            cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],
+            bolus=[
+                _bolus(1, datetime(2026, 6, 1, 6, 55), 10),
+                _bolus(2, datetime(2026, 6, 1, 7, 5), 20),
+            ],
+        )
+
+    def test_a_top_up_is_no_second_meal_in_its_five_minute_bin(self):
+        self._seed_top_up()
+
+        bins = self._body()["bins"]
+        self.assertEqual([bins[index]["meal_count"] for index in (83, 85)], [1, 0])
+
+    def test_a_top_up_is_no_second_meal_in_its_pooled_bin(self):
+        self._seed_top_up()
+
+        pooled = self._body()["pooled"]["bins"]
+        self.assertEqual([pooled[index]["meal_count"] for index in (27, 28)], [1, 0])
+
+    def test_a_top_up_of_a_meal_begun_before_the_window_is_no_meal(self):
+        # ADR 470: the 00:05 top-up joins the 23:55 meal before the 30-day window.
+        self._seed(
+            cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],
+            bolus=[
+                _bolus(1, datetime(2026, 5, 31, 23, 55), 45),
+                _bolus(2, datetime(2026, 6, 1, 0, 5), 20),
+            ],
+        )
+
+        body = self._body()
+        self.assertEqual(body["bins"][1]["meal_count"], 0)
+        self.assertEqual(body["pooled"]["bins"][0]["meal_count"], 0)
+
+    def test_a_meal_opened_more_than_a_grace_before_the_window_still_decides(self):
+        # ADR 470: {23:20, 23:30} and {23:55, 00:20} are the history's meals, so the
+        # 00:20 top-up is no meal in the window that starts at 00:00.
+        self._seed(
+            cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],
+            bolus=[
+                _bolus(1, datetime(2026, 5, 31, 23, 20), 45),
+                _bolus(2, datetime(2026, 5, 31, 23, 30), 20),
+                _bolus(3, datetime(2026, 5, 31, 23, 55), 30),
+                _bolus(4, datetime(2026, 6, 1, 0, 20), 20),
+            ],
+        )
+
+        body = self._body()
+        self.assertEqual(body["bins"][4]["meal_count"], 0)
+        self.assertEqual(body["pooled"]["bins"][1]["meal_count"], 0)
+
     def test_pooled_meals_use_the_workstation_12_gram_floor(self):
         self._seed(
             cgm=[_cgm(datetime(2026, 6, 30, 23, 0), 120)],

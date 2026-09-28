@@ -234,6 +234,31 @@ class ApplyHarmTest(unittest.TestCase):
         self.assertEqual(status, Status.HARM_GATED)
         self.assertEqual(rec, 0.72)
 
+    def test_nudge_holds_a_step_down_within_the_threshold(self):
+        # ADR 465: a cut smaller than the noise floor or one full step, whichever
+        # is smaller, holds at current instead of staging a trivial move.
+        for setting, median in ((0.72, 0.71), (0.20, 0.19), (0.11, None), (0.10, None)):
+            with self.subTest(setting=setting, median=median):
+                rec, status = apply_harm(setting, None, Status.NO_CHANGE, self.cfg,
+                                         nudge=True, median=median)
+                self.assertEqual(status, Status.HARM_GATED)
+                self.assertEqual(rec, setting)
+                self.assertFalse(status.actionable)
+
+    def test_nudge_steps_down_at_or_above_the_threshold(self):
+        # ADR 465 guards: every cut at or above the threshold is unchanged, and
+        # the check reads the target before rounding (0.137 steps 0.0274, which
+        # rounds to 0.027 against a threshold of 0.0274).
+        for setting, median, expected in (
+            (0.72, 0.66, 0.66), (0.20, 0.16, 0.16), (0.72, 0.576, 0.576),
+            (0.72, None, 0.576), (0.137, None, 0.11), (0.137, 0.10, 0.11),
+        ):
+            with self.subTest(setting=setting, median=median):
+                rec, status = apply_harm(setting, None, Status.NO_CHANGE, self.cfg,
+                                         nudge=True, median=median)
+                self.assertEqual(status, Status.HARM_LOWER)
+                self.assertAlmostEqual(rec, expected)
+
     def test_gate_withholds_a_raise(self):
         rec, status = apply_harm(0.72, 0.86, Status.CAPPED_RAISE, self.cfg, nudge=False)
         self.assertEqual(status, Status.HARM_GATED)

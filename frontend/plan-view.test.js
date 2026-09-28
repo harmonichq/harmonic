@@ -13,17 +13,25 @@ import { buildDeliverable, reconcileDeliverable } from './plan.js';
 // The one transport, installed before anything imports frontend/data.js, which
 // binds its default fetch when it is first evaluated. Each read answers its path.
 // A write whose path `refused` names answers with that durable 409 refusal.
+// While `plans.stateful` holds, each draft save is recorded and becomes the
+// served draft, as the store does (#459).
 const served = {};
 const refused = {};
+const plans = { stateful: false, saves: [] };
 globalThis.fetch = async (url, options = {}) => {
   const path = new URL(url, 'http://desk.invalid').pathname;
   if (options.method && options.method !== 'GET' && refused[path]) {
     return { ok: false, status: 409, statusText: 'Conflict', json: async () => ({ detail: refused[path] }) };
   }
+  if (plans.stateful && path === '/api/plan' && options.method === 'PUT') {
+    const { items } = JSON.parse(options.body);
+    plans.saves.push(items.map((item) => `${item.type}@${item.start_min}`));
+    served[path] = { items, updated_at: `t${plans.saves.length}` };
+  }
   return { ok: true, status: 200, statusText: 'OK', json: async () => served[path] ?? {} };
 };
 const {
-  PLAN_HEAD, SETTING_NAME, loadPlanState, mount, phase, planUnderway, profileTable, stage, userValue,
+  PLAN_HEAD, SETTING_NAME, loadPlanState, mount, phase, planUnderway, profileTable, replacesDraft, stage, userValue,
 } = await import('./plan-view.js');
 const { loadGuidance } = await import('./guidance.js');
 
@@ -214,4 +222,68 @@ test('a refused Plan withdraw prints the served sentence, never its code (ADR 45
     mount(host);
     assertSentence(host.innerHTML, 'Withdrawing failed');
   } finally { delete refused['/api/plan/history/withdraw']; }
+});
+
+/* #459 — a stage press on Diagnose replaces a draft of a different setting, and
+   the stage control warns first (ADR 459). Synthetic values throughout. */
+const icRows = [360, 480].map((start_min) => ({ type: 'ic', start_min, value: 11,
+  ic_block_provenance: { block_start_min: 360, block_end_min: 600, block_member_start_mins: [360, 480] } }));
+const basalRows = [{ type: 'basal', start_min: 120, value: 0.8 }];
+const icCandidate = {
+  subject: 'setting:carb_ratio', kind: 'setting', parameter: 'carb_ratio',
+  action: [{ start_min: 360, end_min: 600, member_start_mins: [360, 480], direction: 'lower', recommended: 11 }],
+};
+const analyze459 = {
+  basal: [{ slot: 4, label: '02:00', asserts_move: true, current: 0.9, recommended: 0.8 },
+    { slot: 6, label: '03:00', asserts_move: true, current: 0.9, recommended: 0.8 }],
+  ic_blocks: [{ block_id: 'b1', start_min: 360, end_min: 600, member_start_mins: [360, 480],
+    current_values: [12], recommended: 11, asserts_move: true }],
+};
+/** A fresh Plan surface over a clean stateful store holding `items`. */
+async function freshPlan459(items = []) {
+  served['/api/plan'] = { items, updated_at: items.length ? 't0' : null };
+  plans.saves.length = 0;
+  const fresh = await import(`./plan-view.js?case=${Math.random()}`);
+  await fresh.loadPlanState();
+  return fresh;
+}
+
+test('#459 · a draft of another setting is replaced by a stage; the same setting or an empty draft is not', () => {
+  assert.equal(replacesDraft('basal', icRows), true);
+  assert.equal(replacesDraft('basal', basalRows), false);
+  assert.equal(replacesDraft('basal', []), false);
+});
+
+test('#459 · the replaced draft is the one the marks read: a Changes pick not yet saved leads the saved draft', async () => {
+  const unsavedPick = await freshPlan459();
+  assert.equal(unsavedPick.stage(icCandidate), true, 'premise: a carb-ratio pick in Changes');
+  assert.deepEqual(unsavedPick.replacedDraftItems('basal')?.map((row) => `${row.type}@${row.start_min}`), ['ic@360', 'ic@480'],
+    'staging basal warns about the unsaved carb-ratio pick');
+  const pickOverSaved = await freshPlan459(icRows);
+  assert.equal(pickOverSaved.stage(basalCandidate), true, 'premise: a basal pick over a saved carb-ratio draft');
+  assert.deepEqual(pickOverSaved.replacedDraftItems('isf')?.map((row) => `${row.type}@${row.start_min}`), ['basal@180', 'basal@210'],
+    'staging the correction factor warns about the basal pick the marks and the dock show');
+});
+
+test('#459 guard · a cross-setting stage saves only the new setting\'s rows', async () => {
+  plans.stateful = true;
+  try {
+    const { stageEvidence, evidenceIsStaged } = await freshPlan459();
+    const { blockKey } = await import('./diagnose-workspaces.js');
+    const ic = { family: 'ic', key: blockKey(analyze459.ic_blocks[0]) };
+    assert.equal(await stageEvidence(ic, true, analyze459), true);
+    assert.equal(await stageEvidence({ family: 'basal', key: 'basal:4', members: [120] }, true, analyze459), true);
+    assert.deepEqual(plans.saves, [['ic@360', 'ic@480'], ['basal@120']]);
+    assert.equal(evidenceIsStaged(ic, analyze459), false, 'the replaced carb ratio no longer counts as staged');
+  } finally { plans.stateful = false; }
+});
+
+test('#459 guard · staging a second slot of the staged setting keeps the first', async () => {
+  plans.stateful = true;
+  try {
+    const { stageEvidence } = await freshPlan459();
+    assert.equal(await stageEvidence({ family: 'basal', key: 'basal:4', members: [120] }, true, analyze459), true);
+    assert.equal(await stageEvidence({ family: 'basal', key: 'basal:6', members: [180] }, true, analyze459), true);
+    assert.deepEqual(plans.saves, [['basal@120'], ['basal@120', 'basal@180']]);
+  } finally { plans.stateful = false; }
 });

@@ -320,6 +320,10 @@ class ApiTest(unittest.TestCase):
         tiers = {t.value for t in EvidenceTier}
         for s in body["silence_reasons"]:
             self.assertIn(s["tier"], tiers)
+        # ADR 461: nine reasons, "Stayed in range" among them at tier Observed.
+        self.assertEqual(len(body["silence_reasons"]), 9)
+        self.assertIn({"value": "stayed_in_range", "label": "Stayed in range", "tier": "observed"},
+                      [{k: s[k] for k in ("value", "label", "tier")} for s in body["silence_reasons"]])
 
     def test_kb_article_serves_raw_markdown(self):
         # #269: /api/kb/<slug> serves the authored how-to's RAW markdown (the API

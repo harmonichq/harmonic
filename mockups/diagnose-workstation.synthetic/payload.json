@@ -2305,7 +2305,7 @@
     "p90": 194.98
    },
    {
-    "meal_count": 3,
+    "meal_count": 0,
     "median": 194.2,
     "minute": 455,
     "n": 3,
@@ -3685,7 +3685,7 @@
     "p90": 178.14
    },
    {
-    "meal_count": 3,
+    "meal_count": 0,
     "median": 170.9,
     "minute": 1145,
     "n": 3,
@@ -3695,7 +3695,7 @@
     "p90": 186.26
    },
    {
-    "meal_count": 3,
+    "meal_count": 0,
     "median": 174.7,
     "minute": 1150,
     "n": 3,
@@ -4669,7 +4669,7 @@
      "supported": false
     },
     {
-     "meal_count": 3,
+     "meal_count": 0,
      "median": 190.05,
      "minute": 450,
      "n": 54,
@@ -5267,7 +5267,7 @@
      "supported": false
     },
     {
-     "meal_count": 6,
+     "meal_count": 0,
      "median": 169.35,
      "minute": 1140,
      "n": 54,

@@ -3215,7 +3215,7 @@ export const S125 = appOnly('HV2-18',
   '#424 a cross-population caption names its Highs outside the comparison', C4_STORIES.S125);
 // STORY:harmonic-v2-desktop:S126
 export const S126 = appOnly('#413 design lock',
-  '#424 a folded cause shows its share of its Pattern first, the rest outside the count', C4_STORIES.S126);
+  '#424 a folded cause shows its share of its Pattern first, the rest set apart on a second row', C4_STORIES.S126);
 // STORY:harmonic-v2-desktop:S148
 export const S148 = appOnly('ADR 432',
   '#432 Meal bolus short rows name their meal: served carbs, dose and peak', C4_STORIES.S148);
@@ -3258,8 +3258,51 @@ export const S178 = appOnly('ADR 451',
 // STORY:harmonic-v2-desktop:S179
 export const S179 = appOnly('ADR 451',
   '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
+// STORY:harmonic-v2-desktop:S186
+export const S186 = appOnly('ADR 460',
+  '#460 the watch dock and the staged marks follow the Plan draft after a return, a reload and a draft replaced elsewhere',
+  C4_STORIES.S186);
+// STORY:harmonic-v2-desktop:S187
+export const S187 = appOnly('ADR 459',
+  '#459 a stage press that would replace another setting says so first, naming the change it replaces',
+  C4_STORIES.S187);
+// STORY:harmonic-v2-desktop:S188
+export const S188 = appOnly('ADR 462',
+  '#462 an ended record whose saved ending has no periods draws the reassessment the reader presses, cut at its ending',
+  C4_STORIES.S188);
+// STORY:harmonic-v2-desktop:S189
+export const S189 = appOnly('ADR 463',
+  '#463 a change record prints one decimal and an ending saved with its clock bins draws its curve',
+  C4_STORIES.S189);
+// STORY:harmonic-v2-desktop:S190
+export const S190 = appOnly('ADR 465',
+  '#465 a recurring-lows step down within the threshold holds and names the lows, with nothing to stage',
+  C4_STORIES.S190);
+// STORY:harmonic-v2-desktop:S191
+export const S191 = appOnly('ADR 466',
+  '#466 a recurring-lows slot says the overnight lows own its move, counts them and lists each one',
+  C4_STORIES.S191);
+// STORY:harmonic-v2-desktop:S192
+export const S192 = appOnly('ADR 467',
+  '#467 a scoped window keeps the overnight Pattern its outcomes land in, with the band counts',
+  C4_STORIES.S192);
+// STORY:harmonic-v2-desktop:S193
+export const S193 = appOnly('ADR 469',
+  '#469 the rail follows the one urgency ranking: a setting-admitted Pattern shares its setting\'s position and a correction factor that cannot stage says why',
+  C4_STORIES.S193);
+// STORY:harmonic-v2-desktop:S194
+export const S194 = appOnly('ADR 470',
+  '#470 a top-up minutes after a meal is part of that meal: Highs after meals counts one meal per first bolus, and its case file lists each meal once with its summed dose and the peak past its top-up',
+  C4_STORIES.S194);
+// STORY:harmonic-v2-desktop:S195
+export const S195 = appOnly('ADR 461',
+  '#461 Late bolus claims a meal only when it ran above the range line: Highs after meals counts only meals that ran high, each fired Late bolus row prints a peak above 180, and the Guide lists "Stayed in range"',
+  C4_STORIES.S195);
+// STORY:harmonic-v2-desktop:S196
+export const S196 = appOnly('ADR 468',
+  '#468 the Quiet line prints its counts and no time span across a Finding', C4_STORIES.S196);
 
-/* ---- #464: the carb-ratio block's settled design (S186–S196) ---------------
+/* ---- #464: the carb-ratio block's settled design (S197–S207) ---------------
    Every story runs on the manufactured ic-block-evidence case store: one
    carb-ratio block asserting a move over its counted meal runs, with listed
    lows. Each story reads the served block evidence first and compares what the
@@ -3426,24 +3469,24 @@ async function lowDayHop464(page, id, row, evidence) {
   }, `${id} Day at the low's moment`);
 }
 
-// STORY:harmonic-v2-desktop:S186
-export const S186 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S197
+export const S197 = appOnly('ADR 464',
   '#464 the block opens on its one view: every counted run on the ratio strip and three served rules',
   async (page) => {
-    const { row, evidence, counted } = await served464(page, 'S186');
+    const { row, evidence, counted } = await served464(page, 'S197');
     await openBlock464(page, row);
     const tile = blockTile464(row);
     await waitForReplayAssertion(async seen => {
       ok(seen(await countOf(page, `${tile} .tile-modes, ${tile} [class*="tile-mode-"]`)) === 0,
-        'S186 the block tile must offer no alignment or view toggle');
+        'S197 the block tile must offer no alignment or view toggle');
       const series = seen(await tileOption464(page, `${tile} .tile-chart`));
-      ok(series, 'S186 the block tile mounted no chart');
+      ok(series, 'S197 the block tile mounted no chart');
       const dots = series.filter((item) => item.id?.startsWith('ic:dots:')).flatMap((item) => item.data);
       ok(dots.length === counted.length && sameSet464(dots.map((dot) => dot.runId), counted.map((run) => run.run_id)),
-        `S186 the strip must draw one dot per served counted run (${counted.length}); it draws ${dots.length}`);
+        `S197 the strip must draw one dot per served counted run (${counted.length}); it draws ${dots.length}`);
       for (const dot of dots) {
         const run = counted.find((item) => item.run_id === dot.runId);
-        ok(dot.value[0] === run.true_ic, `S186 run ${run.run_id}'s dot must sit at its served ratio ${run.true_ic}, not ${dot.value[0]}`);
+        ok(dot.value[0] === run.true_ic, `S197 run ${run.run_id}'s dot must sit at its served ratio ${run.true_ic}, not ${dot.value[0]}`);
       }
       const rules = seriesById464(series, 'ic:rules');
       const block = evidence.block;
@@ -3451,93 +3494,93 @@ export const S186 = appOnly('ADR 464',
         ['estimate', block.estimate.value, 'dashed']];
       ok(rules && JSON.stringify(rules.markLine.map(({ name, xAxis, type }) => [name, xAxis, type]))
         === JSON.stringify(expected),
-      `S186 the strip's rules must be ${JSON.stringify(expected)}; drawn ${JSON.stringify(rules?.markLine)}`);
+      `S197 the strip's rules must be ${JSON.stringify(expected)}; drawn ${JSON.stringify(rules?.markLine)}`);
       ok(JSON.stringify(rules.markArea) === JSON.stringify([[block.estimate.lo, block.estimate.hi]]),
-        `S186 the estimate's range must be one band at ${block.estimate.lo}–${block.estimate.hi}; drawn ${JSON.stringify(rules.markArea)}`);
-    }, 'S186 the block tile\'s one view');
+        `S197 the estimate's range must be one band at ${block.estimate.lo}–${block.estimate.hi}; drawn ${JSON.stringify(rules.markArea)}`);
+    }, 'S197 the block tile\'s one view');
   });
 
-// STORY:harmonic-v2-desktop:S187
-export const S187 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S198
+export const S198 = appOnly('ADR 464',
   '#464 a whole run\'s dot is filled, a run counted by share is a ring, and each dot is sized by its served weight',
   async (page) => {
-    const { row, counted } = await served464(page, 'S187');
+    const { row, counted } = await served464(page, 'S198');
     const weights = new Set(counted.map((run) => run.fit_weight));
     ok(weights.size > 1 && [...weights].every(Number.isFinite),
-      `S187 premise: the counted runs must serve at least two fit weights, not ${JSON.stringify([...weights])}`);
+      `S198 premise: the counted runs must serve at least two fit weights, not ${JSON.stringify([...weights])}`);
     ok(counted.some((run) => run.pool_reason === 'counted-by-share'),
-      'S187 premise: the served block counts at least one run by carb share');
+      'S198 premise: the served block counts at least one run by carb share');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {
       const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
-      ok(series, 'S187 the block tile mounted no chart');
+      ok(series, 'S198 the block tile mounted no chart');
       const whole = seriesById464(series, 'ic:dots:whole');
       const share = seriesById464(series, 'ic:dots:share');
       const ids = (reason) => counted.filter((run) => run.pool_reason === reason).map((run) => run.run_id);
       ok(whole && sameSet464(whole.data.map((dot) => dot.runId), ids('counted-whole')),
-        'S187 the filled dots must be exactly the runs served counted-whole');
+        'S198 the filled dots must be exactly the runs served counted-whole');
       ok(share && sameSet464(share.data.map((dot) => dot.runId), ids('counted-by-share')),
-        'S187 the rings must be exactly the runs served counted-by-share');
+        'S198 the rings must be exactly the runs served counted-by-share');
       ok(whole.itemStyle.color && whole.itemStyle.color !== 'transparent',
-        `S187 a whole run's dot must be filled, not ${whole.itemStyle.color}`);
+        `S198 a whole run's dot must be filled, not ${whole.itemStyle.color}`);
       ok(share.itemStyle.color === 'transparent' && share.itemStyle.borderWidth === 2
         && share.itemStyle.borderColor === whole.itemStyle.color,
-      `S187 a run counted by share must be a 2 px ring in the whole dots' ink: ${JSON.stringify(share.itemStyle)}`);
+      `S198 a run counted by share must be a 2 px ring in the whole dots' ink: ${JSON.stringify(share.itemStyle)}`);
       const sized = [...whole.data, ...share.data].map((dot) => ({
         size: dot.symbolSize, weight: counted.find((run) => run.run_id === dot.runId).fit_weight }));
       ok(sized.every(({ size }) => size >= 8 && size <= 14),
-        `S187 every dot must be 8–14 px across: ${JSON.stringify(sized.map(({ size }) => size))}`);
+        `S198 every dot must be 8–14 px across: ${JSON.stringify(sized.map(({ size }) => size))}`);
       for (const a of sized) for (const b of sized) {
         ok(a.weight < b.weight ? a.size < b.size : a.weight > b.weight || a.size === b.size,
-          `S187 a dot's size must follow its served weight: weight ${a.weight} draws ${a.size}, weight ${b.weight} draws ${b.size}`);
+          `S198 a dot's size must follow its served weight: weight ${a.weight} draws ${a.size}, weight ${b.weight} draws ${b.size}`);
       }
-    }, 'S187 the strip\'s marks');
+    }, 'S198 the strip\'s marks');
   });
 
-// STORY:harmonic-v2-desktop:S188
-export const S188 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S199
+export const S199 = appOnly('ADR 464',
   '#464 the lower lane draws each counted run as a stem from its start to its end glucose, and each listed low as a triangle',
   async (page) => {
-    const { row, evidence, counted } = await served464(page, 'S188');
+    const { row, evidence, counted } = await served464(page, 'S199');
     const stemmed = counted.filter((run) => Number.isFinite(run.start_bg) && Number.isFinite(run.outcome_bg));
     const lows = evidence.harm_evidence.lows;
-    ok(stemmed.length > 0 && lows.length > 0, 'S188 premise: the served block has stemmed runs and listed lows');
+    ok(stemmed.length > 0 && lows.length > 0, 'S199 premise: the served block has stemmed runs and listed lows');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {
       const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
-      ok(series, 'S188 the block tile mounted no chart');
+      ok(series, 'S199 the block tile mounted no chart');
       const at = (id) => seriesById464(series, id)?.data || [];
       ok(sameSet464(at('ic:stems').map((stem) => stem.runId), stemmed.map((run) => run.run_id)),
-        `S188 the lane must draw one stem per served counted run with a start and an end (${stemmed.length})`);
+        `S199 the lane must draw one stem per served counted run with a start and an end (${stemmed.length})`);
       for (const run of stemmed) {
         const stem = at('ic:stems').find((item) => item.runId === run.run_id);
         const start = at('ic:starts').find((item) => item.runId === run.run_id);
         const end = at('ic:ends').find((item) => item.runId === run.run_id);
         ok(stem.date === run.t.slice(0, 10) && stem.value[1] === run.start_bg && stem.value[2] === run.outcome_bg,
-          `S188 run ${run.run_id}'s stem must run ${run.start_bg}→${run.outcome_bg} mg/dL on its date: ${JSON.stringify(stem)}`);
+          `S199 run ${run.run_id}'s stem must run ${run.start_bg}→${run.outcome_bg} mg/dL on its date: ${JSON.stringify(stem)}`);
         ok(start?.value[1] === run.start_bg && end?.value[1] === run.outcome_bg
           && start.date === stem.date && end.date === stem.date,
-        `S188 run ${run.run_id}'s stem must carry ○ at its start and ● at its end`);
+        `S199 run ${run.run_id}'s stem must carry ○ at its start and ● at its end`);
       }
       const drawnLows = (id) => at(id).map((mark) => ({ t: mark.low?.t, bg: mark.value[1], date: mark.date }));
       const servedLows = (onCounted) => lows.filter((low) => (low.group === 'counted-run') === onCounted)
         .map((low) => ({ t: low.t, bg: low.bg, date: low.t.slice(0, 10) }));
       const byTime = (items) => JSON.stringify([...items].sort((a, b) => (a.t < b.t ? -1 : 1)));
       ok(byTime(drawnLows('ic:lows:counted')) === byTime(servedLows(true)),
-        `S188 the filled triangles must be the served lows on counted runs at their glucose and date: ${byTime(drawnLows('ic:lows:counted'))}`);
+        `S199 the filled triangles must be the served lows on counted runs at their glucose and date: ${byTime(drawnLows('ic:lows:counted'))}`);
       ok(byTime(drawnLows('ic:lows:other')) === byTime(servedLows(false)),
-        `S188 the hollow triangles must be every other served low: ${byTime(drawnLows('ic:lows:other'))}`);
+        `S199 the hollow triangles must be every other served low: ${byTime(drawnLows('ic:lows:other'))}`);
       const filled = seriesById464(series, 'ic:lows:counted');
       const hollow = seriesById464(series, 'ic:lows:other');
       ok(filled.symbol === 'triangle' && filled.symbolRotate === 180 && hollow.symbol === 'triangle'
-        && hollow.symbolRotate === 180, 'S188 a listed low must be a downward triangle');
+        && hollow.symbolRotate === 180, 'S199 a listed low must be a downward triangle');
       ok(filled.itemStyle.color && filled.itemStyle.color !== 'transparent'
         && hollow.itemStyle.color === 'transparent' && hollow.itemStyle.borderColor === filled.itemStyle.color,
-      `S188 a low on a counted run is filled and any other low is hollow in the same ink: ${JSON.stringify([filled.itemStyle, hollow.itemStyle])}`);
+      `S199 a low on a counted run is filled and any other low is hollow in the same ink: ${JSON.stringify([filled.itemStyle, hollow.itemStyle])}`);
       const band = seriesById464(series, 'ic:band')?.markLine.map((line) => line.yAxis);
       ok(JSON.stringify(band) === JSON.stringify([evidence.outcomes.band.low, evidence.outcomes.band.high]),
-        `S188 the lane's hairlines must sit at the served band ${evidence.outcomes.band.low} and ${evidence.outcomes.band.high}: ${JSON.stringify(band)}`);
-    }, 'S188 the lower lane');
+        `S199 the lane's hairlines must sit at the served band ${evidence.outcomes.band.low} and ${evidence.outcomes.band.high}: ${JSON.stringify(band)}`);
+    }, 'S199 the lower lane');
   });
 
 // A counted run's six readout lines, in the settled words, from its served terms.
@@ -3552,16 +3595,16 @@ function runReadout464(run) {
   ];
 }
 
-// STORY:harmonic-v2-desktop:S189
-export const S189 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S200
+export const S200 = appOnly('ADR 464',
   '#464 a run\'s readout is its served balance sheet: carbs ÷ insulin = ratio, then the insulin terms behind it',
   async (page) => {
-    const { row, evidence, counted } = await served464(page, 'S189');
+    const { row, evidence, counted } = await served464(page, 'S200');
     const byDate = [...counted].sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
     const first = byDate[0];
     const shared = counted.find((run) => run.pool_reason === 'counted-by-share');
     const low = evidence.harm_evidence.lows[0];
-    ok(shared && low, 'S189 premise: the served block has a run counted by share and a listed low');
+    ok(shared && low, 'S200 premise: the served block has a run counted by share and a listed low');
     await openBlock464(page, row);
     const host = page.locator(`${blockTile464(row)} .tile-chart`);
     // The keyboard path: the arrows walk the counted runs by date, reading each out.
@@ -3575,8 +3618,8 @@ export const S189 = appOnly('ADR 464',
       }));
       const lines = (text || '').split('\n').map((line) => line.trim()).filter(Boolean);
       ok(JSON.stringify(lines) === JSON.stringify(runReadout464(first)),
-        `S189 the first run by date (${first.run_id}) must read out its served balance sheet; it reads ${JSON.stringify(lines)}`);
-    }, 'S189 the keyboard readout');
+        `S200 the first run by date (${first.run_id}) must read out its served balance sheet; it reads ${JSON.stringify(lines)}`);
+    }, 'S200 the keyboard readout');
     // The pointer path's formatter, on a ring and on a low.
     const read = await host.evaluate((node, { shareId, lowT }) => {
       const chart = window.echarts.getInstanceByDom(node);
@@ -3590,24 +3633,24 @@ export const S189 = appOnly('ADR 464',
       return { share: text(formatter({ data: shareDot })), low: formatter({ data: lowMark }) };
     }, { shareId: shared.run_id, lowT: low.t });
     ok(JSON.stringify(read.share) === JSON.stringify(runReadout464(shared)),
-      `S189 a ring's hover must read out its run's served balance sheet; it reads ${JSON.stringify(read.share)}`);
+      `S200 a ring's hover must read out its run's served balance sheet; it reads ${JSON.stringify(read.share)}`);
     const lowText = `low ${Math.round(low.bg)} mg/dL, ${minutes464(low.minutes_after_bolus)} after its bolus`;
-    ok(read.low === lowText, `S189 a low's hover must read "${lowText}", not "${read.low}"`);
+    ok(read.low === lowText, `S200 a low's hover must read "${lowText}", not "${read.low}"`);
     // Enter selects the run being read out.
     await page.keyboard.press('Enter');
     await waitForReplayAssertion(async seen => {
       const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
       const ring = seriesById464(series, 'ic:selected:dot')?.data || [];
       ok(ring.length === 1 && ring[0].value[0] === first.true_ic,
-        `S189 Enter must select the run read out (${first.run_id}): ${JSON.stringify(ring)}`);
-    }, 'S189 Enter selects the run');
+        `S200 Enter must select the run read out (${first.run_id}): ${JSON.stringify(ring)}`);
+    }, 'S200 Enter selects the run');
   });
 
-// STORY:harmonic-v2-desktop:S190
-export const S190 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S201
+export const S201 = appOnly('ADR 464',
   '#464 the panel\'s Why this move, The case against and lows lines print the served facts',
   async (page) => {
-    const { row, evidence } = await served464(page, 'S190');
+    const { row, evidence } = await served464(page, 'S201');
     const { block, outcomes, harm_evidence: harm } = evidence;
     const side = { above: 'looser', below: 'tighter' }[block.side.direction];
     const ends = block.run_ends;
@@ -3634,7 +3677,7 @@ export const S190 = appOnly('ADR 464',
       + `${minutes464(harm.minutes_after_bolus_max)} after the bolus`
       + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`;
     ok(counts.meals_on_counted_runs > 0 && harm.lows.length > 0,
-      'S190 premise: the served block has meals on counted runs and listed lows');
+      'S201 premise: the served block has meals on counted runs and listed lows');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {
       const panel = seen(await panel464(page));
@@ -3642,27 +3685,27 @@ export const S190 = appOnly('ADR 464',
       const lowsCap = `Lows after ${noun} boluses`;
       const order = ['Why this move', 'The case against', lowsCap].map((cap) => caps.indexOf(cap));
       ok(order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2],
-        `S190 the panel must print Why this move, The case against and ${lowsCap}, in order: ${JSON.stringify(caps)}`);
-      ok(panel.numbers > 0, 'S190 the numbers block must stand above the sections');
+        `S201 the panel must print Why this move, The case against and ${lowsCap}, in order: ${JSON.stringify(caps)}`);
+      ok(panel.numbers > 0, 'S201 the numbers block must stand above the sections');
       const lines = (cap) => panel.sections.find((section) => section.cap === cap).lines;
       ok(JSON.stringify(lines('Why this move')) === JSON.stringify(why),
-        `S190 Why this move must print the served lines ${JSON.stringify(why)}; it prints ${JSON.stringify(lines('Why this move'))}`);
+        `S201 Why this move must print the served lines ${JSON.stringify(why)}; it prints ${JSON.stringify(lines('Why this move'))}`);
       ok(JSON.stringify(lines('The case against')) === JSON.stringify([against]),
-        `S190 The case against must print "${against}"; it prints ${JSON.stringify(lines('The case against'))}`);
+        `S201 The case against must print "${against}"; it prints ${JSON.stringify(lines('The case against'))}`);
       ok(JSON.stringify(lines(lowsCap)) === JSON.stringify([lowsLine]),
-        `S190 the lows line must print "${lowsLine}"; it prints ${JSON.stringify(lines(lowsCap))}`);
+        `S201 the lows line must print "${lowsLine}"; it prints ${JSON.stringify(lines(lowsCap))}`);
       ok(!/computed in the wireframe|\*/.test(panel.sections.flatMap((section) => section.lines).join(' ')),
-        'S190 the panel must carry no wireframe footnote: every fact is served');
-    }, 'S190 the panel\'s lines');
+        'S201 the panel must carry no wireframe footnote: every fact is served');
+    }, 'S201 the panel\'s lines');
   });
 
-// STORY:harmonic-v2-desktop:S191
-export const S191 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S202
+export const S202 = appOnly('ADR 464',
   '#464 the lows print in their served groups, each row with its run\'s ratio, and a row\'s focus selects its run on the tile',
   async (page) => {
-    const { row, evidence } = await served464(page, 'S191');
+    const { row, evidence } = await served464(page, 'S202');
     const { harm_evidence: harm, runs } = evidence;
-    ok(harm.lows.some((low) => low.run_id), 'S191 premise: the served block lists a low on a run');
+    ok(harm.lows.some((low) => low.run_id), 'S202 premise: the served block lists a low on a run');
     await openBlock464(page, row);
     const dates = await page.evaluate((isos) => Object.fromEntries(isos.map((iso) => [iso,
       new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })])),
@@ -3680,8 +3723,8 @@ export const S191 = appOnly('ADR 464',
       const drawn = groups.map((group) => ({ header: group.header,
         rows: group.rows.map(({ id, runId, text }) => ({ id, runId, text })) }));
       ok(JSON.stringify(drawn) === JSON.stringify(expected),
-        `S191 the lows must print in their served groups: expected ${JSON.stringify(expected)}; printed ${JSON.stringify(drawn)}`);
-    }, 'S191 the lows groups');
+        `S202 the lows must print in their served groups: expected ${JSON.stringify(expected)}; printed ${JSON.stringify(drawn)}`);
+    }, 'S202 the lows groups');
     const low = harm.lows.find((item) => item.run_id);
     const run = runs.find((item) => item.run_id === low.run_id);
     await page.locator(`#level .case-occurrence[data-occurrence-id="${low.t}"]`).focus();
@@ -3690,30 +3733,30 @@ export const S191 = appOnly('ADR 464',
       const dot = seriesById464(series, 'ic:selected:dot')?.data || [];
       const end = seriesById464(series, 'ic:selected:end')?.data || [];
       ok(dot.length === 1 && dot[0].value[0] === run.true_ic,
-        `S191 focusing the low must ring its run's dot at ${run.true_ic}: ${JSON.stringify(dot)}`);
+        `S202 focusing the low must ring its run's dot at ${run.true_ic}: ${JSON.stringify(dot)}`);
       ok(end.length === 1 && end[0].value[1] === run.outcome_bg,
-        `S191 focusing the low must ring its run's end at ${run.outcome_bg} mg/dL: ${JSON.stringify(end)}`);
+        `S202 focusing the low must ring its run's end at ${run.outcome_bg} mg/dL: ${JSON.stringify(end)}`);
       const { groups } = seen(await panel464(page));
       const rows = groups.flatMap((group) => group.rows);
       ok(rows.every((item) => item.pressed === String(item.runId === run.run_id)),
-        `S191 every low on run ${run.run_id}, and only those, must be pressed: ${JSON.stringify(rows.map(({ id, pressed }) => [id, pressed]))}`);
-    }, 'S191 a low\'s focus selects its run');
+        `S202 every low on run ${run.run_id}, and only those, must be pressed: ${JSON.stringify(rows.map(({ id, pressed }) => [id, pressed]))}`);
+    }, 'S202 a low\'s focus selects its run');
   });
 
-// STORY:harmonic-v2-desktop:S192
-export const S192 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S203
+export const S203 = appOnly('ADR 464',
   '#464 a low\'s row opens Day at that moment, marked by the hairline (its log row pressed only if Day lists one), from the block opened by its queue row',
   async (page) => {
-    const { row, evidence } = await served464(page, 'S192');
+    const { row, evidence } = await served464(page, 'S203');
     await openBlock464(page, row);
-    await lowDayHop464(page, 'S192', row, evidence);
+    await lowDayHop464(page, 'S203', row, evidence);
   });
 
-// STORY:harmonic-v2-desktop:S193
-export const S193 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S204
+export const S204 = appOnly('ADR 464',
   '#464 a low\'s Day hop also works when the block was opened from a case head\'s View segment',
   async (page) => {
-    const { row, evidence } = await served464(page, 'S193');
+    const { row, evidence } = await served464(page, 'S204');
     // No reader control opens a Finding by clock on this store: every served
     // Finding row carries its event chart in every window. The desk's retained
     // drill-all opening is the one address that opens the first ready Finding
@@ -3727,22 +3770,22 @@ export const S193 = appOnly('ADR 464',
     await waitForReplayAssertion(async seen => {
       const text = seen(await page.locator('#level .slotlink').innerText()).replace(/\s+/g, ' ');
       ok(text.includes(`in the ${evidence.block.label} carb ratio block`),
-        `S193 premise: the clock case head's peak must fall in the served ${evidence.block.label} block: "${text}"`);
-    }, 'S193 the clock case head');
+        `S204 premise: the clock case head's peak must fall in the served ${evidence.block.label} block: "${text}"`);
+    }, 'S204 the clock case head');
     await segment.click();
     await page.locator('#level .lvl-cap', { hasText: 'Why this move' }).first().waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
       const here = seen(await page.locator('#crumb-trail .here').innerText()).trim();
-      ok(here === `${evidence.block.label} block`, `S193 View segment must open the ${evidence.block.label} block, not "${here}"`);
-    }, 'S193 View segment opens the block');
-    await lowDayHop464(page, 'S193', row, evidence);
+      ok(here === `${evidence.block.label} block`, `S204 View segment must open the ${evidence.block.label} block, not "${here}"`);
+    }, 'S204 View segment opens the block');
+    await lowDayHop464(page, 'S204', row, evidence);
   });
 
-// STORY:harmonic-v2-desktop:S194
-export const S194 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S205
+export const S205 = appOnly('ADR 464',
   '#464 the panel names its loading and unavailable run evidence beneath an intact numbers block',
   async (page) => {
-    const { row } = await served464(page, 'S194');
+    const { row } = await served464(page, 'S205');
     const pattern = '**/api/diagnose/carb-ratio-block-evidence*';
     const held = [];
     let failing = false;
@@ -3756,24 +3799,24 @@ export const S194 = appOnly('ADR 464',
       await waitForDesk(page);
       await openBlock464(page, row, { panel: false });
       await waitForReplayAssertion(async seen => {
-        ok(held.length > 0, 'S194 premise: the block\'s run evidence read must be in flight');
+        ok(held.length > 0, 'S205 premise: the block\'s run evidence read must be in flight');
         const panel = seen(await panel464(page));
-        ok(panel.numbers > 0, 'S194 the numbers block must stand while run evidence loads');
+        ok(panel.numbers > 0, 'S205 the numbers block must stand while run evidence loads');
         ok(JSON.stringify(panel.empty) === JSON.stringify([{ text: 'Loading run evidence…', busy: 'true' }]),
-          `S194 the panel must name its loading run evidence: ${JSON.stringify(panel.empty)}`);
+          `S205 the panel must name its loading run evidence: ${JSON.stringify(panel.empty)}`);
         ok(!panel.sections.some((section) => section.cap === 'Why this move'),
-          'S194 nothing renders from a payload not received');
-      }, 'S194 loading');
+          'S205 nothing renders from a payload not received');
+      }, 'S205 loading');
       failing = true;
       await Promise.all(held.splice(0).map((route) => route.fulfill(failure)));
       await waitForReplayAssertion(async seen => {
         const panel = seen(await panel464(page));
-        ok(panel.numbers > 0, 'S194 the numbers block must stand when run evidence fails');
+        ok(panel.numbers > 0, 'S205 the numbers block must stand when run evidence fails');
         ok(JSON.stringify(panel.empty) === JSON.stringify([{ text: 'Run evidence unavailable.', busy: null }]),
-          `S194 the panel must name its unavailable run evidence: ${JSON.stringify(panel.empty)}`);
+          `S205 the panel must name its unavailable run evidence: ${JSON.stringify(panel.empty)}`);
         ok(!panel.sections.some((section) => section.cap === 'Why this move'),
-          'S194 a failed read renders no section');
-      }, 'S194 unavailable');
+          'S205 a failed read renders no section');
+      }, 'S205 unavailable');
     } finally {
       failing = true;
       await Promise.all(held.splice(0).map((route) => route.fulfill(failure).catch(() => {})));
@@ -3781,11 +3824,11 @@ export const S194 = appOnly('ADR 464',
     }
   });
 
-// STORY:harmonic-v2-desktop:S195
-export const S195 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S206
+export const S206 = appOnly('ADR 464',
   '#464 the block\'s queue row draws the ratio strip: its counted runs against the three served rules',
   async (page) => {
-    const { row, evidence, counted } = await served464(page, 'S195');
+    const { row, evidence, counted } = await served464(page, 'S206');
     await goto(page, 'diagnose');
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await settled464(page);
@@ -3794,53 +3837,53 @@ export const S195 = appOnly('ADR 464',
     await waitForReplayAssertion(async seen => {
       const state = seen(await page.locator(`#level .qrow[data-id="${row.id}"]`).getAttribute('data-mini'));
       ok(!state && seen(await countOf(page, mini)) === 1,
-        `S195 premise: the block's queue row must mount its mini, not "${state}"`);
+        `S206 premise: the block's queue row must mount its mini, not "${state}"`);
       ok(seen(await page.locator(mini).getAttribute('data-preview-kind')) === 'carb-ratio',
-        'S195 the queue row must mount the carb-ratio mini');
+        'S206 the queue row must mount the carb-ratio mini');
       const series = seen(await tileOption464(page, mini));
-      ok(series, 'S195 the queue row mounted no mini chart');
+      ok(series, 'S206 the queue row mounted no mini chart');
       ok(sameSet464(series.map((item) => item.id), ['ic:rules', 'ic:dots:whole', 'ic:dots:share']),
-        `S195 the mini must draw the ratio strip alone: ${JSON.stringify(series.map((item) => item.id))}`);
+        `S206 the mini must draw the ratio strip alone: ${JSON.stringify(series.map((item) => item.id))}`);
       const dots = series.filter((item) => item.id.startsWith('ic:dots:')).flatMap((item) => item.data);
       ok(sameSet464(dots.map((dot) => dot.runId), counted.map((run) => run.run_id))
         && dots.every((dot) => dot.value[0] === counted.find((run) => run.run_id === dot.runId).true_ic),
-      `S195 the mini must draw every served counted run at its ratio (${counted.length}); it draws ${dots.length}`);
+      `S206 the mini must draw every served counted run at its ratio (${counted.length}); it draws ${dots.length}`);
       const rules = seriesById464(series, 'ic:rules').markLine.map((line) => line.xAxis);
       const expected = [evidence.block.current, evidence.block.recommendation.value, evidence.block.estimate.value];
       ok(JSON.stringify(rules) === JSON.stringify(expected),
-        `S195 the mini's rules must sit at ${JSON.stringify(expected)}: ${JSON.stringify(rules)}`);
-    }, 'S195 the queue row\'s strip');
+        `S206 the mini's rules must sit at ${JSON.stringify(expected)}: ${JSON.stringify(rules)}`);
+    }, 'S206 the queue row\'s strip');
   });
 
-// STORY:harmonic-v2-desktop:S196
-export const S196 = appOnly('ADR 464',
+// STORY:harmonic-v2-desktop:S207
+export const S207 = appOnly('ADR 464',
   '#464 changed: the block\'s run evidence still ships on its tile, rebuilt — every counted run once per lane, no per-run glucose trace',
   async (page) => {
-    const { row, evidence, counted } = await served464(page, 'S196');
+    const { row, evidence, counted } = await served464(page, 'S207');
     const excluded = evidence.runs.filter((run) => run.in_pool !== true);
-    ok(excluded.length > 0, 'S196 premise: the served block examines runs it does not count');
+    ok(excluded.length > 0, 'S207 premise: the served block examines runs it does not count');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {
       const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
-      ok(series, 'S196 the block tile mounted no chart');
+      ok(series, 'S207 the block tile mounted no chart');
       const retired = series.filter((item) => ['Support run', 'Directional-only run', 'Target range'].includes(item.name)
         || (item.type === 'line' && item.data.length > 0));
       ok(retired.length === 0,
-        `S196 the tile must draw no per-run glucose trace: ${JSON.stringify(retired.map((item) => item.name ?? item.id))}`);
+        `S207 the tile must draw no per-run glucose trace: ${JSON.stringify(retired.map((item) => item.name ?? item.id))}`);
       const dots = series.filter((item) => item.id?.startsWith('ic:dots:')).flatMap((item) => item.data.map((dot) => dot.runId));
       const stems = (seriesById464(series, 'ic:stems')?.data || []).map((stem) => stem.runId);
       for (const run of counted) {
         ok(dots.filter((id) => id === run.run_id).length === 1,
-          `S196 counted run ${run.run_id} must appear once on the ratio strip`);
+          `S207 counted run ${run.run_id} must appear once on the ratio strip`);
         if (Number.isFinite(run.start_bg) && Number.isFinite(run.outcome_bg)) {
           ok(stems.filter((id) => id === run.run_id).length === 1,
-            `S196 counted run ${run.run_id} must appear once on the lower lane`);
+            `S207 counted run ${run.run_id} must appear once on the lower lane`);
         }
       }
       const drawn = new Set(series.flatMap((item) => item.data.map((datum) => datum.runId)).filter(Boolean));
       const shown = excluded.filter((run) => drawn.has(run.run_id)).map((run) => run.run_id);
-      ok(shown.length === 0, `S196 a run the block does not count must not be drawn: ${JSON.stringify(shown)}`);
-    }, 'S196 the rebuilt run evidence');
+      ok(shown.length === 0, `S207 a run the block does not count must not be drawn: ${JSON.stringify(shown)}`);
+    }, 'S207 the rebuilt run evidence');
   });
 
 /* -------------------------------------------------------------- the registry */
@@ -3910,8 +3953,11 @@ export const REGISTRY = [
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
   ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
-  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()], ['S193', S193, J()],
-  ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
+  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()],
+  ['S193', S193, J()], ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
+  ['S197', S197, J()], ['S198', S198, J()], ['S199', S199, J()], ['S200', S200, J()],
+  ['S201', S201, J()], ['S202', S202, J()], ['S203', S203, J()], ['S204', S204, J()],
+  ['S205', S205, J()], ['S206', S206, J()], ['S207', S207, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

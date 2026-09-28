@@ -14,10 +14,10 @@ from bisect import bisect_right
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from .analyzers.scenario import low_prompt_answers
-from .analyzers.scenario.anchors import _is_meal, collect_anchors
+from .analyzers.meals import group_meals
+from .analyzers.scenario.anchors import collect_anchors
 from .analyzers.scenario.outcome_patterns import opportunity_readiness
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_spans
@@ -48,16 +48,9 @@ def _availability(reason=None):
 
 
 def _execution():
-    # Installed Python sources identify the executable, including transitive
-    # classifier/metric defaults. A changed executable cannot impersonate a saved
-    # computation. No historical executable archive is maintained.
-    root = Path(__file__).parent
-    digest = hashlib.sha256()
-    for path in sorted(root.rglob("*.py")):
-        digest.update(str(path.relative_to(root)).encode())
-        digest.update(path.read_bytes())
-    return {"code_version": digest.hexdigest(), "policy": "340:1/386:1/387:1",
-            "configuration": asdict(ScenarioConfig())}
+    # The comparison policy and the scenario configuration a Focus executes
+    # identify a retained computation; an update to other code does not (ADR 462).
+    return {"policy": "340:1/386:1/387:1", "configuration": asdict(ScenarioConfig())}
 
 
 def capture_comparison_context(store, *, at, input_revision):
@@ -90,7 +83,7 @@ def _block(record):
 
 
 def _setting_period(store, record, cutoff, earliest):
-    from .watched_change import basal_slot_regimes, dose_regimes
+    from .watched_change import basal_slot_regimes, dose_regimes, same_change
 
     changed = _time(record.get("detected_at") or record["changed_at"])
     parameter, slot = record["parameter"], record.get("slot")
@@ -136,9 +129,14 @@ def _setting_period(store, record, cutoff, earliest):
             regimes = basal_slot_regimes([e for e in store.basal_events() if e.t <= cutoff]).get(slot_index, [])
         elif parameter in ("isf", "carb_ratio") and block is None and slot is None:
             regimes = dose_regimes([b for b in store.bolus_events() if b.t <= cutoff], parameter)
-        matching = next((i for i, run in enumerate(regimes) if run.start == changed), None)
+        # A record is dated at its regime's start, or, saved before ADR 463, at
+        # the date that dating gave the regime; it keeps its own change time.
+        matching = next((i for i, run in enumerate(regimes) if i and (run.start == changed or same_change(
+            record, parameter=parameter, slot=slot, block=block, legacy=run.legacy_start,
+            before=regimes[i - 1].value, after=run.value))), None)
         if matching is not None:
             runs = [(r.start, r.value) for r in regimes]
+            runs[matching] = (changed, runs[matching][1])
             index = matching
     if (index is None or index == 0 or runs[index][0] != changed
             or runs[index][1] is None or runs[index - 1][1] is None):
@@ -264,6 +262,12 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
 
     if not context or context.get("state") != "available":
         return unavailable("missing_comparison_context")
+    # A context read from a pump read later than the cutoff, or from none, is not
+    # the setting in force then: a saved ending and a Retained read of an ended
+    # record answer it the same way (ADR 442, ADR 462).
+    source = (context.get("source_snapshot") or {}).get("captured_at")
+    if source is None or _time(source) > cutoff:
+        return unavailable("context_after_ending")
     if context.get("version") != _VERSION or any(context.get(key) != value for key, value in _execution().items()):
         return unavailable("unsupported_retained_execution")
     programmed = context.get("programmed_isf")
@@ -356,7 +360,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         groups.append(day_groups)
         coverages.append(coverage)
         owned_cgm = [r for r in arm_cgm if lo <= r.t < hi]
-        ctx_meals = [b for b in arm_bolus if _is_meal(b)]
+        ctx_meals = [meal.first for meal in group_meals(arm_bolus)]
         measurements = meal_measurements(population["meals"], owned_cgm, ctx_meals=ctx_meals)
         observations.append(measurements)
         comparison["views"][name] = {**population["view"], "period": periods[name]}

@@ -1,0 +1,114 @@
+# What a change record prints, draws, and knows about its Plan — triage and review ledger
+
+Ticket: #463. Change: `openspec/changes/qa-round-2` (ADR 463; tasks 27–36;
+outcomes requirements 3–5, surfaces requirements 5–8, plan requirement 2).
+Triage ran unattended (AFK run, 2026-09-24).
+
+## Reproduction
+
+`uv run python docs/scope/463-record-display.repro.py`, at this change's base:
+
+```text
+1. Served differences with a float tail, a reconciled scratch copy of the committed showcase
+   carb_ratio-all-20240616080000 retained: tir before 100.0 after 96.1 difference -3.9000000000000057
+2. c4-profile: clock views on the saved ending and on the retained read
+   profile-all-20240601000000 ended expired_unreviewed: saved assessment available, views saved False; retained read clock bins before 48 after 48
+3. A Trial matched to a Plan by `_reconcile_plan`
+   isf-all-20260511060000: receipt available naming Plan 2026-05-06 00:00:00; served original context action None, explanation 'Observed programmed setting transition; original decision is not recorded.'
+4. A dose-detected Trial and a Plan confirmed from a pump read
+   Trial basal_rate-03-00-20260925030200 changed_at 2026-09-25 03:02:00; Plan recorded 2026-09-24 17:09:05, confirmed from read 2026-09-27 01:00:00 with trial_id None; Trial receipt unavailable; served original context action None
+5. Dating a mid-morning edit the dose stream detects
+   isf regime starts 2024-03-10 08:00
+   carb_ratio regime starts 2024-03-10 08:00
+   Trial candidate profile dated 2024-03-10 08:00: edit at 10:00, first bolus carrying the new values 12:30; dated 2.0 h before the edit
+```
+
+Item 4's Plan time is the wall clock of the run (the Plan routes stamp it), so
+it differs between runs.
+
+`node docs/scope/463-figure.repro.mjs`:
+
+```text
+tir: 100% (10 observed CGM readings in eligible windows) | 96.1% (10 observed CGM readings in eligible windows) | Unclear (difference -3.9000000000000057)
+nights_with_low: 33.333333333333336% (3 coverage-qualified Rest windows in affected hours) | 0% (3 coverage-qualified Rest windows in affected hours) | Unclear (difference -33.333333333333336)
+saved: data-figure-state="saved", chart seat true, role="img" true
+unavailable: data-figure-state="unavailable", chart seat true, role="img" true
+no-readings: data-figure-state="no-readings", chart seat true, role="img" true
+not-requested: data-figure-state="not-requested", chart seat true, role="img" true
+```
+
+`uv run python docs/scope/463-redate.spike.py` (the dating rule, spiked):
+
+```text
+1. The mid-morning probe
+   isf: day rule 2024-03-10 08:00, first-new-value rule 2024-03-10 12:30
+   carb_ratio: day rule 2024-03-10 08:00, first-new-value rule 2024-03-10 12:30
+2-3. Committed case stores
+   stores checked: 73; same-day, never-earlier violations: 0
+   no regime start and no derived Trial id moved on any committed case store
+```
+
+## Grounding notes
+
+- `_setting_period` and `_reversal_at` join a record to its regime by exact start
+  instant, so re-dating alone would break every existing delivery-detected
+  record's comparison and reversal as well as its id; ADR 463 decision 5 covers
+  all three.
+- The design exploration's `focus.json` and `journey.json` embed the package
+  hash, so any Python edit moves them until #462 drops it.
+- The operator could not check a fresh snapshot (the issue's "Ground first"):
+  ADR 463 records the premise and handles both explanations.
+
+## Decisions
+
+- If re-dating moves Trial ids, keep existing records as they are. Connor,
+  2026-09-24.
+- Option 1 for an ended record's curve (the issue's recommendation); one-decimal
+  printing in the desk only; no-curve figures take no chart space; a matched
+  Trial serves its Plan's decision; the link rule (ADR 431 addendum); first-new-
+  value dating with an exact earlier-dating match for existing records (exact
+  since code review round 3). ADR 463, decided
+  autonomously during the AFK run.
+- Surface lifecycle `revise`, as for #462; sweep deferred to start (sandbox).
+- Flat order, for the same reason as #462; the nearby reviewer-memory anchors
+  disagree.
+- Review depth Full: the change moves Plan reconciliation and Trial identity.
+
+## Review rounds
+
+| Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
+|---|---|---|---|---|
+| 1 | — | Initial flat draft pinned f985b3a6 | Blockers (`authoring`): the anchor "outcomes 6" named nothing (the delta has five outcomes requirements); task 28's extended dose-stream test put its confirming read about 46 hours after the Trial, so under the one-day link rule it could never link; the baseline scenario "A saved ending keeps its rows and says it kept no curve" was left contradicting new endings that save bins. Notes (`authoring`): the re-dating spike in Verification asserts nothing after the build; the same-change match had no stated shape. Fixed: anchors drop outcomes 6 and add surfaces 8, a MODIFIED copy of the figure requirement narrowed to endings with no clock bins; task 28 keeps the two-day test as the distant guard and adds a sibling test with the read within a day, the Plan delta's scenario says so; the spike leaves Verification; task 29 names `watched_change.same_change(record, *, parameter, slot, block, start, before, after) -> bool`. | BLOCKED (3 block, 2 note); fixed, no further panel by operator instruction |
+
+## Start evidence (2026-09-24)
+
+Worker-run, sandboxed; every browser leg coordinator-run, unsandboxed, on
+synthetic case stores.
+
+- **Revise pre-work (task 27).** #463's 135 touched stories on its base
+  cfa1ace4 at 1280x720 only. **Deviation:** task 27 asks for 1280x720 and
+  1440x900 before any design change; the coordinator bounded the leg to one
+  size, and it ran after the implementation (code review round 1, note 3):
+  `# executed 132 · failed 3`. S164 and S165 failed on reads that #460's
+  retained-return re-read started. That was a slice-1 regression, fixed in this
+  slice as an ADR 460 addendum. S188 failed on a story defect, fixed in the
+  same slice. The pre-work found no observed behavior without a story.
+- **Failing first.** Backend, on cfa1ace4: the Plan decision, clock views,
+  basal and dose dating tests failed; the Plan-link test `1 failed, 2 passed`.
+  The old-dating record test passes on the base by construction; it fails
+  against a match reduced to the new dating's instant alone. Frontend:
+  `ℹ pass 82 / ℹ fail 3`. S189 fails both legs at both sizes on cfa1ace4
+  ("difference -3.9000000000000057"; no saved clock bins). The desk suite's
+  collapsed-figure test fails at both sizes ("the figure (220px) is no taller
+  than its legend line (26px)").
+- **Branch.** S189 passes both legs at both sizes, and the desk suite passes
+  53 of 53 at both sizes.
+- **Renders (task 36).** The showcase's Read column and c3-history's finished
+  record, at both sizes, before on cfa1ace4 and after on 403cfd67, plus the
+  desk-suite collapsed figure after on the branch, are handed to the
+  coordinator uncommitted. The collapsed figure's before render was owed and
+  missing at review round 1 (note 4): its test asserted before it captured.
+  It now captures first, and its before render was captured on cfa1ace4 at
+  1280x720 with the test laid over it, where the test fails as expected. At
+  1440x900 on the final app code the desk suite passes 53 of 53, and S188,
+  S189, S164, S165, S108, S137, S138 and S186 pass (`# executed 8 · failed 0`).

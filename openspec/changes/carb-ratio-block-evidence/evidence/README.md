@@ -23,30 +23,36 @@ This is raw stdout of `node frontend/desk-behavior.replay.mjs` with
 `TARGET=app`, `CASE_STORE_DIR` set, and:
 
 ```sh
-ONLY=S186,S187,S188,S189,S190,S191,S192,S193,S194,S195,S196
+ONLY=S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207
 ```
 
 Each file keeps the runner's summary line (`# executed … · failed … · selected
 …`) and its PASS or FAIL line per story, unedited.
 
+The raw replay outputs recorded before this branch merged `origin/main` print
+the pre-merge ids S186–S196, which are S197–S207 after it (S186 is S197, and so
+on in order, which is why the `replay-S189-*` and `replay-S192-S193-*` files
+hold S200 and S203–S204), and the final run on the merged tree prints the new
+ids.
+
 | File | Run |
 |---|---|
-| `replay-1280x720.txt` | the first run of all eleven stories, on bdc6de49, `VIEWPORT=1280x720`: 8 of 11 passed; S189, S192 and S193 failed |
-| `replay-1440x900.txt` | the same run at `VIEWPORT=1440x900`: 9 of 11 passed; S192 and S193 failed |
-| `replay-S189-1280x720.txt` | S189 after the tile's keyboard-readout fixes, `VIEWPORT=1280x720`: 1 of 1 passed |
+| `replay-1280x720.txt` | the first run of all eleven stories, on bdc6de49, `VIEWPORT=1280x720`: 8 of 11 passed; S200, S203 and S204 failed |
+| `replay-1440x900.txt` | the same run at `VIEWPORT=1440x900`: 9 of 11 passed; S203 and S204 failed |
+| `replay-S189-1280x720.txt` | S200 after the tile's keyboard-readout fixes, `VIEWPORT=1280x720`: 1 of 1 passed |
 | `replay-S189-1440x900.txt` | the same at `VIEWPORT=1440x900`: 1 of 1 passed |
-| `replay-S192-S193-1280x720.txt` | S192 and S193 as amended, `VIEWPORT=1280x720`: 2 of 2 passed |
+| `replay-S192-S193-1280x720.txt` | S203 and S204 as amended, `VIEWPORT=1280x720`: 2 of 2 passed |
 | `replay-S192-S193-1440x900.txt` | the same at `VIEWPORT=1440x900`: 2 of 2 passed |
 | `replay-final-1280x720.txt` | all eleven stories on the final code commit 8ccd68cf, after the whole-diff review's fixes, `VIEWPORT=1280x720`: 11 of 11 passed |
 | `replay-final-1440x900.txt` | the same at `VIEWPORT=1440x900`: 11 of 11 passed |
 
-Final outcome: all eleven stories pass at both viewports. S186–S188, S190,
-S191 and S194–S196 pass in the first run. S189 passes in its own run.
+Final outcome: all eleven stories pass at both viewports. S197–S199, S201,
+S202 and S205–S207 pass in the first run. S200 passes in its own run.
 
-S189's first-run failure at 1280x720 was a tile defect, and the tile was fixed.
+S200's first-run failure at 1280x720 was a tile defect, and the tile was fixed.
 The first ArrowRight read out 2024-05-07 while the cursor held 2024-05-03.
 
-S192 and S193 pass in their own run. Their first-run failures were a replay
+S203 and S204 pass in their own run. Their first-run failures were a replay
 defect: the first version required a pressed Episode Log row, and Day lists
 none for a harm-listed low. Both stories were amended, and the amended stories
 pass. The ledger's status line on each story names the file that shows its

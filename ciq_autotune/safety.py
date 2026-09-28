@@ -259,6 +259,13 @@ def apply_harm(current: Optional[float], recommended: Optional[float],
         ``current * (1 - max_step_frac)``): nothing to defer to, and recurring lows
         still argue "down".
 
+      Either downward target then passes one threshold check (ADR 465): when the
+      clamped target, before rounding, sits less than the noise floor or one full
+      step below ``current`` (whichever is smaller), the slot holds at ``current``
+      as :attr:`Status.HARM_GATED` rather than stage a cut too small to matter. No
+      minimum step is invented. The comparison carries a 1e-9 tolerance so a
+      target exactly one full step away still moves in floating point.
+
     With no ``current`` baseline there is no relative step to take, so the verdict is
     returned unchanged (the absolute-range-only slot has no raise to gate anyway).
     """
@@ -268,15 +275,21 @@ def apply_harm(current: Optional[float], recommended: Optional[float],
     if nudge:
         step_floor = _clamp(current * (1.0 - cfg.max_step_frac),
                             cfg.abs_min, cfg.abs_max)
+        if median is not None and median >= current:
+            # Median at/above current: no fabricated cut, hold as the recurring-low gate.
+            return current, Status.HARM_GATED
         if median is None:
             # No clean median to defer to — the one full step stands.
-            return round(step_floor, 3), Status.HARM_LOWER
-        if median < current:
+            target = step_floor
+        else:
             # Median agrees the slot runs hot: clamp to it, floored at one step.
             target = _clamp(max(median, step_floor), cfg.abs_min, cfg.abs_max)
-            return round(target, 3), Status.HARM_LOWER
-        # Median at/above current: no fabricated cut, hold as the recurring-low gate.
-        return current, Status.HARM_GATED
+        # ADR 465: a cut below the noise floor or one full step, whichever is
+        # smaller, holds rather than stage a trivial move. Read before rounding.
+        threshold = min(cfg.noise_floor, current * cfg.max_step_frac)
+        if current - target < threshold - 1e-9:
+            return current, Status.HARM_GATED
+        return round(target, 3), Status.HARM_LOWER
 
     # Gate only (single-night low, not recurring): withhold a would-be raise.
     if status in (Status.RAISE, Status.CAPPED_RAISE):

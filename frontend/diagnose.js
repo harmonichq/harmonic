@@ -8,10 +8,11 @@ import { caseAddress } from './tab-routing.js';
 import { presetLabelFor } from './diagnose-workstation.js';
 import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility, seatedUtility as utilitySeated } from './utilities.js';
-import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
+import { draftItems, stageEvidence, evidenceIsStaged, loadPlanState, replacedDraftItems } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
-import { pendingPlan } from './guidance.js';
+import { guidanceAsks, pendingPlan, planDraft } from './guidance.js';
+import { draftName } from './watched-change-dock.js';
 import { formatStartMin } from './plan.js';
 
 // The held Occurrence's own "Open … in Day" control: the last control in the
@@ -94,6 +95,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let parkedOn = null;
   let parkedUnmatched = false;
   let returning = null;
+  // The promise the workstation's last stage press returned, while its save is
+  // pending (ADR 460 point 7): a retained return skips its Plan re-read while
+  // it is set.
+  let staging = null;
+  // The guidance asks counted when Diagnose parked (ADR 460 addendum): a
+  // retained return re-reads the Plan only when another surface asked since.
+  let parkedAsks = 0;
 
   // Context names a served identity or an explicit slot; the window is the
   // route's own string coordinate. Equal on all three means "the same return".
@@ -151,16 +159,32 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     ((held && root.querySelector(OPEN_IN_DAY)) || row || root.querySelector('#crumb-trail'))?.focus({ preventScroll: true });
   }
 
-  async function read() {
-    if (pending) return pending;
-    error = null;
-    // The one in-place repaint waits for the Plan state and for the Focus read,
-    // which carries the guidance read whose served pending Plan the watch panel
-    // paints (#431). Both reads start now, side by side.
+  // The Plan state the workstation paints: the Plan surface's own draft, which
+  // the staged marks read, and the guidance read's served draft and pending
+  // Plan, which the watch panel reads. Changes re-reads guidance on every
+  // arrival but not the Plan surface's copy, so either can move on its own.
+  const planState = () => JSON.stringify([draftItems(), planDraft(), pendingPlan()]);
+
+  // The one in-place repaint waits for the Plan state and for the Focus read,
+  // which carries the guidance read whose served pending Plan and Plan draft the
+  // watch panel paints (#431, ADR 460). Both reads start side by side. A
+  // retained return has already repainted at its re-seat, so it repaints again
+  // only when the reads moved the Plan state: an idle repaint rebuilds the
+  // reading pane under the focus a Day return has just put back.
+  function readPlan({ retained = false } = {}) {
+    const before = retained && planState();
     Promise.all([
       readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); }),
       loadPlanState(),
-    ]).then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
+    ]).then(() => {
+      if (seated && !parked && (!retained || planState() !== before)) workstation.refresh();
+    }).catch(() => {});
+  }
+
+  async function read() {
+    if (pending) return pending;
+    error = null;
+    readPlan();
     // The one status read this call owns: answered before the payload reads
     // are issued, so the recorded revision is at or before every payload
     // snapshot and a write landing during them always moves the revision the
@@ -344,10 +368,22 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       readingScroll = null;
     });
     workstation = createView({ root, callbacks: {
-      stage: (item, desired) => stageEvidence(item, desired, payload?.analyze),
+      stage: (item, desired) => {
+        const answer = stageEvidence(item, desired, payload?.analyze);
+        staging = answer;
+        answer.finally(() => { if (staging === answer) staging = null; });
+        return answer;
+      },
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),
+      // ADR 459: the change a stage of this item would replace, named as the
+      // dock names it. An item's family is already the Plan item type.
+      replacing: (item) => {
+        const items = replacedDraftItems(item.family);
+        return items ? draftName({ items }) : null;
+      },
       retry: read,
       pendingPlan,
+      planDraft,
       settings: () => openUtility('settings'),
       caseChanged,
       // A parked Diagnose is inert: the workstation's page-level keys act only
@@ -481,6 +517,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.ownerDocument.body.append(root);
     parked = true;
     parkedOn = published;
+    parkedAsks = guidanceAsks();
   }
 
   function mount(host, deps = {}) {
@@ -606,6 +643,20 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         return;
       }
       workstation.refresh(); showFocusAction();
+      // ADR 460 point 7: a draft save does not move the input revision, so a
+      // draft written while Diagnose was parked is read here, and when the read
+      // moves the Plan state the refresh it ends with re-seeds the staged marks.
+      // Only a return after another surface asked for guidance while Diagnose
+      // was parked reads it: every Changes arrival and every Plan write asks,
+      // and Day and the utilities never do, so any other return (a Day or
+      // utility return, a top-nav press straight back) cannot have seen the
+      // draft move and reads the held status check alone (ADR 460 addendum,
+      // S164, S165). A read Diagnose itself started before it parked is not an
+      // ask made while it was away, whenever it answers.
+      // Never while a stage save is pending: a read issued before it commits
+      // could land after it and hand back the pre-press draft; the save's own
+      // settle re-seeds instead.
+      if (guidanceAsks() !== parkedAsks && !staging) readPlan({ retained: true });
       const level = root.querySelector('#level');
       if (level && levelScroll !== null) level.scrollTop = levelScroll;
       if (moved) writeCase();

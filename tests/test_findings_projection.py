@@ -27,7 +27,7 @@ from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.evaluation import SEQUENCE_LEVERS
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.scenario.evidence_population import policy_for
-from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
+from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER, outcome_window_population
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.explore_exposures import _FAMILY_FOR_KIND
 from ciq_autotune.findings_projection import (
@@ -41,6 +41,7 @@ from ciq_autotune.findings_projection import (
     FindingsProjection,
     PATTERN_SUBJECTS,
     WindowQuery,
+    pattern_chartable,
     prepare_findings_projection,
 )
 from ciq_autotune.event_comparison import FACTOR_LABELS
@@ -54,7 +55,9 @@ from ciq_autotune.ic_history import (
 from ciq_autotune.result import IcHistory, IcHistoryRunRecord
 from ciq_autotune.uncertainty import Estimate
 from ciq_autotune.window_membership import DAY_MINUTES
+from ciq_autotune.analyzers.basal import analyze_basal
 from tests.test_analyzer_isf import ISF_36, rw, synth_night
+from tests.test_harm_basal_arm import _build
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
              / "scripts" / "gen_findings_projection_fixtures.py")
@@ -437,6 +440,30 @@ class GroundedWindowTest(unittest.TestCase):
         self.assertEqual(empty["chip_counts"],
                          {"highs": 0, "lows": 0, "meals": 0, "corrections": 0})
 
+    def test_a_recurring_lows_hold_names_the_lows_and_no_lean(self):
+        # ADR 465 decision 3: 03:00's steady nights deliver 0.71 against 0.72
+        # with lows there on two nights, so the slot holds. Its row names the
+        # setting alone and opens with the recurring-lows hold sentence.
+        basal, cgm = _build(rate=0.71, programmed=0.72, low_nights=(20, 21))
+        slots = analyze_basal(basal, cgm, [], [], harm_config=HarmConfig())
+        projection = FindingsProjection(
+            _analysis={"window_days": 30,
+                       "basal": [slot.to_dict() for slot in slots]},
+            _exposures={"exposures": {}},
+            _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
+        )
+        rows = projection.project(WindowQuery.clock(180, 240))["rows"]
+        self.assertEqual(
+            [row["title"] for row in rows if row["title"].startswith("Basal 03:00")],
+            ["Basal 03:00"])
+        row = _row(rows, "Basal 03:00")
+        self.assertEqual(row["register"], "held")
+        self.assertIsNone(row["priority"])
+        self.assertTrue(row["headline"].startswith(
+            "Lows keep happening overnight, but the step down is smaller than "
+            "the smallest change worth making, so the rate stays as it is."))
+
     def test_a_window_wrapping_midnight_reaches_both_sides_of_it(self):
         rows = self.projection.project(WindowQuery.clock(22 * 60, 2 * 60))["rows"]
         self.assertIn("Basal 00:30 to 01:30 · raise", _titles(rows, "assert"))
@@ -498,7 +525,7 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
                          ["lows", "corrections"])
         self.assertEqual(afternoon["chip_counts"], {
-            "highs": 3, "lows": 1, "meals": 1, "corrections": 1,
+            "highs": 3, "lows": 2, "meals": 2, "corrections": 1,
         })
 
         global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
@@ -929,27 +956,116 @@ class QueueOrderTest(unittest.TestCase):
         counts = [row["episodes"] or 0 for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
 
-    def test_the_sorted_queue_publishes_its_three_closed_ranking_tiers(self):
-        """The public projection names rank without inventing a headline (#41).
-
-        Tiers are assigned only after this queue's server-owned sort: priorities
-        decide which rows lead, but no first asserting row receives a stronger
-        claim than the rest.
-        """
-        scoped_rows = self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]
-        rows = self.global_rows + scoped_rows
-        allowed = {"next_in_line", "worth_a_look", "noted"}
-        self.assertEqual({row["tier"] for row in rows}, allowed)
-        self.assertEqual(
-            {row["tier"] for row in rows if row["register"] == "assert"},
-            {"next_in_line"},
+    def test_a_setting_admitted_pattern_sits_in_its_settings_position(self):
+        """ADR 469 decisions 1–3: one Priority fills one ranked position."""
+        rows = self.global_rows
+        ids = [row["id"] for row in rows]
+        by_id = {row["id"]: row for row in rows}
+        anchors = {
+            "pattern:highs_after_meals": "ic:720",
+            "pattern:lows_after_meals": "ic:720",
+            "pattern:overnight_lows_no_iob": "basal:30-90",
+        }
+        for pattern, anchor in anchors.items():
+            with self.subTest(pattern=pattern):
+                row = by_id[pattern]
+                self.assertEqual(row.get("anchored_by"), anchor)
+                self.assertEqual(row.get("rank_note"), "Ranked with its setting")
+                self.assertEqual(row["tier"], by_id[anchor]["tier"])
+                between = rows[ids.index(anchor) + 1:ids.index(pattern)]
+                self.assertTrue(all(
+                    item.get("anchored_by") == anchor
+                    or by_id.get(item.get("claimed_by"), {}).get("anchored_by") == anchor
+                    for item in between
+                ), [item["id"] for item in between])
+        self.assertEqual(ids[ids.index("pattern:highs_after_meals") + 1], "finding:carb_undercount")
+        top_level = [row["tier"] for row in rows if row["claimed_by"] is None]
+        self.assertLess(
+            max(index for index, tier in enumerate(top_level) if tier == "next_in_line"),
+            min(index for index, tier in enumerate(top_level) if tier == "worth_a_look"),
         )
-        self.assertTrue(all(
-            row["tier"] == "noted" if row["priority"] is None
-            else (row["tier"] == "next_in_line" if row["register"] == "assert"
-                  else row["tier"] == "worth_a_look")
-            for row in rows
-        ))
+        for row in rows:
+            if row["id"] not in anchors:
+                self.assertIsNone(row.get("anchored_by"), row["id"])
+                self.assertIsNone(row.get("rank_note"), row["id"])
+
+    def test_a_scoped_window_says_its_rank_comes_from_all_30_days(self):
+        rows = {row["id"]: row for row in
+                self.projection.project(WindowQuery.clock(*AFTERNOON))["rows"]}
+        self.assertEqual(rows["finding:over_treated_low"].get("rank_note"), "Ranked on all 30 days")
+        self.assertIsNone(rows["ic:720"].get("rank_note"))
+
+    def test_a_pattern_whose_setting_is_outside_the_window_ranks_alone(self):
+        rows = {row["id"]: row for row in
+                self.projection.project(WindowQuery.clock(6 * 60, 11 * 60))["rows"]}
+        highs = rows["pattern:highs_after_meals"]
+        self.assertIsNone(highs.get("anchored_by"))
+        self.assertEqual(highs.get("rank_note"), "Ranked on all 30 days")
+
+    def test_the_overnight_pattern_never_anchors_to_a_daytime_basal_row(self):
+        """ADR 469 decision 7: in 05:00–08:00 the only asserting basal row is the
+        06:30 raise, outside the 00:00–06:00 band, so the overnight Pattern keeps
+        its own rank rather than sitting beneath it."""
+        whole_day = gen.basal_rows
+
+        def daytime_raise():
+            rows = whole_day()
+            rows[11] = gen._slot(11, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
+            rows[13] = gen._slot(13, current=0.80, value=0.998, lo=0.816, hi=1.259,
+                                 n=22, supported=1)
+            return rows
+
+        with patch.object(gen, "basal_rows", daytime_raise):
+            analysis = gen.analysis()
+        rows = {row["id"]: row for row in prepare_findings_projection(
+            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
+        ).project(WindowQuery.clock(5 * 60, 8 * 60))["rows"]}
+        self.assertEqual(rows["basal:390-420"]["register"], "assert")
+        self.assertNotIn("basal:330-360", rows)
+        overnight = rows["pattern:overnight_lows_no_iob"]
+        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
+        self.assertIsNone(overnight["anchored_by"])
+        self.assertEqual(overnight["rank_note"], "Ranked on all 30 days")
+
+    def test_the_overnight_pattern_anchors_to_the_basal_run_that_admitted_it(self):
+        """ADR 469 decision 7: a basal run that starts inside 00:00–06:00 and
+        crosses 06:00 admits the overnight Pattern, so the Pattern sits beneath it."""
+        whole_day = gen.basal_rows
+
+        def run_across_six():
+            rows = whole_day()
+            for index in (1, 2):
+                rows[index] = gen._slot(index, current=1.00, value=1.00, lo=0.96, hi=1.04, n=20)
+            for index in (11, 12):
+                rows[index] = gen._slot(index, current=0.80, value=0.998, lo=0.816, hi=1.259,
+                                        n=22, supported=1)
+            return rows
+
+        with patch.object(gen, "basal_rows", run_across_six):
+            analysis = gen.analysis()
+        rows = {row["id"]: row for row in prepare_findings_projection(
+            analysis=analysis, exposures=gen.exposures(), scenarios=gen.scenarios(),
+        ).project(WindowQuery.whole_day())["rows"]}
+        overnight = rows["pattern:overnight_lows_no_iob"]
+        self.assertEqual(rows["basal:330-390"]["register"], "assert")
+        self.assertEqual(overnight["pattern"]["admission_route"], "setting_staging")
+        self.assertEqual(overnight["anchored_by"], "basal:330-390")
+        self.assertEqual(overnight["rank_note"], "Ranked with its setting")
+        self.assertEqual(overnight["tier"], rows["basal:330-390"]["tier"])
+
+    def test_an_asserting_row_that_cannot_stage_sorts_before_unranked_findings(self):
+        rows = FindingsProjection(
+            _analysis=gen.analysis(isf=gen.direction_only_isf_rows()),
+            _exposures=gen.exposures(), _scenarios=gen.scenarios(), _outcome_patterns=[],
+        ).project(WindowQuery.whole_day())["rows"]
+        ids = [row["id"] for row in rows]
+        by_id = {row["id"]: row for row in rows}
+        for cause in ("finding:correction_on_iob", "finding:correction_stacking"):
+            with self.subTest(cause=cause):
+                self.assertIsNone(by_id[cause]["priority"])
+                self.assertEqual(by_id[cause]["episodes"], 1)
+                self.assertIsNone(by_id["isf"]["priority"])
+                self.assertLess(ids.index("isf"), ids.index(cause))
 
     def test_the_order_is_the_servers_own_priorities_not_a_re_derivation(self):
         levers = {lever["parameter"]: lever["priority"]
@@ -1034,15 +1150,28 @@ class PatternProjectionTest(unittest.TestCase):
                     self.result["rows"].index(pattern_row) + 1 + len(claimed),
                 )))
 
-        scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
+        query = WindowQuery.clock(*AFTERNOON)
+        scoped = self.projection.project(query)
+        scoped_exposures, _roster = outcome_window_population(
+            self.projection._analysis, self.projection._exposures,
+            self.projection._scenarios, query,
+        )
         scoped_patterns = [row for row in scoped["rows"] if row["kind"] == "pattern"]
         self.assertTrue(scoped_patterns)
         for pattern_row in scoped_patterns:
             self.assertEqual(pattern_row["window_scope"], "window")
-            self.assertEqual(pattern_row["pattern_chart"]["window"],
-                             WindowQuery.clock(*AFTERNOON).to_dict())
+            # Chartability decides the chart coordinate alone, never membership
+            # (ADR 467 decision 2).
+            self.assertEqual(
+                pattern_row["pattern_chart"],
+                {"key": pattern_row["pattern"]["key"], "window": query.to_dict()}
+                if pattern_chartable(pattern_row["pattern"], scoped_exposures) else None,
+            )
             self.assertLessEqual(pattern_row["pattern"]["k"], pattern_row["pattern"]["n"])
-        self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
+        served = {row["id"] for row in scoped_patterns}
+        for row in scoped["rows"]:
+            if row.get("claimed_by"):
+                self.assertIn(row["claimed_by"], served)
 
     def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
         rows = [row for row in self.result["rows"] if not row.get("claimed_by")]
@@ -1184,6 +1313,76 @@ class PatternProjectionTest(unittest.TestCase):
                 "no_data": 0, "clean": 0,
             },
         })
+
+
+class ScopedPatternMembershipTest(unittest.TestCase):
+    """#467: a scoped window serves a Pattern when its outcomes land in it, whether or
+    not it owns a chart (ADR 467)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        case = next(item for item in QA_CASES if item.name == "basal-recurring-low-lower")
+        with Store.open(":memory:") as store:
+            materialize_case(store, case)
+            execution = execute_case(store, case)
+        cls.prepared = prepare_findings_projection(
+            analysis=execution.analysis, exposures=execution.exposures,
+            scenarios=execution.scenarios,
+        )
+
+    def _overnight(self, query):
+        body = self.prepared.project(query)
+        row = next((item for item in body["rows"]
+                    if item["id"] == "pattern:overnight_lows_no_iob"), None)
+        return body, row
+
+    def test_the_whole_day_says_overnight(self):
+        _body, row = self._overnight(WindowQuery.whole_day())
+        self.assertEqual([item["sentence"] for item in row["count_sentences"]],
+                         ["2 of 30 nights ran low overnight"])
+
+    def test_a_window_overlapping_the_band_serves_the_overnight_pattern(self):
+        _body, whole = self._overnight(WindowQuery.whole_day())
+        for bounds in ((0, 360), (120, 300)):
+            with self.subTest(bounds=bounds):
+                _body, row = self._overnight(WindowQuery.clock(*bounds))
+                self.assertIsNotNone(row)
+                self.assertEqual(
+                    (row["pattern"]["k"], row["pattern"]["n"],
+                     row["pattern"]["admission_route"], row["priority"]),
+                    (whole["pattern"]["k"], whole["pattern"]["n"],
+                     whole["pattern"]["admission_route"], whole["priority"]),
+                )
+                self.assertEqual(row["window_scope"], "window")
+                self.assertIsNone(row["pattern_chart"])
+                self.assertEqual([item["sentence"] for item in row["count_sentences"]],
+                                 ["2 of 30 nights ran low between 00:00 and 06:00"])
+
+    def test_a_window_clear_of_the_band_serves_no_overnight_pattern(self):
+        body, row = self._overnight(WindowQuery.clock(840, 1260))
+        self.assertIsNone(row)
+        self.assertNotIn("overnight_lows_no_iob",
+                         [pattern["key"] for pattern in body["outcome_patterns"]])
+
+    def test_the_explicit_whole_day_scope_folds_causes_under_served_patterns(self):
+        projection = gen.projection()
+        whole = {row["id"]: row for row in projection.project(WindowQuery.whole_day())["rows"]}
+        scoped = projection.project(WindowQuery.clock(0, DAY_MINUTES))["rows"]
+        by_id = {row["id"]: row for row in scoped}
+        self.assertIn("pattern:lows_after_meals", by_id)
+        self.assertIn("pattern:lows_after_correcting_highs", by_id)
+        for lever in ("correction_stacking", "correction_on_iob"):
+            with self.subTest(lever=lever):
+                self.assertEqual(by_id[f"finding:{lever}"]["claimed_by"],
+                                 "pattern:lows_after_correcting_highs")
+                self.assertEqual(whole[f"finding:{lever}"]["claimed_by"],
+                                 "pattern:lows_after_correcting_highs")
+        served = {row["id"] for row in scoped if row["kind"] == "pattern"}
+        for row in scoped:
+            if row.get("claimed_by"):
+                self.assertIn(row["claimed_by"], served)
 
 
 class FoldSentenceTest(unittest.TestCase):
@@ -2469,7 +2668,13 @@ class SequenceProducerProjectionTest(unittest.TestCase):
             self.assertLessEqual(cause["episodes"], 8)
             self.assertGreater(cause["episodes"], 0)
             self.assertIsNone(cause["claimed_by"])
-            self.assertFalse(any(r["kind"] == "pattern" for r in scoped["rows"]))
+            # A Pattern whose outcomes land in the window may be served (ADR 467),
+            # but none rosters this cause as its member.
+            self.assertFalse(any(
+                member["subject"] == f"habit:{lever}"
+                for r in scoped["rows"] if r["kind"] == "pattern"
+                for member in r["pattern"]["members"]
+            ))
             for evidence in projection._exposures["sequence_evidence"][lever]["occurrences"]:
                 evidence.pop("outcome_minute", None)
             self.assertNotIn(source["id"], {r["id"] for r in projection.project(query)["rows"]})
@@ -2496,3 +2701,30 @@ class SequenceProducerProjectionTest(unittest.TestCase):
             cause = next(r for r in rows if r["id"] == f"finding:{lever}")
             self.assertGreater(cause["episodes"], 0)
             self.assertEqual(cause["chips"], ["highs", "meals"])
+
+
+class LateBolusCauseRowTest(unittest.TestCase):
+    """ADR 461: the Late bolus Cause row counts only meals that ran high."""
+
+    def _cause(self, post_peak):
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.explore_exposures import build_exposures
+        from ciq_autotune.store import Store
+        from tests.test_outcome_patterns import write_late_meals
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                write_late_meals(store, post_peak=post_peak)
+                projection = prepare_findings_projection(
+                    analysis={}, exposures=build_exposures(store),
+                    scenarios=build_scenarios(store).to_dict(),
+                ).project(WindowQuery.whole_day(), None)
+        return next((r for r in projection["rows"] if r.get("id") == "finding:late_bolus"), None)
+
+    def test_late_meals_that_stayed_in_range_serve_no_cause_row(self):
+        self.assertIsNone(self._cause(165.0))
+
+    def test_late_meals_that_ran_high_read_as_running_high(self):
+        cause = self._cause(240.0)
+        self.assertEqual([s["sentence"] for s in cause["count_sentences"]],
+                         ["14 of 14 meals ran high"])

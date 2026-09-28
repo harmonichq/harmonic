@@ -5426,8 +5426,8 @@ S186 · The block opens on its one view. The block's tile offers no view or
             no .tile-modes, one dot per counted run at its served ratio, the
             rules in order at the served values with their line types, and one
             band at the served range
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5442,8 +5442,8 @@ S187 · On the ratio strip, a run counted whole is a filled dot and a run counte
   evidence: S187 compares each series' runs with the served pool reasons, the
             fill and ring styles, and every pair of dots' sizes against their
             served weights
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5463,8 +5463,8 @@ S188 · The lower lane draws each counted run on its date as a stem from its
             triangles with the served lows by group, time, glucose and date,
             reads their symbol and fill, and compares the band hairlines with
             the served band
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5485,8 +5485,13 @@ S189 · A run's readout is its served balance sheet in six lines: date, time,
             its served terms. It calls the option's own tooltip formatter on a
             ring and on a low (the pointer path) and compares both. It then
             presses Enter and requires the selected ring on that run
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1440x900 and fails at 1280x720 in the coordinator's run
+            on bdc6de49 (2026-09-27). At 1280x720 the first ArrowRight reads
+            out 2024-05-07 while the tile's cursor holds 2024-05-03, the first
+            counted run by date; both are counted whole at 5.56 g/U, in the
+            same tenth of the strip. The story asserts the tile's own rule (the
+            arrows walk the counted runs by date) and is not changed. The
+            failure is reported to the tile's owner as a tile defect
 ```
 
 ```
@@ -5508,8 +5513,8 @@ S190 · Below the numbers block the panel prints "Why this move", "The case
   evidence: S190 builds each expected line from the served fields and
             compares the printed lines exactly, section by section, with their
             order
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5530,26 +5535,37 @@ S191 · The lows print as one roster in their served groups ("On counted runs",
   evidence: S191 compares the printed groups and rows with the served lows. It
             focuses the first low on a run, then reads the tile's selected-run
             series and every row's pressed state
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
 S192 · A low's row opens Day at that low's own moment. The address names the
-       block, the low's date, its moment and the carb-ratio lever. On Day, the
-       low's Episode Log row is the one pressed row, and its anchor is the one
-       ringed at size 15. The block was opened from its queue row.
-  element:  #level .case-occurrence; .gf-stage-day .gf-log-row, its chart's
-            day-anchor-markers
+       block, the low's date, its moment and the carb-ratio lever. Day marks
+       the moment with its one hairline, standing at the low's time on the
+       evidence strip. A harm-listed low is not an Episode Log entry, so a log
+       row is pressed, and its anchor ringed at size 15, only when Day lists
+       one at that instant; when it lists none, no row is pressed and no
+       anchor ringed. The block was opened from its queue row.
+  element:  #level .case-occurrence; .gf-stage-day .gf-chart (its
+            evidence-crosshair graphic and day-anchor-markers), .gf-log-row
   source:   frontend/diagnose-workstation.js renderIcBlockEvidence onSelect;
-            frontend/diagnose.js day; frontend/day.js adopt
+            frontend/diagnose.js day; frontend/day.js adopt;
+            frontend/day-chart.js focusUpdate, buildAnchorOverlay
   lock:     none (revise; the #464 settled block design)
-  data:     ic-block-evidence; the low at 2024-05-15 12:30, 68 mg/dL
+  data:     ic-block-evidence; the low at 2024-05-15 12:30, 68 mg/dL; Day
+            lists no Episode Log row at that instant
   evidence: S192 opens the block from its queue row, then presses the low's
-            row. It reads the Day address, the pressed log rows and the anchors
-            ringed at size 15, comparing instants whichever printer wrote them
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+            row. It reads the Day address; the hairline's x against the
+            chart's own conversion of the low's time; and the listed, pressed
+            and ringed log rows at the low's instant, comparing instants
+            whichever printer wrote them
+  status:   amended 2026-09-27 after the coordinator's run on bdc6de49. That
+            version required a pressed Episode Log row and failed at both
+            sizes with the address correct and "pressed []": Day lists no row
+            for a harm-listed low. The coordinator verified in a browser that
+            Day opens at the low's moment with the hairline standing there.
+            The amended story is owed its rerun at both sizes
 ```
 
 ```
@@ -5567,9 +5583,11 @@ S193 · The same Day hop works when the block was opened from a clock case
             opens a clock case here. The story first requires the clock case
             head's peak line to name the served block. It then presses View
             segment, requires the crumb to name that block, and runs S192's
-            Day-hop assertions
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+            Day-hop assertions, as amended there
+  status:   amended with S192 on 2026-09-27. The coordinator's run on bdc6de49
+            reached the block through View segment and failed only at S192's
+            pressed-row assertion, at both sizes. The amended story is owed
+            its rerun at both sizes
 ```
 
 ```
@@ -5586,8 +5604,8 @@ S194 · While the block's run evidence is in flight, the panel prints the one
             block and reads the loading line, then answers the held reads 503
             and reads the unavailable line. Both times it requires the numbers
             block to stand and no Why this move section to print
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5601,8 +5619,8 @@ S195 · The block's queue row draws the ratio strip alone: every served counted
   evidence: S195 requires the row's mini to be mounted. It compares the mini's
             series set, its dots' runs and ratios, and its rules' values with
             the served block
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 ```
@@ -5622,8 +5640,8 @@ S196 · Changed: the block's run evidence still ships on its tile, rebuilt. The
   evidence: S196 reads every series on the tile, checking the retired trace
             names and data-bearing lines, each counted run's appearances per
             lane, and every run id drawn against the runs not counted
-  status:   owed. The coordinator runs it at both sizes; no result is recorded
-            yet
+  status:   passes at 1280x720 and 1440x900 in the coordinator's run on
+            bdc6de49 (2026-09-27); raw output in the change's evidence record
 ```
 
 Additional handler inventory for this amendment:
@@ -5635,7 +5653,7 @@ Additional handler inventory for this amendment:
 | Tile keydown (ArrowLeft/ArrowRight/Home/End, Enter), pointerdown-bound click, blur | frontend/diagnose-evidence-charts.js bindRunSelection | S189 |
 | Panel sections and lows line | frontend/diagnose-workstation.js readIcBlockEvidence | S190 |
 | Lows roster rows: click, mouseenter, focus | frontend/occurrence-roster.js renderOccurrenceRoster; frontend/diagnose-workstation.js renderIcBlockEvidence, selectRun | S191, S192 |
-| Day adoption of a contextual moment | frontend/day.js adopt; frontend/day-chart.js buildAnchorOverlay | S192, S193 |
+| Day adoption of a contextual moment and its hairline | frontend/day.js adopt; frontend/day-chart.js focusUpdate, buildAnchorOverlay | S192, S193 |
 | Case head View segment | frontend/diagnose-workstation.js renderCaseHead, pickBlock, frameSubject | S193 |
 | Block run-evidence loading and failure lines | frontend/diagnose-workstation.js renderIcBlockLevel, blockEvidence | S194 |
 | Queue row mini | frontend/diagnose-workstation.js mountRowMinis; frontend/diagnose-workstation-chart.js queuePreviewOption | S195 |

@@ -1,0 +1,76 @@
+(node:75534) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/464-c5/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/464-c5/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S186 case=ic-block-evidence milliseconds=255.676
+# S186 synthetic case=ic-block-evidence (fresh copy)
+PASS S186
+# story-time S186 milliseconds=2211.450
+# case-copy S187 case=ic-block-evidence milliseconds=1.476
+# S187 synthetic case=ic-block-evidence (fresh copy)
+PASS S187
+# story-time S187 milliseconds=1808.492
+# case-copy S188 case=ic-block-evidence milliseconds=1.585
+# S188 synthetic case=ic-block-evidence (fresh copy)
+PASS S188
+# story-time S188 milliseconds=1866.799
+# case-copy S189 case=ic-block-evidence milliseconds=1.947
+# S189 synthetic case=ic-block-evidence (fresh copy)
+PASS S189
+# story-time S189 milliseconds=1942.640
+# case-copy S190 case=ic-block-evidence milliseconds=1.491
+# S190 synthetic case=ic-block-evidence (fresh copy)
+PASS S190
+# story-time S190 milliseconds=1757.368
+# case-copy S191 case=ic-block-evidence milliseconds=1.306
+# S191 synthetic case=ic-block-evidence (fresh copy)
+PASS S191
+# story-time S191 milliseconds=1793.793
+# case-copy S192 case=ic-block-evidence milliseconds=1.164
+# S192 synthetic case=ic-block-evidence (fresh copy)
+FAIL S192 — Timed out after 30000 ms: S192 Day at the low's moment; saw [
+  {
+    pressed: [],
+    ringed: [],
+    address: {
+      date: '2024-05-15',
+      moment: '2024-05-15T12:30:00',
+      subject: 'ic:0',
+      lever: 'carb_ratio',
+      from: 'diagnose'
+    }
+  }
+]; S192 Day must press the low's own Episode Log row (2024-05-15T12:30:00); pressed []
+# story-time S192 milliseconds=32120.074
+# case-copy S193 case=ic-block-evidence milliseconds=2.553
+# S193 synthetic case=ic-block-evidence (fresh copy)
+FAIL S193 — Timed out after 30000 ms: S193 Day at the low's moment; saw [
+  {
+    pressed: [],
+    ringed: [],
+    address: {
+      date: '2024-05-15',
+      moment: '2024-05-15T12:30:00',
+      subject: 'ic:0',
+      lever: 'carb_ratio',
+      from: 'diagnose'
+    }
+  }
+]; S193 Day must press the low's own Episode Log row (2024-05-15T12:30:00); pressed []
+# story-time S193 milliseconds=32276.037
+# case-copy S194 case=ic-block-evidence milliseconds=2.587
+# S194 synthetic case=ic-block-evidence (fresh copy)
+PASS S194
+# story-time S194 milliseconds=2249.728
+# case-copy S195 case=ic-block-evidence milliseconds=2.407
+# S195 synthetic case=ic-block-evidence (fresh copy)
+PASS S195
+# story-time S195 milliseconds=1634.243
+# case-copy S196 case=ic-block-evidence milliseconds=1.634
+# S196 synthetic case=ic-block-evidence (fresh copy)
+PASS S196
+# story-time S196 milliseconds=1874.227
+
+# executed 9 · failed 2 · deferred 0 · selected 11 · chromium launches 1

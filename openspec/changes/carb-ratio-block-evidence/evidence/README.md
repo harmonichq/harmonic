@@ -31,28 +31,33 @@ Each file keeps the runner's summary line (`# executed … · failed … · sele
 
 | File | Run |
 |---|---|
-| `replay.revision.1280x720.txt` | the new stories on the revision, `VIEWPORT=1280x720` |
-| `replay.revision.1440x900.txt` | the new stories on the revision, `VIEWPORT=1440x900` |
-| `replay.base.1280x720.txt` | the base, with this branch's replay harness laid over it, `VIEWPORT=1280x720` (fail-first: each story fails at its feature assertion, not at setup) |
-| `replay.base.1440x900.txt` | the same at `VIEWPORT=1440x900` |
-| `replay.touched.<viewport>.txt` | the stories the amendment touched but did not add, on the revision (`ONLY=S98`), one file per viewport |
+| `replay-1280x720.txt` | the coordinator's run of the eleven stories on bdc6de49, `VIEWPORT=1280x720`: 8 of 11 passed; S189, S192 and S193 failed |
+| `replay-1440x900.txt` | the same run at `VIEWPORT=1440x900`: 9 of 11 passed; S192 and S193 failed |
+
+S192 and S193 failed for a replay reason. They required a pressed Episode Log
+row, and Day lists none for a harm-listed low. Both stories have since been
+amended and are owed a rerun. S189 fails at 1280x720 only, and that failure is
+a tile defect; the ledger's S189 entry records it. Base runs with this
+branch's harness laid over the base are not captured yet.
 
 The complete ledger runs once per viewport on the pushed commit. That run's
 output belongs to the release evidence, not to this directory.
 
 ## Renders
 
-These are synthetic captures of the carb-ratio block, opened from its
-whole-day queue row. They are taken after the console, request, accessibility
-and overflow checks pass.
+These are synthetic captures of the `ic-block-evidence` case at both locked
+viewports. The base is the tree before the settled design; the revision is the
+branch. Each `checks-<viewport>.txt` holds that capture's console/page-error and
+horizontal-overflow checks (0 errors; the page scroll width equals the
+viewport width).
 
 | File | State |
 |---|---|
-| `renders/base/block-panel.1280x720.png` | the block's panel on the base |
-| `renders/base/block-panel.1440x900.png` | the same at 1440x900 |
-| `renders/base/block-tile.1280x720.png` | the block's tile on the base, in its default view |
-| `renders/base/block-tile.1440x900.png` | the same at 1440x900 |
-| `renders/revision/block-panel.1280x720.png` | the block's panel on the revision: Why this move, The case against, and the lows |
-| `renders/revision/block-panel.1440x900.png` | the same at 1440x900 |
-| `renders/revision/block-tile.1280x720.png` | the block's tile on the revision: its one view, the ratio strip over the runs by date |
-| `renders/revision/block-tile.1440x900.png` | the same at 1440x900 |
+| `renders/{base,revision}/desk-<viewport>.png` | the whole-day Diagnose desk: the block's queue row with its mini, and the block's tile on stage |
+| `renders/{base,revision}/block-<viewport>.png` | the block opened from its queue row: its tile, and the panel below the numbers block |
+| `renders/{base,revision}/tile-<viewport>.png` | the block's tile alone. On the base, this is its default Event view of per-run glucose traces. On the revision, it is the one view: the ratio strip over the runs by date |
+| `renders/{base,revision}/panel-<viewport>.png` | the block's panel alone. On the revision, it shows Why this move, The case against and the lows |
+| `renders/{base,revision}/checks-<viewport>.txt` | the checks taken with that viewport's captures |
+
+`<viewport>` is `1280x720` or `1440x900`, so each directory holds eight PNGs
+and two checks files.

@@ -3375,20 +3375,34 @@ const panel464 = (page) => page.evaluate(() => {
   };
 });
 
-// Day, reached from a low: the pressed Episode Log rows and the ringed anchors.
-const dayRing464 = (page) => page.evaluate(() => {
+// Day, reached from a low. Day marks a contextual moment with its one
+// cross-track hairline (`evidence-crosshair`, frontend/day-chart.js
+// focusUpdate), placed at the moment's own time on the evidence strip. An
+// Episode Log row is pressed, and its anchor ringed at size 15, only when Day
+// lists an anchor at that instant; a harm-listed low is not an Episode Log
+// entry, so it may have none. `expectedX` is where the moment falls on the
+// strip, from the chart's own conversion of the served time.
+const dayRing464 = (page, moment) => page.evaluate((moment) => {
   const host = document.querySelector('.gf-stage-day .gf-chart');
   const chart = host && window.echarts?.getInstanceByDom(host);
-  const markers = chart?.getOption().series.find((series) => series.id === 'day-anchor-markers')?.data || [];
+  const option = chart?.getOption();
+  const markers = option?.series.find((series) => series.id === 'day-anchor-markers')?.data || [];
+  const crosshairs = (option?.graphic || []).flatMap((item) => item.elements || [item])
+    .filter((item) => item.id === 'evidence-crosshair');
   return {
+    listed: [...document.querySelectorAll('.gf-log-row')].map((row) => row.dataset.dayRow),
     pressed: [...document.querySelectorAll('.gf-log-row[aria-pressed="true"]')].map((row) => row.dataset.dayRow),
     ringed: markers.filter((marker) => marker.symbolSize === 15).map((marker) => marker._t),
+    crosshairs: crosshairs.map((item) => item.shape?.x1 ?? null),
+    expectedX: chart ? chart.convertToPixel({ xAxisIndex: 1 }, new Date(moment).getTime()) : null,
     address: Object.fromEntries(new URLSearchParams(location.search)),
   };
-});
+}, moment);
 
-// A listed low's row opens Day at the low's own moment, with that moment
-// picked: its Episode Log row pressed and its anchor ringed at size 15.
+// A listed low's row opens Day at the low's own moment: the address names it,
+// and Day's hairline stands at it. When Day lists an Episode Log row at that
+// instant, that row is the one pressed and its anchor the one ringed; when it
+// lists none, no row is pressed and no anchor ringed.
 async function lowDayHop464(page, id, row, evidence) {
   const low = evidence.harm_evidence.lows.find((item) => item.run_id);
   ok(low, `${id} premise: the served block lists no low on a run`);
@@ -3398,14 +3412,18 @@ async function lowDayHop464(page, id, row, evidence) {
   await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
   await waitForDesk(page);
   await waitForReplayAssertion(async seen => {
-    const day = seen(await dayRing464(page));
+    const day = seen(await dayRing464(page, instant464(low.t)));
     ok(day.address.subject === row.id && day.address.date === low.t.slice(0, 10)
       && day.address.moment === low.t && day.address.lever === 'carb_ratio',
     `${id} the low's Day hop must name ${row.id}, its date and its moment: ${JSON.stringify(day.address)}`);
-    ok(day.pressed.length === 1 && instant464(day.pressed[0]) === instant464(low.t),
-      `${id} Day must press the low's own Episode Log row (${low.t}); pressed ${JSON.stringify(day.pressed)}`);
-    ok(day.ringed.length === 1 && instant464(day.ringed[0]) === instant464(low.t),
-      `${id} Day must ring the low's own anchor at size 15 (${low.t}); ringed ${JSON.stringify(day.ringed)}`);
+    ok(Number.isFinite(day.expectedX), `${id} Day's chart must be mounted to place the low's moment`);
+    ok(day.crosshairs.length === 1 && Math.abs(day.crosshairs[0] - day.expectedX) < 1,
+      `${id} Day must stand one hairline at the low's moment (x ${day.expectedX}); drawn ${JSON.stringify(day.crosshairs)}`);
+    const atLow = day.listed.filter((t) => instant464(t) === instant464(low.t));
+    ok(JSON.stringify(day.pressed) === JSON.stringify(atLow),
+      `${id} Day must press exactly its Episode Log row at the low's moment, if it lists one (${JSON.stringify(atLow)}); pressed ${JSON.stringify(day.pressed)}`);
+    ok(day.ringed.length === atLow.length && day.ringed.every((t) => instant464(t) === instant464(low.t)),
+      `${id} Day must ring at size 15 exactly the anchor it lists at the low's moment, if any; ringed ${JSON.stringify(day.ringed)}`);
   }, `${id} Day at the low's moment`);
 }
 
@@ -3683,7 +3701,7 @@ export const S191 = appOnly('ADR 464',
 
 // STORY:harmonic-v2-desktop:S192
 export const S192 = appOnly('ADR 464',
-  '#464 a low\'s row opens Day at that moment, ringed, from the block opened by its queue row',
+  '#464 a low\'s row opens Day at that moment, marked by the hairline (its log row pressed only if Day lists one), from the block opened by its queue row',
   async (page) => {
     const { row, evidence } = await served464(page, 'S192');
     await openBlock464(page, row);

@@ -18,7 +18,10 @@
 
 ## ADR 464 — The backend serves the reconciling sentence from a closed set
 
-**Status:** accepted, 2026-09-24 (operator, scope Q4 A).
+**Status:** accepted, 2026-09-24 (operator, scope Q4 A). Its tally is amended by
+ADR 464 — The outcome tally reads each meal plainly against the band (2026-09-27):
+the sentence's balance key is now whether more meals went above the band than
+below it.
 
 A reader who sees "over-covered" beside a chart on which most meals ran high needs
 the reconciliation in words, and that sentence is chosen on the server, never on
@@ -48,8 +51,9 @@ and for the pooled check, not for the fit, and the panel labels which is which.
 
 ## ADR 464 — By meal is the block's default view; the chain overlay is rebuilt as run strips
 
-**Status:** accepted, 2026-09-24 (operator, scope Q5, "handle it all in this
-ticket").
+**Status:** superseded by ADR 464 — The block's one view: the ratio strip over
+the run timeline (2026-09-27). Accepted 2026-09-24 (operator, scope Q5, "handle it
+all in this ticket").
 
 The reader's first question on opening a carb-ratio block is what happened after
 these meals. The whole-chain overlay cannot answer it: 42 traces of up to twenty
@@ -88,7 +92,8 @@ where the harm evidence it qualifies is.
 
 ## ADR 464 — The outcome tally reuses the Pattern's credited claims
 
-**Status:** accepted, 2026-09-24 (operator, scope Q2 A).
+**Status:** superseded by ADR 464 — The outcome tally reads each meal plainly
+against the band (2026-09-27). Accepted 2026-09-24 (operator, scope Q2 A).
 
 "Ran high" means one thing in this app. The tally over the block's 90-day meals
 reads the same `attributed_levers` the Pattern roster reads — stamped by
@@ -130,3 +135,141 @@ shared claims, which is where it belongs.
 - Why: advisory insulin-dosing guidance on one person's own data; wrong evidence
   misleads a real dose decision, and the repo's data boundary is absolute.
 - Disposition: copied unchanged into the work order.
+
+## ADR 464 — The outcome tally reads each meal plainly against the band
+
+**Status:** accepted, 2026-09-27 (operator). Supersedes ADR 464 — The outcome
+tally reuses the Pattern's credited claims.
+
+Rendered on the operator's own data, the credited-claim tally contradicted the
+glucose on the same screen. A meal that stayed inside the band apart from one dip
+below it was labelled "ran high", and a meal that peaked far above the band was
+labelled "in range". A credited claim answers which lever a Pattern blames for an
+Occurrence, not what the glucose did after a meal, so the reader cannot check it
+against the trace and stops trusting the panel. The operator ruled the tally out.
+
+Each meal dosed in the block's hours is now read plainly over its own post-meal
+window, from its bolus to the analyzer's post-meal horizon (5 h 15 min): its peak
+and its nadir, when each fell, and whether it went above the band, below it, both,
+stayed in range, or had no reading. A meal whose window holds no reading is
+unread, never in range. Each meal also carries its peak before the run's next
+bolus (a bolus under thirty minutes later is the same meal and is skipped), since
+a later meal's rise is not this meal's outcome. The band is the analyzer's own
+in-range band, served once on the tally so no client restates it. The block's
+tally counts those readings, and the reconciling sentence (ADR 464 — The backend
+serves the reconciling sentence from a closed set) now keys on whether more meals
+went above the band than below it.
+
+The 90-day exposure pass the credited claims needed is gone from the block
+evidence, and so is the pooled meal comparison built on its cohorts. The tally no
+longer inherits #461, because it no longer reads the shared claims.
+
+## ADR 464 — The block's one view: the ratio strip over the run timeline
+
+**Status:** accepted, 2026-09-27 (operator). Supersedes ADR 464 — By meal is the
+block's default view; the chain overlay is rebuilt as run strips.
+
+The carb-ratio evidence tile has one view, in two lanes sharing one time axis, and
+no view toggle.
+
+- **Lane A, the ratio strip.** Each counted meal run is one dot at its measured
+  carb ratio, sized by the weight the fit gave it, filled when it counts whole and
+  a ring when it counts by carb share. The programmed, recommended and estimated
+  ratios are three labelled rules, and the estimate's range is a faint band.
+- **Lane B, the run timeline.** Each counted run is a stem from the glucose at its
+  bolus to the glucose where the run ended, by date, between the band edges. The
+  lows the harm arm lists are triangles at their glucose, filled on a counted run
+  and outlined otherwise.
+- **Readout.** Hovering or keying to a run's dot reads out the insulin behind it:
+  its ledger terms and how it ended. Hovering a low reads out its delay after its
+  bolus. A selected run is ringed on both lanes and presses its lows on the panel.
+- **No per-meal marks.** The tile draws runs, because runs are what the ratio
+  measures.
+
+The form was reached on a mock built from the desk's own chrome and stylesheet,
+rendered over a local snapshot of the operator's data that never left the
+machine, through 27 rounds of fresh cold reviewers, and then the operator's reset
+to this form. The rounds would not converge on any meal-anchored view. The
+estimator judges whole meal runs, and most counted runs end after a later meal, so
+"what happened after breakfast" is not the quantity the ratio measures. Every
+meal-anchored drawing either implied the ratio was read at a moment it was not, or
+drew scaffolding around that gap. The settled surface states the gap plainly
+instead: the panel says how many counted runs ended after a later meal past the
+block's end.
+
+This leaves one question for the analyzer, outside this change's boundary: whether
+a carb-ratio block should be measured over a window bounded by the block's own
+meals rather than whole runs. That is an estimator change, and this change touches
+no estimator.
+
+## ADR 464 — Why this move is four sentences, then the case against, then the lows
+
+**Status:** accepted, 2026-09-27 (operator). Replaces the panel plan (scope line,
+balance-sheet row, outcome tally, run roster).
+
+Beneath the unchanged numbers-and-staging block, the panel prints three captioned
+sections of one-sentence lines. A line whose served facts are empty is left out.
+
+- **Why this move**, four lines:
+  1. how many counted runs measured looser or tighter than the programmed ratio,
+     and that the estimate's range leaves the programmed ratio out (the served
+     side counts and direction, the programmed value, the estimate's range);
+  2. one fixed sentence on what the ratio counts: every unit a run used
+     (boluses, corrections, Control-IQ basal changes), with the glucose change
+     converted at the correction factor, judged where the run ended;
+  3. how many counted runs ended after a later meal past the block's end, and how
+     many ended lower, about flat or higher than they started (the served run
+     ends);
+  4. the recommendation's reason, served from the analyzer's own rule: half the
+     gap from the programmed ratio toward the estimate, capped when the step cap
+     bound it, rounded to the pump's step.
+- **The case against**, one line: how many of the block's meals on counted runs
+  peaked above the band before their next bolus, and how many counting later
+  meals within the post-meal window; for a raise, that a looser ratio can raise
+  peaks.
+- **Lows after the block's boluses**: one population, the lows the harm arm lists,
+  with their range of minutes after the bolus and the served sentence on how the
+  lows on counted runs bear on the move. They are grouped on counted runs, on runs
+  not counted, and after a bolus that is not one of these meals, each group
+  headed by its served count. Each low is a row through the shared Occurrence
+  roster and opens Day at its own moment, ringed. Hovering a low selects its run
+  on the tile.
+
+The run roster and the balance-sheet row are not on the panel. The balance sheet
+is per run, in the tile's hover, where the reader is already looking at that run.
+The breadcrumb reads the served counted-run and meal counts once the payload
+lands. The block frame publishes its subject from the block it holds, so the Day
+hop works from a queue row and from View segment alike. While the evidence loads
+the panel prints "Loading run evidence…"; when it fails, is stale or is malformed
+it prints "Run evidence unavailable." A block that is collecting, below its floor
+or unmeasured alone keeps its numbers block and gains no section.
+
+## ADR 464 — Served facts the settled surface prints
+
+**Status:** accepted, 2026-09-27 (operator).
+
+The backend added exactly these facts for the settled tile and panel, and the
+block-evidence projection refuses a block missing any of them:
+
+- **Per run:** how the run ended against where it started (lower, flat or higher)
+  and the flat band, served once on the block; whether the run ended after a later
+  meal outside the block's hours; the weight the fit gave it.
+- **Per block:** how its counted runs ended (lower, flat, higher, after a later
+  meal, of how many); the recommendation with its rule and its reason sentence;
+  the side's direction beside the side counts.
+- **Per meal:** peak and nadir with their minutes after the bolus, the plain
+  outcome, minutes to the run's next bolus, the peak before that next bolus, and
+  whether the meal is on a counted run; on the tally, the band and the counts of
+  meals on counted runs that peaked above the band before the next bolus and
+  anywhere in the window.
+- **Per low:** the run its bolus belongs to, its group (counted run, uncounted run,
+  not one of these meals), its minutes after the bolus and that bolus's carbs; on
+  the harm row, the group counts, the minutes range, and the bearing sentence.
+- **Sensor gaps.** A store reading with no glucose value is dropped once, where
+  the preparation slices every meal and run window, so no window holds one; a meal
+  window holding only a gap reads as unread.
+
+The frontend prints these facts and derives none of them: no count, side, end
+class, group, band, threshold, direction or sentence is formed on the client. The
+estimator, the pool rule, the eight-run floor, the caps, the harm arm and the
+staging predicate are unchanged.

@@ -70,3 +70,18 @@ tell me why." The estimator is not in question. What it decided is not shown.
   charts and is not folded in; #461 (open) is inherited by the outcome tally
   through the shared verdicts and fixed there, not here; #435 (open) lists
   below-floor blocks on this same panel.
+
+## Amended 2026-09-27
+
+The tile and the panel described above were settled by operator review rounds on
+the running app, and what shipped differs. The tile has one view: each counted
+run's measured ratio against the programmed, recommended and estimated ratios,
+over a timeline of where each run started and ended, with the listed lows. The
+panel says why the move is suggested, gives the case against it, and lists the
+lows by group; it carries no run roster or balance-sheet row. The credited-claim
+outcome tally was replaced by a plain reading of each meal against the band, so
+the tally no longer inherits #461. The decision records in `design.md` carry the
+detail: ADR 464 — The outcome tally reads each meal plainly against the band; ADR
+464 — The block's one view: the ratio strip over the run timeline; ADR 464 — Why
+this move is four sentences, then the case against, then the lows; and ADR 464 —
+Served facts the settled surface prints.

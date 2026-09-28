@@ -142,8 +142,13 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                               "effective_run_count"},
                              set(case["block"]["support_detail"]), name)
             self.assertEqual({"arm", "gated", "nudged", "arm_days", "row_days", "lows",
-                              "evaluated", "seriousness", "minutes_after_bolus_median"},
+                              "evaluated", "seriousness", "minutes_after_bolus_median",
+                              "groups", "minutes_after_bolus_min",
+                              "minutes_after_bolus_max", "bearing_sentence"},
                              set(case["harm_evidence"]), name)
+            self.assertEqual(10.0, case["block"]["end_band_mgdl"], name)
+            self.assertEqual("half-gap-capped-rounded",
+                             case["block"]["recommendation"]["rule"], name)
 
     def test_every_run_row_names_a_reason_from_the_analyzers_closed_set(self):
         for name, case in self.cases.items():
@@ -157,6 +162,54 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 self.assertTrue(all(isinstance(flag, bool)
                                     for flag in run["member_in_block"]),
                                 (name, run["run_id"]))
+                self.assertEqual(not run["member_in_block"][-1],
+                                 run["ended_after_later_meal"], (name, run["run_id"]))
+                self.assertEqual(run["in_pool"], run["fit_weight"] is not None,
+                                 (name, run["run_id"]))
+
+    def test_every_run_end_is_its_travel_against_the_served_band(self):
+        for name, case in self.cases.items():
+            band = case["block"]["end_band_mgdl"]
+            for run in case["runs"]:
+                if run["outcome_bg"] is None or run["start_bg"] is None:
+                    self.assertIsNone(run["end_class"], (name, run["run_id"]))
+                    continue
+                travelled = run["outcome_bg"] - run["start_bg"]
+                self.assertEqual(
+                    "lower" if travelled < -band else "higher" if travelled > band
+                    else "flat", run["end_class"], (name, run["run_id"]))
+            counted = [run for run in case["runs"] if run["in_pool"]]
+            self.assertEqual(
+                {"lower": sum(run["end_class"] == "lower" for run in counted),
+                 "flat": sum(run["end_class"] == "flat" for run in counted),
+                 "higher": sum(run["end_class"] == "higher" for run in counted),
+                 "after_later_meal": sum(run["ended_after_later_meal"] for run in counted),
+                 "n": len(counted)},
+                case["block"]["run_ends"], name)
+
+    def test_every_low_is_grouped_by_the_served_roster(self):
+        for name, case in self.cases.items():
+            harm = case["harm_evidence"]
+            runs = {run["run_id"]: run for run in case["runs"]}
+            for low in harm["lows"]:
+                self.assertIn(low["group"], ("counted-run", "uncounted-run",
+                                             "not-a-meal-run"), (name, low["t"]))
+                self.assertEqual(low["dominant_bolus_carbs"], low["bolus_carbs"],
+                                 (name, low["t"]))
+                if low["run_id"] is None:
+                    self.assertEqual("not-a-meal-run", low["group"], (name, low["t"]))
+                    continue
+                self.assertEqual(
+                    "counted-run" if runs[low["run_id"]]["in_pool"] else "uncounted-run",
+                    low["group"], (name, low["t"]))
+            groups = [low["group"] for low in harm["lows"]]
+            self.assertEqual(
+                {"counted_run": groups.count("counted-run"),
+                 "counted_runs_distinct": len({low["run_id"] for low in harm["lows"]
+                                               if low["group"] == "counted-run"}),
+                 "uncounted_run": groups.count("uncounted-run"),
+                 "not_a_meal_run": groups.count("not-a-meal-run")},
+                harm["groups"], name)
 
     def test_the_ledger_quotient_is_the_served_terms_own_arithmetic(self):
         for name, case in self.cases.items():
@@ -174,7 +227,14 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             self.assertEqual({"low", "high"}, set(band), name)
             for meal in case["meals"]:
                 self.assertEqual({"t", "run_id", "offset_min", "peak_bg", "peak_min",
-                                  "nadir_bg", "nadir_min", "outcome"}, set(meal), name)
+                                  "nadir_bg", "nadir_min", "outcome", "next_bolus_min",
+                                  "peak_before_next_bg", "peak_before_next_min",
+                                  "on_counted_run"}, set(meal), name)
+                if meal["next_bolus_min"] is not None:
+                    self.assertGreaterEqual(meal["next_bolus_min"], 30.0, (name, meal["t"]))
+                if meal["peak_before_next_bg"] is not None:
+                    self.assertLessEqual(meal["peak_before_next_bg"], meal["peak_bg"],
+                                         (name, meal["t"]))
                 if meal["peak_bg"] is None:
                     self.assertEqual("unread", meal["outcome"], (name, meal["t"]))
                     continue
@@ -194,8 +254,20 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
                 {"above_high": outcomes.count("high") + both,
                  "below_low": outcomes.count("low") + both, "both": both,
                  "in_range": outcomes.count("in-range"),
-                 "unread": outcomes.count("unread"), "n": len(outcomes)},
+                 "unread": outcomes.count("unread"), "n": len(outcomes),
+                 "meals_on_counted_runs": sum(meal["on_counted_run"]
+                                              for meal in case["meals"]),
+                 "peaked_above_high_before_next": sum(
+                     meal["on_counted_run"] and meal["peak_before_next_bg"] is not None
+                     and meal["peak_before_next_bg"] > case["outcomes"]["band"]["high"]
+                     for meal in case["meals"]),
+                 "peaked_above_high_in_window": sum(
+                     meal["on_counted_run"] and meal["outcome"] in ("high", "high-and-low")
+                     for meal in case["meals"])},
                 case["outcomes"]["counts"], name)
+            counts = case["outcomes"]["counts"]
+            self.assertLessEqual(counts["peaked_above_high_before_next"],
+                                 counts["peaked_above_high_in_window"], name)
 
     def test_the_published_case_exercises_every_fact_the_panel_reads(self):
         case = self.cases["explained"]
@@ -226,6 +298,14 @@ class IcBlockEvidenceRowsTest(unittest.TestCase):
             self.assertTrue(any(meal["outcome"] == "low" for meal in later), low["t"])
         self.assertGreater(case["block"]["support_detail"]["fractional_run_ownership"],
                            0.0)
+        # The settled surface's facts: chains ending after the block, meals whose
+        # window runs past the next bolus, lows on counted runs, and the rule.
+        self.assertGreater(case["block"]["run_ends"]["after_later_meal"], 0)
+        self.assertLess(case["outcomes"]["counts"]["peaked_above_high_before_next"],
+                        case["outcomes"]["counts"]["peaked_above_high_in_window"])
+        self.assertEqual(2, case["harm_evidence"]["groups"]["counted_run"])
+        self.assertIsNotNone(case["harm_evidence"]["bearing_sentence"])
+        self.assertIsNotNone(case["block"]["recommendation"]["sentence"])
 
 
 class ComparisonRowsTest(unittest.TestCase):

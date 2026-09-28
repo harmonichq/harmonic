@@ -29,15 +29,23 @@ _BAND = {"low": ScenarioConfig().segment_range_low_mgdl,
 # The per-meal facts the preparation serves; a meal row without them is a hole.
 _MEAL_FACTS = frozenset({
     "t", "run_id", "offset_min", "peak_bg", "peak_min", "nadir_bg", "nadir_min",
-    "outcome",
+    "outcome", "next_bolus_min", "peak_before_next_bg", "peak_before_next_min",
+    "on_counted_run",
 })
-_COUNT_FACTS = frozenset({"above_high", "below_low", "both", "in_range", "unread", "n"})
+_COUNT_FACTS = frozenset({
+    "above_high", "below_low", "both", "in_range", "unread", "n",
+    "meals_on_counted_runs", "peaked_above_high_before_next",
+    "peaked_above_high_in_window",
+})
 # The per-run facts #464 added; a roster row without them is a hole, not a row.
 _RUN_FACTS = frozenset({
     "pool_reason", "side", "meal_carbs", "meal_dose", "post_correction_user",
     "post_correction_ciq", "post_correction_unknown", "ciq_basal_delta_acted_u",
-    "rescue_carbs", "member_in_block",
+    "rescue_carbs", "member_in_block", "end_class", "ended_after_later_meal",
+    "fit_weight",
 })
+_RUN_END_FACTS = frozenset({"lower", "flat", "higher", "after_later_meal", "n"})
+_RECOMMENDATION_FACTS = frozenset({"value", "rule", "sentence"})
 # The pooled balance sheet's terms and the quotient they make.
 _LEDGER_FACTS = frozenset({
     "carbs_covered", "meal_dose", "post_correction_user", "post_correction_ciq",
@@ -47,7 +55,12 @@ _LEDGER_FACTS = frozenset({
 # The harm row the analyzer publishes on every block, in its one closed shape.
 _HARM_FACTS = frozenset({
     "arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
-    "seriousness", "minutes_after_bolus_median",
+    "seriousness", "minutes_after_bolus_median", "groups", "minutes_after_bolus_min",
+    "minutes_after_bolus_max", "bearing_sentence",
+})
+_LOW_FACTS = frozenset({"run_id", "group", "minutes_after_bolus", "bolus_carbs"})
+_LOW_GROUP_FACTS = frozenset({
+    "counted_run", "counted_runs_distinct", "uncounted_run", "not_a_meal_run",
 })
 
 # One reconciling sentence per served key, chosen on the server and printed verbatim
@@ -116,19 +129,31 @@ def _meal_reading(point: dict, windows: _CgmWindows) -> dict:
     The peak and nadir are the highest and lowest store readings from the bolus to
     the end of the window, and the outcome is where they fall against the band.  A
     meal with no reading in its window is `unread` rather than in range — silence
-    is not a reading.
+    is not a reading.  The peak before next is the highest reading from the bolus
+    until the run's next member bolus the analyzer served, or the window's end.
     """
     bolus = datetime.fromisoformat(point["t"])
     before, after = MEAL_WINDOW_MIN
     readings = windows.between(bolus + timedelta(minutes=before),
                                bolus + timedelta(minutes=after))
+    next_min = point["next_bolus_min"]
+    cut = bolus + timedelta(minutes=after if next_min is None else min(after, next_min))
+    before_next = [reading for reading in readings if reading.t <= cut]
     row = {
         "t": point["t"], "run_id": point["run_id"],
         "offset_min": (bolus - datetime.fromisoformat(point["run_id"])).total_seconds()
         / 60.0,
         "peak_bg": None, "peak_min": None, "nadir_bg": None, "nadir_min": None,
-        "outcome": "unread",
+        "outcome": "unread", "next_bolus_min": next_min,
+        "peak_before_next_bg": None, "peak_before_next_min": None,
+        "on_counted_run": point["on_counted_run"],
     }
+    if before_next:
+        peak_before_next = max(before_next, key=lambda reading: reading.bg)
+        row.update({
+            "peak_before_next_bg": peak_before_next.bg,
+            "peak_before_next_min": (peak_before_next.t - bolus).total_seconds() / 60.0,
+        })
     if not readings:
         return row
     peak = max(readings, key=lambda reading: reading.bg)
@@ -145,6 +170,7 @@ def _meal_reading(point: dict, windows: _CgmWindows) -> dict:
 
 def _outcome_tally(block: dict, meals: Sequence[dict]) -> dict:
     tally = Counter(meal["outcome"] for meal in meals)
+    counted = [meal for meal in meals if meal["on_counted_run"]]
     counts = {
         "above_high": tally["high"] + tally["high-and-low"],
         "below_low": tally["low"] + tally["high-and-low"],
@@ -152,6 +178,15 @@ def _outcome_tally(block: dict, meals: Sequence[dict]) -> dict:
         "in_range": tally["in-range"],
         "unread": tally["unread"],
         "n": len(meals),
+        # Over meals on counted runs only: how many went above the band before the
+        # run's next bolus, and how many anywhere in their own window.
+        "meals_on_counted_runs": len(counted),
+        "peaked_above_high_before_next": sum(
+            1 for meal in counted
+            if meal["peak_before_next_bg"] is not None
+            and meal["peak_before_next_bg"] > _BAND["high"]),
+        "peaked_above_high_in_window": sum(
+            1 for meal in counted if meal["outcome"] in ("high", "high-and-low")),
     }
     return {
         "counts": counts,
@@ -183,13 +218,22 @@ class IcBlockEvidenceProjection:
             # Every run row carries its own reason, side and ledger terms, and the
             # harm row its whole closed shape, or the payload has a hole in exactly
             # the place the reader looks first.
-            if not _HARM_FACTS <= harm_evidence.keys():
+            if (not _HARM_FACTS <= harm_evidence.keys()
+                    or not _LOW_GROUP_FACTS <= harm_evidence["groups"].keys()):
                 raise KeyError("harm evidence is missing a published fact")
+            for low in harm_evidence["lows"]:
+                if not _LOW_FACTS <= low.keys():
+                    raise KeyError("low row is missing a published fact")
             if not _LEDGER_FACTS <= evidence["ledger"].keys():
                 raise KeyError("ledger is missing a published term")
             for run in runs:
                 if not _RUN_FACTS <= run.keys():
                     raise KeyError("run row is missing a published fact")
+            run_ends = evidence["run_ends"]
+            recommendation = evidence["recommendation"]
+            if (not _RUN_END_FACTS <= run_ends.keys()
+                    or not _RECOMMENDATION_FACTS <= recommendation.keys()):
+                raise KeyError("block is missing a published fact")
             # The preparation's own facts are guarded the same way: a sidecar
             # rebuilt from an older shape is refused, not served with a hole.
             meals = list(evidence["meals"])
@@ -225,6 +269,9 @@ class IcBlockEvidenceProjection:
                     "effective_support": eligibility["effective_run_count"],
                     "examined_runs": evidence["n_runs_touching"],
                     "excluded_runs": evidence["n_runs_excluded"],
+                    "end_band_mgdl": evidence["end_band_mgdl"],
+                    "run_ends": run_ends,
+                    "recommendation": recommendation,
                 },
                 "ledger": evidence["ledger"],
                 "outcomes": outcomes,

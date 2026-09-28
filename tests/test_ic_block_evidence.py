@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
 import json
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -514,7 +515,10 @@ class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
         real, fits = ic_regression._regression_estimates, []
 
         def spy(rows):
-            fits.append(list(rows))
+            # The fit's own per-run rows, keyed by run, as it hands them to the
+            # estimator: (weight, 1/ratio, shares).
+            fits.append({run_id.started_at.isoformat(): row for run_id, row
+                         in sys._getframe(1).f_locals["row_by_run"].items()})
             return real(rows)
 
         lone = [_meal(day, 9, carbs=40.0 + 2 * day, insulin=(40.0 + 2 * day) / 5,
@@ -528,19 +532,21 @@ class IcBlockSettledSurfaceFactsTest(unittest.TestCase):
             prepared = self._prepared(events, _outcome_cgm(lone + chains),
                                       segments=((0, 5.0), (720, 6.0)))
 
-        served = {}
+        # The first estimate call is the full fit.
+        fit_rows = fits[0]
+        counted = set()
         for block_id in (0, 720):
             for run in prepared.project(block_id)["runs"]:
                 if not run["in_pool"]:
                     self.assertIsNone(run["fit_weight"], run["run_id"])
                     continue
                 # A chained run is one row of the fit, so both blocks serve its weight.
-                served.setdefault(run["run_id"], run["fit_weight"])
-                self.assertEqual(served[run["run_id"]], run["fit_weight"])
+                counted.add(run["run_id"])
+                self.assertEqual(fit_rows[run["run_id"]][0], run["fit_weight"],
+                                 (block_id, run["run_id"]))
         self.assertIn(gap.t.isoformat(),
                       {run["run_id"] for run in prepared.project(0)["runs"]})
-        # The first estimate call is the full fit; its rows are (weight, 1/ratio, shares).
-        self.assertEqual(sorted(row[0] for row in fits[0]), sorted(served.values()))
+        self.assertEqual(set(fit_rows), counted)
 
     def test_the_next_bolus_skips_one_under_thirty_minutes_later(self):
         # A lone flat morning run per day, then one chain: a bolus topped up twenty

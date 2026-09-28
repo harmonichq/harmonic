@@ -400,11 +400,27 @@ class BlockHarmEvidenceTest(unittest.TestCase):
         self.assertEqual(2, evidence["row_days"])
         self.assertEqual(120.0, evidence["minutes_after_bolus_median"])
         self.assertTrue(evidence["evaluated"])
-        self.assertEqual(block.harm, {key: evidence[key] for key in block.harm})
+        # The arm's own row is copied; each low only gains its run, group and minutes.
+        self.assertEqual({key: value for key, value in block.harm.items() if key != "lows"},
+                         {key: evidence[key] for key in block.harm if key != "lows"})
+        self.assertEqual(block.harm["lows"],
+                         [{key: row[key] for key in low}
+                          for low, row in zip(block.harm["lows"], evidence["lows"])])
         self.assertEqual(block.guidance["seriousness"], evidence["seriousness"])
+        # Both lows sit on counted runs; the tighten they hold asserts no move, so
+        # there is nothing for them to bear on.
+        self.assertEqual(["counted-run", "counted-run"],
+                         [row["group"] for row in evidence["lows"]])
+        self.assertEqual({"counted_run": 2, "counted_runs_distinct": 2,
+                          "uncounted_run": 0, "not_a_meal_run": 0}, evidence["groups"])
+        self.assertEqual((90.0, 150.0), (evidence["minutes_after_bolus_min"],
+                                         evidence["minutes_after_bolus_max"]))
+        self.assertFalse(block.asserts_move)
+        self.assertIsNone(evidence["bearing_sentence"])
 
     KEYS = {"arm", "gated", "nudged", "arm_days", "row_days", "lows", "evaluated",
-            "seriousness", "minutes_after_bolus_median"}
+            "seriousness", "minutes_after_bolus_median", "groups",
+            "minutes_after_bolus_min", "minutes_after_bolus_max", "bearing_sentence"}
 
     def test_a_tighten_held_by_a_low_elsewhere_on_the_arm_says_it_was_gated(self):
         # Block 0 (00:00-18:00) asserts a tighten; the only low belongs to an evening

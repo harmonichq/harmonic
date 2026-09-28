@@ -165,6 +165,7 @@ def _explained():
         basal.extend(_suspends(second.t))
         lows.append(PrintedLow(t=first.t + timedelta(minutes=210), bg=68.0, iob_u=2.2,
                                arm=HarmArm.IC, dominant_bolus_t=first.t,
+                               dominant_bolus_carbs=first.carbs,
                                attribution_reason="meal-bolus"))
     for day in range(40, 50):
         first = _meal(day, 11, carbs=40.0, insulin=8.0, bg=None)

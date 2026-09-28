@@ -244,8 +244,10 @@ and the client decides no move of its own.
 
 The run roster and the balance-sheet row are not on the panel. The balance sheet
 is per run, in the tile's hover, where the reader is already looking at that run.
-The breadcrumb reads the served counted-run and meal counts once the payload
-lands. The block frame publishes its subject from the block it holds, so the Day
+The breadcrumb keeps the findings row's meal-run and meal counts and never
+changes when the payload lands. The numbers block and the breadcrumb stay
+byte-identical to the shipped row, so the payload can never disagree with the row
+that opened it. The block frame publishes its subject from the block it holds, so the Day
 hop works from a queue row and from View segment alike. While the evidence loads
 the panel prints "Loading run evidence…"; when it fails, is stale or is malformed
 it prints "Run evidence unavailable." A block that is collecting, below its floor
@@ -256,31 +258,53 @@ or unmeasured alone keeps its numbers block and gains no section.
 **Status:** accepted, 2026-09-27 (operator).
 
 The backend added exactly these facts for the settled tile and panel, and the
-block-evidence projection refuses a block missing any of them:
+block-evidence projection refuses a block missing any of them. Each is marked
+*printed* (the settled surface prints or draws it) or *served only*:
 
 - **Per run:** how the run ended against where it started (lower, flat or higher)
-  and the flat band, served once on the block; whether the run ended after a later
-  meal outside the block's hours; the weight the fit gave it; the total correction
-  insulin its ledger counted, summed once on the server.
+  — *printed*, in the run's hover and keyboard readout — and the flat band's value,
+  served once on the block — *served only*; whether the run ended after a later
+  meal outside the block's hours — *served only* (the panel prints the block's
+  count); the weight the fit gave it — *printed*, as the dot's size; the total
+  correction insulin its ledger counted, summed once on the server — *printed*, in
+  the readout; its side of the programmed ratio and its in-block members — *served
+  only*.
 - **Per block:** how its counted runs ended (lower, flat, higher, unread for a
   counted run with no outcome read — every run of a block pooling the no-outcome
-  fallback — after a later meal, of how many); the block's asserted direction (raise, lower, or none); the
-  recommendation with its rule, whose value and reason sentence are served only
-  when the block asserts a move and are null on a hold, so the tile draws no
-  recommended rule for a block that recommends nothing; the side's direction
-  beside the side counts.
+  fallback — after a later meal, of how many) — *printed*, on the run-ends line;
+  the block's asserted direction (raise, lower, or none) — *printed*, as the
+  captions and the looser-ratio clause; the recommendation with its rule, whose
+  value and reason sentence are served only when the block asserts a move and are
+  null on a hold, so the tile draws no recommended rule for a block that
+  recommends nothing — the value and sentence *printed*, the rule's name *served
+  only*; the side's direction beside the side counts — *printed*.
 - **Per meal:** peak and nadir with their minutes after the bolus, the plain
   outcome, minutes to the run's next bolus, the peak before that next bolus, and
-  whether the meal is on a counted run; on the tally, the band, the length of the
-  post-meal window every meal was read over, and the counts of meals on counted
-  runs that peaked above the band before the next bolus and anywhere in the window.
+  whether the meal is on a counted run — *served only*; on the tally, the band and
+  the length of the post-meal window every meal was read over — *printed* — the
+  counts of meals on counted runs that peaked above the band before the next bolus
+  and anywhere in the window, over the meals on counted runs — *printed*, on the
+  meals line — and the tally's other counts (above, below, both, in range, unread,
+  of how many) — *served only*.
 - **Per low:** the run its bolus belongs to, its group (counted run, uncounted run,
-  not one of these meals), its minutes after the bolus and that bolus's carbs; on
-  the harm row, the group counts and their total, the minutes range, and the
-  bearing sentence.
+  not one of these meals) and its minutes after the bolus — *printed*, on its
+  roster row — and that bolus's carbs — *served only*; on the harm row, the group
+  counts and their total, the minutes range and the bearing sentence — *printed* —
+  and the median minutes and the distinct counted-run count — *served only*.
+- **Run series:** the CGM series over the analyzer-owned bounds — *served only*
+  beyond the tile's check that the block has data to draw.
 - **Sensor gaps.** A store reading with no glucose value is dropped once, where
   the preparation slices every meal and run window, so no window holds one; a meal
   window holding only a gap reads as unread.
+
+The served-only facts are the payload's explainability contract, not the
+surface's. The http-api requirement names them and the projection refuses a
+payload without them. They are read through the API, and by the replay where a
+story's premise needs one, but the settled surface prints only the subset marked
+printed above: each meal's own reading, the tally's other counts, the flat band's
+value, the median delay, the distinct-runs count, each low's bolus carbs, the
+recommendation's rule name, each run's side, in-block members and later-meal flag,
+and the run series beyond its has-data check are served and not printed.
 
 The frontend prints these facts and derives none of them: no count, side, end
 class, group, band, threshold, direction or sentence is formed on the client. The

@@ -67,6 +67,10 @@ implemented and verified, never attempted; the coordinator ticks.
   `counts.ran_high ≥ 1`, `counts.ran_low ≥ 1` and a sentence naming the chain-end
   read; a second test pins that a meal the Pattern credits to `late_bolus` is
   `ran-high` here too (one definition); on main `outcomes` is absent.
+  Superseded in execution: the tally shipped as each block-hours meal's plain
+  reading against the band with no served `sentence`, and with the 90-day exposure
+  pass gone there was no warm-up cost left to measure (design.md, ADR 464 — The
+  outcome tally reads each meal plainly against the band).
 - [x] 4. **Serve the harm evidence.** On `evidence.harm_evidence`: the block's
   `harm` dict (`arm`, `gated`, `nudged`, `arm_days`, `row_days`, `lows` — each low
   with `t`, `bg`, `dominant_bolus_t`, `attribution_reason`) and the guidance
@@ -113,6 +117,10 @@ implemented and verified, never attempted; the coordinator ticks.
   `mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json`; `--check`
   green; `tests/test_synthetic_fixture_shapes.py` and `tests/test_ic_block_evidence.py`
   cover the v2 shape through `TestClient` on the endpoint.
+  Superseded in execution: no `meal_comparison` projection shipped; the v2
+  payload carries each meal's plain reading and the tally instead, because the
+  pooled meal comparison left with the credited claims (design.md, ADR 464 — The
+  outcome tally reads each meal plainly against the band).
 - [x] 6. **A manufactured QA case for the browser.** Add `QaCase("ic-block-evidence")`
   to `scripts/qa_e2e_cases.py` (recipe first, per AGENTS.md "Maintaining QA coverage
   eras"): two programmed carb-ratio blocks; chained runs shared across them;
@@ -188,6 +196,11 @@ implemented and verified, never attempted; the coordinator ticks.
   Found at verification: the fixed PR smoke slice must reach every replay case
   and did not reach `ic-block-evidence`, so S201 (the panel story) joins
   `SMOKE_STORIES`, with its pinned count and digest, in the same change.
+  Superseded in execution: the stories shipped as S197–S207 for the settled one
+  view and panel — no By meal, run roster or ledger-row story — with S207 the
+  CHANGED record (design.md, ADR 464 — The block's one view: the ratio strip over
+  the run timeline, and ADR 464 — Why this move is four sentences, then the case
+  against, then the lows).
 - [x] 17. **Replay on the built app, and run the hand-listed browser suites.**
   `npm ci && npm run build`; the QA copy-then-serve command with `--no-fetch
   --token ''` on the `ic-block-evidence` case store emitted by
@@ -207,6 +220,10 @@ implemented and verified, never attempted; the coordinator ticks.
   of the three views at both viewports from the base worktree and the revision,
   after console, request, accessibility and overflow checks pass, retained under
   `evidence/`. No real data; no snapshot-derived value.
+  Superseded in execution: the revision has one view, so the renders are the
+  desk, the opened block, its one-view tile and its panel at both viewports
+  (design.md, ADR 464 — The block's one view: the ratio strip over the run
+  timeline; evidence/README.md, Renders).
 - [x] 19. **Design record.** `DESIGN.md` gains a `### #464 carb-ratio block evidence
   amendment` appended after the `### #404 desk revise amendment` section (past
   the scan's pinned acknowledgements at `DESIGN.md:163`, `:181`, `:183`, which

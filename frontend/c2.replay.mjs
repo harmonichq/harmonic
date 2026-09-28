@@ -29,9 +29,17 @@ export async function waitForCharts(page) {
   await page.locator('#chart canvas').first().waitFor({ timeout: 30000 });
   await page.waitForFunction(() => {
     const tiles = [...document.querySelectorAll('#tile-field .evidence-tile')];
-    return tiles.length > 0 && tiles.every(tile =>
+    if (!(tiles.length > 0 && tiles.every(tile =>
       !/Loading evidence/.test(tile.querySelector('.tile-state')?.textContent || '')
-      && (tile.dataset.state !== 'ok' || tile.querySelector('canvas')));
+      && (tile.dataset.state !== 'ok' || tile.querySelector('canvas'))))) return false;
+    // A queue row's mini mounts its canvas when its own evidence lands, after
+    // the tile field has settled (#464 made the carb-ratio row's mini wait on
+    // the block-evidence fetch). A canvas count sampled before that mount
+    // reads one short, so "charts are up" includes every mini: mounted, or
+    // settled as a state word, or dropped by the row.
+    const minis = [...document.querySelectorAll('[data-v2-diagnose] .qrow .mini')];
+    return minis.every(mini => mini.querySelector('canvas')
+      || (mini.classList.contains('tile-state') && !/Loading evidence/.test(mini.textContent || '')));
   }, null, { timeout: 30000 });
 }
 

@@ -883,7 +883,9 @@ function isfOption(mode, { data, mini = false } = {}) {
 
 /* THE BLOCK READ ALOUD (#464): the served counts only — the counted runs, how
    many of them count whole and how much carb-share credit the shared ones add,
-   and the listed lows by their served group. */
+   and the listed lows by their served group — then the block's served state,
+   so a block still collecting or below its floor is never read as a
+   measured one. */
 const LOW_GROUP_WORDS = Object.freeze([
   ['counted_run', 'on counted runs'],
   ['uncounted_run', 'on runs not counted'],
@@ -895,7 +897,8 @@ function carbRatioDescription(data) {
   const groups = data?.harm_evidence?.groups || {};
   return `${block.run_ends?.n ?? 0} counted meal runs: ${detail.whole_runs ?? 0} counted whole, `
     + `${detail.fractional_run_ownership ?? 0} runs' worth counted by carb share; listed lows: `
-    + `${LOW_GROUP_WORDS.map(([key, words]) => `${groups[key] ?? 0} ${words}`).join(', ')}.`;
+    + `${LOW_GROUP_WORDS.map(([key, words]) => `${groups[key] ?? 0} ${words}`).join(', ')}.`
+    + (block.state ? ` Block state: ${block.state}.` : '');
 }
 
 /* A run's hover, line for line in the settled words: when, how many meals, the
@@ -986,7 +989,12 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
    sentence, no per-meal mark, no tint. The lanes split the seat 40/60 by its
    measured height. */
 const CARB_RATIO_TILE = Object.freeze({ height: 459, laneA: .4, labels: 44, axis: 44 });
+/* A KEY IS FILLED OR HOLLOW AS ITS MARK IS. ECharts' own `empty*` legend icons
+   fill with a hard-coded white, so a hollow key is an outline path — a second,
+   reversed subpath cuts the hole — filled with the mark's own ink. */
 const DOWN_TRIANGLE = 'path://M0,0L10,0L5,9Z';
+const HOLLOW_DOWN_TRIANGLE = 'path://M0,0L10,0L5,9Z M2.6,1.4L5,5.8L7.4,1.4Z';
+const RING = 'path://M5,0A5,5 0 1,1 5,10A5,5 0 1,1 5,0Z M5,1.5A3.5,3.5 0 1,0 5,8.5A3.5,3.5 0 1,0 5,1.5Z';
 const DAY_MS = 864e5;
 function carbRatioOption(_mode, {
   data, mini = false, surface = null, selectedRunId = null, onSelectRun = null,
@@ -1076,21 +1084,22 @@ function carbRatioOption(_mode, {
         t: byRun.get(runId).t })) : []))
       .sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0)),
   });
+  const key = (name, icon, ink) => ({ name, icon, itemStyle: { color: ink, borderWidth: 0 } });
   const glucoseSpan = [Math.min(40, ...glucose.map((value) => Math.floor(value / 20) * 20)),
     Math.max(300, ...glucose.map((value) => Math.ceil(value / 20) * 20))];
   return {
     ...chartBase(description, false, colors),
     grid: [gridA, gridB],
     legend: [
-      { ...legendChips([{ name: 'whole run', icon: 'circle' },
-        { name: 'counted by share', icon: 'circle' }], colors),
+      { ...legendChips([key('whole run', 'circle', colors.text),
+        key('counted by share', RING, colors.text)], colors),
       left: GRID.left, top: gridA.top + gridA.height + 24,
       formatter: (name) => (name === 'counted by share'
         ? `${name} · size = carbs counted · hover a dot for the insulin behind its ratio` : name) },
-      { ...legendChips([{ name: 'at the bolus', icon: 'circle' },
-        { name: 'where the run ended', icon: 'circle' },
-        { name: 'listed low', icon: DOWN_TRIANGLE },
-        { name: 'on a run not counted', icon: DOWN_TRIANGLE }], colors),
+      { ...legendChips([key('at the bolus', RING, colors.text),
+        key('where the run ended', 'circle', colors.text),
+        key('listed low', DOWN_TRIANGLE, colors.low),
+        key('on a run not counted', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
       left: GRID.left, top: laneB + 6 },
     ],
     /* A dot, a stem or its markers read out their run; a ▼ reads out its low. */

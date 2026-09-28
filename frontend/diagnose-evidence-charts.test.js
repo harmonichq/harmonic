@@ -1981,7 +1981,61 @@ test('#464 · the tile reads aloud only the counts the block serves', () => {
     `${ends.n} counted meal runs: ${detail.whole_runs} counted whole, `
     + `${detail.fractional_run_ownership} runs' worth counted by carb share; listed lows: `
     + `${groups.counted_run} on counted runs, ${groups.uncounted_run} on runs not counted, `
-    + `${groups.not_a_meal_run} after a bolus that is not one of these meals.`);
+    + `${groups.not_a_meal_run} after a bolus that is not one of these meals. `
+    + `Block state: ${data.block.state}.`);
+});
+
+/* A block that is not measured yet still draws the runs it serves, but draws
+   no recommendation it was not served, and says which state it is in. */
+test('#464 · a block not in the numeric state names its served state and draws no unserved recommendation', () => {
+  const cases = icCases();
+  for (const name of ['below_floor', 'all_rejected']) {
+    const data = cases[name];
+    assert.notEqual(data.block.state, 'numeric', `premise: ${name} is not numeric`);
+    const option = overview(data);
+    assert.match(option.aria.description, new RegExp(` Block state: ${data.block.state}\\.$`));
+    const served = data.block.recommendation.value;
+    const rules = byId(option, 'ic:rules').markLine.data.map(({ name: rule }) => rule);
+    assert.equal(rules.includes('recommended'), Number.isFinite(served),
+      `${name} draws a recommended rule only when one is served`);
+    const axis = option.xAxis[0];
+    const cs = { x: 34, y: 44, width: 900, height: 100 };
+    const labels = byId(option, 'ic:rule-labels').renderItem({ coordSys: cs, dataIndex: 0 }, {
+      coord: ([value, y]) => [cs.x + (value - axis.min) / (axis.max - axis.min) * cs.width, y],
+    }).children.map(({ style }) => style.text);
+    assert.equal(labels.some((text) => text.startsWith('recommended')), Number.isFinite(served),
+      `${name} labels a recommendation only when one is served`);
+    assert.equal(byId(option, 'ic:dots:whole').data.length + byId(option, 'ic:dots:share').data.length,
+      countedRuns(data).length, `${name} still draws its served counted runs`);
+  }
+  assert.equal(cases.all_rejected.block.recommendation.value, null,
+    'premise: one case serves no recommendation');
+});
+
+/* The keys are filled or hollow as their marks are, never ECharts' `empty*`
+   icons, which fill with a hard-coded white; a hollow key is an outline path
+   filled with its mark's ink. */
+test('#464 · each legend key is filled or hollow as its mark is', () => {
+  const option = overview(icCases().explained);
+  const keys = Object.fromEntries(option.legend.flatMap(({ data }) => data)
+    .map(({ name, icon, itemStyle }) => [name, { icon, ink: itemStyle.color }]));
+  const hollow = ['counted by share', 'at the bolus', 'on a run not counted'];
+  const filled = ['whole run', 'where the run ended', 'listed low'];
+  for (const [solid, open] of [['whole run', 'counted by share'], ['where the run ended', 'at the bolus'],
+    ['listed low', 'on a run not counted']]) {
+    assert.notEqual(keys[solid].icon, keys[open].icon, `${solid} and ${open} key differently`);
+  }
+  assert.ok(hollow.every((name) => keys[name].icon.startsWith('path://')
+    && keys[name].icon.match(/M/g).length === 2), 'a hollow key is an outline path with its hole cut');
+  assert.ok(filled.every((name) => !/M.*M/.test(keys[name].icon)), 'a filled key has no hole');
+  assert.ok(Object.values(keys).every(({ icon }) => !icon.startsWith('empty')));
+  assert.equal(keys['counted by share'].icon, keys['at the bolus'].icon, 'one ring glyph');
+  const series = Object.fromEntries(option.series.map((item) => [item.name, item]));
+  for (const [name, { ink }] of Object.entries(keys)) {
+    const style = series[name].itemStyle;
+    assert.equal(ink, hollow.includes(name) ? style.borderColor : style.color,
+      `${name} keys in its mark's ink`);
+  }
 });
 
 test('#464 · the thumbnail and the queue-row mini draw the ratio strip alone', () => {

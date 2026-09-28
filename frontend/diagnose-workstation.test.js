@@ -899,12 +899,41 @@ test('#464 · the recommendation and lows-bearing sentences leave when served nu
   });
 });
 
-test('#464 · a block with no served side, counted run or low prints only the mechanism line', () => {
+test('#464 · a collecting or below-floor block keeps the numbers block and gains no section', () => {
   withRosterDocument(() => {
-    const text = icPanelText(renderIcPanel(icCapture.all_rejected));
-    assert.equal((text.match(/class="lvl-cap"/g) || []).length, 1);
-    assert.equal((text.match(/class="slot-stats"/g) || []).length, 1);
-    assert.match(text, /The ratio counts all the insulin a run used/);
+    for (const name of ['all_rejected', 'below_floor']) {
+      const evidence = icCapture[name];
+      assert.notEqual(evidence.block.state, 'numeric', `${name} is served unmeasured`);
+      const host = renderIcPanel(evidence);
+      const text = icPanelText(host);
+      assert.equal(host.html.length, 0, `${name} inserts nothing beneath the numbers block`);
+      assert.equal(host.children.length, 1, `${name} appends nothing beneath the numbers block`);
+      assert.doesNotMatch(text, /Why this move|The case against|Lows after|class="slot-stats"/);
+    }
+  });
+});
+
+test('#464 · a payload missing a served fact prints the unavailable line beneath the numbers block', () => {
+  withRosterDocument(() => {
+    for (const drop of [(p) => { delete p.runs; }, (p) => { delete p.harm_evidence.lows; },
+      (p) => { delete p.outcomes.counts; }]) {
+      const evidence = structuredClone(icExplained);
+      drop(evidence);
+      const host = renderIcPanel(evidence);
+      assert.equal(host.children[0].innerHTML, IC_NUMBERS_BLOCK);
+      assert.deepEqual(host.html, ['<div class="empty">Run evidence unavailable.</div>'],
+        'no half-written panel precedes the unavailable line');
+      assert.equal(host.children.length, 1);
+    }
+  });
+});
+
+test('#464 · the lows count prints the served groups\' sum, not the row count', () => {
+  withRosterDocument(() => {
+    const evidence = structuredClone(icExplained);
+    evidence.harm_evidence.groups.not_a_meal_run = 3;
+    const text = icPanelText(renderIcPanel(evidence));
+    assert.ok(text.includes('<div class="slot-stats">5 lows, 3 h 30 min to 3 h 30 min after the bolus;'));
   });
 });
 
@@ -974,6 +1003,8 @@ test('#464 · the breadcrumb counts the served counted runs and meals', () => {
   assert.equal(icBlockCrumbMeta(icBlockCell, icExplained), '24 runs counted · 30 meals');
   assert.equal(icBlockCrumbMeta(icBlockCell, { pending: true }), '18 meal runs · 30 meals',
     'before the payload lands, the shipped analyze count stands');
+  assert.equal(icBlockCrumbMeta(icBlockCell, { ...icExplained, runs: undefined }), '18 meal runs · 30 meals',
+    'a payload missing its runs leaves the analyze count standing rather than throwing');
 });
 
 test('#464 · the block panel states loading and unavailable evidence', () => {

@@ -1106,25 +1106,35 @@ const servedEvidence = (evidence) => Boolean(evidence && !evidence.pending && !e
   && !evidence.stale);
 
 /** The block frame's breadcrumb meta: the served roster's counted rows and the
-    served meal count, or the analyze count that stood before the payload lands. */
+    served meal count, or the analyze count that stood before the payload lands —
+    and that stands too for a payload missing either fact. */
 export function icBlockCrumbMeta(cell, evidence) {
-  if (!servedEvidence(evidence)) return `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
-  const counted = evidence.runs.filter((run) => COUNTED_POOL_REASONS.has(run.pool_reason)).length;
-  return `${counted} runs counted · ${evidence.outcomes.counts.n} meals`;
+  const analyzed = `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
+  if (!servedEvidence(evidence)) return analyzed;
+  try {
+    const counted = evidence.runs.filter((run) => COUNTED_POOL_REASONS.has(run.pool_reason)).length;
+    return `${counted} runs counted · ${evidence.outcomes.counts.n} meals`;
+  } catch {
+    return analyzed;
+  }
 }
 
 /** Below the numbers block: "Why this move", "The case against" and the lows,
     each a `.lvl-cap` over one-sentence lines. A line whose served facts are null
-    or empty is left out rather than printed with a hole. */
-function renderIcBlockEvidence(host, evidence, options) {
+    or empty is left out rather than printed with a hole.
+
+    The payload crosses a process boundary, so this READS every served field
+    first and writes nothing until all of it has been read: a payload missing a
+    fact throws here, before any markup, and the caller prints its unavailable
+    line beneath an intact numbers block rather than half a panel. */
+function readIcBlockEvidence(evidence, options) {
   const { block, outcomes, harm_evidence: harm, runs } = evidence;
   const lines = (items) => `<div class="inner">${items.filter(Boolean)
     .map((line) => `<div class="slot-stats">${line}</div>`).join('')}</div>`;
   const noun = block.label.toLowerCase();
   const ends = block.run_ends;
   const blockEnd = block.end_min === 1440 ? '24:00' : hhmm(block.end_min);
-  host.insertAdjacentHTML('beforeend', '<div class="lvl-cap">Why this move</div>');
-  host.insertAdjacentHTML('beforeend', lines([
+  const markup = ['<div class="lvl-cap">Why this move</div>', lines([
     // The side is served only when the estimate's range leaves the programmed value out.
     block.side.direction && `${block.side.side_k} of ${block.side.side_n} counted runs measured `
       + `${SIDE_WORD[block.side.direction]} than ${u(block.current)} g/U; the estimate's range `
@@ -1133,12 +1143,11 @@ function renderIcBlockEvidence(host, evidence, options) {
     ends.n > 0 && `For ${ends.after_later_meal} of ${ends.n} runs that end came after a later meal `
       + `past ${blockEnd}; there ${ends.lower} ended lower, ${ends.flat} about flat, ${ends.higher} higher.`,
     block.recommendation.sentence,
-  ]));
+  ])];
 
   const counts = outcomes.counts;
   if (counts.meals_on_counted_runs > 0) {
-    host.insertAdjacentHTML('beforeend', '<div class="lvl-cap">The case against</div>');
-    host.insertAdjacentHTML('beforeend', lines([
+    markup.push('<div class="lvl-cap">The case against</div>', lines([
       `${counts.peaked_above_high_before_next} of the ${counts.meals_on_counted_runs} ${noun} meals on `
         + `counted runs peaked above ${outcomes.band.high} before their next bolus `
         + `(${counts.peaked_above_high_in_window} counting later meals within 5 h 15 min)`
@@ -1147,16 +1156,8 @@ function renderIcBlockEvidence(host, evidence, options) {
   }
 
   const lows = harm.lows;
-  if (!lows.length) return;
-  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Lows after ${noun} boluses</div>`);
-  const bearing = harm.bearing_sentence;
-  host.insertAdjacentHTML('beforeend', lines([
-    `${lows.length} low${lows.length === 1 ? '' : 's'}, ${fmtMinutes(harm.minutes_after_bolus_min)} to `
-      + `${fmtMinutes(harm.minutes_after_bolus_max)} after the bolus`
-      + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`,
-  ]));
   const runRatio = new Map(runs.map((run) => [run.run_id, run.true_ic]));
-  renderOccurrenceRoster(host, LOW_GROUPS.map(([group, countKey, label]) => {
+  const groups = LOW_GROUPS.map(([group, countKey, label]) => {
     const rows = lows.filter((low) => low.group === group);
     return {
       header: `<div class="ev-group"><b>${label}</b><span class="n"> · ${harm.groups[countKey]}</span></div>`,
@@ -1172,13 +1173,30 @@ function renderIcBlockEvidence(host, evidence, options) {
           + `${runRatio.has(low.run_id) ? ` · run ${u(runRatio.get(low.run_id))} g/U` : ''}</span>`,
       })),
     };
-  }).filter((group) => group.servedCount > 0), {
+  }).filter((group) => group.servedCount > 0);
+  if (lows.length) {
+    // The count is the served groups' own, not a length of the rows below it.
+    const total = LOW_GROUPS.reduce((sum, [, countKey]) => sum + harm.groups[countKey], 0);
+    const bearing = harm.bearing_sentence;
+    markup.push(`<div class="lvl-cap">Lows after ${noun} boluses</div>`, lines([
+      `${total} low${total === 1 ? '' : 's'}, ${fmtMinutes(harm.minutes_after_bolus_min)} to `
+        + `${fmtMinutes(harm.minutes_after_bolus_max)} after the bolus`
+        + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`,
+    ]));
+  }
+  const runOfLow = new Map(lows.map((low) => [low.t, low.run_id]));
+  return { markup, groups, runOfLow };
+}
+
+function renderIcBlockEvidence(host, { markup, groups, runOfLow }, options) {
+  for (const html of markup) host.insertAdjacentHTML('beforeend', html);
+  renderOccurrenceRoster(host, groups, {
     selectedId: null, shownCount: Infinity, cap: Infinity,
     // An Occurrence opens Day at its own moment, ringed (CONTEXT.md, Occurrence).
     onSelect: (id) => options.onDay?.({ t: id, cause_lever: 'carb_ratio' }),
     onMore: () => {},
     onPreview: (id) => {
-      const runId = lows.find((low) => low.t === id).run_id;
+      const runId = runOfLow.get(id);
       if (runId) options.onPreviewRun?.(runId);
     },
   });
@@ -1246,11 +1264,20 @@ export function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, opti
     host.insertAdjacentHTML('beforeend', '<div class="empty" aria-busy="true">Loading run evidence…</div>');
     return;
   }
-  if (!servedEvidence(evidence)) {
-    host.insertAdjacentHTML('beforeend', '<div class="empty">Run evidence unavailable.</div>');
+  const unavailable = () => host.insertAdjacentHTML('beforeend',
+    '<div class="empty">Run evidence unavailable.</div>');
+  if (!servedEvidence(evidence)) { unavailable(); return; }
+  let panel;
+  try {
+    // A block the analyzer did not measure (collecting, below the floor) is
+    // Unsupported: it keeps the numbers block and gains no section.
+    if (evidence.block.state !== 'numeric') return;
+    panel = readIcBlockEvidence(evidence, options);
+  } catch {
+    unavailable();
     return;
   }
-  renderIcBlockEvidence(host, evidence, options);
+  renderIcBlockEvidence(host, panel, options);
 }
 
 /**

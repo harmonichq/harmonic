@@ -4,7 +4,7 @@ Positional numbering is the lock's authority. Chunk 1 owns 1–5, chunk 2 owns
 6–7, chunk 3 owns 8–11, chunk 4 owns 12–15, chunk 5 owns 16–19. A ticked box means
 implemented and verified, never attempted; the coordinator ticks.
 
-- [ ] 1. **Serve why each run is or is not in the estimate.** The shared block
+- [x] 1. **Serve why each run is or is not in the estimate.** The shared block
   stamper (`_analyze_ic_blocks_shared`, `ciq_autotune/analyzers/ic.py`) records
   on every run row of `evidence.runs` one `pool_reason` from the closed set
   `counted-whole`, `counted-by-share`, `directional-only`, `prior-action-not-separable`,
@@ -23,7 +23,7 @@ implemented and verified, never attempted; the coordinator ticks.
   `pool_reason` is `no-outcome-read` and `directional_only` is `False`; on main it
   fails because no reason is served. A second test: a chained run dosed across two
   blocks serves `counted-by-share` on both blocks with `ownership` summing to 1.
-- [ ] 2. **Serve the block's balance sheet.** On `evidence.ledger`: over the pooled
+- [x] 2. **Serve the block's balance sheet.** On `evidence.ledger`: over the pooled
   runs, ownership-weighted sums of `carbs_covered`, `meal_dose`,
   `post_correction_user`, `post_correction_ciq`, `post_correction_unknown`,
   `ciq_basal_delta_acted_u`, `bg_outcome_u`, `rescue_carbs`, plus
@@ -33,8 +33,9 @@ implemented and verified, never attempted; the coordinator ticks.
   sheet). Pytest on analyzer output from N synthetic runs: each served run's
   `true_ic` equals its served `carbs / effective_insulin` to 1e-6, and the block's
   `pooled_ratio` equals the weighted quotient of the served per-run terms.
-- [ ] 3. **Serve the outcome tally and the reconciling sentence — by the Pattern's own
-  credited claims.** "Ran high" for "Highs after meals" is decided by
+- [x] 3. **Serve the outcome tally and the reconciling sentence — by the Pattern's own
+  credited claims.** (as amended by ADR 464 — plain reading; served from the
+  window, not credited claims) "Ran high" for "Highs after meals" is decided by
   `credited_claims(exposures, "meals", rate_levers)` over the `attributed_levers`
   that `build_exposures(store, window_days=…)` (`ciq_autotune/explore_exposures.py`)
   stamps on each meals-family occurrence — a store-level evaluation with the
@@ -66,7 +67,7 @@ implemented and verified, never attempted; the coordinator ticks.
   `counts.ran_high ≥ 1`, `counts.ran_low ≥ 1` and a sentence naming the chain-end
   read; a second test pins that a meal the Pattern credits to `late_bolus` is
   `ran-high` here too (one definition); on main `outcomes` is absent.
-- [ ] 4. **Serve the harm evidence.** On `evidence.harm_evidence`: the block's
+- [x] 4. **Serve the harm evidence.** On `evidence.harm_evidence`: the block's
   `harm` dict (`arm`, `gated`, `nudged`, `arm_days`, `row_days`, `lows` — each low
   with `t`, `bg`, `dominant_bolus_t`, `attribution_reason`) and the guidance
   `seriousness` the analyzer stamps on the block, copied verbatim, plus
@@ -76,7 +77,7 @@ implemented and verified, never attempted; the coordinator ticks.
   rows' header, never beside the outcome counts). Pytest: a block with two
   attributed lows on separate days serves both rows, `row_days == 2` and the
   median of their two offsets.
-- [ ] 5. **Project it, bump the schema, regenerate the fixture.**
+- [x] 5. **Project it, bump the schema, regenerate the fixture.**
   `prepare_ic_block_evidence` / `project` (`ciq_autotune/ic_block_evidence.py`)
   copy through: `block.current`, `block.estimate` (`value`, `lo`, `hi`, `wide`),
   `block.side` (`side_k`, `side_n` from `recurrence_channels`), `block.support_detail`
@@ -112,7 +113,7 @@ implemented and verified, never attempted; the coordinator ticks.
   `mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json`; `--check`
   green; `tests/test_synthetic_fixture_shapes.py` and `tests/test_ic_block_evidence.py`
   cover the v2 shape through `TestClient` on the endpoint.
-- [ ] 6. **A manufactured QA case for the browser.** Add `QaCase("ic-block-evidence")`
+- [x] 6. **A manufactured QA case for the browser.** Add `QaCase("ic-block-evidence")`
   to `scripts/qa_e2e_cases.py` (recipe first, per AGENTS.md "Maintaining QA coverage
   eras"): two programmed carb-ratio blocks; chained runs shared across them;
   excluded runs of every served reason; one pooled chain that spikes then prints
@@ -120,102 +121,41 @@ implemented and verified, never attempted; the coordinator ticks.
   raise. Materialize, `execute_case`, and copy the complete serialized dumps into
   literal `QaExpectation` values — never derived at assertion time. The
   catalog-generated `test_case_ic_block_evidence` passes.
-- [ ] 7. **Budgets and drift.** `uv run python scripts/gen_qa_e2e_db.py --check` green;
+- [x] 7. **Budgets and drift.** `uv run python scripts/gen_qa_e2e_db.py --check` green;
   the committed showcase is unchanged (`git diff --stat -- mockups/qa-e2e.synthetic`
   empty); all five budgets re-measured without raising a limit and recorded in this
   change's `coverage-appendix.md`; a breach stops the work.
-- [ ] 8. **By meal is the tile's default view.** In
-  `frontend/diagnose-evidence-charts.js` the carb-ratio entry's `modes` become
-  `['meal', 'runs', 'clock']` (`diagnose-canvas-layout.js` reads `modes[0]` as the
-  default). The `meal` option draws the served `meal_comparison` projection
-  through a new named export of `frontend/diagnose-event-comparison.js`,
-  `comparisonProjectionOption(projection, range, surface, mini, selected = null)`,
-  extracted from the module's private `option()` (which reads only
-  `caseFile.projection`); `eventComparisonChartOption` keeps `assertEventCaseFile`
-  and delegates to it, so the case-file path and its tests are unchanged and the
-  guard's fate is: untouched. The module's closed `STYLE` map (`matched`,
-  `nearly_matched`, `comparison`) gains three entries this sub-order owns —
-  `ran-high` → `--ec-matched` solid, `ran-low` → `--ec-nearly-matched` dashed,
-  `in-range` → `--ec-comparison` dotted — reusing the existing tokens, no new
-  colour, so the series helpers' unguarded `STYLE[cohort.key]` reads resolve; the
-  series helpers read the served `median` / `p25` / `p75` and `cohort.name`
-  exactly as they do for a case file. The tile mounts the ECharts option in its
-  own element as every other kind does; `renderEventSurface`'s `ec-*` ids are not
-  involved. The key prints each cohort's served `name` and `routed_count` — the
-  cohort's tally count, since every non-`unread` meal is traced — never
-  `usable_count` (a traced meal whose window falls in a CGM gap is routed but not
-  usable, so the two diverge), plus the served `unread` count; a cohort whose
-  served `support` is `withheld` draws no series and its key entry says so
-  ("not drawn"). Failing-first node test through the registry:
-  `option('meal')` on the v2 fixture yields the served cohorts as named series
-  with point counts equal to the served cohort sizes, and
-  `eventComparisonChartOption` still throws on a non-case-file input; on main the
-  mode does not exist.
-- [ ] 9. **Runs replaces the chain overlay.** New module `frontend/diagnose-run-strips.js`
-  (+ `.test.js`, + `frontend/diagnose-run-strips.css` imported where the
-  comparison chart's stylesheet is) renders the `runs` option: one row per served
-  run, sorted by served `true_ic`, pooled runs first, excluded runs after and
-  dimmed, each carrying its served `pool_reason` in reader words (one fixed map in
-  the module, the same shape ADR 434 used for excluded nights). Each strip: the
-  run's CGM series from the block-hours meal onward in hours; the block-hours meal
-  a filled marker and later chain meals open markers; served lows (`harm_evidence.lows`
-  whose `dominant_bolus_t` is a member) and points above 180 marked; correction
-  ticks from the run's `post_correction_*` terms at their member offsets; at the
-  row's edge the balance sheet (bolus · corrections · basal Δ · glucose travel →
-  ratio) against the programmed value. The x-axis `min`/`max` are the served
-  bounds. Hover and keyboard (Up/Down between strips, Left/Right along one) show a
-  readout naming the run's start, meals, ratio and reason. Selection: the option
-  takes `selectedRunId` and calls `onSelectRun(run_id)`; this is the
-  **strip-selection contract** the panel consumes (chunk 4). Failing-first node
-  tests: strip order equals served-ratio order with pooled first; a run with
-  `pool_reason: no-outcome-read` is dimmed and never in a series named
-  "Directional-only run"; `xAxis.min` equals the lowest served `cgm_start_min`.
-- [ ] 10. **By clock shows the claim against the programmed ratio.** The `clock`
-  option draws the served `current` as a rule, the served estimate band as a
-  shaded span, each run's ratio at its meal start with its served `side`, and
-  shared runs (`counted-by-share`) with a distinct marker sized by `ownership`. The
-  key names each. Change `frontend/diagnose-evidence-charts.test.js` at the
-  "feed-only forms do not invent unavailable … values" test so it asserts the
-  served values are drawn as served instead of asserting their absence.
-- [ ] 11. **Every key, description and thumbnail names what is drawn.** No series
-  is named "Directional-only run" unless every member run is `directional-only`;
-  the aria description names the served counts per population (pooled, shared,
-  excluded, meals in hours); the thumbnail reads the served counts;
-  `frontend/diagnose-canvas-layout.test.js` pins the three modes. Node tests.
-- [ ] 12. **The panel says what the verdict is measured over.** In
-  `renderIcBlockLevel` (`frontend/diagnose-workstation.js`) a scope line in the
-  correction factor panel's measured-in idiom: the ledger closes at the end of
-  each meal chain, not five hours after the meal; `whole_runs` whole runs and
-  `fractional_run_ownership` from runs shared with the neighbouring block make the
-  `effective_run_count`; the support line links the glossary's Meal run entry.
-  Served facts only; the panel composes no count.
-- [ ] 13. **The panel shows the ledger, the tally, the sentence and the lows.**
-  Beneath the numbers-and-staging block, which stays byte-identical: the served
-  balance sheet as one labelled row of terms with `pooled_ratio` beside the
-  fitted estimate; the served outcome `counts` as a count sentence in the queue's
-  `n of d noun outcome` form; the served
-  `sentence` verbatim; the attributed lows as rows through the shared
-  occurrence-roster mechanism (`frontend/occurrence-roster.js`), one per served
-  low printing its date and time and minutes after its bolus, each opening Day at
-  that moment with it ringed, headed by the served `seriousness` word, whether the harm arm gated or nudged
-  this block, and the served `minutes_after_bolus_median` ("typically N min after
-  the bolus"). Loading and failure states use the
-  inspector's shipped `.empty` line ("Loading run evidence…", "Run evidence
-  unavailable."); nothing renders from a payload not received.
-- [ ] 14. **The run roster, and the Day hop from both entry paths.** Through the
-  same roster mechanism: groups `Counted whole`, `Counted by share`, then one group
-  per served exclusion reason in reader words, each header with its served count;
-  one button row per run printing start day and time, meals in the run, carbs,
-  effective insulin, measured ratio and (shared runs) ownership; the five-row cap
-  and show-more honoured with expand state on the block frame; selecting a row
-  sets `selectedRunId` on the strips option and selecting a strip presses the row
-  (the strip-selection contract, chunk 3); the selected run's detail block
-  carries "Clear" and "Open in Day", landing on Day at the run's first meal with
-  it ringed. The block frame publishes a subject derived from the block itself so
-  the Day callback also navigates when the block was opened from the case head's
-  "View segment" (`frontend/diagnose.js` navigates only on a published subject).
-  Node tests on `renderIcBlockLevel` and on the frame's subject.
-- [ ] 15. **Define meal run for the reader, and keep the two guards that read
+- [x] 8. Replaced by the settled design (design.md, ADR 464 — The block's one view:
+  the ratio strip over the run timeline): the tile opens on its one view with no
+  toggle, and the ratio strip draws each counted run at its measured ratio, sized
+  by its fit weight, whole runs filled and shared runs ringed.
+- [x] 9. Replaced by the settled design (design.md, ADR 464 — The block's one view:
+  the ratio strip over the run timeline): the run timeline draws each counted run
+  from the glucose at its bolus to where it ended, with the listed lows as
+  triangles; a run's hover reads out its ledger terms and how it ended; click and
+  arrow keys select a run, ringed on both lanes.
+- [x] 10. Replaced by the settled design (design.md, ADR 464 — The block's one view:
+  the ratio strip over the run timeline): the programmed, recommended and
+  estimated ratios are labelled rules on the ratio strip, with the estimate's
+  range as a faint band.
+- [x] 11. Replaced by the settled design (design.md, ADR 464 — The block's one view:
+  the ratio strip over the run timeline): each lane's key names only its marks,
+  filled or hollow as drawn; the read-aloud text ends with the block's served
+  state; the thumbnail and the queue row's mini draw the ratio strip alone.
+- [x] 12. Replaced by the settled design (design.md, ADR 464 — Why this move is four
+  sentences, then the case against, then the lows): "Why this move" prints the
+  served side, the fixed mechanism sentence, where the counted runs ended, and
+  the served recommendation reason.
+- [x] 13. Replaced by the settled design (design.md, ADR 464 — Why this move is four
+  sentences, then the case against, then the lows): "The case against" prints the
+  served peaks before the next bolus, the lows print as one served population in
+  three groups, and the loading and unavailable lines stand beneath an intact
+  numbers block.
+- [x] 14. Replaced by the settled design (design.md, ADR 464 — Why this move is four
+  sentences, then the case against, then the lows): each low opens Day at its own
+  moment, ringed, from a queue row and from View segment alike; hovering a low
+  selects its run on the tile; no run roster is on the panel.
+- [x] 15. **Define meal run for the reader, and keep the two guards that read
   these files green.** `frontend/glossary.js` I:C group gains Meal run (what it
   is, why several meals form one), Support (whole runs plus carb-share credit
   toward the eight-run floor), Directional-only, and Chain-end read; `CONTEXT.md`

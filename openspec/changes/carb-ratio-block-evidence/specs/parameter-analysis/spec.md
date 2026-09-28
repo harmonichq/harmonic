@@ -8,12 +8,19 @@ Every run on a block's published roster carries one pool reason from a closed se
 — counted whole, counted by carb share, directional-only, prior-meal action not
 separable, dosed under an earlier ratio or an uncurrent chain, no outcome read —
 chosen by the fit that built the pool, together with its side of the programmed
-ratio and the ledger terms that produced its ratio: member boluses, post-meal
+ratio, the ledger terms that produced its ratio (member boluses, post-meal
 corrections by provenance, the acted Control-IQ basal delta, the glucose-travel
-insulin and attributed rescue carbs. The block publishes its whole-run count, its
-fractional carb-share ownership and their effective sum, and a carb-share-weighted
-pooled balance sheet whose quotient is published beside, and labelled distinctly
-from, the fitted estimate. No consumer reconstructs a reason, a side, a term or a
+insulin and attributed rescue carbs), which of its members were dosed in the
+block's hours, the weight the fit gave it, how it ended against where it started
+(lower, flat or higher, by a flat band published once on the block), and whether
+it ended after a later meal outside the block's hours. The block publishes its
+whole-run count, its fractional carb-share ownership and their effective sum; the
+side's direction beside its side counts; how its counted runs ended; a
+carb-share-weighted pooled balance sheet whose quotient is published beside, and
+labelled distinctly from, the fitted estimate; and its recommendation with the
+analyzer's own rule stated in words — half the gap from the programmed ratio
+toward the estimate, capped when the step cap bound it, rounded to the pump's
+step. No consumer reconstructs a reason, a side, an end, a weight, a term or a
 count from the estimate, the bounds or the run identity.
 
 #### Scenario: A lone meal whose outcome read falls in a CGM gap
@@ -30,28 +37,51 @@ count from the estimate, the bounds or the run identity.
 - **WHEN** its ledger terms are summed as the meal-run ledger defines them
 - **THEN** carbs covered over that sum equals the run's published ratio
 
-### Requirement: A carb-ratio block publishes its meals' outcomes and one reconciling sentence
+#### Scenario: Each counted run's weight is its own
+
+- **GIVEN** N synthetic runs through the shipped estimator
+- **WHEN** the block's roster is published
+- **THEN** each counted run's published fit weight equals the weight the fit gave
+  that same run, and the fit's runs are exactly the counted runs
+
+### Requirement: A carb-ratio block publishes its meals' plain readings and one reconciling sentence
 
 The system SHALL satisfy the following:
 
-For the meals dosed in a block's hours over its fixed span, the block-evidence
-payload publishes each meal's outcome as read by the Pattern roster's own
-credited claims — ran high when credited to a highs-after-meals rate lever, ran
-low when credited to a lows-after-meals rate lever, in range when a meal
-exposure credited to neither, unread when no meal exposure exists — with their
-counts, and one sentence chosen on the server from a closed set on the block's
-asserted direction, the tally's balance and the chain-end read. The projection
-layer publishes these, because it holds the store the exposure feed reads; the
-block stamper publishes neither. The block's harm arm's attributed printed lows,
-gate, nudge, day count and seriousness are published with them, together with
-the median minutes from each low's dominant bolus to the low over exactly those
-lows. The surface prints the sentence verbatim and composes none.
+For each meal dosed in a block's hours, the block-evidence payload publishes the
+meal's own plain reading over its post-meal window, from its bolus to the
+analyzer's post-meal horizon: its peak and nadir with their minutes after the
+bolus, and an outcome — above the band, below it, both, in range, or unread when
+the window holds no reading. It also publishes the minutes to the run's next bolus
+(a bolus under thirty minutes later is the same meal and is skipped), the peak
+before that next bolus, and whether the meal is on a counted run. The band is the
+analyzer's own in-range band, published once. The tally counts those outcomes, the
+meals on counted runs, and how many of those peaked above the band before their
+next bolus and anywhere in their window; one sentence is chosen on the server from
+a closed set on the block's asserted direction and whether more meals went above
+the band than below it. A store reading with no glucose value is dropped once,
+where every window is sliced, so a sensor gap is never read as a glucose value.
+The projection layer publishes the readings and tally, because it holds the store;
+the block stamper publishes neither. The block's harm arm publishes its listed
+lows, gate, nudge, day count and seriousness, and each low's run, its group (on a
+counted run, on a run not counted, or after a bolus that is not one of these
+meals), its minutes after its bolus and that bolus's carbs; the harm row adds the
+group counts, the median, least and greatest minutes after the bolus over exactly
+those lows, and one sentence on how the lows on counted runs bear on the move. The
+surface prints every sentence verbatim and composes none.
 
 #### Scenario: A pooled chain spikes, then prints a low
 
-- **GIVEN** a manufactured block whose pooled chain rises above the target range
-  after its block-hours meal and later prints a low attributed to that meal
+- **GIVEN** a manufactured block whose pooled chain rises above the band after its
+  block-hours meal and later prints a low attributed to that meal
 - **WHEN** the block evidence is published
-- **THEN** its tally counts at least one ran-high and one ran-low meal, its harm
-  evidence lists the low with the median minutes after its bolus, and its
-  sentence names the chain-end read
+- **THEN** its tally counts at least one meal above the band, its harm evidence
+  lists the low on a counted run with its minutes after its bolus, and its sentence
+  names the chain-end read
+
+#### Scenario: A sensor gap is not a reading
+
+- **GIVEN** a meal window holding a store reading with no glucose value
+- **WHEN** the block evidence is prepared
+- **THEN** the preparation succeeds, the gap reading appears in no meal reading and
+  no run series, and a window holding only the gap reads as unread

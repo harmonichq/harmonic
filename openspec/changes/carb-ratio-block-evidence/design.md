@@ -18,10 +18,7 @@
 
 ## ADR 464 — The backend serves the reconciling sentence from a closed set
 
-**Status:** accepted, 2026-09-24 (operator, scope Q4 A). Its tally is amended by
-ADR 464 — The outcome tally reads each meal plainly against the band (2026-09-27):
-the sentence's balance key is now whether more meals went above the band than
-below it.
+**Status:** superseded on 2026-09-27 by "ADR 464 — Why this move is four sentences, then the case against, then the lows": the settled panel prints no reconciling sentence, so the closed sentence set is no longer served; the per-meal plain reading and its counts (ADR 464 — The outcome tally reads each meal plainly against the band) stay served and are what the case-against line prints.
 
 A reader who sees "over-covered" beside a chart on which most meals ran high needs
 the reconciliation in words, and that sentence is chosen on the server, never on

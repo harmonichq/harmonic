@@ -1,0 +1,12 @@
+commit 807fcc7a2cf23904f076aa53b6bb2083966f4d1d
+npm-build exit=0
+pytest exit=0
+node-fast-gate exit=0
+openspec-validate exit=0
+check-adr exit=0
+check-owned exit=0
+check-allowlist exit=0
+public-tree exit=0
+drift-ic-block-evidence exit=0
+drift-qa-e2e exit=0
+drift-demo exit=0

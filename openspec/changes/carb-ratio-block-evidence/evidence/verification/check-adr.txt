@@ -1,0 +1,1 @@
+check-adr: 255 ADRs in 117 design.md files, all identities unique and issue-keyed.

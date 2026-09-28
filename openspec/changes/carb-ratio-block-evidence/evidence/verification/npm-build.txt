@@ -1,0 +1,15 @@
+
+> build
+> vite build --config vite.config.mjs
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 611 modules transformed.
+rendering chunks...
+computing gzip size...
+frontend/dist/assets/favicon-CW_IcLGp.svg      0.63 kB │ gzip:   0.43 kB
+frontend/dist/index.html                       0.77 kB │ gzip:   0.48 kB
+frontend/dist/assets/index-P4U9uiIN.css      500.01 kB │ gzip: 280.23 kB
+frontend/dist/assets/index-boYhzWad.js     3,002.72 kB │ gzip: 737.22 kB
+
+✓ built in 147ms

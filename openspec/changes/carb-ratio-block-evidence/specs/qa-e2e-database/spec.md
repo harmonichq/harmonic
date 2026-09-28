@@ -16,5 +16,5 @@ every recorded budget within its limit.
 - **WHEN** the `ic-block-evidence` case is materialized and served through the
   production endpoints
 - **THEN** its block evidence carries a run under each served pool reason, a
-  tally with ran-high and ran-low counts, and two attributed lows on separate
+  tally with above-band and below-band counts read plainly over each meal's window, and two attributed lows on separate
   days, matching the literal expectation exactly

@@ -1102,6 +1102,21 @@ function fmtMinutes(total) {
   return `${Math.floor(rounded / 60)} h${m ? ` ${m} min` : ''}`;
 }
 
+// The analyzer's closed block states; the three unmeasured ones are Unsupported
+// (risk contract): the numbers block stands and the panel adds nothing.
+const IC_UNSUPPORTED_STATES = new Set(['collecting', 'below-floor', 'unmeasured-alone']);
+/* A fact the panel prints is read through one of these: a missing or mistyped
+   one is a malformed payload and throws, never a "NaN" or "--" on screen.
+   `servedOrNull` admits a served null (an omitted line) but not an absent key. */
+function servedNumber(value) {
+  if (!Number.isFinite(value)) throw new TypeError('served number missing');
+  return value;
+}
+function servedOrNull(value) {
+  if (value === undefined) throw new TypeError('served fact missing');
+  return value;
+}
+
 const servedEvidence = (evidence) => Boolean(evidence && !evidence.pending && !evidence.failed
   && !evidence.stale);
 
@@ -1133,25 +1148,30 @@ function readIcBlockEvidence(evidence, options) {
     .map((line) => `<div class="slot-stats">${line}</div>`).join('')}</div>`;
   const noun = block.label.toLowerCase();
   const ends = block.run_ends;
-  const blockEnd = block.end_min === 1440 ? '24:00' : hhmm(block.end_min);
+  const endMin = servedNumber(block.end_min);
+  const blockEnd = endMin === 1440 ? '24:00' : hhmm(endMin);
+  const direction = servedOrNull(block.side.direction);
+  if (direction !== null && !SIDE_WORD[direction]) throw new TypeError('served side unknown');
+  const ratio = (value) => u(servedNumber(value));
   const markup = ['<div class="lvl-cap">Why this move</div>', lines([
     // The side is served only when the estimate's range leaves the programmed value out.
-    block.side.direction && `${block.side.side_k} of ${block.side.side_n} counted runs measured `
-      + `${SIDE_WORD[block.side.direction]} than ${u(block.current)} g/U; the estimate's range `
-      + `${u(block.estimate.lo)}–${u(block.estimate.hi)} leaves ${u(block.current)} out.`,
+    direction && `${servedNumber(block.side.side_k)} of ${servedNumber(block.side.side_n)} counted runs `
+      + `measured ${SIDE_WORD[direction]} than ${ratio(block.current)} g/U; the estimate's range `
+      + `${ratio(block.estimate.lo)}–${ratio(block.estimate.hi)} leaves ${ratio(block.current)} out.`,
     IC_MECHANISM,
-    ends.n > 0 && `For ${ends.after_later_meal} of ${ends.n} runs that end came after a later meal `
-      + `past ${blockEnd}; there ${ends.lower} ended lower, ${ends.flat} about flat, ${ends.higher} higher.`,
-    block.recommendation.sentence,
+    servedNumber(ends.n) > 0 && `For ${servedNumber(ends.after_later_meal)} of ${ends.n} runs that end `
+      + `came after a later meal past ${blockEnd}; there ${servedNumber(ends.lower)} ended lower, `
+      + `${servedNumber(ends.flat)} about flat, ${servedNumber(ends.higher)} higher.`,
+    servedOrNull(block.recommendation.sentence),
   ])];
 
   const counts = outcomes.counts;
-  if (counts.meals_on_counted_runs > 0) {
+  if (servedNumber(counts.meals_on_counted_runs) > 0) {
     markup.push('<div class="lvl-cap">The case against</div>', lines([
-      `${counts.peaked_above_high_before_next} of the ${counts.meals_on_counted_runs} ${noun} meals on `
-        + `counted runs peaked above ${outcomes.band.high} before their next bolus `
-        + `(${counts.peaked_above_high_in_window} counting later meals within 5 h 15 min)`
-        + `${block.side.direction === 'above' ? '; a looser ratio can raise peaks' : ''}.`,
+      `${servedNumber(counts.peaked_above_high_before_next)} of the ${counts.meals_on_counted_runs} `
+        + `${noun} meals on counted runs peaked above ${servedNumber(outcomes.band.high)} before their `
+        + `next bolus (${servedNumber(counts.peaked_above_high_in_window)} counting later meals within `
+        + `5 h 15 min)${direction === 'above' ? '; a looser ratio can raise peaks' : ''}.`,
     ]));
   }
 
@@ -1160,27 +1180,27 @@ function readIcBlockEvidence(evidence, options) {
   const groups = LOW_GROUPS.map(([group, countKey, label]) => {
     const rows = lows.filter((low) => low.group === group);
     return {
-      header: `<div class="ev-group"><b>${label}</b><span class="n"> · ${harm.groups[countKey]}</span></div>`,
+      header: `<div class="ev-group"><b>${label}</b><span class="n"> · ${servedNumber(harm.groups[countKey])}</span></div>`,
       servedCount: rows.length,
       rows: rows.map((low) => ({
         id: low.t,
         pressed: low.run_id != null && low.run_id === options.selectedRunId,
-        dataset: { runId: low.run_id || '' },
+        dataset: { runId: servedOrNull(low.run_id) || '' },
         // One sentence the whole row wide: it wraps rather than clip in the inspector.
         html: `<span class="only" style="grid-column:1 / -1;white-space:normal">${fmtDate(low.t.slice(0, 10))}`
           + ` · bolus ${low.dominant_bolus_t.slice(11, 16)} → low ${low.t.slice(11, 16)}`
-          + ` · ${Math.round(low.bg)} mg/dL · ${fmtMinutes(low.minutes_after_bolus)} later`
-          + `${runRatio.has(low.run_id) ? ` · run ${u(runRatio.get(low.run_id))} g/U` : ''}</span>`,
+          + ` · ${Math.round(servedNumber(low.bg))} mg/dL · ${fmtMinutes(servedNumber(low.minutes_after_bolus))} later`
+          + `${runRatio.has(low.run_id) ? ` · run ${ratio(runRatio.get(low.run_id))} g/U` : ''}</span>`,
       })),
     };
   }).filter((group) => group.servedCount > 0);
   if (lows.length) {
     // The count is the served groups' own, not a length of the rows below it.
-    const total = LOW_GROUPS.reduce((sum, [, countKey]) => sum + harm.groups[countKey], 0);
-    const bearing = harm.bearing_sentence;
+    const total = LOW_GROUPS.reduce((sum, [, countKey]) => sum + servedNumber(harm.groups[countKey]), 0);
+    const bearing = servedOrNull(harm.bearing_sentence);
     markup.push(`<div class="lvl-cap">Lows after ${noun} boluses</div>`, lines([
-      `${total} low${total === 1 ? '' : 's'}, ${fmtMinutes(harm.minutes_after_bolus_min)} to `
-        + `${fmtMinutes(harm.minutes_after_bolus_max)} after the bolus`
+      `${total} low${total === 1 ? '' : 's'}, ${fmtMinutes(servedNumber(harm.minutes_after_bolus_min))} to `
+        + `${fmtMinutes(servedNumber(harm.minutes_after_bolus_max))} after the bolus`
         + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`,
     ]));
   }
@@ -1269,9 +1289,11 @@ export function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, opti
   if (!servedEvidence(evidence)) { unavailable(); return; }
   let panel;
   try {
-    // A block the analyzer did not measure (collecting, below the floor) is
-    // Unsupported: it keeps the numbers block and gains no section.
-    if (evidence.block.state !== 'numeric') return;
+    // A block the analyzer did not measure is Unsupported: it keeps the numbers
+    // block and gains no section. A missing or unknown state is malformed.
+    const state = evidence.block.state;
+    if (IC_UNSUPPORTED_STATES.has(state)) return;
+    if (state !== 'numeric') throw new TypeError('served block state unknown');
     panel = readIcBlockEvidence(evidence, options);
   } catch {
     unavailable();

@@ -899,10 +899,13 @@ test('#464 · the recommendation and lows-bearing sentences leave when served nu
   });
 });
 
-test('#464 · a collecting or below-floor block keeps the numbers block and gains no section', () => {
+test('#464 · a collecting, below-floor or unmeasured-alone block keeps the numbers block and gains no section', () => {
   withRosterDocument(() => {
-    for (const name of ['all_rejected', 'below_floor']) {
-      const evidence = icCapture[name];
+    // The capture has no unmeasured-alone case; the analyzer's third unmeasured
+    // state (ic.py) is served the same way, as `block.state`.
+    const unmeasuredAlone = { ...icExplained, block: { ...icExplained.block, state: 'unmeasured-alone' } };
+    for (const [name, evidence] of [['all_rejected', icCapture.all_rejected],
+      ['below_floor', icCapture.below_floor], ['unmeasured-alone', unmeasuredAlone]]) {
       assert.notEqual(evidence.block.state, 'numeric', `${name} is served unmeasured`);
       const host = renderIcPanel(evidence);
       const text = icPanelText(host);
@@ -916,13 +919,15 @@ test('#464 · a collecting or below-floor block keeps the numbers block and gain
 test('#464 · a payload missing a served fact prints the unavailable line beneath the numbers block', () => {
   withRosterDocument(() => {
     for (const drop of [(p) => { delete p.runs; }, (p) => { delete p.harm_evidence.lows; },
-      (p) => { delete p.outcomes.counts; }]) {
+      (p) => { delete p.outcomes.counts; }, (p) => { delete p.block.state; },
+      (p) => { p.block.state = 'numerical'; }, (p) => { delete p.harm_evidence.groups.counted_run; },
+      (p) => { delete p.block.run_ends.flat; }]) {
       const evidence = structuredClone(icExplained);
       drop(evidence);
       const host = renderIcPanel(evidence);
       assert.equal(host.children[0].innerHTML, IC_NUMBERS_BLOCK);
       assert.deepEqual(host.html, ['<div class="empty">Run evidence unavailable.</div>'],
-        'no half-written panel precedes the unavailable line');
+        `no half-written panel precedes the unavailable line: ${drop}`);
       assert.equal(host.children.length, 1);
     }
   });

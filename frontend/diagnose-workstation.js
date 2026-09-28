@@ -1138,7 +1138,14 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
    words around it are fixed copy. The reader words for served keys are the only
    maps this panel keeps. */
 const SIDE_WORD = { above: 'looser', below: 'tighter' };
-const BLOCK_DIRECTIONS = new Set(['raise', 'lower', null]);
+/* The panel's two captions, keyed on the served move: the meals peaking above the
+   band argue against a looser ratio and for a tighter one, and a hold has no move
+   to argue, so its sections say what they show. */
+const BLOCK_CAPTIONS = new Map([
+  ['raise', ['Why this move', 'The case against']],
+  ['lower', ['Why this move', 'The case for']],
+  [null, ['Why no move', 'After these meals']],
+]);
 const LOW_GROUPS = [
   ['counted-run', 'counted_run', 'On counted runs'],
   ['uncounted-run', 'uncounted_run', 'On runs not counted'],
@@ -1181,9 +1188,10 @@ export function icBlockCrumbMeta(cell) {
   return `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
 }
 
-/** Below the numbers block: "Why this move", "The case against" and the lows,
-    each a `.lvl-cap` over one-sentence lines. A line whose served facts are null
-    or empty is left out rather than printed with a hole.
+/** Below the numbers block: the why section, the meals section and the lows,
+    each a `.lvl-cap` over one-sentence lines, the first two captioned by the
+    served move (`BLOCK_CAPTIONS`). A line whose served facts are null or empty is
+    left out rather than printed with a hole.
 
     The payload crosses a process boundary, so this READS every served field
     first and writes nothing until all of it has been read: a payload missing a
@@ -1201,9 +1209,12 @@ function readIcBlockEvidence(evidence, options) {
   if (side !== null && !SIDE_WORD[side]) throw new TypeError('served side unknown');
   // The move the block asserts, null on a held block: only it can speak of a looser ratio.
   const move = servedOrNull(block.direction);
-  if (!BLOCK_DIRECTIONS.has(move)) throw new TypeError('served direction unknown');
+  if (!BLOCK_CAPTIONS.has(move)) throw new TypeError('served direction unknown');
+  const [whyCaption, mealsCaption] = BLOCK_CAPTIONS.get(move);
   const ratio = (value) => u(servedNumber(value));
-  const markup = ['<div class="lvl-cap">Why this move</div>', lines([
+  // Counted runs with no outcome read (a fallback pool) have no end to class.
+  const unread = servedNumber(ends.unread);
+  const markup = [`<div class="lvl-cap">${whyCaption}</div>`, lines([
     // The side is served only when the estimate's range leaves the programmed value out.
     side && `${servedNumber(block.side.side_k)} of ${servedNumber(block.side.side_n)} counted runs `
       + `measured ${SIDE_WORD[side]} than ${ratio(block.current)} g/U; the estimate's range `
@@ -1213,13 +1224,13 @@ function readIcBlockEvidence(evidence, options) {
     servedNumber(ends.n) > 0 && `Of the ${ends.n} counted runs, ${servedNumber(ends.lower)} ended lower `
       + `than they started, ${servedNumber(ends.flat)} about flat and ${servedNumber(ends.higher)} higher, `
       + `where they ended; for ${servedNumber(ends.after_later_meal)} of them that end came after a later `
-      + `meal past ${blockEnd}.`,
+      + `meal past ${blockEnd}${unread > 0 ? `; ${unread} had no reading where they ended` : ''}.`,
     servedOrNull(block.recommendation.sentence),
   ])];
 
   const counts = outcomes.counts;
   if (servedNumber(counts.meals_on_counted_runs) > 0) {
-    markup.push('<div class="lvl-cap">The case against</div>', lines([
+    markup.push(`<div class="lvl-cap">${mealsCaption}</div>`, lines([
       `${servedNumber(counts.peaked_above_high_before_next)} of the ${counts.meals_on_counted_runs} `
         + `${noun} meals on counted runs peaked above ${servedNumber(outcomes.band.high)} before their `
         + `next bolus (${servedNumber(counts.peaked_above_high_in_window)} counting later meals within `

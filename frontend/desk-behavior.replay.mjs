@@ -3648,12 +3648,14 @@ export const S200 = appOnly('ADR 464',
 
 // STORY:harmonic-v2-desktop:S201
 export const S201 = appOnly('ADR 464',
-  '#464 the panel\'s Why this move, The case against and lows lines print the served facts',
+  '#464 the panel\'s why, meals and lows lines print the served facts, captioned by the served move',
   async (page) => {
     const { row, evidence } = await served464(page, 'S201');
     const { block, outcomes, harm_evidence: harm } = evidence;
     const side = { above: 'looser', below: 'tighter' }[block.side.direction];
     const ends = block.run_ends;
+    const captions = { raise: ['Why this move', 'The case against'], lower: ['Why this move', 'The case for'] };
+    const [whyCap, mealsCap] = captions[block.direction] || ['Why no move', 'After these meals'];
     const blockEnd = block.end_min === 1440 ? '24:00'
       : `${String(Math.floor(block.end_min / 60)).padStart(2, '0')}:${String(block.end_min % 60).padStart(2, '0')}`;
     const why = [
@@ -3662,7 +3664,8 @@ export const S201 = appOnly('ADR 464',
       MECHANISM_464,
       ends.n > 0 && `Of the ${ends.n} counted runs, ${ends.lower} ended lower than they started, ${ends.flat} `
         + `about flat and ${ends.higher} higher, where they ended; for ${ends.after_later_meal} of them that end `
-        + `came after a later meal past ${blockEnd}.`,
+        + `came after a later meal past ${blockEnd}`
+        + `${ends.unread > 0 ? `; ${ends.unread} had no reading where they ended` : ''}.`,
       block.recommendation.sentence,
     ].filter(Boolean);
     const counts = outcomes.counts;
@@ -3678,20 +3681,22 @@ export const S201 = appOnly('ADR 464',
       + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`;
     ok(counts.meals_on_counted_runs > 0 && harm.lows.length > 0,
       'S201 premise: the served block has meals on counted runs and listed lows');
+    ok(['raise', 'lower', null].includes(block.direction) && Number.isFinite(ends.unread),
+      `S201 premise: the block serves its move (${block.direction}) and its unread count (${ends.unread})`);
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {
       const panel = seen(await panel464(page));
       const caps = panel.sections.map((section) => section.cap);
       const lowsCap = `Lows after ${noun} boluses`;
-      const order = ['Why this move', 'The case against', lowsCap].map((cap) => caps.indexOf(cap));
+      const order = [whyCap, mealsCap, lowsCap].map((cap) => caps.indexOf(cap));
       ok(order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2],
-        `S201 the panel must print Why this move, The case against and ${lowsCap}, in order: ${JSON.stringify(caps)}`);
+        `S201 the panel must print ${whyCap}, ${mealsCap} and ${lowsCap}, in order: ${JSON.stringify(caps)}`);
       ok(panel.numbers > 0, 'S201 the numbers block must stand above the sections');
       const lines = (cap) => panel.sections.find((section) => section.cap === cap).lines;
-      ok(JSON.stringify(lines('Why this move')) === JSON.stringify(why),
-        `S201 Why this move must print the served lines ${JSON.stringify(why)}; it prints ${JSON.stringify(lines('Why this move'))}`);
-      ok(JSON.stringify(lines('The case against')) === JSON.stringify([against]),
-        `S201 The case against must print "${against}"; it prints ${JSON.stringify(lines('The case against'))}`);
+      ok(JSON.stringify(lines(whyCap)) === JSON.stringify(why),
+        `S201 ${whyCap} must print the served lines ${JSON.stringify(why)}; it prints ${JSON.stringify(lines(whyCap))}`);
+      ok(JSON.stringify(lines(mealsCap)) === JSON.stringify([against]),
+        `S201 ${mealsCap} must print "${against}"; it prints ${JSON.stringify(lines(mealsCap))}`);
       ok(JSON.stringify(lines(lowsCap)) === JSON.stringify([lowsLine]),
         `S201 the lows line must print "${lowsLine}"; it prints ${JSON.stringify(lines(lowsCap))}`);
       ok(!/computed in the wireframe|\*/.test(panel.sections.flatMap((section) => section.lines).join(' ')),

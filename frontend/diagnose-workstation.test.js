@@ -1100,7 +1100,8 @@ test('#464 · a collecting, below-floor or unmeasured-alone block keeps the numb
       const text = icPanelText(host);
       assert.equal(host.html.length, 0, `${name} inserts nothing beneath the numbers block`);
       assert.equal(host.children.length, 1, `${name} appends nothing beneath the numbers block`);
-      assert.doesNotMatch(text, /Why this move|The case against|Lows after|class="slot-stats"/);
+      assert.doesNotMatch(text,
+        /Why this move|Why no move|The case against|The case for|After these meals|Lows after|class="slot-stats"/);
     }
   });
 });
@@ -1110,7 +1111,8 @@ test('#464 · a payload missing a served fact prints the unavailable line beneat
     for (const drop of [(p) => { delete p.runs; }, (p) => { delete p.harm_evidence.lows; },
       (p) => { delete p.outcomes.counts; }, (p) => { delete p.block.state; },
       (p) => { p.block.state = 'numerical'; }, (p) => { delete p.harm_evidence.groups.counted_run; },
-      (p) => { delete p.block.run_ends.flat; }, (p) => { delete p.outcomes.window_min; },
+      (p) => { delete p.block.run_ends.flat; }, (p) => { delete p.block.run_ends.unread; },
+      (p) => { delete p.outcomes.window_min; },
       (p) => { delete p.block.direction; }, (p) => { p.block.direction = 'up'; },
       (p) => { delete p.harm_evidence.groups.total; }]) {
       const evidence = structuredClone(icExplained);
@@ -1165,10 +1167,50 @@ test('#464 · a held block\'s panel prints no recommendation step', () => {
     assert.equal(held.block.asserts_move, false, 'premise: the overnight block is held');
     assert.equal(held.block.state, 'numeric', 'premise: and measured');
     const text = icPanelText(renderIcPanel(held, {}, icHeldCell));
-    assert.ok(text.includes('<div class="lvl-cap">Why this move</div>'));
+    assert.ok(text.includes('<div class="lvl-cap">Why no move</div>'));
     assert.ok(text.includes('<div class="slot-stats">Of the 9 counted runs, 0 ended lower than they started, '
       + '9 about flat and 0 higher, where they ended; for 0 of them that end came after a later meal past 07:00.</div>'));
     assert.doesNotMatch(text, /Recommended|half the gap/);
+  });
+});
+
+test('#464 · the panel\'s captions follow the served move', () => {
+  withRosterDocument(() => {
+    const captions = (text) => [...text.matchAll(/<div class="lvl-cap">([^<]*)<\/div>/g)]
+      .map((match) => match[1]);
+    assert.equal(icExplained.block.direction, 'raise', 'premise: the explained block asserts a raise');
+    assert.deepEqual(captions(icPanelText(renderIcPanel(icExplained))),
+      ['Why this move', 'The case against', 'Lows after morning boluses']);
+
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
+    assert.deepEqual(captions(icPanelText(renderIcPanel(held, {}, icHeldCell))).slice(0, 2),
+      ['Why no move', 'After these meals']);
+
+    // A modified copy of the explained block: `block.direction` set to 'lower'.
+    const lowered = structuredClone(icExplained);
+    lowered.block.direction = 'lower';
+    const text = icPanelText(renderIcPanel(lowered));
+    assert.deepEqual(captions(text), ['Why this move', 'The case for', 'Lows after morning boluses']);
+    assert.doesNotMatch(text, /a looser ratio can raise peaks/, 'the lines inside are unchanged');
+  });
+});
+
+test('#464 · the run-ends line names the served unread count only when there is one', () => {
+  withRosterDocument(() => {
+    const endsLine = (text) => text.split('\n').find((line) => line.includes('counted runs, '))
+      ?.match(/<div class="slot-stats">(Of the [^<]*)<\/div>/)[1];
+    assert.equal(icExplained.block.run_ends.unread, 0, 'premise: every explained run was read');
+    assert.equal(endsLine(icPanelText(renderIcPanel(icExplained))),
+      'Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they '
+      + 'ended; for 10 of them that end came after a later meal past 12:00.');
+
+    // A modified copy of the explained block: `block.run_ends.unread` set to 3.
+    const unread = structuredClone(icExplained);
+    unread.block.run_ends.unread = 3;
+    assert.equal(endsLine(icPanelText(renderIcPanel(unread))),
+      'Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they '
+      + 'ended; for 10 of them that end came after a later meal past 12:00; 3 had no reading where they ended.');
   });
 });
 

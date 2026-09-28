@@ -232,6 +232,16 @@ sections of one-sentence lines. A line whose served facts are empty is left out.
   roster and opens Day at its own moment, ringed. Hovering a low selects its run
   on the tile.
 
+The first two captions follow the block's served direction: "Why this move" and
+"The case against" on a raise, "Why this move" and "The case for" on a lower, and
+"Why no move" and "After these meals" on a hold. The lines are the same served
+facts in all three, but what they argue is not. Meals peaking above the band before
+their next bolus argue against a looser ratio and for a tighter one, so one fixed
+caption would call the same fact the case against a lower that it supports. A hold
+has no move for them to argue either way, so its captions say what the sections
+show. The caption is keyed on the served direction, like the looser-ratio clause,
+and the client decides no move of its own.
+
 The run roster and the balance-sheet row are not on the panel. The balance sheet
 is per run, in the tile's hover, where the reader is already looking at that run.
 The breadcrumb reads the served counted-run and meal counts once the payload

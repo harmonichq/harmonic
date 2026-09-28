@@ -46,13 +46,19 @@ tile SHALL derive no ratio, weight, side, end, group, band, count or direction.
 The Diagnose carb-ratio block panel SHALL render, beneath its numbers-and-staging
 block, which renders exactly as shipped, three captioned sections of one-sentence
 lines, each printed from served facts and left out when those facts are empty.
-"Why this move" SHALL print how many counted runs measured looser or tighter than
+The first two captions SHALL be keyed on the block's served direction: "Why this
+move" and "The case against" for a raise, "Why this move" and "The case for" for a
+lower, and "Why no move" and "After these meals" when the block asserts no move;
+the lines beneath them are the same in all three. The why section SHALL print how
+many counted runs measured looser or tighter than
 the programmed ratio and that the estimate's range leaves it out; one fixed
 sentence saying the ratio counts all the insulin a run used, with the glucose
 change converted at the correction factor, judged where the run ended; how many
 counted runs ended after a later meal past the block's end, and how many ended
-lower, about flat or higher; and the served recommendation reason verbatim. "The
-case against" SHALL print how many of the block's meals on counted runs peaked
+lower, about flat or higher, adding the served count of counted runs with no
+reading where they ended when it is not zero; and the served recommendation reason
+verbatim. The meals section SHALL print how many of the block's meals on counted
+runs peaked
 above the served band before their next bolus, and how many counting later meals
 within the post-meal window. The lows section SHALL print the served count and
 range of minutes after the bolus with the served bearing sentence, then every low
@@ -67,7 +73,7 @@ malformed the panel SHALL print "Run evidence unavailable." beneath an intact
 numbers block and render no section from a payload not received. A block the
 analyzer serves as collecting, below its floor or unmeasured alone SHALL keep its
 numbers block and gain no section. The panel SHALL derive no count, side, end,
-group, band, direction or sentence.
+group, band, direction, caption or sentence.
 
 #### Scenario: The panel explains a raise
 
@@ -77,6 +83,15 @@ group, band, direction or sentence.
 - **THEN** "Why this move", "The case against" and the lows section render from the
   served payload, one row per listed low under its served group, and the
   numbers-and-staging block is unchanged
+
+#### Scenario: The captions follow the served move
+
+- **GIVEN** a served measured block with meals on counted runs
+- **WHEN** the reader opens its panel
+- **THEN** its first two captions are "Why this move" and "The case against" when
+  the served direction is a raise, "Why this move" and "The case for" when it is a
+  lower, and "Why no move" and "After these meals" when it is none, over the same
+  lines
 
 #### Scenario: The Day hop works from View segment
 

@@ -6319,9 +6319,10 @@ ruling as "Settled by the operator on 2026-09-27 ("ship it")". The block's tile
 has one view in two lanes: a ratio strip of the counted meal runs against the
 programmed, recommended and estimated ratios, and the counted runs by date, each
 a stem from the glucose at its bolus to where the run ended, with the listed lows
-marked. Below the shipped numbers block, the panel prints "Why this move" in four
-lines, "The case against" in one, and the lows after the block's boluses as one
-line and one grouped roster. Every figure is served by the block-evidence
+marked. Below the shipped numbers block, the panel prints a why section in four
+lines and a meals section in one, captioned by the served move ("Why this move"
+and "The case against" on a raise), and the lows after the block's boluses as
+one line and one grouped roster. Every figure is served by the block-evidence
 payload.
 
 S197–S206 are added. S207 is changed: it records the block's run evidence
@@ -6467,25 +6468,36 @@ S200 · A run's readout is its served balance sheet in six lines: date, time,
 ```
 
 ```
-S201 · Below the numbers block the panel prints "Why this move", "The case
-       against" and "Lows after ‹block› boluses", in that order. Why this move
-       prints four lines: the served side count against the programmed value
-       and the estimate's range; the fixed mechanism sentence; the served
-       run-end split after a later meal; and the served recommendation
-       sentence. The case against prints the served peak counts against the
-       served high edge. The lows line prints the served low count, the delay
-       range after the bolus and the served bearing sentence. A line whose
-       served fact is null is omitted, and no footnote prints.
+S201 · Below the numbers block the panel prints a why section, a meals section
+       and "Lows after ‹block› boluses", in that order. The first two captions
+       follow the served block direction: "Why this move" and "The case
+       against" on a raise, "Why this move" and "The case for" on a lower, and
+       "Why no move" and "After these meals" on a hold. The why section prints
+       four lines: the served side count against the programmed value and the
+       estimate's range; the fixed mechanism sentence; the served run-end
+       split after a later meal, ending "; ‹n› had no reading where they
+       ended" when the served unread count is not zero; and the served
+       recommendation sentence. The meals section prints the served peak
+       counts against the served high edge. The lows line prints the served
+       low count, the delay range after the bolus and the served bearing
+       sentence. A line whose served fact is null is omitted, and no footnote
+       prints.
   element:  #level .lvl-cap and the .slot-stats lines under each
   source:   frontend/diagnose-workstation.js readIcBlockEvidence
   lock:     none (revise; the #464 settled block design)
   data:     ic-block-evidence; every optional fact is served, so all four
             lines print; the omitted-line branch is not reachable on any QA
-            case
-  evidence: S201 builds each expected line from the served fields and
-            compares the printed lines exactly, section by section, with their
-            order
-  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            case. The block serves a raise with no unread run, so the raise
+            captions print and the unread clause does not; the lower and hold
+            captions and the unread clause are held by the Node panel tests
+  evidence: S201 builds each expected caption from the served direction and
+            each expected line from the served fields, including the unread
+            count, and compares the printed lines exactly, section by section,
+            with their order
+  status:   amended 2026-09-27 after the runs below (the captions follow the
+            served direction, and the run-ends line names a served unread
+            count); not yet replayed as amended.
+            Before the amendment: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
             Final run on 8ccd68cf, every #464 story at both sizes:

@@ -1120,18 +1120,11 @@ function servedOrNull(value) {
 const servedEvidence = (evidence) => Boolean(evidence && !evidence.pending && !evidence.failed
   && !evidence.stale);
 
-/** The block frame's breadcrumb meta: the served roster's counted rows and the
-    served meal count, or the analyze count that stood before the payload lands —
-    and that stands too for a payload missing either fact. */
-export function icBlockCrumbMeta(cell, evidence) {
-  const analyzed = `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
-  if (!servedEvidence(evidence)) return analyzed;
-  try {
-    const counted = evidence.runs.filter((run) => COUNTED_POOL_REASONS.has(run.pool_reason)).length;
-    return `${counted} runs counted · ${evidence.outcomes.counts.n} meals`;
-  } catch {
-    return analyzed;
-  }
+/** The block frame's breadcrumb meta: the shipped analyze count, with or without a
+    served payload. The panel's numbers block prints the same support count, so the
+    crumb never disagrees with it and never changes text once the evidence lands. */
+export function icBlockCrumbMeta(cell) {
+  return `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
 }
 
 /** Below the numbers block: "Why this move", "The case against" and the lows,
@@ -3703,7 +3696,7 @@ function boot(root, data, callbacks, signal) {
            denominator and run (term 16); this one now does too. */
         : f.k === 'slot' ? `${f.cell.slot.days} nights of steady data · ${auditState.analysis.window_days} d basal run`
           // every parameter's meta names its OWN denominator and run
-          : f.k === 'block' ? icBlockCrumbMeta(f.cell, blockEvidence(f))
+          : f.k === 'block' ? icBlockCrumbMeta(f.cell)
             : f.k === 'isf' ? `${isf.estimate.n.toLocaleString()} correction steps`
               : '';
   }

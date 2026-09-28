@@ -1004,12 +1004,10 @@ test('#464 · a lows row opens Day at the low\'s own instant and previews its ru
   });
 });
 
-test('#464 · the breadcrumb counts the served counted runs and meals', () => {
-  assert.equal(icBlockCrumbMeta(icBlockCell, icExplained), '24 runs counted · 30 meals');
-  assert.equal(icBlockCrumbMeta(icBlockCell, { pending: true }), '18 meal runs · 30 meals',
-    'before the payload lands, the shipped analyze count stands');
-  assert.equal(icBlockCrumbMeta(icBlockCell, { ...icExplained, runs: undefined }), '18 meal runs · 30 meals',
-    'a payload missing its runs leaves the analyze count standing rather than throwing');
+test('#464 · the breadcrumb keeps the shipped support count, payload or not', () => {
+  assert.equal(icBlockCrumbMeta(icBlockCell, icExplained), '18 meal runs · 30 meals',
+    'the crumb agrees with the numbers block beneath it once the evidence lands');
+  assert.equal(icBlockCrumbMeta(icBlockCell, { pending: true }), '18 meal runs · 30 meals');
 });
 
 test('#464 · the block panel states loading and unavailable evidence', () => {

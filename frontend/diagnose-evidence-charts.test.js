@@ -16,6 +16,7 @@ import {
   glucoseRange,
 } from './diagnose-evidence-charts.js';
 import { fieldRange } from './diagnose-canvas-layout.js';
+import { queuePreviewOption } from './diagnose-workstation-chart.js';
 
 const fixture = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 /* A served excluded-night breakdown: the analyzer stamps all six keys on every
@@ -112,7 +113,7 @@ test('the registry declares six stateless chart kinds and their request coordina
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    null, ['event', 'clock'], ['event', 'clock'], null, null, null,
+    null, ['event', 'clock'], null, null, null, null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -229,7 +230,7 @@ test('entries build different alignments simultaneously with one optical spine',
   const isfEvent = byKind.isf.option('event', {
     data: isf, range: null, explore: false, mini: false, window: [1320, 120],
   });
-  const icEvent = byKind['carb-ratio'].option('event', {
+  const icOverview = byKind['carb-ratio'].option('overview', {
     data: ic, range: [80, 220], explore: false, mini: false, window: [1320, 120],
   });
   const event = eventCase();
@@ -239,13 +240,14 @@ test('entries build different alignments simultaneously with one optical spine',
 
   assert.equal(basalEditorial.series.some(({ id }) => id === 'furniture'), true);
   assert.equal(isfEvent.xAxis.name, 'insulin acted (U)');
-  assert.deepEqual(icEvent.yAxis.min, 80);
-  assert.deepEqual(icEvent.yAxis.max, 220);
   assert.equal(basalEditorial.legend.show, false);
-  assert.deepEqual(isfEvent.grid, icEvent.grid);
-  const { containLabel, ...icPlot } = icEvent.grid;
-  assert.deepEqual(icPlot, comparison.grid,
+  const { containLabel, ...isfPlot } = isfEvent.grid;
+  assert.deepEqual(isfPlot, comparison.grid,
     'the comparison shares the other kinds\' plot insets');
+  /* The carb-ratio tile's two lanes open on the same spine and close on the
+     same right inset. */
+  assert.ok(icOverview.grid.every((lane) => lane.left === isfEvent.grid.left
+    && lane.right === isfEvent.grid.right));
 });
 
 /* A FULL-RANK AXIS NAME BELONGS TO ITS OWN AXIS (#360). The grid runs
@@ -265,10 +267,6 @@ test('every full-rank evidence axis name is anchored to the axis it labels', () 
   const built = (mini) => [
     ['isf', 'event', byKind.isf.option('event', { data: isf, range: null, mini, window: [1320, 120] })],
     ['isf', 'clock', byKind.isf.option('clock', { data: isf, range: null, mini, window: [1320, 120] })],
-    ['carb-ratio', 'event',
-      byKind['carb-ratio'].option('event', { data: ic, range: [80, 220], mini, window: [1320, 120] })],
-    ['carb-ratio', 'clock',
-      byKind['carb-ratio'].option('clock', { data: ic, range: [80, 220], mini, window: [1320, 120] })],
   ];
 
   const seated = [];
@@ -301,10 +299,6 @@ test('every full-rank evidence axis name is anchored to the axis it labels', () 
     'isf/event xAxis insulin acted (U)',
     'isf/event yAxis glucose change (mg/dL)',
     'isf/clock yAxis glucose change (mg/dL)',
-    'carb-ratio/event xAxis minutes from first meal',
-    'carb-ratio/event yAxis mg/dL',
-    'carb-ratio/clock xAxis meal start',
-    'carb-ratio/clock yAxis Carb ratio (g/U)',
   ]);
 
   /* The mini rank still carries no axis name at all — it drops the name rather
@@ -314,6 +308,16 @@ test('every full-rank evidence axis name is anchored to the axis it labels', () 
     assert.equal(option.xAxis.name, undefined, `${kind}/${mode} mini names no x-axis`);
     assert.equal(option.yAxis.name, undefined, `${kind}/${mode} mini names no y-axis`);
   }
+
+  /* The carb-ratio tile names one axis — its ratio strip's, "g/U" — seated at
+     the axis end the same way; its thumbnail names none. */
+  const icFull = byKind['carb-ratio'].option('overview', { data: ic });
+  assert.deepEqual(icFull.xAxis.map(({ name }) => name), ['g/U', undefined]);
+  assert.equal(icFull.xAxis[0].nameTextStyle.align, 'right');
+  assert.equal(Object.hasOwn(icFull.xAxis[0], 'nameLocation'), false);
+  assert.ok(icFull.yAxis.every(({ name }) => name === undefined));
+  const icMini = byKind['carb-ratio'].option('overview', { data: ic, mini: true });
+  assert.equal(icMini.xAxis.name, undefined);
 
   /* And the one chart whose name already measured seated keeps the seat it has. */
   const basal = byKind.basal.option(null, {
@@ -1115,39 +1119,22 @@ test('every multi-series evidence form carries an on-chart legend', () => {
     byKind.basal.option(null, { data: basal }),
     byKind.isf.option('clock', { data: isf }),
     byKind.isf.option('event', { data: isf }),
-    byKind['carb-ratio'].option('clock', { data: ic, window: [1200, 420] }),
+    byKind['carb-ratio'].option('overview', { data: ic }),
   ];
 
-  assert.ok(options.slice(1).every(({ legend }) => legend?.show === true));
-  assert.ok(options.slice(1).every(({ legend }) => legend.data.length > 0));
+  const legends = options.slice(1).flatMap(({ legend }) => [legend].flat());
+  assert.ok(legends.every((legend) => legend?.show === true));
+  assert.ok(legends.every((legend) => legend.data.length > 0));
   assert.equal(options[0].legend.show, false);
   assert.ok(options[0].graphic.length > 0, 'the basal editorial treatment uses its instrument ledger in place of a legend');
 });
 
-test('carb-ratio target boundaries stay rails while meal runs stay distinct strands (#255)', () => {
-  const data = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
-    .cases.directional_only;
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
-  const option = entry.option('event', { data, range: [80, 220], mini: false });
-  const target = option.series.find(({ name }) => name === 'Target range');
-  const runs = option.series.filter(({ name, type }) => type === 'line' &&
-    (name === 'Support run' || name === 'Directional-only run'));
-
-  assert.equal(target.markArea, undefined, 'the target range does not fill the evidence plot');
-  assert.deepEqual(target.markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
-  assert.equal(target.markLine.lineStyle.type, 'dashed');
-  assert.deepEqual(runs.map(({ name, symbol, data: points, lineStyle }) =>
-    ({ name, symbol, points, type: lineStyle.type, opacity: lineStyle.opacity })),
-  runs.map(({ name, symbol, data: points, lineStyle }) => ({
-    name, symbol, points, type: lineStyle.type,
-    opacity: name === 'Support run' ? .34 : .20,
-  })), 'only the locked strand opacity pair changes presentation');
-});
-
-test('feed-only forms do not invent unavailable fit or current-setting values', () => {
+/* The correction-factor feed serves no fit, so its chart draws none. The
+   carb-ratio block (v2) serves its programmed ratio, its recommendation and its
+   estimate with the estimate's range, so its tile draws each exactly as served
+   — and draws none it was not served. */
+test('evidence forms draw the fit and current-setting values they are served, as served', () => {
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
-  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
-    .cases.directional_only;
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.deepEqual(Object.keys(isf).sort(), ['counts', 'finding', 'schema', 'steps', 'windows']);
@@ -1156,20 +1143,35 @@ test('feed-only forms do not invent unavailable fit or current-setting values', 
     .map(({ name }) => name), ['Qualifying fasting steps']);
   assert.deepEqual(byKind.isf.option('clock', { data: isf }).series
     .map(({ name }) => name), ['Qualifying fasting steps']);
-  assert.equal(Object.hasOwn(ic.block, 'current'), false);
-  assert.deepEqual(byKind['carb-ratio'].option('clock', { data: ic }).series
-    .map(({ name }) => name), ['Directional-only run', 'Support run']);
+  for (const [name, ic] of Object.entries(fixture(
+    '../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases)) {
+    assert.ok(Object.hasOwn(ic.block, 'current'), `premise: ${name} serves its programmed ratio`);
+    const { block } = ic;
+    const rules = byKind['carb-ratio'].option('overview', { data: ic }).series
+      .find(({ id }) => id === 'ic:rules');
+    assert.deepEqual(rules.markLine.data.map(({ name: rule, xAxis }) => [rule, xAxis]), [
+      ['programmed', block.current], ['recommended', block.recommendation?.value],
+      ['estimate', block.estimate?.value],
+    ].filter(([, value]) => Number.isFinite(value)), `${name} draws each served ratio as served`);
+    const ranged = Number.isFinite(block.estimate?.lo) && Number.isFinite(block.estimate?.hi);
+    assert.deepEqual(rules.markArea?.data ?? null,
+      ranged ? [[{ xAxis: block.estimate.lo }, { xAxis: block.estimate.hi }]] : null,
+      `${name} draws the served range and no other`);
+  }
 });
 
 test('surface copy says Carb ratio rather than the engine abbreviation', () => {
   const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
     .cases.directional_only;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+  const option = entry.option('overview', { data: ic });
   const visible = JSON.stringify({
     name: entry.name,
-    meta: entry.modes.map((mode) => entry.meta(mode)),
-    clock: entry.option('clock', { data: ic, window: [1200, 420] }),
-    event: entry.option('event', { data: ic, range: [60, 200] }),
+    meta: entry.meta(null),
+    overview: option,
+    legend: option.legend.map((legend) => legend.data.map(({ name }) =>
+      (legend.formatter ? legend.formatter(name) : name))),
+    tooltip: ic.runs.map((run) => option.tooltip.formatter({ data: { runId: run.run_id } })),
     thumbnail: entry.thumbnail(ic),
   });
 
@@ -1193,7 +1195,7 @@ test('chart options resolve live theme tokens', () => {
     return {
       basal: byKind.basal.option(null, { data: basal }),
       isf: byKind.isf.option('event', { data: isf }),
-      ic: byKind['carb-ratio'].option('event', { data: ic, range: [60, 240] }),
+      ic: byKind['carb-ratio'].option('overview', { data: ic }),
       event: byKind['event-comparison'].option(null, { data: event, range: [60, 240] }),
       thumbnail: byKind.basal.thumbnail(basal),
     };
@@ -1226,8 +1228,15 @@ test('chart options resolve live theme tokens', () => {
     assert.equal(dark.basal.xAxis.axisLabel.color, '#a3968a');
     assert.equal(light.isf.series[0].itemStyle.color, '#3f5a3b');
     assert.equal(dark.isf.series[0].itemStyle.color, '#86ad78');
-    assert.equal(light.ic.series[1].lineStyle.color, '#3f5a3b');
-    assert.equal(dark.ic.series[1].lineStyle.color, '#86ad78');
+    /* The carb-ratio tile's runs are in the text ink and its estimate in the
+       data ink, both resolved live. */
+    const estimateInk = (option) => option.series.find(({ id }) => id === 'ic:rules')
+      .markLine.data.find(({ name }) => name === 'estimate').lineStyle.color;
+    const dotInk = (option) => option.series.find(({ id }) => id === 'ic:dots:whole').itemStyle.color;
+    assert.equal(estimateInk(light.ic), '#3f5a3b');
+    assert.equal(estimateInk(dark.ic), '#86ad78');
+    assert.equal(dotInk(light.ic), '#141a15');
+    assert.equal(dotInk(dark.ic), '#f5ece0');
     assert.equal(light.event.yAxis.axisLabel.color, '#3d5848');
     assert.equal(dark.event.yAxis.axisLabel.color, '#a3968a');
     assert.equal(light.thumbnail.graphic[0].style.fill, '#3d5848');
@@ -1294,7 +1303,9 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
   };
   const ic = {
     block: { label: 'Overnight', examined_runs: 11, support: 4, excluded_runs: 7,
-      start_min: 1200, end_min: 420 },
+      start_min: 1200, end_min: 420, run_ends: { n: 3 },
+      support_detail: { whole_runs: 2, fractional_run_ownership: 1.5 } },
+    harm_evidence: { groups: { counted_run: 5, uncounted_run: 6, not_a_meal_run: 8 }, lows: [] },
     runs: [], series: [],
   };
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
@@ -1303,22 +1314,21 @@ test('payload counts stay distinct in chart and thumbnail presentation', () => {
     /0 steady nights/);
   assert.match(byKind.isf.option('event', { data: isf, mini: false }).aria.description,
     /7 detected.*2 qualifying windows.*41 qualifying steps/);
-  assert.match(byKind['carb-ratio'].option('clock', { data: ic, mini: false,
-    window: [1200, 420] }).aria.description, /11 examined.*4 support.*7 excluded/);
+  assert.match(byKind['carb-ratio'].option('overview', { data: ic, mini: false }).aria.description,
+    /^3 counted meal runs: 2 counted whole, 1\.5 .*: 5 on counted runs, 6 on runs not counted, 8 after/);
   assert.equal(byKind.basal.thumbnail(basal).graphic[1].style.text, '19 / 3');
   assert.equal(byKind.isf.thumbnail(isf).graphic[1].style.text, '7 / 2 / 41');
   assert.equal(byKind['carb-ratio'].thumbnail(ic).graphic[1].style.text, '11 / 4');
 });
 
 test('glucose projections expose served values and thumbnails have no axis furniture', () => {
-  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
-    .cases.below_floor;
   const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
   assert.equal(byKind.basal.glucoseValues, null);
   assert.equal(byKind.isf.glucoseValues, null);
-  assert.ok(byKind['carb-ratio'].glucoseValues(ic).includes(220));
+  assert.equal(byKind['carb-ratio'].glucoseValues, null,
+    'the carb-ratio tile keeps its own glucose scale, so it widens no other tile\'s');
   const servedMedian = event.projection.cohorts
     .flatMap((cohort) => cohort.points).find((point) => point.median !== null).median;
   assert.ok(byKind['event-comparison'].glucoseValues(event).includes(servedMedian),
@@ -1512,39 +1522,10 @@ test('a selected occurrence trace is contained by the axis it is drawn against',
   assert.deepEqual([mini.yAxis.min, mini.yAxis.max], injected);
 });
 
-test('current I:C event options render every published meal member', () => {
-  const cases = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
-    .cases;
-  const ic = cases.cross_midnight;
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
-  const option = entry.option('event', { data: ic, range: [60, 200] });
-  const expectedMembers = ic.runs.reduce((count, run) => count + run.member_offsets_min.length, 0);
-  const markers = option.series.filter(({ type }) => type === 'scatter');
-  const traces = option.series.filter((series) => series.type === 'line' && series.data.length);
-
-  assert.deepEqual(markers.map(({ symbol }) => symbol), ['diamond', 'emptyDiamond']);
-  assert.equal(markers.reduce((count, series) => count + series.data.length, 0), expectedMembers);
-  assert.ok(traces.every(({ connectNulls }) => connectNulls === true));
-  assert.deepEqual(option.legend.data.map(({ name }) => name),
-    ['Support run', 'Directional-only run']);
-
-  const mixed = entry.option('event', { data: cases.directional_only, range: [60, 200] });
-  const mixedTraces = mixed.series.filter((series) => series.type === 'line' && series.data.length);
-  assert.ok(mixedTraces.every(({ connectNulls }) => connectNulls === true));
-  assert.ok(mixedTraces.some(({ lineStyle }) => lineStyle.type === 'solid'));
-  assert.ok(mixedTraces.some(({ lineStyle }) => lineStyle.type === 'dashed'));
-  assert.deepEqual(mixed.series.filter(({ type }) => type === 'scatter').map(({ symbol }) => symbol),
-    ['diamond', 'emptyDiamond']);
-});
-
 test('glucose chart options fail closed without one injected field range', () => {
-  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
-    .cases.below_floor;
   const event = eventCase();
   const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
 
-  assert.throws(() => byKind['carb-ratio'].option('event', { data: ic }),
-    /field glucose range/);
   assert.throws(() => byKind['event-comparison'].option(null, { data: event }),
     /field glucose range/);
 });
@@ -1698,14 +1679,453 @@ test('#395 · Pattern evidence joins the shared field and malformed previews fai
 });
 
 
-test('#341 · narrow I:C plots label interior ticks without changing the shared extent', () => {
-  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'carb-ratio');
-  const data = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
-  for (const width of [320, 480, 481, 960]) {
-    const option = entry.option(null, { data, range: [40, 220], surface: { clientWidth: width } });
-    assert.deepEqual([option.yAxis.min, option.yAxis.max], [40, 220]);
-    assert.equal(option.yAxis.interval, undefined, 'the scale keeps its shipped tick-density rule');
-    assert.equal(option.yAxis.axisLabel.showMinLabel, width <= 480 ? false : undefined);
-    assert.equal(option.yAxis.axisLabel.showMaxLabel, width <= 480 ? false : undefined);
+/* #464 · THE SETTLED BLOCK DESIGN. The carb-ratio tile is one view in two
+   lanes: the ratio strip above — one dot per counted run at its served ratio
+   against the served programmed, recommended and estimated ratios — and below,
+   where each counted run started and ended, with the listed lows. Every mark is
+   a served field; these tests read the option the registry builds from the
+   synthetic capture, `explained` above all. */
+const icCases = () => fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases;
+const COUNTED_REASONS = ['counted-whole', 'counted-by-share'];
+const countedRuns = (data) => data.runs.filter((run) => COUNTED_REASONS.includes(run.pool_reason));
+const carbRatioEntry = () => DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+const overview = (data, context = {}) => carbRatioEntry().option('overview', { data, ...context });
+const byId = (option, id) => option.series.find((series) => series.id === id);
+const dayOf = (t) => Date.parse(`${t.slice(0, 10)}T00:00:00`);
+
+test('#464 · the ratio strip draws one dot per counted run at its served ratio', () => {
+  for (const [name, data] of Object.entries(icCases())) {
+    const option = overview(data);
+    const whole = byId(option, 'ic:dots:whole');
+    const share = byId(option, 'ic:dots:share');
+    const counted = countedRuns(data);
+    assert.equal(whole.data.length + share.data.length, counted.length, `${name}: one dot per counted run`);
+    assert.deepEqual(whole.data.map(({ runId }) => runId),
+      counted.filter((run) => run.pool_reason === 'counted-whole').map((run) => run.run_id));
+    assert.deepEqual(share.data.map(({ runId }) => runId),
+      counted.filter((run) => run.pool_reason === 'counted-by-share').map((run) => run.run_id));
+    const ratio = new Map(counted.map((run) => [run.run_id, run.true_ic]));
+    assert.ok([...whole.data, ...share.data].every(({ runId, value }) => value[0] === ratio.get(runId)),
+      `${name}: each dot sits at its run's served ratio`);
+    assert.equal(whole.name, 'whole run');
+    assert.equal(share.name, 'counted by share');
   }
+  const explained = icCases().explained;
+  const option = overview(explained);
+  assert.equal(countedRuns(explained).length, explained.block.run_ends.n,
+    'premise: the capture counts its runs the way the block serves the count');
+  /* A whole run is a filled dot and a run counted by share a ring, both in the
+     text ink; no hollow ECharts symbol, whose fill is a hard-coded white. */
+  const whole = byId(option, 'ic:dots:whole');
+  const share = byId(option, 'ic:dots:share');
+  assert.equal(whole.symbol, 'circle');
+  assert.equal(share.symbol, 'circle');
+  assert.equal(share.itemStyle.color, 'transparent');
+  assert.equal(share.itemStyle.borderColor, whole.itemStyle.color);
+  assert.equal(share.itemStyle.borderWidth, 2);
+});
+
+test('#464 · a dot grows with its served fit weight, 8 to 14 px', () => {
+  const data = icCases().explained;
+  const option = overview(data);
+  const weight = new Map(countedRuns(data).map((run) => [run.run_id, run.fit_weight]));
+  const dots = [...byId(option, 'ic:dots:whole').data, ...byId(option, 'ic:dots:share').data]
+    .map(({ runId, symbolSize }) => [weight.get(runId), symbolSize])
+    .sort(([a], [b]) => a - b);
+  assert.ok(new Set(dots.map(([w]) => w)).size > 1, 'premise: the capture serves more than one weight');
+  assert.ok(dots.every(([, size]) => size >= 8 && size <= 14), 'every dot is 8 to 14 px across');
+  for (let index = 1; index < dots.length; index += 1) {
+    assert.ok(dots[index][1] >= dots[index - 1][1], 'a heavier run never draws a smaller dot');
+    if (dots[index][0] > dots[index - 1][0]) {
+      assert.ok(dots[index][1] > dots[index - 1][1], 'a strictly heavier run draws a larger dot');
+    }
+  }
+});
+
+test('#464 · the three rules sit at the served ratios and the band spans the served range', () => {
+  const data = icCases().explained;
+  const option = overview(data);
+  const rules = byId(option, 'ic:rules');
+  assert.deepEqual(rules.markLine.data.map(({ name, xAxis, lineStyle }) => [name, xAxis, lineStyle.type]), [
+    ['programmed', data.block.current, 'solid'],
+    ['recommended', data.block.recommendation.value, 'dotted'],
+    ['estimate', data.block.estimate.value, 'dashed'],
+  ]);
+  assert.ok(rules.markLine.data.every(({ lineStyle }) => lineStyle.width === 1));
+  assert.deepEqual(rules.markArea.data, [[{ xAxis: data.block.estimate.lo }, { xAxis: data.block.estimate.hi }]]);
+  assert.ok(rules.markArea.itemStyle.opacity <= .06, 'the range is a faint wash');
+  /* The scale is fitted to what the lane draws, on the half g/U, ticked every
+     half, and named for its unit. */
+  const axis = option.xAxis[0];
+  const drawn = [...countedRuns(data).map((run) => run.true_ic), data.block.current,
+    data.block.recommendation.value, data.block.estimate.lo, data.block.estimate.hi];
+  assert.equal(axis.interval, .5);
+  assert.equal(axis.min * 2 % 1, 0);
+  assert.equal(axis.max * 2 % 1, 0);
+  assert.ok(drawn.every((value) => value > axis.min && value < axis.max));
+  assert.equal(axis.axisLabel.formatter(4), '4.0');
+  assert.equal(axis.name, 'g/U');
+});
+
+/* Three labels over three rules, placed on at most two rows: none overlaps
+   another and none leaves the plot, whether the rules stand apart or crowd. */
+test('#464 · the rule labels never overlap or clip, on at most two rows', () => {
+  const data = icCases().explained;
+  const layout = (block, width) => {
+    const option = overview({ ...data, block });
+    const axis = option.xAxis[0];
+    const cs = { x: 34, y: 44, width, height: 100 };
+    const api = { coord: ([value, y]) => [cs.x + (value - axis.min) / (axis.max - axis.min) * cs.width, y] };
+    return { cs, texts: byId(option, 'ic:rule-labels').renderItem({ coordSys: cs, dataIndex: 0 }, api)
+      .children.map(({ style }) => style) };
+  };
+  const crowded = { ...data.block, current: 5.3, recommendation: { ...data.block.recommendation, value: 5.3 },
+    estimate: { ...data.block.estimate, value: 5.32, lo: 5.2, hi: 5.45 } };
+  const atEdge = { ...data.block, current: 4.6, recommendation: { ...data.block.recommendation, value: 4.7 },
+    estimate: { ...data.block.estimate, value: 4.75, lo: 4.62, hi: 4.9 } };
+  for (const [block, width] of [[data.block, 900], [data.block, 420], [crowded, 900], [crowded, 420],
+    [atEdge, 900], [atEdge, 420]]) {
+    const { cs, texts } = layout(block, width);
+    assert.deepEqual(texts.map(({ text }) => text).sort(), [
+      `programmed ${block.current.toFixed(2)}`,
+      `recommended ${block.recommendation.value.toFixed(2)}`,
+      `estimate ${block.estimate.value.toFixed(2)} (${block.estimate.lo.toFixed(2)}–${block.estimate.hi.toFixed(2)})`,
+    ].sort());
+    const boxes = texts.map(({ text, x, y, align }) => {
+      const w = text.length * 11 * .55;
+      const left = align === 'right' ? x - w : align === 'center' ? x - w / 2 : x;
+      return { left, right: left + w, y };
+    });
+    assert.ok(new Set(boxes.map(({ y }) => y)).size <= 2, 'two rows at most');
+    assert.ok(boxes.every(({ left, right, y }) => left >= cs.x && right <= cs.x + cs.width && y < cs.y),
+      'every label sits above the plot, inside its width');
+    for (const [i, a] of boxes.entries()) {
+      for (const b of boxes.slice(i + 1)) {
+        assert.ok(a.y !== b.y || a.right <= b.left || b.right <= a.left, `${JSON.stringify(texts)} overlap`);
+      }
+    }
+  }
+});
+
+test('#464 · the lower lane draws each counted run from its bolus glucose to where it ended', () => {
+  for (const [name, data] of Object.entries(icCases())) {
+    const option = overview(data);
+    const served = countedRuns(data).filter((run) => Number.isFinite(run.start_bg)
+      && Number.isFinite(run.outcome_bg));
+    const stems = byId(option, 'ic:stems');
+    assert.equal(stems.data.length, served.length, `${name}: one stem per counted run with a served start and end`);
+    assert.deepEqual(stems.data.map(({ value }) => value),
+      served.map((run) => [dayOf(run.t), run.start_bg, run.outcome_bg]));
+    assert.deepEqual(byId(option, 'ic:starts').data.map(({ value }) => value),
+      served.map((run) => [dayOf(run.t), run.start_bg]));
+    assert.deepEqual(byId(option, 'ic:ends').data.map(({ value }) => value),
+      served.map((run) => [dayOf(run.t), run.outcome_bg]));
+  }
+  const data = icCases().explained;
+  const option = overview(data);
+  /* The stem is one 1 px line; the served band edges are the lane's two
+     labelled hairlines. */
+  const stems = byId(option, 'ic:stems');
+  const line = stems.renderItem({ dataIndex: 0 }, {
+    value: (dimension) => stems.data[0].value[dimension], coord: ([x, y]) => [x, y],
+  }).children.find(({ type }) => type === 'line');
+  assert.equal(line.style.lineWidth, 1);
+  const band = byId(option, 'ic:band');
+  assert.deepEqual(band.markLine.data.map(({ yAxis }) => yAxis), [data.outcomes.band.low, data.outcomes.band.high]);
+  assert.equal(band.markLine.label.show, true);
+  assert.equal(option.xAxis[1].type, 'time');
+  assert.equal(option.xAxis[1].minInterval, 7 * 864e5, 'the date axis ticks by the week');
+});
+
+test('#464 · every listed low is a ▼ at its glucose on its date, filled only on a counted run', () => {
+  const data = icCases().explained;
+  const lows = data.harm_evidence.lows;
+  const regrouped = { ...data, harm_evidence: { ...data.harm_evidence,
+    lows: [...lows, { ...lows[0], group: 'uncounted-run', bg: 61 },
+      { ...lows[1], group: 'not-a-meal-run', run_id: null, bg: 55 }] } };
+  for (const payload of [data, regrouped]) {
+    const option = overview(payload);
+    const filled = byId(option, 'ic:lows:counted');
+    const hollow = byId(option, 'ic:lows:other');
+    const served = payload.harm_evidence.lows;
+    assert.equal(filled.data.length + hollow.data.length, served.length, 'one ▼ per listed low');
+    assert.deepEqual(filled.data.map(({ value }) => value),
+      served.filter((low) => low.group === 'counted-run').map((low) => [dayOf(low.t), low.bg]));
+    assert.deepEqual(hollow.data.map(({ value }) => value),
+      served.filter((low) => low.group !== 'counted-run').map((low) => [dayOf(low.t), low.bg]));
+    assert.equal(filled.symbolRotate, 180);
+    assert.equal(hollow.symbolRotate, 180);
+    assert.equal(hollow.itemStyle.color, 'transparent');
+    assert.equal(hollow.itemStyle.borderColor, filled.itemStyle.color);
+  }
+  assert.equal(byId(overview(regrouped), 'ic:lows:other').data.length, 2,
+    'premise: the regrouped payload lists lows off counted runs');
+});
+
+test('#464 · the tile keys itself in two legend rows, in the settled words, and nothing else', () => {
+  const option = overview(icCases().explained);
+  assert.equal(option.legend.length, 2);
+  const words = (legend) => legend.data.map(({ name }) => (legend.formatter ? legend.formatter(name) : name));
+  assert.deepEqual(words(option.legend[0]), ['whole run',
+    'counted by share · size = carbs counted · hover a dot for the insulin behind its ratio']);
+  assert.deepEqual(words(option.legend[1]), ['at the bolus', 'where the run ended', 'listed low',
+    'on a run not counted']);
+  const named = new Set(option.series.map(({ name }) => name));
+  for (const legend of option.legend) {
+    assert.ok(legend.data.every(({ name }) => named.has(name)), 'every chip keys a drawn series');
+    assert.equal(legend.selectedMode, false);
+  }
+  assert.equal(option.title, undefined, 'no caption sentences');
+  assert.ok(!(option.graphic || []).some((item) => item.type === 'text'), 'no caption sentences');
+});
+
+test('#464 · no carb-ratio option draws a directional-only run, a meal, or a peak', () => {
+  for (const [name, data] of Object.entries(icCases())) {
+    for (const mini of [false, true]) {
+      const option = overview(data, { mini });
+      const names = option.series.map((series) => series.name);
+      assert.ok(!names.includes('Directional-only run'), `${name}: no directional-only series`);
+      assert.ok(option.series.every((series) => /^ic:/.test(series.id || '')
+        && !/meal|peak|member/i.test(series.id)), `${name}: no per-meal marks or peak ticks`);
+    }
+  }
+});
+
+test('#464 · the tooltip reads a run its served ledger terms and a low its served delay', () => {
+  const data = icCases().explained;
+  const option = overview(data);
+  const run = countedRuns(data).find((row) => row.pool_reason === 'counted-by-share');
+  const dot = byId(option, 'ic:dots:share').data.find(({ runId }) => runId === run.run_id);
+  const lines = option.tooltip.formatter({ data: dot }).split('<br>');
+  const corrections = run.post_correction_user + run.post_correction_ciq + run.post_correction_unknown;
+  const end = { lower: 'lower', flat: 'about flat', higher: 'higher' }[run.end_class];
+  assert.deepEqual(lines, [
+    run.t.slice(0, 10),
+    run.t.slice(11, 16),
+    `${run.n_meals} meal${run.n_meals === 1 ? '' : 's'}`,
+    `carbs ${Number(run.carbs.toFixed(1))} g ÷ insulin ${run.effective_insulin.toFixed(2)} U = ${run.true_ic.toFixed(2)} g/U`,
+    `insulin: bolus ${run.meal_dose.toFixed(2)} · corrections ${corrections.toFixed(2)} · Control-IQ basal ${run.ciq_basal_delta_acted_u.toFixed(2)} · glucose change ${run.bg_outcome_u.toFixed(2)}`,
+    `ended ${Math.round(run.outcome_bg)} mg/dL after ${Number((run.outcome_min / 60).toFixed(1))} h (${end})`,
+  ]);
+  /* A stem and its markers read the same run. */
+  const stem = byId(option, 'ic:stems').data.find(({ runId }) => runId === run.run_id);
+  assert.equal(option.tooltip.formatter({ data: stem }), lines.join('<br>'));
+  const low = byId(option, 'ic:lows:counted').data[0];
+  assert.equal(data.harm_evidence.lows[0].minutes_after_bolus, 210, 'premise: the served delay');
+  assert.equal(option.tooltip.formatter({ data: low }),
+    `low ${data.harm_evidence.lows[0].bg} mg/dL, 3 h 30 min after its bolus`);
+  assert.equal(option.tooltip.trigger, 'item');
+  assert.match(option.tooltip.extraCssText, /max-width: 320px/);
+});
+
+test('#464 · a selected run is ringed on both lanes, and a click or Enter selects a run', () => {
+  const data = icCases().explained;
+  const [first] = [...countedRuns(data)].sort((a, b) => (a.t < b.t ? -1 : 1));
+  const selected = countedRuns(data)[5];
+  const option = overview(data, { selectedRunId: selected.run_id });
+  const dot = [...byId(option, 'ic:dots:whole').data, ...byId(option, 'ic:dots:share').data]
+    .find(({ runId }) => runId === selected.run_id);
+  assert.deepEqual(byId(option, 'ic:selected:dot').data.map(({ value }) => value), [dot.value]);
+  assert.deepEqual(byId(option, 'ic:selected:end').data.map(({ value }) => value),
+    [[dayOf(selected.t), selected.outcome_bg]]);
+  assert.equal(byId(overview(data), 'ic:selected:dot').data.length, 0);
+
+  const listeners = new Map();
+  const surface = { clientWidth: 966, clientHeight: 459, tabIndex: -1, dataset: {},
+    setAttribute(key, value) { this[key] = value; },
+    addEventListener(type, handler, { signal } = {}) {
+      listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+    } };
+  const fire = (type, event = {}) => (listeners.get(type) || [])
+    .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+  const handlers = [];
+  const actions = [];
+  const chart = { on: (type, handler) => handlers.push([type, handler]),
+    off: (type, handler) => handlers.splice(handlers.findIndex((row) => row[1] === handler), 1),
+    dispatchAction: (action) => actions.push(action) };
+  const prior = globalThis.echarts;
+  globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+  try {
+    const chosen = [];
+    const built = overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
+    fire('pointerdown');
+    assert.deepEqual(handlers.map(([type]) => type), ['click']);
+    handlers[0][1]({ data: { runId: selected.run_id } });
+    handlers[0][1]({ data: { low: data.harm_evidence.lows[0] } });
+    assert.deepEqual(chosen, [selected.run_id], 'a dot or stem selects its run; a low selects nothing');
+
+    assert.equal(surface.tabIndex, 0, 'the tile takes focus');
+    fire('keydown', { key: 'ArrowRight' });
+    const tip = actions.at(-1);
+    assert.equal(tip.type, 'showTip');
+    assert.equal(built.series[tip.seriesIndex].data[tip.dataIndex].runId, first.run_id,
+      'the arrows walk the counted runs by date');
+    fire('keydown', { key: 'Enter' });
+    assert.deepEqual(chosen, [selected.run_id, first.run_id]);
+
+    /* A relayout rebuilds the option on the same host: the earlier binding
+       goes, so a click still selects once. */
+    overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
+    fire('pointerdown');
+    assert.equal(handlers.length, 1, 'one click binding per host');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
+/* A tile whose request fails, or that repaints, disposes its chart and keeps
+   its host. The host's handlers must then do nothing — never call into a chart
+   that is absent or disposed — and drop themselves. */
+test('#464 · the tile host handlers are inert and detach once the chart is absent or disposed', () => {
+  const data = icCases().explained;
+  const host = () => {
+    const listeners = new Map();
+    return {
+      listeners, clientWidth: 966, clientHeight: 459, tabIndex: -1,
+      setAttribute(key, value) { this[key] = value; },
+      addEventListener(type, handler, { signal } = {}) {
+        listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+      },
+      live: () => [...listeners.values()].flat().filter(({ signal }) => !signal?.aborted).length,
+      fire(type, event = {}) {
+        (listeners.get(type) || []).filter(({ signal }) => !signal?.aborted)
+          .forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+      },
+    };
+  };
+  const everything = (surface) => {
+    surface.fire('pointerdown');
+    for (const key of ['ArrowRight', 'Enter', 'End', 'ArrowLeft', 'Home']) surface.fire('keydown', { key });
+    surface.fire('blur');
+  };
+  const refusing = () => { throw new TypeError("Cannot read properties of null (reading 'getComponent')"); };
+  const disposedChart = { isDisposed: () => true, on: refusing, off: refusing, dispatchAction: refusing };
+  const prior = globalThis.echarts;
+  try {
+    for (const [name, chartFor] of [['absent', () => null], ['disposed', () => disposedChart]]) {
+      const surface = host();
+      const chosen = [];
+      globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chartFor() : undefined) };
+      overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
+      assert.ok(surface.live() > 0, 'premise: the build bound its handlers');
+      assert.doesNotThrow(() => everything(surface), `${name}: no call reaches the chart`);
+      assert.deepEqual(chosen, [], `${name}: nothing is selected without a chart`);
+      assert.equal(surface.live(), 0, `${name}: the host dropped every handler`);
+    }
+
+    /* A chart that was live when the click was bound, then disposed by the
+       tile leaving its chart state. */
+    const surface = host();
+    const handlers = [];
+    let disposed = false;
+    const chart = {
+      isDisposed: () => disposed,
+      on: (type, handler) => (disposed ? refusing() : handlers.push([type, handler])),
+      off: (type, handler) => (disposed ? refusing()
+        : handlers.splice(handlers.findIndex((row) => row[1] === handler), 1)),
+      dispatchAction: () => (disposed ? refusing() : undefined),
+    };
+    globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+    overview(data, { surface, onSelectRun: () => {} });
+    surface.fire('pointerdown');
+    surface.fire('keydown', { key: 'ArrowRight' });
+    assert.equal(handlers.length, 1, 'premise: the live chart took the click binding');
+    disposed = true;
+    assert.doesNotThrow(() => everything(surface), 'a disposed chart is never called');
+    assert.equal(surface.live(), 0, 'the host dropped every handler');
+    assert.doesNotThrow(() => overview(data, { surface, onSelectRun: () => {} }),
+      'a rebuild over the disposed chart does not call into it either');
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
+test('#464 · the tile reads aloud only the counts the block serves', () => {
+  const data = icCases().explained;
+  const { run_ends: ends, support_detail: detail } = data.block;
+  const groups = data.harm_evidence.groups;
+  assert.equal(overview(data).aria.description,
+    `${ends.n} counted meal runs: ${detail.whole_runs} counted whole, `
+    + `${detail.fractional_run_ownership} runs' worth counted by carb share; listed lows: `
+    + `${groups.counted_run} on counted runs, ${groups.uncounted_run} on runs not counted, `
+    + `${groups.not_a_meal_run} after a bolus that is not one of these meals. `
+    + `Block state: ${data.block.state}.`);
+});
+
+/* A block that is not measured yet still draws the runs it serves, but draws
+   no recommendation it was not served, and says which state it is in. */
+test('#464 · a block not in the numeric state names its served state and draws no unserved recommendation', () => {
+  const cases = icCases();
+  for (const name of ['below_floor', 'all_rejected']) {
+    const data = cases[name];
+    assert.notEqual(data.block.state, 'numeric', `premise: ${name} is not numeric`);
+    const option = overview(data);
+    assert.match(option.aria.description, new RegExp(` Block state: ${data.block.state}\\.$`));
+    const served = data.block.recommendation.value;
+    const rules = byId(option, 'ic:rules').markLine.data.map(({ name: rule }) => rule);
+    assert.equal(rules.includes('recommended'), Number.isFinite(served),
+      `${name} draws a recommended rule only when one is served`);
+    const axis = option.xAxis[0];
+    const cs = { x: 34, y: 44, width: 900, height: 100 };
+    const labels = byId(option, 'ic:rule-labels').renderItem({ coordSys: cs, dataIndex: 0 }, {
+      coord: ([value, y]) => [cs.x + (value - axis.min) / (axis.max - axis.min) * cs.width, y],
+    }).children.map(({ style }) => style.text);
+    assert.equal(labels.some((text) => text.startsWith('recommended')), Number.isFinite(served),
+      `${name} labels a recommendation only when one is served`);
+    assert.equal(byId(option, 'ic:dots:whole').data.length + byId(option, 'ic:dots:share').data.length,
+      countedRuns(data).length, `${name} still draws its served counted runs`);
+  }
+  assert.equal(cases.all_rejected.block.recommendation.value, null,
+    'premise: one case serves no recommendation');
+});
+
+/* The keys are filled or hollow as their marks are, never ECharts' `empty*`
+   icons, which fill with a hard-coded white; a hollow key is an outline path
+   filled with its mark's ink. */
+test('#464 · each legend key is filled or hollow as its mark is', () => {
+  const option = overview(icCases().explained);
+  const keys = Object.fromEntries(option.legend.flatMap(({ data }) => data)
+    .map(({ name, icon, itemStyle }) => [name, { icon, ink: itemStyle.color }]));
+  const hollow = ['counted by share', 'at the bolus', 'on a run not counted'];
+  const filled = ['whole run', 'where the run ended', 'listed low'];
+  for (const [solid, open] of [['whole run', 'counted by share'], ['where the run ended', 'at the bolus'],
+    ['listed low', 'on a run not counted']]) {
+    assert.notEqual(keys[solid].icon, keys[open].icon, `${solid} and ${open} key differently`);
+  }
+  assert.ok(hollow.every((name) => keys[name].icon.startsWith('path://')
+    && keys[name].icon.match(/M/g).length === 2), 'a hollow key is an outline path with its hole cut');
+  assert.ok(filled.every((name) => !/M.*M/.test(keys[name].icon)), 'a filled key has no hole');
+  assert.ok(Object.values(keys).every(({ icon }) => !icon.startsWith('empty')));
+  assert.equal(keys['counted by share'].icon, keys['at the bolus'].icon, 'one ring glyph');
+  const series = Object.fromEntries(option.series.map((item) => [item.name, item]));
+  for (const [name, { ink }] of Object.entries(keys)) {
+    const style = series[name].itemStyle;
+    assert.equal(ink, hollow.includes(name) ? style.borderColor : style.color,
+      `${name} keys in its mark's ink`);
+  }
+});
+
+test('#464 · the thumbnail and the queue-row mini draw the ratio strip alone', () => {
+  const data = icCases().explained;
+  const entry = carbRatioEntry();
+  const counted = countedRuns(data).length;
+  const dots = (option) => option.series.filter(({ id }) => id?.startsWith('ic:dots:'))
+    .reduce((sum, series) => sum + series.data.length, 0);
+  const mini = overview(data, { mini: true });
+  const thumbnail = entry.thumbnail(data, 'Carb ratio 00:00 to 12:00 · meal runs');
+  const queue = queuePreviewOption({ kind: 'carb-ratio', data }, [60, 240], {
+    text: '#f2ede2', muted: '#a49c90', line: '#3f3833', signal: '#86ad78' });
+  for (const option of [mini, thumbnail, queue]) {
+    assert.equal(dots(option), counted, 'every counted run is a dot');
+    assert.ok(option.series.some(({ id }) => id === 'ic:rules'), 'the three rules stay');
+    assert.ok(!option.series.some(({ id }) => /^ic:(stems|starts|ends|lows|band|rule-labels)/.test(id)),
+      'nothing from the lower lane, and no labels');
+    assert.ok([option.xAxis, option.yAxis].flat().every((axis) => axis.show === false));
+  }
+  assert.equal(mini.legend.show, false);
+  assert.equal(thumbnail.graphic[0].style.text, 'CARB RATIO 00:00 TO 12:00 · MEAL RUNS');
+  /* A mini dot is scaled down from the tile's, and still grows with its weight. */
+  const size = (option) => Math.max(...option.series.filter(({ id }) => id?.startsWith('ic:dots:'))
+    .flatMap(({ data: rows }) => rows.map(({ symbolSize }) => symbolSize)));
+  assert.ok(size(mini) < size(overview(data)));
 });

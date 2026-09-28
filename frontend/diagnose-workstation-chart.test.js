@@ -38,18 +38,20 @@ test('#341 · queue previews carry a purpose-built grammar for every evidence fa
     basal.nights.length, 'basal draws every served night around its programmed rate');
   assert.equal(options.isf.series.find(({ id }) => id === 'queue:isf:steps').data.length,
     isf.steps.length, 'correction factor draws every served dose/response step');
-  assert.equal(options.ic.series.filter(({ id }) => id?.startsWith('queue:ic:run:')).length,
-    ic.series.length, 'I:C preserves every served meal trace');
-  assert.deepEqual(options.ic.series.find(({ id }) => id === `queue:ic:run:${ic.series[0].run_id}`).data,
-    ic.series[0].points.map(({ minute, bg }) => [minute, bg]),
-    'I:C does not smooth or manufacture points');
+  const counted = ic.runs.filter((run) => ['counted-whole', 'counted-by-share'].includes(run.pool_reason));
+  assert.deepEqual(options.ic.series.filter(({ id }) => id.startsWith('ic:dots:'))
+    .flatMap(({ data }) => data.map(({ runId, value }) => [runId, value[0]])),
+  counted.map((run) => [run.run_id, run.true_ic]),
+  'carb ratio draws every counted run at its served ratio, and nothing else');
   const supported = event.projection.cohorts.filter((cohort) =>
     cohort.points.some((point) => point.support !== 'withheld' && Number.isFinite(point.median)));
   assert.equal(options.event.series.filter(({ id }) => id?.endsWith(':median')).length,
     supported.length, 'behavioral previews draw each cohort with served aggregate support');
   assert.ok(options.basal.series.some(({ id }) => id === 'queue:basal:programmed'));
   assert.ok(options.isf.series.some(({ id }) => id === 'queue:isf:zero'));
-  assert.ok(options.ic.series.some(({ id }) => id === 'queue:ic:meal-anchor'));
+  assert.deepEqual(options.ic.series.find(({ id }) => id === 'ic:rules').markLine.data
+    .map(({ xAxis }) => xAxis), [ic.block.current, ic.block.recommendation?.value,
+    ic.block.estimate?.value].filter(Number.isFinite));
   assert.ok(options.event.series.some(({ id }) => id === 'queue:event:event-anchor'));
   for (const option of Object.values(options)) {
     assert.equal(option.xAxis.show, false);
@@ -113,19 +115,6 @@ test('#413 · a withheld claimed cohort mutes its label, and the anchor label is
 });
 
 test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
-  const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
-    runs: [{ run_id: 'meal', in_pool: true }],
-    series: [{ run_id: 'meal', points: [
-      { minute: -5, bg: 110 }, { minute: 0, bg: null }, { minute: 5, bg: 130 },
-    ] }],
-  } }, [60, 240], previewColors);
-  const meal = ic.series.find(({ id }) => id === 'queue:ic:run:meal');
-  assert.deepEqual(meal.data, [[-5, 110], [0, null], [5, 130]]);
-  assert.equal(meal.connectNulls, false);
-  assert.notEqual(meal.symbol, 'none', 'isolated served meal points remain visible');
-  assert.equal(meal.itemStyle.color, previewColors.signal,
-    'meal symbols use the same evidence ink as their trace');
-
   const event = queuePreviewOption({ kind: 'event-comparison', data: { projection: {
     window_min: [-10, 20], cohorts: [{ key: 'matched', name: 'Matched', points: [
       { minute: -10, median: 100, p25: 90, p75: 110, support: 'supported' },

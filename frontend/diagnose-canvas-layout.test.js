@@ -238,3 +238,21 @@ test('a past-setting row publishes no chart, so All charts cannot restore it', (
   assert.deepEqual(descriptorsFromFindings({ rows: [history] }, registry), [],
     'a window of nothing but past-setting rows still publishes no chart');
 });
+
+/* A CARB-RATIO BLOCK HAS ONE VIEW (#464, the settled block design). A kind with
+   one view declares no modes — the precedent basal and the comparison kinds set
+   — so its descriptor carries no mode and its tile draws no mode toggle. The
+   registry here is the shipped one, so the pin cannot drift from it. */
+test('a carb-ratio tile opens on its one view and declares no mode to toggle', async () => {
+  const { DIAGNOSE_EVIDENCE_CHARTS } = await import('./diagnose-evidence-charts.js');
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
+  const [descriptor] = descriptorsFromFindings({ analysis_generation: 'process:7', rows: [
+    { id: 'ic:0', register: 'assert', parameter: 'carb_ratio',
+      span: { start_min: 0, end_min: 720, label: '00:00 to 12:00' } },
+  ] }, DIAGNOSE_EVIDENCE_CHARTS);
+
+  assert.equal(entry.modes, null, 'one view is no modes, as the one-view kinds declare it');
+  assert.equal(descriptor.kind, 'carb-ratio');
+  assert.equal(descriptor.mode, null);
+  assert.equal(typeof entry.meta(descriptor.mode), 'string');
+});

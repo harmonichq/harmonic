@@ -843,9 +843,18 @@ function icPanelText(host) {
   return [...host.html, ...host.children.slice(1).map((child) => child.innerHTML)].join('\n');
 }
 
-function renderIcPanel(evidence, options = {}) {
+/* The capture's held overnight block, as the analyze feed serves its cell: no
+   move asserted, so nothing recommended. */
+const icHeldCell = buildIcBlocks([{
+  block_id: 1200, label: 'Overnight', start_min: 1200, end_min: 420, current_values: [5.0],
+  recommended: null, direction: null, asserts_move: false, state: 'numeric',
+  n_runs: 9, n_meals: 18, annotation: null, held_reason: null,
+  estimate: { value: 5.0, lo: 5.0, hi: 5.0, wide: false },
+}])[0];
+
+function renderIcPanel(evidence, options = {}, cell = icBlockCell) {
   const host = new RosterElement();
-  renderIcBlockLevel(host, icBlockCell, new Set(), () => {}, null, { evidence, ...options });
+  renderIcBlockLevel(host, cell, new Set(), () => {}, null, { evidence, ...options });
   return host;
 }
 
@@ -876,10 +885,10 @@ test('#464 · each panel line prints the served values of the explained block', 
       '<div class="lvl-cap">Why this move</div>',
       '<div class="slot-stats">18 of 24 counted runs measured looser than 5.00 g/U; the estimate\'s range 5.25–5.48 leaves 5.00 out.</div>',
       '<div class="slot-stats">The ratio counts all the insulin a run used — boluses, corrections, Control-IQ basal changes — with the glucose change converted at your correction factor, judged where the run ended.</div>',
-      '<div class="slot-stats">For 10 of 24 runs that end came after a later meal past 12:00; there 8 ended lower, 16 about flat, 0 higher.</div>',
+      '<div class="slot-stats">Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they ended; for 10 of them that end came after a later meal past 12:00.</div>',
       '<div class="slot-stats">Recommended 5.20 is half the gap from the programmed 5.00 toward the 5.37 estimate, rounded to the pump\'s 0.1 g/U step.</div>',
       '<div class="lvl-cap">The case against</div>',
-      '<div class="slot-stats">8 of the 26 morning meals on counted runs peaked above 180 before their next bolus (13 counting later meals within 5 h 15 min); a looser ratio can raise peaks.</div>',
+      '<div class="slot-stats">8 of the 26 morning meals on counted runs peaked above 180 before their next bolus (13 counting later meals within 5 h 15 min of the bolus); a looser ratio can raise peaks.</div>',
       '<div class="lvl-cap">Lows after morning boluses</div>',
       '<div class="slot-stats">2 lows, 3 h 30 min to 3 h 30 min after the bolus; the 2 lows on counted runs point toward less insulin, the same way as the suggestion.</div>',
     ]) assert.ok(text.includes(line), `missing: ${line}`);
@@ -921,7 +930,9 @@ test('#464 · a payload missing a served fact prints the unavailable line beneat
     for (const drop of [(p) => { delete p.runs; }, (p) => { delete p.harm_evidence.lows; },
       (p) => { delete p.outcomes.counts; }, (p) => { delete p.block.state; },
       (p) => { p.block.state = 'numerical'; }, (p) => { delete p.harm_evidence.groups.counted_run; },
-      (p) => { delete p.block.run_ends.flat; }]) {
+      (p) => { delete p.block.run_ends.flat; }, (p) => { delete p.outcomes.window_min; },
+      (p) => { delete p.block.direction; }, (p) => { p.block.direction = 'up'; },
+      (p) => { delete p.harm_evidence.groups.total; }]) {
       const evidence = structuredClone(icExplained);
       drop(evidence);
       const host = renderIcPanel(evidence);
@@ -933,12 +944,51 @@ test('#464 · a payload missing a served fact prints the unavailable line beneat
   });
 });
 
-test('#464 · the lows count prints the served groups\' sum, not the row count', () => {
+test('#464 · the lows count prints the served total, not the row count', () => {
   withRosterDocument(() => {
     const evidence = structuredClone(icExplained);
-    evidence.harm_evidence.groups.not_a_meal_run = 3;
+    evidence.harm_evidence.groups.total = 5;
     const text = icPanelText(renderIcPanel(evidence));
     assert.ok(text.includes('<div class="slot-stats">5 lows, 3 h 30 min to 3 h 30 min after the bolus;'));
+  });
+});
+
+test('#464 · the case against prints the served window, and a looser ratio only on a served raise', () => {
+  withRosterDocument(() => {
+    assert.equal(icExplained.block.direction, 'raise', 'premise: the explained block asserts a raise');
+    const caseAgainst = (text) => text.split('\n')
+      .find((line) => line.includes('meals on counted runs peaked above'));
+    const widened = structuredClone(icExplained);
+    widened.outcomes.window_min = 240;
+    assert.equal(caseAgainst(icPanelText(renderIcPanel(widened))),
+      '<div class="inner"><div class="slot-stats">8 of the 26 morning meals on counted runs peaked above 180 '
+      + 'before their next bolus (13 counting later meals within 4 h of the bolus); a looser ratio can '
+      + 'raise peaks.</div></div>');
+
+    /* A held block serves no move, even where its runs measured looser. */
+    const unmoved = structuredClone(icExplained);
+    unmoved.block.direction = null;
+    assert.equal(unmoved.block.side.direction, 'above', 'premise: the runs still measured looser');
+    assert.doesNotMatch(icPanelText(renderIcPanel(unmoved)), /a looser ratio can raise peaks/);
+
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
+    assert.equal(caseAgainst(icPanelText(renderIcPanel(held, {}, icHeldCell))),
+      '<div class="inner"><div class="slot-stats">0 of the 18 overnight meals on counted runs peaked above 180 '
+      + 'before their next bolus (0 counting later meals within 5 h 15 min of the bolus).</div></div>');
+  });
+});
+
+test('#464 · a held block\'s panel prints no recommendation step', () => {
+  withRosterDocument(() => {
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.asserts_move, false, 'premise: the overnight block is held');
+    assert.equal(held.block.state, 'numeric', 'premise: and measured');
+    const text = icPanelText(renderIcPanel(held, {}, icHeldCell));
+    assert.ok(text.includes('<div class="lvl-cap">Why this move</div>'));
+    assert.ok(text.includes('<div class="slot-stats">Of the 9 counted runs, 0 ended lower than they started, '
+      + '9 about flat and 0 higher, where they ended; for 0 of them that end came after a later meal past 07:00.</div>'));
+    assert.doesNotMatch(text, /Recommended|half the gap/);
   });
 });
 

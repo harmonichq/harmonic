@@ -1083,8 +1083,8 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
    class, side, reason or threshold: every figure below is a served field, and the
    words around it are fixed copy. The reader words for served keys are the only
    maps this panel keeps. */
-const COUNTED_POOL_REASONS = new Set(['counted-whole', 'counted-by-share']);
 const SIDE_WORD = { above: 'looser', below: 'tighter' };
+const BLOCK_DIRECTIONS = new Set(['raise', 'lower', null]);
 const LOW_GROUPS = [
   ['counted-run', 'counted_run', 'On counted runs'],
   ['uncounted-run', 'uncounted_run', 'On runs not counted'],
@@ -1143,18 +1143,23 @@ function readIcBlockEvidence(evidence, options) {
   const ends = block.run_ends;
   const endMin = servedNumber(block.end_min);
   const blockEnd = endMin === 1440 ? '24:00' : hhmm(endMin);
-  const direction = servedOrNull(block.side.direction);
-  if (direction !== null && !SIDE_WORD[direction]) throw new TypeError('served side unknown');
+  const side = servedOrNull(block.side.direction);
+  if (side !== null && !SIDE_WORD[side]) throw new TypeError('served side unknown');
+  // The move the block asserts, null on a held block: only it can speak of a looser ratio.
+  const move = servedOrNull(block.direction);
+  if (!BLOCK_DIRECTIONS.has(move)) throw new TypeError('served direction unknown');
   const ratio = (value) => u(servedNumber(value));
   const markup = ['<div class="lvl-cap">Why this move</div>', lines([
     // The side is served only when the estimate's range leaves the programmed value out.
-    direction && `${servedNumber(block.side.side_k)} of ${servedNumber(block.side.side_n)} counted runs `
-      + `measured ${SIDE_WORD[direction]} than ${ratio(block.current)} g/U; the estimate's range `
+    side && `${servedNumber(block.side.side_k)} of ${servedNumber(block.side.side_n)} counted runs `
+      + `measured ${SIDE_WORD[side]} than ${ratio(block.current)} g/U; the estimate's range `
       + `${ratio(block.estimate.lo)}–${ratio(block.estimate.hi)} leaves ${ratio(block.current)} out.`,
     IC_MECHANISM,
-    servedNumber(ends.n) > 0 && `For ${servedNumber(ends.after_later_meal)} of ${ends.n} runs that end `
-      + `came after a later meal past ${blockEnd}; there ${servedNumber(ends.lower)} ended lower, `
-      + `${servedNumber(ends.flat)} about flat, ${servedNumber(ends.higher)} higher.`,
+    // The end counts are over every counted run; the later-meal count is its own clause.
+    servedNumber(ends.n) > 0 && `Of the ${ends.n} counted runs, ${servedNumber(ends.lower)} ended lower `
+      + `than they started, ${servedNumber(ends.flat)} about flat and ${servedNumber(ends.higher)} higher, `
+      + `where they ended; for ${servedNumber(ends.after_later_meal)} of them that end came after a later `
+      + `meal past ${blockEnd}.`,
     servedOrNull(block.recommendation.sentence),
   ])];
 
@@ -1164,7 +1169,8 @@ function readIcBlockEvidence(evidence, options) {
       `${servedNumber(counts.peaked_above_high_before_next)} of the ${counts.meals_on_counted_runs} `
         + `${noun} meals on counted runs peaked above ${servedNumber(outcomes.band.high)} before their `
         + `next bolus (${servedNumber(counts.peaked_above_high_in_window)} counting later meals within `
-        + `5 h 15 min)${direction === 'above' ? '; a looser ratio can raise peaks' : ''}.`,
+        + `${fmtMinutes(servedNumber(outcomes.window_min))} of the bolus)`
+        + `${move === 'raise' ? '; a looser ratio can raise peaks' : ''}.`,
     ]));
   }
 
@@ -1188,8 +1194,8 @@ function readIcBlockEvidence(evidence, options) {
     };
   }).filter((group) => group.servedCount > 0);
   if (lows.length) {
-    // The count is the served groups' own, not a length of the rows below it.
-    const total = LOW_GROUPS.reduce((sum, [, countKey]) => sum + servedNumber(harm.groups[countKey]), 0);
+    // The count is the served total, not a length of the rows below it.
+    const total = servedNumber(harm.groups.total);
     const bearing = servedOrNull(harm.bearing_sentence);
     markup.push(`<div class="lvl-cap">Lows after ${noun} boluses</div>`, lines([
       `${total} low${total === 1 ? '' : 's'}, ${fmtMinutes(servedNumber(harm.minutes_after_bolus_min))} to `

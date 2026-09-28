@@ -1686,8 +1686,7 @@ test('#395 · Pattern evidence joins the shared field and malformed previews fai
    a served field; these tests read the option the registry builds from the
    synthetic capture, `explained` above all. */
 const icCases = () => fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases;
-const COUNTED_REASONS = ['counted-whole', 'counted-by-share'];
-const countedRuns = (data) => data.runs.filter((run) => COUNTED_REASONS.includes(run.pool_reason));
+const countedRuns = (data) => data.runs.filter((run) => run.in_pool === true);
 const carbRatioEntry = () => DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'carb-ratio');
 const overview = (data, context = {}) => carbRatioEntry().option('overview', { data, ...context });
 const byId = (option, id) => option.series.find((series) => series.id === id);
@@ -1723,6 +1722,23 @@ test('#464 · the ratio strip draws one dot per counted run at its served ratio'
   assert.equal(share.itemStyle.color, 'transparent');
   assert.equal(share.itemStyle.borderColor, whole.itemStyle.color);
   assert.equal(share.itemStyle.borderWidth, 2);
+});
+
+test('#464 · the served in_pool flag, not the pool reason, decides which runs are drawn', () => {
+  const data = structuredClone(icCases().explained);
+  const dropped = data.runs.find((run) => run.in_pool && run.pool_reason === 'counted-whole');
+  const added = data.runs.find((run) => !run.in_pool && Number.isFinite(run.true_ic)
+    && Number.isFinite(run.start_bg) && Number.isFinite(run.outcome_bg));
+  assert.ok(dropped && added, 'premise: the capture serves a counted and an uncounted run');
+  dropped.in_pool = false;
+  added.in_pool = true;
+  const option = overview(data);
+  const drawn = (id) => byId(option, id).data.map(({ runId }) => runId);
+  const dots = [...drawn('ic:dots:whole'), ...drawn('ic:dots:share')];
+  for (const ids of [dots, drawn('ic:stems')]) {
+    assert.ok(!ids.includes(dropped.run_id), 'a run the server does not count is not drawn');
+    assert.ok(ids.includes(added.run_id), 'a run the server counts is drawn');
+  }
 });
 
 test('#464 · a dot grows with its served fit weight, 8 to 14 px', () => {
@@ -1892,12 +1908,14 @@ test('#464 · no carb-ratio option draws a directional-only run, a meal, or a pe
 });
 
 test('#464 · the tooltip reads a run its served ledger terms and a low its served delay', () => {
-  const data = icCases().explained;
-  const option = overview(data);
+  const data = structuredClone(icCases().explained);
   const run = countedRuns(data).find((row) => row.pool_reason === 'counted-by-share');
+  // The corrections print the served total, never a client sum of its terms.
+  run.post_correction_total = 1.25;
+  const option = overview(data);
   const dot = byId(option, 'ic:dots:share').data.find(({ runId }) => runId === run.run_id);
   const lines = option.tooltip.formatter({ data: dot }).split('<br>');
-  const corrections = run.post_correction_user + run.post_correction_ciq + run.post_correction_unknown;
+  const corrections = 1.25;
   const end = { lower: 'lower', flat: 'about flat', higher: 'higher' }[run.end_class];
   assert.deepEqual(lines, [
     run.t.slice(0, 10),
@@ -2261,6 +2279,23 @@ test('#464 · a block not in the numeric state names its served state and draws 
   }
   assert.equal(cases.all_rejected.block.recommendation.value, null,
     'premise: one case serves no recommendation');
+});
+
+test('#464 · a measured block that asserts no move draws no recommended rule or label', () => {
+  for (const name of ['cross_midnight', 'directional_only']) {
+    const data = icCases()[name];
+    assert.equal(data.block.asserts_move, false, `premise: ${name} is held`);
+    assert.equal(data.block.state, 'numeric', `premise: ${name} is measured`);
+    const option = overview(data);
+    assert.deepEqual(byId(option, 'ic:rules').markLine.data.map(({ name: rule }) => rule),
+      ['programmed', 'estimate'], `${name} draws no recommended rule`);
+    const axis = option.xAxis[0];
+    const cs = { x: 34, y: 44, width: 900, height: 100 };
+    const labels = byId(option, 'ic:rule-labels').renderItem({ coordSys: cs, dataIndex: 0 }, {
+      coord: ([value, y]) => [cs.x + (value - axis.min) / (axis.max - axis.min) * cs.width, y],
+    }).children.map(({ style }) => style.text);
+    assert.ok(!labels.some((text) => text.startsWith('recommended')), `${name} labels no recommendation`);
+  }
 });
 
 /* The keys are filled or hollow as their marks are, never ECharts' `empty*`

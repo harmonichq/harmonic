@@ -71,15 +71,15 @@ export const hhmm = (mins) => {
 };
 
 /* A CARB-RATIO BLOCK'S RATIO STRIP (#464, the settled block design). One axis,
-   the carb ratio: one dot per counted run at its served ratio, sized by its
-   served fit weight, a whole run filled and a run counted by share a ring, all
-   in the text ink. Behind them, three 1 px rules at the served programmed
-   (solid), recommended (dotted) and estimated (dashed, the data ink) ratios, and
-   the estimate's served range as one faint wash. The dots share one row and
-   stack only where two fall in the same tenth of a g/U. The tile's upper lane,
-   the drawer thumbnail and the queue row's mini all draw the block through
-   this, so no two of them can disagree about a dot. */
-export const COUNTED_POOL_REASONS = Object.freeze(['counted-whole', 'counted-by-share']);
+   the carb ratio: one dot per run the server counts (`in_pool`) at its served
+   ratio, sized by its served fit weight, a whole run filled and a run counted
+   by share a ring, all in the text ink. Behind them, three 1 px rules at the
+   served programmed (solid), recommended (dotted) and estimated (dashed, the
+   data ink) ratios, and the estimate's served range as one faint wash; a rule
+   the block is not served, as a held block's recommendation, is not drawn. The
+   dots share one row and stack only where two fall in the same tenth of a g/U.
+   The tile's upper lane, the drawer thumbnail and the queue row's mini all draw
+   the block through this, so no two of them can disagree about a dot. */
 /* Canvas text has no flow, so a label's width is its character count off the
    face's advance — taken wide, so a label judged clear never touches its
    neighbour. A label drops to the second row, or slides along its row, only
@@ -113,8 +113,7 @@ function placeRuleLabels(labels, cs, at) {
 export function ratioStrip(data, ink, { mini = false } = {}) {
   const block = data?.block || {};
   const estimate = block.estimate || {};
-  const counted = (data?.runs || []).filter((run) =>
-    COUNTED_POOL_REASONS.includes(run.pool_reason) && Number.isFinite(run.true_ic));
+  const counted = (data?.runs || []).filter((run) => run.in_pool === true && Number.isFinite(run.true_ic));
   const rules = [
     ['programmed', block.current, 'solid', ink.text],
     ['recommended', block.recommendation?.value, 'dotted', ink.text],
@@ -143,10 +142,10 @@ export function ratioStrip(data, ink, { mini = false } = {}) {
     const level = levels.get(bin) ?? 0;
     levels.set(bin, level + 1);
     return { value: [run.true_ic, level], runId: run.run_id, symbolSize: size(run.fit_weight),
-      poolReason: run.pool_reason };
+      whole: run.pool_reason === 'counted-whole' };
   });
-  const population = (reason) => dots.filter(({ poolReason }) => poolReason === reason)
-    .map(({ poolReason: _reason, ...dot }) => dot);
+  const population = (whole) => dots.filter((dot) => dot.whole === whole)
+    .map(({ whole: _whole, ...dot }) => dot);
   const labels = rules.map(([name, value, , color]) => ({ value, color,
     text: name === 'estimate' && ranged
       ? `estimate ${value.toFixed(2)} (${estimate.lo.toFixed(2)}–${estimate.hi.toFixed(2)})`
@@ -163,11 +162,11 @@ export function ratioStrip(data, ink, { mini = false } = {}) {
           itemStyle: { color: ink.signal, opacity: .06 },
           data: [[{ xAxis: estimate.lo }, { xAxis: estimate.hi }]] } } : {}) },
       { id: 'ic:dots:whole', name: 'whole run', type: 'scatter', symbol: 'circle', z: 5,
-        animation: false, data: population('counted-whole'), itemStyle: { color: ink.text } },
+        animation: false, data: population(true), itemStyle: { color: ink.text } },
       /* A ring is a transparent disc with a border: ECharts' own hollow symbols
          fill with a hard-coded white. */
       { id: 'ic:dots:share', name: 'counted by share', type: 'scatter', symbol: 'circle', z: 5,
-        animation: false, data: population('counted-by-share'),
+        animation: false, data: population(false),
         itemStyle: { color: 'transparent', borderColor: ink.text, borderWidth: mini ? 1 : 2 } },
       ...(mini ? [] : [{ id: 'ic:rule-labels', type: 'custom', data: [[min, 0]], silent: true,
         clip: false, animation: false, z: 6,

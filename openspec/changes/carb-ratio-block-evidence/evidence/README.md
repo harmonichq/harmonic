@@ -43,7 +43,7 @@ ids.
 | `replay-S189-1440x900.txt` | the same at `VIEWPORT=1440x900`: 1 of 1 passed |
 | `replay-S192-S193-1280x720.txt` | S203 and S204 as amended, `VIEWPORT=1280x720`: 2 of 2 passed |
 | `replay-S192-S193-1440x900.txt` | the same at `VIEWPORT=1440x900`: 2 of 2 passed |
-| `replay-final-1280x720.txt` | all eleven stories on the final code commit 8ccd68cf, after the whole-diff review's fixes, `VIEWPORT=1280x720`: 11 of 11 passed |
+| `replay-final-1280x720.txt` | all eleven stories (S197–S207) on the final code commit 65f4f4c7, after the merge of main and the whole-diff review's fixes, `VIEWPORT=1280x720`: 11 of 11 passed |
 | `replay-final-1440x900.txt` | the same at `VIEWPORT=1440x900`: 11 of 11 passed |
 
 Final outcome: all eleven stories pass at both viewports. S197–S199, S201,

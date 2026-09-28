@@ -1973,6 +1973,72 @@ test('#464 · a selected run is ringed on both lanes, and a click or Enter selec
   }
 });
 
+/* The keyed tip lands on the run's own dot, but ECharts re-shows a tip by pixel
+   on every later render, and a relayout is a rebuild — so in a column of runs
+   sharing one ratio the tip can resolve to any dot of that column. ECharts'
+   manual tip is a no-op under node, so the tip is modelled here as the re-show
+   does it: the tooltip formatter handed each dot of the cursor run's column. */
+test('#464 · the keyboard readout names the run under the cursor, even where its dot is stacked', () => {
+  const data = icCases().explained;
+  const [first, second] = [...countedRuns(data)].sort((a, b) => (a.t < b.t ? -1 : 1));
+  const dots = (option) => [...byId(option, 'ic:dots:whole').data, ...byId(option, 'ic:dots:share').data];
+  const column = (option, run) => {
+    const own = dots(option).find(({ runId }) => runId === run.run_id);
+    return dots(option).filter(({ value }) => value[0] === own.value[0]);
+  };
+  const readouts = (option, run) => column(option, run)
+    .map((dot) => option.tooltip.formatter({ data: dot }).split('<br>').slice(0, 2).join(' '));
+  const named = (run) => `${run.t.slice(0, 10)} ${run.t.slice(11, 16)}`;
+  const prior = globalThis.echarts;
+  try {
+    for (const [size, relaid] of [[[966, 459], [806, 240]], [[806, 240], [966, 459]]]) {
+      const listeners = new Map();
+      const surface = { clientWidth: size[0], clientHeight: size[1], tabIndex: -1,
+        setAttribute(key, value) { this[key] = value; },
+        addEventListener(type, handler, { signal } = {}) {
+          listeners.set(type, [...(listeners.get(type) || []), { handler, signal }]);
+        } };
+      const fire = (type, event = {}) => (listeners.get(type) || [])
+        .filter(({ signal }) => !signal?.aborted).forEach(({ handler }) => handler({ preventDefault() {}, ...event }));
+      const actions = [];
+      const chart = { on() {}, off() {}, dispatchAction: (action) => actions.push(action) };
+      globalThis.echarts = { getInstanceByDom: (el) => (el === surface ? chart : undefined) };
+      const chosen = [];
+      const build = () => overview(data, { surface, onSelectRun: (runId) => chosen.push(runId) });
+      const keyed = (option) => option.series[actions.at(-1).seriesIndex].data[actions.at(-1).dataIndex].runId;
+      const at = `${size.join('×')}`;
+
+      let option = build();
+      for (const run of [first, second]) {
+        assert.ok(column(option, run).length > 1, `premise: ${named(run)} shares its ratio column (${at})`);
+      }
+      fire('keydown', { key: 'ArrowRight' });
+      assert.equal(keyed(option), first.run_id, `the tip is keyed to the first run by date (${at})`);
+      assert.deepEqual(readouts(option, first), column(option, first).map(() => named(first)),
+        `every dot of the column reads out the first run (${at})`);
+
+      [surface.clientWidth, surface.clientHeight] = relaid;
+      option = build();
+      assert.deepEqual(readouts(option, first), column(option, first).map(() => named(first)),
+        `a relayout to ${relaid.join('×')} keeps reading the first run (${at})`);
+
+      fire('keydown', { key: 'ArrowRight' });
+      assert.equal(keyed(option), second.run_id, `the next arrow keys the second run (${at})`);
+      assert.deepEqual(readouts(option, second), column(option, second).map(() => named(second)),
+        `every dot of the column reads out the second run (${at})`);
+      fire('keydown', { key: 'Enter' });
+      assert.deepEqual(chosen, [second.run_id], `Enter selects the run being read (${at})`);
+
+      fire('pointermove');
+      const neighbour = column(option, second).find(({ runId }) => runId !== second.run_id);
+      assert.notEqual(option.tooltip.formatter({ data: neighbour }).split('<br>').slice(0, 2).join(' '),
+        named(second), `a moving pointer hands the readout back to the dot under it (${at})`);
+    }
+  } finally {
+    globalThis.echarts = prior;
+  }
+});
+
 /* A tile whose request fails, or that repaints, disposes its chart and keeps
    its host. The host's handlers must then do nothing — never call into a chart
    that is absent or disposed — and drop themselves. */

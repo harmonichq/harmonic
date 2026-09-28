@@ -150,13 +150,19 @@ def _explained():
     pooled morning chains that spike and then print a low attributed to their first
     meal (on separate days), ten runs chained across the midday boundary, one run
     read into a CGM gap, and three runs dosed under the value a snapshot retired
-    inside the window.
+    inside the window.  The first spiking morning meal's own window carries a short
+    sensor gap — two store readings with no glucose value, clear of its peak and nadir.
     """
     events, cgm, basal, lows = [], [], [], []
     for day in range(25, 37):
         event = _meal(day, 9, bg=None)
         events.append(event)
-        cgm.extend(_trace(event.t, _ran_high if day % 2 else _in_range))
+        trace = _trace(event.t, _ran_high if day % 2 else _in_range)
+        if day == 25:
+            gap = {event.t + timedelta(minutes=minute) for minute in (60, 65)}
+            trace = [CgmReading(reading.t, None, reading.type) if reading.t in gap
+                     else reading for reading in trace]
+        cgm.extend(trace)
     for day in (37, 38):
         first = _meal(day, 9, bg=None)
         second = _meal(day, 11, carbs=50.0, insulin=10.0, bg=None)

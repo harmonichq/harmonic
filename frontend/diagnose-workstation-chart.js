@@ -70,10 +70,121 @@ export const hhmm = (mins) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 };
 
+/* A CARB-RATIO BLOCK'S RATIO STRIP (#464, the settled block design). One axis,
+   the carb ratio: one dot per counted run at its served ratio, sized by its
+   served fit weight, a whole run filled and a run counted by share a ring, all
+   in the text ink. Behind them, three 1 px rules at the served programmed
+   (solid), recommended (dotted) and estimated (dashed, the data ink) ratios, and
+   the estimate's served range as one faint wash. The dots share one row and
+   stack only where two fall in the same tenth of a g/U. The tile's upper lane,
+   the drawer thumbnail and the queue row's mini all draw the block through
+   this, so no two of them can disagree about a dot. */
+export const COUNTED_POOL_REASONS = Object.freeze(['counted-whole', 'counted-by-share']);
+/* Canvas text has no flow, so a label's width is its character count off the
+   face's advance — taken wide, so a label judged clear never touches its
+   neighbour. A label drops to the second row, or slides along its row, only
+   where it would meet one already placed; the cost of a row is a slide of
+   this many pixels. */
+const RULE_LABEL = Object.freeze({ size: 11, advance: .6, pitch: 14, lift: 4, gap: 6, rowCost: 24 });
+
+function placeRuleLabels(labels, cs, at) {
+  const placed = [];
+  const within = (left, width) => Math.min(Math.max(left, cs.x), cs.x + cs.width - width);
+  for (const label of [...labels].sort((a, b) => a.value - b.value)) {
+    const width = label.text.length * RULE_LABEL.size * RULE_LABEL.advance;
+    const ideal = at(label.value) - width / 2;
+    let seat = null;
+    for (const row of [0, 1]) {
+      const taken = placed.filter((other) => other.row === row);
+      const clear = (left) => taken.every((other) => left >= other.left + other.width + RULE_LABEL.gap
+        || left + width + RULE_LABEL.gap <= other.left);
+      const lefts = [ideal, ...taken.flatMap((other) => [other.left + other.width + RULE_LABEL.gap,
+        other.left - RULE_LABEL.gap - width])].map((left) => within(left, width)).filter(clear);
+      for (const left of lefts) {
+        const cost = Math.abs(left - ideal) + row * RULE_LABEL.rowCost;
+        if (!seat || cost < seat.cost) seat = { row, left, cost };
+      }
+    }
+    placed.push({ ...label, width, ...(seat || { row: 1, left: within(ideal, width) }) });
+  }
+  return placed;
+}
+
+export function ratioStrip(data, ink, { mini = false } = {}) {
+  const block = data?.block || {};
+  const estimate = block.estimate || {};
+  const counted = (data?.runs || []).filter((run) =>
+    COUNTED_POOL_REASONS.includes(run.pool_reason) && Number.isFinite(run.true_ic));
+  const rules = [
+    ['programmed', block.current, 'solid', ink.text],
+    ['recommended', block.recommendation?.value, 'dotted', ink.text],
+    ['estimate', estimate.value, 'dashed', ink.signal],
+  ].filter(([, value]) => Number.isFinite(value));
+  const ranged = Number.isFinite(estimate.lo) && Number.isFinite(estimate.hi);
+  /* The scale spans what the lane draws, rounded out to the half g/U with a
+     tenth of air, so no dot or rule sits on the frame. */
+  const values = [...counted.map((run) => run.true_ic), ...rules.map(([, value]) => value),
+    ...(ranged ? [estimate.lo, estimate.hi] : [])];
+  const [min, max] = values.length
+    ? [Math.floor((Math.min(...values) - .1) * 2) / 2, Math.ceil((Math.max(...values) + .1) * 2) / 2]
+    : [3.5, 7];
+  /* Diameter by the square root of the weight, so a dot's area carries it. */
+  const roots = counted.map((run) => run.fit_weight).filter(Number.isFinite).map(Math.sqrt);
+  const [light, heavy] = [Math.min(...roots), Math.max(...roots)];
+  const [small, large] = mini ? [4, 7] : [8, 14];
+  const size = (weight) => {
+    if (!Number.isFinite(weight)) return small;
+    return heavy > light
+      ? small + (large - small) * (Math.sqrt(weight) - light) / (heavy - light) : (small + large) / 2;
+  };
+  const levels = new Map();
+  const dots = counted.map((run) => {
+    const bin = Math.round(run.true_ic * 10);
+    const level = levels.get(bin) ?? 0;
+    levels.set(bin, level + 1);
+    return { value: [run.true_ic, level], runId: run.run_id, symbolSize: size(run.fit_weight),
+      poolReason: run.pool_reason };
+  });
+  const population = (reason) => dots.filter(({ poolReason }) => poolReason === reason)
+    .map(({ poolReason: _reason, ...dot }) => dot);
+  const labels = rules.map(([name, value, , color]) => ({ value, color,
+    text: name === 'estimate' && ranged
+      ? `estimate ${value.toFixed(2)} (${estimate.lo.toFixed(2)}–${estimate.hi.toFixed(2)})`
+      : `${name} ${value.toFixed(2)}` }));
+  return {
+    xAxis: { type: 'value', min, max, interval: .5 },
+    yAxis: { type: 'value', min: -1, max: Math.max(1, ...levels.values()) + 1, show: false },
+    series: [
+      { id: 'ic:rules', type: 'line', data: [], silent: true, animation: false,
+        markLine: { symbol: 'none', silent: true, animation: false, label: { show: false },
+          data: rules.map(([name, value, type, color]) => ({ name, xAxis: value,
+            lineStyle: { type, color, width: 1 } })) },
+        ...(ranged ? { markArea: { silent: true, animation: false,
+          itemStyle: { color: ink.signal, opacity: .06 },
+          data: [[{ xAxis: estimate.lo }, { xAxis: estimate.hi }]] } } : {}) },
+      { id: 'ic:dots:whole', name: 'whole run', type: 'scatter', symbol: 'circle', z: 5,
+        animation: false, data: population('counted-whole'), itemStyle: { color: ink.text } },
+      /* A ring is a transparent disc with a border: ECharts' own hollow symbols
+         fill with a hard-coded white. */
+      { id: 'ic:dots:share', name: 'counted by share', type: 'scatter', symbol: 'circle', z: 5,
+        animation: false, data: population('counted-by-share'),
+        itemStyle: { color: 'transparent', borderColor: ink.text, borderWidth: mini ? 1 : 2 } },
+      ...(mini ? [] : [{ id: 'ic:rule-labels', type: 'custom', data: [[min, 0]], silent: true,
+        clip: false, animation: false, z: 6,
+        renderItem: (params, api) => ({ type: 'group', children: placeRuleLabels(labels,
+          params.coordSys, (value) => api.coord([value, 0])[0]).map((label) => ({ type: 'text',
+          style: { text: label.text, x: label.left,
+            y: params.coordSys.y - RULE_LABEL.lift - label.row * RULE_LABEL.pitch,
+            align: 'left', verticalAlign: 'bottom', fill: label.color,
+            font: `${RULE_LABEL.size}px Inter, system-ui, sans-serif` } })) }) }]),
+    ],
+  };
+}
+
 /* Queue previews are evidence summaries, not scaled-down copies of the full
    charts. Each family keeps only the marks that answer its first question:
    departures from the programmed basal rate, dose against glucose response,
-   meal traces around their shared start, or cohort response around an event.
+   counted meal runs by carb ratio, or cohort response around an event.
    Every mark below is a served point or a reference rule; no fit, smoothing or
    replacement value is derived here. */
 const previewBase = (description) => ({
@@ -182,41 +293,16 @@ export function queuePreviewOption(descriptor, range, colors, row) {
     };
   }
 
+  /* A carb-ratio block's mini is its tile's ratio strip alone (#464): the
+     counted runs' dots against the three rules, with no labels. */
   if (descriptor.kind === 'carb-ratio') {
-    const runs = new Map((data.runs || []).map((run) => [run.run_id, run]));
-    const traces = (data.series || []).map((series) => ({ ...series,
-      points: series.points || [] }));
-    const x = previewRange(null, traces.flatMap((trace) => trace.points
-      .map((point) => point.minute)));
-    const y = previewRange(range, traces.flatMap((trace) => trace.points
-      .map((point) => point.bg)));
+    const strip = ratioStrip(data, { text, signal }, { mini: true });
     return {
-      ...previewBase(`${traces.length} served meal traces shown around the first meal.`),
-      xAxis: previewAxis('value', { min: x[0], max: x[1] }),
-      yAxis: previewAxis('value', { min: y[0], max: y[1] }),
-      graphic: [previewText('MEAL · RESPONSE', 'center', text, { align: 'center' })],
-      series: [
-        { id: 'queue:ic:target', type: 'line', data: [], silent: true,
-          markArea: { silent: true, itemStyle: { color: signal, opacity: .055 },
-            data: [[{ yAxis: 70 }, { yAxis: 180 }]] } },
-        ...traces.map((trace) => {
-          const supported = Boolean(runs.get(trace.run_id)?.in_pool);
-          return { id: `queue:ic:run:${trace.run_id}`, type: 'line', symbol: 'circle',
-            symbolSize: 3.5, showSymbol: true, connectNulls: false, animation: false,
-            data: trace.points.map((point) => [
-              Number.isFinite(point.minute) ? point.minute : null,
-              Number.isFinite(point.minute) && Number.isFinite(point.bg) ? point.bg : null,
-            ]),
-            lineStyle: { color: supported ? signal : excluded, width: supported ? 1.6 : 1,
-              opacity: supported ? .64 : .34, type: supported ? 'solid' : 'dashed' },
-            itemStyle: { color: supported ? signal : excluded,
-              opacity: supported ? .8 : .5 } };
-        }),
-        { id: 'queue:ic:meal-anchor', type: 'custom', animation: false, silent: true,
-          data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
-            x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
-            width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .65 } }) },
-      ],
+      ...previewBase(`${data.block?.run_ends?.n ?? 0} counted meal runs by their carb ratio against the programmed, recommended and estimated ratios.`),
+      grid: { left: 8, right: 8, top: 8, bottom: 8, containLabel: false },
+      xAxis: { ...strip.xAxis, show: false },
+      yAxis: { ...strip.yAxis, show: false },
+      series: strip.series,
     };
   }
 

@@ -29,6 +29,8 @@ export const STORY_CASES = Object.freeze({
   S173: 'c3-focus', S174: 'c3-preempted', S175: 'c4-history', S176: 'c3-preempted',
   S182: 'pattern-near-tie',
   S177: 'isf-strengthen', S178: 'isf-strengthen', S179: 'isf-strengthen',
+  ...Object.fromEntries('S186,S187,S188,S189,S190,S191,S192,S193,S194,S195,S196'.split(',')
+    .map(id => [id, 'ic-block-evidence'])),
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

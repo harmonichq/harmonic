@@ -944,13 +944,15 @@ const lowReadout = (low) => `low ${Math.round(low.bg)} mg/dL`
    calling into the dead instance, so nothing here ever reaches a chart that
    is gone.
 
-   THE KEYS OWN THE READOUT WHILE THEY HOLD IT. ECharts shows a keyed tip on
+   THE KEYS' RUN IS ON TOP WHILE THEY HOLD IT. ECharts shows a keyed tip on
    the run's own dot, but re-shows it by pixel on every later render — and a
    relayout is a rebuild — so where counted runs stack at one ratio a
-   neighbouring dot answers. The run the keys are reading is kept per host,
-   across rebuilds, and the tooltip names that run by its id whichever stacked
-   dot the pixel lands on. A moving pointer, or focus leaving, hands the
-   readout back to the dot under the pointer. */
+   neighbouring dot would answer. The run the keys are reading is kept per
+   host, across rebuilds, and carried by a clear cursor mark drawn over the
+   stack, so the pixel lands on that run; a rebuild re-shows the tip where the
+   run now sits. The tooltip itself only ever reads the datum it is handed. A
+   moving pointer — caught before the chart sees it — or focus leaving lifts
+   the mark, so a hover always reads the dot under the pointer. */
 const runBindings = new WeakMap();
 const keyedRuns = new WeakMap();
 const liveChart = (instance) => (instance && !instance.isDisposed?.() ? instance : null);
@@ -984,12 +986,23 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     bound = current;
   }, { signal });
   let cursor = stops.findIndex(({ runId }) => runId === keyedRuns.get(surface));
+  const showTip = (current) => current.dispatchAction({ type: 'showTip',
+    seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
   if (cursor < 0) keyedRuns.delete(surface);
+  else {
+    /* A rebuild moves the run's dot, and the tip follows it once the host has
+       set the option. The chart is read without dropping the binding: a host
+       being mounted initialises its chart only after this build. */
+    queueMicrotask(() => {
+      const current = liveChart(globalThis.echarts?.getInstanceByDom?.(surface));
+      if (current && cursor >= 0) showTip(current);
+    });
+  }
   const release = () => {
     cursor = -1;
-    keyedRuns.delete(surface);
+    if (keyedRuns.delete(surface)) chart()?.setOption({ series: [{ id: 'ic:cursor', data: [] }] });
   };
-  surface.addEventListener('pointermove', release, { signal });
+  surface.addEventListener('pointermove', release, { signal, capture: true });
   surface.addEventListener('keydown', (event) => {
     const current = chart();
     if (!current || !stops.length) return;
@@ -1000,8 +1013,8 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
       event.preventDefault();
       cursor = step;
       keyedRuns.set(surface, stops[cursor].runId);
-      current.dispatchAction({ type: 'showTip',
-        seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+      current.setOption({ series: [{ id: 'ic:cursor', data: [stops[cursor].dot] }] });
+      showTip(current);
     } else if (event.key === 'Enter' && cursor >= 0) {
       event.preventDefault();
       select(stops[cursor].runId);
@@ -1060,8 +1073,10 @@ function carbRatioOption(_mode, {
   const onA = (series) => ({ ...series, xAxisIndex: 0, yAxisIndex: 0 });
   const onB = (series) => ({ ...series, xAxisIndex: 1, yAxisIndex: 1 });
   const selected = byRun.get(selectedRunId);
-  const selectedDot = strip.series.filter(({ id }) => id.startsWith('ic:dots:'))
-    .flatMap((series) => series.data).find(({ runId }) => runId === selectedRunId);
+  const dotOf = (runId) => strip.series.filter(({ id }) => id.startsWith('ic:dots:'))
+    .flatMap((series) => series.data).find((dot) => dot.runId === runId);
+  const selectedDot = dotOf(selectedRunId);
+  const keyedDot = dotOf(keyedRuns.get(surface));
   const ring = { symbol: 'circle', silent: true, animation: false, z: 7,
     itemStyle: { color: 'transparent', borderColor: colors.text, borderWidth: 1.5 } };
   const lowMarks = (counted) => ({ type: 'scatter', symbol: 'triangle', symbolRotate: 180,
@@ -1074,6 +1089,11 @@ function carbRatioOption(_mode, {
     ...strip.series.map(onA),
     onA({ id: 'ic:selected:dot', type: 'scatter', ...ring,
       data: selectedDot ? [{ value: selectedDot.value, symbolSize: selectedDot.symbolSize + 8 }] : [] }),
+    /* The keys' cursor: a clear copy of the run's dot, drawn over the stack so
+       a tip re-shown by pixel lands on the run being read. */
+    onA({ id: 'ic:cursor', type: 'scatter', symbol: 'circle', animation: false, z: 8,
+      emphasis: { disabled: true }, itemStyle: { color: 'transparent' },
+      data: keyedDot ? [keyedDot] : [] }),
     onB({ id: 'ic:band', type: 'line', data: [], silent: true, animation: false,
       markLine: { symbol: 'none', silent: true, animation: false,
         lineStyle: { type: 'solid', color: colors.line, width: 1 },
@@ -1113,8 +1133,8 @@ function carbRatioOption(_mode, {
   bindRunSelection(surface, {
     onSelectRun,
     stops: series.flatMap((item, seriesIndex) => (item.id.startsWith('ic:dots:')
-      ? item.data.map(({ runId }, dataIndex) => ({ runId, seriesIndex, dataIndex,
-        t: byRun.get(runId).t })) : []))
+      ? item.data.map((dot, dataIndex) => ({ runId: dot.runId, dot, seriesIndex, dataIndex,
+        t: byRun.get(dot.runId).t })) : []))
       .sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0)),
   });
   const key = (name, icon, ink) => ({ name, icon, itemStyle: { color: ink, borderWidth: 0 } });
@@ -1135,14 +1155,13 @@ function carbRatioOption(_mode, {
         key('on a run not counted', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
       left: GRID.left, top: laneB + 6 },
     ],
-    /* A dot, a stem or its markers read out their run — or the run the keys
-       hold, whichever dot is under the tip; a ▼ reads out its low. */
+    /* A dot, a stem or its markers read out their run; a ▼ reads out its low. */
     tooltip: { show: true, trigger: 'item', confine: true,
       extraCssText: 'max-width: 320px; white-space: normal;',
       formatter: (params) => {
         const datum = params?.data;
         if (datum?.low) return lowReadout(datum.low);
-        const run = byRun.get(keyedRuns.get(surface) ?? datum?.runId);
+        const run = byRun.get(datum?.runId);
         return run ? runReadout(run) : '';
       } },
     xAxis: [

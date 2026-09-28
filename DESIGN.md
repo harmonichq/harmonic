@@ -494,14 +494,18 @@ changed.
 - **The panel.** Below the unchanged numbers block, the panel has three
   captioned sections of one-sentence lines. It has no grey explanation block
   and no collapsed section.
-  - **Why this move**, in four lines: how many counted runs measured on the
-    far side of the programmed ratio, with the estimate's range leaving it out;
-    what the ratio counts (all the insulin a run used, with the glucose change
-    converted at the correction factor, judged where the run ended); how many
-    runs ended after a later meal, and how those ended; and how the
-    recommendation steps from the programmed value toward the estimate.
-  - **The case against**, in one line: how many of the block's meals on counted
-    runs peaked above range before their next bolus.
+  - **Why this move** (**Why no move** on a block that holds), in four lines:
+    how many counted runs measured on the far side of the programmed ratio,
+    with the estimate's range leaving it out; what the ratio counts (all the
+    insulin a run used, with the glucose change converted at the correction
+    factor, judged where the run ended); how the counted runs ended, how many
+    of those ends came after a later meal, and how many had no reading where
+    they ended; and, when a move is served, how the recommendation steps from
+    the programmed value toward the estimate.
+  - **The case against** a looser ratio, **The case for** a tighter one, or
+    **After these meals** on a hold — the caption follows the served move — in
+    one line: how many of the block's meals on counted runs peaked above range
+    before their next bolus.
   - **Lows after the block's boluses**, in one line, then the lows as one
     roster. This is the one population of lows the tile marks. They are
     grouped as on counted runs, on runs not counted, or after a bolus that is

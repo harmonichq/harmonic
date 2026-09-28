@@ -457,3 +457,63 @@ standing Q2 sanction of 2026-09-23. No token in `frontend/theme.css` changed.
 - **Evidence.** The desk ledger's S121 and S122 hold the replays; a private
   design-evidence record — not part of the public tree — holds the logs and
   captures.
+
+### #464 carb-ratio block evidence amendment
+
+A carb-ratio block shows the meal runs its move is measured over, and says why
+in the panel. The operator settled the design on 2026-09-27. Every number the
+tile and the panel print is served with the block's evidence; the desk derives
+no count, class, side, reason, threshold or sentence. No colour or type token
+changed.
+
+- **One view.** The block's tile has one view and no toggle. It has two lanes,
+  each with one legend row, and no caption sentence, hatching, tint, class
+  colour or per-meal mark.
+- **The ratio strip.** The upper lane is one carb-ratio axis in g/U. Each
+  counted meal run is one dot at its measured ratio: filled when the run counts
+  whole, a ring when it counts by carb share. A dot's area follows the carbs the
+  run counts. Every dot is in the text ink. Behind them stand three 1 px rules:
+  programmed (solid), recommended (dotted) and the estimate (dashed, in the
+  data ink), with the estimate's range as one faint wash. The rules' labels
+  stagger over two rows so none overlaps. The strip stacks dots only where two
+  share a tenth of a g/U.
+- **The runs by date.** The lower lane shows the same counted runs by date,
+  each as a 1 px stem from the glucose at its bolus (○) to where the run ended
+  (●). The target range's edges are faint labelled hairlines. Each listed low is
+  a downward triangle at its glucose on its date: filled on a counted run,
+  hollow otherwise. Nothing else is drawn in the lane.
+- **Readout.** A dot or a stem reads out its run as a balance sheet: date, time
+  and meals; carbs ÷ insulin = ratio; the insulin behind it (bolus,
+  corrections, Control-IQ basal, glucose change); and where the run ended. A
+  triangle reads out its low and how long after its bolus it came. The arrows
+  walk the runs by date, and Enter or a click selects one.
+- **The panel.** Below the unchanged numbers block, the panel has three
+  captioned sections of one-sentence lines. It has no grey explanation block
+  and no collapsed section.
+  - **Why this move**, in four lines: how many counted runs measured on the
+    far side of the programmed ratio, with the estimate's range leaving it out;
+    what the ratio counts (all the insulin a run used, with the glucose change
+    converted at the correction factor, judged where the run ended); how many
+    runs ended after a later meal, and how those ended; and how the
+    recommendation steps from the programmed value toward the estimate.
+  - **The case against**, in one line: how many of the block's meals on counted
+    runs peaked above range before their next bolus.
+  - **Lows after the block's boluses**, in one line, then the lows as one
+    roster. This is the one population of lows the tile marks. They are
+    grouped as on counted runs, on runs not counted, or after a bolus that is
+    not one of these meals. Each row gives its bolus and low times, its
+    glucose, the delay, and the run's ratio when it has one. Hovering or
+    focusing a row selects its run on the tile. Pressing a row opens Day at
+    that low, ringed. This works from either way into the block: its queue row
+    or a case head's View segment.
+  - A line whose served fact is absent is left out; nothing prints a hole.
+  - While the run evidence is loading, the panel says "Loading run evidence…".
+    If the read fails, it says "Run evidence unavailable.". Either way, the
+    numbers block stands.
+- **Thumbnail.** The block's queue row and its drawer thumbnail draw the ratio
+  strip alone.
+- **Replaced.** The tile's former Event view (each run's glucose from its first
+  meal) and Clock view (each run's ratio at its meal start) are gone. The
+  block's run evidence still ships, rebuilt as the two lanes.
+- **Evidence.** The desk's behavior ledger holds the replays, and the change's
+  own evidence record lists the synthetic renders and the raw replay output.

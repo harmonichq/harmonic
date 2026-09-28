@@ -1,0 +1,83 @@
+(node:74052) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/464-c5/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/464-c5/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S186 case=ic-block-evidence milliseconds=323.305
+# S186 synthetic case=ic-block-evidence (fresh copy)
+PASS S186
+# story-time S186 milliseconds=2797.981
+# case-copy S187 case=ic-block-evidence milliseconds=2.014
+# S187 synthetic case=ic-block-evidence (fresh copy)
+PASS S187
+# story-time S187 milliseconds=1673.738
+# case-copy S188 case=ic-block-evidence milliseconds=2.070
+# S188 synthetic case=ic-block-evidence (fresh copy)
+PASS S188
+# story-time S188 milliseconds=1662.029
+# case-copy S189 case=ic-block-evidence milliseconds=1.275
+# S189 synthetic case=ic-block-evidence (fresh copy)
+FAIL S189 — Timed out after 30000 ms: S189 the keyboard readout; saw [
+  '2024-05-07\n' +
+    '09:00\n' +
+    '1 meal\n' +
+    'carbs 60 g ÷ insulin 10.80 U = 5.56 g/U\n' +
+    'insulin: bolus 12.00 · corrections 0.00 · Control-IQ basal 0.00 · glucose change -1.20\n' +
+    'ended 120 mg/dL after 5 h (lower)'
+]; S189 the first run by date (2024-05-03T09:00:00) must read out its served balance sheet; it reads ["2024-05-07","09:00","1 meal","carbs 60 g ÷ insulin 10.80 U = 5.56 g/U","insulin: bolus 12.00 · corrections 0.00 · Control-IQ basal 0.00 · glucose change -1.20","ended 120 mg/dL after 5 h (lower)"]
+# story-time S189 milliseconds=31760.264
+# case-copy S190 case=ic-block-evidence milliseconds=2.865
+# S190 synthetic case=ic-block-evidence (fresh copy)
+PASS S190
+# story-time S190 milliseconds=1979.344
+# case-copy S191 case=ic-block-evidence milliseconds=0.975
+# S191 synthetic case=ic-block-evidence (fresh copy)
+PASS S191
+# story-time S191 milliseconds=1852.658
+# case-copy S192 case=ic-block-evidence milliseconds=1.532
+# S192 synthetic case=ic-block-evidence (fresh copy)
+FAIL S192 — Timed out after 30000 ms: S192 Day at the low's moment; saw [
+  {
+    pressed: [],
+    ringed: [],
+    address: {
+      date: '2024-05-15',
+      moment: '2024-05-15T12:30:00',
+      subject: 'ic:0',
+      lever: 'carb_ratio',
+      from: 'diagnose'
+    }
+  }
+]; S192 Day must press the low's own Episode Log row (2024-05-15T12:30:00); pressed []
+# story-time S192 milliseconds=32172.204
+# case-copy S193 case=ic-block-evidence milliseconds=2.841
+# S193 synthetic case=ic-block-evidence (fresh copy)
+FAIL S193 — Timed out after 30000 ms: S193 Day at the low's moment; saw [
+  {
+    pressed: [],
+    ringed: [],
+    address: {
+      date: '2024-05-15',
+      moment: '2024-05-15T12:30:00',
+      subject: 'ic:0',
+      lever: 'carb_ratio',
+      from: 'diagnose'
+    }
+  }
+]; S193 Day must press the low's own Episode Log row (2024-05-15T12:30:00); pressed []
+# story-time S193 milliseconds=32232.566
+# case-copy S194 case=ic-block-evidence milliseconds=2.878
+# S194 synthetic case=ic-block-evidence (fresh copy)
+PASS S194
+# story-time S194 milliseconds=2277.534
+# case-copy S195 case=ic-block-evidence milliseconds=1.839
+# S195 synthetic case=ic-block-evidence (fresh copy)
+PASS S195
+# story-time S195 milliseconds=1602.300
+# case-copy S196 case=ic-block-evidence milliseconds=1.534
+# S196 synthetic case=ic-block-evidence (fresh copy)
+PASS S196
+# story-time S196 milliseconds=1658.860
+
+# executed 8 · failed 3 · deferred 0 · selected 11 · chromium launches 1

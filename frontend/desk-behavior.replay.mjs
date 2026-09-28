@@ -3259,6 +3259,589 @@ export const S178 = appOnly('ADR 451',
 export const S179 = appOnly('ADR 451',
   '#451 a recorded Plan names its concern and its value in the wearer\'s words', C4_STORIES.S179);
 
+/* ---- #464: the carb-ratio block's settled design (S186–S196) ---------------
+   Every story runs on the manufactured ic-block-evidence case store: one
+   carb-ratio block asserting a move over its counted meal runs, with listed
+   lows. Each story reads the served block evidence first and compares what the
+   desk draws or prints against it. A missing row, block or fact is a premise
+   failure; what the desk draws or prints wrong is the feature failure. */
+const COUNTED_464 = ['counted-whole', 'counted-by-share'];
+const LOW_GROUPS_464 = [
+  ['counted-run', 'counted_run', 'On counted runs'],
+  ['uncounted-run', 'uncounted_run', 'On runs not counted'],
+  ['not-a-meal-run', 'not_a_meal_run', 'After a bolus that is not one of these meals'],
+];
+// The settled design's fixed mechanism sentence (the panel's second line).
+const MECHANISM_464 = 'The ratio counts all the insulin a run used — boluses, corrections, '
+  + 'Control-IQ basal changes — with the glucose change converted at your correction '
+  + 'factor, judged where the run ended.';
+const g2 = (value) => value.toFixed(2);
+const minutes464 = (total) => {
+  const rounded = Math.round(total);
+  if (rounded < 60) return `${rounded} min`;
+  return `${Math.floor(rounded / 60)} h${rounded % 60 ? ` ${rounded % 60} min` : ''}`;
+};
+// One instant, whichever printer wrote it: the analyzer's isoformat or the
+// engine's space-separated form.
+const instant464 = (t) => String(t).replace(' ', 'T');
+
+async function served464(page, id) {
+  const read = async (path) => {
+    const response = await page.request.get(`${APP_BASE_URL}${path}`);
+    ok(response.ok(), `${id} premise: ${path} answered ${response.status()}`);
+    return response.json();
+  };
+  const preparation = await read('/api/diagnose/finding-case-file-preparation');
+  const rows = preparation.rendered_rows.filter((row) => row.parameter === 'carb_ratio');
+  ok(rows.length === 1, `${id} premise: ic-block-evidence serves one carb-ratio row, not ${rows.length}`);
+  const [row] = rows;
+  const query = new URLSearchParams({ block_id: row.id.slice('ic:'.length),
+    analysis_generation: preparation.findings.analysis_generation });
+  const evidence = await read(`/api/diagnose/carb-ratio-block-evidence?${query}`);
+  ok(evidence.block?.state === 'numeric', `${id} premise: the served block is measured, not ${evidence.block?.state}`);
+  const counted = evidence.runs.filter((run) => COUNTED_464.includes(run.pool_reason));
+  ok(counted.length > 0, `${id} premise: the served block counts no meal run`);
+  return { row, evidence, counted };
+}
+
+const settled464 = (page) => page.waitForFunction(
+  () => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+
+// The reader's own route to a block: the whole-day queue, then its row.
+async function openBlock464(page, row, { panel = true } = {}) {
+  await goto(page, 'diagnose');
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settled464(page);
+  const queueRow = page.locator(`#level .qrow[data-id="${row.id}"]`);
+  await queueRow.waitFor({ timeout: 30000 });
+  await queueRow.click();
+  if (!panel) return;
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${row.id}"] .tile-chart canvas`).first()
+    .waitFor({ timeout: 30000 });
+  await page.locator('#level .lvl-cap', { hasText: 'Why this move' }).first().waitFor({ timeout: 30000 });
+}
+
+// The block tile's mounted option, reduced to what the stories compare. A
+// time-axis value also carries its local calendar date, read in the page.
+const tileOption464 = (page, selector) => page.evaluate((selector) => {
+  const host = document.querySelector(selector);
+  const chart = host && window.echarts.getInstanceByDom(host);
+  if (!chart) return null;
+  const date = (ms) => {
+    const at = new Date(ms);
+    return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
+  };
+  const option = chart.getOption();
+  return option.series.map((series) => ({
+    id: series.id ?? null, name: series.name ?? null, type: series.type,
+    symbol: series.symbol ?? null, symbolRotate: series.symbolRotate ?? null,
+    itemStyle: { color: series.itemStyle?.color ?? null, borderColor: series.itemStyle?.borderColor ?? null,
+      borderWidth: series.itemStyle?.borderWidth ?? null },
+    data: (series.data || []).map((item) => {
+      const value = item?.value ?? item;
+      return { value, runId: item?.runId ?? null, symbolSize: item?.symbolSize ?? null, low: item?.low ?? null,
+        date: Array.isArray(value) && value[0] > 1e11 ? date(value[0]) : null };
+    }),
+    markLine: (series.markLine?.data || []).map((item) => ({ name: item.name ?? null,
+      xAxis: item.xAxis ?? null, yAxis: item.yAxis ?? null, type: item.lineStyle?.type ?? null })),
+    markArea: (series.markArea?.data || []).map((pair) => pair.map((edge) => edge.xAxis ?? null)),
+  }));
+}, selector);
+const blockTile464 = (row) => `#tile-focal .evidence-tile[data-chart-id="${row.id}"]`;
+const seriesById464 = (series, id) => series.find((item) => item.id === id);
+const sameSet464 = (a, b) => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|');
+
+// The panel's printed sections, each the one-sentence lines under its cap.
+const panel464 = (page) => page.evaluate(() => {
+  const level = document.querySelector('#level');
+  const caps = [...level.querySelectorAll('.lvl-cap')];
+  const lines = (cap) => [...(cap.nextElementSibling?.querySelectorAll(':scope > .slot-stats') || [])]
+    .map((node) => node.textContent.replace(/\s+/g, ' ').trim());
+  const groups = [...level.querySelectorAll('.ev-group')].map((header) => {
+    const rows = [];
+    for (let node = header.nextElementSibling; node?.matches('.case-occurrence'); node = node.nextElementSibling) {
+      rows.push({ id: node.dataset.occurrenceId, runId: node.dataset.runId ?? null,
+        pressed: node.getAttribute('aria-pressed'), text: node.textContent.replace(/\s+/g, ' ').trim() });
+    }
+    return { header: header.textContent.replace(/\s+/g, ' ').trim(), rows };
+  });
+  return {
+    sections: caps.map((cap) => ({ cap: cap.textContent.trim(), lines: lines(cap) })),
+    groups,
+    empty: [...level.querySelectorAll('.empty')].map((node) => ({
+      text: node.textContent.trim(), busy: node.getAttribute('aria-busy') })),
+    numbers: level.querySelectorAll('.numrow').length,
+    text: level.textContent,
+  };
+});
+
+// Day, reached from a low. Day marks a contextual moment with its one
+// cross-track hairline (`evidence-crosshair`, frontend/day-chart.js
+// focusUpdate), placed at the moment's own time on the evidence strip. An
+// Episode Log row is pressed, and its anchor ringed at size 15, only when Day
+// lists an anchor at that instant; a harm-listed low is not an Episode Log
+// entry, so it may have none. `expectedX` is where the moment falls on the
+// strip, from the chart's own conversion of the served time.
+const dayRing464 = (page, moment) => page.evaluate((moment) => {
+  const host = document.querySelector('.gf-stage-day .gf-chart');
+  const chart = host && window.echarts?.getInstanceByDom(host);
+  const option = chart?.getOption();
+  const markers = option?.series.find((series) => series.id === 'day-anchor-markers')?.data || [];
+  const crosshairs = (option?.graphic || []).flatMap((item) => item.elements || [item])
+    .filter((item) => item.id === 'evidence-crosshair');
+  return {
+    listed: [...document.querySelectorAll('.gf-log-row')].map((row) => row.dataset.dayRow),
+    pressed: [...document.querySelectorAll('.gf-log-row[aria-pressed="true"]')].map((row) => row.dataset.dayRow),
+    ringed: markers.filter((marker) => marker.symbolSize === 15).map((marker) => marker._t),
+    crosshairs: crosshairs.map((item) => item.shape?.x1 ?? null),
+    expectedX: chart ? chart.convertToPixel({ xAxisIndex: 1 }, new Date(moment).getTime()) : null,
+    address: Object.fromEntries(new URLSearchParams(location.search)),
+  };
+}, moment);
+
+// A listed low's row opens Day at the low's own moment: the address names it,
+// and Day's hairline stands at it. When Day lists an Episode Log row at that
+// instant, that row is the one pressed and its anchor the one ringed; when it
+// lists none, no row is pressed and no anchor ringed.
+async function lowDayHop464(page, id, row, evidence) {
+  const low = evidence.harm_evidence.lows.find((item) => item.run_id);
+  ok(low, `${id} premise: the served block lists no low on a run`);
+  const control = page.locator(`#level .case-occurrence[data-occurrence-id="${low.t}"]`);
+  await control.waitFor({ timeout: 30000 });
+  await control.click();
+  await page.locator('.gf-stage-day').waitFor({ timeout: 30000 });
+  await waitForDesk(page);
+  await waitForReplayAssertion(async seen => {
+    const day = seen(await dayRing464(page, instant464(low.t)));
+    ok(day.address.subject === row.id && day.address.date === low.t.slice(0, 10)
+      && day.address.moment === low.t && day.address.lever === 'carb_ratio',
+    `${id} the low's Day hop must name ${row.id}, its date and its moment: ${JSON.stringify(day.address)}`);
+    ok(Number.isFinite(day.expectedX), `${id} Day's chart must be mounted to place the low's moment`);
+    ok(day.crosshairs.length === 1 && Math.abs(day.crosshairs[0] - day.expectedX) < 1,
+      `${id} Day must stand one hairline at the low's moment (x ${day.expectedX}); drawn ${JSON.stringify(day.crosshairs)}`);
+    const atLow = day.listed.filter((t) => instant464(t) === instant464(low.t));
+    ok(JSON.stringify(day.pressed) === JSON.stringify(atLow),
+      `${id} Day must press exactly its Episode Log row at the low's moment, if it lists one (${JSON.stringify(atLow)}); pressed ${JSON.stringify(day.pressed)}`);
+    ok(day.ringed.length === atLow.length && day.ringed.every((t) => instant464(t) === instant464(low.t)),
+      `${id} Day must ring at size 15 exactly the anchor it lists at the low's moment, if any; ringed ${JSON.stringify(day.ringed)}`);
+  }, `${id} Day at the low's moment`);
+}
+
+// STORY:harmonic-v2-desktop:S186
+export const S186 = appOnly('ADR 464',
+  '#464 the block opens on its one view: every counted run on the ratio strip and three served rules',
+  async (page) => {
+    const { row, evidence, counted } = await served464(page, 'S186');
+    await openBlock464(page, row);
+    const tile = blockTile464(row);
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, `${tile} .tile-modes, ${tile} [class*="tile-mode-"]`)) === 0,
+        'S186 the block tile must offer no alignment or view toggle');
+      const series = seen(await tileOption464(page, `${tile} .tile-chart`));
+      ok(series, 'S186 the block tile mounted no chart');
+      const dots = series.filter((item) => item.id?.startsWith('ic:dots:')).flatMap((item) => item.data);
+      ok(dots.length === counted.length && sameSet464(dots.map((dot) => dot.runId), counted.map((run) => run.run_id)),
+        `S186 the strip must draw one dot per served counted run (${counted.length}); it draws ${dots.length}`);
+      for (const dot of dots) {
+        const run = counted.find((item) => item.run_id === dot.runId);
+        ok(dot.value[0] === run.true_ic, `S186 run ${run.run_id}'s dot must sit at its served ratio ${run.true_ic}, not ${dot.value[0]}`);
+      }
+      const rules = seriesById464(series, 'ic:rules');
+      const block = evidence.block;
+      const expected = [['programmed', block.current, 'solid'], ['recommended', block.recommendation.value, 'dotted'],
+        ['estimate', block.estimate.value, 'dashed']];
+      ok(rules && JSON.stringify(rules.markLine.map(({ name, xAxis, type }) => [name, xAxis, type]))
+        === JSON.stringify(expected),
+      `S186 the strip's rules must be ${JSON.stringify(expected)}; drawn ${JSON.stringify(rules?.markLine)}`);
+      ok(JSON.stringify(rules.markArea) === JSON.stringify([[block.estimate.lo, block.estimate.hi]]),
+        `S186 the estimate's range must be one band at ${block.estimate.lo}–${block.estimate.hi}; drawn ${JSON.stringify(rules.markArea)}`);
+    }, 'S186 the block tile\'s one view');
+  });
+
+// STORY:harmonic-v2-desktop:S187
+export const S187 = appOnly('ADR 464',
+  '#464 a whole run\'s dot is filled, a run counted by share is a ring, and each dot is sized by its served weight',
+  async (page) => {
+    const { row, counted } = await served464(page, 'S187');
+    const weights = new Set(counted.map((run) => run.fit_weight));
+    ok(weights.size > 1 && [...weights].every(Number.isFinite),
+      `S187 premise: the counted runs must serve at least two fit weights, not ${JSON.stringify([...weights])}`);
+    ok(counted.some((run) => run.pool_reason === 'counted-by-share'),
+      'S187 premise: the served block counts at least one run by carb share');
+    await openBlock464(page, row);
+    await waitForReplayAssertion(async seen => {
+      const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
+      ok(series, 'S187 the block tile mounted no chart');
+      const whole = seriesById464(series, 'ic:dots:whole');
+      const share = seriesById464(series, 'ic:dots:share');
+      const ids = (reason) => counted.filter((run) => run.pool_reason === reason).map((run) => run.run_id);
+      ok(whole && sameSet464(whole.data.map((dot) => dot.runId), ids('counted-whole')),
+        'S187 the filled dots must be exactly the runs served counted-whole');
+      ok(share && sameSet464(share.data.map((dot) => dot.runId), ids('counted-by-share')),
+        'S187 the rings must be exactly the runs served counted-by-share');
+      ok(whole.itemStyle.color && whole.itemStyle.color !== 'transparent',
+        `S187 a whole run's dot must be filled, not ${whole.itemStyle.color}`);
+      ok(share.itemStyle.color === 'transparent' && share.itemStyle.borderWidth === 2
+        && share.itemStyle.borderColor === whole.itemStyle.color,
+      `S187 a run counted by share must be a 2 px ring in the whole dots' ink: ${JSON.stringify(share.itemStyle)}`);
+      const sized = [...whole.data, ...share.data].map((dot) => ({
+        size: dot.symbolSize, weight: counted.find((run) => run.run_id === dot.runId).fit_weight }));
+      ok(sized.every(({ size }) => size >= 8 && size <= 14),
+        `S187 every dot must be 8–14 px across: ${JSON.stringify(sized.map(({ size }) => size))}`);
+      for (const a of sized) for (const b of sized) {
+        ok(a.weight < b.weight ? a.size < b.size : a.weight > b.weight || a.size === b.size,
+          `S187 a dot's size must follow its served weight: weight ${a.weight} draws ${a.size}, weight ${b.weight} draws ${b.size}`);
+      }
+    }, 'S187 the strip\'s marks');
+  });
+
+// STORY:harmonic-v2-desktop:S188
+export const S188 = appOnly('ADR 464',
+  '#464 the lower lane draws each counted run as a stem from its start to its end glucose, and each listed low as a triangle',
+  async (page) => {
+    const { row, evidence, counted } = await served464(page, 'S188');
+    const stemmed = counted.filter((run) => Number.isFinite(run.start_bg) && Number.isFinite(run.outcome_bg));
+    const lows = evidence.harm_evidence.lows;
+    ok(stemmed.length > 0 && lows.length > 0, 'S188 premise: the served block has stemmed runs and listed lows');
+    await openBlock464(page, row);
+    await waitForReplayAssertion(async seen => {
+      const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
+      ok(series, 'S188 the block tile mounted no chart');
+      const at = (id) => seriesById464(series, id)?.data || [];
+      ok(sameSet464(at('ic:stems').map((stem) => stem.runId), stemmed.map((run) => run.run_id)),
+        `S188 the lane must draw one stem per served counted run with a start and an end (${stemmed.length})`);
+      for (const run of stemmed) {
+        const stem = at('ic:stems').find((item) => item.runId === run.run_id);
+        const start = at('ic:starts').find((item) => item.runId === run.run_id);
+        const end = at('ic:ends').find((item) => item.runId === run.run_id);
+        ok(stem.date === run.t.slice(0, 10) && stem.value[1] === run.start_bg && stem.value[2] === run.outcome_bg,
+          `S188 run ${run.run_id}'s stem must run ${run.start_bg}→${run.outcome_bg} mg/dL on its date: ${JSON.stringify(stem)}`);
+        ok(start?.value[1] === run.start_bg && end?.value[1] === run.outcome_bg
+          && start.date === stem.date && end.date === stem.date,
+        `S188 run ${run.run_id}'s stem must carry ○ at its start and ● at its end`);
+      }
+      const drawnLows = (id) => at(id).map((mark) => ({ t: mark.low?.t, bg: mark.value[1], date: mark.date }));
+      const servedLows = (onCounted) => lows.filter((low) => (low.group === 'counted-run') === onCounted)
+        .map((low) => ({ t: low.t, bg: low.bg, date: low.t.slice(0, 10) }));
+      const byTime = (items) => JSON.stringify([...items].sort((a, b) => (a.t < b.t ? -1 : 1)));
+      ok(byTime(drawnLows('ic:lows:counted')) === byTime(servedLows(true)),
+        `S188 the filled triangles must be the served lows on counted runs at their glucose and date: ${byTime(drawnLows('ic:lows:counted'))}`);
+      ok(byTime(drawnLows('ic:lows:other')) === byTime(servedLows(false)),
+        `S188 the hollow triangles must be every other served low: ${byTime(drawnLows('ic:lows:other'))}`);
+      const filled = seriesById464(series, 'ic:lows:counted');
+      const hollow = seriesById464(series, 'ic:lows:other');
+      ok(filled.symbol === 'triangle' && filled.symbolRotate === 180 && hollow.symbol === 'triangle'
+        && hollow.symbolRotate === 180, 'S188 a listed low must be a downward triangle');
+      ok(filled.itemStyle.color && filled.itemStyle.color !== 'transparent'
+        && hollow.itemStyle.color === 'transparent' && hollow.itemStyle.borderColor === filled.itemStyle.color,
+      `S188 a low on a counted run is filled and any other low is hollow in the same ink: ${JSON.stringify([filled.itemStyle, hollow.itemStyle])}`);
+      const band = seriesById464(series, 'ic:band')?.markLine.map((line) => line.yAxis);
+      ok(JSON.stringify(band) === JSON.stringify([evidence.outcomes.band.low, evidence.outcomes.band.high]),
+        `S188 the lane's hairlines must sit at the served band ${evidence.outcomes.band.low} and ${evidence.outcomes.band.high}: ${JSON.stringify(band)}`);
+    }, 'S188 the lower lane');
+  });
+
+// A counted run's six readout lines, in the settled words, from its served terms.
+function runReadout464(run) {
+  const end = { lower: 'lower', flat: 'about flat', higher: 'higher' }[run.end_class];
+  return [
+    run.t.slice(0, 10), run.t.slice(11, 16), `${run.n_meals} meal${run.n_meals === 1 ? '' : 's'}`,
+    `carbs ${Number(run.carbs.toFixed(1))} g ÷ insulin ${g2(run.effective_insulin)} U = ${g2(run.true_ic)} g/U`,
+    `insulin: bolus ${g2(run.meal_dose)} · corrections ${g2(run.post_correction_user + run.post_correction_ciq
+      + run.post_correction_unknown)} · Control-IQ basal ${g2(run.ciq_basal_delta_acted_u)} · glucose change ${g2(run.bg_outcome_u)}`,
+    `ended ${Math.round(run.outcome_bg)} mg/dL after ${Number((run.outcome_min / 60).toFixed(1))} h${end ? ` (${end})` : ''}`,
+  ];
+}
+
+// STORY:harmonic-v2-desktop:S189
+export const S189 = appOnly('ADR 464',
+  '#464 a run\'s readout is its served balance sheet: carbs ÷ insulin = ratio, then the insulin terms behind it',
+  async (page) => {
+    const { row, evidence, counted } = await served464(page, 'S189');
+    const byDate = [...counted].sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
+    const first = byDate[0];
+    const shared = counted.find((run) => run.pool_reason === 'counted-by-share');
+    const low = evidence.harm_evidence.lows[0];
+    ok(shared && low, 'S189 premise: the served block has a run counted by share and a listed low');
+    await openBlock464(page, row);
+    const host = page.locator(`${blockTile464(row)} .tile-chart`);
+    // The keyboard path: the arrows walk the counted runs by date, reading each out.
+    await host.focus();
+    await page.keyboard.press('ArrowRight');
+    await waitForReplayAssertion(async seen => {
+      const text = seen(await host.evaluate((node) => {
+        const tip = [...node.querySelectorAll('div')].find((div) => div.style.zIndex === '9999999'
+          && getComputedStyle(div).display !== 'none' && div.style.opacity !== '0');
+        return tip ? tip.innerText : null;
+      }));
+      const lines = (text || '').split('\n').map((line) => line.trim()).filter(Boolean);
+      ok(JSON.stringify(lines) === JSON.stringify(runReadout464(first)),
+        `S189 the first run by date (${first.run_id}) must read out its served balance sheet; it reads ${JSON.stringify(lines)}`);
+    }, 'S189 the keyboard readout');
+    // The pointer path's formatter, on a ring and on a low.
+    const read = await host.evaluate((node, { shareId, lowT }) => {
+      const chart = window.echarts.getInstanceByDom(node);
+      const option = chart.getOption();
+      const formatter = option.tooltip[0].formatter;
+      const shareDot = option.series.find((series) => series.id === 'ic:dots:share').data
+        .find((dot) => dot.runId === shareId);
+      const lowMark = option.series.filter((series) => series.id.startsWith('ic:lows:'))
+        .flatMap((series) => series.data).find((mark) => mark.low.t === lowT);
+      const text = (html) => html.split('<br>').map((line) => line.trim());
+      return { share: text(formatter({ data: shareDot })), low: formatter({ data: lowMark }) };
+    }, { shareId: shared.run_id, lowT: low.t });
+    ok(JSON.stringify(read.share) === JSON.stringify(runReadout464(shared)),
+      `S189 a ring's hover must read out its run's served balance sheet; it reads ${JSON.stringify(read.share)}`);
+    const lowText = `low ${Math.round(low.bg)} mg/dL, ${minutes464(low.minutes_after_bolus)} after its bolus`;
+    ok(read.low === lowText, `S189 a low's hover must read "${lowText}", not "${read.low}"`);
+    // Enter selects the run being read out.
+    await page.keyboard.press('Enter');
+    await waitForReplayAssertion(async seen => {
+      const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
+      const ring = seriesById464(series, 'ic:selected:dot')?.data || [];
+      ok(ring.length === 1 && ring[0].value[0] === first.true_ic,
+        `S189 Enter must select the run read out (${first.run_id}): ${JSON.stringify(ring)}`);
+    }, 'S189 Enter selects the run');
+  });
+
+// STORY:harmonic-v2-desktop:S190
+export const S190 = appOnly('ADR 464',
+  '#464 the panel\'s Why this move, The case against and lows lines print the served facts',
+  async (page) => {
+    const { row, evidence } = await served464(page, 'S190');
+    const { block, outcomes, harm_evidence: harm } = evidence;
+    const side = { above: 'looser', below: 'tighter' }[block.side.direction];
+    const ends = block.run_ends;
+    const blockEnd = block.end_min === 1440 ? '24:00'
+      : `${String(Math.floor(block.end_min / 60)).padStart(2, '0')}:${String(block.end_min % 60).padStart(2, '0')}`;
+    const why = [
+      side && `${block.side.side_k} of ${block.side.side_n} counted runs measured ${side} than ${g2(block.current)} g/U; `
+        + `the estimate's range ${g2(block.estimate.lo)}–${g2(block.estimate.hi)} leaves ${g2(block.current)} out.`,
+      MECHANISM_464,
+      ends.n > 0 && `For ${ends.after_later_meal} of ${ends.n} runs that end came after a later meal past ${blockEnd}; `
+        + `there ${ends.lower} ended lower, ${ends.flat} about flat, ${ends.higher} higher.`,
+      block.recommendation.sentence,
+    ].filter(Boolean);
+    const counts = outcomes.counts;
+    const noun = block.label.toLowerCase();
+    const against = `${counts.peaked_above_high_before_next} of the ${counts.meals_on_counted_runs} ${noun} meals on `
+      + `counted runs peaked above ${outcomes.band.high} before their next bolus (${counts.peaked_above_high_in_window} `
+      + `counting later meals within 5 h 15 min)${block.side.direction === 'above' ? '; a looser ratio can raise peaks' : ''}.`;
+    const total = LOW_GROUPS_464.reduce((sum, [, key]) => sum + harm.groups[key], 0);
+    const bearing = harm.bearing_sentence;
+    const lowsLine = `${total} low${total === 1 ? '' : 's'}, ${minutes464(harm.minutes_after_bolus_min)} to `
+      + `${minutes464(harm.minutes_after_bolus_max)} after the bolus`
+      + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`;
+    ok(counts.meals_on_counted_runs > 0 && harm.lows.length > 0,
+      'S190 premise: the served block has meals on counted runs and listed lows');
+    await openBlock464(page, row);
+    await waitForReplayAssertion(async seen => {
+      const panel = seen(await panel464(page));
+      const caps = panel.sections.map((section) => section.cap);
+      const lowsCap = `Lows after ${noun} boluses`;
+      const order = ['Why this move', 'The case against', lowsCap].map((cap) => caps.indexOf(cap));
+      ok(order.every((at) => at >= 0) && order[0] < order[1] && order[1] < order[2],
+        `S190 the panel must print Why this move, The case against and ${lowsCap}, in order: ${JSON.stringify(caps)}`);
+      ok(panel.numbers > 0, 'S190 the numbers block must stand above the sections');
+      const lines = (cap) => panel.sections.find((section) => section.cap === cap).lines;
+      ok(JSON.stringify(lines('Why this move')) === JSON.stringify(why),
+        `S190 Why this move must print the served lines ${JSON.stringify(why)}; it prints ${JSON.stringify(lines('Why this move'))}`);
+      ok(JSON.stringify(lines('The case against')) === JSON.stringify([against]),
+        `S190 The case against must print "${against}"; it prints ${JSON.stringify(lines('The case against'))}`);
+      ok(JSON.stringify(lines(lowsCap)) === JSON.stringify([lowsLine]),
+        `S190 the lows line must print "${lowsLine}"; it prints ${JSON.stringify(lines(lowsCap))}`);
+      ok(!/computed in the wireframe|\*/.test(panel.sections.flatMap((section) => section.lines).join(' ')),
+        'S190 the panel must carry no wireframe footnote: every fact is served');
+    }, 'S190 the panel\'s lines');
+  });
+
+// STORY:harmonic-v2-desktop:S191
+export const S191 = appOnly('ADR 464',
+  '#464 the lows print in their served groups, each row with its run\'s ratio, and a row\'s focus selects its run on the tile',
+  async (page) => {
+    const { row, evidence } = await served464(page, 'S191');
+    const { harm_evidence: harm, runs } = evidence;
+    ok(harm.lows.some((low) => low.run_id), 'S191 premise: the served block lists a low on a run');
+    await openBlock464(page, row);
+    const dates = await page.evaluate((isos) => Object.fromEntries(isos.map((iso) => [iso,
+      new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })])),
+    [...new Set(harm.lows.map((low) => low.t.slice(0, 10)))]);
+    const ratio = new Map(runs.map((run) => [run.run_id, run.true_ic]));
+    const expected = LOW_GROUPS_464.map(([group, key, label]) => ({
+      header: `${label} · ${harm.groups[key]}`,
+      rows: harm.lows.filter((low) => low.group === group).map((low) => ({ id: low.t, runId: low.run_id || '',
+        text: `${dates[low.t.slice(0, 10)]} · bolus ${low.dominant_bolus_t.slice(11, 16)} → low ${low.t.slice(11, 16)}`
+          + ` · ${Math.round(low.bg)} mg/dL · ${minutes464(low.minutes_after_bolus)} later`
+          + `${ratio.has(low.run_id) ? ` · run ${g2(ratio.get(low.run_id))} g/U` : ''}` })),
+    })).filter((group) => group.rows.length);
+    await waitForReplayAssertion(async seen => {
+      const { groups } = seen(await panel464(page));
+      const drawn = groups.map((group) => ({ header: group.header,
+        rows: group.rows.map(({ id, runId, text }) => ({ id, runId, text })) }));
+      ok(JSON.stringify(drawn) === JSON.stringify(expected),
+        `S191 the lows must print in their served groups: expected ${JSON.stringify(expected)}; printed ${JSON.stringify(drawn)}`);
+    }, 'S191 the lows groups');
+    const low = harm.lows.find((item) => item.run_id);
+    const run = runs.find((item) => item.run_id === low.run_id);
+    await page.locator(`#level .case-occurrence[data-occurrence-id="${low.t}"]`).focus();
+    await waitForReplayAssertion(async seen => {
+      const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
+      const dot = seriesById464(series, 'ic:selected:dot')?.data || [];
+      const end = seriesById464(series, 'ic:selected:end')?.data || [];
+      ok(dot.length === 1 && dot[0].value[0] === run.true_ic,
+        `S191 focusing the low must ring its run's dot at ${run.true_ic}: ${JSON.stringify(dot)}`);
+      ok(end.length === 1 && end[0].value[1] === run.outcome_bg,
+        `S191 focusing the low must ring its run's end at ${run.outcome_bg} mg/dL: ${JSON.stringify(end)}`);
+      const { groups } = seen(await panel464(page));
+      const rows = groups.flatMap((group) => group.rows);
+      ok(rows.every((item) => item.pressed === String(item.runId === run.run_id)),
+        `S191 every low on run ${run.run_id}, and only those, must be pressed: ${JSON.stringify(rows.map(({ id, pressed }) => [id, pressed]))}`);
+    }, 'S191 a low\'s focus selects its run');
+  });
+
+// STORY:harmonic-v2-desktop:S192
+export const S192 = appOnly('ADR 464',
+  '#464 a low\'s row opens Day at that moment, marked by the hairline (its log row pressed only if Day lists one), from the block opened by its queue row',
+  async (page) => {
+    const { row, evidence } = await served464(page, 'S192');
+    await openBlock464(page, row);
+    await lowDayHop464(page, 'S192', row, evidence);
+  });
+
+// STORY:harmonic-v2-desktop:S193
+export const S193 = appOnly('ADR 464',
+  '#464 a low\'s Day hop also works when the block was opened from a case head\'s View segment',
+  async (page) => {
+    const { row, evidence } = await served464(page, 'S193');
+    // No reader control opens a Finding by clock on this store: every served
+    // Finding row carries its event chart in every window. The desk's retained
+    // drill-all opening is the one address that opens the first ready Finding
+    // by clock, so the story requires the rendered clock case head before it
+    // presses anything.
+    await page.goto(`${APP_BASE_URL}/?mode=drill-all`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.gf .pane', { timeout: 20000 });
+    await waitForDesk(page);
+    const segment = page.locator('#level .slotlink .linkbtn', { hasText: 'View segment' });
+    await segment.waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const text = seen(await page.locator('#level .slotlink').innerText()).replace(/\s+/g, ' ');
+      ok(text.includes(`in the ${evidence.block.label} carb ratio block`),
+        `S193 premise: the clock case head's peak must fall in the served ${evidence.block.label} block: "${text}"`);
+    }, 'S193 the clock case head');
+    await segment.click();
+    await page.locator('#level .lvl-cap', { hasText: 'Why this move' }).first().waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const here = seen(await page.locator('#crumb-trail .here').innerText()).trim();
+      ok(here === `${evidence.block.label} block`, `S193 View segment must open the ${evidence.block.label} block, not "${here}"`);
+    }, 'S193 View segment opens the block');
+    await lowDayHop464(page, 'S193', row, evidence);
+  });
+
+// STORY:harmonic-v2-desktop:S194
+export const S194 = appOnly('ADR 464',
+  '#464 the panel names its loading and unavailable run evidence beneath an intact numbers block',
+  async (page) => {
+    const { row } = await served464(page, 'S194');
+    const pattern = '**/api/diagnose/carb-ratio-block-evidence*';
+    const held = [];
+    let failing = false;
+    const failure = { status: 503, json: { detail: 'Synthetic run evidence failure' } };
+    const handler = (route) => (failing ? route.fulfill(failure) : held.push(route));
+    await page.route(pattern, handler);
+    try {
+      // Reload under the hold, so the block's first read is the one held.
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('.gf .pane', { timeout: 20000 });
+      await waitForDesk(page);
+      await openBlock464(page, row, { panel: false });
+      await waitForReplayAssertion(async seen => {
+        ok(held.length > 0, 'S194 premise: the block\'s run evidence read must be in flight');
+        const panel = seen(await panel464(page));
+        ok(panel.numbers > 0, 'S194 the numbers block must stand while run evidence loads');
+        ok(JSON.stringify(panel.empty) === JSON.stringify([{ text: 'Loading run evidence…', busy: 'true' }]),
+          `S194 the panel must name its loading run evidence: ${JSON.stringify(panel.empty)}`);
+        ok(!panel.sections.some((section) => section.cap === 'Why this move'),
+          'S194 nothing renders from a payload not received');
+      }, 'S194 loading');
+      failing = true;
+      await Promise.all(held.splice(0).map((route) => route.fulfill(failure)));
+      await waitForReplayAssertion(async seen => {
+        const panel = seen(await panel464(page));
+        ok(panel.numbers > 0, 'S194 the numbers block must stand when run evidence fails');
+        ok(JSON.stringify(panel.empty) === JSON.stringify([{ text: 'Run evidence unavailable.', busy: null }]),
+          `S194 the panel must name its unavailable run evidence: ${JSON.stringify(panel.empty)}`);
+        ok(!panel.sections.some((section) => section.cap === 'Why this move'),
+          'S194 a failed read renders no section');
+      }, 'S194 unavailable');
+    } finally {
+      failing = true;
+      await Promise.all(held.splice(0).map((route) => route.fulfill(failure).catch(() => {})));
+      await page.unroute(pattern, handler);
+    }
+  });
+
+// STORY:harmonic-v2-desktop:S195
+export const S195 = appOnly('ADR 464',
+  '#464 the block\'s queue row draws the ratio strip: its counted runs against the three served rules',
+  async (page) => {
+    const { row, evidence, counted } = await served464(page, 'S195');
+    await goto(page, 'diagnose');
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settled464(page);
+    const mini = `#level .qrow[data-id="${row.id}"] .mini`;
+    await page.locator(`#level .qrow[data-id="${row.id}"]`).waitFor({ timeout: 30000 });
+    await waitForReplayAssertion(async seen => {
+      const state = seen(await page.locator(`#level .qrow[data-id="${row.id}"]`).getAttribute('data-mini'));
+      ok(!state && seen(await countOf(page, mini)) === 1,
+        `S195 premise: the block's queue row must mount its mini, not "${state}"`);
+      ok(seen(await page.locator(mini).getAttribute('data-preview-kind')) === 'carb-ratio',
+        'S195 the queue row must mount the carb-ratio mini');
+      const series = seen(await tileOption464(page, mini));
+      ok(series, 'S195 the queue row mounted no mini chart');
+      ok(sameSet464(series.map((item) => item.id), ['ic:rules', 'ic:dots:whole', 'ic:dots:share']),
+        `S195 the mini must draw the ratio strip alone: ${JSON.stringify(series.map((item) => item.id))}`);
+      const dots = series.filter((item) => item.id.startsWith('ic:dots:')).flatMap((item) => item.data);
+      ok(sameSet464(dots.map((dot) => dot.runId), counted.map((run) => run.run_id))
+        && dots.every((dot) => dot.value[0] === counted.find((run) => run.run_id === dot.runId).true_ic),
+      `S195 the mini must draw every served counted run at its ratio (${counted.length}); it draws ${dots.length}`);
+      const rules = seriesById464(series, 'ic:rules').markLine.map((line) => line.xAxis);
+      const expected = [evidence.block.current, evidence.block.recommendation.value, evidence.block.estimate.value];
+      ok(JSON.stringify(rules) === JSON.stringify(expected),
+        `S195 the mini's rules must sit at ${JSON.stringify(expected)}: ${JSON.stringify(rules)}`);
+    }, 'S195 the queue row\'s strip');
+  });
+
+// STORY:harmonic-v2-desktop:S196
+export const S196 = appOnly('ADR 464',
+  '#464 changed: the block\'s run evidence still ships on its tile, rebuilt — every counted run once per lane, no per-run glucose trace',
+  async (page) => {
+    const { row, evidence, counted } = await served464(page, 'S196');
+    const excluded = evidence.runs.filter((run) => !COUNTED_464.includes(run.pool_reason));
+    ok(excluded.length > 0, 'S196 premise: the served block examines runs it does not count');
+    await openBlock464(page, row);
+    await waitForReplayAssertion(async seen => {
+      const series = seen(await tileOption464(page, `${blockTile464(row)} .tile-chart`));
+      ok(series, 'S196 the block tile mounted no chart');
+      const retired = series.filter((item) => ['Support run', 'Directional-only run', 'Target range'].includes(item.name)
+        || (item.type === 'line' && item.data.length > 0));
+      ok(retired.length === 0,
+        `S196 the tile must draw no per-run glucose trace: ${JSON.stringify(retired.map((item) => item.name ?? item.id))}`);
+      const dots = series.filter((item) => item.id?.startsWith('ic:dots:')).flatMap((item) => item.data.map((dot) => dot.runId));
+      const stems = (seriesById464(series, 'ic:stems')?.data || []).map((stem) => stem.runId);
+      for (const run of counted) {
+        ok(dots.filter((id) => id === run.run_id).length === 1,
+          `S196 counted run ${run.run_id} must appear once on the ratio strip`);
+        if (Number.isFinite(run.start_bg) && Number.isFinite(run.outcome_bg)) {
+          ok(stems.filter((id) => id === run.run_id).length === 1,
+            `S196 counted run ${run.run_id} must appear once on the lower lane`);
+        }
+      }
+      const drawn = new Set(series.flatMap((item) => item.data.map((datum) => datum.runId)).filter(Boolean));
+      const shown = excluded.filter((run) => drawn.has(run.run_id)).map((run) => run.run_id);
+      ok(shown.length === 0, `S196 a run the block does not count must not be drawn: ${JSON.stringify(shown)}`);
+    }, 'S196 the rebuilt run evidence');
+  });
+
 /* -------------------------------------------------------------- the registry */
 
 const J = (state = 'investigate') => ({ source: 'journey', state });
@@ -3325,6 +3908,9 @@ export const REGISTRY = [
   ['S173', S173, J()], ['S174', S174, J()], ['S175', S175, J()], ['S176', S176, J()],
   ['S182', S182, J()],
   ['S177', S177, J()], ['S178', S178, J()], ['S179', S179, J()],
+  ['S186', S186, J()], ['S187', S187, J()], ['S188', S188, J()], ['S189', S189, J()],
+  ['S190', S190, J()], ['S191', S191, J()], ['S192', S192, J()], ['S193', S193, J()],
+  ['S194', S194, J()], ['S195', S195, J()], ['S196', S196, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

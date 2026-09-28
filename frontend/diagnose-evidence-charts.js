@@ -10,7 +10,9 @@ import {
   glucoseRange,
 } from './diagnose-event-comparison.js';
 import { validFindingCaseFile } from './finding-case-file-validation.js';
-import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
+import {
+  COUNTED_POOL_REASONS, GRID, queuePreviewOption, ratioStrip,
+} from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -105,29 +107,21 @@ const chartBase = (description, mini, colors) => ({
    there is a shape here worth opening — not which series is which, at a size
    where they cannot be told apart anyway. It was spending a third of a ~100px
    plot naming two series the tile's own caption has already introduced. */
-const chartLegend = (data, colors, mini = false) => (mini ? { show: false } : {
-  show: true, left: GRID.left, right: 22, bottom: 0, selectedMode: false,
+/* The legend chip, apart from where it sits: the one-row tiles seat it under
+   the plot, and the carb-ratio tile seats one row under each of its lanes. */
+const legendChips = (data, colors) => ({
+  show: true, selectedMode: false,
   itemWidth: 22, itemHeight: 8, itemGap: 18,
   textStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
   data,
+});
+const chartLegend = (data, colors, mini = false) => (mini ? { show: false } : {
+  ...legendChips(data, colors), left: GRID.left, right: 22, bottom: 0,
 });
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 const hhmm = (minute) => {
   const normalized = ((minute % 1440) + 1440) % 1440;
   return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`;
-};
-const minuteOfDay = (timestamp) => {
-  const match = /T(\d\d):(\d\d)/.exec(timestamp || '');
-  return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
-};
-const clockFrame = ([start, end] = [0, 1440]) => {
-  const full = start === 0 && end >= 1439;
-  const span = full ? 1440 : (((end - start) % 1440) + 1440) % 1440 || 1440;
-  return {
-    span,
-    map: (minute) => (((minute - start) % 1440) + 1440) % 1440,
-    label: (offset) => hhmm(offset + start),
-  };
 };
 
 function thumbnail(name, count, series = []) {
@@ -887,95 +881,268 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window, surface = null } = {}) {
-  const colors = chartColors();
+/* THE BLOCK READ ALOUD (#464): the served counts only — the counted runs, how
+   many of them count whole and how much carb-share credit the shared ones add,
+   and the listed lows by their served group — then the block's served state,
+   so a block still collecting or below its floor is never read as a
+   measured one. */
+const LOW_GROUP_WORDS = Object.freeze([
+  ['counted_run', 'on counted runs'],
+  ['uncounted_run', 'on runs not counted'],
+  ['not_a_meal_run', 'after a bolus that is not one of these meals'],
+]);
+function carbRatioDescription(data) {
   const block = data?.block || {};
-  const runs = data?.runs || [];
-  const description = `${block.examined_runs ?? 0} examined meal runs; ${block.support ?? 0} support; ${block.excluded_runs ?? 0} excluded. Support uses solid traces and filled diamonds; directional-only evidence uses dashed traces and open diamonds.`;
-  if (mode === 'clock') {
-    const frame = clockFrame(window || [block.start_min ?? 0, block.end_min ?? 1440]);
-    const points = (inPool) => runs.filter((run) => run.in_pool === inPool && finite(run.true_ic))
-      .map((run) => [frame.map(minuteOfDay(run.t)), run.true_ic]);
-    return {
-      ...chartBase(description, mini, colors),
-      legend: chartLegend([
-        { name: 'Support run', icon: 'circle' },
-        { name: 'Directional-only run', icon: 'emptyCircle' },
-      ], colors, mini),
-      xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
-        ...axis(colors, 'horizontal', mini),
-        axisLabel: { ...axis(colors, 'horizontal', mini).axisLabel, formatter: frame.label },
-        splitLine: { show: false } },
-      yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)',
-        ...axis(colors, 'vertical', mini) },
-      series: [
-        { name: 'Directional-only run', type: 'scatter', symbol: 'emptyCircle',
-          symbolSize: mini ? 3 : 6, data: points(false),
-          itemStyle: { color: colors.excluded, opacity: .72 } },
-        { name: 'Support run', type: 'scatter', symbol: 'circle',
-          symbolSize: mini ? 4 : 8, data: points(true),
-          itemStyle: { color: colors.signal, opacity: .88 } },
-      ],
-    };
-  }
-  if (!Array.isArray(range) || range.length !== 2
-      || !range.every(finite) || range[0] >= range[1]) {
-    throw new TypeError('carb-ratio evidence needs one injected field glucose range');
-  }
-  const runById = new Map(runs.map((run) => [run.run_id, run]));
-  const pointsByRun = new Map((data?.series || []).map((series) => [series.run_id, series.points]));
-  const members = mealMemberMarkers(runs.map((run) => ({
-    ...run, points: pointsByRun.get(run.run_id) || [],
-  })), range[0] + 4).map((marker) => ({
-    ...marker,
-    inPool: Boolean(runById.get(marker.runId)?.in_pool),
-    itemStyle: { color: runById.get(marker.runId)?.in_pool ? colors.signal : colors.excluded },
-  }));
-  return {
-    ...chartBase(description, mini, colors),
-    legend: chartLegend([
-      { name: 'Support run', icon: 'diamond' },
-      { name: 'Directional-only run', icon: 'emptyDiamond' },
-    ], colors, mini),
-    xAxis: { type: 'value', name: 'minutes from first meal',
-      ...axis(colors, 'horizontal', mini),
-      splitLine: { show: false } },
-    yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
-      ...axis(colors, 'vertical', mini),
-      // Clipped endpoint intervals can be much shorter than the interior ticks.
-      // Keep the shared extent; a narrow I:C plot labels its interior ticks.
-      ...(surface?.clientWidth <= 480 ? { axisLabel: {
-        ...axis(colors, 'vertical', mini).axisLabel, showMinLabel: false, showMaxLabel: false,
-      } } : {}) },
-    series: [
-      { name: 'Target range', type: 'line', data: [], silent: true,
-        markLine: { symbol: 'none', silent: true,
-          lineStyle: { type: 'dashed', color: colors.muted, opacity: .6 },
-          label: { show: !mini, position: 'insideEndTop', color: colors.muted,
-            fontSize: 10, formatter: '{c}' }, data: [{ yAxis: 70 }, { yAxis: 180 }] } },
-      ...(data?.series || []).map((series) => ({
-        name: runById.get(series.run_id)?.in_pool ? 'Support run' : 'Directional-only run',
-        type: 'line', symbol: 'none', connectNulls: true, animation: false,
-        data: series.points.map((point) => [point.minute, point.bg]),
-        lineStyle: {
-          color: runById.get(series.run_id)?.in_pool ? colors.signal : colors.excluded,
-          width: mini ? .8 : 1.2,
-          opacity: runById.get(series.run_id)?.in_pool ? .34 : .20,
-          type: runById.get(series.run_id)?.in_pool ? 'solid' : 'dashed' },
-      })),
-      { name: 'Support run', type: 'scatter', symbol: 'diamond',
-        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => inPool),
-        animation: false, emphasis: { disabled: true }, z: 8 },
-      { name: 'Directional-only run', type: 'scatter', symbol: 'emptyDiamond',
-        symbolSize: mini ? 3 : 7, data: members.filter(({ inPool }) => !inPool),
-        animation: false, emphasis: { disabled: true }, z: 8 },
-    ],
-  };
+  const detail = block.support_detail || {};
+  const groups = data?.harm_evidence?.groups || {};
+  return `${block.run_ends?.n ?? 0} counted meal runs: ${detail.whole_runs ?? 0} counted whole, `
+    + `${detail.fractional_run_ownership ?? 0} runs' worth counted by carb share; listed lows: `
+    + `${LOW_GROUP_WORDS.map(([key, words]) => `${groups[key] ?? 0} ${words}`).join(', ')}.`
+    + (block.state ? ` Block state: ${block.state}.` : '');
 }
 
-export function carbRatioGlucoseValues(data) {
-  return (data?.series || []).flatMap((series) => series.points || [])
-    .map((point) => point.bg).filter(finite);
+/* A run's hover, line for line in the settled words: when, how many meals, the
+   served quotient, the served insulin terms behind it, and where it ended. The
+   one sum is the three served correction terms, printed as one. */
+const END_CLASS_WORDS = Object.freeze({ lower: 'lower', flat: 'about flat', higher: 'higher' });
+const units = (value) => (finite(value) ? value.toFixed(2) : '—');
+function runReadout(run) {
+  const corrections = run.post_correction_user + run.post_correction_ciq + run.post_correction_unknown;
+  const end = END_CLASS_WORDS[run.end_class];
+  return [
+    run.t.slice(0, 10),
+    run.t.slice(11, 16),
+    `${run.n_meals} meal${run.n_meals === 1 ? '' : 's'}`,
+    `carbs ${finite(run.carbs) ? Number(run.carbs.toFixed(1)) : '—'} g ÷ insulin ${units(run.effective_insulin)} U = ${units(run.true_ic)} g/U`,
+    `insulin: bolus ${units(run.meal_dose)} · corrections ${units(corrections)} · Control-IQ basal ${units(run.ciq_basal_delta_acted_u)} · glucose change ${units(run.bg_outcome_u)}`,
+    ...(finite(run.outcome_bg) && finite(run.outcome_min)
+      ? [`ended ${Math.round(run.outcome_bg)} mg/dL after ${Number((run.outcome_min / 60).toFixed(1))} h${end ? ` (${end})` : ''}`]
+      : []),
+  ].join('<br>');
+}
+const afterBolus = (minutes) => {
+  const whole = Math.round(minutes);
+  const hours = Math.floor(whole / 60);
+  return [hours ? `${hours} h` : '', whole % 60 || !hours ? `${whole % 60} min` : '']
+    .filter(Boolean).join(' ');
+};
+const lowReadout = (low) => `low ${Math.round(low.bg)} mg/dL`
+  + (finite(low.minutes_after_bolus) ? `, ${afterBolus(low.minutes_after_bolus)} after its bolus` : '');
+
+/* ONE BINDING PER HOST. The tile mounts its chart in its own host and hands
+   every option that host as `surface`; each build replaces the binding the
+   previous build left, since a relayout rebuilds the option. The chart is read
+   at event time, because the host is initialised after the option is built —
+   so the click handler is attached on the pointer's way down, ahead of the
+   click it answers. The arrows walk the counted runs by date, reading each out
+   as its hover does, and Enter selects the one being read.
+
+   THE BINDING LIVES ONLY AS LONG AS THE CHART. A tile that leaves its chart
+   state — a failed or pending request, a repaint — disposes the chart and
+   keeps the host. Every handler reads the chart first, and a host whose chart
+   is absent or disposed drops all of its handlers there and then, without
+   calling into the dead instance, so nothing here ever reaches a chart that
+   is gone. */
+const runBindings = new WeakMap();
+const liveChart = (instance) => (instance && !instance.isDisposed?.() ? instance : null);
+function bindRunSelection(surface, { stops, onSelectRun }) {
+  if (typeof surface?.addEventListener !== 'function') return;
+  runBindings.get(surface)?.();
+  const controller = new AbortController();
+  const { signal } = controller;
+  const select = (runId) => { if (runId && onSelectRun) onSelectRun(runId); };
+  const onClick = (params) => select(params?.data?.runId);
+  let bound = null;
+  const detach = () => {
+    controller.abort();
+    liveChart(bound)?.off('click', onClick);
+    bound = null;
+    if (runBindings.get(surface) === detach) runBindings.delete(surface);
+  };
+  runBindings.set(surface, detach);
+  const chart = () => {
+    const current = liveChart(globalThis.echarts?.getInstanceByDom?.(surface));
+    if (!current) detach();
+    return current;
+  };
+  surface.tabIndex = 0;
+  surface.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Home End Enter');
+  surface.addEventListener('pointerdown', () => {
+    const current = chart();
+    if (!current || current === bound) return;
+    liveChart(bound)?.off('click', onClick);
+    current.on('click', onClick);
+    bound = current;
+  }, { signal });
+  let cursor = -1;
+  surface.addEventListener('keydown', (event) => {
+    const current = chart();
+    if (!current || !stops.length) return;
+    const last = stops.length - 1;
+    const step = { ArrowRight: Math.min(last, cursor + 1), ArrowLeft: Math.max(0, cursor - 1),
+      Home: 0, End: last }[event.key];
+    if (step !== undefined) {
+      event.preventDefault();
+      cursor = step;
+      current.dispatchAction({ type: 'showTip',
+        seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+    } else if (event.key === 'Enter' && cursor >= 0) {
+      event.preventDefault();
+      select(stops[cursor].runId);
+    }
+  }, { signal });
+  surface.addEventListener('blur', () => {
+    cursor = -1;
+    chart()?.dispatchAction({ type: 'hideTip' });
+  }, { signal });
+}
+
+/* THE CARB-RATIO TILE (#464, the settled block design): one view, two lanes.
+   Above, the ratio strip (`ratioStrip`, which the thumbnails share). Below, the
+   counted runs by date: one 1 px stem per run from the glucose at its bolus (○)
+   to where it ended (●), the served band edges as two faint labelled
+   hairlines, and each listed low as a ▼ at its glucose on its date — filled on
+   a counted run, hollow otherwise. One key row under each lane; no caption
+   sentence, no per-meal mark, no tint. The lanes split the seat 40/60 by its
+   measured height. */
+const CARB_RATIO_TILE = Object.freeze({ height: 459, laneA: .4, labels: 44, axis: 44 });
+/* A KEY IS FILLED OR HOLLOW AS ITS MARK IS. ECharts' own `empty*` legend icons
+   fill with a hard-coded white, so a hollow key is an outline path — a second,
+   reversed subpath cuts the hole — filled with the mark's own ink. */
+const DOWN_TRIANGLE = 'path://M0,0L10,0L5,9Z';
+const HOLLOW_DOWN_TRIANGLE = 'path://M0,0L10,0L5,9Z M2.6,1.4L5,5.8L7.4,1.4Z';
+const RING = 'path://M5,0A5,5 0 1,1 5,10A5,5 0 1,1 5,0Z M5,1.5A3.5,3.5 0 1,0 5,8.5A3.5,3.5 0 1,0 5,1.5Z';
+const DAY_MS = 864e5;
+function carbRatioOption(_mode, {
+  data, mini = false, surface = null, selectedRunId = null, onSelectRun = null,
+} = {}) {
+  const colors = chartColors();
+  const description = carbRatioDescription(data);
+  const strip = ratioStrip(data, colors, { mini });
+  if (mini) {
+    return { ...chartBase(description, true, colors), legend: { show: false },
+      tooltip: { show: false }, xAxis: { ...strip.xAxis, show: false },
+      yAxis: { ...strip.yAxis, show: false }, series: strip.series };
+  }
+  const runs = (data?.runs || []).filter((run) => COUNTED_POOL_REASONS.includes(run.pool_reason));
+  const byRun = new Map(runs.map((run) => [run.run_id, run]));
+  const stemmed = runs.filter((run) => finite(run.start_bg) && finite(run.outcome_bg));
+  /* A low row is guaranteed its run, group and delay by the server's own
+     guard, not its time or glucose; one missing either has no place to go. */
+  const lows = (data?.harm_evidence?.lows || [])
+    .filter((low) => finite(low.bg) && typeof low.t === 'string');
+  const band = data?.outcomes?.band || {};
+  const day = (t) => Date.parse(`${t.slice(0, 10)}T00:00:00`);
+  const days = [...stemmed.map((run) => day(run.t)), ...lows.map((low) => day(low.t))];
+  const glucose = [...stemmed.flatMap((run) => [run.start_bg, run.outcome_bg]),
+    ...lows.map((low) => low.bg), band.low, band.high].filter(finite);
+  const laneB = Math.round((surface?.clientHeight || CARB_RATIO_TILE.height) * CARB_RATIO_TILE.laneA);
+  const gridA = { left: GRID.left, right: FULL_GRID.right, top: CARB_RATIO_TILE.labels,
+    height: Math.max(24, laneB - CARB_RATIO_TILE.labels - CARB_RATIO_TILE.axis), containLabel: false };
+  const gridB = { left: GRID.left, right: FULL_GRID.right, top: laneB + 28, bottom: 24,
+    containLabel: false };
+  const onA = (series) => ({ ...series, xAxisIndex: 0, yAxisIndex: 0 });
+  const onB = (series) => ({ ...series, xAxisIndex: 1, yAxisIndex: 1 });
+  const selected = byRun.get(selectedRunId);
+  const selectedDot = strip.series.filter(({ id }) => id.startsWith('ic:dots:'))
+    .flatMap((series) => series.data).find(({ runId }) => runId === selectedRunId);
+  const ring = { symbol: 'circle', silent: true, animation: false, z: 7,
+    itemStyle: { color: 'transparent', borderColor: colors.text, borderWidth: 1.5 } };
+  const lowMarks = (counted) => ({ type: 'scatter', symbol: 'triangle', symbolRotate: 180,
+    symbolSize: 8, animation: false, z: 6,
+    data: lows.filter((low) => (low.group === 'counted-run') === counted)
+      .map((low) => ({ value: [day(low.t), low.bg], low })),
+    itemStyle: counted ? { color: colors.low }
+      : { color: 'transparent', borderColor: colors.low, borderWidth: 1.5 } });
+  const series = [
+    ...strip.series.map(onA),
+    onA({ id: 'ic:selected:dot', type: 'scatter', ...ring,
+      data: selectedDot ? [{ value: selectedDot.value, symbolSize: selectedDot.symbolSize + 8 }] : [] }),
+    onB({ id: 'ic:band', type: 'line', data: [], silent: true, animation: false,
+      markLine: { symbol: 'none', silent: true, animation: false,
+        lineStyle: { type: 'solid', color: colors.line, width: 1 },
+        label: { show: true, position: 'insideStartTop', color: colors.muted, fontFamily: MONO,
+          fontSize: 10, formatter: '{c} mg/dL' },
+        data: [band.low, band.high].filter(finite).map((value) => ({ yAxis: value })) } }),
+    /* A 1 px line is too thin to point at, so each stem carries a clear hit
+       strip under it. */
+    onB({ id: 'ic:stems', type: 'custom', animation: false, z: 3,
+      data: stemmed.map((run) => ({ value: [day(run.t), run.start_bg, run.outcome_bg],
+        runId: run.run_id })),
+      renderItem: (params, api) => {
+        const [x, from] = api.coord([api.value(0), api.value(1)]);
+        const [, to] = api.coord([api.value(0), api.value(2)]);
+        const chosen = stemmed[params.dataIndex].run_id === selectedRunId;
+        return { type: 'group', children: [
+          { type: 'rect', shape: { x: x - 4, y: Math.min(from, to), width: 8,
+            height: Math.abs(to - from) }, style: { fill: 'transparent' } },
+          { type: 'line', shape: { x1: x, y1: from, x2: x, y2: to },
+            style: { stroke: chosen ? colors.text : colors.muted, lineWidth: chosen ? 2 : 1 } },
+        ] };
+      } }),
+    onB({ id: 'ic:starts', name: 'at the bolus', type: 'scatter', symbol: 'circle', symbolSize: 5,
+      animation: false, z: 4,
+      data: stemmed.map((run) => ({ value: [day(run.t), run.start_bg], runId: run.run_id })),
+      itemStyle: { color: 'transparent', borderColor: colors.text, borderWidth: 1 } }),
+    onB({ id: 'ic:ends', name: 'where the run ended', type: 'scatter', symbol: 'circle',
+      symbolSize: 5, animation: false, z: 4,
+      data: stemmed.map((run) => ({ value: [day(run.t), run.outcome_bg], runId: run.run_id })),
+      itemStyle: { color: colors.text } }),
+    onB({ id: 'ic:lows:counted', name: 'listed low', ...lowMarks(true) }),
+    onB({ id: 'ic:lows:other', name: 'on a run not counted', ...lowMarks(false) }),
+    onB({ id: 'ic:selected:end', type: 'scatter', ...ring,
+      data: selected && stemmed.includes(selected)
+        ? [{ value: [day(selected.t), selected.outcome_bg], symbolSize: 13 }] : [] }),
+  ];
+  bindRunSelection(surface, {
+    onSelectRun,
+    stops: series.flatMap((item, seriesIndex) => (item.id.startsWith('ic:dots:')
+      ? item.data.map(({ runId }, dataIndex) => ({ runId, seriesIndex, dataIndex,
+        t: byRun.get(runId).t })) : []))
+      .sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0)),
+  });
+  const key = (name, icon, ink) => ({ name, icon, itemStyle: { color: ink, borderWidth: 0 } });
+  const glucoseSpan = [Math.min(40, ...glucose.map((value) => Math.floor(value / 20) * 20)),
+    Math.max(300, ...glucose.map((value) => Math.ceil(value / 20) * 20))];
+  return {
+    ...chartBase(description, false, colors),
+    grid: [gridA, gridB],
+    legend: [
+      { ...legendChips([key('whole run', 'circle', colors.text),
+        key('counted by share', RING, colors.text)], colors),
+      left: GRID.left, top: gridA.top + gridA.height + 24,
+      formatter: (name) => (name === 'counted by share'
+        ? `${name} · size = carbs counted · hover a dot for the insulin behind its ratio` : name) },
+      { ...legendChips([key('at the bolus', RING, colors.text),
+        key('where the run ended', 'circle', colors.text),
+        key('listed low', DOWN_TRIANGLE, colors.low),
+        key('on a run not counted', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
+      left: GRID.left, top: laneB + 6 },
+    ],
+    /* A dot, a stem or its markers read out their run; a ▼ reads out its low. */
+    tooltip: { show: true, trigger: 'item', confine: true,
+      extraCssText: 'max-width: 320px; white-space: normal;',
+      formatter: (params) => {
+        const datum = params?.data;
+        if (datum?.low) return lowReadout(datum.low);
+        const run = byRun.get(datum?.runId);
+        return run ? runReadout(run) : '';
+      } },
+    xAxis: [
+      { ...strip.xAxis, gridIndex: 0, name: 'g/U', ...axis(colors, 'horizontal'),
+        splitLine: { show: false },
+        axisLabel: { ...axis(colors, 'horizontal').axisLabel, formatter: (value) => value.toFixed(1) } },
+      { gridIndex: 1, type: 'time', minInterval: 7 * DAY_MS, maxInterval: 7 * DAY_MS,
+        ...(days.length ? { min: Math.min(...days) - DAY_MS, max: Math.max(...days) + DAY_MS } : {}),
+        ...axis(colors, 'horizontal'), splitLine: { show: false },
+        axisLabel: { ...axis(colors, 'horizontal').axisLabel, formatter: '{MMM} {d}' } },
+    ],
+    yAxis: [
+      { ...strip.yAxis, gridIndex: 0 },
+      { gridIndex: 1, type: 'value', min: glucoseSpan[0], max: glucoseSpan[1], show: false },
+    ],
+    series,
+  };
 }
 
 /* A PARAMETER TILE CARRIES ITS OWN ROW'S EXTENT, in the queue's words. Basal
@@ -1040,22 +1207,31 @@ const entries = [
     kind: 'carb-ratio',
     name: 'Carb ratio · meal runs',
     nameFor: spanNamed('Carb ratio', 'meal runs'),
-    modes: ['event', 'clock'],
-    meta: (mode) => mode === 'event'
-      ? 'CGM from first meal' : 'Carb ratio by meal start',
+    /* One view (#464, the settled block design), so no modes and no toggle —
+       the one-view kinds' precedent. */
+    modes: null,
+    meta: () => 'counted runs by carb ratio · where each run ended',
     option: carbRatioOption,
-    thumbnail: (data, title) => thumbnail((title || 'Carb ratio · meal runs').toUpperCase(),
-      `${data?.block?.examined_runs ?? 0} / ${data?.block?.support ?? 0}`,
-      [{ type: 'line', symbol: 'none', connectNulls: true,
-        data: data?.series?.[0]?.points?.map((point) => point.bg) || [],
-        lineStyle: { color: chartColors().signal, width: 1 } }]),
+    /* The drawer's caption carries the served examined / support pair, as every
+       kind's does; the picture is the tile's ratio strip alone. */
+    thumbnail: (data, title) => {
+      const strip = ratioStrip(data, chartColors(), { mini: true });
+      return {
+        ...thumbnail((title || 'Carb ratio · meal runs').toUpperCase(),
+          `${data?.block?.examined_runs ?? 0} / ${data?.block?.support ?? 0}`, strip.series),
+        xAxis: { ...strip.xAxis, show: false },
+        yAxis: { ...strip.yAxis, show: false },
+      };
+    },
     coordinateSchema: ['block_id', 'analysis_generation'],
     matches: (row) => !row.event_chart && row.parameter === 'carb_ratio',
     coordinates: (row, findings) => ({
       block_id: row.block_id ?? row.span?.start_min,
       analysis_generation: findings.analysis_generation,
     }),
-    glucoseValues: carbRatioGlucoseValues,
+    /* The tile draws no glucose against the field's shared range: its lower
+       lane keeps its own 40–300 mg/dL scale. */
+    glucoseValues: null,
   },
   {
     kind: 'eating-sequence',

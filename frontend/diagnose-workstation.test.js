@@ -1101,7 +1101,7 @@ test('#464 · a collecting, below-floor or unmeasured-alone block keeps the numb
       assert.equal(host.html.length, 0, `${name} inserts nothing beneath the numbers block`);
       assert.equal(host.children.length, 1, `${name} appends nothing beneath the numbers block`);
       assert.doesNotMatch(text,
-        /Why this move|Why no move|The case against|The case for|After these meals|Lows after|class="slot-stats"/);
+        /Why this move|What the counted runs measured|The case against|The case for|After these meals|Lows after|class="slot-stats"/);
     }
   });
 });
@@ -1151,7 +1151,11 @@ test('#464 · the case against prints the served window, and a looser ratio only
     const unmoved = structuredClone(icExplained);
     unmoved.block.direction = null;
     assert.equal(unmoved.block.side.direction, 'above', 'premise: the runs still measured looser');
-    assert.doesNotMatch(icPanelText(renderIcPanel(unmoved)), /a looser ratio can raise peaks/);
+    const unmovedText = icPanelText(renderIcPanel(unmoved));
+    assert.doesNotMatch(unmovedText, /a looser ratio can raise peaks/);
+    assert.ok(unmovedText.includes('<div class="lvl-cap">What the counted runs measured</div>\n'
+      + '<div class="inner"><div class="slot-stats">18 of 24 counted runs measured looser than'),
+      'the served side prints under a caption that argues no move');
 
     const held = icCapture.cross_midnight;
     assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
@@ -1167,7 +1171,7 @@ test('#464 · a held block\'s panel prints no recommendation step', () => {
     assert.equal(held.block.asserts_move, false, 'premise: the overnight block is held');
     assert.equal(held.block.state, 'numeric', 'premise: and measured');
     const text = icPanelText(renderIcPanel(held, {}, icHeldCell));
-    assert.ok(text.includes('<div class="lvl-cap">Why no move</div>'));
+    assert.ok(text.includes('<div class="lvl-cap">What the counted runs measured</div>'));
     assert.ok(text.includes('<div class="slot-stats">Of the 9 counted runs, 0 ended lower than they started, '
       + '9 about flat and 0 higher, where they ended; for 0 of them that end came after a later meal past 07:00.</div>'));
     assert.doesNotMatch(text, /Recommended|half the gap/);
@@ -1185,14 +1189,14 @@ test('#464 · the panel\'s captions follow the served move', () => {
     const held = icCapture.cross_midnight;
     assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
     assert.deepEqual(captions(icPanelText(renderIcPanel(held, {}, icHeldCell))).slice(0, 2),
-      ['Why no move', 'After these meals']);
+      ['What the counted runs measured', 'After these meals']);
 
     // A modified copy of the explained block: `block.direction` set to 'lower'.
     const lowered = structuredClone(icExplained);
     lowered.block.direction = 'lower';
     const text = icPanelText(renderIcPanel(lowered));
     assert.deepEqual(captions(text), ['Why this move', 'The case for', 'Lows after morning boluses']);
-    assert.doesNotMatch(text, /a looser ratio can raise peaks/, 'the lines inside are unchanged');
+    assert.doesNotMatch(text, /a looser ratio can raise peaks/, 'the meals line adds that clause only on a raise');
   });
 });
 

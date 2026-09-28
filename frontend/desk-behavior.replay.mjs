@@ -3655,7 +3655,7 @@ export const S201 = appOnly('ADR 464',
     const side = { above: 'looser', below: 'tighter' }[block.side.direction];
     const ends = block.run_ends;
     const captions = { raise: ['Why this move', 'The case against'], lower: ['Why this move', 'The case for'] };
-    const [whyCap, mealsCap] = captions[block.direction] || ['Why no move', 'After these meals'];
+    const [whyCap, mealsCap] = captions[block.direction] || ['What the counted runs measured', 'After these meals'];
     const blockEnd = block.end_min === 1440 ? '24:00'
       : `${String(Math.floor(block.end_min / 60)).padStart(2, '0')}:${String(block.end_min % 60).padStart(2, '0')}`;
     const why = [

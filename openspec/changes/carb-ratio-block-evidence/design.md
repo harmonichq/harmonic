@@ -207,23 +207,25 @@ balance-sheet row, outcome tally, run roster).
 Beneath the unchanged numbers-and-staging block, the panel prints three captioned
 sections of one-sentence lines. A line whose served facts are empty is left out.
 
-- **Why this move**, four lines:
+- **The why section**, captioned "Why this move" on a raise or a lower and "What
+  the counted runs measured" on a hold, four lines:
   1. how many counted runs measured looser or tighter than the programmed ratio,
      and that the estimate's range leaves the programmed ratio out (the served
      side counts and direction, the programmed value, the estimate's range);
   2. one fixed sentence on what the ratio counts: every unit a run used
      (boluses, corrections, Control-IQ basal changes), with the glucose change
      converted at the correction factor, judged where the run ended;
-  3. how many counted runs ended after a later meal past the block's end, and how
-     many ended lower, about flat or higher than they started (the served run
-     ends);
+  3. how many counted runs ended after a later meal past the block's end, how
+     many ended lower, about flat or higher than they started, and how many had
+     no reading where they ended, when any (the served run ends);
   4. the recommendation's reason, served from the analyzer's own rule: half the
      gap from the programmed ratio toward the estimate, capped when the step cap
      bound it, rounded to the pump's step.
-- **The case against**, one line: how many of the block's meals on counted runs
-  peaked above the band before their next bolus, and how many counting later
-  meals within the post-meal window; for a raise, that a looser ratio can raise
-  peaks.
+- **The meals section**, captioned "The case against" on a raise, "The case for"
+  on a lower and "After these meals" on a hold, one line: how many of the block's
+  meals on counted runs peaked above the band before their next bolus, and how
+  many counting later meals within the post-meal window; on a raise only, that a
+  looser ratio can raise peaks.
 - **Lows after the block's boluses**: one population, the lows the harm arm lists,
   with their range of minutes after the bolus and the served sentence on how the
   lows on counted runs bear on the move. They are grouped on counted runs, on runs
@@ -234,12 +236,15 @@ sections of one-sentence lines. A line whose served facts are empty is left out.
 
 The first two captions follow the block's served direction: "Why this move" and
 "The case against" on a raise, "Why this move" and "The case for" on a lower, and
-"Why no move" and "After these meals" on a hold. The lines are the same served
-facts in all three, but what they argue is not. Meals peaking above the band before
+"What the counted runs measured" and "After these meals" on a hold. The lines
+print the same served facts in all three, and the meals line adds that a looser
+ratio can raise peaks only on a raise; what the facts argue is not the same. Meals peaking above the band before
 their next bolus argue against a looser ratio and for a tighter one, so one fixed
 caption would call the same fact the case against a lower that it supports. A hold
 has no move for them to argue either way, so its captions say what the sections
-show. The caption is keyed on the served direction, like the looser-ratio clause,
+show. A block the regime bracket holds still serves its side, so its first line
+reads as a case for a move: captioned "Why no move", it would head that line and
+give no reason. The caption is keyed on the served direction, like the looser-ratio clause,
 and the client decides no move of its own.
 
 The run roster and the balance-sheet row are not on the panel. The balance sheet

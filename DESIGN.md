@@ -494,7 +494,8 @@ changed.
 - **The panel.** Below the unchanged numbers block, the panel has three
   captioned sections of one-sentence lines. It has no grey explanation block
   and no collapsed section.
-  - **Why this move** (**Why no move** on a block that holds), in four lines:
+  - **Why this move** (**What the counted runs measured** on a block that
+    holds), in four lines:
     how many counted runs measured on the far side of the programmed ratio,
     with the estimate's range leaving it out; what the ratio counts (all the
     insulin a run used, with the glucose change converted at the correction

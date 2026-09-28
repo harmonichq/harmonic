@@ -6472,16 +6472,16 @@ S201 · Below the numbers block the panel prints a why section, a meals section
        and "Lows after ‹block› boluses", in that order. The first two captions
        follow the served block direction: "Why this move" and "The case
        against" on a raise, "Why this move" and "The case for" on a lower, and
-       "Why no move" and "After these meals" on a hold. The why section prints
-       four lines: the served side count against the programmed value and the
-       estimate's range; the fixed mechanism sentence; the served run-end
-       split after a later meal, ending "; ‹n› had no reading where they
-       ended" when the served unread count is not zero; and the served
-       recommendation sentence. The meals section prints the served peak
-       counts against the served high edge. The lows line prints the served
-       low count, the delay range after the bolus and the served bearing
-       sentence. A line whose served fact is null is omitted, and no footnote
-       prints.
+       "What the counted runs measured" and "After these meals" on a hold. The
+       why section prints four lines: the served side count against the
+       programmed value and the estimate's range; the fixed mechanism
+       sentence; the served run-end split after a later meal, ending "; ‹n›
+       had no reading where they ended" when the served unread count is not
+       zero; and the served recommendation sentence. The meals section prints
+       the served peak counts against the served high edge. The lows line
+       prints the served low count, the delay range after the bolus and the
+       served bearing sentence. A line whose served fact is null is omitted,
+       and no footnote prints.
   element:  #level .lvl-cap and the .slot-stats lines under each
   source:   frontend/diagnose-workstation.js readIcBlockEvidence
   lock:     none (revise; the #464 settled block design)

@@ -48,19 +48,19 @@ block, which renders exactly as shipped, three captioned sections of one-sentenc
 lines, each printed from served facts and left out when those facts are empty.
 The first two captions SHALL be keyed on the block's served direction: "Why this
 move" and "The case against" for a raise, "Why this move" and "The case for" for a
-lower, and "Why no move" and "After these meals" when the block asserts no move;
-the lines beneath them are the same in all three. The why section SHALL print how
-many counted runs measured looser or tighter than
-the programmed ratio and that the estimate's range leaves it out; one fixed
+lower, and "What the counted runs measured" and "After these meals" when the block
+asserts no move; the lines beneath them print the same served facts in all three,
+and the meals line adds that a looser ratio can raise peaks only on a raise. The
+why section SHALL print how many counted runs measured looser or tighter than the
+programmed ratio and that the estimate's range leaves it out; one fixed
 sentence saying the ratio counts all the insulin a run used, with the glucose
 change converted at the correction factor, judged where the run ended; how many
 counted runs ended after a later meal past the block's end, and how many ended
 lower, about flat or higher, adding the served count of counted runs with no
 reading where they ended when it is not zero; and the served recommendation reason
 verbatim. The meals section SHALL print how many of the block's meals on counted
-runs peaked
-above the served band before their next bolus, and how many counting later meals
-within the post-meal window. The lows section SHALL print the served count and
+runs peaked above the served band before their next bolus, and how many counting
+later meals within the post-meal window. The lows section SHALL print the served count and
 range of minutes after the bolus with the served bearing sentence, then every low
 the harm arm lists as a row through the shared Occurrence roster, grouped on
 counted runs, on runs not counted, and after a bolus that is not one of these
@@ -90,8 +90,9 @@ group, band, direction, caption or sentence.
 - **WHEN** the reader opens its panel
 - **THEN** its first two captions are "Why this move" and "The case against" when
   the served direction is a raise, "Why this move" and "The case for" when it is a
-  lower, and "Why no move" and "After these meals" when it is none, over the same
-  lines
+  lower, and "What the counted runs measured" and "After these meals" when it is
+  none, over lines printing the same served facts, the meals line adding that a
+  looser ratio can raise peaks only on a raise
 
 #### Scenario: The Day hop works from View segment
 

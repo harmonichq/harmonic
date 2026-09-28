@@ -1144,7 +1144,7 @@ const SIDE_WORD = { above: 'looser', below: 'tighter' };
 const BLOCK_CAPTIONS = new Map([
   ['raise', ['Why this move', 'The case against']],
   ['lower', ['Why this move', 'The case for']],
-  [null, ['Why no move', 'After these meals']],
+  [null, ['What the counted runs measured', 'After these meals']],
 ]);
 const LOW_GROUPS = [
   ['counted-run', 'counted_run', 'On counted runs'],

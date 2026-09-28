@@ -100,6 +100,46 @@ test('show-more uses served counts and one expansion state across groups', () =>
   });
 });
 
+/* #464 — the carb-ratio block's lows list every served low, so its caller lifts
+   the cap entirely; a row can be pressed by the run it sits on rather than by its
+   own id; and hovering or focusing a row previews it without selecting it. */
+test('an uncapped roster lists every served row with no more control', () => {
+  withDocument(() => {
+    const host = new FakeElement();
+    renderOccurrenceRoster(host, [{
+      header: '<div class="ev-group">Lows</div>',
+      servedCount: 7,
+      rows: Array.from({ length: 7 }, (_, index) => ({ id: `low-${index}`, html: `Low ${index}` })),
+    }], { selectedId: null, shownCount: Infinity, cap: Infinity, onSelect() {}, onMore() {} });
+    assert.equal(host.children.length, 7);
+    assert.ok(host.children.every((child) => child.className === 'ev-row case-occurrence'));
+  });
+});
+
+test('a row pressed by its caller wins over the selected id, and hover or focus previews it', () => {
+  withDocument(() => {
+    const host = new FakeElement();
+    const previewed = [];
+    renderOccurrenceRoster(host, [{
+      header: '',
+      servedCount: 2,
+      rows: [
+        { id: 'low-1', html: 'First', pressed: true, dataset: { runId: 'run-a' } },
+        { id: 'low-2', html: 'Second', pressed: false },
+      ],
+    }], {
+      selectedId: 'low-2', shownCount: 5, onSelect() {}, onMore() {},
+      onPreview: (id) => previewed.push(id),
+    });
+    assert.equal(host.children[0].getAttribute('aria-pressed'), 'true');
+    assert.equal(host.children[1].getAttribute('aria-pressed'), 'false');
+    assert.equal(host.children[0].dataset.runId, 'run-a');
+    host.children[0].listeners.get('mouseenter')();
+    host.children[1].listeners.get('focus')();
+    assert.deepEqual(previewed, ['low-1', 'low-2']);
+  });
+});
+
 test('each caller keeps its shipped empty-state order', () => {
   withDocument(() => {
     const host = new FakeElement();

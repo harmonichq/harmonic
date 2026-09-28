@@ -56,7 +56,8 @@ tell me why." The estimator is not in question. What it decided is not shown.
   gains shared runs, a no-outcome run, an earlier-ratio run, a spike-then-low
   chain and two attributed lows; a manufactured QA case carries the same states
   to the browser; the desk behavior ledger gains a story per added or changed
-  behavior and is replayed at both viewports on the built app.
+  behavior and is replayed at both viewports on the built app, and the panel
+  story joins the fixed PR smoke slice so that slice reaches the new case.
 
 ## Impact
 

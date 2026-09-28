@@ -862,10 +862,11 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
         # real replay case. #424: S125 and S126 join it for the same reason, as
         # the only stories on `behavioral-missed-meal` and
         # `behavioral-correction-stacking`. #451: S177 joins it as the only
-        # story on `isf-strengthen`.
-        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 25)
+        # story on `isf-strengthen`. #464: S190 joins it as the panel story on
+        # `ic-block-evidence`, the only case the slice did not yet reach.
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 26)
         self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
-                         '9b92ee77d0e2e046753bdb5b80eb87d6451ce18ff1c35b7ca494d4de112b6523')
+                         '0f321a5c27005f95995f180174b1a46a3c3626b775c65b8922bac06b04b927ca')
         with tempfile.TemporaryDirectory() as directory:
             run = acceptance.Run(Path(directory))
             ids = acceptance.inventory(run)

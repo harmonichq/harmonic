@@ -140,7 +140,7 @@ authorized-synthetic mockups/diagnose-workstation.synthetic/settings-audit.captu
 # which prints the full delta first. Never edit it by hand: the digest is
 # checked at parse time and a hand edit fails the config closed.
 # BEGIN dose-ratio baseline
-dose-ratio-baseline 263 24f90ce5734603d619bfddd519572c336cf2616795012366f88788d568e62519
+dose-ratio-baseline 267 0f0024d94e5583284668fb2d7ebbbfd6a6aedc0497a49e41da61ab59baada0ac
 dose-ratio-ack CONTEXT.md:527 | 0.2 U
 dose-ratio-ack CONTEXT.md:77 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:99 | 0.5 U
@@ -183,96 +183,96 @@ dose-ratio-ack frontend/__fixtures__/findings-projection.json:20043 | 6.6 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:20122 | 6.8 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:20201 | 7 g/U
 dose-ratio-ack frontend/__fixtures__/findings-projection.json:20280 | 7.2 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:223535 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:223594 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:224196 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:224826 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:224848 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:225332 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:225739 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:226311 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:226731 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:227209 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:227811 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:228441 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:228463 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:228945 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229261 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229726 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229798 | 1.26 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229870 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229901 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:229923 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:230399 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:230624 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:230655 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:230677 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:231144 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:231175 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:231197 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:231673 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:231906 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:27799 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:28735 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30034 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30067 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30100 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30133 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30157 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:30168 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:33923 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:34333 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:34911 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:35513 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:35817 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:36204 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:36226 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:36714 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:36939 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:37504 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:37579 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:37631 | 1.26 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:37682 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:37704 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38186 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38414 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38445 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38467 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38943 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38974 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:38996 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:39478 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:39714 | 1 U : 37.6 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:47211 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48147 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48530 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48563 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48596 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48629 | 1 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48653 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:48664 | 4.6 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:57711 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:58313 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:59394 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:59814 | 1 U : 36 mg/dL
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:60296 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:60898 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:61528 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:61550 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:62036 | 4.3 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:62638 | 1.00 U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:70726 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:79231 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:80167 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:87782 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:88718 | 6 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:96333 | 0.1 g/U
-dose-ratio-ack frontend/__fixtures__/findings-projection.json:97269 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:223985 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:224044 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:224646 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:225276 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:225298 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:225782 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:226189 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:226761 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:227181 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:227659 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:228261 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:228891 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:228913 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:229395 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:229711 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230176 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230248 | 1.26 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230320 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230351 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230373 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:230849 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231074 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231105 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231127 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231594 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231625 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:231647 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:232123 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:232356 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:27825 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:28785 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30084 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30117 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30150 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30183 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30207 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:30218 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:33973 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:34383 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:34961 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:35563 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:35867 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:36254 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:36276 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:36764 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:36989 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:37554 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:37629 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:37681 | 1.26 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:37732 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:37754 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:38236 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:38464 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:38495 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:38517 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:38993 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39024 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39046 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39528 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:39764 | 1 U : 37.6 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:47287 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48247 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48630 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48663 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48696 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48729 | 1 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48753 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:48764 | 4.6 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:57811 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:58413 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:59494 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:59914 | 1 U : 36 mg/dL
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:60396 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:60998 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:61628 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:61650 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:62136 | 4.3 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:62738 | 1.00 U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:70852 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:79407 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:80367 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:88008 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:88968 | 6 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:96609 | 0.1 g/U
+dose-ratio-ack frontend/__fixtures__/findings-projection.json:97569 | 6 g/U
 dose-ratio-ack frontend/kb.test.js:187 | 0.5 U
 dose-ratio-ack frontend/kb.test.js:207 | 0.5 U
 dose-ratio-ack frontend/plan.js:476 | 0.001 U
 dose-ratio-ack frontend/plan.js:478 | 0.1 g/U
-dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json:2450 | 0.1 g/U
+dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json:2482 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:169 | 10 U
 dose-ratio-ack openspec/specs/behavioral-layer/spec.md:40 | 0.3 U
@@ -345,7 +345,11 @@ dose-ratio-ack tests/test_classifier_correction_stacking.py:137 | 1U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:150 | 0.1 U
 dose-ratio-ack tests/test_classifier_correction_stacking.py:158 | 0.1 U
 dose-ratio-ack tests/test_ic_block_evidence.py:193 | 4.0 g/U
-dose-ratio-ack tests/test_ic_block_evidence.py:617 | 7.5 g/U
+dose-ratio-ack tests/test_ic_block_evidence.py:634 | 7.5 g/U
+dose-ratio-ack tests/test_ic_block_evidence.py:649 | 5.0 g/U
+dose-ratio-ack tests/test_ic_block_evidence.py:650 | 3.75 g/U
+dose-ratio-ack tests/test_ic_block_evidence.py:651 | 9 U
+dose-ratio-ack tests/test_ic_block_evidence.py:686 | 1.5 U
 dose-ratio-ack tests/test_ic_blocks.py:158 | 4.0 g/U
 dose-ratio-ack tests/test_ic_blocks.py:181 | 12 U
 dose-ratio-ack tests/test_ic_blocks.py:209 | 8.0 g/U

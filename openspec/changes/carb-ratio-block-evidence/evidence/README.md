@@ -37,6 +37,8 @@ Each file keeps the runner's summary line (`# executed … · failed … · sele
 | `replay-S189-1440x900.txt` | the same at `VIEWPORT=1440x900`: 1 of 1 passed |
 | `replay-S192-S193-1280x720.txt` | S192 and S193 as amended, `VIEWPORT=1280x720`: 2 of 2 passed |
 | `replay-S192-S193-1440x900.txt` | the same at `VIEWPORT=1440x900`: 2 of 2 passed |
+| `replay-final-1280x720.txt` | all eleven stories on the final code commit 8ccd68cf, after the whole-diff review's fixes, `VIEWPORT=1280x720`: 11 of 11 passed |
+| `replay-final-1440x900.txt` | the same at `VIEWPORT=1440x900`: 11 of 11 passed |
 
 Final outcome: all eleven stories pass at both viewports. S186–S188, S190,
 S191 and S194–S196 pass in the first run. S189 passes in its own run.
@@ -49,6 +51,14 @@ defect: the first version required a pressed Episode Log row, and Day lists
 none for a harm-listed low. Both stories were amended, and the amended stories
 pass. The ledger's status line on each story names the file that shows its
 final result.
+
+## Full verification
+
+`verification/` holds the work order's Verification block run once, serially,
+on the commit named in its `summary.txt`: one file per leg with the raw output,
+and `summary.txt` with each leg's exit code and wall time. The whole pytest ran
+with `--durations=5` and the focused QA suite with `--durations=3`, which is
+where `coverage-appendix.md`'s final budget column reads from.
 
 ## Browser suites
 

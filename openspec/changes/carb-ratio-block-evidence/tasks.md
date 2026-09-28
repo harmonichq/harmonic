@@ -185,6 +185,9 @@ implemented and verified, never attempted; the coordinator ticks.
   behavior — the block's run evidence on the tile — still ships, rebuilt), not a
   retirement; `mockups/sweep/harmonic-v2-desktop/acceptance.py`'s pinned
   `issued/active/retired` counts move to the new totals in the same commit.
+  Found at verification: the fixed PR smoke slice must reach every replay case
+  and did not reach `ic-block-evidence`, so S190 (the panel story) joins
+  `SMOKE_STORIES`, with its pinned count and digest, in the same change.
 - [x] 17. **Replay on the built app, and run the hand-listed browser suites.**
   `npm ci && npm run build`; the QA copy-then-serve command with `--no-fetch
   --token ''` on the `ic-block-evidence` case store emitted by

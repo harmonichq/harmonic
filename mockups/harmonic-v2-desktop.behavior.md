@@ -5429,6 +5429,9 @@ S186 · The block opens on its one view. The block's tile offers no view or
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5446,6 +5449,9 @@ S187 · On the ratio strip, a run counted whole is a filled dot and a run counte
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5468,6 +5474,9 @@ S188 · The lower lane draws each counted run on its date as a stem from its
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5497,6 +5506,9 @@ S189 · A run's readout is its served balance sheet in six lines: date, time,
             out 2024-05-07 while the tile's cursor held 2024-05-03, two runs
             counted whole at 5.56 g/U in the same stack of the strip. That was
             a tile defect, fixed in the tile
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5521,6 +5533,9 @@ S190 · Below the numbers block the panel prints "Why this move", "The case
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5544,6 +5559,9 @@ S191 · The lows print as one roster in their served groups ("On counted runs",
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5576,6 +5594,9 @@ S192 · A low's row opens Day at that low's own moment. The address names the
             (evidence/replay-1280x720.txt, evidence/replay-1440x900.txt). Day
             lists no row for a harm-listed low, which the coordinator
             confirmed in a browser. That was a replay defect
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5601,6 +5622,9 @@ S193 · The same Day hop works when the block was opened from a clock case
             segment and failed only at S192's pressed-row assertion, at both
             sizes, on bdc6de49 (evidence/replay-1280x720.txt,
             evidence/replay-1440x900.txt)
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5620,6 +5644,9 @@ S194 · While the block's run evidence is in flight, the panel prints the one
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5636,6 +5663,9 @@ S195 · The block's queue row draws the ratio strip alone: every served counted
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 ```
@@ -5658,6 +5688,9 @@ S196 · Changed: the block's run evidence still ships on its tile, rebuilt. The
   status:   final: passes at 1280x720 and 1440x900. Coordinator-run
             2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
             evidence/replay-1440x900.txt
+            Final run on 8ccd68cf, every #464 story at both sizes:
+            evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
 ```
 
 Additional handler inventory for this amendment:

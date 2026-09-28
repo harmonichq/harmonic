@@ -1,0 +1,2 @@
+verify-660-story: current (mockups/verify-660-story.synthetic)
+diagnose-workstation: current (mockups/diagnose-workstation.synthetic)

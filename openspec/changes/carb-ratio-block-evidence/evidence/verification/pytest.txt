@@ -1,0 +1,178 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/connor/worktrees/harmonic/464
+configfile: pyproject.toml
+plugins: anyio-4.14.1, requests-mock-1.12.1
+collected 2776 items
+
+tests/test_admission.py ............                                     [  0%]
+tests/test_analyze_facade.py .........................                   [  1%]
+tests/test_analyzer_basal.py ........................................... [  2%]
+............................                                             [  3%]
+tests/test_analyzer_coverage.py ........................................ [  5%]
+.                                                                        [  5%]
+tests/test_analyzer_ic.py .............................................. [  7%]
+........................................................................ [  9%]
+                                                                         [  9%]
+tests/test_analyzer_isf.py ...........................................   [ 11%]
+tests/test_annotation_register.py ......                                 [ 11%]
+tests/test_api.py ...................................................... [ 13%]
+....................................................................     [ 15%]
+tests/test_arc_rows_mirror.py .                                          [ 15%]
+tests/test_basal_night_evidence.py ................                      [ 16%]
+tests/test_carbs.py .....................                                [ 17%]
+tests/test_check_adr_numbers.py ..........                               [ 17%]
+tests/test_check_demo_fixtures.py ............                           [ 17%]
+tests/test_check_public_allowlist.py ...................                 [ 18%]
+tests/test_check_public_links.py .........................               [ 19%]
+tests/test_ci_workflow.py ..                                             [ 19%]
+tests/test_classifier_carb_undercount.py ..................              [ 20%]
+tests/test_classifier_correction_on_iob.py .......                       [ 20%]
+tests/test_classifier_correction_stacking.py ...........                 [ 20%]
+tests/test_classifier_late_bolus.py ................................     [ 22%]
+tests/test_classifier_meal_bolus_short.py .................              [ 22%]
+tests/test_classifier_missed_meal.py ...............                     [ 23%]
+tests/test_classifier_suspend.py ..............                          [ 23%]
+tests/test_classifier_user_override.py ...................               [ 24%]
+tests/test_cli.py ...........                                            [ 24%]
+tests/test_credentials.py ...........                                    [ 25%]
+tests/test_day_navigator.py .......                                      [ 25%]
+tests/test_deploy_assets.py .....                                        [ 25%]
+tests/test_derived_artifacts.py ...................                      [ 26%]
+tests/test_durable_follow_up.py .........................                [ 27%]
+tests/test_eating_sequence_finding_fixture.py .........                  [ 27%]
+tests/test_eating_sequence_findings.py ...................               [ 28%]
+tests/test_eating_sequence_fixture.py ..                                 [ 28%]
+tests/test_eating_sequences.py ..................................        [ 29%]
+tests/test_epochs.py ............................                        [ 30%]
+tests/test_event_comparison.py ...                                       [ 30%]
+tests/test_events.py .......                                             [ 30%]
+tests/test_evidence_population_policy.py .                               [ 30%]
+tests/test_explore_exposures.py ........                                 [ 31%]
+tests/test_explore_time_of_day.py ...............                        [ 31%]
+tests/test_false_low.py ...............                                  [ 32%]
+tests/test_fetch_loop.py ....................                            [ 32%]
+tests/test_finding_case_file.py ........................................ [ 34%]
+............................                                             [ 35%]
+tests/test_finding_case_file_api.py ...............................      [ 36%]
+tests/test_findings_projection.py ...................................... [ 37%]
+........................................................................ [ 40%]
+.......................                                                  [ 41%]
+tests/test_follow_up_comparison.py ..................................... [ 42%]
+...                                                                      [ 42%]
+tests/test_follow_up_store.py ....................................       [ 44%]
+tests/test_frontend_asset_routes.py ....                                 [ 44%]
+tests/test_gen_qa_e2e_db.py .........                                    [ 44%]
+tests/test_gen_verify_payload_block_ic.py .                              [ 44%]
+tests/test_guidance.py ...............................                   [ 45%]
+tests/test_guidance_api.py .....................                         [ 46%]
+tests/test_guidance_inputs.py .                                          [ 46%]
+tests/test_guidance_preferences.py .......                               [ 46%]
+tests/test_guide_catalog.py ............                                 [ 47%]
+tests/test_harm.py ...................................                   [ 48%]
+tests/test_harm_basal_arm.py ..........                                  [ 48%]
+tests/test_ic_block_evidence.py ............................             [ 49%]
+tests/test_ic_blocks.py ..............................................   [ 51%]
+tests/test_ic_history_events.py ..                                       [ 51%]
+tests/test_ic_meal_runs.py ......................                        [ 52%]
+tests/test_ic_regression.py ...............                              [ 52%]
+tests/test_ic_regression_whole_run_ownership.py ..                       [ 52%]
+tests/test_insulin.py ..................                                 [ 53%]
+tests/test_isf_rest_window_evidence.py .....                             [ 53%]
+tests/test_lever_closed_set_mirrors.py ..                                [ 53%]
+tests/test_localized_outcomes_grounding.py ..                            [ 53%]
+tests/test_meal_bolus_short_attribution.py ............................. [ 54%]
+                                                                         [ 54%]
+tests/test_meal_suspend.py ............                                  [ 55%]
+tests/test_meals.py ........                                             [ 55%]
+tests/test_model.py .........................                            [ 56%]
+tests/test_outcome_patterns.py .............                             [ 57%]
+tests/test_outcomes.py ..........................                        [ 57%]
+tests/test_outcomes_trend.py ........................................... [ 59%]
+......................................................                   [ 61%]
+tests/test_pattern_policy.py ............                                [ 61%]
+tests/test_pattern_replay.py ..                                          [ 61%]
+tests/test_pattern_sweep.py ................                             [ 62%]
+tests/test_pending_prompts.py .......................................... [ 64%]
+                                                                         [ 64%]
+tests/test_plan_verdict.py .....................                         [ 64%]
+tests/test_preempted_lows.py ...............                             [ 65%]
+tests/test_priority.py ........                                          [ 65%]
+tests/test_qa_e2e_cases.py ............................................. [ 67%]
+.............................................                            [ 68%]
+tests/test_render.py ......                                              [ 69%]
+tests/test_replay.py ...............                                     [ 69%]
+tests/test_replay_fit_meals.py ...                                       [ 69%]
+tests/test_report.py .........                                           [ 70%]
+tests/test_rescue_evidence.py ...............................            [ 71%]
+tests/test_rest_window.py ............                                   [ 71%]
+tests/test_result.py .....................                               [ 72%]
+tests/test_result_cache.py .....................                         [ 73%]
+tests/test_revise_e2e_retired.py ....                                    [ 73%]
+tests/test_safety_backtest.py ................................s          [ 74%]
+tests/test_scan_public_tree.py ......................................... [ 75%]
+.....................................                                    [ 77%]
+tests/test_scenario_engine.py .......................................... [ 78%]
+........................................................................ [ 81%]
+.....                                                                    [ 81%]
+tests/test_scenario_model_view.py .........................              [ 82%]
+tests/test_scenario_narrate.py .....................                     [ 83%]
+tests/test_scenario_opportunities.py ..                                  [ 83%]
+tests/test_scenario_timeline_hoist.py ....                               [ 83%]
+tests/test_settings.py .....................                             [ 84%]
+tests/test_settling.py .........                                         [ 84%]
+tests/test_silence_reason.py ................................            [ 85%]
+tests/test_store.py .................................................... [ 87%]
+..............................................                           [ 89%]
+tests/test_sync_partial.py .......                                       [ 89%]
+tests/test_synthetic_fixture_shapes.py ...............                   [ 90%]
+tests/test_tandemsource_map.py ......................................... [ 91%]
+..                                                                       [ 91%]
+tests/test_tandemsource_map_real.py .......                              [ 91%]
+tests/test_timeline.py ......................                            [ 92%]
+tests/test_trial_evidence.py .................                           [ 93%]
+tests/test_tuning_priority.py .......................................... [ 94%]
+........                                                                 [ 95%]
+tests/test_uncertainty.py ..............................                 [ 96%]
+tests/test_user_correction_provenance.py .......................         [ 96%]
+tests/test_verify_block_ic.py .............                              [ 97%]
+tests/test_verify_trials.py ............                                 [ 97%]
+tests/test_wall_clock.py ..............                                  [ 98%]
+tests/test_watched_change.py ........................................... [ 99%]
+                                                                         [ 99%]
+tests/test_window_membership.py ...                                      [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/connor/worktrees/harmonic/464/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_api.py: 26 warnings
+tests/test_day_navigator.py: 6 warnings
+tests/test_durable_follow_up.py: 152 warnings
+tests/test_findings_projection.py: 6 warnings
+tests/test_follow_up_comparison.py: 16 warnings
+tests/test_gen_verify_payload_block_ic.py: 5 warnings
+tests/test_guidance.py: 2 warnings
+tests/test_guidance_api.py: 6 warnings
+tests/test_ic_block_evidence.py: 132 warnings
+tests/test_pattern_replay.py: 6 warnings
+tests/test_pending_prompts.py: 5 warnings
+tests/test_plan_verdict.py: 5 warnings
+tests/test_qa_e2e_cases.py: 8 warnings
+tests/test_trial_evidence.py: 50 warnings
+tests/test_verify_block_ic.py: 35 warnings
+tests/test_verify_trials.py: 35 warnings
+tests/test_wall_clock.py: 5 warnings
+tests/test_watched_change.py: 40 warnings
+  /Users/connor/worktrees/harmonic/464/ciq_autotune/store.py:1011: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    return self.conn.execute(sql, params).fetchall()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================= slowest 5 durations ==============================
+42.10s call     tests/test_pattern_replay.py::PatternReplayTest::test_adr_391_catalog_replay_through_public_producers
+19.59s call     tests/test_follow_up_comparison.py::PatternOpportunityComparisonTest::test_mapped_direction_waits_for_pattern_gate_and_keeps_glucose_checks
+18.22s call     tests/test_follow_up_comparison.py::SupportedComparisonTest::test_supported_opposite_outcomes_remain_mixed
+14.23s call     tests/test_eating_sequence_finding_fixture.py::EatingSequenceFindingFixtureTest::test_dedicated_payload_is_deterministic_public_producer_output
+9.80s call     tests/test_follow_up_comparison.py::MeasurementComparisonTest::test_focus_mapped_glucose_assessment_is_independent_of_habit_provenance
+========== 2775 passed, 1 skipped, 541 warnings in 348.44s (0:05:48) ===========

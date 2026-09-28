@@ -1,0 +1,20 @@
+commit 65f4f4c71af0e042acfaeff8ec51f770f5daa043
+npm-build exit=0 wall=0s
+pytest exit=0 wall=349s
+pytest-qa-focused exit=0 wall=47s
+node-fast-gate exit=0 wall=5s
+openspec-validate exit=0 wall=1s
+ledger-acceptance exit=0 wall=98s
+check-adr exit=0 wall=0s
+check-owned exit=0 wall=0s
+check-allowlist exit=0 wall=0s
+public-tree exit=0 wall=23s
+drift-ic-block-evidence exit=0 wall=0s
+drift-qa-e2e exit=0 wall=0s
+drift-demo exit=0 wall=1s
+drift-exploration exit=0 wall=70s
+drift-findings-projection exit=0 wall=6s
+drift-chart-builder exit=0 wall=1s
+drift-event-comparison exit=0 wall=0s
+browser-runner exit=0 wall=0s
+desk-browser exit=0 wall=50s

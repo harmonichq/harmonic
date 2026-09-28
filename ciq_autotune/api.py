@@ -485,7 +485,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             )
             return prepare_ic_block_evidence(store, analysis)
         try:
-            return fixed(key, "ic-block-evidence-v1", compute,
+            return fixed(key, "ic-block-evidence-v2", compute,
                          dump=dump_ic_block_evidence,
                          rebuild=rebuild_ic_block_evidence,
                          serve_stale=False)

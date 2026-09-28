@@ -1,0 +1,18 @@
+- Validating...
+✓ spec/backtest
+✓ spec/basal-suggestion
+✓ spec/behavioral-layer
+✓ change/carb-ratio-block-evidence
+✓ spec/credentials
+✓ spec/data-ingest
+✓ spec/durable-follow-up
+✓ spec/eating-sequences
+✓ spec/http-api
+✓ spec/insulin-reconstruction
+✓ spec/outcomes
+✓ spec/parameter-analysis
+✓ spec/plan
+✓ spec/qa-e2e-database
+✓ spec/safety
+✓ spec/surfaces
+Totals: 16 passed, 0 failed (16 items)

@@ -255,6 +255,16 @@ measurement (195.91 s on 9652979a, build excluded) are historical comparisons,
 not the current ceiling basis. The two failed shards remain failures; their
 wall times are not green acceptance evidence.
 
+**2026-09-28 — six full shards (#464).** With the ledger at 215 stories, four
+shards hold 53–54 stories each, and run 36383642293 measured one 1280×720 shard
+at 964 s of story time over 54 stories (S91 alone 99 s) before the 960 s process
+ceiling killed it; main's scheduled run 36326911809 had already died the same way
+at 204 stories (960 s over 51). The full inventory is therefore six shards of
+35–36 stories. Scaling the measured 964 s / 54 stories to 36 gives about 643 s
+of story time per shard, which keeps the 960 s process ceiling and the 21-minute
+job with more than 300 s of headroom, so both stand unchanged; the next
+scheduled run's shard wall times replace this estimate as the measured basis.
+
 Every ceiling was checked against the new job list. Preserve each previously
 stated headroom allowance and round up to a whole minute when the current
 ceiling no longer fits it. Cockpit shell now needs `70 + 236 = 306 s`, rounded
@@ -337,7 +347,7 @@ change the replay's case mapping.
 
 ```sh
 uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$evidence/case-cache"
-uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$evidence/shard-1"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/6 --out "$evidence/shard-1"
 ```
 
 Opt into a one-off preparation benchmark separately:

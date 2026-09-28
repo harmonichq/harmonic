@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 import {
-  buildIcBlocks, crumbLabel, occurrenceDescription, occurrenceFacts, queryState, renderCaseHead,
-  renderEventComparisonRoster, renderIsfLevel,
+  buildIcBlocks, crumbLabel, frameSubject, icBlockCrumbMeta, occurrenceDescription, occurrenceFacts,
+  queryState, renderCaseHead, renderEventComparisonRoster, renderIcBlockLevel, renderIsfLevel,
   renderSlotLevel, renderLane,
 } from './diagnose-workstation.js';
+import { evidenceDayContext } from './diagnose-context.js';
+import { glossaryGroups } from './glossary.js';
 import { buildSlotLane } from './diagnose-workstation-chart.js';
 import { ANCHOR_STATE_WORD } from './day-chart.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
@@ -1000,6 +1002,314 @@ test('#356 · a carb-ratio block names the day edge 24:00 and keeps its geometry
   assert.equal(throughMidnight.span, '20:00–06:00');
   assert.equal(throughMidnight.wraps, true);
   assert.deepEqual(throughMidnight.spans, [[1200, 1440], [0, 360]]);
+});
+
+/* #464 — the carb-ratio block panel prints the settled design beneath the
+   numbers block: every figure is a served field of the block-evidence payload,
+   read here straight from the committed synthetic capture. */
+const icCapture = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json', import.meta.url), 'utf8')).cases;
+const icExplained = icCapture.explained;
+const icBlockCell = buildIcBlocks([{
+  block_id: 0, label: 'Morning', start_min: 0, end_min: 720, current_values: [5.0],
+  recommended: 5.2, direction: 'raise', asserts_move: true, state: 'numeric',
+  n_runs: 18, n_meals: 30, annotation: 'a conservative one-step move would loosen this ratio',
+  held_reason: null, estimate: { value: 5.3704, lo: 5.2452, hi: 5.4832, wide: false },
+}])[0];
+
+/* Every string the panel wrote, in document order: the level host's own
+   inserted markup and the markup of each element appended beneath it. */
+function icPanelText(host) {
+  return [...host.html, ...host.children.slice(1).map((child) => child.innerHTML)].join('\n');
+}
+
+/* The capture's held overnight block, as the analyze feed serves its cell: no
+   move asserted, so nothing recommended. */
+const icHeldCell = buildIcBlocks([{
+  block_id: 1200, label: 'Overnight', start_min: 1200, end_min: 420, current_values: [5.0],
+  recommended: null, direction: null, asserts_move: false, state: 'numeric',
+  n_runs: 9, n_meals: 18, annotation: null, held_reason: null,
+  estimate: { value: 5.0, lo: 5.0, hi: 5.0, wide: false },
+}])[0];
+
+function renderIcPanel(evidence, options = {}, cell = icBlockCell) {
+  const host = new RosterElement();
+  renderIcBlockLevel(host, cell, new Set(), () => {}, null, { evidence, ...options });
+  return host;
+}
+
+function withRosterDocument(run) {
+  const originalDocument = globalThis.document;
+  globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+  try { return run(); } finally { globalThis.document = originalDocument; }
+}
+
+/* Captured from the pre-change tree (the block level before #464's panel), so
+   this is a byte-identity check against that rendering, not a render compared
+   with itself. */
+const IC_NUMBERS_BLOCK = '\n    <div class="slot-head">\n      <span class="time">00:00–12:00</span>\n      <span class="verdict">Morning · suggests a looser ratio</span>\n    </div>\n    \n    <div class="numrows">\n      <div class="numrow"><span class="k">Current</span><b>5.00</b>\n        <span class="qual">g/U, programmed now</span></div>\n      <div class="numrow"><span class="k">Estimate</span><b>5.37</b>\n        <span class="qual">g/U, the interval below brackets THIS number</span></div>\n      <div class="numrow"><span class="k">Recommended</span><b>5.20</b>\n        <span class="qual">g/U, one conservative step</span></div>\n    </div>\n    <div class="slot-stats">CI 5.25–5.48 g/U on the estimate\n      <span></span></div>\n    \n    \n    <div class="slot-stats">18 meal runs <span>·</span> 30 meals</div>\n    <div class="slot-say">a conservative one-step move would loosen this ratio</div>';
+
+test('#464 · the numbers and staging block is byte-identical to the pre-change rendering', () => {
+  withRosterDocument(() => {
+    const host = renderIcPanel(icExplained);
+    assert.equal(host.children[0].innerHTML, IC_NUMBERS_BLOCK);
+    const foot = host.children[0].children.find((child) => child.className === 'slot-foot');
+    assert.equal(foot.children[0].innerHTML, 'Stage change<span class="sub">staged for Plan</span>');
+  });
+});
+
+test('#464 · each panel line prints the served values of the explained block', () => {
+  withRosterDocument(() => {
+    const text = icPanelText(renderIcPanel(icExplained));
+    for (const line of [
+      '<div class="lvl-cap">Why this move</div>',
+      '<div class="slot-stats">18 of 24 counted runs measured looser than 5.00 g/U; the estimate\'s range 5.25–5.48 leaves 5.00 out.</div>',
+      '<div class="slot-stats">The ratio counts all the insulin a run used — boluses, corrections, Control-IQ basal changes — with the glucose change converted at your correction factor, judged where the run ended.</div>',
+      '<div class="slot-stats">Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they ended; for 10 of them that end came after a later meal past 12:00.</div>',
+      '<div class="slot-stats">Recommended 5.20 is half the gap from the programmed 5.00 toward the 5.37 estimate, rounded to the pump\'s 0.1 g/U step.</div>',
+      '<div class="lvl-cap">The case against</div>',
+      '<div class="slot-stats">8 of the 26 morning meals on counted runs peaked above 180 before their next bolus (13 counting later meals within 5 h 15 min of the bolus); a looser ratio can raise peaks.</div>',
+      '<div class="lvl-cap">Lows after morning boluses</div>',
+      '<div class="slot-stats">2 lows, 3 h 30 min to 3 h 30 min after the bolus; the 2 lows on counted runs point toward less insulin, the same way as the suggestion.</div>',
+    ]) assert.ok(text.includes(line), `missing: ${line}`);
+  });
+});
+
+test('#464 · the recommendation and lows-bearing sentences leave when served null', () => {
+  withRosterDocument(() => {
+    const evidence = structuredClone(icExplained);
+    evidence.block.recommendation.sentence = null;
+    evidence.harm_evidence.bearing_sentence = null;
+    const text = icPanelText(renderIcPanel(evidence));
+    assert.doesNotMatch(text, /Recommended 5\.20 is half the gap/);
+    assert.ok(text.includes('<div class="slot-stats">2 lows, 3 h 30 min to 3 h 30 min after the bolus.</div>'));
+    assert.equal((text.match(/class="slot-stats"/g) || []).length, 5,
+      'three Why lines, the case against and the lows line');
+  });
+});
+
+test('#464 · a collecting, below-floor or unmeasured-alone block keeps the numbers block and gains no section', () => {
+  withRosterDocument(() => {
+    // The capture has no unmeasured-alone case; the analyzer's third unmeasured
+    // state (ic.py) is served the same way, as `block.state`.
+    const unmeasuredAlone = { ...icExplained, block: { ...icExplained.block, state: 'unmeasured-alone' } };
+    for (const [name, evidence] of [['all_rejected', icCapture.all_rejected],
+      ['below_floor', icCapture.below_floor], ['unmeasured-alone', unmeasuredAlone]]) {
+      assert.notEqual(evidence.block.state, 'numeric', `${name} is served unmeasured`);
+      const host = renderIcPanel(evidence);
+      const text = icPanelText(host);
+      assert.equal(host.html.length, 0, `${name} inserts nothing beneath the numbers block`);
+      assert.equal(host.children.length, 1, `${name} appends nothing beneath the numbers block`);
+      assert.doesNotMatch(text,
+        /Why this move|What the counted runs measured|The case against|The case for|After these meals|Lows after|class="slot-stats"/);
+    }
+  });
+});
+
+test('#464 · a payload missing a served fact prints the unavailable line beneath the numbers block', () => {
+  withRosterDocument(() => {
+    for (const drop of [(p) => { delete p.runs; }, (p) => { delete p.harm_evidence.lows; },
+      (p) => { delete p.outcomes.counts; }, (p) => { delete p.block.state; },
+      (p) => { p.block.state = 'numerical'; }, (p) => { delete p.harm_evidence.groups.counted_run; },
+      (p) => { delete p.block.run_ends.flat; }, (p) => { delete p.block.run_ends.unread; },
+      (p) => { delete p.outcomes.window_min; },
+      (p) => { delete p.block.direction; }, (p) => { p.block.direction = 'up'; },
+      (p) => { delete p.harm_evidence.groups.total; }]) {
+      const evidence = structuredClone(icExplained);
+      drop(evidence);
+      const host = renderIcPanel(evidence);
+      assert.equal(host.children[0].innerHTML, IC_NUMBERS_BLOCK);
+      assert.deepEqual(host.html, ['<div class="empty">Run evidence unavailable.</div>'],
+        `no half-written panel precedes the unavailable line: ${drop}`);
+      assert.equal(host.children.length, 1);
+    }
+  });
+});
+
+test('#464 · the lows count prints the served total, not the row count', () => {
+  withRosterDocument(() => {
+    const evidence = structuredClone(icExplained);
+    evidence.harm_evidence.groups.total = 5;
+    const text = icPanelText(renderIcPanel(evidence));
+    assert.ok(text.includes('<div class="slot-stats">5 lows, 3 h 30 min to 3 h 30 min after the bolus;'));
+  });
+});
+
+test('#464 · the case against prints the served window, and a looser ratio only on a served raise', () => {
+  withRosterDocument(() => {
+    assert.equal(icExplained.block.direction, 'raise', 'premise: the explained block asserts a raise');
+    const caseAgainst = (text) => text.split('\n')
+      .find((line) => line.includes('meals on counted runs peaked above'));
+    const widened = structuredClone(icExplained);
+    widened.outcomes.window_min = 240;
+    assert.equal(caseAgainst(icPanelText(renderIcPanel(widened))),
+      '<div class="inner"><div class="slot-stats">8 of the 26 morning meals on counted runs peaked above 180 '
+      + 'before their next bolus (13 counting later meals within 4 h of the bolus); a looser ratio can '
+      + 'raise peaks.</div></div>');
+
+    /* A held block serves no move, even where its runs measured looser. */
+    const unmoved = structuredClone(icExplained);
+    unmoved.block.direction = null;
+    assert.equal(unmoved.block.side.direction, 'above', 'premise: the runs still measured looser');
+    const unmovedText = icPanelText(renderIcPanel(unmoved));
+    assert.doesNotMatch(unmovedText, /a looser ratio can raise peaks/);
+    assert.ok(unmovedText.includes('<div class="lvl-cap">What the counted runs measured</div>\n'
+      + '<div class="inner"><div class="slot-stats">18 of 24 counted runs measured looser than'),
+      'the served side prints under a caption that argues no move');
+
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
+    assert.equal(caseAgainst(icPanelText(renderIcPanel(held, {}, icHeldCell))),
+      '<div class="inner"><div class="slot-stats">0 of the 18 overnight meals on counted runs peaked above 180 '
+      + 'before their next bolus (0 counting later meals within 5 h 15 min of the bolus).</div></div>');
+  });
+});
+
+test('#464 · a held block\'s panel prints no recommendation step', () => {
+  withRosterDocument(() => {
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.asserts_move, false, 'premise: the overnight block is held');
+    assert.equal(held.block.state, 'numeric', 'premise: and measured');
+    const text = icPanelText(renderIcPanel(held, {}, icHeldCell));
+    assert.ok(text.includes('<div class="lvl-cap">What the counted runs measured</div>'));
+    assert.ok(text.includes('<div class="slot-stats">Of the 9 counted runs, 0 ended lower than they started, '
+      + '9 about flat and 0 higher, where they ended; for 0 of them that end came after a later meal past 07:00.</div>'));
+    assert.doesNotMatch(text, /Recommended|half the gap/);
+  });
+});
+
+test('#464 · the panel\'s captions follow the served move', () => {
+  withRosterDocument(() => {
+    const captions = (text) => [...text.matchAll(/<div class="lvl-cap">([^<]*)<\/div>/g)]
+      .map((match) => match[1]);
+    assert.equal(icExplained.block.direction, 'raise', 'premise: the explained block asserts a raise');
+    assert.deepEqual(captions(icPanelText(renderIcPanel(icExplained))),
+      ['Why this move', 'The case against', 'Lows after morning boluses']);
+
+    const held = icCapture.cross_midnight;
+    assert.equal(held.block.direction, null, 'premise: the overnight block asserts no move');
+    assert.deepEqual(captions(icPanelText(renderIcPanel(held, {}, icHeldCell))).slice(0, 2),
+      ['What the counted runs measured', 'After these meals']);
+
+    // A modified copy of the explained block: `block.direction` set to 'lower'.
+    const lowered = structuredClone(icExplained);
+    lowered.block.direction = 'lower';
+    const text = icPanelText(renderIcPanel(lowered));
+    assert.deepEqual(captions(text), ['Why this move', 'The case for', 'Lows after morning boluses']);
+    assert.doesNotMatch(text, /a looser ratio can raise peaks/, 'the meals line adds that clause only on a raise');
+  });
+});
+
+test('#464 · the run-ends line names the served unread count only when there is one', () => {
+  withRosterDocument(() => {
+    const endsLine = (text) => text.split('\n').find((line) => line.includes('counted runs, '))
+      ?.match(/<div class="slot-stats">(Of the [^<]*)<\/div>/)[1];
+    assert.equal(icExplained.block.run_ends.unread, 0, 'premise: every explained run was read');
+    assert.equal(endsLine(icPanelText(renderIcPanel(icExplained))),
+      'Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they '
+      + 'ended; for 10 of them that end came after a later meal past 12:00.');
+
+    // A modified copy of the explained block: `block.run_ends.unread` set to 3.
+    const unread = structuredClone(icExplained);
+    unread.block.run_ends.unread = 3;
+    assert.equal(endsLine(icPanelText(renderIcPanel(unread))),
+      'Of the 24 counted runs, 8 ended lower than they started, 16 about flat and 0 higher, where they '
+      + 'ended; for 10 of them that end came after a later meal past 12:00; 3 had no reading where they ended.');
+  });
+});
+
+test('#464 · the lows rows equal the served lows in three groups with the served run ratio joined', () => {
+  withRosterDocument(() => {
+    // The two added lows are invented, dated before the scan's span.
+    const evidence = structuredClone(icExplained);
+    evidence.runs.push({ ...evidence.runs[0], run_id: '2024-01-13T09:00:00', true_ic: 6.0,
+      pool_reason: 'earlier-ratio-or-uncurrent-chain' });
+    evidence.harm_evidence.lows.push(
+      { t: '2024-01-13T12:05:00', bg: 64.4, dominant_bolus_t: '2024-01-13T09:00:00',
+        minutes_after_bolus: 185, group: 'uncounted-run', run_id: '2024-01-13T09:00:00', bolus_carbs: 60 },
+      { t: '2024-01-20T16:08:00', bg: 61, dominant_bolus_t: '2024-01-20T15:00:00',
+        minutes_after_bolus: 68, group: 'not-a-meal-run', run_id: null, bolus_carbs: 10 },
+    );
+    Object.assign(evidence.harm_evidence.groups, { uncounted_run: 1, not_a_meal_run: 1 });
+    const host = renderIcPanel(evidence);
+    const text = icPanelText(host);
+    const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
+    assert.deepEqual(rows.map((row) => row.dataset.occurrenceId),
+      evidence.harm_evidence.lows.map((low) => low.t));
+    for (const subhead of ['<b>On counted runs</b><span class="n"> · 2</span>',
+      '<b>On runs not counted</b><span class="n"> · 1</span>',
+      '<b>After a bolus that is not one of these meals</b><span class="n"> · 1</span>']) {
+      assert.ok(text.includes(subhead), `missing subhead: ${subhead}`);
+    }
+    const rowText = rows.map((row) => row.innerHTML.replace(/<[^>]+>/g, ''));
+    const dateOf = (line) => line.slice(0, line.indexOf(' · '));
+    assert.deepEqual(rowText.map(dateOf),
+      ['Feb 7', 'Feb 8', 'Jan 13', 'Jan 20']);
+    assert.deepEqual(rowText.map((line) => line.slice(dateOf(line).length)), [
+      ' · bolus 09:00 → low 12:30 · 68 mg/dL · 3 h 30 min later · run 5.75 g/U',
+      ' · bolus 09:00 → low 12:30 · 68 mg/dL · 3 h 30 min later · run 5.75 g/U',
+      ' · bolus 09:00 → low 12:05 · 64 mg/dL · 3 h 5 min later · run 6.00 g/U',
+      ' · bolus 15:00 → low 16:08 · 61 mg/dL · 1 h 8 min later',
+    ]);
+  });
+});
+
+test('#464 · a lows row opens Day at the low\'s own instant and previews its run on the tile', () => {
+  withRosterDocument(() => {
+    const opened = [];
+    const previewed = [];
+    const [first, second] = icExplained.harm_evidence.lows;
+    const host = renderIcPanel(icExplained, {
+      selectedRunId: second.run_id,
+      onDay: (occurrence) => opened.push(occurrence),
+      onPreviewRun: (runId) => previewed.push(runId),
+    });
+    const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
+    assert.deepEqual(rows.map((row) => row.getAttribute('aria-pressed')), ['false', 'true'],
+      'the tile\'s selected run presses the row on it');
+    rows[0].click();
+    const day = evidenceDayContext({ occurrence: opened[0],
+      current: { subject: frameSubject({ k: 'block', cell: icBlockCell, rowId: null }) } });
+    assert.equal(day.moment, first.t);
+    assert.equal(day.date, first.t.slice(0, 10));
+    assert.equal(day.subject, 'ic:0');
+    rows[0].listeners.get('mouseenter')();
+    rows[1].listeners.get('focus')();
+    assert.deepEqual(previewed, [first.run_id, second.run_id]);
+    assert.notEqual(first.run_id, second.run_id, 'the two served lows sit on two runs');
+  });
+});
+
+test('#464 · the breadcrumb keeps the shipped support count, payload or not', () => {
+  assert.equal(icBlockCrumbMeta(icBlockCell, icExplained), '18 meal runs · 30 meals',
+    'the crumb agrees with the numbers block beneath it once the evidence lands');
+  assert.equal(icBlockCrumbMeta(icBlockCell, { pending: true }), '18 meal runs · 30 meals');
+});
+
+test('#464 · the block panel states loading and unavailable evidence', () => {
+  withRosterDocument(() => {
+    assert.match(renderIcPanel({ pending: true }).html.join('\n'), /aria-busy="true">Loading run evidence…/);
+    assert.match(renderIcPanel({ failed: true }).html.join('\n'), /Run evidence unavailable\./);
+    assert.match(renderIcPanel(undefined).html.join('\n'), /Run evidence unavailable\./);
+  });
+});
+
+/* The case head's "View segment" opens a block with no row id at all, so the
+   published subject must come off the frame's block rather than off `rowId`. */
+test('#464 · a block frame publishes its subject from the block it holds, never from rowId', () => {
+  assert.equal(frameSubject({ k: 'block', cell: { id: 660 }, rowId: null }), 'ic:660',
+    'the View segment path opens a block with no row id, and Day must still resolve a subject');
+  assert.equal(frameSubject({ k: 'block', cell: { id: 660 }, rowId: 'ic:660' }), 'ic:660',
+    'the findings-queue path already carries the matching row id, and the two paths must agree');
+  assert.equal(frameSubject({ k: 'slot', cell: { startMin: 90 }, rowId: null }), 'basal:90');
+  assert.equal(frameSubject({ k: 'factor', rowId: 'finding:1' }), 'finding:1');
+});
+
+test('#464 · the glossary names Meal run, Support, Directional-only and Chain-end read', () => {
+  const icTerms = glossaryGroups.find((group) => group.title === 'I:C').terms.map((term) => term.term);
+  for (const term of ['Meal run', 'Support', 'Directional-only', 'Chain-end read']) {
+    assert.ok(icTerms.includes(term), `glossary names ${term}`);
+  }
 });
 
 

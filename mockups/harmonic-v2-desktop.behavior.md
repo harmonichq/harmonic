@@ -6310,3 +6310,383 @@ Additional handler inventory for this amendment:
 | The Retained line | frontend/history.js reassessmentSection | S188 |
 | Served cohort band states | ciq_autotune/finding_case_file.py _event | S124 |
 | The comparison caption's band states | frontend/diagnose-workstation.js renderEventComparisonRoster | S124 |
+
+## #464 amendment — 2026-09-27, issue #464
+
+S197–S207 are the obligations of #464's settled carb-ratio block design. The
+operator settled it on 2026-09-27; the coordinator's #464 build spec records the
+ruling as "Settled by the operator on 2026-09-27 ("ship it")". The block's tile
+has one view in two lanes: a ratio strip of the counted meal runs against the
+programmed, recommended and estimated ratios, and the counted runs by date, each
+a stem from the glucose at its bolus to where the run ended, with the listed lows
+marked. Below the shipped numbers block, the panel prints a why section in four
+lines and a meals section in one, captioned by the served move ("Why this move"
+and "The case against" on a raise), and the lows after the block's boluses as
+one line and one grouped roster. Every figure is served by the block-evidence
+payload.
+
+S197–S206 are added. S207 is changed: it records the block's run evidence
+leaving the per-run glucose traces the tile used to draw. Before this revision
+the tile had an Event and a Clock view. Event drew each run's glucose from its
+first meal ("Support run" and "Directional-only run" traces), and Clock drew each
+run's ratio at its meal start. The settled design replaces both views with the
+two-lane view, so no retirement is recorded. The behavior, the block's run
+evidence on its tile, still ships in rebuilt form, and S207 holds it: every
+counted run appears once on each lane, and no per-run trace is drawn. No sanction
+is owed for a change of this kind (the `revise` rule for a behavior that still
+ships).
+
+S98 is not amended. Its selected-case assertions read the block tile's mounted
+series and the panel's values, never a view. They hold on the rebuilt tile, and
+S98 keeps running on `ic-lower`.
+
+All eleven stories are app-opener-only. Each runs on the manufactured
+`ic-block-evidence` case store, on a fresh copy each time (`CASE_STORE_DIR`).
+Browser execution belongs to the coordinator at 1280x720 and 1440x900. No
+`★ FROZEN` block and no header inventory line is edited here; the release
+coordinator writes the one release freeze block and reconciles the count line.
+The pinned inventory in `acceptance.py` `inventory()` moves to 215 issued · 196
+active · 19 retired on this branch.
+
+Safe start is AGENTS.md's QA copy-then-serve command over the case store that
+`scripts/gen_qa_e2e_db.py --case ic-block-evidence` emits, with `--no-fetch` and
+`--token ''`.
+
+The case serves one Morning block (00:00–12:00) that asserts a raise, with 25
+counted meal runs: 15 counted whole and 10 counted by share. It also examines 6
+runs it does not count, and lists 2 lows, both on counted runs. It serves every
+optional fact: the side, the recommendation sentence and the lows' bearing
+sentence. S201 therefore asserts that the panel prints exactly the lines those
+served facts produce. It cannot show the omission of a line served null, because
+no QA case serves one. S202 prints the groups the case serves: one group, "On
+counted runs", with two rows. The two empty groups print nothing, and S202
+asserts that absence too. S199 asserts the hollow-low series is empty, as
+served.
+
+```
+S197 · The block opens on its one view. The block's tile offers no view or
+       alignment toggle. Its ratio strip draws one dot per served counted run
+       at its served ratio, and three rules: programmed at the served current
+       value (solid), recommended at the served recommendation (dotted) and
+       estimate at the served estimate (dashed). The estimate's served range is
+       one band.
+  element:  #tile-focal .evidence-tile[data-chart-id="ic:…"] .tile-chart and its
+            rail
+  source:   the served block evidence; frontend/diagnose-evidence-charts.js
+            carbRatioOption, frontend/diagnose-workstation-chart.js ratioStrip
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; 25 counted runs, programmed 5.00, recommended
+            5.20, estimate 5.35 (5.23–5.47)
+  evidence: S197 reads the served preparation and block evidence. It opens the
+            block from its whole-day queue row, then requires the tile to have
+            no .tile-modes, one dot per counted run at its served ratio, the
+            rules in order at the served values with their line types, and one
+            band at the served range
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S198 · On the ratio strip, a run counted whole is a filled dot and a run counted
+       by share is a 2 px ring in the same ink. Each dot is 8–14 px across, and
+       its size follows its served fit weight: a heavier run is never drawn
+       smaller.
+  element:  the block tile's ic:dots:whole and ic:dots:share series
+  source:   frontend/diagnose-workstation-chart.js ratioStrip
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; fit weights 55, 60, 100 and 110
+  evidence: S198 compares each series' runs with the served pool reasons, the
+            fill and ring styles, and every pair of dots' sizes against their
+            served weights
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S199 · The lower lane draws each counted run on its date as a stem from its
+       served start glucose (○) to its served end glucose (●). Each served low
+       is a downward triangle at its glucose on its date: filled when it is on
+       a counted run, hollow in the same ink otherwise. The served band's two
+       edges are the lane's hairlines.
+  element:  the block tile's ic:stems, ic:starts, ic:ends, ic:lows:counted,
+            ic:lows:other and ic:band series
+  source:   frontend/diagnose-evidence-charts.js carbRatioOption
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; 25 stems and 2 lows on counted runs; the hollow
+            series is empty, as served
+  evidence: S199 compares every stem, start and end with its run's served date,
+            start glucose and end glucose. It compares the filled and the hollow
+            triangles with the served lows by group, time, glucose and date,
+            reads their symbol and fill, and compares the band hairlines with
+            the served band
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S200 · A run's readout is its served balance sheet in six lines: date, time,
+       meals, "carbs ‹c› g ÷ insulin ‹e› U = ‹ratio› g/U", the insulin terms
+       behind it (bolus · corrections · Control-IQ basal · glucose change), and
+       where it ended. The arrows walk the counted runs by date and read each
+       one out; Enter selects the run read out. A low reads "low ‹bg› mg/dL,
+       ‹delay› after its bolus".
+  element:  the block tile's chart host (keyboard) and its tooltip
+  source:   frontend/diagnose-evidence-charts.js runReadout, lowReadout,
+            bindRunSelection
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; the first counted run by date is 2024-05-03,
+            counted whole; the case also has runs counted by share and two lows
+  evidence: S200 focuses the chart host and presses ArrowRight. It requires the
+            tooltip to read the first counted run by date, line for line from
+            its served terms. It calls the option's own tooltip formatter on a
+            ring and on a low (the pointer path) and compares both. It then
+            presses Enter and requires the selected ring on that run
+  status:   final: passes at 1280x720 and 1440x900 after the tile's
+            keyboard-readout fixes, taken onto this branch in 77ca4f7f and
+            15e11f96. Coordinator-run 2026-09-27; evidence/replay-S189-1280x720.txt
+            and evidence/replay-S189-1440x900.txt. The story itself is
+            unchanged. Before those fixes it failed at 1280x720 only, on
+            bdc6de49 (evidence/replay-1280x720.txt): the first ArrowRight read
+            out 2024-05-07 while the tile's cursor held 2024-05-03, two runs
+            counted whole at 5.56 g/U in the same stack of the strip. That was
+            a tile defect, fixed in the tile
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S201 · Below the numbers block the panel prints a why section, a meals section
+       and "Lows after ‹block› boluses", in that order. The first two captions
+       follow the served block direction: "Why this move" and "The case
+       against" on a raise, "Why this move" and "The case for" on a lower, and
+       "What the counted runs measured" and "After these meals" on a hold. The
+       why section prints four lines: the served side count against the
+       programmed value and the estimate's range; the fixed mechanism
+       sentence; the served run-end split after a later meal, ending "; ‹n›
+       had no reading where they ended" when the served unread count is not
+       zero; and the served recommendation sentence. The meals section prints
+       the served peak counts against the served high edge. The lows line
+       prints the served low count, the delay range after the bolus and the
+       served bearing sentence. A line whose served fact is null is omitted,
+       and no footnote prints.
+  element:  #level .lvl-cap and the .slot-stats lines under each
+  source:   frontend/diagnose-workstation.js readIcBlockEvidence
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; every optional fact is served, so all four
+            lines print; the omitted-line branch is not reachable on any QA
+            case. The block serves a raise with no unread run, so the raise
+            captions print and the unread clause does not; the lower and hold
+            captions and the unread clause are held by the Node panel tests
+  evidence: S201 builds each expected caption from the served direction and
+            each expected line from the served fields, including the unread
+            count, and compares the printed lines exactly, section by section,
+            with their order
+  status:   amended 2026-09-27 after the runs below (the captions follow the
+            served direction, and the run-ends line names a served unread
+            count); replayed as amended in the final run on 65f4f4c7 below, at both
+            sizes.
+            Before the amendment: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S202 · The lows print as one roster in their served groups ("On counted runs",
+       "On runs not counted", "After a bolus that is not one of these
+       meals"). Each group's header carries its served count, and a group
+       with no low prints nothing. Each row reads "‹date› · bolus ‹HH:MM› →
+       low ‹HH:MM› · ‹bg› mg/dL · ‹delay› later", followed by "· run ‹ratio›
+       g/U" when the low is on a run. Hovering or focusing a row selects its
+       run: the tile rings that run's dot and end, and every row on that run
+       is pressed.
+  element:  #level .ev-group, #level .case-occurrence[data-run-id]
+  source:   frontend/diagnose-workstation.js readIcBlockEvidence,
+            renderIcBlockEvidence, selectRun; frontend/occurrence-roster.js
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; one group, On counted runs · 2, on runs of
+            ratio 5.75
+  evidence: S202 compares the printed groups and rows with the served lows. It
+            focuses the first low on a run, then reads the tile's selected-run
+            series and every row's pressed state
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S203 · A low's row opens Day at that low's own moment. The address names the
+       block, the low's date, its moment and the carb-ratio lever. Day marks
+       the moment with its one hairline, standing at the low's time on the
+       evidence strip. A harm-listed low is not an Episode Log entry, so a log
+       row is pressed, and its anchor ringed at size 15, only when Day lists
+       one at that instant; when it lists none, no row is pressed and no
+       anchor ringed. The block was opened from its queue row.
+  element:  #level .case-occurrence; .gf-stage-day .gf-chart (its
+            evidence-crosshair graphic and day-anchor-markers), .gf-log-row
+  source:   frontend/diagnose-workstation.js renderIcBlockEvidence onSelect;
+            frontend/diagnose.js day; frontend/day.js adopt;
+            frontend/day-chart.js focusUpdate, buildAnchorOverlay
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; the low at 2024-05-15 12:30, 68 mg/dL; Day
+            lists no Episode Log row at that instant
+  evidence: S203 opens the block from its queue row, then presses the low's
+            row. It reads the Day address; the hairline's x against the
+            chart's own conversion of the low's time; and the listed, pressed
+            and ringed log rows at the low's instant, comparing instants
+            whichever printer wrote them
+  status:   final: the amended story passes at 1280x720 and 1440x900.
+            Coordinator-run 2026-09-27; evidence/replay-S192-S193-1280x720.txt
+            and evidence/replay-S192-S193-1440x900.txt. It was amended on
+            2026-09-27 (4cd5a0d2) after the coordinator's run on bdc6de49,
+            where the first version required a pressed Episode Log row and
+            failed at both sizes with the address correct and "pressed []"
+            (evidence/replay-1280x720.txt, evidence/replay-1440x900.txt). Day
+            lists no row for a harm-listed low, which the coordinator
+            confirmed in a browser. That was a replay defect
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S204 · The same Day hop works when the block was opened from a clock case
+       head's "View segment", a route that carries no row id.
+  element:  #level .slotlink .linkbtn (View segment); then S203's elements
+  source:   frontend/diagnose-workstation.js renderCaseHead, pickBlock,
+            frameSubject
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; the Highs after meals clock case peaks at
+            08:00–10:00, in the Morning block
+  evidence: S204 opens the desk's retained drill-all address, the only route
+            on this store that opens a Finding by clock. Every served Finding
+            row carries its event chart in every window, so no reader control
+            opens a clock case here. The story first requires the clock case
+            head's peak line to name the served block. It then presses View
+            segment, requires the crumb to name that block, and runs S203's
+            Day-hop assertions, as amended there
+  status:   final: the amended story passes at 1280x720 and 1440x900.
+            Coordinator-run 2026-09-27; evidence/replay-S192-S193-1280x720.txt
+            and evidence/replay-S192-S193-1440x900.txt. It was amended with
+            S203 (4cd5a0d2). The first version reached the block through View
+            segment and failed only at S203's pressed-row assertion, at both
+            sizes, on bdc6de49 (evidence/replay-1280x720.txt,
+            evidence/replay-1440x900.txt)
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S205 · While the block's run evidence is in flight, the panel prints the one
+       line "Loading run evidence…" (busy) beneath an intact numbers block.
+       When the read fails, it prints "Run evidence unavailable.". Neither
+       state renders a section.
+  element:  #level .empty, #level .numrow, #level .lvl-cap
+  source:   frontend/diagnose-workstation.js renderIcBlockLevel, blockEvidence
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; the story holds the block-evidence read, then
+            answers it 503
+  evidence: S205 holds every block-evidence request and reloads. It opens the
+            block and reads the loading line, then answers the held reads 503
+            and reads the unavailable line. Both times it requires the numbers
+            block to stand and no Why this move section to print
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S206 · The block's queue row draws the ratio strip alone: every served counted
+       run at its ratio against the three served rules, with no labels and no
+       lower lane.
+  element:  #level .qrow[data-id="ic:…"] .mini[data-preview-kind="carb-ratio"]
+  source:   frontend/diagnose-workstation-chart.js queuePreviewOption, ratioStrip
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; the whole-day queue
+  evidence: S206 requires the row's mini to be mounted. It compares the mini's
+            series set, its dots' runs and ratios, and its rules' values with
+            the served block
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+```
+S207 · Changed: the block's run evidence still ships on its tile, rebuilt. The
+       tile draws no per-run glucose trace: no "Support run", no
+       "Directional-only run", no "Target range" and no line series carrying
+       data. Every served counted run appears exactly once on the ratio strip,
+       and once on the lower lane where it has a start and an end. A run the
+       block does not count is drawn nowhere.
+  element:  the block tile's mounted series
+  source:   frontend/diagnose-evidence-charts.js carbRatioOption
+  lock:     none (revise; the #464 settled block design)
+  data:     ic-block-evidence; 25 counted runs and 6 runs not counted
+  changed:  the pre-#464 tile's Event view drew each run's glucose from its
+            first meal, and its Clock view drew each run's ratio at its meal
+            start. The settled design replaces both with the two-lane view
+  evidence: S207 reads every series on the tile, checking the retired trace
+            names and data-bearing lines, each counted run's appearances per
+            lane, and every run id drawn against the runs not counted
+  status:   final: passes at 1280x720 and 1440x900. Coordinator-run
+            2026-09-27 on bdc6de49; evidence/replay-1280x720.txt and
+            evidence/replay-1440x900.txt
+            Final run on 65f4f4c7 (after the merge of main and the review
+            fixes; this story is S197–S207 there), every #464 story at both
+            sizes: evidence/replay-final-1280x720.txt and
+            evidence/replay-final-1440x900.txt (11 executed, 0 failed, each).
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Block tile, one view in two lanes | frontend/diagnose-evidence-charts.js carbRatioOption; frontend/diagnose-workstation-chart.js ratioStrip | S197, S198, S199, S207 |
+| Tile tooltip formatter (run and low readouts) | frontend/diagnose-evidence-charts.js runReadout, lowReadout | S200 |
+| Tile keydown (ArrowLeft/ArrowRight/Home/End, Enter), pointerdown-bound click, blur | frontend/diagnose-evidence-charts.js bindRunSelection | S200 |
+| Panel sections and lows line | frontend/diagnose-workstation.js readIcBlockEvidence | S201 |
+| Lows roster rows: click, mouseenter, focus | frontend/occurrence-roster.js renderOccurrenceRoster; frontend/diagnose-workstation.js renderIcBlockEvidence, selectRun | S202, S203 |
+| Day adoption of a contextual moment and its hairline | frontend/day.js adopt; frontend/day-chart.js focusUpdate, buildAnchorOverlay | S203, S204 |
+| Case head View segment | frontend/diagnose-workstation.js renderCaseHead, pickBlock, frameSubject | S204 |
+| Block run-evidence loading and failure lines | frontend/diagnose-workstation.js renderIcBlockLevel, blockEvidence | S205 |
+| Queue row mini | frontend/diagnose-workstation.js mountRowMinis; frontend/diagnose-workstation-chart.js queuePreviewOption | S206 |
+
+To run the new stories alone, set `ONLY=S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207`.
+Each binds to `ic-block-evidence` through the replay's case map. Raw output
+lands under `openspec/changes/carb-ratio-block-evidence/evidence/` (its README
+names the files).

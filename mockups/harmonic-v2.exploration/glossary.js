@@ -12,6 +12,10 @@ export const glossaryGroups = [
           ] },
           { title: 'I:C', terms: [
             { term: 'I:C', unit: 'g/U — Insulin-to-Carb ratio', def: 'How many grams of carbohydrate one unit of insulin covers. A lower number means more insulin is needed per gram of carbs.' },
+            { term: 'Meal run', def: "A meal, or a chain of meals eaten close enough together that their insulin can't be split apart, read as one ledger. The ledger closes once, at the end of the whole chain, not five hours after each meal." },
+            { term: 'Support', def: 'Whole meal runs plus credit for runs shared with a neighbouring block, counted by their carb share. Together they make the effective run count the eight-run floor is measured against.' },
+            { term: 'Directional-only', def: "A meal run whose insulin denominator had to be floored to avoid dividing by too little. Its direction is trustworthy; its exact number is not, so it is shown but never pooled into the block's estimate." },
+            { term: 'Chain-end read', def: "The point a meal run's outcome is read: full-DIA after the last meal in its chain finishes acting, not a fixed offset after the first meal. A block that reads over- or under-coverage is reading it there, not at the peak or nadir in between." },
           ] },
           { title: 'General', terms: [
             { term: 'CI', def: 'Confidence interval: the range an estimate is likely to fall within given the data available. Narrower means more reliable.' },

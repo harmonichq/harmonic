@@ -33,6 +33,7 @@ from ..harm import (
     HarmArm,
     HarmConfig,
     PrintedLow,
+    _harm_evidence_payload,
     apply_harm_gate_nudge,
     arm_harm,
     arm_harm_evidence,
@@ -1447,22 +1448,31 @@ def _segment_for(tod_min: int, segments: List[Tuple[int, float]]) -> int:
     return idx
 
 
+def _half_gap_step(programmed: float, measured: float,
+                   cfg: IcConfig) -> Tuple[float, bool]:
+    """The recommended ratio, and whether the ±max_step_frac cap bound it.
+
+    Half the gap toward the measured ratio, still capped at ±max_step_frac (#410). Moving
+    only halfway each window converges without the ping-pong a full-step chase produces
+    (forecast: full steps reversed 2–3× per 12 weeks; half-gap ~3% final error, fewest
+    reversals). The gap decides the safe recommendation; Priority then prices that
+    concrete step to decide whether it is actionable now. Priority never scales the step
+    a second time — later windows re-measure and price the next half-gap (ADR 435).
+    """
+    half_gap = programmed + (measured - programmed) / 2.0
+    step_lo = programmed * (1.0 - cfg.max_step_frac)
+    step_hi = programmed * (1.0 + cfg.max_step_frac)
+    return (round(min(max(half_gap, step_lo), step_hi), 1),
+            not step_lo <= half_gap <= step_hi)
+
+
 def _recommend(programmed: Optional[float], measured: Optional[float],
                cfg: IcConfig) -> Tuple[Optional[float], str]:
     if measured is None:
         return None, "not enough isolated carb-tagged meals to estimate the carb ratio"
     if programmed is None:
         return round(measured, 1), "carb ratio implied by post-meal corrections"
-    # Half the gap toward the measured ratio, still capped at ±max_step_frac (#410). Moving
-    # only halfway each window converges without the ping-pong a full-step chase produces
-    # (forecast: full steps reversed 2–3× per 12 weeks; half-gap ~3% final error, fewest
-    # reversals). The gap decides the safe recommendation; Priority then prices that
-    # concrete step to decide whether it is actionable now. Priority never scales the step
-    # a second time — later windows re-measure and price the next half-gap (ADR 435).
-    half_gap = programmed + (measured - programmed) / 2.0
-    step_lo = programmed * (1.0 - cfg.max_step_frac)
-    step_hi = programmed * (1.0 + cfg.max_step_frac)
-    rec = round(min(max(half_gap, step_lo), step_hi), 1)
+    rec, _capped = _half_gap_step(programmed, measured, cfg)
     if measured < programmed:
         ann = ("post-meal corrections imply meals are under-covered, so a tighter "
                "(smaller) carb ratio would dose more per carb")
@@ -2006,6 +2016,215 @@ def _run_pool(runs: Sequence[MealRun]) -> List[MealRun]:
     return confirmed if confirmed else supported
 
 
+# Why a roster run is or is not in a block's numeric pool — the closed set the block
+# publishes on every run row (#464). Only the fit that built the pool can answer it,
+# so both fit builders choose one per roster run and nothing downstream re-derives it.
+POOL_REASONS = (
+    "counted-whole",
+    "counted-by-share",
+    "directional-only",
+    "prior-action-not-separable",
+    "earlier-ratio-or-uncurrent-chain",
+    "no-outcome-read",
+)
+POOLED_REASONS = frozenset(POOL_REASONS[:2])
+
+
+def _run_side(run: MealRun, programmed: Optional[float]) -> int:
+    """Which side of the programmed ratio this run's own number fell on (#464).
+
+    Zero is "neither side": the block has no programmed value to compare against, or
+    the run landed on it. A published ratio is rounded to three places, so landing on
+    it is an ordinary outcome rather than a coincidence worth a separate code.
+    """
+    if programmed is None:
+        return 0
+    if run.true_ic > programmed:
+        return 1
+    return -1 if run.true_ic < programmed else 0
+
+
+def _pooled_ledger(pool: Sequence[MealRun],
+                   ownership: Dict[RunIdentity, float]) -> Dict:
+    """The pooled runs' balance sheet, each term weighted by this block's carb share.
+
+    The shipped estimator is a carb-weighted joint fit on per-block share (ADR 117),
+    so the block's ``estimate`` is not the quotient of any summed terms. This is the
+    plain arithmetic beside it: the terms the panel prints, and the quotient those
+    printed terms actually make (ADR 464 — balance sheet). Rounded before the
+    division, so a reader dividing the printed row reproduces the printed ratio.
+
+    A pool holds either only outcome-confirmed runs or only fallbacks
+    (:func:`_run_pool` never mixes them), so a missing ``bg_outcome_u`` is a pool
+    with no glucose-travel term at all rather than a hole in one.
+    """
+    def total(term) -> float:
+        return round(math.fsum(
+            ownership[RunIdentity(run.t)] * term(run) for run in pool), 4)
+
+    carbs_covered = total(lambda run: run.carbs_covered)
+    effective_insulin = total(lambda run: run.effective_insulin)
+    return {
+        "carbs_covered": carbs_covered,
+        "meal_dose": total(lambda run: run.meal_dose),
+        "post_correction_user": total(lambda run: run.post_correction_user),
+        "post_correction_ciq": total(lambda run: run.post_correction_ciq),
+        "post_correction_unknown": total(lambda run: run.post_correction_unknown),
+        "ciq_basal_delta_acted_u": total(lambda run: run.ciq_basal_delta_acted_u),
+        "bg_outcome_u": total(lambda run: run.bg_outcome_u or 0.0),
+        "rescue_carbs": total(lambda run: run.rescue_carbs),
+        "effective_insulin": effective_insulin,
+        "pooled_ratio": (round(carbs_covered / effective_insulin, 4)
+                         if effective_insulin > 0 else None),
+    }
+
+
+def _minutes_after_bolus(low: Dict) -> float:
+    """Minutes from one published low's dominant bolus to the low itself.
+
+    A low reaches a block's harm row by the block its ``dominant_bolus_t`` falls in,
+    so every published low has one.
+    """
+    return (datetime.fromisoformat(low["t"])
+            - datetime.fromisoformat(low["dominant_bolus_t"])).total_seconds() / 60.0
+
+
+def _minutes_after_bolus_median(lows: Sequence[Dict]) -> Optional[float]:
+    """Median minutes from each published low's dominant bolus to the low itself.
+
+    Read over exactly the lows this block published and no other population, which
+    is the only claim the number supports.
+    """
+    offsets = [_minutes_after_bolus(low) for low in lows]
+    return round(statistics.median(offsets), 1) if offsets else None
+
+
+# A run that ends within this many mg/dL of where it started ended flat (#464). No
+# analyzer constant carries a settle band, so it is defined here beside the run rows
+# it classifies, and served once on the block so no client restates it.
+RUN_END_BAND_MGDL = 10.0
+# Boluses under this many minutes apart in one run are one meal for the "before next"
+# window: a topped-up or split bolus does not cut the first bolus's window short (#464).
+_SAME_MEAL_BOLUS_MIN = 30.0
+
+
+def _run_end_class(run: MealRun) -> Optional[str]:
+    """Where a run ended against where it started; exactly the band away is flat."""
+    if run.outcome_bg is None or run.bg0 is None:
+        return None
+    travelled = run.outcome_bg - run.bg0
+    if travelled < -RUN_END_BAND_MGDL:
+        return "lower"
+    if travelled > RUN_END_BAND_MGDL:
+        return "higher"
+    return "flat"
+
+
+def _next_bolus_min(meal: RunMeal, run: MealRun) -> Optional[float]:
+    """Minutes from one member's bolus to the run's next member bolus.
+
+    A member dosed under :data:`_SAME_MEAL_BOLUS_MIN` after this one is the same meal,
+    so it is skipped and the member after it is read; ``None`` when no member follows.
+    """
+    gaps = [(other.t - meal.t).total_seconds() / 60.0 for other in run.meals]
+    return min((gap for gap in gaps if gap >= _SAME_MEAL_BOLUS_MIN), default=None)
+
+
+def _run_ends(run_rows: Sequence[Dict]) -> Dict:
+    """How the block's counted runs ended, tallied over exactly the counted rows.
+
+    A block whose pool is :func:`_run_pool`'s fallback counts runs with no outcome
+    read, which have no end class; ``unread`` counts them, so the four classes always
+    sum to ``n``.
+    """
+    counted = [row for row in run_rows if row["in_pool"]]
+    return {
+        **{end: sum(1 for row in counted if row["end_class"] == end)
+           for end in ("lower", "flat", "higher")},
+        "unread": sum(1 for row in counted if row["end_class"] is None),
+        "after_later_meal": sum(1 for row in counted if row["ended_after_later_meal"]),
+        "n": len(counted),
+    }
+
+
+def _recommendation(block: IcBlock, measured: Optional[float], direction: Optional[str],
+                    cfg: IcConfig) -> Dict:
+    """The block's recommended value and the analyzer's rule for it, in words.
+
+    The value and the sentence are served only when the block asserts a move; a held
+    or unmeasured block recommends nothing, so it has no value to draw and no rule to
+    explain.  ``block.recommended`` itself is untouched.
+    """
+    sentence = None
+    if direction is not None:
+        capped = _half_gap_step(block.current, measured, cfg)[1]
+        sentence = (
+            f"Recommended {block.recommended:.2f} is half the gap from the programmed "
+            f"{block.current:.2f} toward the {measured:.2f} estimate, "
+            + (f"capped at {cfg.max_step_frac * 100:g} % of the programmed value, "
+               if capped else "")
+            + "rounded to the pump's 0.1 g/U step."
+        )
+    return {"value": block.recommended if block.asserts_move else None,
+            "rule": "half-gap-capped-rounded", "sentence": sentence}
+
+
+def _harm_low_rows(lows: Sequence[Dict], roster: Sequence[MealRun],
+                   pool_reason_by_run: Dict[RunIdentity, str]) -> List[Dict]:
+    """Each published low beside the roster run its dominant bolus is a member of."""
+    run_of_bolus = {meal.t.isoformat(): run for run in roster for meal in run.meals}
+    rows = []
+    for low in lows:
+        run = run_of_bolus.get(low["dominant_bolus_t"])
+        if run is None:
+            group = "not-a-meal-run"
+        elif pool_reason_by_run[RunIdentity(run.t)] in POOLED_REASONS:
+            group = "counted-run"
+        else:
+            group = "uncounted-run"
+        rows.append({
+            **low,
+            "run_id": run.t.isoformat() if run is not None else None,
+            "group": group,
+            "minutes_after_bolus": round(_minutes_after_bolus(low), 1),
+            "bolus_carbs": low["dominant_bolus_carbs"],
+        })
+    return rows
+
+
+def _bearing_sentence(counted_lows: int, direction: Optional[str]) -> Optional[str]:
+    """How the lows on counted runs bear on the block's asserted move.
+
+    A low points toward less insulin, which is the way a raise (a looser ratio) moves.
+    """
+    if counted_lows == 0 or direction is None:
+        return None
+    subject = ("The 1 low on a counted run points" if counted_lows == 1
+               else f"The {counted_lows} lows on counted runs point")
+    bearing = ("the same way as the suggestion" if direction == "raise"
+               else "against the suggestion")
+    return f"{subject} toward less insulin, {bearing}."
+
+
+def _excluded_run_reason(run: MealRun, *, identity_proven: bool) -> str:
+    """Why a roster run the fit examined did not reach its block's numeric pool.
+
+    Asked in the order the published set is written: the run's own ledger first (a
+    hypo-floored denominator, then prior meal action this chain's carbs cannot be
+    separated from), then the dose-time identity the fit proved, and last the
+    full-DIA outcome read :func:`_run_pool` preferred. A run reaching the final
+    branch is a numeric candidate the fit admitted, so the only thing left that
+    kept it out is the read.
+    """
+    if run.directional_only:
+        return "directional-only"
+    if run.prior_action_status != "supported":
+        return "prior-action-not-separable"
+    if not identity_proven:
+        return "earlier-ratio-or-uncurrent-chain"
+    return "no-outcome-read"
+
+
 @dataclass(frozen=True)
 class _IcBlockFit:
     """Estimator-owned numeric inputs consumed by the shared block stamper."""
@@ -2015,6 +2234,9 @@ class _IcBlockFit:
     pool_runs: Tuple[MealRun, ...]
     roster_runs: Tuple[MealRun, ...]
     ownership_by_run: Dict[RunIdentity, float]
+    pool_reason_by_run: Dict[RunIdentity, str]
+    # The weight the numeric fit gave each pooled run, as the fit itself used it.
+    fit_weight_by_run: Dict[RunIdentity, float]
     effective_run_count: float
     whole_runs: int
     fractional_run_ownership: float
@@ -2049,6 +2271,7 @@ def _incumbent_block_fits(
                     if identity_by_run.get(RunIdentity(run.t)) == current_identity
                 ]
         pool = _run_pool(inside)
+        pooled_ids = {id(run) for run in pool}
         estimate = estimate_pooled_ratio_clustered([
             [(run.carbs_covered, run.effective_insulin)] for run in pool
         ])
@@ -2064,6 +2287,19 @@ def _incumbent_block_fits(
             pool_runs=tuple(pool),
             roster_runs=tuple(inside),
             ownership_by_run={RunIdentity(run.t): 1.0 for run in inside},
+            # This roster is already identity-filtered above, so every run on it was
+            # dosed under the block's current value — the incumbent never publishes
+            # the uncurrent-chain reason, and its pooled runs are always whole.
+            pool_reason_by_run={
+                RunIdentity(run.t): (
+                    "counted-whole" if id(run) in pooled_ids
+                    else _excluded_run_reason(run, identity_proven=True)
+                )
+                for run in inside
+            },
+            # A pooled ratio of sums is the carb-weighted mean of the runs' inverse
+            # ratios, so each pooled run weighs its covered carbs.
+            fit_weight_by_run={RunIdentity(run.t): run.carbs_covered for run in pool},
             effective_run_count=float(len(pool)),
             whole_runs=len(pool),
             fractional_run_ownership=0.0,
@@ -2422,7 +2658,6 @@ def _analyze_ic_blocks_shared(
         inside = list(fit.eligible_runs)
         roster = list(fit.roster_runs)
         pool = list(fit.pool_runs)
-        pool_ids = {id(r) for r in pool}
         est = fit.estimate
         effective_runs = fit.effective_run_count
         n_runs = math.floor(effective_runs)
@@ -2480,6 +2715,7 @@ def _analyze_ic_blocks_shared(
         # arm-wide low evidence has no claim on it.
         harm_evidence: Dict = {}
         hold_reason: Optional[str] = None
+        gated = False
         if harm is not None:
             tightening = (rec is not None and programmed is not None
                           and rec < programmed)
@@ -2530,8 +2766,12 @@ def _analyze_ic_blocks_shared(
         # `tuning_priority` turns these into a Wilson bound; the denominator is fixed
         # here so a 30-day divisor can never reach a 90-day count.
         side_k = side_n = 0
+        side_direction: Optional[str] = None
         if band_excludes and measured is not None and programmed is not None:
             direction = 1.0 if measured > programmed else -1.0
+            # The side `side_k` counts toward, served so no reader re-derives it from
+            # the estimate and the programmed value.
+            side_direction = "above" if direction > 0 else "below"
             for r in pool:
                 side_n += 1
                 if (r.true_ic - programmed) * direction > 0:
@@ -2541,6 +2781,7 @@ def _analyze_ic_blocks_shared(
             "window_days": BLOCK_WINDOW_DAYS,
             "side_k": side_k,
             "side_n": side_n,
+            "side_direction": side_direction,
             "low_days": int((harm_evidence or {}).get("row_days") or 0),
             "rescue_days": rescue_days,
             "measurement_asserts": band_excludes,
@@ -2565,9 +2806,17 @@ def _analyze_ic_blocks_shared(
                     "ciq_basal_delta_u": m.ciq_basal_delta_u,
                     "prior_meal_action_u": m.prior_meal_action_u,
                     "prior_action_status": m.prior_action_status,
+                    "next_bolus_min": _next_bolus_min(m, r),
+                    # A touching run off this block's roster was never counted here.
+                    "on_counted_run": (fit.pool_reason_by_run.get(RunIdentity(r.t))
+                                       in POOLED_REASONS),
                 })
         for r in roster:
             duration = (r.end_t - r.t).total_seconds() / 60.0
+            pool_reason = fit.pool_reason_by_run[RunIdentity(r.t)]
+            # Whether each member was dosed inside this block's hours, by the same
+            # membership test `coverage_meals` uses.
+            member_in_block = [_block_of(_tod(meal.t), groups) == bid for meal in r.meals]
             run_rows.append({
                 "run_id": r.t.isoformat(), "t": r.t.isoformat(),
                 "end_t": r.end_t.isoformat(), "n_meals": r.n_meals,
@@ -2575,14 +2824,38 @@ def _analyze_ic_blocks_shared(
                 "true_ic": r.true_ic, "start_bg": r.bg0, "outcome_bg": r.outcome_bg,
                 "bg_outcome_u": r.bg_outcome_u,
                 "directional_only": r.directional_only,
-                "in_pool": id(r) in pool_ids,
+                # The reason the fit gave is the authority; `in_pool` is read off it
+                # rather than counted a second way, so the two cannot disagree.
+                "pool_reason": pool_reason,
+                "in_pool": pool_reason in POOLED_REASONS,
+                "side": _run_side(r, programmed),
                 "ownership": fit.ownership_by_run[RunIdentity(r.t)],
+                # The ledger terms behind this run's ratio, so the panel prints the
+                # balance sheet rather than reconstructing it from the quotient.
+                "meal_carbs": r.meal_carbs,
+                "meal_dose": r.meal_dose,
+                "post_correction_user": r.post_correction_user,
+                "post_correction_ciq": r.post_correction_ciq,
+                "post_correction_unknown": r.post_correction_unknown,
+                "post_correction_total": round(
+                    r.post_correction_user + r.post_correction_ciq
+                    + r.post_correction_unknown, 3),
+                "ciq_basal_delta_acted_u": r.ciq_basal_delta_acted_u,
+                "rescue_carbs": r.rescue_carbs,
                 # The current-block evidence canvas consumes these analyzer-owned
                 # display facts verbatim.  Keep them beside the closed ledger so
                 # no projection has to reconstruct its member chain or horizon.
                 "member_offsets_min": [
                     (meal.t - r.t).total_seconds() / 60.0 for meal in r.meals
                 ],
+                # Parallel to the offsets.
+                "member_in_block": member_in_block,
+                "end_class": _run_end_class(r),
+                # A block is one arc of the day and members run in time order, so a
+                # roster run whose last member is outside the block's hours ended
+                # after its end, on a later meal.
+                "ended_after_later_meal": not member_in_block[-1],
+                "fit_weight": fit.fit_weight_by_run.get(RunIdentity(r.t)),
                 "cgm_start_min": -float(cfg.bg0_max_gap_min),
                 "cgm_end_min": duration + cfg.post_meal_min,
                 "outcome_min": duration + cfg.outcome_at_min,
@@ -2622,8 +2895,11 @@ def _analyze_ic_blocks_shared(
                 # count separate from support: a rejected run is evidence that was
                 # examined, never evidence that did not exist.
                 "n_runs_excluded": len(roster) - len(pool),
+                "ledger": _pooled_ledger(pool, fit.ownership_by_run),
                 "points": meal_points,
                 "runs": run_rows,
+                "end_band_mgdl": RUN_END_BAND_MGDL,
+                "run_ends": _run_ends(run_rows),
             },
         )
         # Stamp the one eligibility decision here, off the evidence just assembled —
@@ -2651,6 +2927,50 @@ def _analyze_ic_blocks_shared(
                 "seriousness": "recurring_low" if block.harm.get("nudged") else None,
             },
         )
+        # The harm arm's own row for this block, on every block and in one closed
+        # shape, so a reader never infers "no lows" from a missing key. It is the
+        # same `arm_harm_evidence` call `block.harm` carries wherever the arm touched
+        # this block, and the verdicts it copies are the ones stamped above; the
+        # backend states whether the arm ran at all. What this block adds reads only
+        # the lows published here: each low's roster run and group, their minutes
+        # after the bolus, and how the counted-run lows bear on the asserted move.
+        harm_row = (
+            arm_harm_evidence(harm, bid) if harm is not None
+            else _harm_evidence_payload(arm=HarmArm.IC.value, gated=False,
+                                        nudged=False, arm_days=0, row_days=0,
+                                        lows=())
+        )
+        lows = _harm_low_rows(harm_row["lows"], roster, fit.pool_reason_by_run)
+        low_minutes = [low["minutes_after_bolus"] for low in lows]
+        counted_lows = [low for low in lows if low["group"] == "counted-run"]
+        block = replace(block, evidence={
+            **block.evidence,
+            "recommendation": _recommendation(block, measured, direction, cfg),
+            "harm_evidence": {
+                **harm_row,
+                "lows": lows,
+                "groups": {
+                    "counted_run": len(counted_lows),
+                    "counted_runs_distinct": len({low["run_id"] for low in counted_lows}),
+                    "uncounted_run": sum(1 for low in lows
+                                         if low["group"] == "uncounted-run"),
+                    "not_a_meal_run": sum(1 for low in lows
+                                          if low["group"] == "not-a-meal-run"),
+                    "total": len(lows),
+                },
+                "minutes_after_bolus_min": min(low_minutes, default=None),
+                "minutes_after_bolus_max": max(low_minutes, default=None),
+                "bearing_sentence": _bearing_sentence(len(counted_lows), direction),
+                # The gate this block was actually judged by. A tighten is held by a
+                # meal-owned low anywhere on the arm, so it can be gated here while
+                # `block.harm["gated"]` — the arm's per-block key — stays False.
+                "gated": gated,
+                "evaluated": harm is not None,
+                "seriousness": block.guidance["seriousness"],
+                "minutes_after_bolus_median": _minutes_after_bolus_median(
+                    harm_row["lows"]),
+            },
+        })
         if block.asserts_move:
             block = replace(block, days_observed=observed)
         # #523: display-only held_reason, transcribed from the annotation this block

@@ -40,6 +40,8 @@ export const STORY_CASES = Object.freeze({
   S194: 'behavioral-split-meal',
   S195: 'behavioral-late-bolus',
   S196: 'showcase',
+  ...Object.fromEntries('S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207'.split(',')
+    .map(id => [id, 'ic-block-evidence'])),
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

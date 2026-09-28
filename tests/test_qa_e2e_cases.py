@@ -42,7 +42,7 @@ EXPECTED_CASE_NAMES = (
     "isf-strengthen", "isf-direction-only-weaken", "isf-held",
     "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
     "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
-    "ic-history-register",
+    "ic-history-register", "ic-block-evidence",
     "behavioral-carb-undercount",
     "behavioral-late-bolus",
     "behavioral-split-meal",

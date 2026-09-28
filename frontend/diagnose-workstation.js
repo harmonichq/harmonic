@@ -596,6 +596,17 @@ export function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onVie
   host.append(box);
 }
 
+/* THE CASE ON SCREEN'S SUBJECT, one frame kind at a time (ADR 428). A slot and a
+   block both open by CELL, not by row id — the case head's "View segment" opens a
+   block with no row id at all (#464) — so both derive their subject from the cell
+   they hold rather than from whatever id the frame happened to arrive with. Every
+   other frame kind keeps the served row id it was drilled with. */
+export function frameSubject(frame) {
+  if (frame.k === 'slot') return `basal:${frame.cell.startMin}`;
+  if (frame.k === 'block') return `ic:${frame.cell.id}`;
+  return frame.rowId;
+}
+
 /** One breadcrumb label for a pushed frame (D7/term 34: the root is the queue's own
     noun, at every depth). `chartTitle(chartId)` names a chart tile. */
 export function crumbLabel(frame, chartTitle) {
@@ -1121,13 +1132,167 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     options.onClear || (() => {}), options.onDay || (() => {}));
 }
 
+/* #464 — the carb-ratio block panel prints the settled design (the operator's,
+   2026-09-27) from the block-evidence payload. The frontend composes no count,
+   class, side, reason or threshold: every figure below is a served field, and the
+   words around it are fixed copy. The reader words for served keys are the only
+   maps this panel keeps. */
+const SIDE_WORD = { above: 'looser', below: 'tighter' };
+/* The panel's two captions, keyed on the served move: the meals peaking above the
+   band argue against a looser ratio and for a tighter one, and a hold has no move
+   to argue, so its sections say what they show. */
+const BLOCK_CAPTIONS = new Map([
+  ['raise', ['Why this move', 'The case against']],
+  ['lower', ['Why this move', 'The case for']],
+  [null, ['What the counted runs measured', 'After these meals']],
+]);
+const LOW_GROUPS = [
+  ['counted-run', 'counted_run', 'On counted runs'],
+  ['uncounted-run', 'uncounted_run', 'On runs not counted'],
+  ['not-a-meal-run', 'not_a_meal_run', 'After a bolus that is not one of these meals'],
+];
+const IC_MECHANISM = 'The ratio counts all the insulin a run used — boluses, corrections, '
+  + 'Control-IQ basal changes — with the glucose change converted at your correction '
+  + 'factor, judged where the run ended.';
+
+/** "68" → "1 h 8 min"; under an hour stays "N min", a whole hour "N h". */
+function fmtMinutes(total) {
+  const rounded = Math.round(total);
+  if (rounded < 60) return `${rounded} min`;
+  const m = rounded % 60;
+  return `${Math.floor(rounded / 60)} h${m ? ` ${m} min` : ''}`;
+}
+
+// The analyzer's closed block states; the three unmeasured ones are Unsupported
+// (risk contract): the numbers block stands and the panel adds nothing.
+const IC_UNSUPPORTED_STATES = new Set(['collecting', 'below-floor', 'unmeasured-alone']);
+/* A fact the panel prints is read through one of these: a missing or mistyped
+   one is a malformed payload and throws, never a "NaN" or "--" on screen.
+   `servedOrNull` admits a served null (an omitted line) but not an absent key. */
+function servedNumber(value) {
+  if (!Number.isFinite(value)) throw new TypeError('served number missing');
+  return value;
+}
+function servedOrNull(value) {
+  if (value === undefined) throw new TypeError('served fact missing');
+  return value;
+}
+
+const servedEvidence = (evidence) => Boolean(evidence && !evidence.pending && !evidence.failed
+  && !evidence.stale);
+
+/** The block frame's breadcrumb meta: the shipped analyze count, with or without a
+    served payload. The panel's numbers block prints the same support count, so the
+    crumb never disagrees with it and never changes text once the evidence lands. */
+export function icBlockCrumbMeta(cell) {
+  return `${cell.block.n_runs} meal runs · ${cell.block.n_meals} meals`;
+}
+
+/** Below the numbers block: the why section, the meals section and the lows,
+    each a `.lvl-cap` over one-sentence lines, the first two captioned by the
+    served move (`BLOCK_CAPTIONS`). A line whose served facts are null or empty is
+    left out rather than printed with a hole.
+
+    The payload crosses a process boundary, so this READS every served field
+    first and writes nothing until all of it has been read: a payload missing a
+    fact throws here, before any markup, and the caller prints its unavailable
+    line beneath an intact numbers block rather than half a panel. */
+function readIcBlockEvidence(evidence, options) {
+  const { block, outcomes, harm_evidence: harm, runs } = evidence;
+  const lines = (items) => `<div class="inner">${items.filter(Boolean)
+    .map((line) => `<div class="slot-stats">${line}</div>`).join('')}</div>`;
+  const noun = block.label.toLowerCase();
+  const ends = block.run_ends;
+  const endMin = servedNumber(block.end_min);
+  const blockEnd = endMin === 1440 ? '24:00' : hhmm(endMin);
+  const side = servedOrNull(block.side.direction);
+  if (side !== null && !SIDE_WORD[side]) throw new TypeError('served side unknown');
+  // The move the block asserts, null on a held block: only it can speak of a looser ratio.
+  const move = servedOrNull(block.direction);
+  if (!BLOCK_CAPTIONS.has(move)) throw new TypeError('served direction unknown');
+  const [whyCaption, mealsCaption] = BLOCK_CAPTIONS.get(move);
+  const ratio = (value) => u(servedNumber(value));
+  // Counted runs with no outcome read (a fallback pool) have no end to class.
+  const unread = servedNumber(ends.unread);
+  const markup = [`<div class="lvl-cap">${whyCaption}</div>`, lines([
+    // The side is served only when the estimate's range leaves the programmed value out.
+    side && `${servedNumber(block.side.side_k)} of ${servedNumber(block.side.side_n)} counted runs `
+      + `measured ${SIDE_WORD[side]} than ${ratio(block.current)} g/U; the estimate's range `
+      + `${ratio(block.estimate.lo)}–${ratio(block.estimate.hi)} leaves ${ratio(block.current)} out.`,
+    IC_MECHANISM,
+    // The end counts are over every counted run; the later-meal count is its own clause.
+    servedNumber(ends.n) > 0 && `Of the ${ends.n} counted runs, ${servedNumber(ends.lower)} ended lower `
+      + `than they started, ${servedNumber(ends.flat)} about flat and ${servedNumber(ends.higher)} higher, `
+      + `where they ended; for ${servedNumber(ends.after_later_meal)} of them that end came after a later `
+      + `meal past ${blockEnd}${unread > 0 ? `; ${unread} had no reading where they ended` : ''}.`,
+    servedOrNull(block.recommendation.sentence),
+  ])];
+
+  const counts = outcomes.counts;
+  if (servedNumber(counts.meals_on_counted_runs) > 0) {
+    markup.push(`<div class="lvl-cap">${mealsCaption}</div>`, lines([
+      `${servedNumber(counts.peaked_above_high_before_next)} of the ${counts.meals_on_counted_runs} `
+        + `${noun} meals on counted runs peaked above ${servedNumber(outcomes.band.high)} before their `
+        + `next bolus (${servedNumber(counts.peaked_above_high_in_window)} counting later meals within `
+        + `${fmtMinutes(servedNumber(outcomes.window_min))} of the bolus)`
+        + `${move === 'raise' ? '; a looser ratio can raise peaks' : ''}.`,
+    ]));
+  }
+
+  const lows = harm.lows;
+  const runRatio = new Map(runs.map((run) => [run.run_id, run.true_ic]));
+  const groups = LOW_GROUPS.map(([group, countKey, label]) => {
+    const rows = lows.filter((low) => low.group === group);
+    return {
+      header: `<div class="ev-group"><b>${label}</b><span class="n"> · ${servedNumber(harm.groups[countKey])}</span></div>`,
+      servedCount: rows.length,
+      rows: rows.map((low) => ({
+        id: low.t,
+        pressed: low.run_id != null && low.run_id === options.selectedRunId,
+        dataset: { runId: servedOrNull(low.run_id) || '' },
+        // One sentence the whole row wide: it wraps rather than clip in the inspector.
+        html: `<span class="only" style="grid-column:1 / -1;white-space:normal">${fmtDate(low.t.slice(0, 10))}`
+          + ` · bolus ${low.dominant_bolus_t.slice(11, 16)} → low ${low.t.slice(11, 16)}`
+          + ` · ${Math.round(servedNumber(low.bg))} mg/dL · ${fmtMinutes(servedNumber(low.minutes_after_bolus))} later`
+          + `${runRatio.has(low.run_id) ? ` · run ${ratio(runRatio.get(low.run_id))} g/U` : ''}</span>`,
+      })),
+    };
+  }).filter((group) => group.servedCount > 0);
+  if (lows.length) {
+    // The count is the served total, not a length of the rows below it.
+    const total = servedNumber(harm.groups.total);
+    const bearing = servedOrNull(harm.bearing_sentence);
+    markup.push(`<div class="lvl-cap">Lows after ${noun} boluses</div>`, lines([
+      `${total} low${total === 1 ? '' : 's'}, ${fmtMinutes(servedNumber(harm.minutes_after_bolus_min))} to `
+        + `${fmtMinutes(servedNumber(harm.minutes_after_bolus_max))} after the bolus`
+        + `${bearing ? `; ${bearing[0].toLowerCase()}${bearing.slice(1)}` : '.'}`,
+    ]));
+  }
+  const runOfLow = new Map(lows.map((low) => [low.t, low.run_id]));
+  return { markup, groups, runOfLow };
+}
+
+function renderIcBlockEvidence(host, { markup, groups, runOfLow }, options) {
+  for (const html of markup) host.insertAdjacentHTML('beforeend', html);
+  renderOccurrenceRoster(host, groups, {
+    selectedId: null, shownCount: Infinity, cap: Infinity,
+    // An Occurrence opens Day at its own moment, ringed (CONTEXT.md, Occurrence).
+    onSelect: (id) => options.onDay?.({ t: id, cause_lever: 'carb_ratio' }),
+    onMore: () => {},
+    onPreview: (id) => {
+      const runId = runOfLow.get(id);
+      if (runId) options.onPreviewRun?.(runId);
+    },
+  });
+}
+
 /**
  * One I:C BLOCK, through the same panel. `asserts_move` is the backend's single
  * I:C predicate (term 14) — it is read, never re-derived — so a block that
  * asserts carries the identical stage button a slot does, and a held one prints
  * its number and interval at full contrast with nothing to stage.
  */
-function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, options = {}) {
+export function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, options = {}) {
   const b = cell.block;
   const e = b.estimate;
   const canStage = cell.asserts;
@@ -1179,6 +1344,27 @@ function renderIcBlockLevel(host, cell, icStaged, onStage, demoNote, options = {
         + 'the number and its interval are shown as measured.',
     onStage: () => onStage(cell),
   });
+  const evidence = options.evidence;
+  if (evidence?.pending) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty" aria-busy="true">Loading run evidence…</div>');
+    return;
+  }
+  const unavailable = () => host.insertAdjacentHTML('beforeend',
+    '<div class="empty">Run evidence unavailable.</div>');
+  if (!servedEvidence(evidence)) { unavailable(); return; }
+  let panel;
+  try {
+    // A block the analyzer did not measure is Unsupported: it keeps the numbers
+    // block and gains no section. A missing or unknown state is malformed.
+    const state = evidence.block.state;
+    if (IC_UNSUPPORTED_STATES.has(state)) return;
+    if (state !== 'numeric') throw new TypeError('served block state unknown');
+    panel = readIcBlockEvidence(evidence, options);
+  } catch {
+    unavailable();
+    return;
+  }
+  renderIcBlockEvidence(host, panel, options);
 }
 
 /**
@@ -1623,7 +1809,15 @@ function boot(root, data, callbacks, signal) {
     const context = {
       mini, window: scopeWindow(), caseFile: catalog ? descriptor.data : tileCaseFile(descriptor), surface: host,
     };
+    /* The run-selection contract (#464, sub-order 3): the open block's own tile
+       reads the frame's selected run on every draw and presses a run back
+       through `selectRun`, the same seam the lows rows use. */
+    const frame = top();
+    const selectsRun = descriptor.kind === 'carb-ratio' && frame.k === 'block'
+      && descriptor.coordinates.block_id === frame.cell.id;
+    if (selectsRun) context.onSelectRun = (runId) => selectRun(frame, runId);
     const build = () => {
+      if (selectsRun) context.selectedRunId = frame.selectedRunId ?? null;
       const option = optionForDescriptor(descriptor, DIAGNOSE_EVIDENCE_CHARTS, range, context);
       if (!mini && host.clientWidth <= 480) {
         const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
@@ -1637,7 +1831,7 @@ function boot(root, data, callbacks, signal) {
     };
     const option = build();
     const chart = window.echarts.init(host, null, { renderer: 'canvas' });
-    return { chart, option, relayout: () => chart.setOption(build(), true) };
+    return { chart, option, relayout: () => chart.setOption(build(), true), selectsRun };
   }
 
   function mountRowMinis(miniSlots) {
@@ -2239,7 +2433,7 @@ function boot(root, data, callbacks, signal) {
   let publishedCase;
   function publishCase() {
     const f = top();
-    const subject = f.k === 'slot' ? `basal:${f.cell.startMin}` : f.rowId;
+    const subject = frameSubject(f);
     const served = f.caseFile?.window;
     const window = f.k === 'slot' ? `${f.cell.startMin}-${f.cell.endMin}`
       : Number.isFinite(served?.start_min) ? `${served.start_min}-${served.end_min}` : null;
@@ -2392,6 +2586,62 @@ function boot(root, data, callbacks, signal) {
       transientSlot: true,
     };
   };
+  /* #464 — the block panel's own evidence read, patterned exactly on the slot's:
+     read the tile's own descriptor first (the tile the queue already seated for
+     this block asks for the identical payload), and only fetch independently
+     when no tile holds it — one fetch per block frame, no parallel client. */
+  const blockDescriptor = (cell) => tileDescriptors.find((descriptor) => descriptor.kind === 'carb-ratio'
+    && descriptor.coordinates.block_id === cell.id);
+  const blockEvidence = (frame) => {
+    const descriptor = blockDescriptor(frame.cell);
+    if (descriptor?.data) return descriptor.data;
+    if (frame.blockEvidence) return frame.blockEvidence;
+    if (frame.blockEvidencePending || tileRuntime.get(descriptor?.chartId)?.pending) return { pending: true };
+    if (frame.blockEvidenceFailed || descriptor?.state === 'error' || descriptor?.state === 'stale-generation') {
+      return { failed: true };
+    }
+    return null;
+  };
+  const requestBlockEvidence = (frame) => {
+    if (blockDescriptor(frame.cell) || frame.blockEvidence || frame.blockEvidencePending) return;
+    const load = callbacks.loadCarbRatioEvidence;
+    if (!load) { frame.blockEvidenceFailed = true; return; }
+    const request = frame.blockEvidenceRequest;
+    frame.blockEvidencePending = true;
+    void load({ block_id: frame.cell.id, analysis_generation: findings?.analysis_generation })
+      .then((evidence) => {
+        if (top() !== frame || frame.blockEvidenceRequest !== request) return;
+        frame.blockEvidencePending = false;
+        frame.blockEvidence = evidence;
+        paint();
+      }).catch(() => {
+        if (top() !== frame || frame.blockEvidenceRequest !== request) return;
+        frame.blockEvidencePending = false;
+        frame.blockEvidenceFailed = true;
+        paint();
+      });
+  };
+  const prepareBlockFrame = (frame) => {
+    Object.assign(frame, { selectedRunId: null,
+      blockEvidence: null, blockEvidencePending: false, blockEvidenceFailed: false,
+      blockEvidenceRequest: (frame.blockEvidenceRequest || 0) + 1 });
+    requestBlockEvidence(frame);
+    return frame;
+  };
+  /* The run-selection seam with the carb-ratio tile (#464, sub-order 3's
+     contract): hovering or focusing a lows row, or pressing a run on the tile,
+     sets the block frame's one selected run. It presses the lows rows on that run
+     in place and redraws only the block's own tile, so the row under the
+     reader's pointer or focus is never rebuilt out from under it. */
+  const selectRun = (frame, runId) => {
+    if (frame.selectedRunId === runId) return;
+    frame.selectedRunId = runId;
+    if (top() !== frame) return;
+    for (const row of el('level').querySelectorAll('.case-occurrence[data-run-id]')) {
+      row.setAttribute('aria-pressed', String(row.dataset.runId === runId));
+    }
+    for (const mount of tileMounts) if (mount.selectsRun) mount.relayout();
+  };
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
   /* Selection belongs to the standing case file, while descriptor data belongs
@@ -2465,11 +2715,14 @@ function boot(root, data, callbacks, signal) {
     push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin, returnWindow }));
   }
 
-  /** The I:C findings-queue route: push from level 1, swap in place. */
+  /** The I:C findings-queue route: push from level 1, swap in place. Also the case
+      head's "View segment" route, which carries no row id at all (#464) — the
+      frame's published subject is derived from the block it holds, never from
+      `rowId`, so Day still opens from this path (`frameSubject`). */
   function pickBlock(cell, rowId = null, { queueOrigin = false } = {}) {
     releaseWindow();
-    if (top().k === 'block') { Object.assign(top(), { cell, rowId }); paint(); return; }
-    push({ k: 'block', cell, rowId, queueOrigin });
+    if (top().k === 'block') { prepareBlockFrame(Object.assign(top(), { cell, rowId })); paint(); return; }
+    push(prepareBlockFrame({ k: 'block', cell, rowId, queueOrigin }));
   }
 
   /* SELECT-IN-PLACE (P35 retired, ADR 31 part 5). An evidence-row click used to
@@ -2507,7 +2760,7 @@ function boot(root, data, callbacks, signal) {
     // capture has none and opens on its first block instead
     const cell = icBlocks.find((c) => c.asserts) || icBlocks[0];
     if (CFG.stageOpen && cell.asserts) icStaged.add(cell.id);
-    stack.push({ k: 'block', cell });
+    stack.push(prepareBlockFrame({ k: 'block', cell }));
   }
   if (CFG.level === 'isf') stack.push({ k: 'isf' });
 
@@ -3532,7 +3785,7 @@ function boot(root, data, callbacks, signal) {
            denominator and run (term 16); this one now does too. */
         : f.k === 'slot' ? `${f.cell.slot.days} nights of steady data · ${auditState.analysis.window_days} d basal run`
           // every parameter's meta names its OWN denominator and run
-          : f.k === 'block' ? `${f.cell.block.n_runs} meal runs · ${f.cell.block.n_meals} meals`
+          : f.k === 'block' ? icBlockCrumbMeta(f.cell)
             : f.k === 'isf' ? `${isf.estimate.n.toLocaleString()} correction steps`
               : '';
   }
@@ -3678,7 +3931,13 @@ function boot(root, data, callbacks, signal) {
       renderIcBlockLevel(host, f.cell, icStaged, (cell) => stageAndSettle(
         () => { if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id); },
         blockItem,
-        () => icStaged.has(cell.id)), demoNote, { replaces: replacing(blockItem) });
+        () => icStaged.has(cell.id)), demoNote, {
+        replaces: replacing(blockItem),
+        evidence: blockEvidence(f),
+        selectedRunId: f.selectedRunId,
+        onDay: (occurrence) => callbacks.day?.(occurrence),
+        onPreviewRun: (runId) => selectRun(f, runId),
+      });
       return;
     }
     if (f.k === 'isf') {

@@ -104,6 +104,18 @@ numeric I:C direction.
 _Avoid_: clean meal (ambiguous with data quality), low-IOB meal (correction action
 does not disqualify it).
 
+**Meal run**:
+A maximal chain of qualifying meals whose consecutive boluses sit close enough
+together that the **I:C meal ledger** cannot be closed per meal, so the chain is
+kept intact and read as one ledger instead of thrown away. The ledger closes once,
+at full-DIA after the *last* member's bolus (the **chain-end read**), not five
+hours after each meal. A run wholly inside one carb-ratio block counts whole
+toward that block's support; a run whose members straddle two blocks is split
+between them by carb share. A run whose insulin denominator had to be floored is
+**directional-only**: shown, but never pooled into a block's numeric estimate.
+_Avoid_: bolus run, meal chain (ambiguous with the underlying bolus chain itself,
+not the closed ledger read over it).
+
 **Fasting window**:
 A stretch with no recent carbs used to read ISF, where glucose change is
 attributable to insulin alone.

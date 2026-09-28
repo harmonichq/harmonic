@@ -44,6 +44,7 @@ EXPECTED_ACTIVE_KINDS = {
     "ic-held": None,
     "ic-quiet-seven-run": None,
     "ic-history-register": None,
+    "ic-block-evidence": None,
     "behavioral-carb-undercount": None,
     "behavioral-late-bolus": None,
     "behavioral-split-meal": None,

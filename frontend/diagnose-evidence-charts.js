@@ -942,8 +942,17 @@ const lowReadout = (low) => `low ${Math.round(low.bg)} mg/dL`
    keeps the host. Every handler reads the chart first, and a host whose chart
    is absent or disposed drops all of its handlers there and then, without
    calling into the dead instance, so nothing here ever reaches a chart that
-   is gone. */
+   is gone.
+
+   THE KEYS OWN THE READOUT WHILE THEY HOLD IT. ECharts shows a keyed tip on
+   the run's own dot, but re-shows it by pixel on every later render — and a
+   relayout is a rebuild — so where counted runs stack at one ratio a
+   neighbouring dot answers. The run the keys are reading is kept per host,
+   across rebuilds, and the tooltip names that run by its id whichever stacked
+   dot the pixel lands on. A moving pointer, or focus leaving, hands the
+   readout back to the dot under the pointer. */
 const runBindings = new WeakMap();
+const keyedRuns = new WeakMap();
 const liveChart = (instance) => (instance && !instance.isDisposed?.() ? instance : null);
 function bindRunSelection(surface, { stops, onSelectRun }) {
   if (typeof surface?.addEventListener !== 'function') return;
@@ -974,7 +983,13 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     current.on('click', onClick);
     bound = current;
   }, { signal });
-  let cursor = -1;
+  let cursor = stops.findIndex(({ runId }) => runId === keyedRuns.get(surface));
+  if (cursor < 0) keyedRuns.delete(surface);
+  const release = () => {
+    cursor = -1;
+    keyedRuns.delete(surface);
+  };
+  surface.addEventListener('pointermove', release, { signal });
   surface.addEventListener('keydown', (event) => {
     const current = chart();
     if (!current || !stops.length) return;
@@ -984,6 +999,7 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     if (step !== undefined) {
       event.preventDefault();
       cursor = step;
+      keyedRuns.set(surface, stops[cursor].runId);
       current.dispatchAction({ type: 'showTip',
         seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
     } else if (event.key === 'Enter' && cursor >= 0) {
@@ -992,7 +1008,7 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     }
   }, { signal });
   surface.addEventListener('blur', () => {
-    cursor = -1;
+    release();
     chart()?.dispatchAction({ type: 'hideTip' });
   }, { signal });
 }
@@ -1119,13 +1135,14 @@ function carbRatioOption(_mode, {
         key('on a run not counted', HOLLOW_DOWN_TRIANGLE, colors.low)], colors),
       left: GRID.left, top: laneB + 6 },
     ],
-    /* A dot, a stem or its markers read out their run; a ▼ reads out its low. */
+    /* A dot, a stem or its markers read out their run — or the run the keys
+       hold, whichever dot is under the tip; a ▼ reads out its low. */
     tooltip: { show: true, trigger: 'item', confine: true,
       extraCssText: 'max-width: 320px; white-space: normal;',
       formatter: (params) => {
         const datum = params?.data;
         if (datum?.low) return lowReadout(datum.low);
-        const run = byRun.get(datum?.runId);
+        const run = byRun.get(keyedRuns.get(surface) ?? datum?.runId);
         return run ? runReadout(run) : '';
       } },
     xAxis: [

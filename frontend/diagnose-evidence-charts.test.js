@@ -1908,9 +1908,11 @@ test('#464 · no carb-ratio option draws a directional-only run, a meal, or a pe
 });
 
 test('#464 · the tooltip reads a run its served ledger terms and a low its served delay', () => {
+  /* A modified copy of the served case, made to isolate one field: the run's
+     served corrections total is set apart from the sum of its terms, so the
+     hover is shown to print the total, never a client sum. */
   const data = structuredClone(icCases().explained);
   const run = countedRuns(data).find((row) => row.pool_reason === 'counted-by-share');
-  // The corrections print the served total, never a client sum of its terms.
   run.post_correction_total = 1.25;
   const option = overview(data);
   const dot = byId(option, 'ic:dots:share').data.find(({ runId }) => runId === run.run_id);

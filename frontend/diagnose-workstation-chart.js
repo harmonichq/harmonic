@@ -70,16 +70,6 @@ export const hhmm = (mins) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 };
 
-/* A CARB-RATIO BLOCK'S RATIO STRIP (#464, the settled block design). One axis,
-   the carb ratio: one dot per run the server counts (`in_pool`) at its served
-   ratio, sized by its served fit weight, a whole run filled and a run counted
-   by share a ring, all in the text ink. Behind them, three 1 px rules at the
-   served programmed (solid), recommended (dotted) and estimated (dashed, the
-   data ink) ratios, and the estimate's served range as one faint wash; a rule
-   the block is not served, as a held block's recommendation, is not drawn. The
-   dots share one row and stack only where two fall in the same tenth of a g/U.
-   The tile's upper lane, the drawer thumbnail and the queue row's mini all draw
-   the block through this, so no two of them can disagree about a dot. */
 /* Canvas text has no flow, so a label's width is its character count off the
    face's advance — taken wide, so a label judged clear never touches its
    neighbour. A label drops to the second row, or slides along its row, only
@@ -110,6 +100,16 @@ function placeRuleLabels(labels, cs, at) {
   return placed;
 }
 
+/* A CARB-RATIO BLOCK'S RATIO STRIP (#464, the settled block design). One axis,
+   the carb ratio: one dot per run the server counts (`in_pool`) at its served
+   ratio, sized by its served fit weight, a whole run filled and a run counted
+   by share a ring, all in the text ink. Behind them, three 1 px rules at the
+   served programmed (solid), recommended (dotted) and estimated (dashed, the
+   data ink) ratios, and the estimate's served range as one faint wash; a rule
+   the block is not served, as a held block's recommendation, is not drawn. The
+   dots share one row and stack only where two fall in the same tenth of a g/U.
+   The tile's upper lane, the drawer thumbnail and the queue row's mini all draw
+   the block through this, so no two of them can disagree about a dot. */
 export function ratioStrip(data, ink, { mini = false } = {}) {
   const block = data?.block || {};
   const estimate = block.estimate || {};

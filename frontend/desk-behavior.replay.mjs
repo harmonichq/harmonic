@@ -3265,7 +3265,6 @@ export const S179 = appOnly('ADR 451',
    lows. Each story reads the served block evidence first and compares what the
    desk draws or prints against it. A missing row, block or fact is a premise
    failure; what the desk draws or prints wrong is the feature failure. */
-const COUNTED_464 = ['counted-whole', 'counted-by-share'];
 const LOW_GROUPS_464 = [
   ['counted-run', 'counted_run', 'On counted runs'],
   ['uncounted-run', 'uncounted_run', 'On runs not counted'],
@@ -3299,7 +3298,7 @@ async function served464(page, id) {
     analysis_generation: preparation.findings.analysis_generation });
   const evidence = await read(`/api/diagnose/carb-ratio-block-evidence?${query}`);
   ok(evidence.block?.state === 'numeric', `${id} premise: the served block is measured, not ${evidence.block?.state}`);
-  const counted = evidence.runs.filter((run) => COUNTED_464.includes(run.pool_reason));
+  const counted = evidence.runs.filter((run) => run.in_pool === true);
   ok(counted.length > 0, `${id} premise: the served block counts no meal run`);
   return { row, evidence, counted };
 }
@@ -3818,7 +3817,7 @@ export const S196 = appOnly('ADR 464',
   '#464 changed: the block\'s run evidence still ships on its tile, rebuilt — every counted run once per lane, no per-run glucose trace',
   async (page) => {
     const { row, evidence, counted } = await served464(page, 'S196');
-    const excluded = evidence.runs.filter((run) => !COUNTED_464.includes(run.pool_reason));
+    const excluded = evidence.runs.filter((run) => run.in_pool !== true);
     ok(excluded.length > 0, 'S196 premise: the served block examines runs it does not count');
     await openBlock464(page, row);
     await waitForReplayAssertion(async seen => {

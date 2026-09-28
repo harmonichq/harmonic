@@ -986,8 +986,16 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
     bound = current;
   }, { signal });
   let cursor = stops.findIndex(({ runId }) => runId === keyedRuns.get(surface));
-  const showTip = (current) => current.dispatchAction({ type: 'showTip',
-    seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+  /* The run is read out twice, in the tooltip's own words: on the canvas, and
+     in the focused host's label, as the comparison chart's `inspect` does for
+     its cursor. The label is set after the chart renders, since every render
+     writes the resting description back — which is also how a released cursor
+     leaves the host. */
+  const readOut = (current) => {
+    current.dispatchAction({ type: 'showTip',
+      seriesIndex: stops[cursor].seriesIndex, dataIndex: stops[cursor].dataIndex });
+    surface.setAttribute('aria-label', stops[cursor].label);
+  };
   if (cursor < 0) keyedRuns.delete(surface);
   else {
     /* A rebuild moves the run's dot, and the tip follows it once the host has
@@ -995,7 +1003,7 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
        being mounted initialises its chart only after this build. */
     queueMicrotask(() => {
       const current = liveChart(globalThis.echarts?.getInstanceByDom?.(surface));
-      if (current && cursor >= 0) showTip(current);
+      if (current && cursor >= 0) readOut(current);
     });
   }
   const release = () => {
@@ -1014,7 +1022,7 @@ function bindRunSelection(surface, { stops, onSelectRun }) {
       cursor = step;
       keyedRuns.set(surface, stops[cursor].runId);
       current.setOption({ series: [{ id: 'ic:cursor', data: [stops[cursor].dot] }] });
-      showTip(current);
+      readOut(current);
     } else if (event.key === 'Enter' && cursor >= 0) {
       event.preventDefault();
       select(stops[cursor].runId);
@@ -1134,7 +1142,8 @@ function carbRatioOption(_mode, {
     onSelectRun,
     stops: series.flatMap((item, seriesIndex) => (item.id.startsWith('ic:dots:')
       ? item.data.map((dot, dataIndex) => ({ runId: dot.runId, dot, seriesIndex, dataIndex,
-        t: byRun.get(dot.runId).t })) : []))
+        t: byRun.get(dot.runId).t, label: `${runReadout(byRun.get(dot.runId)).split('<br>').join('. ')}.` }))
+      : []))
       .sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0)),
   });
   const key = (name, icon, ink) => ({ name, icon, itemStyle: { color: ink, borderWidth: 0 } });

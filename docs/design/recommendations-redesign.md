@@ -1,13 +1,13 @@
 # Recommendations redesign
 
-Status: **exploring**. The information architecture is proposed and awaiting
-approval. The Lock is a draft, and no direction is locked.
+Status: **exploring**. The information architecture is approved (2026-10-12).
+The Lock is approved as a draft and becomes binding when a direction is locked.
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
 consolidated brief from the first exploration (2026-10-12) as decision history.
 
-## 1. Information architecture (proposed — awaiting approval)
+## 1. Information architecture (approved 2026-10-12)
 
 ### 1.1 Tabs
 
@@ -46,7 +46,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Queue | Ranked cards, top card expanded | "0 patterns" label | Card skeletons | Unavailable + Retry | A card expanded; mid-swipe; just snoozed (bar "Snoozed · Until <date>" + Undo); Snoozed footer when N > 0 |
 | Queue · Snoozed | Rows "Until <date>" + Restore | Not reachable (the footer is hidden at 0) | — | Unavailable + Retry | Restored (row leaves) |
 | Queue · setting detail | current → estimate, range, n, chart | — | Chart skeleton | Unavailable | — |
-| Changes | Active Trial or Focus + last change | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); Ending (see question 2) |
+| Changes | Active Trial or Focus + last change | "No active change" label | Skeleton | Unavailable + Retry | Maturing; Matured (result pill); **End** (Focus: anytime; Trial: once matured) → confirm sheet → ended |
 | Overview | 14 d selected | "No data" label per window | Skeleton | Unavailable + Retry | 30 d / 90 d selected |
 | Day | Latest day with data | "No data" for a day without readings | Chart skeleton | Unavailable + Retry | Week strip; Month sheet; Prompts row when count > 0 |
 | Day · Prompts | One prompt, "n / N" | Not reachable (the row is hidden at 0) | — | Not saved + Retry | Yes → grams field and keyboard; mid-swipe Not sure |
@@ -55,6 +55,17 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Settings · Tandem Source | Sync rows + account rows | Account "Not set" + Update | — | — | Updating credentials |
 | Settings · Pump profile | The active profile's segments | "No profile" label | — | — | — |
 | Settings · Glossary | Alphabetical terms | — | — | — | — |
+
+### 1.3a Ending a change (decided 2026-10-12)
+- **End** is a compact secondary action on the active change. There is no note
+  field: the engine accepts an optional free-text conclusion, but the app never
+  sends one.
+- **Focus:** End is available at any time (`POST /api/focus/{id}/resolve`).
+- **Trial:** End appears once the change has matured
+  (`POST /api/verify/trials/{id}/finish`). The engine refuses it before then
+  (`immature_trial`). To end a Trial early, put the previous value back on the
+  pump; the engine closes it as reverted on its own.
+- Ending is one tap, then a confirm sheet with **End** as its only primary.
 
 ### 1.4 Touch gestures and their desktop equivalents
 
@@ -92,6 +103,7 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
 | **Yes / No / False low / Not sure** | answer | A Prompt's answers. False low marks the reading itself as invalid. |
 | **Log carbs** | verb | Record carbs eaten without a bolus. |
+| **End** | verb | Stop watching the active change. |
 | **Recorded** | state | An answer or entry was saved. |
 | **In range, Below 70, Above 180, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
@@ -99,7 +111,7 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 
 Any term not in this table may not appear in the UI.
 
-## 2. Lock (draft — becomes binding at approval)
+## 2. Lock (approved draft — binding once a direction is locked)
 
 ### 2.1 Tokens (from the running app, `frontend/material.css` `:root`)
 
@@ -124,8 +136,8 @@ Any term not in this table may not appear in the UI.
 | Manual carb | `--manual-carb` | #d2743e |
 | Radius | `--radius` | 4px |
 
-- The app is dark-only (`color-scheme: dark`). The exploration mockups used a
-  light palette; see question 1.
+- **Dark only** (`color-scheme: dark`), decided 2026-10-12. The light palette
+  used by the exploration mockups is retired.
 - Font: Inter, then the system stack.
 - Type scale, five steps with tabular numerals: 34 / 22 / 17 / 13 / 11 px.
 - Spacing: a 4/8 grid. Side margin 16 phone, 24 tablet, 32 desktop.
@@ -162,7 +174,7 @@ Any term not in this table may not appear in the UI.
 
 ### 2.4 Approved screen list
 The inventory in §1.3, with phone screens at 390 px and desktop at 1440 px.
-Tablet follows desktop's structure at 1180 px. Approval is pending.
+Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
 
 ## 3. Files beside this document
 - `build.py`: the exploration generator. It reads captured API answers, which are not committed.

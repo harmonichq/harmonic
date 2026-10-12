@@ -1,0 +1,1500 @@
+screen	label	value	source
+1 · Queue	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+1 · Queue	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+1 · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+1 · Queue	1	1	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+1 · Queue	Wide	Wide	guidance.candidates[pattern:highs_after_meals].support.wide = true
+1 · Queue	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+1 · Queue	Meals ran high	Meals ran high	findings.rows[id=pattern:highs_after_meals].count_sentences[noun=meals].noun + .outcome
+1 · Queue	Range	Range	UI label (no data)
+1 · Queue	19–27%	19–27%	findings.outcome_patterns[key=highs_after_meals].wilson.lo/.hi (same k/n as headline)
+1 · Queue	Carb undercount	Carb undercount	guidance.candidates[pattern:highs_after_meals].members[habit:carb_undercount].title
+1 · Queue	22 / 150	22 / 150	findings.rows[id=finding:carb_undercount].fold_sentences[scope=pattern].count / .denominator
+1 · Queue	Late bolus	Late bolus	guidance.candidates[pattern:highs_after_meals].members[habit:late_bolus].title
+1 · Queue	8 / 150	8 / 150	findings.rows[id=finding:late_bolus].fold_sentences[scope=pattern].count / .denominator
+1 · Queue	High-carb sequences	High-carb sequences	guidance.candidates[pattern:highs_after_meals].members[habit:high_carb_sequence].title (plural)
+1 · Queue	9 / 35	9 / 35	findings.rows[id=finding:high_carb_sequence].fold_sentences[scope=outside].count / .denominator
+1 · Queue	less in range	less in range	findings.rows[id=finding:high_carb_sequence].fold_sentences[0].outcome (ran less in range)
+1 · Queue	17–36%	17–36%	guidance.candidates[pattern:highs_after_meals].support.lo/.hi (k=9, n=35 = this line)
+1 · Queue	Episodes	Episodes	UI label (no data)
+1 · Queue	31 Aug 22:15	31 Aug 22:15	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.event_refs[0]
+1 · Queue	308	308	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.glucose_mgdl
+1 · Queue	169	169	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[resolution].facts.glucose_mgdl
+1 · Queue	Peak	Peak	UI label (no data)
+1 · Queue	mg/dL	mg/dL	UI label (no data)
+1 · Queue	19 Sep 20:06	19 Sep 20:06	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.event_refs[0]
+1 · Queue	270	270	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.glucose_mgdl
+1 · Queue	167	167	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[resolution].facts.glucose_mgdl
+1 · Queue	12 Sep 23:38	12 Sep 23:38	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.event_refs[0]
+1 · Queue	43	43	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.glucose_mgdl
+1 · Queue	76	76	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[resolution].facts.glucose_mgdl
+1 · Queue	Nadir	Nadir	UI label (no data)
+1 · Queue	Pin	Pin	UI action: POST /api/focus (pattern_key)
+1 · Queue	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+1 · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+1 · Queue	2	2	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+1 · Queue	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+1 · Queue	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+1 · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+1 · Queue	3	3	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+1 · Queue	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+1 · Queue	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+1 · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+1 · Queue	4	4	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+1 · Queue	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+1 · Queue	3	3	derived: count prompts.json[] where answer = null
+1 · Queue	!	!	status.json last_error != null (alert badge)
+2 · Queue · card 2	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+2 · Queue · card 2	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+2 · Queue · card 2	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+2 · Queue · card 2	1	1	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+2 · Queue · card 2	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+2 · Queue · card 2	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+2 · Queue · card 2	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+2 · Queue · card 2	2	2	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+2 · Queue · card 2	Wide	Wide	guidance.candidates[pattern:highs_after_treating_lows].support.wide = true
+2 · Queue · card 2	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+2 · Queue · card 2	Lows rebounded high	Lows rebounded high	findings.rows[id=finding:over_treated_low].count_sentences[noun=lows].noun + .outcome
+2 · Queue · card 2	Range	Range	UI label (no data)
+2 · Queue · card 2	10–24%	10–24%	findings.outcome_patterns[key=highs_after_treating_lows].wilson.lo/.hi (same k/n as headline)
+2 · Queue · card 2	Episodes	Episodes	UI label (no data)
+2 · Queue · card 2	20 Sep 03:26	20 Sep 03:26	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-143].citations[peak].facts.event_refs[0]
+2 · Queue · card 2	400	400	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-143].citations[peak].facts.glucose_mgdl
+2 · Queue · card 2	255	255	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-143].citations[resolution].facts.glucose_mgdl
+2 · Queue · card 2	Peak	Peak	UI label (no data)
+2 · Queue · card 2	mg/dL	mg/dL	UI label (no data)
+2 · Queue · card 2	28 Sep 19:17	28 Sep 19:17	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-201].citations[peak].facts.event_refs[0]
+2 · Queue · card 2	307	307	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-201].citations[peak].facts.glucose_mgdl
+2 · Queue · card 2	154	154	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-201].citations[resolution].facts.glucose_mgdl
+2 · Queue · card 2	5 Sep 18:43	5 Sep 18:43	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-034].citations[peak].facts.event_refs[0]
+2 · Queue · card 2	215	215	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-034].citations[peak].facts.glucose_mgdl
+2 · Queue · card 2	111	111	guidance.candidates[pattern:highs_after_treating_lows].evidence[episode_id=ep-034].citations[resolution].facts.glucose_mgdl
+2 · Queue · card 2	Pin	Pin	UI action: POST /api/focus (pattern_key)
+2 · Queue · card 2	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+2 · Queue · card 2	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+2 · Queue · card 2	3	3	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+2 · Queue · card 2	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+2 · Queue · card 2	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+2 · Queue · card 2	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+2 · Queue · card 2	4	4	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+2 · Queue · card 2	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+2 · Queue · card 2	3	3	derived: count prompts.json[] where answer = null
+2 · Queue · card 2	!	!	status.json last_error != null (alert badge)
+3 · Queue · snoozed toast	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+3 · Queue · snoozed toast	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+3 · Queue · snoozed toast	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+3 · Queue · snoozed toast	1	1	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+3 · Queue · snoozed toast	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+3 · Queue · snoozed toast	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+3 · Queue · snoozed toast	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+3 · Queue · snoozed toast	2	2	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+3 · Queue · snoozed toast	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+3 · Queue · snoozed toast	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+3 · Queue · snoozed toast	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+3 · Queue · snoozed toast	3	3	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+3 · Queue · snoozed toast	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+3 · Queue · snoozed toast	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	UI icon: snooze
+3 · Queue · snoozed toast	Snoozed	Snoozed	UI label (no data)
+3 · Queue · snoozed toast	Until	Until	UI label (no data)
+3 · Queue · snoozed toast	26 Oct	26 Oct	derived: today + 14 d
+3 · Queue · snoozed toast	Undo	Undo	UI action: DELETE /api/guidance/preferences/{subject}
+3 · Queue · snoozed toast	3	3	derived: count prompts.json[] where answer = null
+3 · Queue · snoozed toast	!	!	status.json last_error != null (alert badge)
+4 · Queue · snoozed list (example)	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+4 · Queue · snoozed list (example)	Highs after treating lows	Highs after treating lows	example state; guidance.candidates[pattern:highs_after_treating_lows].title
+4 · Queue · snoozed list (example)	Restore	Restore	UI label (no data)
+4 · Queue · snoozed list (example)	Until	Until	UI label (no data)
+4 · Queue · snoozed list (example)	26 Oct	26 Oct	example state; derived: today + 14 d
+4 · Queue · snoozed list (example)	7 / 45	7 / 45	example state; findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+4 · Queue · snoozed list (example)	3	3	derived: count prompts.json[] where answer = null
+4 · Queue · snoozed list (example)	!	!	status.json last_error != null (alert badge)
+5 · Queue · setting (example)	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+5 · Queue · setting (example)	07:00	07:00	example state (setting not admitted today); analyze.json basal[label=07:00].label
+5 · Queue · setting (example)	1.037	1.037	example state (setting not admitted today); analyze.json basal[07:00].current
+5 · Queue · setting (example)	1.164	1.164	example state (setting not admitted today); analyze.json basal[07:00].estimate.value
+5 · Queue · setting (example)	1.037–1.392	1.037–1.392	example state (setting not admitted today); analyze.json basal[07:00].estimate.lo/.hi
+5 · Queue · setting (example)	19 days	19 days	example state (setting not admitted today); analyze.json basal[07:00].days
+5 · Queue · setting (example)	07:30	07:30	example state (setting not admitted today); analyze.json basal[label=07:30].label
+5 · Queue · setting (example)	1.244	1.244	example state (setting not admitted today); analyze.json basal[07:30].current
+5 · Queue · setting (example)	1.434	1.434	example state (setting not admitted today); analyze.json basal[07:30].estimate.value
+5 · Queue · setting (example)	1.244–1.748	1.244–1.748	example state (setting not admitted today); analyze.json basal[07:30].estimate.lo/.hi
+5 · Queue · setting (example)	19 days	19 days	example state (setting not admitted today); analyze.json basal[07:30].days
+5 · Queue · setting (example)	Slot	Slot	UI label (no data)
+5 · Queue · setting (example)	U/h	U/h	UI label (no data)
+5 · Queue · setting (example)	Range	Range	UI label (no data)
+5 · Queue · setting (example)	n	n	UI label (no data)
+5 · Queue · setting (example)	05	05	axis label
+5 · Queue · setting (example)	07	07	axis label
+5 · Queue · setting (example)	09	09	axis label
+5 · Queue · setting (example)	setting chart	chart	example state (setting not admitted today); analyze.json basal[05:00..09:30] current (step), estimate.value (bar), estimate.lo/.hi (band)
+5 · Queue · setting (example)	1.5	1.5	axis label
+5 · Queue · setting (example)	0.5	0.5	axis label
+5 · Queue · setting (example)	Current	Current	UI label (no data)
+5 · Queue · setting (example)	Estimate	Estimate	UI label (no data)
+5 · Queue · setting (example)	Setting	Setting	example state (setting not admitted today); kind
+5 · Queue · setting (example)	Basal	Basal	example state (setting not admitted today); guidance.candidates[setting:basal_rate].title
+5 · Queue · setting (example)	07:00–08:00	07:00–08:00	example state (setting not admitted today); analyze.json basal slots 07:00, 07:30
+5 · Queue · setting (example)	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+5 · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+5 · Queue · setting (example)	1	1	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+5 · Queue · setting (example)	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+5 · Queue · setting (example)	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+5 · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+5 · Queue · setting (example)	2	2	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+5 · Queue · setting (example)	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+5 · Queue · setting (example)	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+5 · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+5 · Queue · setting (example)	3	3	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+5 · Queue · setting (example)	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+5 · Queue · setting (example)	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+5 · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+5 · Queue · setting (example)	4	4	derived: rank of guidance.candidates where admitted ∧ ¬preference.set_aside, sorted by −priority
+5 · Queue · setting (example)	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+5 · Queue · setting (example)	3	3	derived: count prompts.json[] where answer = null
+5 · Queue · setting (example)	!	!	status.json last_error != null (alert badge)
+6 · Changes (example)	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+6 · Changes (example)	Trial	Trial	example state (Trial not yet created: no data since the change); kind
+6 · Changes (example)	since	since	UI label (no data)
+6 · Changes (example)	12 Oct	12 Oct	example state (Trial not yet created: no data since the change); findings.rows[ich1_WzQyMCw2NjAsIjQiXQ].regime_end
+6 · Changes (example)	Maturing	Maturing	example state (Trial not yet created: no data since the change); derived: 0 post-change data days < days_required
+6 · Changes (example)	Carb ratio	Carb ratio	example state (Trial not yet created: no data since the change); guidance.candidates[setting:carb_ratio].title
+6 · Changes (example)	07:00–11:00	07:00–11:00	example state (Trial not yet created: no data since the change); findings.rows[ich1_WzQyMCw2NjAsIjQiXQ].span
+6 · Changes (example)	4 → 4.4	4 → 4.4	example state (Trial not yet created: no data since the change); findings.rows[ich1_WzQyMCw2NjAsIjQiXQ].past_setting → .programmed_now
+6 · Changes (example)	g/U	g/U	example state (Trial not yet created: no data since the change); guidance.candidates[setting:carb_ratio].units
+6 · Changes (example)	Days	Days	UI label (no data)
+6 · Changes (example)	0	0	example state (Trial not yet created: no data since the change); derived: status.latest_data_day 2026-09-30 precedes regime_end 2026-10-12
+6 · Changes (example)	14	14	example state (Trial not yet created: no data since the change); trials.json trials[].maturing.days_required
+6 · Changes (example)	In range	In range	UI label (no data)
+6 · Changes (example)	65.9%	65.9%	example state (Trial not yet created: no data since the change); outcomes_14.metrics.tir
+6 · Changes (example)	—	—	no post-change data
+6 · Changes (example)	Below 70	Below 70	UI label (no data)
+6 · Changes (example)	0.6%	0.6%	example state (Trial not yet created: no data since the change); outcomes_14.metrics.tbr_lvl1
+6 · Changes (example)	Above 180	Above 180	UI label (no data)
+6 · Changes (example)	33.5%	33.5%	example state (Trial not yet created: no data since the change); outcomes_14.metrics.tar_lvl1
+6 · Changes (example)	Mean	Mean	UI label (no data)
+6 · Changes (example)	169 mg/dL	169 mg/dL	example state (Trial not yet created: no data since the change); outcomes_14.metrics.mean_glucose (rounded)
+6 · Changes (example)	Before 14 d	Before 14 d	outcomes_14 window
+6 · Changes (example)	After	After	UI label (no data)
+6 · Changes (example)	Last change	Last change	UI label (no data)
+6 · Changes (example)	Trial	Trial	trials.json trials[id=profile-all-20260805024315] (trials.json = Trials)
+6 · Changes (example)	Profile	Profile	trials.json trials[id=profile-all-20260805024315].parameter
+6 · Changes (example)	5 Aug	5 Aug	trials.json trials[id=profile-all-20260805024315].changed_at
+6 · Changes (example)	Unclear	Unclear	trials.json trials[id=profile-all-20260805024315].ending.assessment.outcomes[key=tir].assessment.state
+6 · Changes (example)	81.4% → 77.7%	81.4% → 77.7%	trials.json trials[id=profile-all-20260805024315].ending.assessment.outcomes[tir].before → .after
+6 · Changes (example)	3.7 pts	3.7 pts	trials.json trials[id=profile-all-20260805024315].outcomes[tir].difference
+6 · Changes (example)	3	3	derived: count prompts.json[] where answer = null
+6 · Changes (example)	!	!	status.json last_error != null (alert badge)
+7 · Overview	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+7 · Overview	To	To	UI label (no data)
+7 · Overview	30 Sep	30 Sep	outcomes_14.span_end
+7 · Overview	14 d	14 d	UI label (no data)
+7 · Overview	30 d	30 d	UI label (no data)
+7 · Overview	90 d	90 d	UI label (no data)
+7 · Overview	65.9%	65.9%	outcomes_14.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+7 · Overview	71.4%	71.4%	outcomes_30.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+7 · Overview	78.1%	78.1%	outcomes_90.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+7 · Overview	&lt;70	&lt;70	band label: outcomes metric level definition (openspec outcomes spec)
+7 · Overview	70–180	70–180	band label: outcomes metric level definition (openspec outcomes spec)
+7 · Overview	&gt;180	&gt;180	band label: outcomes metric level definition (openspec outcomes spec)
+7 · Overview	&gt;250	&gt;250	band label: outcomes metric level definition (openspec outcomes spec)
+7 · Overview	In range · 14 d	In range · 14 d	UI label (no data)
+7 · Overview	12.2 pts vs 90 d	12.2 pts vs 90 d	derived: outcomes_90.tir − outcomes_14.tir
+7 · Overview	65.9	65.9	outcomes_14.metrics.tir
+7 · Overview	Δ 14 / 90	Δ 14 / 90	UI label (no data)
+7 · Overview	0.6%	0.6%	outcomes_14.metrics.tbr_lvl1
+7 · Overview	1.0%	1.0%	outcomes_30.metrics.tbr_lvl1
+7 · Overview	1.8%	1.8%	outcomes_90.metrics.tbr_lvl1
+7 · Overview	Below 70	Below 70	UI label (no data)
+7 · Overview	1.2	1.2	derived: 14 d − 90 d
+7 · Overview	33.5%	33.5%	outcomes_14.metrics.tar_lvl1
+7 · Overview	27.6%	27.6%	outcomes_30.metrics.tar_lvl1
+7 · Overview	20.0%	20.0%	outcomes_90.metrics.tar_lvl1
+7 · Overview	Above 180	Above 180	UI label (no data)
+7 · Overview	13.5	13.5	derived: 14 d − 90 d
+7 · Overview	169	169	outcomes_14.metrics.mean_glucose
+7 · Overview	157	157	outcomes_30.metrics.mean_glucose
+7 · Overview	147	147	outcomes_90.metrics.mean_glucose
+7 · Overview	Mean	Mean	UI label (no data)
+7 · Overview	22	22	derived: 14 d − 90 d
+7 · Overview	150	150	prototype
+7 · Overview	142	142	prototype
+7 · Overview	136	136	prototype
+7 · Overview	Pre-meal	Pre-meal	UI label (no data)
+7 · Overview	14	14	prototype (derived 14 d − 90 d)
+7 · Overview	170	170	prototype
+7 · Overview	161	161	prototype
+7 · Overview	141	141	prototype
+7 · Overview	Post-meal 2 h	Post-meal 2 h	UI label (no data)
+7 · Overview	29	29	prototype (derived 14 d − 90 d)
+7 · Overview	Time of day	Time of day	UI label (no data)
+7 · Overview	30 d	30 d	time_of_day.window.data_days
+7 · Overview	mg/dL	mg/dL	UI label (no data)
+7 · Overview	00–06	00–06	block label
+7 · Overview	140	140	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+7 · Overview	06–12	06–12	block label
+7 · Overview	134	134	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+7 · Overview	12–18	12–18	block label
+7 · Overview	144	144	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+7 · Overview	18–24	18–24	block label
+7 · Overview	167	167	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+7 · Overview	40	40	axis label
+7 · Overview	70	70	axis label
+7 · Overview	180	180	axis label
+7 · Overview	300	300	axis label
+7 · Overview	3	3	derived: count prompts.json[] where answer = null
+7 · Overview	!	!	status.json last_error != null (alert badge)
+8 · Day	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+8 · Day	Mean	Mean	UI label (no data)
+8 · Day	142	142	derived: mean(timeline.cgm[].bg)
+8 · Day	mg/dL	mg/dL	UI label (no data)
+8 · Day	In range	In range	UI label (no data)
+8 · Day	85	85	derived: share of timeline.cgm[].bg within time_of_day.target_range
+8 · Day	%	%	UI label (no data)
+8 · Day	Carbs	Carbs	UI label (no data)
+8 · Day	163	163	derived: sum timeline.boluses[].carbs
+8 · Day	g	g	UI label (no data)
+8 · Day	Insulin	Insulin	UI label (no data)
+8 · Day	56.8	56.8	derived: sum timeline.boluses[].insulin + sum basal[].basal_rate×duration_mins/60
+8 · Day	U	U	UI label (no data)
+8 · Day	70	70	axis label
+8 · Day	180	180	axis label
+8 · Day	250	250	axis label
+8 · Day	2	2	axis label
+8 · Day	0 U/h	0 U/h	axis label
+8 · Day	00	00	axis label
+8 · Day	06	06	axis label
+8 · Day	12	12	axis label
+8 · Day	18	18	axis label
+8 · Day	24	24	axis label
+8 · Day	Day chart	glucose line, bolus markers, basal bars	timeline_2026-09-29 cgm[] (every 2nd point), boluses[] (carbs≠null = meal), basal[] hourly sums of basal_rate vs profile_basal_rate, pump_events[], sleep_windows[]
+8 · Day	Meal bolus	Meal bolus	UI label (no data)
+8 · Day	Bolus, no carbs	Bolus, no carbs	UI label (no data)
+8 · Day	Suspend	Suspend	UI label (no data)
+8 · Day	Basal	Basal	UI label (no data)
+8 · Day	Programmed	Programmed	UI label (no data)
+8 · Day	Sleep	Sleep	UI label (no data)
+8 · Day	Logged carbs	Logged carbs	UI label (no data)
+8 · Day	0	0	derived: count carbs.json carb_entries[] on 2026-09-29
+8 · Day	06:34	06:34	timeline.boluses[].t
+8 · Day	Meal	Meal	UI label (no data)
+8 · Day	18 g	18 g	timeline.boluses[].carbs
+8 · Day	3.45 U	3.45 U	timeline.boluses[].insulin
+8 · Day	10:13	10:13	timeline.boluses[].t
+8 · Day	35 g	35 g	timeline.boluses[].carbs
+8 · Day	9.35 U	9.35 U	timeline.boluses[].insulin
+8 · Day	15:45	15:45	timeline.boluses[].t
+8 · Day	6.72 U	6.72 U	timeline.boluses[].insulin
+8 · Day	16:18	16:18	timeline.boluses[].t
+8 · Day	6.25 U	6.25 U	timeline.boluses[].insulin
+8 · Day	21:28	21:28	timeline.boluses[].t
+8 · Day	25 g	25 g	timeline.boluses[].carbs
+8 · Day	4.83 U	4.83 U	timeline.boluses[].insulin
+8 · Day	21:33	21:33	timeline.boluses[].t
+8 · Day	15 g	15 g	timeline.boluses[].carbs
+8 · Day	2.68 U	2.68 U	timeline.boluses[].insulin
+8 · Day	<span class="lbtn"><b>+</b> Log carbs</span>	<span class="lbtn"><b>+</b> Log carbs</span>	UI control: opens Log carbs (POST /api/carbs)
+8 · Day	Lows	Lows	prompts.json[].detector = low
+8 · Day	3	3	derived: count prompts.json[] where answer = null
+8 · Day	Sep 2026	Sep 2026	day_navigator_2026-09.json month
+8 · Day	S	S	weekday label
+8 · Day	27	27	day_navigator_2026-09.json days[iso=2026-09-27].iso
+8 · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-27].curve[] (sparkline)
+8 · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-27].highs
+8 · Day	70%	70%	day_navigator_2026-09.json days[iso=2026-09-27].tir
+8 · Day	M	M	weekday label
+8 · Day	28	28	day_navigator_2026-09.json days[iso=2026-09-28].iso
+8 · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-28].curve[] (sparkline)
+8 · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-28].lows
+8 · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-28].highs
+8 · Day	63%	63%	day_navigator_2026-09.json days[iso=2026-09-28].tir
+8 · Day	T	T	weekday label
+8 · Day	29	29	day_navigator_2026-09.json days[iso=2026-09-29].iso
+8 · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-29].curve[] (sparkline)
+8 · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-29].highs
+8 · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-29].tir
+8 · Day	W	W	weekday label
+8 · Day	30	30	day_navigator_2026-09.json days[iso=2026-09-30].iso
+8 · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-30].curve[] (sparkline)
+8 · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-30].highs
+8 · Day	44%	44%	day_navigator_2026-09.json days[iso=2026-09-30].tir
+8 · Day	1	1	day_navigator_2026-09.json days[iso=2026-10-01].iso
+8 · Day	F	F	weekday label
+8 · Day	2	2	day_navigator_2026-09.json days[iso=2026-10-02].iso
+8 · Day	3	3	day_navigator_2026-09.json days[iso=2026-10-03].iso
+8 · Day	!	!	status.json last_error != null (alert badge)
+9 · Day · month	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+9 · Day · month	<span class="lbtn"><b>+</b> Log carbs</span>	<span class="lbtn"><b>+</b> Log carbs</span>	UI control: opens Log carbs
+9 · Day · month	September 2026	September 2026	day_navigator_2026-09.json month
+9 · Day · month	S	S	weekday label
+9 · Day · month	M	M	weekday label
+9 · Day · month	T	T	weekday label
+9 · Day · month	W	W	weekday label
+9 · Day · month	F	F	weekday label
+9 · Day · month	Lows	Lows	UI label (no data)
+9 · Day · month	Highs	Highs	UI label (no data)
+9 · Day · month	Clean	Clean	UI label (no data)
+9 · Day · month	% in range	% in range	UI label (no data)
+9 · Day · month	30	30	day_navigator_2026-09.json days[iso=2026-08-30].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-30].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-08-30].lows
+9 · Day · month	8	8	day_navigator_2026-09.json days[iso=2026-08-30].highs
+9 · Day · month	37%	37%	day_navigator_2026-09.json days[iso=2026-08-30].tir
+9 · Day · month	31	31	day_navigator_2026-09.json days[iso=2026-08-31].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-31].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-08-31].lows
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-08-31].highs
+9 · Day · month	77%	77%	day_navigator_2026-09.json days[iso=2026-08-31].tir
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-01].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-01].curve[] (sparkline)
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-01].highs
+9 · Day · month	83%	83%	day_navigator_2026-09.json days[iso=2026-09-01].tir
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-02].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-02].curve[] (sparkline)
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-02].lows
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-02].highs
+9 · Day · month	92%	92%	day_navigator_2026-09.json days[iso=2026-09-02].tir
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-03].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-03].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-03].lows
+9 · Day · month	9	9	day_navigator_2026-09.json days[iso=2026-09-03].highs
+9 · Day · month	76%	76%	day_navigator_2026-09.json days[iso=2026-09-03].tir
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-09-04].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-04].curve[] (sparkline)
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-04].highs
+9 · Day · month	74%	74%	day_navigator_2026-09.json days[iso=2026-09-04].tir
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-05].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-05].curve[] (sparkline)
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-05].highs
+9 · Day · month	85%	85%	day_navigator_2026-09.json days[iso=2026-09-05].tir
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-06].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-06].curve[] (sparkline)
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-06].highs
+9 · Day · month	80%	80%	day_navigator_2026-09.json days[iso=2026-09-06].tir
+9 · Day · month	7	7	day_navigator_2026-09.json days[iso=2026-09-07].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-07].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-07].lows
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-07].highs
+9 · Day · month	66%	66%	day_navigator_2026-09.json days[iso=2026-09-07].tir
+9 · Day · month	8	8	day_navigator_2026-09.json days[iso=2026-09-08].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-08].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-08].highs
+9 · Day · month	97%	97%	day_navigator_2026-09.json days[iso=2026-09-08].tir
+9 · Day · month	9	9	day_navigator_2026-09.json days[iso=2026-09-09].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-09].curve[] (sparkline)
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-09].highs
+9 · Day · month	82%	82%	day_navigator_2026-09.json days[iso=2026-09-09].tir
+9 · Day · month	10	10	day_navigator_2026-09.json days[iso=2026-09-10].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-10].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-10].lows
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-09-10].highs
+9 · Day · month	62%	62%	day_navigator_2026-09.json days[iso=2026-09-10].tir
+9 · Day · month	11	11	day_navigator_2026-09.json days[iso=2026-09-11].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-11].curve[] (sparkline)
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-11].lows
+9 · Day · month	98%	98%	day_navigator_2026-09.json days[iso=2026-09-11].tir
+9 · Day · month	12	12	day_navigator_2026-09.json days[iso=2026-09-12].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-12].curve[] (sparkline)
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-12].lows
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-12].highs
+9 · Day · month	83%	83%	day_navigator_2026-09.json days[iso=2026-09-12].tir
+9 · Day · month	13	13	day_navigator_2026-09.json days[iso=2026-09-13].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-13].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-13].lows
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-13].highs
+9 · Day · month	56%	56%	day_navigator_2026-09.json days[iso=2026-09-13].tir
+9 · Day · month	14	14	day_navigator_2026-09.json days[iso=2026-09-14].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-14].curve[] (sparkline)
+9 · Day · month	7	7	day_navigator_2026-09.json days[iso=2026-09-14].lows
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-14].highs
+9 · Day · month	62%	62%	day_navigator_2026-09.json days[iso=2026-09-14].tir
+9 · Day · month	15	15	day_navigator_2026-09.json days[iso=2026-09-15].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-15].curve[] (sparkline)
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-15].lows
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-15].highs
+9 · Day · month	68%	68%	day_navigator_2026-09.json days[iso=2026-09-15].tir
+9 · Day · month	16	16	day_navigator_2026-09.json days[iso=2026-09-16].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-16].curve[] (sparkline)
+9 · Day · month	9	9	day_navigator_2026-09.json days[iso=2026-09-16].highs
+9 · Day · month	49%	49%	day_navigator_2026-09.json days[iso=2026-09-16].tir
+9 · Day · month	17	17	day_navigator_2026-09.json days[iso=2026-09-17].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-17].curve[] (sparkline)
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-09-17].lows
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-17].highs
+9 · Day · month	66%	66%	day_navigator_2026-09.json days[iso=2026-09-17].tir
+9 · Day · month	18	18	day_navigator_2026-09.json days[iso=2026-09-18].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-18].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-18].lows
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-18].highs
+9 · Day · month	52%	52%	day_navigator_2026-09.json days[iso=2026-09-18].tir
+9 · Day · month	19	19	day_navigator_2026-09.json days[iso=2026-09-19].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-19].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-19].lows
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-09-19].highs
+9 · Day · month	62%	62%	day_navigator_2026-09.json days[iso=2026-09-19].tir
+9 · Day · month	20	20	day_navigator_2026-09.json days[iso=2026-09-20].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-20].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-20].lows
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-20].highs
+9 · Day · month	60%	60%	day_navigator_2026-09.json days[iso=2026-09-20].tir
+9 · Day · month	21	21	day_navigator_2026-09.json days[iso=2026-09-21].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-21].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-21].lows
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-21].highs
+9 · Day · month	88%	88%	day_navigator_2026-09.json days[iso=2026-09-21].tir
+9 · Day · month	22	22	day_navigator_2026-09.json days[iso=2026-09-22].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-22].curve[] (sparkline)
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-09-22].highs
+9 · Day · month	49%	49%	day_navigator_2026-09.json days[iso=2026-09-22].tir
+9 · Day · month	23	23	day_navigator_2026-09.json days[iso=2026-09-23].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-23].curve[] (sparkline)
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-23].highs
+9 · Day · month	87%	87%	day_navigator_2026-09.json days[iso=2026-09-23].tir
+9 · Day · month	24	24	day_navigator_2026-09.json days[iso=2026-09-24].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-24].curve[] (sparkline)
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-24].highs
+9 · Day · month	85%	85%	day_navigator_2026-09.json days[iso=2026-09-24].tir
+9 · Day · month	25	25	day_navigator_2026-09.json days[iso=2026-09-25].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-25].curve[] (sparkline)
+9 · Day · month	4	4	day_navigator_2026-09.json days[iso=2026-09-25].highs
+9 · Day · month	46%	46%	day_navigator_2026-09.json days[iso=2026-09-25].tir
+9 · Day · month	26	26	day_navigator_2026-09.json days[iso=2026-09-26].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-26].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-26].lows
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-26].highs
+9 · Day · month	74%	74%	day_navigator_2026-09.json days[iso=2026-09-26].tir
+9 · Day · month	27	27	day_navigator_2026-09.json days[iso=2026-09-27].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-27].curve[] (sparkline)
+9 · Day · month	5	5	day_navigator_2026-09.json days[iso=2026-09-27].highs
+9 · Day · month	70%	70%	day_navigator_2026-09.json days[iso=2026-09-27].tir
+9 · Day · month	28	28	day_navigator_2026-09.json days[iso=2026-09-28].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-28].curve[] (sparkline)
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-09-28].lows
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-28].highs
+9 · Day · month	63%	63%	day_navigator_2026-09.json days[iso=2026-09-28].tir
+9 · Day · month	29	29	day_navigator_2026-09.json days[iso=2026-09-29].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-29].curve[] (sparkline)
+9 · Day · month	6	6	day_navigator_2026-09.json days[iso=2026-09-29].highs
+9 · Day · month	85%	85%	day_navigator_2026-09.json days[iso=2026-09-29].tir
+9 · Day · month	30	30	day_navigator_2026-09.json days[iso=2026-09-30].iso
+9 · Day · month	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-30].curve[] (sparkline)
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-09-30].highs
+9 · Day · month	44%	44%	day_navigator_2026-09.json days[iso=2026-09-30].tir
+9 · Day · month	1	1	day_navigator_2026-09.json days[iso=2026-10-01].iso
+9 · Day · month	2	2	day_navigator_2026-09.json days[iso=2026-10-02].iso
+9 · Day · month	3	3	day_navigator_2026-09.json days[iso=2026-10-03].iso
+9 · Day · month	3	3	derived: count prompts.json[] where answer = null
+9 · Day · month	!	!	status.json last_error != null (alert badge)
+10 · Day · prompt	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+10 · Day · prompt	1 / 3	1 / 3	derived: position of first unanswered prompt / count prompts.json[] where answer = null
+10 · Day · prompt	Low	Low	prompts.json[anchor_t=2026-09-26 13:27:35].detector
+10 · Day · prompt	26 Sep 13:27	26 Sep 13:27	prompts.json[anchor_t=2026-09-26 13:27:35].anchor_t
+10 · Day · prompt	69	69	prompts.json[anchor_t=2026-09-26 13:27:35].key_bg
+10 · Day · prompt	mg/dL	mg/dL	UI label (no data)
+10 · Day · prompt	sparkline	trace	prompts.json[anchor_t=2026-09-26 13:27:35].cgm[] (sparkline)
+10 · Day · prompt	70	70	axis label
+10 · Day · prompt	11:32	11:32	prompts.json[].cgm[0].t
+10 · Day · prompt	15:27	15:27	prompts.json[].cgm[-1].t
+10 · Day · prompt	Carbs	Carbs	UI label (no data)
+10 · Day · prompt	Yes	Yes	POST /api/prompts/answer answer carbs, grams null, certainty unknown
+10 · Day · prompt	No	No	POST /api/prompts/answer answer no
+10 · Day · prompt	False low	False low	POST /api/prompts/answer answer false-low (low detector only)
+10 · Day · prompt	swipe	swipe = Not sure	UI gesture: swipe active prompt → POST /api/prompts/answer {answer: not-sure}
+10 · Day · prompt	3	3	derived: count prompts.json[] where answer = null
+10 · Day · prompt	!	!	status.json last_error != null (alert badge)
+11 · Day · prompt · grams	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+11 · Day · prompt · grams	1 / 3	1 / 3	derived: position of first unanswered prompt / count prompts.json[] where answer = null
+11 · Day · prompt · grams	Low	Low	prompts.json[anchor_t=2026-09-26 13:27:35].detector
+11 · Day · prompt · grams	26 Sep 13:27	26 Sep 13:27	prompts.json[anchor_t=2026-09-26 13:27:35].anchor_t
+11 · Day · prompt · grams	69	69	prompts.json[anchor_t=2026-09-26 13:27:35].key_bg
+11 · Day · prompt · grams	mg/dL	mg/dL	UI label (no data)
+11 · Day · prompt · grams	sparkline	trace	prompts.json[anchor_t=2026-09-26 13:27:35].cgm[] (sparkline)
+11 · Day · prompt · grams	70	70	axis label
+11 · Day · prompt · grams	11:32	11:32	prompts.json[].cgm[0].t
+11 · Day · prompt · grams	15:27	15:27	prompts.json[].cgm[-1].t
+11 · Day · prompt · grams	Carbs	Carbs	UI label (no data)
+11 · Day · prompt · grams	Yes	Yes	answer carbs: POST /api/prompts/answer {answer: carbs, entry: {grams: null, certainty: unknown}}
+11 · Day · prompt · grams	Recorded	Recorded	UI label (no data)
+11 · Day · prompt · grams	Grams	Grams	UI label (no data)
+11 · Day · prompt · grams	Optional	Optional	UI label (no data)
+11 · Day · prompt · grams	0	0	input placeholder; PATCH /api/carbs/{carb_entry_id} {grams, certainty: exact}
+11 · Day · prompt · grams	g	g	UI label (no data)
+11 · Day · prompt · grams	Next	Next	UI action: advance to next prompt
+11 · Day · prompt · grams	keyboard	system keyboard	UI: native numeric keyboard (inputmode=numeric); drawn as iOS system chrome
+12 · Day · log carbs	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+12 · Day · log carbs	<span class="lbtn"><b>+</b> Log carbs</span>	<span class="lbtn"><b>+</b> Log carbs</span>	UI control: opens Log carbs
+12 · Day · log carbs	Log carbs	Log carbs	UI label (no data)
+12 · Day · log carbs	0	0	input placeholder (inputmode=numeric)
+12 · Day · log carbs	g	g	UI label (no data)
+12 · Day · log carbs	Time	Time	UI label (no data)
+12 · Day · log carbs	Now	Now	UI default: POST /api/carbs t = now
+12 · Day · log carbs	12 Oct 09:41	12 Oct 09:41	UI default: device clock
+12 · Day · log carbs	Save	Save	POST /api/carbs {t, grams, certainty: exact, source: manual}
+12 · Day · log carbs	keyboard	system keyboard	UI: native numeric keyboard (inputmode=numeric); drawn as iOS system chrome
+13 · Settings	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+13 · Settings	Tandem Source	Tandem Source	UI label (no data)
+13 · Settings	Failed	Failed	status.json last_error != null
+13 · Settings	Pump profile	Pump profile	UI label (no data)
+13 · Settings	P008	P008	pump_settings.profile.name
+13 · Settings	Glossary	Glossary	UI label (no data)
+13 · Settings	3	3	derived: count prompts.json[] where answer = null
+13 · Settings	!	!	status.json last_error != null (alert badge)
+14 · Settings · Tandem Source	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+14 · Settings · Tandem Source	Sync	Sync	UI label (no data)
+14 · Settings · Tandem Source	State	State	UI label (no data)
+14 · Settings · Tandem Source	Failed	Failed	status.json last_error != null
+14 · Settings · Tandem Source	Last success	Last success	UI label (no data)
+14 · Settings · Tandem Source	30 Sep 17:18	30 Sep 17:18	status.json last_success_at
+14 · Settings · Tandem Source	Last attempt	Last attempt	UI label (no data)
+14 · Settings · Tandem Source	12 Oct 14:52	12 Oct 14:52	status.json last_attempt_at
+14 · Settings · Tandem Source	Error	Error	UI label (no data)
+14 · Settings · Tandem Source	HTTP 400 · eventIds	HTTP 400 · eventIds	derived: status.json last_error → HTTP status + unrecognized key
+14 · Settings · Tandem Source	Data	Data	UI label (no data)
+14 · Settings · Tandem Source	5 Jul 2025 – 30 Sep 2026	5 Jul 2025 – 30 Sep 2026	status.json earliest_data_day / latest_data_day
+14 · Settings · Tandem Source	228 d	228 d	status.json data_day_count
+14 · Settings · Tandem Source	Account	Account	UI label (no data)
+14 · Settings · Tandem Source	Email	Email	UI label (no data)
+14 · Settings · Tandem Source	Region	Region	UI label (no data)
+14 · Settings · Tandem Source	••••••@••••••••••••	••••••@••••••••••••	GET /api/credentials .email (masked: length + @ position only)
+14 · Settings · Tandem Source	US	US	GET /api/credentials .region (work.db credentials.region)
+14 · Settings · Tandem Source	Password	Password	UI label (no data)
+14 · Settings · Tandem Source	Set	Set	derived: GET /api/credentials .configured = true (value never served)
+14 · Settings · Tandem Source	Update	Update	POST /api/credentials {email, password, region}
+14 · Settings · Tandem Source	00:00	00:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	0.6	0.6	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	36	36	pump_settings.profile.segments[].isf
+14 · Settings · Tandem Source	5.6	5.6	pump_settings.profile.segments[].carb_ratio
+14 · Settings · Tandem Source	03:00	03:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	0.72	0.72	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	06:30	06:30	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	0.833	0.833	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	07:00	07:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	1.037	1.037	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	4.4	4.4	pump_settings.profile.segments[].carb_ratio
+14 · Settings · Tandem Source	07:30	07:30	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	1.244	1.244	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	08:00	08:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	1.216	1.216	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	08:30	08:30	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	1.32	1.32	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	40	40	pump_settings.profile.segments[].isf
+14 · Settings · Tandem Source	09:00	09:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	1.1	1.1	pump_settings.profile.segments[].basal_rate
+14 · Settings · Tandem Source	11:00	11:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	12:00	12:00	pump_settings.profile.segments[].start_min
+14 · Settings · Tandem Source	Pump profile	Pump profile	UI label (no data)
+14 · Settings · Tandem Source	P008	P008	pump_settings.profile.name
+14 · Settings · Tandem Source	Other	Other	UI label (no data)
+14 · Settings · Tandem Source	3	3	pump_settings.other_profile_count
+14 · Settings · Tandem Source	12 Oct 14:52	12 Oct 14:52	pump_settings.fetched_at
+14 · Settings · Tandem Source	DIA	DIA	UI label (no data)
+14 · Settings · Tandem Source	Max bolus	Max bolus	UI label (no data)
+14 · Settings · Tandem Source	Target	Target	UI label (no data)
+14 · Settings · Tandem Source	5 h	5 h	pump_settings.profile.dia_hours
+14 · Settings · Tandem Source	15 U	15 U	pump_settings.profile.max_bolus
+14 · Settings · Tandem Source	110 mg/dL	110 mg/dL	pump_settings.profile.segments[].target_bg (all equal)
+14 · Settings · Tandem Source	Start	Start	UI label (no data)
+14 · Settings · Tandem Source	Basal U/h	Basal U/h	UI label (no data)
+14 · Settings · Tandem Source	CF mg/dL/U	CF mg/dL/U	UI label (no data)
+14 · Settings · Tandem Source	CR g/U	CR g/U	UI label (no data)
+14 · Settings · Tandem Source	3	3	derived: count prompts.json[] where answer = null
+14 · Settings · Tandem Source	!	!	status.json last_error != null (alert badge)
+15 · Settings · Pump profile	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+15 · Settings · Pump profile	Sync	Sync	UI label (no data)
+15 · Settings · Pump profile	State	State	UI label (no data)
+15 · Settings · Pump profile	Failed	Failed	status.json last_error != null
+15 · Settings · Pump profile	Last success	Last success	UI label (no data)
+15 · Settings · Pump profile	30 Sep 17:18	30 Sep 17:18	status.json last_success_at
+15 · Settings · Pump profile	Last attempt	Last attempt	UI label (no data)
+15 · Settings · Pump profile	12 Oct 14:52	12 Oct 14:52	status.json last_attempt_at
+15 · Settings · Pump profile	Error	Error	UI label (no data)
+15 · Settings · Pump profile	HTTP 400 · eventIds	HTTP 400 · eventIds	derived: status.json last_error → HTTP status + unrecognized key
+15 · Settings · Pump profile	Data	Data	UI label (no data)
+15 · Settings · Pump profile	5 Jul 2025 – 30 Sep 2026	5 Jul 2025 – 30 Sep 2026	status.json earliest_data_day / latest_data_day
+15 · Settings · Pump profile	228 d	228 d	status.json data_day_count
+15 · Settings · Pump profile	Account	Account	UI label (no data)
+15 · Settings · Pump profile	Email	Email	UI label (no data)
+15 · Settings · Pump profile	Region	Region	UI label (no data)
+15 · Settings · Pump profile	••••••@••••••••••••	••••••@••••••••••••	GET /api/credentials .email (masked: length + @ position only)
+15 · Settings · Pump profile	US	US	GET /api/credentials .region (work.db credentials.region)
+15 · Settings · Pump profile	Password	Password	UI label (no data)
+15 · Settings · Pump profile	Set	Set	derived: GET /api/credentials .configured = true (value never served)
+15 · Settings · Pump profile	Update	Update	POST /api/credentials {email, password, region}
+15 · Settings · Pump profile	00:00	00:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	0.6	0.6	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	36	36	pump_settings.profile.segments[].isf
+15 · Settings · Pump profile	5.6	5.6	pump_settings.profile.segments[].carb_ratio
+15 · Settings · Pump profile	03:00	03:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	0.72	0.72	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	06:30	06:30	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	0.833	0.833	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	07:00	07:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	1.037	1.037	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	4.4	4.4	pump_settings.profile.segments[].carb_ratio
+15 · Settings · Pump profile	07:30	07:30	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	1.244	1.244	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	08:00	08:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	1.216	1.216	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	08:30	08:30	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	1.32	1.32	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	40	40	pump_settings.profile.segments[].isf
+15 · Settings · Pump profile	09:00	09:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	1.1	1.1	pump_settings.profile.segments[].basal_rate
+15 · Settings · Pump profile	11:00	11:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	12:00	12:00	pump_settings.profile.segments[].start_min
+15 · Settings · Pump profile	Pump profile	Pump profile	UI label (no data)
+15 · Settings · Pump profile	P008	P008	pump_settings.profile.name
+15 · Settings · Pump profile	Other	Other	UI label (no data)
+15 · Settings · Pump profile	3	3	pump_settings.other_profile_count
+15 · Settings · Pump profile	12 Oct 14:52	12 Oct 14:52	pump_settings.fetched_at
+15 · Settings · Pump profile	DIA	DIA	UI label (no data)
+15 · Settings · Pump profile	Max bolus	Max bolus	UI label (no data)
+15 · Settings · Pump profile	Target	Target	UI label (no data)
+15 · Settings · Pump profile	5 h	5 h	pump_settings.profile.dia_hours
+15 · Settings · Pump profile	15 U	15 U	pump_settings.profile.max_bolus
+15 · Settings · Pump profile	110 mg/dL	110 mg/dL	pump_settings.profile.segments[].target_bg (all equal)
+15 · Settings · Pump profile	Start	Start	UI label (no data)
+15 · Settings · Pump profile	Basal U/h	Basal U/h	UI label (no data)
+15 · Settings · Pump profile	CF mg/dL/U	CF mg/dL/U	UI label (no data)
+15 · Settings · Pump profile	CR g/U	CR g/U	UI label (no data)
+15 · Settings · Pump profile	3	3	derived: count prompts.json[] where answer = null
+15 · Settings · Pump profile	!	!	status.json last_error != null (alert badge)
+16 · Settings · glossary	Mon 12 Oct	Mon 12 Oct	status.json last_attempt_at (date of today)
+16 · Settings · glossary	Carb ratio	Carb ratio	glossary term: frontend/glossary.js I:C
+16 · Settings · glossary	Grams of carbs one unit covers.	Grams of carbs one unit covers.	glossary definition: frontend/glossary.js I:C
+16 · Settings · glossary	Carb undercount	Carb undercount	glossary term: api/catalog.json levers[carb_undercount].meaning (shortened)
+16 · Settings · glossary	Meal held more carbs than dosed.	Meal held more carbs than dosed.	glossary definition: api/catalog.json levers[carb_undercount].meaning (shortened)
+16 · Settings · glossary	Correction factor	Correction factor	glossary term: frontend/glossary.js ISF
+16 · Settings · glossary	Glucose drop per unit of insulin.	Glucose drop per unit of insulin.	glossary definition: frontend/glossary.js ISF
+16 · Settings · glossary	CV	CV	glossary term: CONTEXT.md glycemic metric; openspec outcomes spec
+16 · Settings · glossary	Coefficient of variation.	Coefficient of variation.	glossary definition: CONTEXT.md glycemic metric; openspec outcomes spec
+16 · Settings · glossary	False low	False low	glossary term: ciq_autotune/api.py false-low answer (#381)
+16 · Settings · glossary	A sub-70 reading that wasn't real.	A sub-70 reading that wasn't real.	glossary definition: ciq_autotune/api.py false-low answer (#381)
+16 · Settings · glossary	Focus	Focus	glossary term: CONTEXT.md Focus
+16 · Settings · glossary	A habit you pin by hand.	A habit you pin by hand.	glossary definition: CONTEXT.md Focus
+16 · Settings · glossary	GMI	GMI	glossary term: openspec outcomes spec (GMI, A1c-analog)
+16 · Settings · glossary	A1c estimate from mean glucose.	A1c estimate from mean glucose.	glossary definition: openspec outcomes spec (GMI, A1c-analog)
+16 · Settings · glossary	High-carb sequences	High-carb sequences	glossary term: CONTEXT.md Sequence habit; catalog high_carb_sequence
+16 · Settings · glossary	Largest eating sequences vs the rest.	Largest eating sequences vs the rest.	glossary definition: CONTEXT.md Sequence habit; catalog high_carb_sequence
+16 · Settings · glossary	In range	In range	glossary term: openspec outcomes spec (TIR)
+16 · Settings · glossary	Readings at 70–180 mg/dL.	Readings at 70–180 mg/dL.	glossary definition: openspec outcomes spec (TIR)
+16 · Settings · glossary	Late bolus	Late bolus	glossary term: api/catalog.json levers[late_bolus].meaning (shortened)
+16 · Settings · glossary	Dose landed after glucose rose.	Dose landed after glucose rose.	glossary definition: api/catalog.json levers[late_bolus].meaning (shortened)
+16 · Settings · glossary	Maturing	Maturing	glossary term: CONTEXT.md Maturing
+16 · Settings · glossary	A Trial inside its 14-day window.	A Trial inside its 14-day window.	glossary definition: CONTEXT.md Maturing
+16 · Settings · glossary	Pattern	Pattern	glossary term: CONTEXT.md Pattern
+16 · Settings · glossary	An outcome counted on one denominator.	An outcome counted on one denominator.	glossary definition: CONTEXT.md Pattern
+16 · Settings · glossary	Pin	Pin	glossary term: CONTEXT.md Focus (pins by hand)
+16 · Settings · glossary	Follow a Pattern as a Focus.	Follow a Pattern as a Focus.	glossary definition: CONTEXT.md Focus (pins by hand)
+16 · Settings · glossary	Range	Range	glossary term: frontend/glossary.js CI
+16 · Settings · glossary	Where the true value likely falls.	Where the true value likely falls.	glossary definition: frontend/glossary.js CI
+16 · Settings · glossary	Setting	Setting	glossary term: CONTEXT.md tunable parameters
+16 · Settings · glossary	A pump value: basal, CF or carb ratio.	A pump value: basal, CF or carb ratio.	glossary definition: CONTEXT.md tunable parameters
+16 · Settings · glossary	Snooze	Snooze	glossary term: guidance.py preference_status return_reason + 14-day snooze addition
+16 · Settings · glossary	Off the queue 14 d; back early if evidence changes.	Off the queue 14 d; back early if evidence changes.	glossary definition: guidance.py preference_status return_reason + 14-day snooze addition
+16 · Settings · glossary	Trial	Trial	glossary term: CONTEXT.md Trial
+16 · Settings · glossary	A setting change Harmonic watches.	A setting change Harmonic watches.	glossary definition: CONTEXT.md Trial
+16 · Settings · glossary	Unclear	Unclear	glossary term: follow_up_comparison assessment reason
+16 · Settings · glossary	The interval includes zero.	The interval includes zero.	glossary definition: follow_up_comparison assessment reason
+16 · Settings · glossary	Wide	Wide	glossary term: frontend/glossary.js Wide CI
+16 · Settings · glossary	A range too wide to be certain.	A range too wide to be certain.	glossary definition: frontend/glossary.js Wide CI
+16 · Settings · glossary	3	3	derived: count prompts.json[] where answer = null
+16 · Settings · glossary	!	!	status.json last_error != null (alert badge)
+17 · Tablet · Queue	1	1	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+17 · Tablet · Queue	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+17 · Tablet · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+17 · Tablet · Queue	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+17 · Tablet · Queue	2	2	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+17 · Tablet · Queue	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+17 · Tablet · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+17 · Tablet · Queue	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+17 · Tablet · Queue	3	3	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+17 · Tablet · Queue	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+17 · Tablet · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+17 · Tablet · Queue	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+17 · Tablet · Queue	4	4	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+17 · Tablet · Queue	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+17 · Tablet · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+17 · Tablet · Queue	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+17 · Tablet · Queue	Wide	Wide	guidance.candidates[pattern:highs_after_meals].support.wide = true
+17 · Tablet · Queue	1	1	derived: rank
+17 · Tablet · Queue	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	UI icon button: snooze 14 d (guidance preference until today + 14 d)
+17 · Tablet · Queue	Meals ran high	Meals ran high	findings.rows[id=pattern:highs_after_meals].count_sentences[noun=meals].noun + .outcome
+17 · Tablet · Queue	Range	Range	UI label (no data)
+17 · Tablet · Queue	19–27%	19–27%	findings.outcome_patterns[key=highs_after_meals].wilson.lo/.hi (same k/n as headline)
+17 · Tablet · Queue	Carb undercount	Carb undercount	guidance.candidates[pattern:highs_after_meals].members[habit:carb_undercount].title
+17 · Tablet · Queue	22 / 150	22 / 150	findings.rows[id=finding:carb_undercount].fold_sentences[scope=pattern].count / .denominator
+17 · Tablet · Queue	Late bolus	Late bolus	guidance.candidates[pattern:highs_after_meals].members[habit:late_bolus].title
+17 · Tablet · Queue	8 / 150	8 / 150	findings.rows[id=finding:late_bolus].fold_sentences[scope=pattern].count / .denominator
+17 · Tablet · Queue	High-carb sequences	High-carb sequences	guidance.candidates[pattern:highs_after_meals].members[habit:high_carb_sequence].title (plural)
+17 · Tablet · Queue	9 / 35	9 / 35	findings.rows[id=finding:high_carb_sequence].fold_sentences[scope=outside].count / .denominator
+17 · Tablet · Queue	less in range	less in range	findings.rows[id=finding:high_carb_sequence].fold_sentences[0].outcome (ran less in range)
+17 · Tablet · Queue	17–36%	17–36%	guidance.candidates[pattern:highs_after_meals].support.lo/.hi (k=9, n=35 = this line)
+17 · Tablet · Queue	Episodes	Episodes	UI label (no data)
+17 · Tablet · Queue	9	9	len(guidance.candidates[pattern:highs_after_meals].evidence)
+17 · Tablet · Queue	31 Aug 22:15	31 Aug 22:15	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	308	308	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	169	169	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	Peak	Peak	UI label (no data)
+17 · Tablet · Queue	mg/dL	mg/dL	UI label (no data)
+17 · Tablet · Queue	3 Sep 16:24	3 Sep 16:24	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	197	197	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	154	154	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	12 Sep 23:38	12 Sep 23:38	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.event_refs[0]
+17 · Tablet · Queue	43	43	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.glucose_mgdl
+17 · Tablet · Queue	76	76	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	Nadir	Nadir	UI label (no data)
+17 · Tablet · Queue	16 Sep 17:42	16 Sep 17:42	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	186	186	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	177	177	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	19 Sep 20:06	19 Sep 20:06	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	270	270	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	167	167	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	23 Sep 16:36	23 Sep 16:36	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	185	185	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	108	108	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	25 Sep 06:02	25 Sep 06:02	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	257	257	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	94	94	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	25 Sep 14:57	25 Sep 14:57	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	230	230	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	174	174	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	27 Sep 17:02	27 Sep 17:02	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[peak].facts.event_refs[0]
+17 · Tablet · Queue	223	223	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[peak].facts.glucose_mgdl
+17 · Tablet · Queue	166	166	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[resolution].facts.glucose_mgdl
+17 · Tablet · Queue	Pin	Pin	UI action: POST /api/focus (pattern_key)
+17 · Tablet · Queue	3	3	derived: count prompts.json[] where answer = null
+17 · Tablet · Queue	!	!	status.json last_error != null (alert badge)
+18 · Tablet · Overview	To	To	UI label (no data)
+18 · Tablet · Overview	30 Sep	30 Sep	outcomes_14.span_end
+18 · Tablet · Overview	14 d	14 d	UI label (no data)
+18 · Tablet · Overview	30 d	30 d	UI label (no data)
+18 · Tablet · Overview	90 d	90 d	UI label (no data)
+18 · Tablet · Overview	65.9%	65.9%	outcomes_14.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+18 · Tablet · Overview	71.4%	71.4%	outcomes_30.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+18 · Tablet · Overview	78.1%	78.1%	outcomes_90.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+18 · Tablet · Overview	&lt;70	&lt;70	band label: outcomes metric level definition (openspec outcomes spec)
+18 · Tablet · Overview	70–180	70–180	band label: outcomes metric level definition (openspec outcomes spec)
+18 · Tablet · Overview	&gt;180	&gt;180	band label: outcomes metric level definition (openspec outcomes spec)
+18 · Tablet · Overview	&gt;250	&gt;250	band label: outcomes metric level definition (openspec outcomes spec)
+18 · Tablet · Overview	In range · 14 d	In range · 14 d	UI label (no data)
+18 · Tablet · Overview	12.2 pts vs 90 d	12.2 pts vs 90 d	derived: outcomes_90.tir − outcomes_14.tir
+18 · Tablet · Overview	65.9	65.9	outcomes_14.metrics.tir
+18 · Tablet · Overview	Time of day	Time of day	UI label (no data)
+18 · Tablet · Overview	30 d	30 d	time_of_day.window.data_days
+18 · Tablet · Overview	mg/dL	mg/dL	UI label (no data)
+18 · Tablet · Overview	00–06	00–06	block label
+18 · Tablet · Overview	140	140	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+18 · Tablet · Overview	06–12	06–12	block label
+18 · Tablet · Overview	134	134	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+18 · Tablet · Overview	12–18	12–18	block label
+18 · Tablet · Overview	144	144	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+18 · Tablet · Overview	18–24	18–24	block label
+18 · Tablet · Overview	167	167	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+18 · Tablet · Overview	40	40	axis label
+18 · Tablet · Overview	70	70	axis label
+18 · Tablet · Overview	180	180	axis label
+18 · Tablet · Overview	300	300	axis label
+18 · Tablet · Overview	Median	Median	UI label (no data)
+18 · Tablet · Overview	IQR	IQR	UI label (no data)
+18 · Tablet · Overview	IQR &gt;180	IQR &gt;180	UI label (no data)
+18 · Tablet · Overview	p10–p90	p10–p90	UI label (no data)
+18 · Tablet · Overview	Metrics	Metrics	UI label (no data)
+18 · Tablet · Overview	14 / 30 / 90 d	14 / 30 / 90 d	UI label (no data)
+18 · Tablet · Overview	Δ 14 / 90	Δ 14 / 90	UI label (no data)
+18 · Tablet · Overview	0.6%	0.6%	outcomes_14.metrics.tbr_lvl1
+18 · Tablet · Overview	1.0%	1.0%	outcomes_30.metrics.tbr_lvl1
+18 · Tablet · Overview	1.8%	1.8%	outcomes_90.metrics.tbr_lvl1
+18 · Tablet · Overview	Below 70	Below 70	UI label (no data)
+18 · Tablet · Overview	1.2	1.2	derived: 14 d − 90 d
+18 · Tablet · Overview	0.1%	0.1%	outcomes_14.metrics.tbr_lvl2
+18 · Tablet · Overview	0.3%	0.3%	outcomes_30.metrics.tbr_lvl2
+18 · Tablet · Overview	0.5%	0.5%	outcomes_90.metrics.tbr_lvl2
+18 · Tablet · Overview	Below 54	Below 54	UI label (no data)
+18 · Tablet · Overview	0.4	0.4	derived: 14 d − 90 d
+18 · Tablet · Overview	33.5%	33.5%	outcomes_14.metrics.tar_lvl1
+18 · Tablet · Overview	27.6%	27.6%	outcomes_30.metrics.tar_lvl1
+18 · Tablet · Overview	20.0%	20.0%	outcomes_90.metrics.tar_lvl1
+18 · Tablet · Overview	Above 180	Above 180	UI label (no data)
+18 · Tablet · Overview	13.5	13.5	derived: 14 d − 90 d
+18 · Tablet · Overview	10.6%	10.6%	outcomes_14.metrics.tar_lvl2
+18 · Tablet · Overview	7.7%	7.7%	outcomes_30.metrics.tar_lvl2
+18 · Tablet · Overview	4.4%	4.4%	outcomes_90.metrics.tar_lvl2
+18 · Tablet · Overview	Above 250	Above 250	UI label (no data)
+18 · Tablet · Overview	6.2	6.2	derived: 14 d − 90 d
+18 · Tablet · Overview	169	169	outcomes_14.metrics.mean_glucose
+18 · Tablet · Overview	157	157	outcomes_30.metrics.mean_glucose
+18 · Tablet · Overview	147	147	outcomes_90.metrics.mean_glucose
+18 · Tablet · Overview	Mean	Mean	UI label (no data)
+18 · Tablet · Overview	22	22	derived: 14 d − 90 d
+18 · Tablet · Overview	7.4%	7.4%	outcomes_14.metrics.gmi
+18 · Tablet · Overview	7.1%	7.1%	outcomes_30.metrics.gmi
+18 · Tablet · Overview	6.8%	6.8%	outcomes_90.metrics.gmi
+18 · Tablet · Overview	GMI	GMI	UI label (no data)
+18 · Tablet · Overview	0.6	0.6	derived: 14 d − 90 d
+18 · Tablet · Overview	35.6%	35.6%	outcomes_14.metrics.cv
+18 · Tablet · Overview	36.4%	36.4%	outcomes_30.metrics.cv
+18 · Tablet · Overview	33.9%	33.9%	outcomes_90.metrics.cv
+18 · Tablet · Overview	CV	CV	UI label (no data)
+18 · Tablet · Overview	1.7	1.7	derived: 14 d − 90 d
+18 · Tablet · Overview	150	150	prototype
+18 · Tablet · Overview	142	142	prototype
+18 · Tablet · Overview	136	136	prototype
+18 · Tablet · Overview	Pre-meal	Pre-meal	UI label (no data)
+18 · Tablet · Overview	14	14	prototype (derived 14 d − 90 d)
+18 · Tablet · Overview	170	170	prototype
+18 · Tablet · Overview	161	161	prototype
+18 · Tablet · Overview	141	141	prototype
+18 · Tablet · Overview	Post-meal 2 h	Post-meal 2 h	UI label (no data)
+18 · Tablet · Overview	29	29	prototype (derived 14 d − 90 d)
+18 · Tablet · Overview	98%	98%	outcomes_14.coverage.cgm_active
+18 · Tablet · Overview	97%	97%	outcomes_30.coverage.cgm_active
+18 · Tablet · Overview	95%	95%	outcomes_90.coverage.cgm_active
+18 · Tablet · Overview	CGM active	CGM active	UI label (no data)
+18 · Tablet · Overview	3.2	3.2	derived: 14 d − 90 d
+18 · Tablet · Overview	3	3	derived: count prompts.json[] where answer = null
+18 · Tablet · Overview	!	!	status.json last_error != null (alert badge)
+19 · Tablet · Day	September 2026	September 2026	day_navigator_2026-09.json month
+19 · Tablet · Day	S	S	weekday label
+19 · Tablet · Day	M	M	weekday label
+19 · Tablet · Day	T	T	weekday label
+19 · Tablet · Day	W	W	weekday label
+19 · Tablet · Day	F	F	weekday label
+19 · Tablet · Day	Lows	Lows	UI label (no data)
+19 · Tablet · Day	Highs	Highs	UI label (no data)
+19 · Tablet · Day	Clean	Clean	UI label (no data)
+19 · Tablet · Day	% in range	% in range	UI label (no data)
+19 · Tablet · Day	30	30	day_navigator_2026-09.json days[iso=2026-08-30].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-30].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-08-30].lows
+19 · Tablet · Day	8	8	day_navigator_2026-09.json days[iso=2026-08-30].highs
+19 · Tablet · Day	37%	37%	day_navigator_2026-09.json days[iso=2026-08-30].tir
+19 · Tablet · Day	31	31	day_navigator_2026-09.json days[iso=2026-08-31].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-31].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-08-31].lows
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-08-31].highs
+19 · Tablet · Day	77%	77%	day_navigator_2026-09.json days[iso=2026-08-31].tir
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-01].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-01].curve[] (sparkline)
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-01].highs
+19 · Tablet · Day	83%	83%	day_navigator_2026-09.json days[iso=2026-09-01].tir
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-02].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-02].curve[] (sparkline)
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-02].lows
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-02].highs
+19 · Tablet · Day	92%	92%	day_navigator_2026-09.json days[iso=2026-09-02].tir
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-03].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-03].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-03].lows
+19 · Tablet · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-03].highs
+19 · Tablet · Day	76%	76%	day_navigator_2026-09.json days[iso=2026-09-03].tir
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-04].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-04].curve[] (sparkline)
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-04].highs
+19 · Tablet · Day	74%	74%	day_navigator_2026-09.json days[iso=2026-09-04].tir
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-05].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-05].curve[] (sparkline)
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-05].highs
+19 · Tablet · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-05].tir
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-06].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-06].curve[] (sparkline)
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-06].highs
+19 · Tablet · Day	80%	80%	day_navigator_2026-09.json days[iso=2026-09-06].tir
+19 · Tablet · Day	7	7	day_navigator_2026-09.json days[iso=2026-09-07].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-07].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-07].lows
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-07].highs
+19 · Tablet · Day	66%	66%	day_navigator_2026-09.json days[iso=2026-09-07].tir
+19 · Tablet · Day	8	8	day_navigator_2026-09.json days[iso=2026-09-08].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-08].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-08].highs
+19 · Tablet · Day	97%	97%	day_navigator_2026-09.json days[iso=2026-09-08].tir
+19 · Tablet · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-09].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-09].curve[] (sparkline)
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-09].highs
+19 · Tablet · Day	82%	82%	day_navigator_2026-09.json days[iso=2026-09-09].tir
+19 · Tablet · Day	10	10	day_navigator_2026-09.json days[iso=2026-09-10].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-10].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-10].lows
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-10].highs
+19 · Tablet · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-10].tir
+19 · Tablet · Day	11	11	day_navigator_2026-09.json days[iso=2026-09-11].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-11].curve[] (sparkline)
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-11].lows
+19 · Tablet · Day	98%	98%	day_navigator_2026-09.json days[iso=2026-09-11].tir
+19 · Tablet · Day	12	12	day_navigator_2026-09.json days[iso=2026-09-12].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-12].curve[] (sparkline)
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-12].lows
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-12].highs
+19 · Tablet · Day	83%	83%	day_navigator_2026-09.json days[iso=2026-09-12].tir
+19 · Tablet · Day	13	13	day_navigator_2026-09.json days[iso=2026-09-13].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-13].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-13].lows
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-13].highs
+19 · Tablet · Day	56%	56%	day_navigator_2026-09.json days[iso=2026-09-13].tir
+19 · Tablet · Day	14	14	day_navigator_2026-09.json days[iso=2026-09-14].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-14].curve[] (sparkline)
+19 · Tablet · Day	7	7	day_navigator_2026-09.json days[iso=2026-09-14].lows
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-14].highs
+19 · Tablet · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-14].tir
+19 · Tablet · Day	15	15	day_navigator_2026-09.json days[iso=2026-09-15].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-15].curve[] (sparkline)
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-15].lows
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-15].highs
+19 · Tablet · Day	68%	68%	day_navigator_2026-09.json days[iso=2026-09-15].tir
+19 · Tablet · Day	16	16	day_navigator_2026-09.json days[iso=2026-09-16].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-16].curve[] (sparkline)
+19 · Tablet · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-16].highs
+19 · Tablet · Day	49%	49%	day_navigator_2026-09.json days[iso=2026-09-16].tir
+19 · Tablet · Day	17	17	day_navigator_2026-09.json days[iso=2026-09-17].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-17].curve[] (sparkline)
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-17].lows
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-17].highs
+19 · Tablet · Day	66%	66%	day_navigator_2026-09.json days[iso=2026-09-17].tir
+19 · Tablet · Day	18	18	day_navigator_2026-09.json days[iso=2026-09-18].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-18].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-18].lows
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-18].highs
+19 · Tablet · Day	52%	52%	day_navigator_2026-09.json days[iso=2026-09-18].tir
+19 · Tablet · Day	19	19	day_navigator_2026-09.json days[iso=2026-09-19].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-19].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-19].lows
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-19].highs
+19 · Tablet · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-19].tir
+19 · Tablet · Day	20	20	day_navigator_2026-09.json days[iso=2026-09-20].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-20].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-20].lows
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-20].highs
+19 · Tablet · Day	60%	60%	day_navigator_2026-09.json days[iso=2026-09-20].tir
+19 · Tablet · Day	21	21	day_navigator_2026-09.json days[iso=2026-09-21].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-21].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-21].lows
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-21].highs
+19 · Tablet · Day	88%	88%	day_navigator_2026-09.json days[iso=2026-09-21].tir
+19 · Tablet · Day	22	22	day_navigator_2026-09.json days[iso=2026-09-22].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-22].curve[] (sparkline)
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-22].highs
+19 · Tablet · Day	49%	49%	day_navigator_2026-09.json days[iso=2026-09-22].tir
+19 · Tablet · Day	23	23	day_navigator_2026-09.json days[iso=2026-09-23].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-23].curve[] (sparkline)
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-23].highs
+19 · Tablet · Day	87%	87%	day_navigator_2026-09.json days[iso=2026-09-23].tir
+19 · Tablet · Day	24	24	day_navigator_2026-09.json days[iso=2026-09-24].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-24].curve[] (sparkline)
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-24].highs
+19 · Tablet · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-24].tir
+19 · Tablet · Day	25	25	day_navigator_2026-09.json days[iso=2026-09-25].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-25].curve[] (sparkline)
+19 · Tablet · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-25].highs
+19 · Tablet · Day	46%	46%	day_navigator_2026-09.json days[iso=2026-09-25].tir
+19 · Tablet · Day	26	26	day_navigator_2026-09.json days[iso=2026-09-26].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-26].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-26].lows
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-26].highs
+19 · Tablet · Day	74%	74%	day_navigator_2026-09.json days[iso=2026-09-26].tir
+19 · Tablet · Day	27	27	day_navigator_2026-09.json days[iso=2026-09-27].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-27].curve[] (sparkline)
+19 · Tablet · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-27].highs
+19 · Tablet · Day	70%	70%	day_navigator_2026-09.json days[iso=2026-09-27].tir
+19 · Tablet · Day	28	28	day_navigator_2026-09.json days[iso=2026-09-28].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-28].curve[] (sparkline)
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-28].lows
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-28].highs
+19 · Tablet · Day	63%	63%	day_navigator_2026-09.json days[iso=2026-09-28].tir
+19 · Tablet · Day	29	29	day_navigator_2026-09.json days[iso=2026-09-29].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-29].curve[] (sparkline)
+19 · Tablet · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-29].highs
+19 · Tablet · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-29].tir
+19 · Tablet · Day	30	30	day_navigator_2026-09.json days[iso=2026-09-30].iso
+19 · Tablet · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-30].curve[] (sparkline)
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-30].highs
+19 · Tablet · Day	44%	44%	day_navigator_2026-09.json days[iso=2026-09-30].tir
+19 · Tablet · Day	1	1	day_navigator_2026-09.json days[iso=2026-10-01].iso
+19 · Tablet · Day	2	2	day_navigator_2026-09.json days[iso=2026-10-02].iso
+19 · Tablet · Day	3	3	day_navigator_2026-09.json days[iso=2026-10-03].iso
+19 · Tablet · Day	Mean	Mean	UI label (no data)
+19 · Tablet · Day	142	142	derived: mean(timeline.cgm[].bg)
+19 · Tablet · Day	mg/dL	mg/dL	UI label (no data)
+19 · Tablet · Day	In range	In range	UI label (no data)
+19 · Tablet · Day	85	85	derived: share of timeline.cgm[].bg within time_of_day.target_range
+19 · Tablet · Day	%	%	UI label (no data)
+19 · Tablet · Day	Carbs	Carbs	UI label (no data)
+19 · Tablet · Day	163	163	derived: sum timeline.boluses[].carbs
+19 · Tablet · Day	g	g	UI label (no data)
+19 · Tablet · Day	Insulin	Insulin	UI label (no data)
+19 · Tablet · Day	56.8	56.8	derived: sum timeline.boluses[].insulin + sum basal[].basal_rate×duration_mins/60
+19 · Tablet · Day	U	U	UI label (no data)
+19 · Tablet · Day	70	70	axis label
+19 · Tablet · Day	180	180	axis label
+19 · Tablet · Day	250	250	axis label
+19 · Tablet · Day	2	2	axis label
+19 · Tablet · Day	0 U/h	0 U/h	axis label
+19 · Tablet · Day	00	00	axis label
+19 · Tablet · Day	06	06	axis label
+19 · Tablet · Day	12	12	axis label
+19 · Tablet · Day	18	18	axis label
+19 · Tablet · Day	24	24	axis label
+19 · Tablet · Day	Day chart	glucose line, bolus markers, basal bars	timeline_2026-09-29 cgm[] (every 2nd point), boluses[] (carbs≠null = meal), basal[] hourly sums of basal_rate vs profile_basal_rate, pump_events[], sleep_windows[]
+19 · Tablet · Day	Meal bolus	Meal bolus	UI label (no data)
+19 · Tablet · Day	Bolus, no carbs	Bolus, no carbs	UI label (no data)
+19 · Tablet · Day	Suspend	Suspend	UI label (no data)
+19 · Tablet · Day	Basal	Basal	UI label (no data)
+19 · Tablet · Day	Programmed	Programmed	UI label (no data)
+19 · Tablet · Day	Sleep	Sleep	UI label (no data)
+19 · Tablet · Day	Logged carbs	Logged carbs	UI label (no data)
+19 · Tablet · Day	0	0	derived: count carbs.json carb_entries[] on 2026-09-29
+19 · Tablet · Day	06:34	06:34	timeline.boluses[].t
+19 · Tablet · Day	Meal	Meal	UI label (no data)
+19 · Tablet · Day	18 g	18 g	timeline.boluses[].carbs
+19 · Tablet · Day	3.45 U	3.45 U	timeline.boluses[].insulin
+19 · Tablet · Day	10:13	10:13	timeline.boluses[].t
+19 · Tablet · Day	35 g	35 g	timeline.boluses[].carbs
+19 · Tablet · Day	9.35 U	9.35 U	timeline.boluses[].insulin
+19 · Tablet · Day	15:45	15:45	timeline.boluses[].t
+19 · Tablet · Day	6.72 U	6.72 U	timeline.boluses[].insulin
+19 · Tablet · Day	16:18	16:18	timeline.boluses[].t
+19 · Tablet · Day	6.25 U	6.25 U	timeline.boluses[].insulin
+19 · Tablet · Day	21:28	21:28	timeline.boluses[].t
+19 · Tablet · Day	25 g	25 g	timeline.boluses[].carbs
+19 · Tablet · Day	4.83 U	4.83 U	timeline.boluses[].insulin
+19 · Tablet · Day	21:33	21:33	timeline.boluses[].t
+19 · Tablet · Day	15 g	15 g	timeline.boluses[].carbs
+19 · Tablet · Day	2.68 U	2.68 U	timeline.boluses[].insulin
+19 · Tablet · Day	<span class="lbtn"><b>+</b> Log carbs</span>	<span class="lbtn"><b>+</b> Log carbs</span>	UI control: opens Log carbs (POST /api/carbs)
+19 · Tablet · Day	Lows	Lows	prompts.json[].detector = low
+19 · Tablet · Day	3	3	derived: count prompts.json[] where answer = null
+19 · Tablet · Day	Mon 29 Sep 2026	Mon 29 Sep 2026	timeline_2026-09-29.start
+19 · Tablet · Day	!	!	status.json last_error != null (alert badge)
+20 · Desktop · Queue	1	1	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+20 · Desktop · Queue	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+20 · Desktop · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+20 · Desktop · Queue	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+20 · Desktop · Queue	2	2	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+20 · Desktop · Queue	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+20 · Desktop · Queue	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+20 · Desktop · Queue	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+20 · Desktop · Queue	3	3	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+20 · Desktop · Queue	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+20 · Desktop · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+20 · Desktop · Queue	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+20 · Desktop · Queue	4	4	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+20 · Desktop · Queue	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+20 · Desktop · Queue	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+20 · Desktop · Queue	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+20 · Desktop · Queue	Select	Select	UI label (no data)
+20 · Desktop · Queue	Enter	Enter	key label
+20 · Desktop · Queue	Open	Open	UI label (no data)
+20 · Desktop · Queue	Wide	Wide	guidance.candidates[pattern:highs_after_meals].support.wide = true
+20 · Desktop · Queue	1	1	derived: rank
+20 · Desktop · Queue	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	UI icon button: snooze 14 d (guidance preference until today + 14 d)
+20 · Desktop · Queue	Meals ran high	Meals ran high	findings.rows[id=pattern:highs_after_meals].count_sentences[noun=meals].noun + .outcome
+20 · Desktop · Queue	Range	Range	UI label (no data)
+20 · Desktop · Queue	19–27%	19–27%	findings.outcome_patterns[key=highs_after_meals].wilson.lo/.hi (same k/n as headline)
+20 · Desktop · Queue	Carb undercount	Carb undercount	guidance.candidates[pattern:highs_after_meals].members[habit:carb_undercount].title
+20 · Desktop · Queue	22 / 150	22 / 150	findings.rows[id=finding:carb_undercount].fold_sentences[scope=pattern].count / .denominator
+20 · Desktop · Queue	Late bolus	Late bolus	guidance.candidates[pattern:highs_after_meals].members[habit:late_bolus].title
+20 · Desktop · Queue	8 / 150	8 / 150	findings.rows[id=finding:late_bolus].fold_sentences[scope=pattern].count / .denominator
+20 · Desktop · Queue	High-carb sequences	High-carb sequences	guidance.candidates[pattern:highs_after_meals].members[habit:high_carb_sequence].title (plural)
+20 · Desktop · Queue	9 / 35	9 / 35	findings.rows[id=finding:high_carb_sequence].fold_sentences[scope=outside].count / .denominator
+20 · Desktop · Queue	less in range	less in range	findings.rows[id=finding:high_carb_sequence].fold_sentences[0].outcome (ran less in range)
+20 · Desktop · Queue	17–36%	17–36%	guidance.candidates[pattern:highs_after_meals].support.lo/.hi (k=9, n=35 = this line)
+20 · Desktop · Queue	Episodes	Episodes	UI label (no data)
+20 · Desktop · Queue	9	9	len(guidance.candidates[pattern:highs_after_meals].evidence)
+20 · Desktop · Queue	31 Aug 22:15	31 Aug 22:15	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	308	308	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	169	169	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-001].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	Peak	Peak	UI label (no data)
+20 · Desktop · Queue	mg/dL	mg/dL	UI label (no data)
+20 · Desktop · Queue	3 Sep 16:24	3 Sep 16:24	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	197	197	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	154	154	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-024].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	12 Sep 23:38	12 Sep 23:38	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.event_refs[0]
+20 · Desktop · Queue	43	43	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[nadir].facts.glucose_mgdl
+20 · Desktop · Queue	76	76	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-083].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	Nadir	Nadir	UI label (no data)
+20 · Desktop · Queue	16 Sep 17:42	16 Sep 17:42	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	186	186	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	177	177	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-118].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	19 Sep 20:06	19 Sep 20:06	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	270	270	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	167	167	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-144].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	23 Sep 16:36	23 Sep 16:36	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	185	185	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	108	108	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-170].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	25 Sep 06:02	25 Sep 06:02	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	257	257	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	94	94	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-177].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	25 Sep 14:57	25 Sep 14:57	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	230	230	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	174	174	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-182].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	27 Sep 17:02	27 Sep 17:02	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[peak].facts.event_refs[0]
+20 · Desktop · Queue	223	223	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[peak].facts.glucose_mgdl
+20 · Desktop · Queue	166	166	guidance.candidates[pattern:highs_after_meals].evidence[episode_id=ep-196].citations[resolution].facts.glucose_mgdl
+20 · Desktop · Queue	Pin	Pin	UI action: POST /api/focus (pattern_key)
+20 · Desktop · Queue	3	3	derived: count prompts.json[] where answer = null
+20 · Desktop · Queue	!	!	status.json last_error != null (alert badge)
+21 · Desktop · Overview	To	To	UI label (no data)
+21 · Desktop · Overview	30 Sep	30 Sep	outcomes_14.span_end
+21 · Desktop · Overview	14 d	14 d	UI label (no data)
+21 · Desktop · Overview	30 d	30 d	UI label (no data)
+21 · Desktop · Overview	90 d	90 d	UI label (no data)
+21 · Desktop · Overview	65.9%	65.9%	outcomes_14.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+21 · Desktop · Overview	71.4%	71.4%	outcomes_30.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+21 · Desktop · Overview	78.1%	78.1%	outcomes_90.metrics.tir; bar bands derived: tbr_lvl2, tbr_lvl1−tbr_lvl2, tir, tar_lvl1−tar_lvl2, tar_lvl2
+21 · Desktop · Overview	&lt;70	&lt;70	band label: outcomes metric level definition (openspec outcomes spec)
+21 · Desktop · Overview	70–180	70–180	band label: outcomes metric level definition (openspec outcomes spec)
+21 · Desktop · Overview	&gt;180	&gt;180	band label: outcomes metric level definition (openspec outcomes spec)
+21 · Desktop · Overview	&gt;250	&gt;250	band label: outcomes metric level definition (openspec outcomes spec)
+21 · Desktop · Overview	In range · 14 d	In range · 14 d	UI label (no data)
+21 · Desktop · Overview	12.2 pts vs 90 d	12.2 pts vs 90 d	derived: outcomes_90.tir − outcomes_14.tir
+21 · Desktop · Overview	65.9	65.9	outcomes_14.metrics.tir
+21 · Desktop · Overview	Time of day	Time of day	UI label (no data)
+21 · Desktop · Overview	30 d	30 d	time_of_day.window.data_days
+21 · Desktop · Overview	mg/dL	mg/dL	UI label (no data)
+21 · Desktop · Overview	00–06	00–06	block label
+21 · Desktop · Overview	140	140	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+21 · Desktop · Overview	06–12	06–12	block label
+21 · Desktop · Overview	134	134	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+21 · Desktop · Overview	12–18	12–18	block label
+21 · Desktop · Overview	144	144	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+21 · Desktop · Overview	18–24	18–24	block label
+21 · Desktop · Overview	167	167	derived: median of time_of_day.pooled.bins[].median in block (p10/p25/p75/p90 likewise)
+21 · Desktop · Overview	40	40	axis label
+21 · Desktop · Overview	70	70	axis label
+21 · Desktop · Overview	180	180	axis label
+21 · Desktop · Overview	300	300	axis label
+21 · Desktop · Overview	Median	Median	UI label (no data)
+21 · Desktop · Overview	IQR	IQR	UI label (no data)
+21 · Desktop · Overview	IQR &gt;180	IQR &gt;180	UI label (no data)
+21 · Desktop · Overview	p10–p90	p10–p90	UI label (no data)
+21 · Desktop · Overview	Metrics	Metrics	UI label (no data)
+21 · Desktop · Overview	14 / 30 / 90 d	14 / 30 / 90 d	UI label (no data)
+21 · Desktop · Overview	Δ 14 / 90	Δ 14 / 90	UI label (no data)
+21 · Desktop · Overview	0.6%	0.6%	outcomes_14.metrics.tbr_lvl1
+21 · Desktop · Overview	1.0%	1.0%	outcomes_30.metrics.tbr_lvl1
+21 · Desktop · Overview	1.8%	1.8%	outcomes_90.metrics.tbr_lvl1
+21 · Desktop · Overview	Below 70	Below 70	UI label (no data)
+21 · Desktop · Overview	1.2	1.2	derived: 14 d − 90 d
+21 · Desktop · Overview	0.1%	0.1%	outcomes_14.metrics.tbr_lvl2
+21 · Desktop · Overview	0.3%	0.3%	outcomes_30.metrics.tbr_lvl2
+21 · Desktop · Overview	0.5%	0.5%	outcomes_90.metrics.tbr_lvl2
+21 · Desktop · Overview	Below 54	Below 54	UI label (no data)
+21 · Desktop · Overview	0.4	0.4	derived: 14 d − 90 d
+21 · Desktop · Overview	33.5%	33.5%	outcomes_14.metrics.tar_lvl1
+21 · Desktop · Overview	27.6%	27.6%	outcomes_30.metrics.tar_lvl1
+21 · Desktop · Overview	20.0%	20.0%	outcomes_90.metrics.tar_lvl1
+21 · Desktop · Overview	Above 180	Above 180	UI label (no data)
+21 · Desktop · Overview	13.5	13.5	derived: 14 d − 90 d
+21 · Desktop · Overview	10.6%	10.6%	outcomes_14.metrics.tar_lvl2
+21 · Desktop · Overview	7.7%	7.7%	outcomes_30.metrics.tar_lvl2
+21 · Desktop · Overview	4.4%	4.4%	outcomes_90.metrics.tar_lvl2
+21 · Desktop · Overview	Above 250	Above 250	UI label (no data)
+21 · Desktop · Overview	6.2	6.2	derived: 14 d − 90 d
+21 · Desktop · Overview	169	169	outcomes_14.metrics.mean_glucose
+21 · Desktop · Overview	157	157	outcomes_30.metrics.mean_glucose
+21 · Desktop · Overview	147	147	outcomes_90.metrics.mean_glucose
+21 · Desktop · Overview	Mean	Mean	UI label (no data)
+21 · Desktop · Overview	22	22	derived: 14 d − 90 d
+21 · Desktop · Overview	7.4%	7.4%	outcomes_14.metrics.gmi
+21 · Desktop · Overview	7.1%	7.1%	outcomes_30.metrics.gmi
+21 · Desktop · Overview	6.8%	6.8%	outcomes_90.metrics.gmi
+21 · Desktop · Overview	GMI	GMI	UI label (no data)
+21 · Desktop · Overview	0.6	0.6	derived: 14 d − 90 d
+21 · Desktop · Overview	35.6%	35.6%	outcomes_14.metrics.cv
+21 · Desktop · Overview	36.4%	36.4%	outcomes_30.metrics.cv
+21 · Desktop · Overview	33.9%	33.9%	outcomes_90.metrics.cv
+21 · Desktop · Overview	CV	CV	UI label (no data)
+21 · Desktop · Overview	1.7	1.7	derived: 14 d − 90 d
+21 · Desktop · Overview	150	150	prototype
+21 · Desktop · Overview	142	142	prototype
+21 · Desktop · Overview	136	136	prototype
+21 · Desktop · Overview	Pre-meal	Pre-meal	UI label (no data)
+21 · Desktop · Overview	14	14	prototype (derived 14 d − 90 d)
+21 · Desktop · Overview	170	170	prototype
+21 · Desktop · Overview	161	161	prototype
+21 · Desktop · Overview	141	141	prototype
+21 · Desktop · Overview	Post-meal 2 h	Post-meal 2 h	UI label (no data)
+21 · Desktop · Overview	29	29	prototype (derived 14 d − 90 d)
+21 · Desktop · Overview	98%	98%	outcomes_14.coverage.cgm_active
+21 · Desktop · Overview	97%	97%	outcomes_30.coverage.cgm_active
+21 · Desktop · Overview	95%	95%	outcomes_90.coverage.cgm_active
+21 · Desktop · Overview	CGM active	CGM active	UI label (no data)
+21 · Desktop · Overview	3.2	3.2	derived: 14 d − 90 d
+21 · Desktop · Overview	3	3	derived: count prompts.json[] where answer = null
+21 · Desktop · Overview	!	!	status.json last_error != null (alert badge)
+22 · Desktop · Queue · setting (example)	Basal 07:00–08:00	Basal 07:00–08:00	example state (setting not admitted today); analyze.json basal slots
+22 · Desktop · Queue · setting (example)	Setting	Setting	example state (setting not admitted today); kind
+22 · Desktop · Queue · setting (example)	1.037 → 1.164	1.037 → 1.164	example state (setting not admitted today); analyze.json basal[07:00].current → estimate.value
+22 · Desktop · Queue · setting (example)	1	1	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+22 · Desktop · Queue · setting (example)	Highs after meals	Highs after meals	guidance.candidates[pattern:highs_after_meals].title
+22 · Desktop · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:highs_after_meals].kind
+22 · Desktop · Queue · setting (example)	34 / 150	34 / 150	findings.outcome_patterns[key=highs_after_meals].k / .n
+22 · Desktop · Queue · setting (example)	2	2	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+22 · Desktop · Queue · setting (example)	Highs after treating lows	Highs after treating lows	guidance.candidates[pattern:highs_after_treating_lows].title
+22 · Desktop · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:highs_after_treating_lows].kind
+22 · Desktop · Queue · setting (example)	7 / 45	7 / 45	findings.outcome_patterns[key=highs_after_treating_lows].k / .n
+22 · Desktop · Queue · setting (example)	3	3	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+22 · Desktop · Queue · setting (example)	Lows after meals	Lows after meals	guidance.candidates[pattern:lows_after_meals].title
+22 · Desktop · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:lows_after_meals].kind
+22 · Desktop · Queue · setting (example)	12 / 150	12 / 150	findings.outcome_patterns[key=lows_after_meals].k / .n
+22 · Desktop · Queue · setting (example)	4	4	derived: rank of admitted ∧ ¬set_aside guidance.candidates by −priority
+22 · Desktop · Queue · setting (example)	Lows after correcting highs	Lows after correcting highs	guidance.candidates[pattern:lows_after_correcting_highs].title
+22 · Desktop · Queue · setting (example)	Pattern	Pattern	guidance.candidates[pattern:lows_after_correcting_highs].kind
+22 · Desktop · Queue · setting (example)	2 / 45	2 / 45	findings.outcome_patterns[key=lows_after_correcting_highs].k / .n
+22 · Desktop · Queue · setting (example)	Select	Select	UI label (no data)
+22 · Desktop · Queue · setting (example)	Enter	Enter	key label
+22 · Desktop · Queue · setting (example)	Open	Open	UI label (no data)
+22 · Desktop · Queue · setting (example)	07:00	07:00	example state (setting not admitted today); analyze.json basal[label=07:00].label
+22 · Desktop · Queue · setting (example)	1.037	1.037	example state (setting not admitted today); analyze.json basal[07:00].current
+22 · Desktop · Queue · setting (example)	1.164	1.164	example state (setting not admitted today); analyze.json basal[07:00].estimate.value
+22 · Desktop · Queue · setting (example)	1.037–1.392	1.037–1.392	example state (setting not admitted today); analyze.json basal[07:00].estimate.lo/.hi
+22 · Desktop · Queue · setting (example)	19 days	19 days	example state (setting not admitted today); analyze.json basal[07:00].days
+22 · Desktop · Queue · setting (example)	07:30	07:30	example state (setting not admitted today); analyze.json basal[label=07:30].label
+22 · Desktop · Queue · setting (example)	1.244	1.244	example state (setting not admitted today); analyze.json basal[07:30].current
+22 · Desktop · Queue · setting (example)	1.434	1.434	example state (setting not admitted today); analyze.json basal[07:30].estimate.value
+22 · Desktop · Queue · setting (example)	1.244–1.748	1.244–1.748	example state (setting not admitted today); analyze.json basal[07:30].estimate.lo/.hi
+22 · Desktop · Queue · setting (example)	19 days	19 days	example state (setting not admitted today); analyze.json basal[07:30].days
+22 · Desktop · Queue · setting (example)	Slot	Slot	UI label (no data)
+22 · Desktop · Queue · setting (example)	U/h	U/h	UI label (no data)
+22 · Desktop · Queue · setting (example)	Range	Range	UI label (no data)
+22 · Desktop · Queue · setting (example)	n	n	UI label (no data)
+22 · Desktop · Queue · setting (example)	05	05	axis label
+22 · Desktop · Queue · setting (example)	07	07	axis label
+22 · Desktop · Queue · setting (example)	09	09	axis label
+22 · Desktop · Queue · setting (example)	setting chart	chart	example state (setting not admitted today); analyze.json basal[05:00..09:30] current (step), estimate.value (bar), estimate.lo/.hi (band)
+22 · Desktop · Queue · setting (example)	1.5	1.5	axis label
+22 · Desktop · Queue · setting (example)	0.5	0.5	axis label
+22 · Desktop · Queue · setting (example)	Current	Current	UI label (no data)
+22 · Desktop · Queue · setting (example)	Estimate	Estimate	UI label (no data)
+22 · Desktop · Queue · setting (example)	Basal	Basal	example state (setting not admitted today); guidance.candidates[setting:basal_rate].title
+22 · Desktop · Queue · setting (example)	07:00–08:00	07:00–08:00	example state (setting not admitted today); analyze.json basal slots 07:00, 07:30
+22 · Desktop · Queue · setting (example)	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="12.5" r="6.5"/><path d="M9.5 9v3.5l2.2 1.4"/><path d="M14.5 2.5h4.5l-4.5 4.5h4.5"/></svg>	UI icon button: snooze 14 d
+22 · Desktop · Queue · setting (example)	07:00–08:00	07:00–08:00	example state (setting not admitted today); analyze.json basal slots
+22 · Desktop · Queue · setting (example)	3	3	derived: count prompts.json[] where answer = null
+22 · Desktop · Queue · setting (example)	!	!	status.json last_error != null (alert badge)
+23 · Desktop · Day	September 2026	September 2026	day_navigator_2026-09.json month
+23 · Desktop · Day	S	S	weekday label
+23 · Desktop · Day	M	M	weekday label
+23 · Desktop · Day	T	T	weekday label
+23 · Desktop · Day	W	W	weekday label
+23 · Desktop · Day	F	F	weekday label
+23 · Desktop · Day	Lows	Lows	UI label (no data)
+23 · Desktop · Day	Highs	Highs	UI label (no data)
+23 · Desktop · Day	Clean	Clean	UI label (no data)
+23 · Desktop · Day	% in range	% in range	UI label (no data)
+23 · Desktop · Day	30	30	day_navigator_2026-09.json days[iso=2026-08-30].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-30].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-08-30].lows
+23 · Desktop · Day	8	8	day_navigator_2026-09.json days[iso=2026-08-30].highs
+23 · Desktop · Day	37%	37%	day_navigator_2026-09.json days[iso=2026-08-30].tir
+23 · Desktop · Day	31	31	day_navigator_2026-09.json days[iso=2026-08-31].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-08-31].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-08-31].lows
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-08-31].highs
+23 · Desktop · Day	77%	77%	day_navigator_2026-09.json days[iso=2026-08-31].tir
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-01].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-01].curve[] (sparkline)
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-01].highs
+23 · Desktop · Day	83%	83%	day_navigator_2026-09.json days[iso=2026-09-01].tir
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-02].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-02].curve[] (sparkline)
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-02].lows
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-02].highs
+23 · Desktop · Day	92%	92%	day_navigator_2026-09.json days[iso=2026-09-02].tir
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-03].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-03].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-03].lows
+23 · Desktop · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-03].highs
+23 · Desktop · Day	76%	76%	day_navigator_2026-09.json days[iso=2026-09-03].tir
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-04].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-04].curve[] (sparkline)
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-04].highs
+23 · Desktop · Day	74%	74%	day_navigator_2026-09.json days[iso=2026-09-04].tir
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-05].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-05].curve[] (sparkline)
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-05].highs
+23 · Desktop · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-05].tir
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-06].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-06].curve[] (sparkline)
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-06].highs
+23 · Desktop · Day	80%	80%	day_navigator_2026-09.json days[iso=2026-09-06].tir
+23 · Desktop · Day	7	7	day_navigator_2026-09.json days[iso=2026-09-07].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-07].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-07].lows
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-07].highs
+23 · Desktop · Day	66%	66%	day_navigator_2026-09.json days[iso=2026-09-07].tir
+23 · Desktop · Day	8	8	day_navigator_2026-09.json days[iso=2026-09-08].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-08].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-08].highs
+23 · Desktop · Day	97%	97%	day_navigator_2026-09.json days[iso=2026-09-08].tir
+23 · Desktop · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-09].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-09].curve[] (sparkline)
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-09].highs
+23 · Desktop · Day	82%	82%	day_navigator_2026-09.json days[iso=2026-09-09].tir
+23 · Desktop · Day	10	10	day_navigator_2026-09.json days[iso=2026-09-10].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-10].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-10].lows
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-10].highs
+23 · Desktop · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-10].tir
+23 · Desktop · Day	11	11	day_navigator_2026-09.json days[iso=2026-09-11].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-11].curve[] (sparkline)
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-11].lows
+23 · Desktop · Day	98%	98%	day_navigator_2026-09.json days[iso=2026-09-11].tir
+23 · Desktop · Day	12	12	day_navigator_2026-09.json days[iso=2026-09-12].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-12].curve[] (sparkline)
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-12].lows
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-12].highs
+23 · Desktop · Day	83%	83%	day_navigator_2026-09.json days[iso=2026-09-12].tir
+23 · Desktop · Day	13	13	day_navigator_2026-09.json days[iso=2026-09-13].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-13].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-13].lows
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-13].highs
+23 · Desktop · Day	56%	56%	day_navigator_2026-09.json days[iso=2026-09-13].tir
+23 · Desktop · Day	14	14	day_navigator_2026-09.json days[iso=2026-09-14].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-14].curve[] (sparkline)
+23 · Desktop · Day	7	7	day_navigator_2026-09.json days[iso=2026-09-14].lows
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-14].highs
+23 · Desktop · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-14].tir
+23 · Desktop · Day	15	15	day_navigator_2026-09.json days[iso=2026-09-15].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-15].curve[] (sparkline)
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-15].lows
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-15].highs
+23 · Desktop · Day	68%	68%	day_navigator_2026-09.json days[iso=2026-09-15].tir
+23 · Desktop · Day	16	16	day_navigator_2026-09.json days[iso=2026-09-16].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-16].curve[] (sparkline)
+23 · Desktop · Day	9	9	day_navigator_2026-09.json days[iso=2026-09-16].highs
+23 · Desktop · Day	49%	49%	day_navigator_2026-09.json days[iso=2026-09-16].tir
+23 · Desktop · Day	17	17	day_navigator_2026-09.json days[iso=2026-09-17].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-17].curve[] (sparkline)
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-09-17].lows
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-17].highs
+23 · Desktop · Day	66%	66%	day_navigator_2026-09.json days[iso=2026-09-17].tir
+23 · Desktop · Day	18	18	day_navigator_2026-09.json days[iso=2026-09-18].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-18].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-18].lows
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-18].highs
+23 · Desktop · Day	52%	52%	day_navigator_2026-09.json days[iso=2026-09-18].tir
+23 · Desktop · Day	19	19	day_navigator_2026-09.json days[iso=2026-09-19].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-19].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-19].lows
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-19].highs
+23 · Desktop · Day	62%	62%	day_navigator_2026-09.json days[iso=2026-09-19].tir
+23 · Desktop · Day	20	20	day_navigator_2026-09.json days[iso=2026-09-20].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-20].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-20].lows
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-20].highs
+23 · Desktop · Day	60%	60%	day_navigator_2026-09.json days[iso=2026-09-20].tir
+23 · Desktop · Day	21	21	day_navigator_2026-09.json days[iso=2026-09-21].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-21].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-21].lows
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-21].highs
+23 · Desktop · Day	88%	88%	day_navigator_2026-09.json days[iso=2026-09-21].tir
+23 · Desktop · Day	22	22	day_navigator_2026-09.json days[iso=2026-09-22].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-22].curve[] (sparkline)
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-22].highs
+23 · Desktop · Day	49%	49%	day_navigator_2026-09.json days[iso=2026-09-22].tir
+23 · Desktop · Day	23	23	day_navigator_2026-09.json days[iso=2026-09-23].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-23].curve[] (sparkline)
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-23].highs
+23 · Desktop · Day	87%	87%	day_navigator_2026-09.json days[iso=2026-09-23].tir
+23 · Desktop · Day	24	24	day_navigator_2026-09.json days[iso=2026-09-24].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-24].curve[] (sparkline)
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-24].highs
+23 · Desktop · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-24].tir
+23 · Desktop · Day	25	25	day_navigator_2026-09.json days[iso=2026-09-25].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-25].curve[] (sparkline)
+23 · Desktop · Day	4	4	day_navigator_2026-09.json days[iso=2026-09-25].highs
+23 · Desktop · Day	46%	46%	day_navigator_2026-09.json days[iso=2026-09-25].tir
+23 · Desktop · Day	26	26	day_navigator_2026-09.json days[iso=2026-09-26].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-26].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-26].lows
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-26].highs
+23 · Desktop · Day	74%	74%	day_navigator_2026-09.json days[iso=2026-09-26].tir
+23 · Desktop · Day	27	27	day_navigator_2026-09.json days[iso=2026-09-27].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-27].curve[] (sparkline)
+23 · Desktop · Day	5	5	day_navigator_2026-09.json days[iso=2026-09-27].highs
+23 · Desktop · Day	70%	70%	day_navigator_2026-09.json days[iso=2026-09-27].tir
+23 · Desktop · Day	28	28	day_navigator_2026-09.json days[iso=2026-09-28].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-28].curve[] (sparkline)
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-09-28].lows
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-28].highs
+23 · Desktop · Day	63%	63%	day_navigator_2026-09.json days[iso=2026-09-28].tir
+23 · Desktop · Day	29	29	day_navigator_2026-09.json days[iso=2026-09-29].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-29].curve[] (sparkline)
+23 · Desktop · Day	6	6	day_navigator_2026-09.json days[iso=2026-09-29].highs
+23 · Desktop · Day	85%	85%	day_navigator_2026-09.json days[iso=2026-09-29].tir
+23 · Desktop · Day	30	30	day_navigator_2026-09.json days[iso=2026-09-30].iso
+23 · Desktop · Day	nav sparkline	curve	day_navigator_2026-09.json days[iso=2026-09-30].curve[] (sparkline)
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-09-30].highs
+23 · Desktop · Day	44%	44%	day_navigator_2026-09.json days[iso=2026-09-30].tir
+23 · Desktop · Day	1	1	day_navigator_2026-09.json days[iso=2026-10-01].iso
+23 · Desktop · Day	2	2	day_navigator_2026-09.json days[iso=2026-10-02].iso
+23 · Desktop · Day	3	3	day_navigator_2026-09.json days[iso=2026-10-03].iso
+23 · Desktop · Day	Mean	Mean	UI label (no data)
+23 · Desktop · Day	142	142	derived: mean(timeline.cgm[].bg)
+23 · Desktop · Day	mg/dL	mg/dL	UI label (no data)
+23 · Desktop · Day	In range	In range	UI label (no data)
+23 · Desktop · Day	85	85	derived: share of timeline.cgm[].bg within time_of_day.target_range
+23 · Desktop · Day	%	%	UI label (no data)
+23 · Desktop · Day	Carbs	Carbs	UI label (no data)
+23 · Desktop · Day	163	163	derived: sum timeline.boluses[].carbs
+23 · Desktop · Day	g	g	UI label (no data)
+23 · Desktop · Day	Insulin	Insulin	UI label (no data)
+23 · Desktop · Day	56.8	56.8	derived: sum timeline.boluses[].insulin + sum basal[].basal_rate×duration_mins/60
+23 · Desktop · Day	U	U	UI label (no data)
+23 · Desktop · Day	70	70	axis label
+23 · Desktop · Day	180	180	axis label
+23 · Desktop · Day	250	250	axis label
+23 · Desktop · Day	2	2	axis label
+23 · Desktop · Day	0 U/h	0 U/h	axis label
+23 · Desktop · Day	00	00	axis label
+23 · Desktop · Day	06	06	axis label
+23 · Desktop · Day	12	12	axis label
+23 · Desktop · Day	18	18	axis label
+23 · Desktop · Day	24	24	axis label
+23 · Desktop · Day	Day chart	glucose line, bolus markers, basal bars	timeline_2026-09-29 cgm[] (every 2nd point), boluses[] (carbs≠null = meal), basal[] hourly sums of basal_rate vs profile_basal_rate, pump_events[], sleep_windows[]
+23 · Desktop · Day	Meal bolus	Meal bolus	UI label (no data)
+23 · Desktop · Day	Bolus, no carbs	Bolus, no carbs	UI label (no data)
+23 · Desktop · Day	Suspend	Suspend	UI label (no data)
+23 · Desktop · Day	Basal	Basal	UI label (no data)
+23 · Desktop · Day	Programmed	Programmed	UI label (no data)
+23 · Desktop · Day	Sleep	Sleep	UI label (no data)
+23 · Desktop · Day	Logged carbs	Logged carbs	UI label (no data)
+23 · Desktop · Day	0	0	derived: count carbs.json carb_entries[] on 2026-09-29
+23 · Desktop · Day	06:34	06:34	timeline.boluses[].t
+23 · Desktop · Day	Meal	Meal	UI label (no data)
+23 · Desktop · Day	18 g	18 g	timeline.boluses[].carbs
+23 · Desktop · Day	3.45 U	3.45 U	timeline.boluses[].insulin
+23 · Desktop · Day	10:13	10:13	timeline.boluses[].t
+23 · Desktop · Day	35 g	35 g	timeline.boluses[].carbs
+23 · Desktop · Day	9.35 U	9.35 U	timeline.boluses[].insulin
+23 · Desktop · Day	15:45	15:45	timeline.boluses[].t
+23 · Desktop · Day	6.72 U	6.72 U	timeline.boluses[].insulin
+23 · Desktop · Day	16:18	16:18	timeline.boluses[].t
+23 · Desktop · Day	6.25 U	6.25 U	timeline.boluses[].insulin
+23 · Desktop · Day	21:28	21:28	timeline.boluses[].t
+23 · Desktop · Day	25 g	25 g	timeline.boluses[].carbs
+23 · Desktop · Day	4.83 U	4.83 U	timeline.boluses[].insulin
+23 · Desktop · Day	21:33	21:33	timeline.boluses[].t
+23 · Desktop · Day	15 g	15 g	timeline.boluses[].carbs
+23 · Desktop · Day	2.68 U	2.68 U	timeline.boluses[].insulin
+23 · Desktop · Day	<span class="lbtn"><b>+</b> Log carbs</span>	<span class="lbtn"><b>+</b> Log carbs</span>	UI control: opens Log carbs (POST /api/carbs)
+23 · Desktop · Day	Mon 29 Sep 2026	Mon 29 Sep 2026	timeline_2026-09-29.start
+23 · Desktop · Day	Log carbs	Log carbs	UI label (no data)
+23 · Desktop · Day	0	0	input placeholder
+23 · Desktop · Day	Now	Now	UI default: t = now
+23 · Desktop · Day	09:41	09:41	UI default: device clock
+23 · Desktop · Day	Save	Save	POST /api/carbs {t, grams, certainty: exact, source: manual}
+23 · Desktop · Day	Prompts	Prompts	UI label (no data)
+23 · Desktop · Day	1 / 3	1 / 3	derived: position / count prompts.json[] where answer = null
+23 · Desktop · Day	Low	Low	prompts.json[anchor_t=2026-09-26 13:27:35].detector
+23 · Desktop · Day	26 Sep 13:27	26 Sep 13:27	prompts.json[anchor_t=2026-09-26 13:27:35].anchor_t
+23 · Desktop · Day	69	69	prompts.json[anchor_t=2026-09-26 13:27:35].key_bg
+23 · Desktop · Day	sparkline	trace	prompts.json[anchor_t=2026-09-26 13:27:35].cgm[] (sparkline)
+23 · Desktop · Day	11:32	11:32	prompts.json[].cgm[0].t
+23 · Desktop · Day	15:27	15:27	prompts.json[].cgm[-1].t
+23 · Desktop · Day	Yes	Yes	POST /api/prompts/answer answer carbs, grams null
+23 · Desktop · Day	No	No	POST /api/prompts/answer answer no
+23 · Desktop · Day	False low	False low	POST /api/prompts/answer answer false-low
+23 · Desktop · Day	Not sure	Not sure	POST /api/prompts/answer answer not-sure (desktop button; swipe on touch)
+23 · Desktop · Day	3	3	derived: count prompts.json[] where answer = null
+23 · Desktop · Day	!	!	status.json last_error != null (alert badge)

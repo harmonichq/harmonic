@@ -49,7 +49,7 @@ scripts below are the **fast gate**. Its backend delivery leg needs a built shel
 npm ci && npm run build                    # required before backend delivery tests
 uv run python -m pytest                    # backend, stdlib unittest over the built shell
 node --test 'frontend/**/*.test.js'        # fast gate: the one source root
-npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
+npx --yes @fission-ai/openspec@1.14.0 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard

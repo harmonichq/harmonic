@@ -195,8 +195,11 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+      # Pinned to an exact release: a floating major lets an upstream rule
+      # change fail main with no commit here (1.14.1 turned >500-character
+      # requirement text into a strict-mode failure). Raise the pin on purpose.
       - name: Validate OpenSpec
-        run: npx --yes @fission-ai/openspec@1 validate --all --strict
+        run: npx --yes @fission-ai/openspec@1.14.0 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
       # no npm dependency. The one source root is named explicitly: a glob
       # that does not name a root is a runner no new test is ever seen by.

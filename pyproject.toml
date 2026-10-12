@@ -26,7 +26,7 @@ dependencies = []
 # formerly pinned an exact `dev` commit for these before upstream tagged a
 # release.
 sync = [
-    "tconnectsync>=3.0.0",
+    "tconnectsync>=3.0.3",
     "cryptography>=42",
 ]
 # Plots for the Phase 3 "why" report.

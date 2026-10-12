@@ -1205,7 +1205,7 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.110" },
     { name = "httpx", marker = "extra == 'api'", specifier = ">=0.27" },
     { name = "matplotlib", marker = "extra == 'report'", specifier = ">=3.5" },
-    { name = "tconnectsync", marker = "extra == 'sync'", specifier = ">=3.0.0" },
+    { name = "tconnectsync", marker = "extra == 'sync'", specifier = ">=3.0.3" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = ">=0.27" },
 ]
 provides-extras = ["sync", "report", "api"]
@@ -2856,7 +2856,7 @@ wheels = [
 
 [[package]]
 name = "tconnectsync"
-version = "3.0.0"
+version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "arrow" },
@@ -2878,9 +2878,9 @@ dependencies = [
     { name = "urllib3", version = "2.6.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "urllib3", version = "2.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/67/5f/5c8e8af0d3fa0c095ee21659085909344c7597747d36f0d1be6f16b3eb98/tconnectsync-3.0.0.tar.gz", hash = "sha256:c12c3b4388e933c340c51f7cf94f53ee95ca3526c5ba3f25fe914681e01a67c1", size = 79998, upload-time = "2026-07-01T07:27:37.819Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/2b/6189b92ae5fe0352e917018afd3b1aeffaddc4e01721a99fc9d849d65b71/tconnectsync-3.0.3.tar.gz", hash = "sha256:63a82c48591de91337fdfe7fb94f719a7420225ebd609040a9f923f0db4d4f38", size = 89526, upload-time = "2026-10-02T02:25:30.836Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/88/1bbeaffc92d1744fa78414a2cfacb899a7ead4eb2d793ac256693664648a/tconnectsync-3.0.0-py3-none-any.whl", hash = "sha256:ae6a535390a8a8e8a71fba4d3034e72c9236988136b7785e56a4ad6ac76f1a4f", size = 92180, upload-time = "2026-07-01T07:27:36.681Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/a4/2e60fa86aeb59eaeb35b49c6d8f99efbc1913d505ff6abb8aa9479049b6b/tconnectsync-3.0.3-py3-none-any.whl", hash = "sha256:9f52919a326877812d4c7eb21b4440c1a8b81b25a2afe387f7dfbb1d9500d2e9", size = 96257, upload-time = "2026-10-02T02:25:29.297Z" },
 ]
 
 [[package]]

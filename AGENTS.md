@@ -434,10 +434,12 @@ Hard-won, and expensive to re-derive.
   **exclusion** signal to de-bias the fasting window — never a modeling input,
   never a synthetic bolus, never sourced from the pump feed. The two streams are
   unrelated; do not conflate them.
-- **Cancelled-bolus carbs are unrecoverable, and `eventIds` on the pump-logs
-  endpoint is a no-op.** The endpoint ignores that query parameter entirely, so
-  the codes it returns are the complete feed — there is nothing to fuzz for.
-  Carbs persist only on a *confirmed* bolus. A bolus that was calculated and
+- **Cancelled-bolus carbs are unrecoverable, and the pump-logs event filter
+  never surfaced them.** The endpoint long ignored its event-code filter (then
+  `eventIds`) and returned every code in the window, so there is nothing to
+  fuzz for. Around 2026-09-30 the vendor began rejecting `eventIds` with HTTP
+  400; it is now `eventCodes`, sent by `tconnectsync` ≥3.0.3 with the web app's
+  own code list. Carbs persist only on a *confirmed* bolus. A bolus that was calculated and
   then backed out emits a BG-entry stamp with no carb field, and the vendor's
   own daily total excludes it too. Don't chase these.
 
@@ -445,8 +447,11 @@ Hard-won, and expensive to re-derive.
 
 - **Never re-vendor `tconnectsync`.** A local `tconnectsync/` directory shadows
   the installed package on `sys.path` and breaks the import. Harmonic depends on
-  upstream `tconnectsync`, floored at `>=3.0.0` and pinned by `uv.lock`.
-- **3.0.0 is a hard floor, and a stale virtualenv hides why.** When Tandem cut
+  upstream `tconnectsync`, floored at `>=3.0.3` and pinned by `uv.lock`.
+- **3.0.3 is the floor for fetching at all.** Below it every pump-logs request
+  sends `eventIds`, which the vendor has rejected with HTTP 400 since about
+  2026-09-30 — the hourly fetch fails and the store silently stops growing.
+- **3.0.0 was the first hard floor, and a stale virtualenv hides why.** When Tandem cut
   over from the old reports API to the BFF endpoints, upstream fixed it
   natively, and 3.0.0 was the first tagged release carrying that. It also
   renamed every event field to camelCase (`currentGlucoseDisplayValue`,

@@ -88,6 +88,7 @@ export const SelectRowDesktop: Story = {
   },
 };
 
+// Desktop: the same Snooze text action beneath Pin (S is its shortcut).
 export const SnoozeUndoDesktop: Story = {
   args: { layout: 'desktop', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
   parameters: { frame: FRAMES.desktop },
@@ -105,7 +106,7 @@ export const SnoozeUndoDesktop: Story = {
 };
 
 // Phone snooze has a visible control as well as the swipe: the play presses
-// the open card's Snooze, sees the bar, and undoes it.
+// the open card's Snooze text action beneath Pin, sees the bar, and undoes it.
 export const SnoozeUndoPhone: Story = {
   args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
   parameters: { frame: FRAMES.phone },

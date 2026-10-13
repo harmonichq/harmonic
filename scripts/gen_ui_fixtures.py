@@ -567,7 +567,7 @@ def _queue_store(client: TestClient) -> dict:
     return {
         "findings": {
             "outcome_patterns": [
-                {**{field: p[field] for field in ("key", "subject", "title", "k", "n", "wilson")},
+                {**{field: p[field] for field in ("key", "subject", "title", "k", "n")},
                  "wide": p.get("wide"), "collapse": p.get("collapse"), "action": p.get("action")}
                 for p in findings["outcome_patterns"]
             ],

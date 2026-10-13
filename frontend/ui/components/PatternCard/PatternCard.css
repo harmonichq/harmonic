@@ -33,16 +33,9 @@
   letter-spacing: -.02em;
 }
 .ui-pcard__of { color: var(--wk-ink-body); font-size: var(--ui-type-body); }
+.ui-pcard__magnitude .ui-pill { margin-left: 4px; }
 
 .ui-pcard__waffle { margin-top: 16px; }
 
-.ui-pcard__range {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-variant-numeric: tabular-nums;
-}
-.ui-pcard__range-value { color: var(--wk-ink-body); font-size: var(--ui-type-label); }
 
 .ui-pcard__action { display: flex; margin-top: 24px; }

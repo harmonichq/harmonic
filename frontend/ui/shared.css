@@ -24,3 +24,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* A card's lesser action (Snooze): a text action centred beneath the card's
+   primary, far enough below it not to be hit by accident. */
+.ui-card-snooze { display: flex; justify-content: center; margin-top: 16px; }

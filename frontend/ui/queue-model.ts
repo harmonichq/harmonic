@@ -27,8 +27,7 @@ export type PatternData = {
   magnitude: Magnitude | null;
   /** Pattern-scope cause shares, largest first. */
   causes: Cause[];
-  range: { lo: Sourced<number>; hi: Sourced<number>; n: Sourced<number> } | null;
-  /** The engine flags the pattern's own range as too broad to rely on. */
+  /** The engine flags the pattern as too broad to rely on (ADR 485). */
   uncertain: boolean;
   pinned: boolean;
 };
@@ -67,7 +66,6 @@ export function pattern(name: QueueStore, key: string): PatternData {
   const row = s.findings.rows.find((r) => r.id === rowId);
   if (!row) throw new Error(`${name} serves no ${rowId} row`);
   const rowPath = `${root}.rows[id=${rowId}].0`;
-  const outcomePath = `${root}.outcome_patterns[key=${key}].0`;
   const counted = Boolean(row.count_sentences?.length);
   const causes = member
     ? [{ title: row.title, count: row.count_sentences![0].count }]
@@ -88,13 +86,6 @@ export function pattern(name: QueueStore, key: string): PatternData {
         }
       : null,
     causes,
-    range: counted
-      ? {
-          lo: sourced(`${outcomePath}.wilson.lo × ${outcomePath}.n`, 'round'),
-          hi: sourced(`${outcomePath}.wilson.hi × ${outcomePath}.n`, 'round'),
-          n: sourced(`${outcomePath}.n`),
-        }
-      : null,
     uncertain: (outcome?.wide as boolean | null | undefined) === true,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
   };
@@ -132,7 +123,7 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
 
 /** The story states the generator found in the served answers, by name. */
 const states = fixtures.states;
-type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned';
+type PatternState = 'multi_cause' | 'single_cause' | 'no_cause' | 'pinned' | 'uncertain';
 type SettingState = 'setting' | 'setting_trial';
 
 export function patternState(name: PatternState): PatternData {

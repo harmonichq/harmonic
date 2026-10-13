@@ -4,15 +4,14 @@
 // resolves that path against the fixtures and compares it with the text.
 //
 // A derived number names its formula the same way: the source is fields joined
-// by " × " (multiplied) or " − " (subtracted), applied left to right, and
+// by " − " (subtracted), applied left to right, and
 // `data-format` names how the result is printed — `round` to the nearest whole
 // number, `fixed1` or `fixed2` to one or two decimals, `clock` as minutes since
 // midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
 // `date` as the day and month of a served date or time ("19 May"), `time` as
 // the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time, `until` as the date
 // fourteen days after a served time (§1.5 Snooze: "for 14 days").
-// "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n); the
-// 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
+// The 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
 //
 // Grammar: dot-separated keys and array indexes; `length` on an array; and one
 // filter on an array segment: equality, `prompts[answer=null]`, whose value is
@@ -54,10 +53,10 @@ export function resolveField(root, path) {
   return value;
 }
 
-const OPERATORS = { '×': (a, b) => a * b, '−': (a, b) => a - b };
+const OPERATORS = { '−': (a, b) => a - b };
 
 export function resolveSource(root, source) {
-  const [first, ...rest] = source.split(/ ([×−]) /);
+  const [first, ...rest] = source.split(/ (−) /);
   let value = resolveField(root, first);
   for (let i = 0; i < rest.length; i += 2) value = OPERATORS[rest[i]](value, resolveField(root, rest[i + 1]));
   return value;

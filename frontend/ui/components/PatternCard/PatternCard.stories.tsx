@@ -8,8 +8,8 @@ import { PatternCard } from './PatternCard';
 // - SingleCause: one attributed cause.
 // - NoCause: a counted pattern no cause claims.
 // - Pinned: the pattern a Focus was pinned on through the engine.
-// The Uncertain state waits on the pattern's own `wide` flag, which the
-// backend does not serve yet.
+// - Uncertain: the pattern the engine serves `wide` (ADR 485), its tag at the
+//   end of the magnitude line.
 const meta = {
   title: 'PatternCard',
   component: PatternCard,
@@ -22,5 +22,6 @@ type Story = StoryObj<typeof meta>;
 export const MultiCause: Story = { args: { data: patternState('multi_cause') } };
 export const SingleCause: Story = { args: { data: patternState('single_cause') } };
 export const NoCause: Story = { args: { data: patternState('no_cause') } };
+export const Uncertain: Story = { args: { data: patternState('uncertain') } };
 export const Pinned: Story = { args: { data: patternState('pinned') } };
 export const Loading: Story = { args: { loading: true } };

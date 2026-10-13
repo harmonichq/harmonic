@@ -75,7 +75,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue card to snooze it, or the Snooze icon button in the open card's header row | Snooze icon button in the open card's header row; shortcut S |
+| Swipe a Queue card to snooze it, or the Snooze text action beneath Pin (a Setting card: at its foot) | The same Snooze text action; shortcut S |
 | Swipe a Prompt to record Not sure | A fourth button, **Not sure** |
 | Swipe the Day week strip | ‹ › buttons and a month grid that is always visible |
 | Tap the month label to open the Month sheet | Month grid in the left pane |
@@ -85,8 +85,8 @@ Each row lists a screen's states. Labels only; no state uses prose.
 
 Desktop has no hover-revealed actions, and every action has a visible control.
 Every touch gesture has a visible equivalent on the phone as well: a swipe is a
-shortcut, never the only way (Snooze is also an icon button in the open card's
-header). Back from a drill-down is the "‹ Parent" control in the screen header;
+shortcut, never the only way (Snooze is also a text action on the open
+card). Back from a drill-down is the "‹ Parent" control in the screen header;
 the system's own edge-swipe back is left to the platform, never overridden.
 
 ### 1.5 Glossary (every user-facing noun and verb)
@@ -105,7 +105,7 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Snooze** | verb | Remove from the Queue for 14 days. It returns early if the evidence changes. |
 | **Restore** | verb | Bring a snoozed item back. |
 | **Undo** | verb | Reverse the last snooze. |
-| **Range** | noun | The engine's interval for the statistic it sits next to. |
+| **Range** | noun | The engine's interval for a Setting's estimate. |
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
 | **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
@@ -191,6 +191,7 @@ in §2.
 | Numeric input | Sized to 3 digits, unit inline, the system numeric keyboard. |
 | State pill | Borderless tinted tag: 18 px, 2 px radius, uppercase 11 px label, the state's tone at 15% fill (Unclear on the rail surface). No outline, so it never reads as a button. Item kinds take no pill: the kind glyph carries Pattern vs Setting. |
 | Badge | 16 px; a count pill or an alert "!". |
+| Caption + value pair | A caption names the value it sits with and reads as one unit with it: stacked, the caption directly above the value, left edges aligned (Nights / Range); or inline, the caption before the value on the value's own baseline (`align-items: baseline`), never centred against it. |
 | Tab bar item / rail item | 44 px target, icon above label. |
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
@@ -241,11 +242,20 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   necessarily cutting what the back end can deliver." See §2.6.
 - **2026-10-13 — Snooze has a visible control on the phone.** The operator
   decided the phone's open card carries the same Snooze icon button as desktop,
-  in its own header row; the swipe stays as the shortcut (§1.4).
+  in its own header row; the swipe stays as the shortcut (§1.4). Its place
+  is superseded below: Snooze is now a text action beneath Pin.
 - **2026-10-13 — the desktop detail pane is filled by its card.** The operator
   decided the open card fills its pane up to a 720 px reading width, left-aligned
   with the pane's margin, with Snooze in the card's own header row and no
   collapse chevron (the card does not collapse on desktop).
+  Superseded for Snooze's place by the next amendment.
+- **2026-10-13 — Snooze is a text action beneath Pin.** The operator asked
+  "shouldn't snooze be next to pin as a little minor button", then chose
+  Apple's stacked primary-plus-lesser layout ("Continue" over "Not Now") over
+  Material's side-by-side row: Pin stays the full-width primary, Snooze is a
+  centred text action 16 px beneath it, and a Setting card carries the same
+  action at its foot. The header's Snooze icon button is removed on phone and
+  desktop; S and the phone swipe stay as shortcuts.
 - **2026-10-13 — a Snoozed item reads as its Queue row.** The operator: "I
   think the snoozed items can have slightly more detail, kind of looking just
   like their original rows looked … we have room to show a little bit more in
@@ -259,6 +269,14 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   removed: "we're already indicating patterns vs. settings with a little icon
   next to the row." The row's kind glyph is named Pattern or Setting for
   assistive tech, so the kind is still said in words.
+- **2026-10-13 — only settings have a range.** The operator: "Only settings
+  should have a range." The Range line leaves the Pattern card; Uncertain
+  (ADR 485) carries a pattern's confidence, and §1.5 Range now means a
+  Setting's estimate interval. On the same card's Range line the operator saw
+  the caption "looks odd, like it's off-centered and just kind of like a
+  different text than the numbers it's describing": it was centred beside a
+  larger value. §2.2 now sets the caption + value pair: stacked, or inline on
+  one baseline.
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -350,14 +368,16 @@ unless noted. Loading is a skeleton of the component's own shape.
      preference`; `findings.outcome_patterns[].k, n` and the noun; the top
      cause lever from `findings.rows[].fold_sentences`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
-     button in the open card's header row (shortcut S); there's no swipe.
+     the open card's Snooze text action (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
-   a Range in the magnitude's units, and Pin.
-   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain;
+   and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
+   confidence (ADR 485).
+   - States: multi-cause; **single cause**; **no attributed cause**; Uncertain
+     (the tag at the end of the magnitude line);
      pinned (Pin replaced by a "Focus" pill); loading.
-   - Header row: the title, the Snooze icon button, and (phone) the collapse
-     chevron.
-   - Fields: `outcome_patterns[].k, n, wilson`; fold sentences (count,
+   - Header row: the title and (phone) the collapse chevron. Snooze is a
+     text action centred beneath Pin (or the Focus pill), 16 px below it.
+   - Fields: `outcome_patterns[].k, n, wide`; fold sentences (count,
      denominator, lever title).
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
@@ -371,7 +391,7 @@ unless noted. Loading is a skeleton of the component's own shape.
     count ("30 nights") and one Range. No button.
     - States: default; range collapsed (lo = hi, single value shown);
       matured into a Trial (Changes link).
-    - Header row: the title and the Snooze icon button.
+    - Snooze: a text action centred at the card's foot.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their ISF/carb-ratio equivalents.
     - Desktop: fills the detail pane up to 720 px.

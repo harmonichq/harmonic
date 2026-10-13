@@ -10,7 +10,7 @@ export type Sourced<T> = { readonly value: T; readonly source: string; readonly 
 
 export const fixtures = data;
 
-/** One served field, or several joined by " × " or " − " for a derived value. */
+/** One served field, or several joined by " − " for a derived value. */
 export function sourced<T>(source: string, format?: Format): Sourced<T> {
   return { value: resolveSource(data, source) as T, source, format };
 }

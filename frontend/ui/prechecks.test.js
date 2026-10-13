@@ -6,14 +6,14 @@ import { precheckProblems } from './prechecks.js';
 
 const sources = {
   fixtures: { outcomes: { 14: { window_days: 14 } }, prompts: [{ answer: null }, { answer: 'yes' }],
-    pattern: { n: 6, wilson: { lo: 0.1477 } }, span: { start_min: 180 },
+    tbr: { lvl1: 8.1, lvl2: 2.4 }, span: { start_min: 180 },
     slot: { current: 0.9, nights: [{ rate: 0.171 }, { rate: 0.52 }, { rate: 0.85 }] } },
   allowed: new Set(['pin', 'queue', 'd', 'snooze', 'may']),
 };
 const clean = {
   texts: [{ text: 'Pin', source: null }, { text: '14', source: 'outcomes.14.window_days' },
     { text: 'd', source: null }, { text: '1', source: 'prompts[answer=null].length' }, { text: '!', source: null },
-    { text: '1', source: 'pattern.wilson.lo × pattern.n', format: 'round' },
+    { text: '5.7', source: 'tbr.lvl1 − tbr.lvl2', format: 'fixed1' },
     { text: '03:00', source: 'span.start_min', format: 'clock' }],
   names: ['Snooze'],
   buttons: [{ role: 'primary', height: 50, label: 'Pin' }, { role: 'segment', height: 28, label: '14 d' },
@@ -64,8 +64,8 @@ test('(e) a number with no field, a missing field, or a different value fails', 
 });
 
 test('(e) a derived or formatted number must equal its formula, as printed', () => {
-  assert.match(run({ texts: [{ text: '2', source: 'pattern.wilson.lo × pattern.n', format: 'round' }] })[0],
-    /^\(e\) "2" is not pattern\.wilson\.lo × pattern\.n as round \(1\)/);
+  assert.match(run({ texts: [{ text: '5.6', source: 'tbr.lvl1 − tbr.lvl2', format: 'fixed1' }] })[0],
+    /^\(e\) "5\.6" is not tbr\.lvl1 − tbr\.lvl2 as fixed1 \(5\.7\)/);
   assert.match(run({ texts: [{ text: '3:00', source: 'span.start_min', format: 'clock' }] })[0], /^\(e\) "3:00"/);
 });
 

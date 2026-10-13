@@ -3,8 +3,8 @@
 //
 // Phone: the header stays put while the page scrolls under it, above the tab
 // bar; the open item shows its card in the row's place (accordion; the others
-// stay rows), with Snooze as an icon button in the card's header (the swipe is
-// its shortcut). A quiet "Snoozed · N" row ends the list when anything is
+// stay rows), with Snooze as a text action centred beneath Pin, or at a
+// Setting card's foot (the swipe is its shortcut). A quiet "Snoozed · N" row ends the list when anything is
 // snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
 // each its Queue row with Until and Restore); back returns with the same
 // item open.
@@ -12,7 +12,7 @@
 // the rail, the ranked list on the left (the selected row marked; the Snoozed
 // list drills down inside this pane and the open item stays), and the open
 // item on the right, up to a
-// reading width, with Snooze in its card's header and no collapse chevron
+// reading width, with the same Snooze text action and no collapse chevron
 // (shortcut S; ↑/↓ move the selection), the bar at the foot of that pane.
 // Each pane scrolls as a whole; nothing scrolls inside a card (§2.3).
 //
@@ -26,7 +26,6 @@ import { Num } from '../../Num';
 import {
   queuedCount, ranking, snoozed, snoozedCount, type QueueItem, type QueueStore,
 } from '../../queue-model';
-import { Button } from '../../components/Button/Button';
 import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
 import { NavBar } from '../../components/NavBar/NavBar';
 import { PatternCard } from '../../components/PatternCard/PatternCard';
@@ -71,10 +70,9 @@ function Row({ item, layout, selected, swiping, onSelect, until }: {
 }
 
 function Card({ item, layout, onSnooze }: { item: QueueItem; layout: Layout; onSnooze: () => void }) {
-  const action = <Button kind="icon" icon="snooze" label="Snooze" onClick={onSnooze} />;
   return item.kind === 'setting'
-    ? <SettingCard data={item.data} action={action} />
-    : <PatternCard data={item.data} action={action} collapsible={layout === 'phone'} />;
+    ? <SettingCard data={item.data} onSnooze={onSnooze} />
+    : <PatternCard data={item.data} onSnooze={onSnooze} collapsible={layout === 'phone'} />;
 }
 
 export function QueueScreen({

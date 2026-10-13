@@ -9,9 +9,6 @@
   font-family: var(--ui-font);
 }
 
-/* The title row: the title, and an action on the item at its end. */
-.ui-scard__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-
 /* One line, quieter than the figure: the kind word strong, its slot regular. */
 .ui-scard__title {
   margin: 0;

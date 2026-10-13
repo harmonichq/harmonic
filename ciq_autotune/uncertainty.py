@@ -125,9 +125,10 @@ def wilson_wide(k: int, n: int, z: float = _FINDING_Z) -> bool:
     """Whether the Wilson interval for ``k`` of ``n`` reads as soft.
 
     Soft when ``n`` is under the floor, or when the interval's half-width exceeds
-    ``_WIDE_REL_HALFWIDTH`` of the point rate. The one rule behind every
-    rate-shaped ``wide`` flag, so a soft finding and a soft Pattern range mean the
-    same thing to a renderer.
+    ``_WIDE_REL_HALFWIDTH`` of the point rate. The rule behind a finding's
+    rate-shaped ``wide`` flag. An outcome Pattern's ``wide`` answers a different
+    question — whether its Queue admission holds at the low end (ADR 485) — and
+    does not read this.
     """
     if n == 0 or n < _WIDE_MIN_N:
         return True

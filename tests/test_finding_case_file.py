@@ -850,7 +850,7 @@ def test_a_meal_two_rate_levers_claim_is_credited_once_to_the_first():
         _meal_row(stamps[2], "carb_undercount", ("carb_undercount",), {"carb_undercount"}),
     ]}}}
     scenarios = {"patterns": [
-        {"lever": lever, "priority": price,
+        {"lever": lever, "priority": price, "admission_basis": "lower_bound",
          "confidence": {"k": 2, "n": 3, "lo": .2, "hi": .9},
          "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
         for lever, price in (("carb_undercount", 40), ("late_bolus", 30))
@@ -942,7 +942,7 @@ def test_circular_pattern_projection_and_case_share_explicit_population():
     }}}
     scenarios = {"patterns": [
         {
-            "lever": lever, "priority": priority,
+            "lever": lever, "priority": priority, "admission_basis": "lower_bound",
             "confidence": {"k": 12, "n": 20, "lo": 0.39, "hi": 0.78},
             "guidance": {"action_id": lever, "seriousness": "moderate"},
         }

@@ -2,6 +2,7 @@
   "_generated_by": "mockups/harmonic-v2.exploration/generate.py",
   "_note": "SYNTHETIC. Existing behavioral-over-treated-low QA case with the same raw synthetic records repeated thirty days later. Current pattern, comparison, Focus and trend producers supply the data. Preemption is an alternative ending of the same active Focus, before manual resolution: a manufactured pump-profile switch is detected by the shipped watch owner. Focus has no maturity gate. The shipped lifecycle owner captures the manual and setting-preempted endings; original decision context is unavailable for this legacy setup.",
   "action": {
+    "admission_basis": "lower_bound",
     "confidence": {
       "confidence": 0.8,
       "effect": 0.5499,
@@ -88650,6 +88651,7 @@
           "low_confidence": [],
           "patterns": [
             {
+              "admission_basis": "lower_bound",
               "confidence": {
                 "confidence": 0.8,
                 "effect": 0.5499,
@@ -90316,7 +90318,7 @@
               "settled_price": 0,
               "subject": "pattern:highs_after_meals",
               "title": "Highs after meals",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -90442,7 +90444,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_correcting_highs",
               "title": "Lows after correcting highs",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.4253,
                 "lo": 0.0513
@@ -90699,7 +90701,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_meals",
               "title": "Lows after meals",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -91636,6 +91638,7 @@
       "low_confidence": [],
       "patterns": [
         {
+          "admission_basis": "lower_bound",
           "confidence": {
             "confidence": 0.8,
             "effect": 0.5499,
@@ -93306,7 +93309,7 @@
           "settled_price": 0,
           "subject": "pattern:highs_after_meals",
           "title": "Highs after meals",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -93432,7 +93435,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_correcting_highs",
           "title": "Lows after correcting highs",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.4253,
             "lo": 0.0513
@@ -93689,7 +93692,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_meals",
           "title": "Lows after meals",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -102851,6 +102854,7 @@
       "low_confidence": [],
       "patterns": [
         {
+          "admission_basis": "lower_bound",
           "confidence": {
             "confidence": 0.8,
             "effect": 0.5499,

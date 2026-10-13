@@ -27659,6 +27659,7 @@
         },
         "low_confidence": [
           {
+            "admission_basis": "low_confidence",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.3297,
@@ -27720,6 +27721,7 @@
             "title": "Carb undercount"
           },
           {
+            "admission_basis": "low_confidence",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.0408,
@@ -47050,6 +47052,7 @@
         },
         "low_confidence": [
           {
+            "admission_basis": "low_confidence",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.0408,

@@ -4,9 +4,11 @@
 // the result once matured); the setting and its slot as the body-size title,
 // the change date beside them in meta ink; what changed, before → after, as
 // the one figure; its days of evidence as ticks, one per required day, filled
-// as they accrue. Once matured, the engine's Before and After for the glossary
-// metrics, the Trial's own target metric in strong ink, since that is the row
-// the result reads. End (§1.3a) is a compact secondary action, offered only
+// as they accrue, counted against the days required ("6 / 14"). A matured
+// Trial has every required day, "14 / 14", however long it has run since.
+// Once matured, the engine's Before and After for the glossary metrics, the
+// Trial's own target metric in strong ink, since that is the row the result
+// reads. End (§1.3a) is a compact secondary action, offered only
 // when the engine accepts it: a matured active Trial. An ended Trial keeps its
 // result and values, names the date it ended and has no End.
 //
@@ -61,8 +63,8 @@ function Trial({ data, onEnd }: { data: TrialData; onEnd?: () => void }) {
       <div className="ui-change__days">
         <span className="ui-caption">Days</span>
         <span className="ui-change__count">
-          <Num value={data.daysElapsed} />
-          {data.maturing && <span className="ui-change__of"> / <Num value={data.daysRequired} /></span>}
+          <Num value={data.maturing ? data.daysElapsed : data.daysRequired} />
+          <span className="ui-change__of"> / <Num value={data.daysRequired} /></span>
         </span>
         <Ticks elapsed={Math.min(data.daysElapsed.value, data.daysRequired.value)} required={data.daysRequired.value} />
       </div>

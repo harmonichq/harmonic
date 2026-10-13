@@ -10,6 +10,7 @@
    "admission_route": "habit_threshold",
    "chosen_member": {
     "action": "habit:carb_undercount",
+    "admission_basis": "lower_bound",
     "admitted": true,
     "hi": 0.2184,
     "k": 9,
@@ -28,6 +29,7 @@
     {
      "action": "habit:carb_undercount",
      "action_title": "Carb undercount",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2184,
      "k": 9,
@@ -42,6 +44,7 @@
     {
      "action": "habit:late_bolus",
      "action_title": "Late bolus",
+     "admission_basis": "low_confidence",
      "admitted": true,
      "hi": 0.2144,
      "k": 7,
@@ -163,6 +166,7 @@
    "admission_route": "habit_threshold",
    "chosen_member": {
     "action": "habit:over_treated_low",
+    "admission_basis": "lower_bound",
     "admitted": true,
     "hi": 0.2731,
     "k": 8,
@@ -181,6 +185,7 @@
     {
      "action": "habit:over_treated_low",
      "action_title": "Over-treated low",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2731,
      "k": 8,
@@ -240,6 +245,7 @@
    "admission_route": "habit_threshold",
    "chosen_member": {
     "action": "habit:correction_on_iob",
+    "admission_basis": "lower_bound",
     "admitted": true,
     "hi": 0.2618,
     "k": 8,
@@ -258,6 +264,7 @@
     {
      "action": "habit:correction_on_iob",
      "action_title": "Correction on active insulin",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2618,
      "k": 8,
@@ -1811,6 +1818,7 @@
    "low_confidence": [],
    "patterns": [
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.62,
@@ -1843,6 +1851,7 @@
      "title": "Over-treated low"
     },
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.44,
@@ -1875,6 +1884,7 @@
      "title": "Carb undercount"
     },
     {
+     "admission_basis": "low_confidence",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.38,
@@ -1907,6 +1917,7 @@
      "title": "Late bolus"
     },
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.35,
@@ -1996,6 +2007,7 @@
    "members": [
     {
      "action": "habit:carb_undercount",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2184,
      "k": 9,
@@ -2008,6 +2020,7 @@
     },
     {
      "action": "habit:late_bolus",
+     "admission_basis": "low_confidence",
      "admitted": true,
      "hi": 0.2144,
      "k": 7,
@@ -2071,7 +2084,7 @@
    "settled_price": 21,
    "subject": "pattern:highs_after_meals",
    "title": "Highs after meals",
-   "wide": true,
+   "wide": false,
    "wilson": {
     "hi": 0.2184,
     "lo": 0.0423
@@ -2162,6 +2175,7 @@
    "members": [
     {
      "action": "habit:over_treated_low",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2731,
      "k": 8,
@@ -2242,6 +2256,7 @@
    "members": [
     {
      "action": "habit:correction_on_iob",
+     "admission_basis": "lower_bound",
      "admitted": true,
      "hi": 0.2618,
      "k": 8,
@@ -2304,7 +2319,7 @@
    "settled_price": 20,
    "subject": "pattern:lows_after_correcting_highs",
    "title": "Lows after correcting highs",
-   "wide": true,
+   "wide": false,
    "wilson": {
     "hi": 0.2785,
     "lo": 0.0747
@@ -2414,6 +2429,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -2426,6 +2442,7 @@
      },
      {
       "action": "habit:late_bolus",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2144,
       "k": 7,
@@ -2580,6 +2597,7 @@
     "members": [
      {
       "action": "habit:over_treated_low",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2731,
       "k": 8,
@@ -2660,6 +2678,7 @@
     "members": [
      {
       "action": "habit:correction_on_iob",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2618,
       "k": 8,
@@ -2770,6 +2789,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -2782,6 +2802,7 @@
      },
      {
       "action": "habit:late_bolus",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2144,
       "k": 7,
@@ -2845,7 +2866,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.6216,
      "lo": 0.0
@@ -2919,7 +2940,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_meals",
     "title": "Lows after meals",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.6216,
      "lo": 0.0
@@ -2936,6 +2957,7 @@
     "members": [
      {
       "action": "habit:over_treated_low",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2731,
       "k": 8,
@@ -2984,7 +3006,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.9381,
      "lo": 0.5135
@@ -3016,6 +3038,7 @@
     "members": [
      {
       "action": "habit:correction_on_iob",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2618,
       "k": 8,
@@ -3126,6 +3149,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -3138,6 +3162,7 @@
      },
      {
       "action": "habit:late_bolus",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2144,
       "k": 7,
@@ -3292,6 +3317,7 @@
     "members": [
      {
       "action": "habit:over_treated_low",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2731,
       "k": 8,
@@ -3340,7 +3366,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.8523,
      "lo": 0.4094
@@ -3372,6 +3398,7 @@
     "members": [
      {
       "action": "habit:correction_on_iob",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2618,
       "k": 8,
@@ -3434,7 +3461,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.4253,
      "lo": 0.0513
@@ -13854,6 +13881,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -13866,6 +13894,7 @@
       },
       {
        "action": "habit:late_bolus",
+       "admission_basis": "low_confidence",
        "admitted": true,
        "hi": 0.2144,
        "k": 7,
@@ -14020,6 +14049,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -14100,6 +14130,7 @@
      "members": [
       {
        "action": "habit:correction_on_iob",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2618,
        "k": 8,
@@ -14391,6 +14422,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -14403,6 +14435,7 @@
        },
        {
         "action": "habit:late_bolus",
+        "admission_basis": "low_confidence",
         "admitted": true,
         "hi": 0.2144,
         "k": 7,
@@ -14558,6 +14591,7 @@
       "members": [
        {
         "action": "habit:correction_on_iob",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2618,
         "k": 8,
@@ -15104,6 +15138,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -15116,6 +15151,7 @@
       },
       {
        "action": "habit:late_bolus",
+       "admission_basis": "low_confidence",
        "admitted": true,
        "hi": 0.2144,
        "k": 7,
@@ -15179,7 +15215,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -15253,7 +15289,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -15270,6 +15306,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -15318,7 +15355,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.9381,
       "lo": 0.5135
@@ -15350,6 +15387,7 @@
      "members": [
       {
        "action": "habit:correction_on_iob",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2618,
        "k": 8,
@@ -15617,6 +15655,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -15629,6 +15668,7 @@
        },
        {
         "action": "habit:late_bolus",
+        "admission_basis": "low_confidence",
         "admitted": true,
         "hi": 0.2144,
         "k": 7,
@@ -15692,7 +15732,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -15784,6 +15824,7 @@
       "members": [
        {
         "action": "habit:correction_on_iob",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2618,
         "k": 8,
@@ -15972,7 +16013,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -16256,6 +16297,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -16268,6 +16310,7 @@
       },
       {
        "action": "habit:late_bolus",
+       "admission_basis": "low_confidence",
        "admitted": true,
        "hi": 0.2144,
        "k": 7,
@@ -16422,6 +16465,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -16470,7 +16514,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.8523,
       "lo": 0.4094
@@ -16502,6 +16546,7 @@
      "members": [
       {
        "action": "habit:correction_on_iob",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2618,
        "k": 8,
@@ -16564,7 +16609,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4253,
       "lo": 0.0513
@@ -16777,6 +16822,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -16789,6 +16835,7 @@
        },
        {
         "action": "habit:late_bolus",
+        "admission_basis": "low_confidence",
         "admitted": true,
         "hi": 0.2144,
         "k": 7,
@@ -17092,6 +17139,7 @@
       "members": [
        {
         "action": "habit:correction_on_iob",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2618,
         "k": 8,
@@ -17154,7 +17202,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4253,
        "lo": 0.0513
@@ -17975,6 +18023,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -17987,6 +18036,7 @@
       },
       {
        "action": "habit:late_bolus",
+       "admission_basis": "low_confidence",
        "admitted": true,
        "hi": 0.2144,
        "k": 7,
@@ -18050,7 +18100,7 @@
      "settled_price": 21,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -18141,6 +18191,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -18221,6 +18272,7 @@
      "members": [
       {
        "action": "habit:correction_on_iob",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2618,
        "k": 8,
@@ -18283,7 +18335,7 @@
      "settled_price": 20,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2785,
       "lo": 0.0747
@@ -18745,6 +18797,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -18757,6 +18810,7 @@
        },
        {
         "action": "habit:late_bolus",
+        "admission_basis": "low_confidence",
         "admitted": true,
         "hi": 0.2144,
         "k": 7,
@@ -18820,7 +18874,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -19164,6 +19218,7 @@
       "members": [
        {
         "action": "habit:correction_on_iob",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2618,
         "k": 8,
@@ -19226,7 +19281,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2785,
        "lo": 0.0747
@@ -30538,6 +30593,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -30601,7 +30657,7 @@
     "settled_price": 66,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.6788,
      "lo": 0.1058
@@ -30692,6 +30748,7 @@
     "members": [
      {
       "action": "habit:over_treated_low",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2731,
       "k": 8,
@@ -30740,7 +30797,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -30828,7 +30885,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -30892,7 +30949,7 @@
     "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -30912,6 +30969,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -30960,7 +31018,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31048,7 +31106,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -31112,7 +31170,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31178,7 +31236,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31244,7 +31302,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -31292,6 +31350,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -31355,7 +31414,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31429,7 +31488,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31446,6 +31505,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -31494,7 +31554,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31582,7 +31642,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31630,6 +31690,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -31693,7 +31754,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31767,7 +31828,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -31784,6 +31845,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -31832,7 +31894,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -31920,7 +31982,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -31939,6 +32001,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -31987,7 +32050,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -32075,7 +32138,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32123,6 +32186,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -32186,7 +32250,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -32277,6 +32341,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -32325,7 +32390,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -32413,7 +32478,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -32477,7 +32542,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -32490,6 +32555,7 @@
    "low_confidence": [],
    "patterns": [
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.62,
@@ -32522,6 +32588,7 @@
      "title": "Over-treated low"
     },
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.44,
@@ -32632,6 +32699,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -32695,7 +32763,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32769,7 +32837,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -32786,6 +32854,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -32834,7 +32903,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -32922,7 +32991,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -33066,6 +33135,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -33129,7 +33199,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -33263,7 +33333,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -33550,7 +33620,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -33844,6 +33914,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -33907,7 +33978,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -33998,6 +34069,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -34046,7 +34118,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -34134,7 +34206,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -34198,7 +34270,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -34342,6 +34414,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -34405,7 +34478,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -34913,7 +34986,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -35300,7 +35373,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -35688,6 +35761,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -35751,7 +35825,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -35825,7 +35899,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -35842,6 +35916,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -35890,7 +35965,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -35978,7 +36053,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -36122,6 +36197,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -36185,7 +36261,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -36319,7 +36395,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -36508,7 +36584,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -36720,7 +36796,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -36896,7 +36972,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -37155,6 +37231,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -37203,7 +37280,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -37291,7 +37368,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -37355,7 +37432,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -37599,7 +37676,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -37788,7 +37865,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 1.0,
        "lo": 0.3784
@@ -38062,7 +38139,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -38162,7 +38239,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -38421,6 +38498,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -38469,7 +38547,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -38557,7 +38635,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -38882,7 +38960,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -48135,6 +48213,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -48198,7 +48277,7 @@
     "settled_price": 66,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.6788,
      "lo": 0.1058
@@ -48289,6 +48368,7 @@
     "members": [
      {
       "action": "habit:over_treated_low",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2731,
       "k": 8,
@@ -48337,7 +48417,7 @@
     "settled_price": 28,
     "subject": "pattern:highs_after_treating_lows",
     "title": "Highs after treating lows",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -48419,7 +48499,7 @@
     "settled_price": 0,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.4865,
      "lo": 0.0619
@@ -48483,7 +48563,7 @@
     "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -48503,6 +48583,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -48551,7 +48632,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -48633,7 +48714,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -48697,7 +48778,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48763,7 +48844,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48829,7 +48910,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -48877,6 +48958,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -48940,7 +49022,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49014,7 +49096,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49031,6 +49113,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -49079,7 +49162,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49161,7 +49244,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49209,6 +49292,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -49272,7 +49356,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49346,7 +49430,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49363,6 +49447,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -49411,7 +49496,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -49541,6 +49626,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -49604,7 +49690,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49678,7 +49764,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -49695,6 +49781,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -49743,7 +49830,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -49825,7 +49912,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -49844,6 +49931,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -49892,7 +49980,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -49974,7 +50062,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -50022,6 +50110,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -50085,7 +50174,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -50176,6 +50265,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -50224,7 +50314,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -50306,7 +50396,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -50370,7 +50460,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -50383,6 +50473,7 @@
    "low_confidence": [],
    "patterns": [
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.62,
@@ -50415,6 +50506,7 @@
      "title": "Over-treated low"
     },
     {
+     "admission_basis": "lower_bound",
      "confidence": {
       "confidence": 0.8,
       "effect": 0.44,
@@ -53306,6 +53398,7 @@
     "members": [
      {
       "action": "habit:carb_undercount",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2184,
       "k": 9,
@@ -53318,6 +53411,7 @@
      },
      {
       "action": "habit:late_bolus",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2144,
       "k": 7,
@@ -53330,6 +53424,7 @@
      },
      {
       "action": "habit:high_carb_sequence",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2071,
       "k": 5,
@@ -53393,7 +53488,7 @@
     "settled_price": 21,
     "subject": "pattern:highs_after_meals",
     "title": "Highs after meals",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.2184,
      "lo": 0.0423
@@ -54324,6 +54419,7 @@
     "members": [
      {
       "action": "habit:correction_stacking",
+      "admission_basis": "low_confidence",
       "admitted": true,
       "hi": 0.2071,
       "k": 5,
@@ -54336,6 +54432,7 @@
      },
      {
       "action": "habit:correction_on_iob",
+      "admission_basis": "lower_bound",
       "admitted": true,
       "hi": 0.2618,
       "k": 8,
@@ -54398,7 +54495,7 @@
     "settled_price": 20,
     "subject": "pattern:lows_after_correcting_highs",
     "title": "Lows after correcting highs",
-    "wide": true,
+    "wide": false,
     "wilson": {
      "hi": 0.2785,
      "lo": 0.0747
@@ -54927,6 +55024,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -54990,7 +55088,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -55081,6 +55179,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -55129,7 +55228,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -55211,7 +55310,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -55275,7 +55374,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -55419,6 +55518,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -55482,7 +55582,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -55990,7 +56090,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -56314,7 +56414,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -56647,6 +56747,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -56710,7 +56811,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -56784,7 +56885,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -56801,6 +56902,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -56849,7 +56951,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -57075,6 +57177,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -57138,7 +57241,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -57272,7 +57375,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -57756,6 +57859,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -57819,7 +57923,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -57910,6 +58014,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -57958,7 +58063,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -58040,7 +58145,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -58104,7 +58209,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -58248,6 +58353,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -58311,7 +58417,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -58819,7 +58925,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -59143,7 +59249,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -59535,6 +59641,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -59598,7 +59705,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -59689,6 +59796,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -59737,7 +59845,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -59819,7 +59927,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -59883,7 +59991,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -60027,6 +60135,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -60090,7 +60199,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -60598,7 +60707,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -60922,7 +61031,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -109726,6 +109835,7 @@
    "2040-01-21 05:30:00",
    "2040-01-20 23:30:00",
    [
+    "admission_basis",
     "confidence",
     "guidance",
     "hero_episode",
@@ -110864,6 +110974,7 @@
    "f0bb8ecb52dea906",
    [
     "action",
+    "admission_basis",
     "admitted",
     "hi",
     "k",
@@ -110916,6 +111027,7 @@
        "$ref",
        358
       ],
+      "lower_bound",
       true,
       0.2922,
       8,
@@ -120453,6 +120565,7 @@
        "$ref",
        1179,
        [
+        "lower_bound",
         [
          "$ref",
          1648
@@ -120748,6 +120861,7 @@
        "$ref",
        358
       ],
+      "lower_bound",
       true,
       0.2922,
       8,
@@ -130847,6 +130961,7 @@
      "$ref",
      1179,
      [
+      "lower_bound",
       [
        "$ref",
        1909
@@ -151569,6 +151684,7 @@
        "$ref",
        1216
       ],
+      "lower_bound",
       true,
       0.6526,
       8,
@@ -164190,6 +164306,7 @@
        "$ref",
        1179,
        [
+        "lower_bound",
         [
          "$ref",
          3730
@@ -164245,6 +164362,7 @@
        "$ref",
        1216
       ],
+      "lower_bound",
       true,
       0.6526,
       8,
@@ -174693,6 +174811,7 @@
     ]
    ],
    "In pooled sequences, the highest-carb fifth spent 93.1% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 15 vs 64)",
+   "strong_override",
    [
     [
      "$ref",
@@ -174701,6 +174820,10 @@
       [
        "$ref",
        358
+      ],
+      [
+       "$ref",
+       3954
       ],
       true,
       0.1532,
@@ -174749,7 +174872,7 @@
      ],
      [
       "$ref",
-      3954
+      3955
      ],
      30,
      [
@@ -174851,7 +174974,7 @@
      ],
      [
       "$ref",
-      3954
+      3955
      ],
      100,
      [
@@ -174878,7 +175001,7 @@
       "$ref",
       1232
      ],
-     false,
+     true,
      [
       "$ref",
       3299
@@ -174945,7 +175068,7 @@
      ],
      [
       "$ref",
-      3954
+      3955
      ],
      32,
      [
@@ -175007,7 +175130,7 @@
      ],
      [
       "$ref",
-      3954
+      3955
      ],
      8,
      [
@@ -176118,6 +176241,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -180174,6 +180298,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1180,
@@ -182006,6 +182131,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -183973,6 +184099,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1769
@@ -184635,6 +184762,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -185821,6 +185949,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -187073,6 +187202,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -188765,6 +188895,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1648
@@ -190294,6 +190425,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.2922,
            "k": 8,
@@ -197537,6 +197669,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -202082,6 +202215,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1180,
@@ -204118,6 +204252,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -206240,6 +206375,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1769
@@ -207133,6 +207269,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -208347,6 +208484,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -210469,6 +210607,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -212113,6 +212252,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              3730
@@ -213903,6 +214043,7 @@
          "members": [
           {
            "action": "habit:repeat_eating",
+           "admission_basis": "lower_bound",
            "admitted": true,
            "hi": 0.6526,
            "k": 8,
@@ -216330,6 +216471,7 @@
            "$ref",
            1179,
            [
+            "lower_bound",
             [
              "$ref",
              1909
@@ -218509,6 +218651,7 @@
          "members": [
           {
            "action": "habit:high_carb_sequence",
+           "admission_basis": "strong_override",
            "admitted": true,
            "hi": 0.1532,
            "k": 8,
@@ -218572,7 +218715,7 @@
          "settled_price": 20,
          "subject": "pattern:highs_after_meals",
          "title": "Highs after meals",
-         "wide": false,
+         "wide": true,
          "wilson": {
           "hi": 0.0162,
           "lo": 0.0
@@ -219531,6 +219674,10 @@
            [
             [
              "$ref",
+             3954
+            ],
+            [
+             "$ref",
              1180,
              [
               0.8,
@@ -219649,7 +219796,7 @@
          [
           [
            "$ref",
-           3955
+           3956
           ],
           [
            "$ref",
@@ -219698,7 +219845,7 @@
             null,
             [
              "$ref",
-             3955
+             3956
             ],
             [
              "$ref",
@@ -219761,11 +219908,11 @@
             [
              [
               "$ref",
-              3956
+              3957
              ],
              [
               "$ref",
-              3957
+              3958
              ]
             ],
             [
@@ -219866,7 +220013,7 @@
          [
           [
            "$ref",
-           3958
+           3959
           ],
           [
            "$ref",
@@ -219927,7 +220074,7 @@
             null,
             [
              "$ref",
-             3958
+             3959
             ],
             [
              "$ref",
@@ -219990,7 +220137,7 @@
                ],
                [
                 "$ref",
-                3959
+                3960
                ]
               ]
              ]
@@ -220995,11 +221142,11 @@
              ],
              [
               "$ref",
-              3956
+              3957
              ],
              [
               "$ref",
-              3960
+              3961
              ],
              [
               "$ref",
@@ -221023,7 +221170,7 @@
              ],
              [
               "$ref",
-              3957
+              3958
              ],
              [
               "$ref",
@@ -221186,7 +221333,7 @@
                "outside",
                [
                 "$ref",
-                3959
+                3960
                ]
               ]
              ]
@@ -221232,12 +221379,12 @@
             ],
             [
              "$ref",
-             3961
+             3962
             ],
             {
              "sequences": [
               "$ref",
-              3961
+              3962
              ]
             },
             "window"
@@ -221299,7 +221446,7 @@
          [
           [
            "$ref",
-           3962
+           3963
           ],
           [
            "$ref",
@@ -221348,7 +221495,7 @@
             null,
             [
              "$ref",
-             3962
+             3963
             ],
             [
              "$ref",
@@ -221421,7 +221568,7 @@
          [
           [
            "$ref",
-           3963
+           3964
           ],
           [
            "$ref",
@@ -221474,7 +221621,7 @@
             null,
             [
              "$ref",
-             3963
+             3964
             ],
             [
              "$ref",
@@ -221594,7 +221741,7 @@
             [
              [
               "$ref",
-              3960
+              3961
              ]
             ],
             null,
@@ -221747,6 +221894,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -221810,7 +221958,7 @@
      "settled_price": 86,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -221901,6 +222049,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -221949,7 +222098,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -222031,7 +222180,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -222095,7 +222244,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -222239,6 +222388,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -222302,7 +222452,7 @@
       "settled_price": 86,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -222871,7 +223021,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -223195,7 +223345,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -223585,6 +223735,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -223648,7 +223799,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -223722,7 +223873,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -223739,6 +223890,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -223787,7 +223939,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.8358,
       "lo": 0.1642
@@ -223869,7 +224021,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -224013,6 +224165,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -224076,7 +224229,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -224210,7 +224363,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -224434,7 +224587,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -224782,6 +224935,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -224845,7 +224999,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -224919,7 +225073,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -224936,6 +225090,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -224984,7 +225139,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -225210,6 +225365,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -225273,7 +225429,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -225407,7 +225563,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -225887,6 +226043,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -225950,7 +226107,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6788,
       "lo": 0.1058
@@ -226041,6 +226198,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -226089,7 +226247,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -226171,7 +226329,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4865,
       "lo": 0.0619
@@ -226235,7 +226393,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -226379,6 +226537,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -226442,7 +226601,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6788,
        "lo": 0.1058
@@ -226950,7 +227109,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -227274,7 +227433,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4865,
        "lo": 0.0619
@@ -227662,6 +227821,7 @@
      "members": [
       {
        "action": "habit:carb_undercount",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2184,
        "k": 9,
@@ -227725,7 +227885,7 @@
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -227799,7 +227959,7 @@
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -227816,6 +227976,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -227864,7 +228025,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -227946,7 +228107,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.4509,
       "lo": 0.0
@@ -228090,6 +228251,7 @@
       "members": [
        {
         "action": "habit:carb_undercount",
+        "admission_basis": "lower_bound",
         "admitted": true,
         "hi": 0.2184,
         "k": 9,
@@ -228153,7 +228315,7 @@
       "settled_price": 66,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -228287,7 +228449,7 @@
       "settled_price": 66,
       "subject": "pattern:lows_after_meals",
       "title": "Lows after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0
@@ -228413,7 +228575,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.4509,
        "lo": 0.0
@@ -228679,7 +228841,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -228855,7 +229017,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -229111,6 +229273,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -229159,7 +229322,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -229241,7 +229404,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -229305,7 +229468,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -229549,7 +229712,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -229675,7 +229838,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 1.0,
        "lo": 0.3784
@@ -230003,7 +230166,7 @@
      "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.2184,
       "lo": 0.0423
@@ -230103,7 +230266,7 @@
       "settled_price": 39,
       "subject": "pattern:overnight_lows_no_iob",
       "title": "Overnight lows with no insulin on board",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.2184,
        "lo": 0.0423
@@ -230359,6 +230522,7 @@
      "members": [
       {
        "action": "habit:over_treated_low",
+       "admission_basis": "lower_bound",
        "admitted": true,
        "hi": 0.2731,
        "k": 8,
@@ -230407,7 +230571,7 @@
      "settled_price": 28,
      "subject": "pattern:highs_after_treating_lows",
      "title": "Highs after treating lows",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 1.0,
       "lo": 0.3784
@@ -230489,7 +230653,7 @@
      "settled_price": 0,
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
-     "wide": true,
+     "wide": false,
      "wilson": {
       "hi": 0.6216,
       "lo": 0.0
@@ -230751,7 +230915,7 @@
       "settled_price": 0,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
        "hi": 0.6216,
        "lo": 0.0

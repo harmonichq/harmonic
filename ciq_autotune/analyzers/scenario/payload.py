@@ -191,6 +191,10 @@ class Pattern:
       hero first).
     * ``occurrence_groups`` — stable policy occurrences with their member episode ids,
       worst severity, and representative episode id.
+    * ``admission_basis`` — why the engine's split put it where it did (#485):
+      ``"lower_bound"`` (surfaced on its Wilson-lower-bound score), ``"strong_override"``
+      (surfaced only as a substantial, severe recurring shape) or ``"low_confidence"``
+      (too thin, or under the score floor without the override).
     """
 
     lever: Lever
@@ -199,6 +203,7 @@ class Pattern:
     recommendation: str
     hero_episode: str
     occurrences: List[str]
+    admission_basis: str
     occurrence_groups: List[Dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -224,6 +229,7 @@ class Pattern:
             # puts behavioral Levers on the same axis the /api/analyze tuning Levers carry.
             **behavioral_priority(c).to_dict(),
             "rank": self.rank,
+            "admission_basis": self.admission_basis,
             "recommendation": self.recommendation,
             "guidance": {
                 "action_id": action_id(self.lever),

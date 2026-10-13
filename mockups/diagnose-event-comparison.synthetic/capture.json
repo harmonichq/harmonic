@@ -46,6 +46,7 @@
       "members": [
         {
           "action": "habit:carb_undercount",
+          "admission_basis": "lower_bound",
           "admitted": true,
           "hi": 0.2184,
           "k": 9,
@@ -58,6 +59,7 @@
         },
         {
           "action": "habit:late_bolus",
+          "admission_basis": "low_confidence",
           "admitted": true,
           "hi": 0.2144,
           "k": 7,
@@ -121,7 +123,7 @@
       "settled_price": 21,
       "subject": "pattern:highs_after_meals",
       "title": "Highs after meals",
-      "wide": true,
+      "wide": false,
       "wilson": {
         "hi": 0.2184,
         "lo": 0.0423
@@ -212,6 +214,7 @@
       "members": [
         {
           "action": "habit:over_treated_low",
+          "admission_basis": "lower_bound",
           "admitted": true,
           "hi": 0.2731,
           "k": 8,
@@ -292,6 +295,7 @@
       "members": [
         {
           "action": "habit:correction_on_iob",
+          "admission_basis": "lower_bound",
           "admitted": true,
           "hi": 0.2618,
           "k": 8,
@@ -354,7 +358,7 @@
       "settled_price": 20,
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
-      "wide": true,
+      "wide": false,
       "wilson": {
         "hi": 0.2785,
         "lo": 0.0747

@@ -103,7 +103,7 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Restore** | verb | Bring a snoozed item back. |
 | **Undo** | verb | Reverse the last snooze. |
 | **Range** | noun | The engine's interval for the statistic it sits next to. |
-| **Uncertain** | state | The engine flags the range beside it as too broad to rely on (its `wide` flag on that same statistic). |
+| **Uncertain** | state | The engine flags it as not yet real enough to act on (its `wide` flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
 | **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
@@ -237,7 +237,7 @@ unless noted. Loading is a skeleton of the component's own shape.
 5. **StatePill**: a one-word state.
    - States: Pattern, Setting, Uncertain, Maturing, Better, Worse, Unclear, Focus.
    - Words only, at the one pill size; no glyph inside a pill.
-   - Fields: `guidance.candidates[].kind`; `findings.outcome_patterns[].wide` (Uncertain, on the pattern's own range); the trial and focus lifecycle and result.
+   - Fields: `guidance.candidates[].kind`; `findings.outcome_patterns[].wide` (Uncertain: the pattern's Queue admission does not hold at its low end, ADR 485); the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
    - States: "Snoozed · Until <date>" + Undo; "Not saved" + Retry.

@@ -10,10 +10,19 @@ Two committed outputs, one generator, one ``--check``:
   The one invented input is a failed sync attempt, written into the scratch
   copy through ``Store.record_fetch_result`` so the Settings alert badge has a
   served ``last_error`` to read. The showcase itself is never written.
+* Its ``queue`` block holds the Queue components' answers (findings,
+  guidance, analyze, trials, focus), trimmed to the fields they read, from the
+  showcase and from the named QA case stores listed in ``QUEUE_STORES``. Each
+  case store is materialised into a scratch directory by
+  ``scripts/gen_qa_e2e_db.py``'s own ``generate`` and never committed. Every
+  store is chosen for one state a story renders, and ``QUEUE_STORES`` asserts
+  that the engine still serves that state, so a story never shows a state the
+  data no longer has.
 * ``frontend/ui/__fixtures__/ui-allowlist.json`` is every word a story may
   display. It is built from the glossary (§1.5) and the tab names (§1.1) of
-  ``docs/design/recommendations-redesign.md``, plus the engine titles in the
-  fixture above, plus the window unit from §4.2.
+  ``docs/design/recommendations-redesign.md``, plus the engine titles, nouns
+  and units in the fixture above, plus the window unit and the "of" of a
+  magnitude from §4.2.
 
     uv run python scripts/gen_ui_fixtures.py          # rewrite in place
     uv run python scripts/gen_ui_fixtures.py --check  # CI-style drift check
@@ -37,6 +46,10 @@ from fastapi.testclient import TestClient  # noqa: E402
 from ciq_autotune.api import create_app  # noqa: E402
 from ciq_autotune.store import Store  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "scripts"))
+from gen_qa_e2e_db import generate as generate_case  # noqa: E402
+from qa_e2e_cases import QA_CASES  # noqa: E402
+
 SHOWCASE = ROOT / "mockups" / "qa-e2e.synthetic" / "harmonic.sqlite"
 DESIGN = ROOT / "docs" / "design" / "recommendations-redesign.md"
 OUT_DIR = ROOT / "frontend" / "ui" / "__fixtures__"
@@ -48,8 +61,9 @@ WINDOWS = (14, 30, 90)
 # The invented failed attempt: one minute after the showcase's last reading.
 FAILED_ATTEMPT_AT = "2024-07-01 00:00:00"
 FAILED_ERROR = "synthetic sync failure"
-# §4.2 SegmentedControl: "14 / 30 / 90 d". The only unit batch 1 displays.
+# §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
 UNITS = ("d",)
+CONNECTIVES = ("of",)
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
 
@@ -80,8 +94,9 @@ def fixtures() -> dict:
     return {
         "_generated_by": GENERATED_BY,
         "_note": ("Synthetic only: served by the public API, in process, over a "
-                  "scratch copy of the synthetic QA showcase. status.failed adds "
-                  "one invented failed sync attempt to that copy."),
+                  "scratch copy of the synthetic QA showcase and over named QA "
+                  "case stores generated into scratch. status.failed adds one "
+                  "invented failed sync attempt to the showcase copy."),
         "status": {"ok": status_ok, "failed": status_failed},
         "prompts": prompts,
         "outcomes": {
@@ -95,7 +110,142 @@ def fixtures() -> dict:
                 for candidate in guidance["candidates"]
             ],
         },
+        "queue": queue_stores(),
     }
+
+
+def _pattern_row(store: dict, key: str) -> dict:
+    return next(r for r in store["findings"]["rows"] if r["id"] == f"pattern:{key}")
+
+
+def _shares(store: dict, key: str) -> list[int]:
+    return [s["count"] for r in store["findings"]["rows"] if r.get("claimed_by") == f"pattern:{key}"
+            for s in r["fold_sentences"] or () if s["scope"] == "pattern"]
+
+
+def _wide(store: dict, key: str):
+    return next(c for c in store["guidance"]["candidates"]
+                if c["subject"] == f"pattern:{key}")["support"].get("wide")
+
+
+def _counted(store: dict, key: str) -> bool:
+    return bool(_pattern_row(store, key)["count_sentences"])
+
+
+def _basal_row(store: dict, start: int) -> dict:
+    return next(r for r in store["findings"]["rows"]
+                if r["kind"] == "setting" and r.get("parameter") == "basal_rate"
+                and r["span"]["start_min"] == start)
+
+
+def _nights(store: dict, label: str) -> list[float]:
+    slot = next(b for b in store["analyze"]["basal"] if b["label"] == label)
+    return [night["delivered_rate"] for night in slot["evidence"]["night_roster"]]
+
+
+# Each store backs the story states named beside it; the check is what the
+# engine must still serve for those states to be real.
+QUEUE_STORES = {
+    "showcase": (  # SettingCard range collapsed; EvidenceChart zero variance
+        lambda s: (_basal_row(s, 180)["members"][0]["estimate"]["lo"]
+                   == _basal_row(s, 180)["members"][0]["estimate"]["hi"]
+                   and len(set(_nights(s, "03:00"))) == 1)),
+    "behavioral-carb-undercount": (  # multi-cause (the engine also serves it Wide)
+        lambda s: _counted(s, "highs_after_meals") and len(_shares(s, "highs_after_meals")) >= 2),
+    "behavioral-split-meal": (  # single cause, not Wide
+        lambda s: _counted(s, "highs_after_meals") and len(_shares(s, "highs_after_meals")) == 1
+        and _wide(s, "highs_after_meals") is False),
+    "behavioral-correction-stacking": (  # Wide
+        lambda s: _counted(s, "lows_after_correcting_highs")
+        and _wide(s, "lows_after_correcting_highs") is True),
+    "basal-recurring-low-spread": (  # no attributed cause; SettingCard and EvidenceChart default
+        lambda s: _counted(s, "overnight_lows_no_iob") and not _shares(s, "overnight_lows_no_iob")
+        and _pattern_row(s, "overnight_lows_no_iob")["count_sentences"][0]["count"] > 0
+        and len(set(_nights(s, "03:00"))) > 1),
+    "c3-focus": (  # pinned: an active Focus on the pattern's habit
+        lambda s: any(f["status"] == "active" and f["pattern_key"] == "highs_after_meals"
+                      for f in s["focus"]["focuses"])),
+    "c3-trial": (  # SettingCard matured into a Trial
+        lambda s: any(t["parameter"] == "basal_rate" and t["slot"] == "03:00"
+                      and t["state"] == "complete" for t in s["trials"]["trials"])),
+}
+
+ROW_FIELDS = ("id", "kind", "title", "chips", "claimed_by", "lever", "parameter",
+              "count_sentences", "fold_sentences", "span", "members")
+
+
+def _queue_store(database: pathlib.Path) -> dict:
+    """The Queue components' answers from one store, trimmed to what they read."""
+    client = TestClient(create_app(
+        db_path=str(database), token=None, enable_fetch_loop=False,
+        analysis_incarnation="ui-fixtures",
+    ))
+    findings = _get(client, "/api/diagnose/findings")
+    guidance = _get(client, "/api/guidance")
+    analyze = _get(client, "/api/analyze")
+    trials = _get(client, "/api/verify/trials")
+    focus = _get(client, "/api/focus")
+    return {
+        "findings": {
+            "outcome_patterns": [
+                {field: p[field] for field in ("key", "subject", "title", "k", "n", "wilson")}
+                for p in findings["outcome_patterns"]
+            ],
+            "rows": [
+                {field: r.get(field) for field in ROW_FIELDS}
+                for r in findings["rows"]
+                if r["kind"] == "pattern" or r.get("claimed_by")
+                or (r["kind"] == "setting" and r.get("parameter") == "basal_rate" and r.get("members"))
+            ],
+        },
+        "guidance": {
+            "candidates": [
+                {"subject": c["subject"], "kind": c["kind"], "title": c["title"],
+                 "units": c["units"], "support": {"wide": c["support"].get("wide")}}
+                for c in guidance["candidates"]
+            ],
+        },
+        "analyze": {
+            "basal": [
+                {**{field: b[field] for field in
+                    ("slot", "label", "current", "recommended", "estimate", "days")},
+                 "evidence": {"night_roster": [
+                     {field: night[field] for field in ("date", "delivered_rate", "programmed_rate")}
+                     for night in b["evidence"]["night_roster"]
+                 ]}}
+                for b in analyze["basal"] if b.get("asserts_move")
+            ],
+        },
+        "trials": {
+            "trials": [
+                {field: t[field] for field in
+                 ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing")}
+                for t in trials["trials"]
+            ],
+        },
+        "focus": {
+            "focuses": [
+                {field: f[field] for field in ("id", "lever", "pattern_key", "status")}
+                for f in focus["focuses"]
+            ],
+        },
+    }
+
+
+def queue_stores() -> dict:
+    stores = {}
+    with tempfile.TemporaryDirectory() as scratch:
+        for name, holds in QUEUE_STORES.items():
+            database = pathlib.Path(scratch) / f"{name}.sqlite"
+            if name == "showcase":
+                shutil.copyfile(SHOWCASE, database)
+            else:
+                generate_case(database, next(case for case in QA_CASES if case.name == name))
+            store = _queue_store(database)
+            if not holds(store):
+                raise SystemExit(f"QA store {name!r} no longer serves the state its stories render")
+            stores[name] = store
+    return stores
 
 
 def _table_first_column(section: str) -> list[str]:
@@ -116,11 +266,20 @@ def _section(text: str, heading: str) -> str:
 
 def allowlist(data: dict) -> dict:
     text = DESIGN.read_text()
+    stores = data["queue"].values()
+    rows = [r for store in stores for r in store["findings"]["rows"]]
+    sentences = [s for r in rows for s in (r["count_sentences"] or []) + (r["fold_sentences"] or [])]
     sources = {
         "glossary §1.5": _table_first_column(_section(text, "### 1.5 Glossary")),
         "tabs §1.1": _table_first_column(_section(text, "### 1.1 Tabs")),
-        "engine titles": [c["title"] for c in data["guidance"]["candidates"]],
+        "engine titles": [c["title"] for c in data["guidance"]["candidates"]]
+        + [c["title"] for store in stores for c in store["guidance"]["candidates"]]
+        + [r["title"] for r in rows if r.get("claimed_by")],
+        "engine nouns": [s["noun"] for s in sentences],
+        "engine units": [c["units"] for store in stores for c in store["guidance"]["candidates"]
+                         if c["units"]],
         "units §4.2": list(UNITS),
+        "connectives §4.2": list(CONNECTIVES),
     }
     # The metric row is one cell listing every metric, comma-separated; the
     # answer and result rows are slash-separated. Words are what is checked.
@@ -129,8 +288,9 @@ def allowlist(data: dict) -> dict:
     return {
         "_generated_by": GENERATED_BY,
         "_note": ("Every word a component story may display: the redesign "
-                  "glossary, its tab names, the engine titles served in "
-                  "ui-fixtures.json, and the window unit."),
+                  "glossary, its tab names, the engine titles, nouns and units "
+                  "served in ui-fixtures.json, the window unit and the \"of\" "
+                  "of a magnitude."),
         "words": words,
     }
 

@@ -109,6 +109,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
 | **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
+| **Peak / Nadir** | noun | The highest (a high Pattern) or lowest (a low Pattern) point of the median glucose trace after a Pattern's own episodes, in mg/dL. |
+| **Typical** | noun | The same point for the comparison episodes: similar events that did not end in the Pattern's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
 | **Median** | noun | The middle value of the profile at that time of day. |
 | **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
@@ -278,6 +280,13 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   different text than the numbers it's describing": it was centred beside a
   larger value. §2.2 now sets the caption + value pair: stacked, or inline on
   one baseline.
+- **2026-10-13 — the open Pattern card carries an impact line.** The operator
+  asked whether each item could carry "a very brief impact indicator for the
+  glucose impact", and chose the open card over the collapsed row. Under the
+  magnitude: "Peak 227 · Typical 164 mg/dL" for a high Pattern, Nadir for a low
+  one, read from the Pattern's case file (the matched and comparison cohorts'
+  median traces after the anchor). A Pattern the case file serves no
+  comparison for shows no line. Peak, Nadir and Typical join §1.5.
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -378,12 +387,15 @@ unless noted. Loading is a skeleton of the component's own shape.
    and Pin. No Range: only a Setting has one; Uncertain carries a pattern's
    confidence (ADR 485).
    - States: multi-cause; **single cause**; **no attributed cause**; Uncertain
-     (the tag at the end of the magnitude line);
+     (the tag at the end of the magnitude line); with or without the impact
+     line (Peak or Nadir · Typical, mg/dL, beneath the magnitude);
      pinned (Pin replaced by a "Focus" pill); loading.
    - Header row: the title and (phone) the collapse chevron. Snooze is a
      text action centred beneath Pin (or the Focus pill), 16 px below it.
    - Fields: `outcome_patterns[].k, n, wide`; fold sentences (count,
-     denominator, lever title).
+     denominator, lever title); the case file's `projection.cohorts[matched,
+     comparison].points[].median` (the impact line: each cohort's highest or
+     lowest median at or after minute 0).
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.

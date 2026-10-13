@@ -62,7 +62,10 @@ Two committed outputs, one generator, one ``--check``:
   each store's candidates carry their rank, admission and snooze; the pinned
   store's Queue is read again after its snooze (``wearer-pinned-snoozed``);
   ``wearer-first-days-snoozed`` is the first days with everything snoozed (an
-  empty Queue); and the unsynced store records its guidance disposition.
+  empty Queue); and the unsynced store records its guidance disposition. Each
+  Queue store also holds ``cases``: every admitted Pattern's event-aligned case
+  file from ``/api/diagnose/finding-case-file``, trimmed to the median traces
+  of its matched and comparison cohorts, for the open card's impact line.
 
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
@@ -624,7 +627,39 @@ def _queue_store(client: TestClient) -> dict:
                 for f in focus["focuses"]
             ],
         },
+        "cases": _pattern_cases(client, [c["subject"] for c in guidance["candidates"]
+                                         if c["kind"] == "pattern" and c["admitted"]]),
     }
+
+
+# The two cohorts the open Pattern card's impact line compares (§4.2
+# PatternCard): the Pattern's own episodes and the comparison episodes.
+IMPACT_COHORTS = ("matched", "comparison")
+
+
+def _pattern_cases(client: TestClient, subjects: list[str]) -> dict:
+    """Each admitted Pattern's event-aligned case file, trimmed to its two
+    cohorts' median traces, by pattern key. A Pattern whose case file serves
+    no inspectable member (404) has no entry."""
+    preparation = _get(client, "/api/diagnose/finding-case-file-preparation")
+    cases = {}
+    for subject in subjects:
+        response = client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": preparation["projection_id"], "finding_id": subject, "alignment": "event"})
+        if response.status_code == 404:
+            continue
+        response.raise_for_status()
+        projection = response.json()["projection"]
+        cases[subject.removeprefix("pattern:")] = {
+            "comparison": {"state": projection["comparison"]["state"]},
+            "cohorts": [
+                {"key": cohort["key"], "support": cohort["support"],
+                 "points": [{"minute": point["minute"], "median": point["median"]}
+                            for point in cohort["points"]]}
+                for cohort in projection["cohorts"] if cohort["key"] in IMPACT_COHORTS
+            ],
+        }
+    return cases
 
 
 def _patterns(store: dict) -> list[dict]:

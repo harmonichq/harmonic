@@ -6329,6 +6329,11 @@
       "term": "Pattern"
     },
     {
+      "kind": "noun",
+      "meaning": "The highest (a high Pattern) or lowest (a low Pattern) point of the median glucose trace after a Pattern's own episodes, in mg/dL.",
+      "term": "Peak / Nadir"
+    },
+    {
       "kind": "verb",
       "meaning": "Start a Focus on a Pattern's habit.",
       "term": "Pin"
@@ -6392,6 +6397,11 @@
       "kind": "noun",
       "meaning": "A pump setting change the app detected, watched against its before period.",
       "term": "Trial"
+    },
+    {
+      "kind": "noun",
+      "meaning": "The same point for the comparison episodes: similar events that did not end in the Pattern's outcome.",
+      "term": "Typical"
     },
     {
       "kind": "state",
@@ -15483,6 +15493,1214 @@
       "analyze": {
         "basal": []
       },
+      "cases": {
+        "highs_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 149.0,
+                  "minute": -60
+                },
+                {
+                  "median": 148.0,
+                  "minute": -55
+                },
+                {
+                  "median": 151.0,
+                  "minute": -50
+                },
+                {
+                  "median": 155.0,
+                  "minute": -45
+                },
+                {
+                  "median": 151.0,
+                  "minute": -40
+                },
+                {
+                  "median": 150.5,
+                  "minute": -35
+                },
+                {
+                  "median": 150.0,
+                  "minute": -30
+                },
+                {
+                  "median": 151.0,
+                  "minute": -25
+                },
+                {
+                  "median": 151.5,
+                  "minute": -20
+                },
+                {
+                  "median": 155.0,
+                  "minute": -15
+                },
+                {
+                  "median": 157.0,
+                  "minute": -10
+                },
+                {
+                  "median": 160.0,
+                  "minute": -5
+                },
+                {
+                  "median": 160.5,
+                  "minute": 0
+                },
+                {
+                  "median": 164.0,
+                  "minute": 5
+                },
+                {
+                  "median": 161.5,
+                  "minute": 10
+                },
+                {
+                  "median": 158.0,
+                  "minute": 15
+                },
+                {
+                  "median": 165.0,
+                  "minute": 20
+                },
+                {
+                  "median": 167.0,
+                  "minute": 25
+                },
+                {
+                  "median": 174.0,
+                  "minute": 30
+                },
+                {
+                  "median": 177.5,
+                  "minute": 35
+                },
+                {
+                  "median": 186.5,
+                  "minute": 40
+                },
+                {
+                  "median": 192.5,
+                  "minute": 45
+                },
+                {
+                  "median": 190.5,
+                  "minute": 50
+                },
+                {
+                  "median": 197.5,
+                  "minute": 55
+                },
+                {
+                  "median": 204.0,
+                  "minute": 60
+                },
+                {
+                  "median": 209.0,
+                  "minute": 65
+                },
+                {
+                  "median": 212.0,
+                  "minute": 70
+                },
+                {
+                  "median": 210.5,
+                  "minute": 75
+                },
+                {
+                  "median": 216.0,
+                  "minute": 80
+                },
+                {
+                  "median": 220.0,
+                  "minute": 85
+                },
+                {
+                  "median": 221.5,
+                  "minute": 90
+                },
+                {
+                  "median": 222.0,
+                  "minute": 95
+                },
+                {
+                  "median": 227.0,
+                  "minute": 100
+                },
+                {
+                  "median": 227.0,
+                  "minute": 105
+                },
+                {
+                  "median": 224.5,
+                  "minute": 110
+                },
+                {
+                  "median": 222.0,
+                  "minute": 115
+                },
+                {
+                  "median": 222.0,
+                  "minute": 120
+                },
+                {
+                  "median": 216.0,
+                  "minute": 125
+                },
+                {
+                  "median": 209.0,
+                  "minute": 130
+                },
+                {
+                  "median": 211.0,
+                  "minute": 135
+                },
+                {
+                  "median": 208.0,
+                  "minute": 140
+                },
+                {
+                  "median": 206.0,
+                  "minute": 145
+                },
+                {
+                  "median": 202.0,
+                  "minute": 150
+                },
+                {
+                  "median": 200.0,
+                  "minute": 155
+                },
+                {
+                  "median": 198.5,
+                  "minute": 160
+                },
+                {
+                  "median": 200.0,
+                  "minute": 165
+                },
+                {
+                  "median": 196.0,
+                  "minute": 170
+                },
+                {
+                  "median": 195.0,
+                  "minute": 175
+                },
+                {
+                  "median": 192.5,
+                  "minute": 180
+                },
+                {
+                  "median": 192.0,
+                  "minute": 185
+                },
+                {
+                  "median": 185.0,
+                  "minute": 190
+                },
+                {
+                  "median": 184.0,
+                  "minute": 195
+                },
+                {
+                  "median": 179.5,
+                  "minute": 200
+                },
+                {
+                  "median": 175.5,
+                  "minute": 205
+                },
+                {
+                  "median": 173.5,
+                  "minute": 210
+                },
+                {
+                  "median": 174.0,
+                  "minute": 215
+                },
+                {
+                  "median": 174.5,
+                  "minute": 220
+                },
+                {
+                  "median": 176.0,
+                  "minute": 225
+                },
+                {
+                  "median": 167.0,
+                  "minute": 230
+                },
+                {
+                  "median": 165.0,
+                  "minute": 235
+                },
+                {
+                  "median": 164.0,
+                  "minute": 240
+                },
+                {
+                  "median": 160.0,
+                  "minute": 245
+                },
+                {
+                  "median": 157.0,
+                  "minute": 250
+                },
+                {
+                  "median": 154.5,
+                  "minute": 255
+                },
+                {
+                  "median": 151.0,
+                  "minute": 260
+                },
+                {
+                  "median": 151.0,
+                  "minute": 265
+                },
+                {
+                  "median": 151.0,
+                  "minute": 270
+                },
+                {
+                  "median": 150.5,
+                  "minute": 275
+                },
+                {
+                  "median": 154.5,
+                  "minute": 280
+                },
+                {
+                  "median": 153.5,
+                  "minute": 285
+                },
+                {
+                  "median": 154.5,
+                  "minute": 290
+                },
+                {
+                  "median": 158.5,
+                  "minute": 295
+                },
+                {
+                  "median": 159.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 148.0,
+                  "minute": -60
+                },
+                {
+                  "median": 146.0,
+                  "minute": -55
+                },
+                {
+                  "median": 140.0,
+                  "minute": -50
+                },
+                {
+                  "median": 142.0,
+                  "minute": -45
+                },
+                {
+                  "median": 138.5,
+                  "minute": -40
+                },
+                {
+                  "median": 132.0,
+                  "minute": -35
+                },
+                {
+                  "median": 130.0,
+                  "minute": -30
+                },
+                {
+                  "median": 128.5,
+                  "minute": -25
+                },
+                {
+                  "median": 128.0,
+                  "minute": -20
+                },
+                {
+                  "median": 130.5,
+                  "minute": -15
+                },
+                {
+                  "median": 131.5,
+                  "minute": -10
+                },
+                {
+                  "median": 128.0,
+                  "minute": -5
+                },
+                {
+                  "median": 129.0,
+                  "minute": 0
+                },
+                {
+                  "median": 126.5,
+                  "minute": 5
+                },
+                {
+                  "median": 129.0,
+                  "minute": 10
+                },
+                {
+                  "median": 123.5,
+                  "minute": 15
+                },
+                {
+                  "median": 124.5,
+                  "minute": 20
+                },
+                {
+                  "median": 126.0,
+                  "minute": 25
+                },
+                {
+                  "median": 125.0,
+                  "minute": 30
+                },
+                {
+                  "median": 121.0,
+                  "minute": 35
+                },
+                {
+                  "median": 127.0,
+                  "minute": 40
+                },
+                {
+                  "median": 129.0,
+                  "minute": 45
+                },
+                {
+                  "median": 130.0,
+                  "minute": 50
+                },
+                {
+                  "median": 132.5,
+                  "minute": 55
+                },
+                {
+                  "median": 136.0,
+                  "minute": 60
+                },
+                {
+                  "median": 134.0,
+                  "minute": 65
+                },
+                {
+                  "median": 136.0,
+                  "minute": 70
+                },
+                {
+                  "median": 140.0,
+                  "minute": 75
+                },
+                {
+                  "median": 139.5,
+                  "minute": 80
+                },
+                {
+                  "median": 145.5,
+                  "minute": 85
+                },
+                {
+                  "median": 149.0,
+                  "minute": 90
+                },
+                {
+                  "median": 149.0,
+                  "minute": 95
+                },
+                {
+                  "median": 149.5,
+                  "minute": 100
+                },
+                {
+                  "median": 152.0,
+                  "minute": 105
+                },
+                {
+                  "median": 153.0,
+                  "minute": 110
+                },
+                {
+                  "median": 157.0,
+                  "minute": 115
+                },
+                {
+                  "median": 159.0,
+                  "minute": 120
+                },
+                {
+                  "median": 159.0,
+                  "minute": 125
+                },
+                {
+                  "median": 160.0,
+                  "minute": 130
+                },
+                {
+                  "median": 164.0,
+                  "minute": 135
+                },
+                {
+                  "median": 164.0,
+                  "minute": 140
+                },
+                {
+                  "median": 163.0,
+                  "minute": 145
+                },
+                {
+                  "median": 161.0,
+                  "minute": 150
+                },
+                {
+                  "median": 160.0,
+                  "minute": 155
+                },
+                {
+                  "median": 157.0,
+                  "minute": 160
+                },
+                {
+                  "median": 157.0,
+                  "minute": 165
+                },
+                {
+                  "median": 157.0,
+                  "minute": 170
+                },
+                {
+                  "median": 155.0,
+                  "minute": 175
+                },
+                {
+                  "median": 154.5,
+                  "minute": 180
+                },
+                {
+                  "median": 150.0,
+                  "minute": 185
+                },
+                {
+                  "median": 149.5,
+                  "minute": 190
+                },
+                {
+                  "median": 156.0,
+                  "minute": 195
+                },
+                {
+                  "median": 149.0,
+                  "minute": 200
+                },
+                {
+                  "median": 152.5,
+                  "minute": 205
+                },
+                {
+                  "median": 146.0,
+                  "minute": 210
+                },
+                {
+                  "median": 138.0,
+                  "minute": 215
+                },
+                {
+                  "median": 149.5,
+                  "minute": 220
+                },
+                {
+                  "median": 146.0,
+                  "minute": 225
+                },
+                {
+                  "median": 146.0,
+                  "minute": 230
+                },
+                {
+                  "median": 147.5,
+                  "minute": 235
+                },
+                {
+                  "median": 142.5,
+                  "minute": 240
+                },
+                {
+                  "median": 144.0,
+                  "minute": 245
+                },
+                {
+                  "median": 144.0,
+                  "minute": 250
+                },
+                {
+                  "median": 142.5,
+                  "minute": 255
+                },
+                {
+                  "median": 140.0,
+                  "minute": 260
+                },
+                {
+                  "median": 140.5,
+                  "minute": 265
+                },
+                {
+                  "median": 141.0,
+                  "minute": 270
+                },
+                {
+                  "median": 137.0,
+                  "minute": 275
+                },
+                {
+                  "median": 134.5,
+                  "minute": 280
+                },
+                {
+                  "median": 133.0,
+                  "minute": 285
+                },
+                {
+                  "median": 133.0,
+                  "minute": 290
+                },
+                {
+                  "median": 136.5,
+                  "minute": 295
+                },
+                {
+                  "median": 138.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 185.0,
+                  "minute": -60
+                },
+                {
+                  "median": 171.5,
+                  "minute": -55
+                },
+                {
+                  "median": 169.0,
+                  "minute": -50
+                },
+                {
+                  "median": 164.0,
+                  "minute": -45
+                },
+                {
+                  "median": 157.5,
+                  "minute": -40
+                },
+                {
+                  "median": 155.0,
+                  "minute": -35
+                },
+                {
+                  "median": 147.5,
+                  "minute": -30
+                },
+                {
+                  "median": 125.0,
+                  "minute": -25
+                },
+                {
+                  "median": 122.0,
+                  "minute": -20
+                },
+                {
+                  "median": 137.5,
+                  "minute": -15
+                },
+                {
+                  "median": 134.0,
+                  "minute": -10
+                },
+                {
+                  "median": 107.0,
+                  "minute": -5
+                },
+                {
+                  "median": 124.5,
+                  "minute": 0
+                },
+                {
+                  "median": 121.0,
+                  "minute": 5
+                },
+                {
+                  "median": 114.0,
+                  "minute": 10
+                },
+                {
+                  "median": 107.5,
+                  "minute": 15
+                },
+                {
+                  "median": 80.0,
+                  "minute": 20
+                },
+                {
+                  "median": 94.5,
+                  "minute": 25
+                },
+                {
+                  "median": 89.0,
+                  "minute": 30
+                },
+                {
+                  "median": 86.0,
+                  "minute": 35
+                },
+                {
+                  "median": 73.0,
+                  "minute": 40
+                },
+                {
+                  "median": 86.0,
+                  "minute": 45
+                },
+                {
+                  "median": 90.0,
+                  "minute": 50
+                },
+                {
+                  "median": 95.5,
+                  "minute": 55
+                },
+                {
+                  "median": 91.5,
+                  "minute": 60
+                },
+                {
+                  "median": 85.0,
+                  "minute": 65
+                },
+                {
+                  "median": 79.5,
+                  "minute": 70
+                },
+                {
+                  "median": 88.0,
+                  "minute": 75
+                },
+                {
+                  "median": 98.5,
+                  "minute": 80
+                },
+                {
+                  "median": 106.0,
+                  "minute": 85
+                },
+                {
+                  "median": 111.5,
+                  "minute": 90
+                },
+                {
+                  "median": 115.0,
+                  "minute": 95
+                },
+                {
+                  "median": 120.5,
+                  "minute": 100
+                },
+                {
+                  "median": 125.5,
+                  "minute": 105
+                },
+                {
+                  "median": 126.5,
+                  "minute": 110
+                },
+                {
+                  "median": 131.5,
+                  "minute": 115
+                },
+                {
+                  "median": 130.5,
+                  "minute": 120
+                },
+                {
+                  "median": 83.0,
+                  "minute": 125
+                },
+                {
+                  "median": 83.0,
+                  "minute": 130
+                },
+                {
+                  "median": 129.5,
+                  "minute": 135
+                },
+                {
+                  "median": 131.0,
+                  "minute": 140
+                },
+                {
+                  "median": 129.0,
+                  "minute": 145
+                },
+                {
+                  "median": 128.5,
+                  "minute": 150
+                },
+                {
+                  "median": 131.0,
+                  "minute": 155
+                },
+                {
+                  "median": 129.0,
+                  "minute": 160
+                },
+                {
+                  "median": 126.0,
+                  "minute": 165
+                },
+                {
+                  "median": 127.0,
+                  "minute": 170
+                },
+                {
+                  "median": 126.5,
+                  "minute": 175
+                },
+                {
+                  "median": 129.0,
+                  "minute": 180
+                },
+                {
+                  "median": 131.5,
+                  "minute": 185
+                },
+                {
+                  "median": 131.5,
+                  "minute": 190
+                },
+                {
+                  "median": 132.0,
+                  "minute": 195
+                },
+                {
+                  "median": 131.5,
+                  "minute": 200
+                },
+                {
+                  "median": 128.5,
+                  "minute": 205
+                },
+                {
+                  "median": 124.5,
+                  "minute": 210
+                },
+                {
+                  "median": 121.5,
+                  "minute": 215
+                },
+                {
+                  "median": 119.5,
+                  "minute": 220
+                },
+                {
+                  "median": 114.5,
+                  "minute": 225
+                },
+                {
+                  "median": 111.5,
+                  "minute": 230
+                },
+                {
+                  "median": 109.0,
+                  "minute": 235
+                },
+                {
+                  "median": 103.5,
+                  "minute": 240
+                },
+                {
+                  "median": 99.0,
+                  "minute": 245
+                },
+                {
+                  "median": 96.0,
+                  "minute": 250
+                },
+                {
+                  "median": 91.5,
+                  "minute": 255
+                },
+                {
+                  "median": 84.0,
+                  "minute": 260
+                },
+                {
+                  "median": 87.0,
+                  "minute": 265
+                },
+                {
+                  "median": 80.5,
+                  "minute": 270
+                },
+                {
+                  "median": 76.5,
+                  "minute": 275
+                },
+                {
+                  "median": 77.0,
+                  "minute": 280
+                },
+                {
+                  "median": 78.5,
+                  "minute": 285
+                },
+                {
+                  "median": 81.0,
+                  "minute": 290
+                },
+                {
+                  "median": 82.0,
+                  "minute": 295
+                },
+                {
+                  "median": 84.0,
+                  "minute": 300
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 149.0,
+                  "minute": -60
+                },
+                {
+                  "median": 152.0,
+                  "minute": -55
+                },
+                {
+                  "median": 151.0,
+                  "minute": -50
+                },
+                {
+                  "median": 151.0,
+                  "minute": -45
+                },
+                {
+                  "median": 148.5,
+                  "minute": -40
+                },
+                {
+                  "median": 145.0,
+                  "minute": -35
+                },
+                {
+                  "median": 145.5,
+                  "minute": -30
+                },
+                {
+                  "median": 149.0,
+                  "minute": -25
+                },
+                {
+                  "median": 142.0,
+                  "minute": -20
+                },
+                {
+                  "median": 145.0,
+                  "minute": -15
+                },
+                {
+                  "median": 152.5,
+                  "minute": -10
+                },
+                {
+                  "median": 152.5,
+                  "minute": -5
+                },
+                {
+                  "median": 150.5,
+                  "minute": 0
+                },
+                {
+                  "median": 149.0,
+                  "minute": 5
+                },
+                {
+                  "median": 150.5,
+                  "minute": 10
+                },
+                {
+                  "median": 146.5,
+                  "minute": 15
+                },
+                {
+                  "median": 147.5,
+                  "minute": 20
+                },
+                {
+                  "median": 142.0,
+                  "minute": 25
+                },
+                {
+                  "median": 141.0,
+                  "minute": 30
+                },
+                {
+                  "median": 138.5,
+                  "minute": 35
+                },
+                {
+                  "median": 144.0,
+                  "minute": 40
+                },
+                {
+                  "median": 145.0,
+                  "minute": 45
+                },
+                {
+                  "median": 146.0,
+                  "minute": 50
+                },
+                {
+                  "median": 157.0,
+                  "minute": 55
+                },
+                {
+                  "median": 158.0,
+                  "minute": 60
+                },
+                {
+                  "median": 164.0,
+                  "minute": 65
+                },
+                {
+                  "median": 165.0,
+                  "minute": 70
+                },
+                {
+                  "median": 167.0,
+                  "minute": 75
+                },
+                {
+                  "median": 170.0,
+                  "minute": 80
+                },
+                {
+                  "median": 173.0,
+                  "minute": 85
+                },
+                {
+                  "median": 173.0,
+                  "minute": 90
+                },
+                {
+                  "median": 175.0,
+                  "minute": 95
+                },
+                {
+                  "median": 174.0,
+                  "minute": 100
+                },
+                {
+                  "median": 178.0,
+                  "minute": 105
+                },
+                {
+                  "median": 178.5,
+                  "minute": 110
+                },
+                {
+                  "median": 177.0,
+                  "minute": 115
+                },
+                {
+                  "median": 176.0,
+                  "minute": 120
+                },
+                {
+                  "median": 177.0,
+                  "minute": 125
+                },
+                {
+                  "median": 175.0,
+                  "minute": 130
+                },
+                {
+                  "median": 175.0,
+                  "minute": 135
+                },
+                {
+                  "median": 176.5,
+                  "minute": 140
+                },
+                {
+                  "median": 176.0,
+                  "minute": 145
+                },
+                {
+                  "median": 177.0,
+                  "minute": 150
+                },
+                {
+                  "median": 176.0,
+                  "minute": 155
+                },
+                {
+                  "median": 173.0,
+                  "minute": 160
+                },
+                {
+                  "median": 171.0,
+                  "minute": 165
+                },
+                {
+                  "median": 169.0,
+                  "minute": 170
+                },
+                {
+                  "median": 168.0,
+                  "minute": 175
+                },
+                {
+                  "median": 166.0,
+                  "minute": 180
+                },
+                {
+                  "median": 166.0,
+                  "minute": 185
+                },
+                {
+                  "median": 163.0,
+                  "minute": 190
+                },
+                {
+                  "median": 159.5,
+                  "minute": 195
+                },
+                {
+                  "median": 158.0,
+                  "minute": 200
+                },
+                {
+                  "median": 157.5,
+                  "minute": 205
+                },
+                {
+                  "median": 156.0,
+                  "minute": 210
+                },
+                {
+                  "median": 152.5,
+                  "minute": 215
+                },
+                {
+                  "median": 154.0,
+                  "minute": 220
+                },
+                {
+                  "median": 151.0,
+                  "minute": 225
+                },
+                {
+                  "median": 152.0,
+                  "minute": 230
+                },
+                {
+                  "median": 152.5,
+                  "minute": 235
+                },
+                {
+                  "median": 151.0,
+                  "minute": 240
+                },
+                {
+                  "median": 147.0,
+                  "minute": 245
+                },
+                {
+                  "median": 145.0,
+                  "minute": 250
+                },
+                {
+                  "median": 144.0,
+                  "minute": 255
+                },
+                {
+                  "median": 141.0,
+                  "minute": 260
+                },
+                {
+                  "median": 142.0,
+                  "minute": 265
+                },
+                {
+                  "median": 142.0,
+                  "minute": 270
+                },
+                {
+                  "median": 139.0,
+                  "minute": 275
+                },
+                {
+                  "median": 138.0,
+                  "minute": 280
+                },
+                {
+                  "median": 141.0,
+                  "minute": 285
+                },
+                {
+                  "median": 140.0,
+                  "minute": 290
+                },
+                {
+                  "median": 141.5,
+                  "minute": 295
+                },
+                {
+                  "median": 144.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        }
+      },
       "findings": {
         "outcome_patterns": [
           {
@@ -16068,6 +17286,1214 @@
     "wearer-first-days-snoozed": {
       "analyze": {
         "basal": []
+      },
+      "cases": {
+        "highs_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 170.5,
+                  "minute": -60
+                },
+                {
+                  "median": 172.5,
+                  "minute": -55
+                },
+                {
+                  "median": 171.5,
+                  "minute": -50
+                },
+                {
+                  "median": 169.0,
+                  "minute": -45
+                },
+                {
+                  "median": 169.0,
+                  "minute": -40
+                },
+                {
+                  "median": 167.0,
+                  "minute": -35
+                },
+                {
+                  "median": 166.0,
+                  "minute": -30
+                },
+                {
+                  "median": 174.0,
+                  "minute": -25
+                },
+                {
+                  "median": 167.0,
+                  "minute": -20
+                },
+                {
+                  "median": 166.0,
+                  "minute": -15
+                },
+                {
+                  "median": 171.0,
+                  "minute": -10
+                },
+                {
+                  "median": 168.5,
+                  "minute": -5
+                },
+                {
+                  "median": 169.5,
+                  "minute": 0
+                },
+                {
+                  "median": 196.5,
+                  "minute": 5
+                },
+                {
+                  "median": 175.0,
+                  "minute": 10
+                },
+                {
+                  "median": 177.0,
+                  "minute": 15
+                },
+                {
+                  "median": 165.0,
+                  "minute": 20
+                },
+                {
+                  "median": 185.5,
+                  "minute": 25
+                },
+                {
+                  "median": 193.5,
+                  "minute": 30
+                },
+                {
+                  "median": 195.5,
+                  "minute": 35
+                },
+                {
+                  "median": 205.5,
+                  "minute": 40
+                },
+                {
+                  "median": 208.5,
+                  "minute": 45
+                },
+                {
+                  "median": 210.5,
+                  "minute": 50
+                },
+                {
+                  "median": 204.0,
+                  "minute": 55
+                },
+                {
+                  "median": 208.0,
+                  "minute": 60
+                },
+                {
+                  "median": 218.0,
+                  "minute": 65
+                },
+                {
+                  "median": 221.0,
+                  "minute": 70
+                },
+                {
+                  "median": 227.5,
+                  "minute": 75
+                },
+                {
+                  "median": 232.5,
+                  "minute": 80
+                },
+                {
+                  "median": 245.0,
+                  "minute": 85
+                },
+                {
+                  "median": 253.5,
+                  "minute": 90
+                },
+                {
+                  "median": 254.5,
+                  "minute": 95
+                },
+                {
+                  "median": 257.0,
+                  "minute": 100
+                },
+                {
+                  "median": 255.5,
+                  "minute": 105
+                },
+                {
+                  "median": 259.0,
+                  "minute": 110
+                },
+                {
+                  "median": 259.0,
+                  "minute": 115
+                },
+                {
+                  "median": 254.0,
+                  "minute": 120
+                },
+                {
+                  "median": 247.5,
+                  "minute": 125
+                },
+                {
+                  "median": 239.0,
+                  "minute": 130
+                },
+                {
+                  "median": 241.5,
+                  "minute": 135
+                },
+                {
+                  "median": 236.0,
+                  "minute": 140
+                },
+                {
+                  "median": 234.0,
+                  "minute": 145
+                },
+                {
+                  "median": 226.0,
+                  "minute": 150
+                },
+                {
+                  "median": 231.5,
+                  "minute": 155
+                },
+                {
+                  "median": 229.5,
+                  "minute": 160
+                },
+                {
+                  "median": 232.5,
+                  "minute": 165
+                },
+                {
+                  "median": 233.5,
+                  "minute": 170
+                },
+                {
+                  "median": 235.0,
+                  "minute": 175
+                },
+                {
+                  "median": 240.0,
+                  "minute": 180
+                },
+                {
+                  "median": 234.0,
+                  "minute": 185
+                },
+                {
+                  "median": 234.5,
+                  "minute": 190
+                },
+                {
+                  "median": 222.0,
+                  "minute": 195
+                },
+                {
+                  "median": 231.0,
+                  "minute": 200
+                },
+                {
+                  "median": 228.0,
+                  "minute": 205
+                },
+                {
+                  "median": 226.0,
+                  "minute": 210
+                },
+                {
+                  "median": 223.5,
+                  "minute": 215
+                },
+                {
+                  "median": 220.5,
+                  "minute": 220
+                },
+                {
+                  "median": 227.0,
+                  "minute": 225
+                },
+                {
+                  "median": 213.0,
+                  "minute": 230
+                },
+                {
+                  "median": 211.0,
+                  "minute": 235
+                },
+                {
+                  "median": 211.5,
+                  "minute": 240
+                },
+                {
+                  "median": 213.0,
+                  "minute": 245
+                },
+                {
+                  "median": 209.0,
+                  "minute": 250
+                },
+                {
+                  "median": 209.5,
+                  "minute": 255
+                },
+                {
+                  "median": 209.5,
+                  "minute": 260
+                },
+                {
+                  "median": 205.0,
+                  "minute": 265
+                },
+                {
+                  "median": 202.0,
+                  "minute": 270
+                },
+                {
+                  "median": 200.0,
+                  "minute": 275
+                },
+                {
+                  "median": 212.0,
+                  "minute": 280
+                },
+                {
+                  "median": 190.5,
+                  "minute": 285
+                },
+                {
+                  "median": 174.0,
+                  "minute": 290
+                },
+                {
+                  "median": 185.5,
+                  "minute": 295
+                },
+                {
+                  "median": 186.5,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 151.0,
+                  "minute": -60
+                },
+                {
+                  "median": 150.0,
+                  "minute": -55
+                },
+                {
+                  "median": 156.0,
+                  "minute": -50
+                },
+                {
+                  "median": 141.0,
+                  "minute": -45
+                },
+                {
+                  "median": 138.0,
+                  "minute": -40
+                },
+                {
+                  "median": 138.0,
+                  "minute": -35
+                },
+                {
+                  "median": 137.0,
+                  "minute": -30
+                },
+                {
+                  "median": 134.0,
+                  "minute": -25
+                },
+                {
+                  "median": 132.0,
+                  "minute": -20
+                },
+                {
+                  "median": 132.0,
+                  "minute": -15
+                },
+                {
+                  "median": 128.0,
+                  "minute": -10
+                },
+                {
+                  "median": 127.0,
+                  "minute": -5
+                },
+                {
+                  "median": 129.0,
+                  "minute": 0
+                },
+                {
+                  "median": 129.0,
+                  "minute": 5
+                },
+                {
+                  "median": 122.0,
+                  "minute": 10
+                },
+                {
+                  "median": 120.0,
+                  "minute": 15
+                },
+                {
+                  "median": 118.0,
+                  "minute": 20
+                },
+                {
+                  "median": 110.0,
+                  "minute": 25
+                },
+                {
+                  "median": 107.0,
+                  "minute": 30
+                },
+                {
+                  "median": 110.0,
+                  "minute": 35
+                },
+                {
+                  "median": 115.0,
+                  "minute": 40
+                },
+                {
+                  "median": 117.0,
+                  "minute": 45
+                },
+                {
+                  "median": 124.0,
+                  "minute": 50
+                },
+                {
+                  "median": 132.0,
+                  "minute": 55
+                },
+                {
+                  "median": 133.0,
+                  "minute": 60
+                },
+                {
+                  "median": 134.0,
+                  "minute": 65
+                },
+                {
+                  "median": 138.0,
+                  "minute": 70
+                },
+                {
+                  "median": 137.0,
+                  "minute": 75
+                },
+                {
+                  "median": 134.0,
+                  "minute": 80
+                },
+                {
+                  "median": 129.0,
+                  "minute": 85
+                },
+                {
+                  "median": 127.0,
+                  "minute": 90
+                },
+                {
+                  "median": 131.5,
+                  "minute": 95
+                },
+                {
+                  "median": 154.0,
+                  "minute": 100
+                },
+                {
+                  "median": 156.0,
+                  "minute": 105
+                },
+                {
+                  "median": 153.0,
+                  "minute": 110
+                },
+                {
+                  "median": 159.0,
+                  "minute": 115
+                },
+                {
+                  "median": 154.0,
+                  "minute": 120
+                },
+                {
+                  "median": 157.0,
+                  "minute": 125
+                },
+                {
+                  "median": 154.0,
+                  "minute": 130
+                },
+                {
+                  "median": 154.0,
+                  "minute": 135
+                },
+                {
+                  "median": 155.0,
+                  "minute": 140
+                },
+                {
+                  "median": 154.0,
+                  "minute": 145
+                },
+                {
+                  "median": 151.0,
+                  "minute": 150
+                },
+                {
+                  "median": 146.0,
+                  "minute": 155
+                },
+                {
+                  "median": 144.0,
+                  "minute": 160
+                },
+                {
+                  "median": 135.5,
+                  "minute": 165
+                },
+                {
+                  "median": 142.0,
+                  "minute": 170
+                },
+                {
+                  "median": 137.0,
+                  "minute": 175
+                },
+                {
+                  "median": 128.0,
+                  "minute": 180
+                },
+                {
+                  "median": 122.0,
+                  "minute": 185
+                },
+                {
+                  "median": 120.0,
+                  "minute": 190
+                },
+                {
+                  "median": 124.0,
+                  "minute": 195
+                },
+                {
+                  "median": 133.0,
+                  "minute": 200
+                },
+                {
+                  "median": 158.0,
+                  "minute": 205
+                },
+                {
+                  "median": 159.0,
+                  "minute": 210
+                },
+                {
+                  "median": 158.5,
+                  "minute": 215
+                },
+                {
+                  "median": 158.0,
+                  "minute": 220
+                },
+                {
+                  "median": 161.0,
+                  "minute": 225
+                },
+                {
+                  "median": 157.0,
+                  "minute": 230
+                },
+                {
+                  "median": 164.0,
+                  "minute": 235
+                },
+                {
+                  "median": 165.0,
+                  "minute": 240
+                },
+                {
+                  "median": 157.0,
+                  "minute": 245
+                },
+                {
+                  "median": 166.0,
+                  "minute": 250
+                },
+                {
+                  "median": 165.5,
+                  "minute": 255
+                },
+                {
+                  "median": 163.0,
+                  "minute": 260
+                },
+                {
+                  "median": 162.0,
+                  "minute": 265
+                },
+                {
+                  "median": 158.0,
+                  "minute": 270
+                },
+                {
+                  "median": 142.0,
+                  "minute": 275
+                },
+                {
+                  "median": 157.0,
+                  "minute": 280
+                },
+                {
+                  "median": 155.0,
+                  "minute": 285
+                },
+                {
+                  "median": 162.0,
+                  "minute": 290
+                },
+                {
+                  "median": 166.0,
+                  "minute": 295
+                },
+                {
+                  "median": 164.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 149.0,
+                  "minute": -60
+                },
+                {
+                  "median": 149.5,
+                  "minute": -55
+                },
+                {
+                  "median": 144.5,
+                  "minute": -50
+                },
+                {
+                  "median": 140.5,
+                  "minute": -45
+                },
+                {
+                  "median": 138.0,
+                  "minute": -40
+                },
+                {
+                  "median": 137.5,
+                  "minute": -35
+                },
+                {
+                  "median": 137.0,
+                  "minute": -30
+                },
+                {
+                  "median": 133.5,
+                  "minute": -25
+                },
+                {
+                  "median": 130.0,
+                  "minute": -20
+                },
+                {
+                  "median": 129.0,
+                  "minute": -15
+                },
+                {
+                  "median": 124.5,
+                  "minute": -10
+                },
+                {
+                  "median": 123.0,
+                  "minute": -5
+                },
+                {
+                  "median": 122.5,
+                  "minute": 0
+                },
+                {
+                  "median": 116.5,
+                  "minute": 5
+                },
+                {
+                  "median": 110.0,
+                  "minute": 10
+                },
+                {
+                  "median": 102.0,
+                  "minute": 15
+                },
+                {
+                  "median": null,
+                  "minute": 20
+                },
+                {
+                  "median": 82.5,
+                  "minute": 25
+                },
+                {
+                  "median": 71.5,
+                  "minute": 30
+                },
+                {
+                  "median": 62.0,
+                  "minute": 35
+                },
+                {
+                  "median": 54.5,
+                  "minute": 40
+                },
+                {
+                  "median": 43.0,
+                  "minute": 45
+                },
+                {
+                  "median": 40.0,
+                  "minute": 50
+                },
+                {
+                  "median": 40.0,
+                  "minute": 55
+                },
+                {
+                  "median": 40.0,
+                  "minute": 60
+                },
+                {
+                  "median": 40.0,
+                  "minute": 65
+                },
+                {
+                  "median": 40.0,
+                  "minute": 70
+                },
+                {
+                  "median": 45.5,
+                  "minute": 75
+                },
+                {
+                  "median": 61.0,
+                  "minute": 80
+                },
+                {
+                  "median": 80.5,
+                  "minute": 85
+                },
+                {
+                  "median": 96.5,
+                  "minute": 90
+                },
+                {
+                  "median": 109.0,
+                  "minute": 95
+                },
+                {
+                  "median": 125.0,
+                  "minute": 100
+                },
+                {
+                  "median": 137.5,
+                  "minute": 105
+                },
+                {
+                  "median": 148.5,
+                  "minute": 110
+                },
+                {
+                  "median": 155.5,
+                  "minute": 115
+                },
+                {
+                  "median": 164.0,
+                  "minute": 120
+                },
+                {
+                  "median": null,
+                  "minute": 125
+                },
+                {
+                  "median": 170.0,
+                  "minute": 130
+                },
+                {
+                  "median": 172.0,
+                  "minute": 135
+                },
+                {
+                  "median": 176.5,
+                  "minute": 140
+                },
+                {
+                  "median": 179.0,
+                  "minute": 145
+                },
+                {
+                  "median": 180.0,
+                  "minute": 150
+                },
+                {
+                  "median": 181.5,
+                  "minute": 155
+                },
+                {
+                  "median": 180.5,
+                  "minute": 160
+                },
+                {
+                  "median": 181.0,
+                  "minute": 165
+                },
+                {
+                  "median": 182.0,
+                  "minute": 170
+                },
+                {
+                  "median": 183.5,
+                  "minute": 175
+                },
+                {
+                  "median": 189.0,
+                  "minute": 180
+                },
+                {
+                  "median": 191.0,
+                  "minute": 185
+                },
+                {
+                  "median": 195.5,
+                  "minute": 190
+                },
+                {
+                  "median": 197.0,
+                  "minute": 195
+                },
+                {
+                  "median": null,
+                  "minute": 200
+                },
+                {
+                  "median": 194.5,
+                  "minute": 205
+                },
+                {
+                  "median": 191.5,
+                  "minute": 210
+                },
+                {
+                  "median": 191.0,
+                  "minute": 215
+                },
+                {
+                  "median": 187.5,
+                  "minute": 220
+                },
+                {
+                  "median": 185.5,
+                  "minute": 225
+                },
+                {
+                  "median": 180.5,
+                  "minute": 230
+                },
+                {
+                  "median": 175.5,
+                  "minute": 235
+                },
+                {
+                  "median": 172.5,
+                  "minute": 240
+                },
+                {
+                  "median": 165.5,
+                  "minute": 245
+                },
+                {
+                  "median": 161.5,
+                  "minute": 250
+                },
+                {
+                  "median": 157.0,
+                  "minute": 255
+                },
+                {
+                  "median": 153.0,
+                  "minute": 260
+                },
+                {
+                  "median": 152.0,
+                  "minute": 265
+                },
+                {
+                  "median": 149.0,
+                  "minute": 270
+                },
+                {
+                  "median": 146.0,
+                  "minute": 275
+                },
+                {
+                  "median": 144.0,
+                  "minute": 280
+                },
+                {
+                  "median": 141.0,
+                  "minute": 285
+                },
+                {
+                  "median": 139.0,
+                  "minute": 290
+                },
+                {
+                  "median": 137.0,
+                  "minute": 295
+                },
+                {
+                  "median": 134.0,
+                  "minute": 300
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 174.0,
+                  "minute": -60
+                },
+                {
+                  "median": 171.0,
+                  "minute": -55
+                },
+                {
+                  "median": 170.0,
+                  "minute": -50
+                },
+                {
+                  "median": 163.0,
+                  "minute": -45
+                },
+                {
+                  "median": 161.0,
+                  "minute": -40
+                },
+                {
+                  "median": 166.0,
+                  "minute": -35
+                },
+                {
+                  "median": 166.0,
+                  "minute": -30
+                },
+                {
+                  "median": 166.5,
+                  "minute": -25
+                },
+                {
+                  "median": 167.0,
+                  "minute": -20
+                },
+                {
+                  "median": 168.0,
+                  "minute": -15
+                },
+                {
+                  "median": 171.0,
+                  "minute": -10
+                },
+                {
+                  "median": 168.5,
+                  "minute": -5
+                },
+                {
+                  "median": 169.5,
+                  "minute": 0
+                },
+                {
+                  "median": 174.5,
+                  "minute": 5
+                },
+                {
+                  "median": 166.5,
+                  "minute": 10
+                },
+                {
+                  "median": 164.5,
+                  "minute": 15
+                },
+                {
+                  "median": 163.0,
+                  "minute": 20
+                },
+                {
+                  "median": 162.0,
+                  "minute": 25
+                },
+                {
+                  "median": 161.0,
+                  "minute": 30
+                },
+                {
+                  "median": 162.5,
+                  "minute": 35
+                },
+                {
+                  "median": 161.5,
+                  "minute": 40
+                },
+                {
+                  "median": 167.0,
+                  "minute": 45
+                },
+                {
+                  "median": 176.5,
+                  "minute": 50
+                },
+                {
+                  "median": 176.0,
+                  "minute": 55
+                },
+                {
+                  "median": 170.0,
+                  "minute": 60
+                },
+                {
+                  "median": 179.0,
+                  "minute": 65
+                },
+                {
+                  "median": 186.5,
+                  "minute": 70
+                },
+                {
+                  "median": 192.5,
+                  "minute": 75
+                },
+                {
+                  "median": 196.0,
+                  "minute": 80
+                },
+                {
+                  "median": 201.0,
+                  "minute": 85
+                },
+                {
+                  "median": 203.0,
+                  "minute": 90
+                },
+                {
+                  "median": 206.0,
+                  "minute": 95
+                },
+                {
+                  "median": 208.0,
+                  "minute": 100
+                },
+                {
+                  "median": 207.5,
+                  "minute": 105
+                },
+                {
+                  "median": 206.0,
+                  "minute": 110
+                },
+                {
+                  "median": 208.0,
+                  "minute": 115
+                },
+                {
+                  "median": 210.0,
+                  "minute": 120
+                },
+                {
+                  "median": 208.0,
+                  "minute": 125
+                },
+                {
+                  "median": 208.5,
+                  "minute": 130
+                },
+                {
+                  "median": 213.0,
+                  "minute": 135
+                },
+                {
+                  "median": 213.5,
+                  "minute": 140
+                },
+                {
+                  "median": 209.0,
+                  "minute": 145
+                },
+                {
+                  "median": 207.5,
+                  "minute": 150
+                },
+                {
+                  "median": 210.0,
+                  "minute": 155
+                },
+                {
+                  "median": 209.5,
+                  "minute": 160
+                },
+                {
+                  "median": 206.0,
+                  "minute": 165
+                },
+                {
+                  "median": 194.0,
+                  "minute": 170
+                },
+                {
+                  "median": 192.5,
+                  "minute": 175
+                },
+                {
+                  "median": 189.0,
+                  "minute": 180
+                },
+                {
+                  "median": 184.5,
+                  "minute": 185
+                },
+                {
+                  "median": 182.5,
+                  "minute": 190
+                },
+                {
+                  "median": 183.0,
+                  "minute": 195
+                },
+                {
+                  "median": 183.5,
+                  "minute": 200
+                },
+                {
+                  "median": 178.0,
+                  "minute": 205
+                },
+                {
+                  "median": 178.5,
+                  "minute": 210
+                },
+                {
+                  "median": 181.0,
+                  "minute": 215
+                },
+                {
+                  "median": 179.5,
+                  "minute": 220
+                },
+                {
+                  "median": 179.5,
+                  "minute": 225
+                },
+                {
+                  "median": 185.0,
+                  "minute": 230
+                },
+                {
+                  "median": 180.5,
+                  "minute": 235
+                },
+                {
+                  "median": 178.0,
+                  "minute": 240
+                },
+                {
+                  "median": 175.0,
+                  "minute": 245
+                },
+                {
+                  "median": 175.0,
+                  "minute": 250
+                },
+                {
+                  "median": 174.5,
+                  "minute": 255
+                },
+                {
+                  "median": 172.0,
+                  "minute": 260
+                },
+                {
+                  "median": 171.0,
+                  "minute": 265
+                },
+                {
+                  "median": 170.0,
+                  "minute": 270
+                },
+                {
+                  "median": 164.5,
+                  "minute": 275
+                },
+                {
+                  "median": 166.0,
+                  "minute": 280
+                },
+                {
+                  "median": 162.0,
+                  "minute": 285
+                },
+                {
+                  "median": 172.0,
+                  "minute": 290
+                },
+                {
+                  "median": 172.0,
+                  "minute": 295
+                },
+                {
+                  "median": 183.5,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        }
       },
       "findings": {
         "outcome_patterns": [
@@ -17338,6 +19764,1529 @@
             "slot": 13
           }
         ]
+      },
+      "cases": {
+        "highs_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 148.5,
+                  "minute": -60
+                },
+                {
+                  "median": 149.0,
+                  "minute": -55
+                },
+                {
+                  "median": 153.0,
+                  "minute": -50
+                },
+                {
+                  "median": 150.0,
+                  "minute": -45
+                },
+                {
+                  "median": 144.0,
+                  "minute": -40
+                },
+                {
+                  "median": 143.0,
+                  "minute": -35
+                },
+                {
+                  "median": 144.0,
+                  "minute": -30
+                },
+                {
+                  "median": 143.5,
+                  "minute": -25
+                },
+                {
+                  "median": 145.0,
+                  "minute": -20
+                },
+                {
+                  "median": 151.0,
+                  "minute": -15
+                },
+                {
+                  "median": 158.5,
+                  "minute": -10
+                },
+                {
+                  "median": 158.0,
+                  "minute": -5
+                },
+                {
+                  "median": 158.5,
+                  "minute": 0
+                },
+                {
+                  "median": 157.0,
+                  "minute": 5
+                },
+                {
+                  "median": 156.0,
+                  "minute": 10
+                },
+                {
+                  "median": 153.5,
+                  "minute": 15
+                },
+                {
+                  "median": 155.0,
+                  "minute": 20
+                },
+                {
+                  "median": 162.0,
+                  "minute": 25
+                },
+                {
+                  "median": 160.0,
+                  "minute": 30
+                },
+                {
+                  "median": 162.0,
+                  "minute": 35
+                },
+                {
+                  "median": 173.0,
+                  "minute": 40
+                },
+                {
+                  "median": 182.5,
+                  "minute": 45
+                },
+                {
+                  "median": 184.5,
+                  "minute": 50
+                },
+                {
+                  "median": 198.0,
+                  "minute": 55
+                },
+                {
+                  "median": 202.0,
+                  "minute": 60
+                },
+                {
+                  "median": 212.0,
+                  "minute": 65
+                },
+                {
+                  "median": 216.5,
+                  "minute": 70
+                },
+                {
+                  "median": 213.5,
+                  "minute": 75
+                },
+                {
+                  "median": 216.0,
+                  "minute": 80
+                },
+                {
+                  "median": 218.0,
+                  "minute": 85
+                },
+                {
+                  "median": 225.0,
+                  "minute": 90
+                },
+                {
+                  "median": 226.0,
+                  "minute": 95
+                },
+                {
+                  "median": 226.5,
+                  "minute": 100
+                },
+                {
+                  "median": 225.5,
+                  "minute": 105
+                },
+                {
+                  "median": 224.0,
+                  "minute": 110
+                },
+                {
+                  "median": 221.5,
+                  "minute": 115
+                },
+                {
+                  "median": 217.0,
+                  "minute": 120
+                },
+                {
+                  "median": 214.0,
+                  "minute": 125
+                },
+                {
+                  "median": 208.5,
+                  "minute": 130
+                },
+                {
+                  "median": 211.0,
+                  "minute": 135
+                },
+                {
+                  "median": 210.0,
+                  "minute": 140
+                },
+                {
+                  "median": 205.5,
+                  "minute": 145
+                },
+                {
+                  "median": 206.0,
+                  "minute": 150
+                },
+                {
+                  "median": 204.0,
+                  "minute": 155
+                },
+                {
+                  "median": 200.5,
+                  "minute": 160
+                },
+                {
+                  "median": 201.0,
+                  "minute": 165
+                },
+                {
+                  "median": 198.0,
+                  "minute": 170
+                },
+                {
+                  "median": 195.0,
+                  "minute": 175
+                },
+                {
+                  "median": 190.0,
+                  "minute": 180
+                },
+                {
+                  "median": 187.0,
+                  "minute": 185
+                },
+                {
+                  "median": 186.0,
+                  "minute": 190
+                },
+                {
+                  "median": 179.0,
+                  "minute": 195
+                },
+                {
+                  "median": 179.0,
+                  "minute": 200
+                },
+                {
+                  "median": 175.0,
+                  "minute": 205
+                },
+                {
+                  "median": 173.0,
+                  "minute": 210
+                },
+                {
+                  "median": 174.0,
+                  "minute": 215
+                },
+                {
+                  "median": 171.0,
+                  "minute": 220
+                },
+                {
+                  "median": 171.5,
+                  "minute": 225
+                },
+                {
+                  "median": 170.0,
+                  "minute": 230
+                },
+                {
+                  "median": 169.5,
+                  "minute": 235
+                },
+                {
+                  "median": 162.0,
+                  "minute": 240
+                },
+                {
+                  "median": 171.0,
+                  "minute": 245
+                },
+                {
+                  "median": 159.0,
+                  "minute": 250
+                },
+                {
+                  "median": 162.0,
+                  "minute": 255
+                },
+                {
+                  "median": 155.5,
+                  "minute": 260
+                },
+                {
+                  "median": 155.0,
+                  "minute": 265
+                },
+                {
+                  "median": 154.0,
+                  "minute": 270
+                },
+                {
+                  "median": 158.0,
+                  "minute": 275
+                },
+                {
+                  "median": 158.0,
+                  "minute": 280
+                },
+                {
+                  "median": 158.0,
+                  "minute": 285
+                },
+                {
+                  "median": 156.0,
+                  "minute": 290
+                },
+                {
+                  "median": 157.5,
+                  "minute": 295
+                },
+                {
+                  "median": 156.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 142.5,
+                  "minute": -60
+                },
+                {
+                  "median": 145.5,
+                  "minute": -55
+                },
+                {
+                  "median": 140.0,
+                  "minute": -50
+                },
+                {
+                  "median": 140.0,
+                  "minute": -45
+                },
+                {
+                  "median": 138.0,
+                  "minute": -40
+                },
+                {
+                  "median": 131.0,
+                  "minute": -35
+                },
+                {
+                  "median": 132.5,
+                  "minute": -30
+                },
+                {
+                  "median": 131.5,
+                  "minute": -25
+                },
+                {
+                  "median": 129.5,
+                  "minute": -20
+                },
+                {
+                  "median": 126.5,
+                  "minute": -15
+                },
+                {
+                  "median": 126.0,
+                  "minute": -10
+                },
+                {
+                  "median": 127.0,
+                  "minute": -5
+                },
+                {
+                  "median": 128.0,
+                  "minute": 0
+                },
+                {
+                  "median": 128.0,
+                  "minute": 5
+                },
+                {
+                  "median": 123.0,
+                  "minute": 10
+                },
+                {
+                  "median": 118.0,
+                  "minute": 15
+                },
+                {
+                  "median": 118.5,
+                  "minute": 20
+                },
+                {
+                  "median": 120.0,
+                  "minute": 25
+                },
+                {
+                  "median": 119.0,
+                  "minute": 30
+                },
+                {
+                  "median": 117.0,
+                  "minute": 35
+                },
+                {
+                  "median": 117.0,
+                  "minute": 40
+                },
+                {
+                  "median": 123.0,
+                  "minute": 45
+                },
+                {
+                  "median": 125.5,
+                  "minute": 50
+                },
+                {
+                  "median": 123.0,
+                  "minute": 55
+                },
+                {
+                  "median": 129.0,
+                  "minute": 60
+                },
+                {
+                  "median": 131.0,
+                  "minute": 65
+                },
+                {
+                  "median": 129.0,
+                  "minute": 70
+                },
+                {
+                  "median": 133.0,
+                  "minute": 75
+                },
+                {
+                  "median": 135.0,
+                  "minute": 80
+                },
+                {
+                  "median": 141.0,
+                  "minute": 85
+                },
+                {
+                  "median": 137.0,
+                  "minute": 90
+                },
+                {
+                  "median": 142.0,
+                  "minute": 95
+                },
+                {
+                  "median": 143.0,
+                  "minute": 100
+                },
+                {
+                  "median": 147.0,
+                  "minute": 105
+                },
+                {
+                  "median": 150.5,
+                  "minute": 110
+                },
+                {
+                  "median": 152.0,
+                  "minute": 115
+                },
+                {
+                  "median": 151.5,
+                  "minute": 120
+                },
+                {
+                  "median": 157.0,
+                  "minute": 125
+                },
+                {
+                  "median": 155.0,
+                  "minute": 130
+                },
+                {
+                  "median": 160.0,
+                  "minute": 135
+                },
+                {
+                  "median": 155.5,
+                  "minute": 140
+                },
+                {
+                  "median": 156.0,
+                  "minute": 145
+                },
+                {
+                  "median": 161.0,
+                  "minute": 150
+                },
+                {
+                  "median": 159.0,
+                  "minute": 155
+                },
+                {
+                  "median": 157.5,
+                  "minute": 160
+                },
+                {
+                  "median": 159.0,
+                  "minute": 165
+                },
+                {
+                  "median": 157.0,
+                  "minute": 170
+                },
+                {
+                  "median": 156.0,
+                  "minute": 175
+                },
+                {
+                  "median": 152.0,
+                  "minute": 180
+                },
+                {
+                  "median": 147.5,
+                  "minute": 185
+                },
+                {
+                  "median": 147.0,
+                  "minute": 190
+                },
+                {
+                  "median": 154.0,
+                  "minute": 195
+                },
+                {
+                  "median": 148.5,
+                  "minute": 200
+                },
+                {
+                  "median": 146.0,
+                  "minute": 205
+                },
+                {
+                  "median": 143.5,
+                  "minute": 210
+                },
+                {
+                  "median": 139.0,
+                  "minute": 215
+                },
+                {
+                  "median": 141.0,
+                  "minute": 220
+                },
+                {
+                  "median": 139.0,
+                  "minute": 225
+                },
+                {
+                  "median": 144.0,
+                  "minute": 230
+                },
+                {
+                  "median": 137.5,
+                  "minute": 235
+                },
+                {
+                  "median": 142.0,
+                  "minute": 240
+                },
+                {
+                  "median": 140.0,
+                  "minute": 245
+                },
+                {
+                  "median": 137.0,
+                  "minute": 250
+                },
+                {
+                  "median": 139.0,
+                  "minute": 255
+                },
+                {
+                  "median": 138.0,
+                  "minute": 260
+                },
+                {
+                  "median": 143.0,
+                  "minute": 265
+                },
+                {
+                  "median": 139.0,
+                  "minute": 270
+                },
+                {
+                  "median": 134.5,
+                  "minute": 275
+                },
+                {
+                  "median": 128.5,
+                  "minute": 280
+                },
+                {
+                  "median": 135.0,
+                  "minute": 285
+                },
+                {
+                  "median": 133.5,
+                  "minute": 290
+                },
+                {
+                  "median": 133.0,
+                  "minute": 295
+                },
+                {
+                  "median": 139.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_correcting_highs": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 123.5,
+                  "minute": -60
+                },
+                {
+                  "median": 113.5,
+                  "minute": -55
+                },
+                {
+                  "median": 102.0,
+                  "minute": -50
+                },
+                {
+                  "median": 94.5,
+                  "minute": -45
+                },
+                {
+                  "median": 89.5,
+                  "minute": -40
+                },
+                {
+                  "median": 82.0,
+                  "minute": -35
+                },
+                {
+                  "median": 75.0,
+                  "minute": -30
+                },
+                {
+                  "median": 69.0,
+                  "minute": -25
+                },
+                {
+                  "median": 65.0,
+                  "minute": -20
+                },
+                {
+                  "median": 61.0,
+                  "minute": -15
+                },
+                {
+                  "median": 59.0,
+                  "minute": -10
+                },
+                {
+                  "median": 56.5,
+                  "minute": -5
+                },
+                {
+                  "median": 53.0,
+                  "minute": 0
+                },
+                {
+                  "median": 57.5,
+                  "minute": 5
+                },
+                {
+                  "median": 62.0,
+                  "minute": 10
+                },
+                {
+                  "median": 69.5,
+                  "minute": 15
+                },
+                {
+                  "median": 78.0,
+                  "minute": 20
+                },
+                {
+                  "median": 88.0,
+                  "minute": 25
+                },
+                {
+                  "median": 95.5,
+                  "minute": 30
+                },
+                {
+                  "median": 102.5,
+                  "minute": 35
+                },
+                {
+                  "median": 109.5,
+                  "minute": 40
+                },
+                {
+                  "median": 117.5,
+                  "minute": 45
+                },
+                {
+                  "median": 123.5,
+                  "minute": 50
+                },
+                {
+                  "median": null,
+                  "minute": 55
+                },
+                {
+                  "median": 133.0,
+                  "minute": 60
+                },
+                {
+                  "median": 140.0,
+                  "minute": 65
+                },
+                {
+                  "median": 145.0,
+                  "minute": 70
+                },
+                {
+                  "median": 149.0,
+                  "minute": 75
+                },
+                {
+                  "median": 154.0,
+                  "minute": 80
+                },
+                {
+                  "median": 160.5,
+                  "minute": 85
+                },
+                {
+                  "median": 165.0,
+                  "minute": 90
+                },
+                {
+                  "median": 167.5,
+                  "minute": 95
+                },
+                {
+                  "median": 173.0,
+                  "minute": 100
+                },
+                {
+                  "median": 177.5,
+                  "minute": 105
+                },
+                {
+                  "median": 179.5,
+                  "minute": 110
+                },
+                {
+                  "median": 183.5,
+                  "minute": 115
+                },
+                {
+                  "median": 183.0,
+                  "minute": 120
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 90.0,
+                  "minute": -60
+                },
+                {
+                  "median": 90.0,
+                  "minute": -55
+                },
+                {
+                  "median": 90.0,
+                  "minute": -50
+                },
+                {
+                  "median": 86.0,
+                  "minute": -45
+                },
+                {
+                  "median": 82.5,
+                  "minute": -40
+                },
+                {
+                  "median": 82.0,
+                  "minute": -35
+                },
+                {
+                  "median": 78.5,
+                  "minute": -30
+                },
+                {
+                  "median": 76.0,
+                  "minute": -25
+                },
+                {
+                  "median": 75.0,
+                  "minute": -20
+                },
+                {
+                  "median": 74.0,
+                  "minute": -15
+                },
+                {
+                  "median": 73.0,
+                  "minute": -10
+                },
+                {
+                  "median": 73.0,
+                  "minute": -5
+                },
+                {
+                  "median": 70.0,
+                  "minute": 0
+                },
+                {
+                  "median": 72.5,
+                  "minute": 5
+                },
+                {
+                  "median": 73.0,
+                  "minute": 10
+                },
+                {
+                  "median": 74.0,
+                  "minute": 15
+                },
+                {
+                  "median": 74.5,
+                  "minute": 20
+                },
+                {
+                  "median": 78.0,
+                  "minute": 25
+                },
+                {
+                  "median": 82.0,
+                  "minute": 30
+                },
+                {
+                  "median": 88.0,
+                  "minute": 35
+                },
+                {
+                  "median": 98.0,
+                  "minute": 40
+                },
+                {
+                  "median": 94.5,
+                  "minute": 45
+                },
+                {
+                  "median": 99.0,
+                  "minute": 50
+                },
+                {
+                  "median": 112.0,
+                  "minute": 55
+                },
+                {
+                  "median": 117.0,
+                  "minute": 60
+                },
+                {
+                  "median": 120.0,
+                  "minute": 65
+                },
+                {
+                  "median": 124.0,
+                  "minute": 70
+                },
+                {
+                  "median": 134.0,
+                  "minute": 75
+                },
+                {
+                  "median": 133.0,
+                  "minute": 80
+                },
+                {
+                  "median": 132.0,
+                  "minute": 85
+                },
+                {
+                  "median": 136.0,
+                  "minute": 90
+                },
+                {
+                  "median": 147.0,
+                  "minute": 95
+                },
+                {
+                  "median": 143.0,
+                  "minute": 100
+                },
+                {
+                  "median": 145.5,
+                  "minute": 105
+                },
+                {
+                  "median": 150.0,
+                  "minute": 110
+                },
+                {
+                  "median": 153.0,
+                  "minute": 115
+                },
+                {
+                  "median": 148.5,
+                  "minute": 120
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 185.5,
+                  "minute": -60
+                },
+                {
+                  "median": 191.0,
+                  "minute": -55
+                },
+                {
+                  "median": 196.0,
+                  "minute": -50
+                },
+                {
+                  "median": 197.0,
+                  "minute": -45
+                },
+                {
+                  "median": 198.0,
+                  "minute": -40
+                },
+                {
+                  "median": 200.0,
+                  "minute": -35
+                },
+                {
+                  "median": 199.0,
+                  "minute": -30
+                },
+                {
+                  "median": 194.0,
+                  "minute": -25
+                },
+                {
+                  "median": 188.0,
+                  "minute": -20
+                },
+                {
+                  "median": 187.0,
+                  "minute": -15
+                },
+                {
+                  "median": 183.0,
+                  "minute": -10
+                },
+                {
+                  "median": 143.5,
+                  "minute": -5
+                },
+                {
+                  "median": 175.0,
+                  "minute": 0
+                },
+                {
+                  "median": 167.0,
+                  "minute": 5
+                },
+                {
+                  "median": 161.0,
+                  "minute": 10
+                },
+                {
+                  "median": 154.0,
+                  "minute": 15
+                },
+                {
+                  "median": 147.0,
+                  "minute": 20
+                },
+                {
+                  "median": 138.0,
+                  "minute": 25
+                },
+                {
+                  "median": 130.0,
+                  "minute": 30
+                },
+                {
+                  "median": 120.0,
+                  "minute": 35
+                },
+                {
+                  "median": 112.0,
+                  "minute": 40
+                },
+                {
+                  "median": 106.0,
+                  "minute": 45
+                },
+                {
+                  "median": 97.0,
+                  "minute": 50
+                },
+                {
+                  "median": 96.0,
+                  "minute": 55
+                },
+                {
+                  "median": 91.0,
+                  "minute": 60
+                },
+                {
+                  "median": 80.0,
+                  "minute": 65
+                },
+                {
+                  "median": 85.0,
+                  "minute": 70
+                },
+                {
+                  "median": 83.0,
+                  "minute": 75
+                },
+                {
+                  "median": 80.0,
+                  "minute": 80
+                },
+                {
+                  "median": 80.0,
+                  "minute": 85
+                },
+                {
+                  "median": 73.0,
+                  "minute": 90
+                },
+                {
+                  "median": 116.0,
+                  "minute": 95
+                },
+                {
+                  "median": 70.0,
+                  "minute": 100
+                },
+                {
+                  "median": 64.0,
+                  "minute": 105
+                },
+                {
+                  "median": 63.0,
+                  "minute": 110
+                },
+                {
+                  "median": 60.0,
+                  "minute": 115
+                },
+                {
+                  "median": 51.0,
+                  "minute": 120
+                },
+                {
+                  "median": 113.0,
+                  "minute": 125
+                },
+                {
+                  "median": 56.0,
+                  "minute": 130
+                },
+                {
+                  "median": 90.0,
+                  "minute": 135
+                },
+                {
+                  "median": 105.0,
+                  "minute": 140
+                },
+                {
+                  "median": 119.0,
+                  "minute": 145
+                },
+                {
+                  "median": 132.0,
+                  "minute": 150
+                },
+                {
+                  "median": 145.0,
+                  "minute": 155
+                },
+                {
+                  "median": 149.0,
+                  "minute": 160
+                },
+                {
+                  "median": 153.0,
+                  "minute": 165
+                },
+                {
+                  "median": 152.0,
+                  "minute": 170
+                },
+                {
+                  "median": 151.0,
+                  "minute": 175
+                },
+                {
+                  "median": 147.0,
+                  "minute": 180
+                },
+                {
+                  "median": 144.0,
+                  "minute": 185
+                },
+                {
+                  "median": 143.0,
+                  "minute": 190
+                },
+                {
+                  "median": 141.0,
+                  "minute": 195
+                },
+                {
+                  "median": 136.0,
+                  "minute": 200
+                },
+                {
+                  "median": 154.0,
+                  "minute": 205
+                },
+                {
+                  "median": 132.0,
+                  "minute": 210
+                },
+                {
+                  "median": 134.0,
+                  "minute": 215
+                },
+                {
+                  "median": 132.0,
+                  "minute": 220
+                },
+                {
+                  "median": 128.0,
+                  "minute": 225
+                },
+                {
+                  "median": 126.0,
+                  "minute": 230
+                },
+                {
+                  "median": 122.0,
+                  "minute": 235
+                },
+                {
+                  "median": 119.0,
+                  "minute": 240
+                },
+                {
+                  "median": 115.0,
+                  "minute": 245
+                },
+                {
+                  "median": 115.0,
+                  "minute": 250
+                },
+                {
+                  "median": 122.0,
+                  "minute": 255
+                },
+                {
+                  "median": 125.5,
+                  "minute": 260
+                },
+                {
+                  "median": 147.0,
+                  "minute": 265
+                },
+                {
+                  "median": 162.0,
+                  "minute": 270
+                },
+                {
+                  "median": 163.0,
+                  "minute": 275
+                },
+                {
+                  "median": 161.0,
+                  "minute": 280
+                },
+                {
+                  "median": 162.0,
+                  "minute": 285
+                },
+                {
+                  "median": 159.0,
+                  "minute": 290
+                },
+                {
+                  "median": 159.0,
+                  "minute": 295
+                },
+                {
+                  "median": 155.0,
+                  "minute": 300
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 147.0,
+                  "minute": -60
+                },
+                {
+                  "median": 147.0,
+                  "minute": -55
+                },
+                {
+                  "median": 146.0,
+                  "minute": -50
+                },
+                {
+                  "median": 150.0,
+                  "minute": -45
+                },
+                {
+                  "median": 142.0,
+                  "minute": -40
+                },
+                {
+                  "median": 141.0,
+                  "minute": -35
+                },
+                {
+                  "median": 139.5,
+                  "minute": -30
+                },
+                {
+                  "median": 142.0,
+                  "minute": -25
+                },
+                {
+                  "median": 140.5,
+                  "minute": -20
+                },
+                {
+                  "median": 137.5,
+                  "minute": -15
+                },
+                {
+                  "median": 138.0,
+                  "minute": -10
+                },
+                {
+                  "median": 141.0,
+                  "minute": -5
+                },
+                {
+                  "median": 143.0,
+                  "minute": 0
+                },
+                {
+                  "median": 143.5,
+                  "minute": 5
+                },
+                {
+                  "median": 143.5,
+                  "minute": 10
+                },
+                {
+                  "median": 144.5,
+                  "minute": 15
+                },
+                {
+                  "median": 143.0,
+                  "minute": 20
+                },
+                {
+                  "median": 142.0,
+                  "minute": 25
+                },
+                {
+                  "median": 142.5,
+                  "minute": 30
+                },
+                {
+                  "median": 140.5,
+                  "minute": 35
+                },
+                {
+                  "median": 142.5,
+                  "minute": 40
+                },
+                {
+                  "median": 141.0,
+                  "minute": 45
+                },
+                {
+                  "median": 148.0,
+                  "minute": 50
+                },
+                {
+                  "median": 155.0,
+                  "minute": 55
+                },
+                {
+                  "median": 159.5,
+                  "minute": 60
+                },
+                {
+                  "median": 165.0,
+                  "minute": 65
+                },
+                {
+                  "median": 169.0,
+                  "minute": 70
+                },
+                {
+                  "median": 172.0,
+                  "minute": 75
+                },
+                {
+                  "median": 178.0,
+                  "minute": 80
+                },
+                {
+                  "median": 180.0,
+                  "minute": 85
+                },
+                {
+                  "median": 180.0,
+                  "minute": 90
+                },
+                {
+                  "median": 179.0,
+                  "minute": 95
+                },
+                {
+                  "median": 179.0,
+                  "minute": 100
+                },
+                {
+                  "median": 183.5,
+                  "minute": 105
+                },
+                {
+                  "median": 183.0,
+                  "minute": 110
+                },
+                {
+                  "median": 185.0,
+                  "minute": 115
+                },
+                {
+                  "median": 187.0,
+                  "minute": 120
+                },
+                {
+                  "median": 187.0,
+                  "minute": 125
+                },
+                {
+                  "median": 182.5,
+                  "minute": 130
+                },
+                {
+                  "median": 183.0,
+                  "minute": 135
+                },
+                {
+                  "median": 180.0,
+                  "minute": 140
+                },
+                {
+                  "median": 178.0,
+                  "minute": 145
+                },
+                {
+                  "median": 181.0,
+                  "minute": 150
+                },
+                {
+                  "median": 177.0,
+                  "minute": 155
+                },
+                {
+                  "median": 175.0,
+                  "minute": 160
+                },
+                {
+                  "median": 173.0,
+                  "minute": 165
+                },
+                {
+                  "median": 170.0,
+                  "minute": 170
+                },
+                {
+                  "median": 169.0,
+                  "minute": 175
+                },
+                {
+                  "median": 167.0,
+                  "minute": 180
+                },
+                {
+                  "median": 166.0,
+                  "minute": 185
+                },
+                {
+                  "median": 162.5,
+                  "minute": 190
+                },
+                {
+                  "median": 160.0,
+                  "minute": 195
+                },
+                {
+                  "median": 161.0,
+                  "minute": 200
+                },
+                {
+                  "median": 159.0,
+                  "minute": 205
+                },
+                {
+                  "median": 155.5,
+                  "minute": 210
+                },
+                {
+                  "median": 152.0,
+                  "minute": 215
+                },
+                {
+                  "median": 154.5,
+                  "minute": 220
+                },
+                {
+                  "median": 151.5,
+                  "minute": 225
+                },
+                {
+                  "median": 153.0,
+                  "minute": 230
+                },
+                {
+                  "median": 152.0,
+                  "minute": 235
+                },
+                {
+                  "median": 152.0,
+                  "minute": 240
+                },
+                {
+                  "median": 146.0,
+                  "minute": 245
+                },
+                {
+                  "median": 146.0,
+                  "minute": 250
+                },
+                {
+                  "median": 147.0,
+                  "minute": 255
+                },
+                {
+                  "median": 142.0,
+                  "minute": 260
+                },
+                {
+                  "median": 145.0,
+                  "minute": 265
+                },
+                {
+                  "median": 142.0,
+                  "minute": 270
+                },
+                {
+                  "median": 138.0,
+                  "minute": 275
+                },
+                {
+                  "median": 135.0,
+                  "minute": 280
+                },
+                {
+                  "median": 136.5,
+                  "minute": 285
+                },
+                {
+                  "median": 138.0,
+                  "minute": 290
+                },
+                {
+                  "median": 138.0,
+                  "minute": 295
+                },
+                {
+                  "median": 141.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        }
       },
       "findings": {
         "outcome_patterns": [
@@ -18927,6 +22876,1529 @@
           }
         ]
       },
+      "cases": {
+        "highs_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 148.5,
+                  "minute": -60
+                },
+                {
+                  "median": 149.0,
+                  "minute": -55
+                },
+                {
+                  "median": 153.0,
+                  "minute": -50
+                },
+                {
+                  "median": 150.0,
+                  "minute": -45
+                },
+                {
+                  "median": 144.0,
+                  "minute": -40
+                },
+                {
+                  "median": 143.0,
+                  "minute": -35
+                },
+                {
+                  "median": 144.0,
+                  "minute": -30
+                },
+                {
+                  "median": 143.5,
+                  "minute": -25
+                },
+                {
+                  "median": 145.0,
+                  "minute": -20
+                },
+                {
+                  "median": 151.0,
+                  "minute": -15
+                },
+                {
+                  "median": 158.5,
+                  "minute": -10
+                },
+                {
+                  "median": 158.0,
+                  "minute": -5
+                },
+                {
+                  "median": 158.5,
+                  "minute": 0
+                },
+                {
+                  "median": 157.0,
+                  "minute": 5
+                },
+                {
+                  "median": 156.0,
+                  "minute": 10
+                },
+                {
+                  "median": 153.5,
+                  "minute": 15
+                },
+                {
+                  "median": 155.0,
+                  "minute": 20
+                },
+                {
+                  "median": 162.0,
+                  "minute": 25
+                },
+                {
+                  "median": 160.0,
+                  "minute": 30
+                },
+                {
+                  "median": 162.0,
+                  "minute": 35
+                },
+                {
+                  "median": 173.0,
+                  "minute": 40
+                },
+                {
+                  "median": 182.5,
+                  "minute": 45
+                },
+                {
+                  "median": 184.5,
+                  "minute": 50
+                },
+                {
+                  "median": 198.0,
+                  "minute": 55
+                },
+                {
+                  "median": 202.0,
+                  "minute": 60
+                },
+                {
+                  "median": 212.0,
+                  "minute": 65
+                },
+                {
+                  "median": 216.5,
+                  "minute": 70
+                },
+                {
+                  "median": 213.5,
+                  "minute": 75
+                },
+                {
+                  "median": 216.0,
+                  "minute": 80
+                },
+                {
+                  "median": 218.0,
+                  "minute": 85
+                },
+                {
+                  "median": 225.0,
+                  "minute": 90
+                },
+                {
+                  "median": 226.0,
+                  "minute": 95
+                },
+                {
+                  "median": 226.5,
+                  "minute": 100
+                },
+                {
+                  "median": 225.5,
+                  "minute": 105
+                },
+                {
+                  "median": 224.0,
+                  "minute": 110
+                },
+                {
+                  "median": 221.5,
+                  "minute": 115
+                },
+                {
+                  "median": 217.0,
+                  "minute": 120
+                },
+                {
+                  "median": 214.0,
+                  "minute": 125
+                },
+                {
+                  "median": 208.5,
+                  "minute": 130
+                },
+                {
+                  "median": 211.0,
+                  "minute": 135
+                },
+                {
+                  "median": 210.0,
+                  "minute": 140
+                },
+                {
+                  "median": 205.5,
+                  "minute": 145
+                },
+                {
+                  "median": 206.0,
+                  "minute": 150
+                },
+                {
+                  "median": 204.0,
+                  "minute": 155
+                },
+                {
+                  "median": 200.5,
+                  "minute": 160
+                },
+                {
+                  "median": 201.0,
+                  "minute": 165
+                },
+                {
+                  "median": 198.0,
+                  "minute": 170
+                },
+                {
+                  "median": 195.0,
+                  "minute": 175
+                },
+                {
+                  "median": 190.0,
+                  "minute": 180
+                },
+                {
+                  "median": 187.0,
+                  "minute": 185
+                },
+                {
+                  "median": 186.0,
+                  "minute": 190
+                },
+                {
+                  "median": 179.0,
+                  "minute": 195
+                },
+                {
+                  "median": 179.0,
+                  "minute": 200
+                },
+                {
+                  "median": 175.0,
+                  "minute": 205
+                },
+                {
+                  "median": 173.0,
+                  "minute": 210
+                },
+                {
+                  "median": 174.0,
+                  "minute": 215
+                },
+                {
+                  "median": 171.0,
+                  "minute": 220
+                },
+                {
+                  "median": 171.5,
+                  "minute": 225
+                },
+                {
+                  "median": 170.0,
+                  "minute": 230
+                },
+                {
+                  "median": 169.5,
+                  "minute": 235
+                },
+                {
+                  "median": 162.0,
+                  "minute": 240
+                },
+                {
+                  "median": 171.0,
+                  "minute": 245
+                },
+                {
+                  "median": 159.0,
+                  "minute": 250
+                },
+                {
+                  "median": 162.0,
+                  "minute": 255
+                },
+                {
+                  "median": 155.5,
+                  "minute": 260
+                },
+                {
+                  "median": 155.0,
+                  "minute": 265
+                },
+                {
+                  "median": 154.0,
+                  "minute": 270
+                },
+                {
+                  "median": 158.0,
+                  "minute": 275
+                },
+                {
+                  "median": 158.0,
+                  "minute": 280
+                },
+                {
+                  "median": 158.0,
+                  "minute": 285
+                },
+                {
+                  "median": 156.0,
+                  "minute": 290
+                },
+                {
+                  "median": 157.5,
+                  "minute": 295
+                },
+                {
+                  "median": 156.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 142.5,
+                  "minute": -60
+                },
+                {
+                  "median": 145.5,
+                  "minute": -55
+                },
+                {
+                  "median": 140.0,
+                  "minute": -50
+                },
+                {
+                  "median": 140.0,
+                  "minute": -45
+                },
+                {
+                  "median": 138.0,
+                  "minute": -40
+                },
+                {
+                  "median": 131.0,
+                  "minute": -35
+                },
+                {
+                  "median": 132.5,
+                  "minute": -30
+                },
+                {
+                  "median": 131.5,
+                  "minute": -25
+                },
+                {
+                  "median": 129.5,
+                  "minute": -20
+                },
+                {
+                  "median": 126.5,
+                  "minute": -15
+                },
+                {
+                  "median": 126.0,
+                  "minute": -10
+                },
+                {
+                  "median": 127.0,
+                  "minute": -5
+                },
+                {
+                  "median": 128.0,
+                  "minute": 0
+                },
+                {
+                  "median": 128.0,
+                  "minute": 5
+                },
+                {
+                  "median": 123.0,
+                  "minute": 10
+                },
+                {
+                  "median": 118.0,
+                  "minute": 15
+                },
+                {
+                  "median": 118.5,
+                  "minute": 20
+                },
+                {
+                  "median": 120.0,
+                  "minute": 25
+                },
+                {
+                  "median": 119.0,
+                  "minute": 30
+                },
+                {
+                  "median": 117.0,
+                  "minute": 35
+                },
+                {
+                  "median": 117.0,
+                  "minute": 40
+                },
+                {
+                  "median": 123.0,
+                  "minute": 45
+                },
+                {
+                  "median": 125.5,
+                  "minute": 50
+                },
+                {
+                  "median": 123.0,
+                  "minute": 55
+                },
+                {
+                  "median": 129.0,
+                  "minute": 60
+                },
+                {
+                  "median": 131.0,
+                  "minute": 65
+                },
+                {
+                  "median": 129.0,
+                  "minute": 70
+                },
+                {
+                  "median": 133.0,
+                  "minute": 75
+                },
+                {
+                  "median": 135.0,
+                  "minute": 80
+                },
+                {
+                  "median": 141.0,
+                  "minute": 85
+                },
+                {
+                  "median": 137.0,
+                  "minute": 90
+                },
+                {
+                  "median": 142.0,
+                  "minute": 95
+                },
+                {
+                  "median": 143.0,
+                  "minute": 100
+                },
+                {
+                  "median": 147.0,
+                  "minute": 105
+                },
+                {
+                  "median": 150.5,
+                  "minute": 110
+                },
+                {
+                  "median": 152.0,
+                  "minute": 115
+                },
+                {
+                  "median": 151.5,
+                  "minute": 120
+                },
+                {
+                  "median": 157.0,
+                  "minute": 125
+                },
+                {
+                  "median": 155.0,
+                  "minute": 130
+                },
+                {
+                  "median": 160.0,
+                  "minute": 135
+                },
+                {
+                  "median": 155.5,
+                  "minute": 140
+                },
+                {
+                  "median": 156.0,
+                  "minute": 145
+                },
+                {
+                  "median": 161.0,
+                  "minute": 150
+                },
+                {
+                  "median": 159.0,
+                  "minute": 155
+                },
+                {
+                  "median": 157.5,
+                  "minute": 160
+                },
+                {
+                  "median": 159.0,
+                  "minute": 165
+                },
+                {
+                  "median": 157.0,
+                  "minute": 170
+                },
+                {
+                  "median": 156.0,
+                  "minute": 175
+                },
+                {
+                  "median": 152.0,
+                  "minute": 180
+                },
+                {
+                  "median": 147.5,
+                  "minute": 185
+                },
+                {
+                  "median": 147.0,
+                  "minute": 190
+                },
+                {
+                  "median": 154.0,
+                  "minute": 195
+                },
+                {
+                  "median": 148.5,
+                  "minute": 200
+                },
+                {
+                  "median": 146.0,
+                  "minute": 205
+                },
+                {
+                  "median": 143.5,
+                  "minute": 210
+                },
+                {
+                  "median": 139.0,
+                  "minute": 215
+                },
+                {
+                  "median": 141.0,
+                  "minute": 220
+                },
+                {
+                  "median": 139.0,
+                  "minute": 225
+                },
+                {
+                  "median": 144.0,
+                  "minute": 230
+                },
+                {
+                  "median": 137.5,
+                  "minute": 235
+                },
+                {
+                  "median": 142.0,
+                  "minute": 240
+                },
+                {
+                  "median": 140.0,
+                  "minute": 245
+                },
+                {
+                  "median": 137.0,
+                  "minute": 250
+                },
+                {
+                  "median": 139.0,
+                  "minute": 255
+                },
+                {
+                  "median": 138.0,
+                  "minute": 260
+                },
+                {
+                  "median": 143.0,
+                  "minute": 265
+                },
+                {
+                  "median": 139.0,
+                  "minute": 270
+                },
+                {
+                  "median": 134.5,
+                  "minute": 275
+                },
+                {
+                  "median": 128.5,
+                  "minute": 280
+                },
+                {
+                  "median": 135.0,
+                  "minute": 285
+                },
+                {
+                  "median": 133.5,
+                  "minute": 290
+                },
+                {
+                  "median": 133.0,
+                  "minute": 295
+                },
+                {
+                  "median": 139.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_correcting_highs": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 123.5,
+                  "minute": -60
+                },
+                {
+                  "median": 113.5,
+                  "minute": -55
+                },
+                {
+                  "median": 102.0,
+                  "minute": -50
+                },
+                {
+                  "median": 94.5,
+                  "minute": -45
+                },
+                {
+                  "median": 89.5,
+                  "minute": -40
+                },
+                {
+                  "median": 82.0,
+                  "minute": -35
+                },
+                {
+                  "median": 75.0,
+                  "minute": -30
+                },
+                {
+                  "median": 69.0,
+                  "minute": -25
+                },
+                {
+                  "median": 65.0,
+                  "minute": -20
+                },
+                {
+                  "median": 61.0,
+                  "minute": -15
+                },
+                {
+                  "median": 59.0,
+                  "minute": -10
+                },
+                {
+                  "median": 56.5,
+                  "minute": -5
+                },
+                {
+                  "median": 53.0,
+                  "minute": 0
+                },
+                {
+                  "median": 57.5,
+                  "minute": 5
+                },
+                {
+                  "median": 62.0,
+                  "minute": 10
+                },
+                {
+                  "median": 69.5,
+                  "minute": 15
+                },
+                {
+                  "median": 78.0,
+                  "minute": 20
+                },
+                {
+                  "median": 88.0,
+                  "minute": 25
+                },
+                {
+                  "median": 95.5,
+                  "minute": 30
+                },
+                {
+                  "median": 102.5,
+                  "minute": 35
+                },
+                {
+                  "median": 109.5,
+                  "minute": 40
+                },
+                {
+                  "median": 117.5,
+                  "minute": 45
+                },
+                {
+                  "median": 123.5,
+                  "minute": 50
+                },
+                {
+                  "median": null,
+                  "minute": 55
+                },
+                {
+                  "median": 133.0,
+                  "minute": 60
+                },
+                {
+                  "median": 140.0,
+                  "minute": 65
+                },
+                {
+                  "median": 145.0,
+                  "minute": 70
+                },
+                {
+                  "median": 149.0,
+                  "minute": 75
+                },
+                {
+                  "median": 154.0,
+                  "minute": 80
+                },
+                {
+                  "median": 160.5,
+                  "minute": 85
+                },
+                {
+                  "median": 165.0,
+                  "minute": 90
+                },
+                {
+                  "median": 167.5,
+                  "minute": 95
+                },
+                {
+                  "median": 173.0,
+                  "minute": 100
+                },
+                {
+                  "median": 177.5,
+                  "minute": 105
+                },
+                {
+                  "median": 179.5,
+                  "minute": 110
+                },
+                {
+                  "median": 183.5,
+                  "minute": 115
+                },
+                {
+                  "median": 183.0,
+                  "minute": 120
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 90.0,
+                  "minute": -60
+                },
+                {
+                  "median": 90.0,
+                  "minute": -55
+                },
+                {
+                  "median": 90.0,
+                  "minute": -50
+                },
+                {
+                  "median": 86.0,
+                  "minute": -45
+                },
+                {
+                  "median": 82.5,
+                  "minute": -40
+                },
+                {
+                  "median": 82.0,
+                  "minute": -35
+                },
+                {
+                  "median": 78.5,
+                  "minute": -30
+                },
+                {
+                  "median": 76.0,
+                  "minute": -25
+                },
+                {
+                  "median": 75.0,
+                  "minute": -20
+                },
+                {
+                  "median": 74.0,
+                  "minute": -15
+                },
+                {
+                  "median": 73.0,
+                  "minute": -10
+                },
+                {
+                  "median": 73.0,
+                  "minute": -5
+                },
+                {
+                  "median": 70.0,
+                  "minute": 0
+                },
+                {
+                  "median": 72.5,
+                  "minute": 5
+                },
+                {
+                  "median": 73.0,
+                  "minute": 10
+                },
+                {
+                  "median": 74.0,
+                  "minute": 15
+                },
+                {
+                  "median": 74.5,
+                  "minute": 20
+                },
+                {
+                  "median": 78.0,
+                  "minute": 25
+                },
+                {
+                  "median": 82.0,
+                  "minute": 30
+                },
+                {
+                  "median": 88.0,
+                  "minute": 35
+                },
+                {
+                  "median": 98.0,
+                  "minute": 40
+                },
+                {
+                  "median": 94.5,
+                  "minute": 45
+                },
+                {
+                  "median": 99.0,
+                  "minute": 50
+                },
+                {
+                  "median": 112.0,
+                  "minute": 55
+                },
+                {
+                  "median": 117.0,
+                  "minute": 60
+                },
+                {
+                  "median": 120.0,
+                  "minute": 65
+                },
+                {
+                  "median": 124.0,
+                  "minute": 70
+                },
+                {
+                  "median": 134.0,
+                  "minute": 75
+                },
+                {
+                  "median": 133.0,
+                  "minute": 80
+                },
+                {
+                  "median": 132.0,
+                  "minute": 85
+                },
+                {
+                  "median": 136.0,
+                  "minute": 90
+                },
+                {
+                  "median": 147.0,
+                  "minute": 95
+                },
+                {
+                  "median": 143.0,
+                  "minute": 100
+                },
+                {
+                  "median": 145.5,
+                  "minute": 105
+                },
+                {
+                  "median": 150.0,
+                  "minute": 110
+                },
+                {
+                  "median": 153.0,
+                  "minute": 115
+                },
+                {
+                  "median": 148.5,
+                  "minute": 120
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 185.5,
+                  "minute": -60
+                },
+                {
+                  "median": 191.0,
+                  "minute": -55
+                },
+                {
+                  "median": 196.0,
+                  "minute": -50
+                },
+                {
+                  "median": 197.0,
+                  "minute": -45
+                },
+                {
+                  "median": 198.0,
+                  "minute": -40
+                },
+                {
+                  "median": 200.0,
+                  "minute": -35
+                },
+                {
+                  "median": 199.0,
+                  "minute": -30
+                },
+                {
+                  "median": 194.0,
+                  "minute": -25
+                },
+                {
+                  "median": 188.0,
+                  "minute": -20
+                },
+                {
+                  "median": 187.0,
+                  "minute": -15
+                },
+                {
+                  "median": 183.0,
+                  "minute": -10
+                },
+                {
+                  "median": 143.5,
+                  "minute": -5
+                },
+                {
+                  "median": 175.0,
+                  "minute": 0
+                },
+                {
+                  "median": 167.0,
+                  "minute": 5
+                },
+                {
+                  "median": 161.0,
+                  "minute": 10
+                },
+                {
+                  "median": 154.0,
+                  "minute": 15
+                },
+                {
+                  "median": 147.0,
+                  "minute": 20
+                },
+                {
+                  "median": 138.0,
+                  "minute": 25
+                },
+                {
+                  "median": 130.0,
+                  "minute": 30
+                },
+                {
+                  "median": 120.0,
+                  "minute": 35
+                },
+                {
+                  "median": 112.0,
+                  "minute": 40
+                },
+                {
+                  "median": 106.0,
+                  "minute": 45
+                },
+                {
+                  "median": 97.0,
+                  "minute": 50
+                },
+                {
+                  "median": 96.0,
+                  "minute": 55
+                },
+                {
+                  "median": 91.0,
+                  "minute": 60
+                },
+                {
+                  "median": 80.0,
+                  "minute": 65
+                },
+                {
+                  "median": 85.0,
+                  "minute": 70
+                },
+                {
+                  "median": 83.0,
+                  "minute": 75
+                },
+                {
+                  "median": 80.0,
+                  "minute": 80
+                },
+                {
+                  "median": 80.0,
+                  "minute": 85
+                },
+                {
+                  "median": 73.0,
+                  "minute": 90
+                },
+                {
+                  "median": 116.0,
+                  "minute": 95
+                },
+                {
+                  "median": 70.0,
+                  "minute": 100
+                },
+                {
+                  "median": 64.0,
+                  "minute": 105
+                },
+                {
+                  "median": 63.0,
+                  "minute": 110
+                },
+                {
+                  "median": 60.0,
+                  "minute": 115
+                },
+                {
+                  "median": 51.0,
+                  "minute": 120
+                },
+                {
+                  "median": 113.0,
+                  "minute": 125
+                },
+                {
+                  "median": 56.0,
+                  "minute": 130
+                },
+                {
+                  "median": 90.0,
+                  "minute": 135
+                },
+                {
+                  "median": 105.0,
+                  "minute": 140
+                },
+                {
+                  "median": 119.0,
+                  "minute": 145
+                },
+                {
+                  "median": 132.0,
+                  "minute": 150
+                },
+                {
+                  "median": 145.0,
+                  "minute": 155
+                },
+                {
+                  "median": 149.0,
+                  "minute": 160
+                },
+                {
+                  "median": 153.0,
+                  "minute": 165
+                },
+                {
+                  "median": 152.0,
+                  "minute": 170
+                },
+                {
+                  "median": 151.0,
+                  "minute": 175
+                },
+                {
+                  "median": 147.0,
+                  "minute": 180
+                },
+                {
+                  "median": 144.0,
+                  "minute": 185
+                },
+                {
+                  "median": 143.0,
+                  "minute": 190
+                },
+                {
+                  "median": 141.0,
+                  "minute": 195
+                },
+                {
+                  "median": 136.0,
+                  "minute": 200
+                },
+                {
+                  "median": 154.0,
+                  "minute": 205
+                },
+                {
+                  "median": 132.0,
+                  "minute": 210
+                },
+                {
+                  "median": 134.0,
+                  "minute": 215
+                },
+                {
+                  "median": 132.0,
+                  "minute": 220
+                },
+                {
+                  "median": 128.0,
+                  "minute": 225
+                },
+                {
+                  "median": 126.0,
+                  "minute": 230
+                },
+                {
+                  "median": 122.0,
+                  "minute": 235
+                },
+                {
+                  "median": 119.0,
+                  "minute": 240
+                },
+                {
+                  "median": 115.0,
+                  "minute": 245
+                },
+                {
+                  "median": 115.0,
+                  "minute": 250
+                },
+                {
+                  "median": 122.0,
+                  "minute": 255
+                },
+                {
+                  "median": 125.5,
+                  "minute": 260
+                },
+                {
+                  "median": 147.0,
+                  "minute": 265
+                },
+                {
+                  "median": 162.0,
+                  "minute": 270
+                },
+                {
+                  "median": 163.0,
+                  "minute": 275
+                },
+                {
+                  "median": 161.0,
+                  "minute": 280
+                },
+                {
+                  "median": 162.0,
+                  "minute": 285
+                },
+                {
+                  "median": 159.0,
+                  "minute": 290
+                },
+                {
+                  "median": 159.0,
+                  "minute": 295
+                },
+                {
+                  "median": 155.0,
+                  "minute": 300
+                }
+              ],
+              "support": "limited"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 147.0,
+                  "minute": -60
+                },
+                {
+                  "median": 147.0,
+                  "minute": -55
+                },
+                {
+                  "median": 146.0,
+                  "minute": -50
+                },
+                {
+                  "median": 150.0,
+                  "minute": -45
+                },
+                {
+                  "median": 142.0,
+                  "minute": -40
+                },
+                {
+                  "median": 141.0,
+                  "minute": -35
+                },
+                {
+                  "median": 139.5,
+                  "minute": -30
+                },
+                {
+                  "median": 142.0,
+                  "minute": -25
+                },
+                {
+                  "median": 140.5,
+                  "minute": -20
+                },
+                {
+                  "median": 137.5,
+                  "minute": -15
+                },
+                {
+                  "median": 138.0,
+                  "minute": -10
+                },
+                {
+                  "median": 141.0,
+                  "minute": -5
+                },
+                {
+                  "median": 143.0,
+                  "minute": 0
+                },
+                {
+                  "median": 143.5,
+                  "minute": 5
+                },
+                {
+                  "median": 143.5,
+                  "minute": 10
+                },
+                {
+                  "median": 144.5,
+                  "minute": 15
+                },
+                {
+                  "median": 143.0,
+                  "minute": 20
+                },
+                {
+                  "median": 142.0,
+                  "minute": 25
+                },
+                {
+                  "median": 142.5,
+                  "minute": 30
+                },
+                {
+                  "median": 140.5,
+                  "minute": 35
+                },
+                {
+                  "median": 142.5,
+                  "minute": 40
+                },
+                {
+                  "median": 141.0,
+                  "minute": 45
+                },
+                {
+                  "median": 148.0,
+                  "minute": 50
+                },
+                {
+                  "median": 155.0,
+                  "minute": 55
+                },
+                {
+                  "median": 159.5,
+                  "minute": 60
+                },
+                {
+                  "median": 165.0,
+                  "minute": 65
+                },
+                {
+                  "median": 169.0,
+                  "minute": 70
+                },
+                {
+                  "median": 172.0,
+                  "minute": 75
+                },
+                {
+                  "median": 178.0,
+                  "minute": 80
+                },
+                {
+                  "median": 180.0,
+                  "minute": 85
+                },
+                {
+                  "median": 180.0,
+                  "minute": 90
+                },
+                {
+                  "median": 179.0,
+                  "minute": 95
+                },
+                {
+                  "median": 179.0,
+                  "minute": 100
+                },
+                {
+                  "median": 183.5,
+                  "minute": 105
+                },
+                {
+                  "median": 183.0,
+                  "minute": 110
+                },
+                {
+                  "median": 185.0,
+                  "minute": 115
+                },
+                {
+                  "median": 187.0,
+                  "minute": 120
+                },
+                {
+                  "median": 187.0,
+                  "minute": 125
+                },
+                {
+                  "median": 182.5,
+                  "minute": 130
+                },
+                {
+                  "median": 183.0,
+                  "minute": 135
+                },
+                {
+                  "median": 180.0,
+                  "minute": 140
+                },
+                {
+                  "median": 178.0,
+                  "minute": 145
+                },
+                {
+                  "median": 181.0,
+                  "minute": 150
+                },
+                {
+                  "median": 177.0,
+                  "minute": 155
+                },
+                {
+                  "median": 175.0,
+                  "minute": 160
+                },
+                {
+                  "median": 173.0,
+                  "minute": 165
+                },
+                {
+                  "median": 170.0,
+                  "minute": 170
+                },
+                {
+                  "median": 169.0,
+                  "minute": 175
+                },
+                {
+                  "median": 167.0,
+                  "minute": 180
+                },
+                {
+                  "median": 166.0,
+                  "minute": 185
+                },
+                {
+                  "median": 162.5,
+                  "minute": 190
+                },
+                {
+                  "median": 160.0,
+                  "minute": 195
+                },
+                {
+                  "median": 161.0,
+                  "minute": 200
+                },
+                {
+                  "median": 159.0,
+                  "minute": 205
+                },
+                {
+                  "median": 155.5,
+                  "minute": 210
+                },
+                {
+                  "median": 152.0,
+                  "minute": 215
+                },
+                {
+                  "median": 154.5,
+                  "minute": 220
+                },
+                {
+                  "median": 151.5,
+                  "minute": 225
+                },
+                {
+                  "median": 153.0,
+                  "minute": 230
+                },
+                {
+                  "median": 152.0,
+                  "minute": 235
+                },
+                {
+                  "median": 152.0,
+                  "minute": 240
+                },
+                {
+                  "median": 146.0,
+                  "minute": 245
+                },
+                {
+                  "median": 146.0,
+                  "minute": 250
+                },
+                {
+                  "median": 147.0,
+                  "minute": 255
+                },
+                {
+                  "median": 142.0,
+                  "minute": 260
+                },
+                {
+                  "median": 145.0,
+                  "minute": 265
+                },
+                {
+                  "median": 142.0,
+                  "minute": 270
+                },
+                {
+                  "median": 138.0,
+                  "minute": 275
+                },
+                {
+                  "median": 135.0,
+                  "minute": 280
+                },
+                {
+                  "median": 136.5,
+                  "minute": 285
+                },
+                {
+                  "median": 138.0,
+                  "minute": 290
+                },
+                {
+                  "median": 138.0,
+                  "minute": 295
+                },
+                {
+                  "median": 141.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        }
+      },
       "findings": {
         "outcome_patterns": [
           {
@@ -20144,6 +25616,1214 @@
             "slot": 11
           }
         ]
+      },
+      "cases": {
+        "highs_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 160.0,
+                  "minute": -60
+                },
+                {
+                  "median": 157.5,
+                  "minute": -55
+                },
+                {
+                  "median": 158.0,
+                  "minute": -50
+                },
+                {
+                  "median": 158.0,
+                  "minute": -45
+                },
+                {
+                  "median": 161.0,
+                  "minute": -40
+                },
+                {
+                  "median": 162.0,
+                  "minute": -35
+                },
+                {
+                  "median": 158.5,
+                  "minute": -30
+                },
+                {
+                  "median": 159.5,
+                  "minute": -25
+                },
+                {
+                  "median": 163.0,
+                  "minute": -20
+                },
+                {
+                  "median": 161.0,
+                  "minute": -15
+                },
+                {
+                  "median": 163.0,
+                  "minute": -10
+                },
+                {
+                  "median": 164.0,
+                  "minute": -5
+                },
+                {
+                  "median": 164.0,
+                  "minute": 0
+                },
+                {
+                  "median": 174.5,
+                  "minute": 5
+                },
+                {
+                  "median": 187.0,
+                  "minute": 10
+                },
+                {
+                  "median": 193.5,
+                  "minute": 15
+                },
+                {
+                  "median": 194.0,
+                  "minute": 20
+                },
+                {
+                  "median": 209.0,
+                  "minute": 25
+                },
+                {
+                  "median": 214.0,
+                  "minute": 30
+                },
+                {
+                  "median": 215.0,
+                  "minute": 35
+                },
+                {
+                  "median": 212.5,
+                  "minute": 40
+                },
+                {
+                  "median": 216.0,
+                  "minute": 45
+                },
+                {
+                  "median": 216.0,
+                  "minute": 50
+                },
+                {
+                  "median": 222.0,
+                  "minute": 55
+                },
+                {
+                  "median": 221.5,
+                  "minute": 60
+                },
+                {
+                  "median": 222.0,
+                  "minute": 65
+                },
+                {
+                  "median": 221.0,
+                  "minute": 70
+                },
+                {
+                  "median": 222.0,
+                  "minute": 75
+                },
+                {
+                  "median": 218.0,
+                  "minute": 80
+                },
+                {
+                  "median": 224.0,
+                  "minute": 85
+                },
+                {
+                  "median": 228.0,
+                  "minute": 90
+                },
+                {
+                  "median": 232.0,
+                  "minute": 95
+                },
+                {
+                  "median": 231.0,
+                  "minute": 100
+                },
+                {
+                  "median": 231.0,
+                  "minute": 105
+                },
+                {
+                  "median": 230.0,
+                  "minute": 110
+                },
+                {
+                  "median": 224.0,
+                  "minute": 115
+                },
+                {
+                  "median": 230.0,
+                  "minute": 120
+                },
+                {
+                  "median": 222.0,
+                  "minute": 125
+                },
+                {
+                  "median": 213.0,
+                  "minute": 130
+                },
+                {
+                  "median": 214.5,
+                  "minute": 135
+                },
+                {
+                  "median": 212.5,
+                  "minute": 140
+                },
+                {
+                  "median": 208.5,
+                  "minute": 145
+                },
+                {
+                  "median": 203.0,
+                  "minute": 150
+                },
+                {
+                  "median": 203.0,
+                  "minute": 155
+                },
+                {
+                  "median": 204.5,
+                  "minute": 160
+                },
+                {
+                  "median": 203.0,
+                  "minute": 165
+                },
+                {
+                  "median": 196.0,
+                  "minute": 170
+                },
+                {
+                  "median": 194.0,
+                  "minute": 175
+                },
+                {
+                  "median": 191.0,
+                  "minute": 180
+                },
+                {
+                  "median": 185.0,
+                  "minute": 185
+                },
+                {
+                  "median": 178.5,
+                  "minute": 190
+                },
+                {
+                  "median": 186.0,
+                  "minute": 195
+                },
+                {
+                  "median": 180.5,
+                  "minute": 200
+                },
+                {
+                  "median": 175.0,
+                  "minute": 205
+                },
+                {
+                  "median": 173.0,
+                  "minute": 210
+                },
+                {
+                  "median": 175.5,
+                  "minute": 215
+                },
+                {
+                  "median": 172.0,
+                  "minute": 220
+                },
+                {
+                  "median": 168.0,
+                  "minute": 225
+                },
+                {
+                  "median": 166.0,
+                  "minute": 230
+                },
+                {
+                  "median": 163.5,
+                  "minute": 235
+                },
+                {
+                  "median": 162.0,
+                  "minute": 240
+                },
+                {
+                  "median": 156.5,
+                  "minute": 245
+                },
+                {
+                  "median": 156.0,
+                  "minute": 250
+                },
+                {
+                  "median": 151.0,
+                  "minute": 255
+                },
+                {
+                  "median": 152.0,
+                  "minute": 260
+                },
+                {
+                  "median": 155.0,
+                  "minute": 265
+                },
+                {
+                  "median": 156.5,
+                  "minute": 270
+                },
+                {
+                  "median": 158.5,
+                  "minute": 275
+                },
+                {
+                  "median": 160.0,
+                  "minute": 280
+                },
+                {
+                  "median": 152.0,
+                  "minute": 285
+                },
+                {
+                  "median": 159.5,
+                  "minute": 290
+                },
+                {
+                  "median": 158.0,
+                  "minute": 295
+                },
+                {
+                  "median": 160.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 145.0,
+                  "minute": -60
+                },
+                {
+                  "median": 148.0,
+                  "minute": -55
+                },
+                {
+                  "median": 146.0,
+                  "minute": -50
+                },
+                {
+                  "median": 139.5,
+                  "minute": -45
+                },
+                {
+                  "median": 138.0,
+                  "minute": -40
+                },
+                {
+                  "median": 135.5,
+                  "minute": -35
+                },
+                {
+                  "median": 135.5,
+                  "minute": -30
+                },
+                {
+                  "median": 135.5,
+                  "minute": -25
+                },
+                {
+                  "median": 132.0,
+                  "minute": -20
+                },
+                {
+                  "median": 128.0,
+                  "minute": -15
+                },
+                {
+                  "median": 135.5,
+                  "minute": -10
+                },
+                {
+                  "median": 133.0,
+                  "minute": -5
+                },
+                {
+                  "median": 130.0,
+                  "minute": 0
+                },
+                {
+                  "median": 126.0,
+                  "minute": 5
+                },
+                {
+                  "median": 124.0,
+                  "minute": 10
+                },
+                {
+                  "median": 124.0,
+                  "minute": 15
+                },
+                {
+                  "median": 129.0,
+                  "minute": 20
+                },
+                {
+                  "median": 129.0,
+                  "minute": 25
+                },
+                {
+                  "median": 123.0,
+                  "minute": 30
+                },
+                {
+                  "median": 120.0,
+                  "minute": 35
+                },
+                {
+                  "median": 122.0,
+                  "minute": 40
+                },
+                {
+                  "median": 119.5,
+                  "minute": 45
+                },
+                {
+                  "median": 120.0,
+                  "minute": 50
+                },
+                {
+                  "median": 122.5,
+                  "minute": 55
+                },
+                {
+                  "median": 127.0,
+                  "minute": 60
+                },
+                {
+                  "median": 130.0,
+                  "minute": 65
+                },
+                {
+                  "median": 127.0,
+                  "minute": 70
+                },
+                {
+                  "median": 133.0,
+                  "minute": 75
+                },
+                {
+                  "median": 131.5,
+                  "minute": 80
+                },
+                {
+                  "median": 142.0,
+                  "minute": 85
+                },
+                {
+                  "median": 134.5,
+                  "minute": 90
+                },
+                {
+                  "median": 134.0,
+                  "minute": 95
+                },
+                {
+                  "median": 138.5,
+                  "minute": 100
+                },
+                {
+                  "median": 139.0,
+                  "minute": 105
+                },
+                {
+                  "median": 147.0,
+                  "minute": 110
+                },
+                {
+                  "median": 150.0,
+                  "minute": 115
+                },
+                {
+                  "median": 149.5,
+                  "minute": 120
+                },
+                {
+                  "median": 156.0,
+                  "minute": 125
+                },
+                {
+                  "median": 148.0,
+                  "minute": 130
+                },
+                {
+                  "median": 150.5,
+                  "minute": 135
+                },
+                {
+                  "median": 156.0,
+                  "minute": 140
+                },
+                {
+                  "median": 157.0,
+                  "minute": 145
+                },
+                {
+                  "median": 159.0,
+                  "minute": 150
+                },
+                {
+                  "median": 158.0,
+                  "minute": 155
+                },
+                {
+                  "median": 160.0,
+                  "minute": 160
+                },
+                {
+                  "median": 160.5,
+                  "minute": 165
+                },
+                {
+                  "median": 152.5,
+                  "minute": 170
+                },
+                {
+                  "median": 153.0,
+                  "minute": 175
+                },
+                {
+                  "median": 155.0,
+                  "minute": 180
+                },
+                {
+                  "median": 149.0,
+                  "minute": 185
+                },
+                {
+                  "median": 148.0,
+                  "minute": 190
+                },
+                {
+                  "median": 149.0,
+                  "minute": 195
+                },
+                {
+                  "median": 146.0,
+                  "minute": 200
+                },
+                {
+                  "median": 144.0,
+                  "minute": 205
+                },
+                {
+                  "median": 140.5,
+                  "minute": 210
+                },
+                {
+                  "median": 139.5,
+                  "minute": 215
+                },
+                {
+                  "median": 141.0,
+                  "minute": 220
+                },
+                {
+                  "median": 139.0,
+                  "minute": 225
+                },
+                {
+                  "median": 138.5,
+                  "minute": 230
+                },
+                {
+                  "median": 138.0,
+                  "minute": 235
+                },
+                {
+                  "median": 139.5,
+                  "minute": 240
+                },
+                {
+                  "median": 139.0,
+                  "minute": 245
+                },
+                {
+                  "median": 138.5,
+                  "minute": 250
+                },
+                {
+                  "median": 135.5,
+                  "minute": 255
+                },
+                {
+                  "median": 136.0,
+                  "minute": 260
+                },
+                {
+                  "median": 133.5,
+                  "minute": 265
+                },
+                {
+                  "median": 133.5,
+                  "minute": 270
+                },
+                {
+                  "median": 131.0,
+                  "minute": 275
+                },
+                {
+                  "median": 133.0,
+                  "minute": 280
+                },
+                {
+                  "median": 135.0,
+                  "minute": 285
+                },
+                {
+                  "median": 134.5,
+                  "minute": 290
+                },
+                {
+                  "median": 135.5,
+                  "minute": 295
+                },
+                {
+                  "median": 134.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        },
+        "lows_after_meals": {
+          "cohorts": [
+            {
+              "key": "matched",
+              "points": [
+                {
+                  "median": 171.0,
+                  "minute": -60
+                },
+                {
+                  "median": 176.5,
+                  "minute": -55
+                },
+                {
+                  "median": 179.0,
+                  "minute": -50
+                },
+                {
+                  "median": 178.5,
+                  "minute": -45
+                },
+                {
+                  "median": 198.0,
+                  "minute": -40
+                },
+                {
+                  "median": 180.0,
+                  "minute": -35
+                },
+                {
+                  "median": 178.5,
+                  "minute": -30
+                },
+                {
+                  "median": 174.5,
+                  "minute": -25
+                },
+                {
+                  "median": 195.5,
+                  "minute": -20
+                },
+                {
+                  "median": 165.5,
+                  "minute": -15
+                },
+                {
+                  "median": 162.5,
+                  "minute": -10
+                },
+                {
+                  "median": 156.5,
+                  "minute": -5
+                },
+                {
+                  "median": 152.5,
+                  "minute": 0
+                },
+                {
+                  "median": 144.5,
+                  "minute": 5
+                },
+                {
+                  "median": 137.0,
+                  "minute": 10
+                },
+                {
+                  "median": 131.0,
+                  "minute": 15
+                },
+                {
+                  "median": 123.5,
+                  "minute": 20
+                },
+                {
+                  "median": 114.5,
+                  "minute": 25
+                },
+                {
+                  "median": 105.0,
+                  "minute": 30
+                },
+                {
+                  "median": 96.5,
+                  "minute": 35
+                },
+                {
+                  "median": 91.0,
+                  "minute": 40
+                },
+                {
+                  "median": 88.0,
+                  "minute": 45
+                },
+                {
+                  "median": 97.0,
+                  "minute": 50
+                },
+                {
+                  "median": 79.0,
+                  "minute": 55
+                },
+                {
+                  "median": 76.0,
+                  "minute": 60
+                },
+                {
+                  "median": 62.0,
+                  "minute": 65
+                },
+                {
+                  "median": 73.0,
+                  "minute": 70
+                },
+                {
+                  "median": 66.5,
+                  "minute": 75
+                },
+                {
+                  "median": 59.0,
+                  "minute": 80
+                },
+                {
+                  "median": 60.0,
+                  "minute": 85
+                },
+                {
+                  "median": 61.5,
+                  "minute": 90
+                },
+                {
+                  "median": 73.0,
+                  "minute": 95
+                },
+                {
+                  "median": 68.5,
+                  "minute": 100
+                },
+                {
+                  "median": 66.0,
+                  "minute": 105
+                },
+                {
+                  "median": 68.0,
+                  "minute": 110
+                },
+                {
+                  "median": 67.5,
+                  "minute": 115
+                },
+                {
+                  "median": 63.0,
+                  "minute": 120
+                },
+                {
+                  "median": 76.0,
+                  "minute": 125
+                },
+                {
+                  "median": 75.0,
+                  "minute": 130
+                },
+                {
+                  "median": 85.5,
+                  "minute": 135
+                },
+                {
+                  "median": 95.5,
+                  "minute": 140
+                },
+                {
+                  "median": 104.5,
+                  "minute": 145
+                },
+                {
+                  "median": 109.0,
+                  "minute": 150
+                },
+                {
+                  "median": 113.0,
+                  "minute": 155
+                },
+                {
+                  "median": 112.0,
+                  "minute": 160
+                },
+                {
+                  "median": 115.0,
+                  "minute": 165
+                },
+                {
+                  "median": 118.0,
+                  "minute": 170
+                },
+                {
+                  "median": 117.5,
+                  "minute": 175
+                },
+                {
+                  "median": 118.0,
+                  "minute": 180
+                },
+                {
+                  "median": 122.0,
+                  "minute": 185
+                },
+                {
+                  "median": 122.0,
+                  "minute": 190
+                },
+                {
+                  "median": 124.5,
+                  "minute": 195
+                },
+                {
+                  "median": 126.0,
+                  "minute": 200
+                },
+                {
+                  "median": 134.0,
+                  "minute": 205
+                },
+                {
+                  "median": 123.5,
+                  "minute": 210
+                },
+                {
+                  "median": 124.0,
+                  "minute": 215
+                },
+                {
+                  "median": 124.5,
+                  "minute": 220
+                },
+                {
+                  "median": 115.0,
+                  "minute": 225
+                },
+                {
+                  "median": 121.0,
+                  "minute": 230
+                },
+                {
+                  "median": 119.0,
+                  "minute": 235
+                },
+                {
+                  "median": 117.5,
+                  "minute": 240
+                },
+                {
+                  "median": 115.0,
+                  "minute": 245
+                },
+                {
+                  "median": 116.0,
+                  "minute": 250
+                },
+                {
+                  "median": 121.5,
+                  "minute": 255
+                },
+                {
+                  "median": 125.5,
+                  "minute": 260
+                },
+                {
+                  "median": 126.5,
+                  "minute": 265
+                },
+                {
+                  "median": 121.0,
+                  "minute": 270
+                },
+                {
+                  "median": 117.0,
+                  "minute": 275
+                },
+                {
+                  "median": 115.0,
+                  "minute": 280
+                },
+                {
+                  "median": 115.0,
+                  "minute": 285
+                },
+                {
+                  "median": 112.5,
+                  "minute": 290
+                },
+                {
+                  "median": 112.0,
+                  "minute": 295
+                },
+                {
+                  "median": 108.5,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            },
+            {
+              "key": "comparison",
+              "points": [
+                {
+                  "median": 153.0,
+                  "minute": -60
+                },
+                {
+                  "median": 151.0,
+                  "minute": -55
+                },
+                {
+                  "median": 151.0,
+                  "minute": -50
+                },
+                {
+                  "median": 147.0,
+                  "minute": -45
+                },
+                {
+                  "median": 146.0,
+                  "minute": -40
+                },
+                {
+                  "median": 148.0,
+                  "minute": -35
+                },
+                {
+                  "median": 148.0,
+                  "minute": -30
+                },
+                {
+                  "median": 153.0,
+                  "minute": -25
+                },
+                {
+                  "median": 154.0,
+                  "minute": -20
+                },
+                {
+                  "median": 153.0,
+                  "minute": -15
+                },
+                {
+                  "median": 152.0,
+                  "minute": -10
+                },
+                {
+                  "median": 153.0,
+                  "minute": -5
+                },
+                {
+                  "median": 154.0,
+                  "minute": 0
+                },
+                {
+                  "median": 154.0,
+                  "minute": 5
+                },
+                {
+                  "median": 150.0,
+                  "minute": 10
+                },
+                {
+                  "median": 151.5,
+                  "minute": 15
+                },
+                {
+                  "median": 147.0,
+                  "minute": 20
+                },
+                {
+                  "median": 146.0,
+                  "minute": 25
+                },
+                {
+                  "median": 145.0,
+                  "minute": 30
+                },
+                {
+                  "median": 148.0,
+                  "minute": 35
+                },
+                {
+                  "median": 146.0,
+                  "minute": 40
+                },
+                {
+                  "median": 153.5,
+                  "minute": 45
+                },
+                {
+                  "median": 159.0,
+                  "minute": 50
+                },
+                {
+                  "median": 164.5,
+                  "minute": 55
+                },
+                {
+                  "median": 166.0,
+                  "minute": 60
+                },
+                {
+                  "median": 172.0,
+                  "minute": 65
+                },
+                {
+                  "median": 176.5,
+                  "minute": 70
+                },
+                {
+                  "median": 182.0,
+                  "minute": 75
+                },
+                {
+                  "median": 183.5,
+                  "minute": 80
+                },
+                {
+                  "median": 185.5,
+                  "minute": 85
+                },
+                {
+                  "median": 185.0,
+                  "minute": 90
+                },
+                {
+                  "median": 187.5,
+                  "minute": 95
+                },
+                {
+                  "median": 187.0,
+                  "minute": 100
+                },
+                {
+                  "median": 188.0,
+                  "minute": 105
+                },
+                {
+                  "median": 185.0,
+                  "minute": 110
+                },
+                {
+                  "median": 188.0,
+                  "minute": 115
+                },
+                {
+                  "median": 186.0,
+                  "minute": 120
+                },
+                {
+                  "median": 188.0,
+                  "minute": 125
+                },
+                {
+                  "median": 184.5,
+                  "minute": 130
+                },
+                {
+                  "median": 185.0,
+                  "minute": 135
+                },
+                {
+                  "median": 180.0,
+                  "minute": 140
+                },
+                {
+                  "median": 179.0,
+                  "minute": 145
+                },
+                {
+                  "median": 179.0,
+                  "minute": 150
+                },
+                {
+                  "median": 176.0,
+                  "minute": 155
+                },
+                {
+                  "median": 177.0,
+                  "minute": 160
+                },
+                {
+                  "median": 174.0,
+                  "minute": 165
+                },
+                {
+                  "median": 173.0,
+                  "minute": 170
+                },
+                {
+                  "median": 171.5,
+                  "minute": 175
+                },
+                {
+                  "median": 167.0,
+                  "minute": 180
+                },
+                {
+                  "median": 165.5,
+                  "minute": 185
+                },
+                {
+                  "median": 163.0,
+                  "minute": 190
+                },
+                {
+                  "median": 163.0,
+                  "minute": 195
+                },
+                {
+                  "median": 159.0,
+                  "minute": 200
+                },
+                {
+                  "median": 161.0,
+                  "minute": 205
+                },
+                {
+                  "median": 156.5,
+                  "minute": 210
+                },
+                {
+                  "median": 155.5,
+                  "minute": 215
+                },
+                {
+                  "median": 152.0,
+                  "minute": 220
+                },
+                {
+                  "median": 151.5,
+                  "minute": 225
+                },
+                {
+                  "median": 151.0,
+                  "minute": 230
+                },
+                {
+                  "median": 150.5,
+                  "minute": 235
+                },
+                {
+                  "median": 150.0,
+                  "minute": 240
+                },
+                {
+                  "median": 148.5,
+                  "minute": 245
+                },
+                {
+                  "median": 146.5,
+                  "minute": 250
+                },
+                {
+                  "median": 147.0,
+                  "minute": 255
+                },
+                {
+                  "median": 147.0,
+                  "minute": 260
+                },
+                {
+                  "median": 145.5,
+                  "minute": 265
+                },
+                {
+                  "median": 143.0,
+                  "minute": 270
+                },
+                {
+                  "median": 139.0,
+                  "minute": 275
+                },
+                {
+                  "median": 137.5,
+                  "minute": 280
+                },
+                {
+                  "median": 143.0,
+                  "minute": 285
+                },
+                {
+                  "median": 143.0,
+                  "minute": 290
+                },
+                {
+                  "median": 141.0,
+                  "minute": 295
+                },
+                {
+                  "median": 140.0,
+                  "minute": 300
+                }
+              ],
+              "support": "supported"
+            }
+          ],
+          "comparison": {
+            "state": "available"
+          }
+        }
       },
       "findings": {
         "outcome_patterns": [

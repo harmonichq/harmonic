@@ -4,6 +4,10 @@
 // too broad to rely on carries the Uncertain pill on its magnitude line (ADR
 // 485). When the engine serves no count for the pattern, the card shows no
 // magnitude or waffle rather than inventing one.
+// Under the magnitude, the impact line: the peak (a high pattern) or nadir (a
+// low one) of the pattern's own episodes against the typical episode the
+// engine compares them with, as two caption + value pairs on one baseline.
+// A pattern the engine serves no comparison for has no impact line.
 // Snooze is the lesser action, a centred text action beneath Pin (Apple's
 // primary-plus-"Not Now" stack). The header holds the title and the collapse
 // chevron, which a screen drops where the card does not collapse (desktop).
@@ -53,6 +57,16 @@ export function PatternCard(props: PatternCardProps) {
             <span className="ui-pcard__of">of <Num value={magnitude.denominator} /> {magnitude.noun}</span>
             {data.uncertain && <StatePill state="uncertain" />}
           </div>
+          {data.impact && (
+            <p className="ui-pcard__impact">
+              <span className="ui-caption">{data.impact.kind === 'peak' ? 'Peak' : 'Nadir'}</span>
+              <span className="ui-pcard__own"><Num value={data.impact.own} /></span>
+              <span className="ui-pcard__dot" aria-hidden="true">·</span>
+              <span className="ui-caption">Typical</span>
+              <span className="ui-pcard__typical"><Num value={data.impact.typical} /></span>
+              <span className="ui-pcard__unit">mg/dL</span>
+            </p>
+          )}
           <div className="ui-pcard__waffle">
             <CauseWaffle n={magnitude.denominator.value} k={magnitude.count.value}
               causes={data.causes} noun={magnitude.noun} tone={data.tone} />

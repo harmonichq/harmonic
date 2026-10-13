@@ -20,6 +20,11 @@ export type Magnitude = {
 
 export type Cause = { title: string; count: number };
 
+/** The open card's impact line: the Pattern's own episodes against the
+ *  comparison episodes, at the peak (highs) or nadir (lows) of each cohort's
+ *  median trace after the anchor. */
+export type Impact = { kind: 'peak' | 'nadir'; own: Sourced<number>; typical: Sourced<number> };
+
 export type PatternData = {
   title: string;
   tone: Tone;
@@ -30,6 +35,8 @@ export type PatternData = {
   /** The engine flags the pattern as too broad to rely on (ADR 485). */
   uncertain: boolean;
   pinned: boolean;
+  /** Null when the engine serves no comparison for this pattern. */
+  impact: Impact | null;
 };
 
 export type SettingData = {
@@ -75,9 +82,10 @@ export function pattern(name: QueueStore, key: string): PatternData {
         .filter((f) => f.scope === 'pattern')
         .map((f) => ({ title: r.title, count: f.count })))
       .sort((a, b) => b.count - a.count);
+  const tone: Tone = row.chips?.includes('highs') ? 'high' : 'low';
   return {
     title: outcome?.title ?? row.title,
-    tone: row.chips?.includes('highs') ? 'high' : 'low',
+    tone,
     magnitude: counted
       ? {
           count: sourced(`${rowPath}.count_sentences.0.count`),
@@ -88,7 +96,34 @@ export function pattern(name: QueueStore, key: string): PatternData {
     causes,
     uncertain: (outcome?.wide as boolean | null | undefined) === true,
     pinned: s.focus.focuses.some((f) => f.status === 'active' && f.pattern_key === key),
+    impact: impact(name, key, tone),
   };
+}
+
+type CasePoint = { minute: number; median: number | null };
+
+/** The impact pair from the Pattern's served case file, or null when it has
+ *  none or either cohort's median is withheld. Each value is the served median
+ *  at the minute where that cohort's trace peaks (or bottoms out) after the
+ *  anchor, so the story check proves the printed number is that point. */
+function impact(name: QueueStore, key: string, tone: Tone): Impact | null {
+  const cases = store(name).cases as Record<string, {
+    comparison: { state: string };
+    cohorts: { key: string; points: CasePoint[] }[];
+  }>;
+  const served = cases[key];
+  if (!served || served.comparison.state !== 'available') return null;
+  const kind = tone === 'high' ? 'peak' : 'nadir';
+  const extreme = (cohort: string): Sourced<number> | null => {
+    const points = served.cohorts.find((c) => c.key === cohort)?.points
+      .filter((p): p is { minute: number; median: number } => p.minute >= 0 && p.median !== null) ?? [];
+    if (points.length === 0) return null;
+    const at = points.reduce((best, p) => ((kind === 'peak' ? p.median > best.median : p.median < best.median) ? p : best));
+    return sourced(`queue.${name}.cases.${key}.cohorts[key=${cohort}].0.points[minute=${at.minute}].0.median`, 'round');
+  };
+  const own = extreme('matched');
+  const typical = extreme('comparison');
+  return own && typical ? { kind, own, typical } : null;
 }
 
 export function basalSetting(name: QueueStore, startMin: number): SettingData {

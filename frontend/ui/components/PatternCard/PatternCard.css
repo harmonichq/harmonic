@@ -35,6 +35,20 @@
 .ui-pcard__of { color: var(--wk-ink-body); font-size: var(--ui-type-body); }
 .ui-pcard__magnitude .ui-pill { margin-left: 4px; }
 
+/* The impact line: caption + value pairs on the values' baseline (§2.2). */
+.ui-pcard__impact {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: var(--ui-type-body);
+  font-variant-numeric: tabular-nums;
+}
+.ui-pcard__own { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
+.ui-pcard__typical { color: var(--wk-ink-body); }
+.ui-pcard__dot { margin: 0 4px; color: var(--wk-ink-meta); }
+.ui-pcard__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); }
+
 .ui-pcard__waffle { margin-top: 16px; }
 
 

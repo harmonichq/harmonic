@@ -1,7 +1,10 @@
 // GlucoseProfile (§4.2): glucose by time of day over the served 30 days.
 //
-// The median is a line; around it two nested bands, the 25–75% spread strong
-// and the 10–90% spread faint, as an AGP draws them; both a quiet green in range.
+// The median is a line; around it the 25–75% spread is solid, and the 10–90%
+// spread keeps a hard edge at its served percentiles while its fill ramps up
+// toward the core — a faint base, then thin layers stacked between the two
+// served percentiles, a rendering only, with no value read off them. Both are
+// a quiet green in range.
 // Where the band leaves range it is clipped and drawn in that glucose zone's
 // tone and hatching (glucose-zones.tsx) — below 54, below the low target, above
 // the high target, above 250 — so colour marks time out of range. The zones
@@ -36,6 +39,7 @@ const MEAL_MAX = 18;
 const TIME_Y = 270;
 const TICK = SEVERE_HIGH;
 const DAY = 1440;
+const FADE = 6;
 
 /** Consecutive supported bins, each run closed at midnight when it reaches it. */
 function runs(bins: ProfileBin[]): ProfileBin[][] {
@@ -61,12 +65,23 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const y = (bg: number) => PLOT_BOTTOM - (PLOT_BOTTOM - PLOT_TOP) * ((Math.max(bg, FLOOR) - FLOOR) / (top - FLOOR));
   const point = (minute: number, bg: number) => `${x(minute).toFixed(1)},${y(bg).toFixed(1)}`;
   const traces = runs(data.bins);
-  const band = (run: ProfileBin[], lo: 'p10' | 'p25', hi: 'p75' | 'p90') =>
-    `M${run.map((bin) => point(bin.minute, bin[hi])).join('L')}L${[...run].reverse().map((bin) => point(bin.minute, bin[lo])).join('L')}Z`;
-  const spreads = [
-    { key: 'outer', lo: 'p10', hi: 'p90' },
-    { key: 'inner', lo: 'p25', hi: 'p75' },
-  ] as const;
+  type Edge = (bin: ProfileBin) => number;
+  const band = (run: ProfileBin[], lo: Edge, hi: Edge) =>
+    `M${run.map((bin) => point(bin.minute, hi(bin))).join('L')}L${[...run].reverse().map((bin) => point(bin.minute, lo(bin))).join('L')}Z`;
+  // The base fills the 10–90% spread to a hard edge; FADE layers from just
+  // inside it in to the 25–75% edge build toward the core; then the core.
+  const spreads: { key: string; lo: Edge; hi: Edge; layer: 'base' | 'fade' | 'core' }[] = [
+    { key: 'base', layer: 'base', lo: (bin) => bin.p10, hi: (bin) => bin.p90 },
+    ...Array.from({ length: FADE }, (_, k) => {
+      const t = (k + 1) / (FADE + 1);
+      return {
+        key: `fade${k}`, layer: 'fade' as const,
+        lo: (bin: ProfileBin) => bin.p10 + (bin.p25 - bin.p10) * t,
+        hi: (bin: ProfileBin) => bin.p90 - (bin.p90 - bin.p75) * t,
+      };
+    }),
+    { key: 'core', layer: 'core', lo: (bin) => bin.p25, hi: (bin) => bin.p75 },
+  ];
   const most = Math.max(1, ...data.meals.map((meal) => meal.count));
   const slot = (right - LEFT) * (30 / DAY);
   const yLow = y(data.low.value);
@@ -94,14 +109,20 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             Median
           </span>
           <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10" className="ui-profile__spread--inner">
+            <svg aria-hidden="true" width="14" height="10" className="ui-profile__spread--core">
               <rect width="14" height="10" className="ui-profile__neutral" />
             </svg>
             <span data-axis="">25–75%</span>
           </span>
           <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10" className="ui-profile__spread--outer">
-              <rect width="14" height="10" className="ui-profile__neutral" />
+            <svg aria-hidden="true" width="14" height="10">
+              <defs>
+                <linearGradient id={`${id}-key-fade`}>
+                  <stop offset="0" className="ui-profile__key-fade-edge" />
+                  <stop offset="1" className="ui-profile__key-fade-core" />
+                </linearGradient>
+              </defs>
+              <rect width="14" height="10" fill={`url(#${id}-key-fade)`} />
             </svg>
             <span data-axis="">10–90%</span>
           </span>
@@ -125,7 +146,7 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
           <ZoneHatches id={id} />
         </defs>
         {spreads.map((spread) => (
-          <g key={spread.key} aria-hidden="true" className={`ui-profile__band ui-profile__spread--${spread.key}`}>
+          <g key={spread.key} aria-hidden="true" className={`ui-profile__band ui-profile__spread--${spread.layer}`}>
             {zones.filter((zone) => zone.reached).map((zone) => (
               <g key={zone.tone} clipPath={`url(#${id}-clip-${zone.tone})`}>
                 {traces.map((run, i) => (

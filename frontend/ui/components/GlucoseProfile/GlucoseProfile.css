@@ -29,8 +29,12 @@
 /* The band: quiet green in range, the excursions in their zone's tone, small enough
    to mark rather than flood; the median rides on it with a halo. */
 .ui-profile__neutral { fill: var(--glucose-in-range); fill-opacity: .3; }
-/* The two spreads: the outer band faint, the inner one drawn over it in full. */
-.ui-profile__spread--outer { opacity: .5; }
+/* The spreads: a faint base to the hard 10–90% edge, fade layers whose
+   overlap ramps up toward the core, and the core drawn over them in full. */
+.ui-profile__spread--base { opacity: .4; }
+.ui-profile__spread--fade { opacity: .14; }
+.ui-profile__key-fade-edge { stop-color: var(--glucose-in-range); stop-opacity: .12; }
+.ui-profile__key-fade-core { stop-color: var(--glucose-in-range); stop-opacity: .22; }
 .ui-profile__band .ui-zone-area { fill-opacity: .85; }
 .ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
 .ui-profile__halo { fill: none; stroke: var(--wk-surface); stroke-width: 5; stroke-linejoin: round; }

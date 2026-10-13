@@ -1,7 +1,10 @@
 // CauseWaffle (§4.2): one cell per occurrence of the pattern's denominator,
 // filled column by column. The first cause is solid, each further cause takes
 // its own texture, so causes differ by pattern and not by colour alone
-// (§2.3 ban 4). Occurrences no cause claims take a neutral fill; the rest are
+// (§2.3 ban 4). A pattern with no attributed cause fills its occurrences
+// with the same solid tone a single cause takes (amendment 2026-10-13);
+// where causes exist, occurrences none of them claims take a neutral fill.
+// The rest are
 // the base cells, labelled with the served noun ("Meals"). The legend names
 // every fill it draws.
 import { useId } from 'react';
@@ -65,7 +68,7 @@ export function CauseWaffle({ n, k, causes, noun, tone }: CauseWaffleProps) {
   const claimed = causes.reduce((sum, cause) => sum + cause.count, 0);
   const fills: string[] = [
     ...causes.flatMap((cause, i) => Array(cause.count).fill(paint(textures[i], tone, `${base}-${i}`))),
-    ...Array(Math.max(0, k - claimed)).fill('var(--wk-ink-meta)'),
+    ...Array(Math.max(0, k - claimed)).fill(causes.length === 0 ? paint('solid', tone, base) : 'var(--wk-ink-meta)'),
   ];
   const rows = Math.min(MAX_ROWS, Math.max(1, Math.ceil(n / MAX_COLUMNS)));
   const columns = Math.ceil(n / rows);

@@ -287,6 +287,11 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   one, read from the Pattern's case file (the matched and comparison cohorts'
   median traces after the anchor). A Pattern the case file serves no
   comparison for shows no line. Peak, Nadir and Typical join §1.5.
+- **2026-10-13 — a pattern with no attributed cause keeps its colour.** The
+  operator, on Overnight lows drawn in a neutral fill: "Wouldn't we just use
+  that yellow for the single cause? Like the non-striped, non-banded yellow?"
+  Its occurrences now take the solid tone a single cause takes (§4.2
+  CauseWaffle); the legend still names only the base cells.
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -399,8 +404,9 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.
-   - States: multi-cause; single cause (one legend entry); no cause (a
-     neutral fill, with a "Meals" or "Lows" legend only).
+   - States: multi-cause; single cause (one legend entry); no cause (the
+     occurrences in the pattern's solid tone, as a single cause draws them,
+     with a "Meals" or "Lows" legend only).
    - Fields: as PatternCard.
    - Desktop: larger cells, same rules.
 10. **SettingCard**: the open setting, showing current → suggested in figure

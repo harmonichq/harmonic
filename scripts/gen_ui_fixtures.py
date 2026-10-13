@@ -142,13 +142,15 @@ FIRST_DAYS = 5
 # A Trial still maturing: the wearer's history cut this many days after the
 # Trial day, short of the engine's fourteen.
 MATURING_DAYS = 6
-# Settings (§1.2, §1.3, and the Settings section of the brief): the sync rows,
+# Settings (§1.1, §1.2, §1.3, and the Settings section of the brief): the root
+# list's Glossary row, the sync rows,
 # the account rows, the pump profile, the screen header's date ("To 30 Sep"),
 # the snooze bar ("Snoozed · Until <date>") and the screen-level "Unavailable".
 # Plain interface words (§2.5), but for DIA, a pump field the brief names.
 SETTINGS_LABELS = ("State", "OK", "Failed", "Last success", "Last attempt", "Error", "Data",
                    "Email", "Region", "Password", "Set", "Not set", "Update", "Start", "Target",
-                   "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To")
+                   "Max bolus", "DIA", "No profile", "Unavailable", "Snoozed", "Until", "To",
+                   "Glossary")
 # The account the stories show as set: an invented address on a reserved
 # domain, posted through the API and masked before it is written anywhere.
 SYNTHETIC_EMAIL = "wearer@example.invalid"
@@ -370,7 +372,9 @@ def glossary() -> list[dict]:
     for line in _section(DESIGN.read_text(), "### 1.5 Glossary").splitlines():
         match = re.match(r"\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*$", line)
         if match:
-            rows.append({"term": match.group(1), "kind": match.group(2), "meaning": match.group(3)})
+            # The table's Markdown code spans print as plain words.
+            rows.append({"term": match.group(1), "kind": match.group(2),
+                         "meaning": match.group(3).replace("`", "")})
     return sorted(rows, key=lambda row: row["term"].lower())
 
 

@@ -43,7 +43,7 @@ test('(c) a button off its role height, or with no role, fails', () => {
   assert.match(run({ buttons: [{ role: 'answer', height: 32, label: 'Pin' }] })[0], /^\(c\) answer .* 32px, not 44px/);
 });
 
-test('a Glossary definition may hold a sentence, words and numbers; its term may not', () => {
+test('the Glossary list may hold a sentence, words and numbers; nothing outside it may', () => {
   const definition = { text: 'Remove from the Queue for 14 days.', source: null, glossary: true };
   assert.deepEqual(run({ texts: [definition] }), []);
   assert.match(run({ texts: [{ ...definition, glossary: false }] })[0], /^\(a\)/);

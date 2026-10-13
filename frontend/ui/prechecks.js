@@ -13,9 +13,9 @@
 //       "10–90%"). A plain number, clock, range or bound inside [data-axis] is
 //       exempt, and nothing else there is.
 //
-// A Glossary definition (inside `.glossary`) is the one place a sentence may
-// appear (§2.3 ban 1), so (a), (b) and (e) skip its text; its term, outside
-// `.glossary`, is still checked.
+// The Glossary list (inside `.glossary`) is the one place a sentence may
+// appear (§2.3 ban 1): its terms and definitions are §1.5's own text, so (a),
+// (b) and (e) skip it. Nothing outside `.glossary` is exempt.
 import { formatValue, resolveSource } from './provenance.js';
 
 // §4.1, one height per role; a list row is a 48 px minimum.

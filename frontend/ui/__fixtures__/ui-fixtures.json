@@ -6297,7 +6297,7 @@
     },
     {
       "kind": "state",
-      "meaning": "The engine flags it as not yet real enough to act on (its `wide` flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on.",
+      "meaning": "The engine flags it as not yet real enough to act on (its wide flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on.",
       "term": "Uncertain"
     },
     {

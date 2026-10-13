@@ -1,0 +1,17 @@
+.ui-bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 8px 0 16px;
+  border-radius: var(--wk-radius);
+  background: var(--wk-surface-rail);
+  box-shadow: 0 6px 20px rgb(0 0 0 / .45);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+.ui-bar--desktop { max-width: 480px; }
+.ui-bar__label { color: var(--wk-ink); font-size: var(--ui-type-label); }
+.ui-bar__alert { color: var(--danger); }

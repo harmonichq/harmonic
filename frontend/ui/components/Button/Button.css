@@ -38,6 +38,16 @@
   color: var(--primary);
 }
 
+.ui-button--answer {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--ui-size-answer);
+  border-color: var(--wk-rule-strong);
+  font-size: var(--ui-type-body);
+}
+.ui-button--answer[aria-pressed='true'] { border-color: var(--primary); }
+.ui-button__check { margin-right: 6px; color: var(--primary); }
+
 .ui-button--icon {
   width: var(--ui-size-icon);
   height: var(--ui-size-icon);
@@ -52,8 +62,10 @@
 }
 .ui-button--secondary:active:enabled,
 .ui-button--icon:active:enabled,
+.ui-button--answer:active:enabled,
 .sb-pressed .ui-button--secondary,
-.sb-pressed .ui-button--icon {
+.sb-pressed .ui-button--icon,
+.sb-pressed .ui-button--answer {
   background: var(--wk-surface-rail);
 }
 .ui-button--text:active:enabled,

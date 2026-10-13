@@ -1,0 +1,25 @@
+.ui-grams {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 2px 4px;
+  border-bottom: 2px solid var(--wk-rule-strong);
+  font-family: var(--ui-font);
+}
+.ui-grams--focused { border-bottom-color: var(--primary); }
+.ui-grams__input {
+  box-sizing: content-box;
+  width: 3ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--wk-ink);
+  caret-color: var(--primary);
+  font: var(--ui-weight-strong) var(--ui-type-figure) / 40px var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ui-grams__input:disabled { color: var(--wk-ink-meta); }
+.ui-grams__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-body); }

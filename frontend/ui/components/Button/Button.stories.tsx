@@ -17,6 +17,7 @@ const ROLES = {
   secondary: { kind: 'secondary', label: 'End' },
   text: { kind: 'text', label: 'Undo' },
   icon: { kind: 'icon', label: 'Snooze', icon: 'snooze' },
+  answer: { kind: 'answer', label: 'Yes' },
 } satisfies Record<string, ButtonProps>;
 
 function story(role: keyof typeof ROLES, state: State): Story {
@@ -56,3 +57,13 @@ export const IconPressed = story('icon', 'pressed');
 export const IconFocused = story('icon', 'focused');
 export const IconDisabled = story('icon', 'disabled');
 export const IconBusy = story('icon', 'busy');
+
+export const AnswerDefault = story('answer', 'default');
+export const AnswerPressed = story('answer', 'pressed');
+export const AnswerFocused = story('answer', 'focused');
+export const AnswerDisabled = story('answer', 'disabled');
+export const AnswerBusy = story('answer', 'busy');
+export const AnswerRecorded: Story = {
+  args: { kind: 'answer', label: 'Yes', recorded: true },
+  parameters: { frame: { width: 160 } },
+};

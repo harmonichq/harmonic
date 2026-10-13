@@ -27,7 +27,7 @@ const TEXTURES = ['solid', 'hatch', 'dots', 'cross'] as const;
 type Texture = (typeof TEXTURES)[number];
 
 function Fill({ id, texture, tone }: { id: string; texture: Texture; tone: Tone }) {
-  const ink = `var(--${tone})`;
+  const ink = `var(--glucose-${tone})`;
   if (texture === 'hatch' || texture === 'cross') {
     return (
       <pattern id={id} width="4" height="4" patternUnits="userSpaceOnUse"
@@ -47,7 +47,7 @@ function Fill({ id, texture, tone }: { id: string; texture: Texture; tone: Tone 
 }
 
 function paint(texture: Texture, tone: Tone, id: string) {
-  return texture === 'solid' ? `var(--${tone})` : `url(#${id})`;
+  return texture === 'solid' ? `var(--glucose-${tone})` : `url(#${id})`;
 }
 
 function Swatch({ fill, defs }: { fill: string; defs?: React.ReactNode }) {

@@ -9,16 +9,16 @@
 .ui-tir__bar { display: flex; gap: 2px; height: 10px; }
 .ui-tir__bar .ui-tir__swatch { flex-basis: 0; min-width: 3px; }
 
-.ui-tir__swatch { display: block; border-radius: 1px; }
-.ui-tir__swatch--low { background: var(--low); }
-.ui-tir__swatch--in-range { background: var(--in-range); }
-.ui-tir__swatch--high { background: var(--high); }
-/* The severe ends: 2 px stripes of the side's colour at 45°, every 4 px. */
+.ui-tir__swatch { display: block; border-radius: 1px; background: var(--tone); }
+.ui-tir__swatch--very-low { --tone: var(--glucose-very-low); }
+.ui-tir__swatch--low { --tone: var(--glucose-low); }
+.ui-tir__swatch--in-range { --tone: var(--glucose-in-range); }
+.ui-tir__swatch--high { --tone: var(--glucose-high); }
+.ui-tir__swatch--very-high { --tone: var(--glucose-very-high); }
+/* The severe ends: 2 px stripes of the band's colour at 45°, every 4 px. */
 .ui-tir__swatch--hatched {
   background: repeating-linear-gradient(-45deg, var(--tone) 0 1.4px, transparent 1.4px 2.83px);
 }
-.ui-tir__swatch--hatched.ui-tir__swatch--low { --tone: var(--low); }
-.ui-tir__swatch--hatched.ui-tir__swatch--high { --tone: var(--high); }
 
 .ui-tir__labels { display: flex; justify-content: space-between; }
 .ui-tir__label {

@@ -1,11 +1,10 @@
 /* The component library's tokens (#483). One source: the colours, grounds,
    inks, rules and radius are the app's own material, imported as-is, and
-   Inter is the same vendored sheet the desk loads. Nothing below re-declares
-   a colour.
+   Inter is the same vendored sheet the desk loads.
 
    What is added here is the redesign lock's scale (§2.1 and §4.1): the
-   five type steps and the one size per control role. Components read these
-   names, never a literal. */
+   five type steps and the one size per control role, and the library's own
+   glucose band colours. Components read these names, never a literal. */
 @import '../material.css';
 @import '../fonts/inter.css';
 
@@ -32,4 +31,24 @@
   --ui-size-nav: 44px;
   --ui-size-pill: 20px;
   --ui-size-badge: 16px;
+
+  /* §2.1 glucose bands: the clinical AGP colours (the 2019 international
+     consensus on time in range, as Clarity and LibreView draw them), one hue
+     family per band, tuned for this dark ground. Library tokens only: the
+     running app keeps material.css's --low / --in-range / --high. Every band
+     clears 3:1 against --wk-surface as a fill, and lightness steps between
+     adjacent bands (OKLab L .57 · .67 · .76 · .86 · .73), so a band never
+     relies on hue alone. Contrast against #221e1b / #0f0d0b:
+       very low  <54      3.40 / 3.99   deep red, darker than low
+       low       54–69    5.20 / 6.09   red
+       in range  70–180   7.91 / 9.28   green
+       high      181–250 10.79 / 12.65  yellow
+       very high >250     6.62 / 7.76   orange, darker than high */
+  --glucose-very-low: #cc3d44;
+  --glucose-low: #ee6457;
+  --glucose-in-range: #7ec476;
+  --glucose-high: #efcf4c;
+  --glucose-very-high: #f08a3c;
+  /* A chart's above-range area: --glucose-high, translucent. */
+  --glucose-above-range-tint: color-mix(in srgb, var(--glucose-high) 22%, transparent);
 }

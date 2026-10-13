@@ -141,6 +141,23 @@ Any term not in this table may not appear in the UI.
 | Danger | `--danger` | #ec6f55 |
 | Manual carb | `--manual-carb` | #d2743e |
 | Radius | `--radius` | 4px |
+| Glucose <54 (library, clinical AGP) | `--glucose-very-low` | #cc3d44 |
+| Glucose 54–69 (library, clinical AGP) | `--glucose-low` | #ee6457 |
+| Glucose 70–180 (library, clinical AGP) | `--glucose-in-range` | #7ec476 |
+| Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
+| Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
+| Above-range tint (library) | `--glucose-above-range-tint` | `--glucose-high` at 22% |
+
+- **Glucose bands follow the clinical AGP colours** (the 2019 international
+  consensus on time in range, as Dexcom Clarity and LibreView draw them): very
+  low dark red, low red, in range green, high yellow, very high orange. These
+  are component-library tokens in `frontend/ui/tokens.css`, not
+  `material.css`; the running app keeps its own `--low` / `--in-range` /
+  `--high`. Each clears 3:1 against `--wk-surface` (3.40, 5.20, 7.91, 10.79,
+  6.62) and adjacent bands step in lightness as well as hue. <54 and >250 keep
+  their hatching as the non-colour cue. Better/worse change colours stay
+  `--wk-status-favorable` / `--wk-status-adverse`: they mean direction, not
+  glucose.
 
 - **Dark only** (`color-scheme: dark`), decided 2026-10-12. The light palette
   used by the exploration mockups is retired.

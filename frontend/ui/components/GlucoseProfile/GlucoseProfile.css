@@ -27,9 +27,9 @@
 .ui-profile__chart { display: block; overflow: visible; }
 
 .ui-profile__band { fill: var(--wk-ink-body); fill-opacity: .24; }
-.ui-profile__above { fill: var(--high); fill-opacity: .22; }
+.ui-profile__above { fill: var(--glucose-above-range-tint); }
 .ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
-.ui-profile__target { stroke: var(--in-range); stroke-opacity: .55; stroke-width: 1; stroke-dasharray: 3 3; }
+.ui-profile__target { stroke: var(--glucose-in-range); stroke-opacity: .55; stroke-width: 1; stroke-dasharray: 3 3; }
 .ui-profile__tick-line { stroke: var(--wk-rule-strong); stroke-width: 1; }
 .ui-profile__rule { stroke: var(--wk-rule); stroke-width: 1; }
 .ui-profile__meal { fill: var(--wk-ink-meta); fill-opacity: .55; }

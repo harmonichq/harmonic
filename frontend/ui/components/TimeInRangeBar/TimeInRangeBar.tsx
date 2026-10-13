@@ -2,9 +2,9 @@
 // with each band labelled below it by its range and its share of readings.
 //
 // 70–180 is labelled "In range" without a number: the figure beside the bar
-// prints it. The two outer bands, <54 and >250, are hatched in their side's
-// colour, so they read as the severe end of that side by pattern as well as by
-// position (§2.3 ban 4). A band too small to see keeps a 3 px sliver.
+// prints it. Each band takes its own clinical AGP colour (tokens.css). The
+// two outer bands, <54 and >250, are also hatched, so they read as the severe
+// end of their side by pattern and position as well as by colour (§2.3 ban 4). A band too small to see keeps a 3 px sliver.
 import type { Sourced } from '../../fixtures';
 import type { TirBands } from '../../overview-model';
 import { Num } from '../../Num';
@@ -12,15 +12,15 @@ import './TimeInRangeBar.css';
 
 export type TimeInRangeBarProps = { bands: TirBands };
 
-type Band = { range: string; tone: 'low' | 'in-range' | 'high'; hatched: boolean; share: Sourced<number>; inRange?: boolean };
+type Band = { range: string; tone: 'very-low' | 'low' | 'in-range' | 'high' | 'very-high'; hatched: boolean; share: Sourced<number>; inRange?: boolean };
 
 export function TimeInRangeBar({ bands }: TimeInRangeBarProps) {
   const rows: Band[] = [
-    { range: '<54', tone: 'low', hatched: true, share: bands.below54 },
+    { range: '<54', tone: 'very-low', hatched: true, share: bands.below54 },
     { range: '54–69', tone: 'low', hatched: false, share: bands.below70 },
     { range: '70–180', tone: 'in-range', hatched: false, share: bands.inRange, inRange: true },
     { range: '181–250', tone: 'high', hatched: false, share: bands.above180 },
-    { range: '>250', tone: 'high', hatched: true, share: bands.above250 },
+    { range: '>250', tone: 'very-high', hatched: true, share: bands.above250 },
   ];
   const swatch = (band: Band) =>
     `ui-tir__swatch ui-tir__swatch--${band.tone}${band.hatched ? ' ui-tir__swatch--hatched' : ''}`;

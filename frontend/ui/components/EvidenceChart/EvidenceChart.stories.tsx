@@ -3,8 +3,8 @@ import { basalSetting, type QueueStore } from '../../queue-model';
 import { EvidenceChart } from './EvidenceChart';
 
 // One story per state (§4.2 EvidenceChart), each a real basal slot:
-// - Default: basal-recurring-low-spread 03:00, nights spread 0.45 to 0.66.
-// - ZeroVariance: the showcase's 03:00, every night at one rate.
+// - Default: basal-recurring-low-spread 03:00, nights spread from 0.45 to 0.66.
+// - ZeroVariance: the showcase's 03:00, every night at one rate: one stack.
 const meta = {
   title: 'EvidenceChart',
   component: EvidenceChart,
@@ -15,8 +15,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 function story(store: QueueStore, start: number): Story {
-  const { nights, current, suggested } = basalSetting(store, start);
-  return { args: { nights, current, suggested } };
+  const { nights, current, estimate, lo, hi, units } = basalSetting(store, start);
+  return { args: { nights, current, estimate, lo, hi, units } };
 }
 
 export const Default = story('basal-recurring-low-spread', 180);

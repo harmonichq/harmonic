@@ -56,3 +56,9 @@ test('(e) a derived or formatted number must equal its formula, as printed', () 
     /^\(e\) "2" is not pattern\.wilson\.lo × pattern\.n as round \(1\)/);
   assert.match(run({ texts: [{ text: '3:00', source: 'span.start_min', format: 'clock' }] })[0], /^\(e\) "3:00"/);
 });
+
+test('(e) an axis tick may be a plain number, and only that', () => {
+  assert.deepEqual(run({ texts: [{ text: '0.45', source: null, axis: true }] }), []);
+  assert.match(run({ texts: [{ text: '0.45 d', source: null, axis: true }] })[0], /^\(e\) "0.45 d" names no fixture field/);
+  assert.match(run({ texts: [{ text: '0.45', source: null }] })[0], /^\(e\) "0.45" names no fixture field/);
+});

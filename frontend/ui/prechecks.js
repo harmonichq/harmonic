@@ -7,7 +7,9 @@
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
 //   (e) every visible number sits in a [data-source] whose fixture field (or
-//       formula over fields, printed in its data-format) it equals
+//       formula over fields, printed in its data-format) it equals. A chart
+//       axis's tick labels are scale, not served values: a plain number inside
+//       [data-axis] is exempt, and nothing else there is.
 import { formatValue, resolveSource } from './provenance.js';
 
 // §4.1, one height per role; a list row is a 48 px minimum.
@@ -18,7 +20,7 @@ const WORD = /[A-Za-z][A-Za-z'’-]*/g;
 const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;
 
 /**
- * @param {{texts: {text: string, source: string|null, format?: string|null}[], names: string[],
+ * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean}[], names: string[],
  *          buttons: {role: string|null, height: number, label: string}[], primaries: number}} shown
  * @param {{fixtures: object, allowed: Set<string>}} sources
  * @returns {string[]} one line per violation; empty when the story passes
@@ -45,8 +47,9 @@ export function precheckProblems({ texts, names, buttons, primaries }, { fixture
     }
   }
   if (primaries > 1) found.push(`(d) ${primaries} primary-filled controls`);
-  for (const { text, source, format } of texts) {
+  for (const { text, source, format, axis } of texts) {
     if (!/\d/.test(text)) continue;
+    if (axis && /^\d+(\.\d+)?$/.test(text)) continue;
     if (!source) {
       found.push(`(e) "${text}" names no fixture field`);
       continue;

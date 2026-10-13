@@ -1,6 +1,6 @@
 {
   "_generated_by": "scripts/gen_ui_fixtures.py",
-  "_note": "Every word a component story may display: the redesign glossary, its tab names, the engine titles, nouns and units served in ui-fixtures.json, the window unit and the \"of\" of a magnitude.",
+  "_note": "Every word a component story may display: the redesign glossary, its tab names, the engine titles, nouns and units served in ui-fixtures.json, the window unit, the \"of\" of a magnitude, and the served fields the evidence chart's marks plot.",
   "words": [
     "a",
     "above",
@@ -19,6 +19,7 @@
     "clusters",
     "correcting",
     "correction",
+    "current",
     "cv",
     "d",
     "day",
@@ -26,6 +27,7 @@
     "dl",
     "end",
     "episode",
+    "estimate",
     "factor",
     "false",
     "fell",

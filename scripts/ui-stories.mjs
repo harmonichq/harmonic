@@ -86,7 +86,8 @@ function inspect() {
     const element = node.parentElement;
     if (!text || !element.checkVisibility({ visibilityProperty: true })) continue;
     const sourced = element.closest('[data-source]');
-    texts.push({ text, source: sourced?.dataset.source ?? null, format: sourced?.dataset.format ?? null });
+    texts.push({ text, source: sourced?.dataset.source ?? null, format: sourced?.dataset.format ?? null,
+      axis: Boolean(element.closest('[data-axis]')) });
   }
   const names = [...shot.querySelectorAll('[aria-label]')].map((element) => element.getAttribute('aria-label'));
   const buttons = [...shot.querySelectorAll('button')].map((button) => ({

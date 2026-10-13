@@ -64,6 +64,10 @@ FAILED_ERROR = "synthetic sync failure"
 # §4.2 SegmentedControl: "14 / 30 / 90 d", and QueueRow's magnitude "9 of 71 lows".
 UNITS = ("d",)
 CONNECTIVES = ("of",)
+# EvidenceChart labels its two marks with the served field each one plots:
+# analyze.basal[].current and analyze.basal[].estimate (approved 2026-10-12;
+# not yet in glossary §1.5).
+MARK_FIELDS = ("current", "estimate")
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
 
@@ -280,6 +284,9 @@ def allowlist(data: dict) -> dict:
                          if c["units"]],
         "units §4.2": list(UNITS),
         "connectives §4.2": list(CONNECTIVES),
+        "chart mark fields": [field for field in MARK_FIELDS
+                              if all(field in slot for store in stores
+                                     for slot in store["analyze"]["basal"])],
     }
     # The metric row is one cell listing every metric, comma-separated; the
     # answer and result rows are slash-separated. Words are what is checked.
@@ -289,8 +296,9 @@ def allowlist(data: dict) -> dict:
         "_generated_by": GENERATED_BY,
         "_note": ("Every word a component story may display: the redesign "
                   "glossary, its tab names, the engine titles, nouns and units "
-                  "served in ui-fixtures.json, the window unit and the \"of\" "
-                  "of a magnitude."),
+                  "served in ui-fixtures.json, the window unit, the \"of\" "
+                  "of a magnitude, and the served fields the evidence chart's "
+                  "marks plot."),
         "words": words,
     }
 

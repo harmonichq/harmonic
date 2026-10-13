@@ -39,6 +39,8 @@ export type SettingData = {
   end: Sourced<number>;
   current: Sourced<number>;
   suggested: Sourced<number>;
+  /** The engine's estimate, which lo–hi bounds; the suggestion may be capped short of it. */
+  estimate: Sourced<number>;
   lo: Sourced<number>;
   hi: Sourced<number>;
   days: Sourced<number>;
@@ -106,6 +108,7 @@ export function basalSetting(name: QueueStore, startMin: number): SettingData {
     end: sourced(`${rowPath}.span.end_min`, 'clock'),
     current: sourced(`${member}.current`),
     suggested: sourced(`${member}.recommended`),
+    estimate: sourced(`${member}.estimate.value`),
     lo: sourced(`${member}.estimate.lo`),
     hi: sourced(`${member}.estimate.hi`),
     days: sourced(`${member}.days`),

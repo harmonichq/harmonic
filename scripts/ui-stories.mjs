@@ -2,6 +2,7 @@
 //
 //   node scripts/ui-stories.mjs check   the story prechecks, one test per story
 //   node scripts/ui-stories.mjs shots   one PNG per story into frontend/ui/__shots__/
+//   UI_STORY=<id part> narrows either to the matching story ids
 //
 // Both read frontend/ui/storybook-static (`npm run build-storybook`) and serve
 // it from this process on a loopback port. Playwright comes from
@@ -22,7 +23,9 @@
 // A story with a play function (Storybook tags it "play-fn") is checked after
 // its play has run: the page traps the preview's channel before Storybook
 // starts, so a play or story exception is caught however early it fires, and
-// the render must settle as "completed". A play that throws, or a render that
+// the render must settle as "finished". Storybook 10 settles a render as
+// finished even when its play threw, so the channel's exceptions are what
+// fail it. A play that throws, or a render that
 // errors or never settles, fails that story's test.
 import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
@@ -113,8 +116,11 @@ for (const [what, path] of [['the built Storybook (npm run build-storybook)', jo
     process.exit(1);
   }
 }
+// UI_STORY narrows a run to the story ids containing it, for iterating on one
+// component; the full run leaves it unset.
+const only = process.env.UI_STORY;
 const stories = Object.values(JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries)
-  .filter((entry) => entry.type === 'story');
+  .filter((entry) => entry.type === 'story' && (!only || entry.id.includes(only)));
 if (stories.length === 0) {
   console.error('the built Storybook indexes no stories');
   process.exit(1);
@@ -151,11 +157,11 @@ async function render(page, id) {
   await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story`);
   await page.waitForSelector('[data-shot]');
   const phase = await page.waitForFunction(() => {
-    const done = ['completed', 'errored', 'aborted'];
+    const done = ['finished', 'completed', 'errored', 'aborted'];
     const current = window.__STORYBOOK_PREVIEW__?.currentRender?.phase;
     return done.includes(current) ? current : null;
   }, null, { timeout: 15000 }).then((handle) => handle.jsonValue());
-  if (phase !== 'completed') errors.push(`the story's render ended ${phase}`);
+  if (phase !== 'finished' && phase !== 'completed') errors.push(`the story's render ended ${phase}`);
   errors.push(...await page.evaluate(() => window.__uiStoryErrors));
   await page.evaluate(() => document.fonts.ready);
   return errors;

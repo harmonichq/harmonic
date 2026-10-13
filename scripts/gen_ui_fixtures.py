@@ -19,6 +19,18 @@ Two committed outputs, one generator, one ``--check``:
     Focus pinned through ``POST /api/focus`` (one change is active at a time,
     so the Trial and the Focus cannot share a store).
 
+  Two more stores serve the Overview states the full history cannot:
+
+  - ``wearer-first-days`` is the same wearer's first five days only, as a sync
+    early on would hold: too few days for the glucose profile to support.
+  - ``wearer-unsynced`` is a store before its first sync, with no readings, so
+    every outcome metric is served as null.
+
+  ``overview`` holds the Overview components' answers by store:
+  ``/api/explore/time-of-day`` and ``/api/day-navigator`` for the wearer's
+  latest month, and ``/api/outcomes`` for each window where the top-level
+  ``outcomes`` (the wearer's) does not already hold it.
+
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
   ``last_error``. The wall clock every write stamps is pinned to one hour after
@@ -82,6 +94,16 @@ CONNECTIVES = ("of",)
 # analyze.basal[].current and analyze.basal[].estimate (approved 2026-10-12;
 # not yet in glossary §1.5).
 MARK_FIELDS = ("current", "estimate")
+# §4.2 GlucoseProfile's insufficient-data label, quoted there; "data" is not yet
+# in glossary §1.5.
+STATE_LABELS = ("No data",)
+# §4.2 DayTile: "a weekday and date". The weekday abbreviations are not yet in
+# glossary §1.5.
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+# The wearer's first days: fewer than the glucose profile's eight supported days.
+FIRST_DAYS = 5
+# The day navigator's month: the month of the wearer's last day.
+NAVIGATOR_MONTH = (ui_patient.START + timedelta(days=ui_patient.DAYS - 1)).strftime("%Y-%m")
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'’-]*")
 
@@ -114,16 +136,20 @@ def _post(client: TestClient, path: str, payload: dict) -> object:
     return response.json()
 
 
-def _wearer(scratch: pathlib.Path, name: str, *, trial: bool):
-    """Ingest the wearer into a scratch store, as a sync would, and serve it."""
-    database = scratch / f"{name}.sqlite"
-    with Store.open(str(database)) as store:
-        history = ui_patient.materialize(store, trial=trial)
-        reconcile_ingested_follow_up(store)
-    client = TestClient(create_app(
+def _serve(database: pathlib.Path) -> TestClient:
+    return TestClient(create_app(
         db_path=str(database), token=None, enable_fetch_loop=False,
         analysis_incarnation="ui-fixtures",
     ))
+
+
+def _wearer(scratch: pathlib.Path, name: str, *, trial: bool, days: int = ui_patient.DAYS):
+    """Ingest the wearer into a scratch store, as a sync would, and serve it."""
+    database = scratch / f"{name}.sqlite"
+    with Store.open(str(database)) as store:
+        history = ui_patient.materialize(store, trial=trial, days=days)
+        reconcile_ingested_follow_up(store)
+    client = _serve(database)
     # The person's own writes: the week's treated lows logged by hand, bar the
     # latest few, and one remaining prompt answered.
     window_start = ui_patient.START + timedelta(days=ui_patient.DAYS - PROMPT_WINDOW_DAYS)
@@ -153,9 +179,23 @@ def fixtures() -> dict:
                                       ok=False, error=FAILED_ERROR)
         status_failed = _get(client, "/api/status")
 
+        overview = {"wearer": {
+            "time_of_day": _time_of_day(client),
+            "day_navigator": _day_navigator(client),
+        }}
+
         _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
         _pin(pinned)
         queue["wearer-pinned"] = _queue_store(pinned)
+        overview["wearer-pinned"] = {"outcomes": _outcomes(pinned)}
+
+        _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
+        overview["wearer-first-days"] = {"time_of_day": _time_of_day(first_days)}
+
+        unsynced = scratch / "wearer-unsynced.sqlite"
+        with Store.open(str(unsynced)):
+            pass
+        overview["wearer-unsynced"] = {"outcomes": _outcomes(_serve(unsynced))}
     return {
         "_generated_by": GENERATED_BY,
         "_note": ("Synthetic only: a seeded simulated Control-IQ wearer "
@@ -164,11 +204,7 @@ def fixtures() -> dict:
                   "failed sync attempt."),
         "status": {"ok": status_ok, "failed": status_failed},
         "prompts": prompts,
-        "outcomes": {
-            key: {field: answer[field] for field in
-                  ("window_days", "span_start", "span_end", "coverage", "metrics")}
-            for key, answer in outcomes.items()
-        },
+        "outcomes": {key: _outcome(answer) for key, answer in outcomes.items()},
         "guidance": {
             "candidates": [
                 {field: candidate[field] for field in ("subject", "kind", "title", "priority")}
@@ -176,7 +212,42 @@ def fixtures() -> dict:
             ],
         },
         "queue": queue,
+        "overview": overview,
         "states": states(queue),
+    }
+
+
+def _outcome(answer: dict) -> dict:
+    return {field: answer[field] for field in
+            ("window_days", "span_start", "span_end", "coverage", "metrics")}
+
+
+def _outcomes(client: TestClient) -> dict:
+    return {str(w): _outcome(_get(client, "/api/outcomes", window=w)) for w in WINDOWS}
+
+
+def _time_of_day(client: TestClient) -> dict:
+    """The glucose profile's answer: the pooled 15-minute bins and meal buckets."""
+    answer = _get(client, "/api/explore/time-of-day")
+    pooled = answer["pooled"]
+    return {
+        "window": answer["window"],
+        "target_range": answer["target_range"],
+        "pooled": pooled and {
+            "bin_minutes": pooled["bin_minutes"],
+            "bins": [{field: b[field] for field in ("minute", "supported", "median", "p10", "p90")}
+                     for b in pooled["bins"]],
+            "meals": [{field: m[field] for field in ("minute", "count")} for m in pooled["meals"]],
+        },
+    }
+
+
+def _day_navigator(client: TestClient) -> dict:
+    answer = _get(client, "/api/day-navigator", month=NAVIGATOR_MONTH)
+    return {
+        "month": answer["month"],
+        "days": [{field: d[field] for field in ("iso", "has_data", "lows", "highs", "tir", "curve")}
+                 for d in answer["days"]],
     }
 
 
@@ -357,6 +428,8 @@ def allowlist(data: dict) -> dict:
                          if c["units"]],
         "units §4.2": list(UNITS),
         "connectives §4.2": list(CONNECTIVES),
+        "state labels §4.2": list(STATE_LABELS),
+        "weekdays §4.2": list(WEEKDAYS),
         "chart mark fields": [field for field in MARK_FIELDS
                               if all(field in slot for store in stores
                                      for slot in store["analyze"]["basal"])],
@@ -370,8 +443,9 @@ def allowlist(data: dict) -> dict:
         "_note": ("Every word a component story may display: the redesign "
                   "glossary, its tab names, the engine titles, nouns and units "
                   "served in ui-fixtures.json, the window unit, the \"of\" "
-                  "of a magnitude, and the served fields the evidence chart's "
-                  "marks plot."),
+                  "of a magnitude, the served fields the evidence chart's "
+                  "marks plot, the glucose profile's \"No data\" and the day "
+                  "tile's weekdays."),
         "words": words,
     }
 

@@ -370,13 +370,20 @@ def simulate(*, trial: bool) -> History:
     return history
 
 
-def materialize(store, *, trial: bool) -> History:
+def materialize(store, *, trial: bool, days: int = DAYS) -> History:
     """Ingest the simulated history into ``store`` as a Tandem Source pull would:
     the profile read at the start (and again after the ``TRIAL_DAY`` change),
-    then CGM, basal, bolus and pump events."""
+    then CGM, basal, bolus and pump events. ``days`` stops the pull at the end of
+    that day, as a sync made early in the wearer's history would."""
     history = simulate(trial=trial)
+    cut = _stamp(START + timedelta(days=days))
+    history.cgm = [row for row in history.cgm if row["EventDateTime"] < cut]
+    history.basal = [row for row in history.basal if row["time"] < cut]
+    history.bolus = [row for row in history.bolus if row["request_time"] < cut]
+    history.pump = [row for row in history.pump if row["time"] < cut]
+    history.treated_lows = [low for low in history.treated_lows if _stamp(low[0]) < cut]
     store.upsert_settings_snapshot(_stamp(START), settings())
-    if trial:
+    if trial and days > TRIAL_DAY:
         store.upsert_settings_snapshot(_stamp(START + timedelta(days=TRIAL_DAY)),
                                        settings(trial_profile()))
     store.upsert_cgm(history.cgm)

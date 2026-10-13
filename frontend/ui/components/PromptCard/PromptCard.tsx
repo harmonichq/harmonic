@@ -3,9 +3,10 @@
 // a full-width sparkline over the 70 line, the low ringed at its time. Under
 // the caption "Carbs" the answers are one joined group, one question with its
 // choices at equal widths on a sunken track, as the segmented control draws a
-// choice: Yes · No · False low, and on desktop a fourth, Not sure, where the
-// phone swipes instead. The engine's question and context sentences are never
-// shown.
+// choice: Yes · No · False low, and on desktop a fourth, Not sure. On the
+// phone Not sure is a text action centred beneath the answers, as Snooze sits
+// beneath Pin, and the swipe is its shortcut. The engine's question and context
+// sentences are never shown.
 //
 // Yes records at once: it becomes the selected segment, raised with a ✓ in the
 // accent (and "Recorded" for a screen reader), and the optional grams field
@@ -120,6 +121,11 @@ export function PromptCard({
           );
         })}
       </div>
+      {layout === 'phone' && (
+        <div className="ui-card-snooze">
+          <Button kind="text" label="Not sure" onClick={() => onAnswer?.('not-sure')} />
+        </div>
+      )}
       {recorded && (
         <div className="ui-prompt__grams">
           <GramsField focused onChange={setGrams} />

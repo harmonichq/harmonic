@@ -15,13 +15,14 @@ import { DayScreen, type DayScreenProps } from './DayScreen';
 //   Unavailable.
 // - Month sheet (phone; desktop always shows the month).
 // - Prompts: the wearer's two lows before any answer, "1 / 2"; Yes recorded;
-//   phone mid-swipe over Not sure (desktop's fourth answer is in every desktop
-//   Prompts story); Not saved, the bar with Retry.
+//   phone mid-swipe over Not sure, the shortcut for the Not sure text action
+//   beneath the answers (desktop's fourth answer is in every desktop Prompts
+//   story); Not saved, the bar with Retry.
 // - Log carbs: open, filled, saving, not saved, Time edited.
 // Plays per size: picking another day; the Month sheet picking one (phone);
 // Log carbs saved, closed with Escape, and retried after a failed save; the
 // Prompts walked through (Yes, Recorded, Next, the second, ‹ Day); a Yes not
-// saved, then retried. Desktop fits its panes without scrolling.
+// saved, then retried; Not sure on the phone. Desktop fits its panes without scrolling.
 const meta: Meta<typeof DayScreen> = {
   title: 'Screens/Day',
   component: DayScreen,
@@ -200,6 +201,16 @@ const notSavedPlay: Story['play'] = async ({ canvasElement }) => {
   await userEvent.click(within(canvas.getByRole('status')).getByRole('button', { name: 'Retry' }));
   await expect(canvas.queryByRole('status')).toBeNull();
   await expect(canvas.getByRole('button', { name: /Yes/ })).toHaveAttribute('aria-pressed', 'true');
+};
+// Phone: Not sure, the text action beneath the answers, records it and moves
+// to the next prompt.
+export const PromptNotSurePhone: Story = {
+  ...story('phone', PROMPTS),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Not sure' }));
+    await expect(place(canvas)).toHaveTextContent('2 / 2');
+  },
 };
 export const PromptRetryPhone: Story = { ...story('phone', { ...PROMPTS, failing: true }), play: notSavedPlay };
 export const PromptRetryDesktop: Story = { ...story('desktop', { ...PROMPTS, failing: true }), play: notSavedPlay };

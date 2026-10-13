@@ -86,7 +86,7 @@ Each row lists a screen's states. Labels only; no state uses prose.
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
 | Swipe a Queue card to snooze it, or the Snooze text action beneath Pin (a Setting card: at its foot) | The same Snooze text action; shortcut S |
-| Swipe a Prompt to record Not sure | A fourth button, **Not sure** |
+| Swipe a Prompt to record Not sure, or the Not sure text action beneath its answers | A fourth button, **Not sure** |
 | Swipe the Day week strip | ‹ › buttons and a month grid that is always visible |
 | Tap the month label to open the Month sheet | Month grid in the left pane |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
@@ -338,6 +338,13 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
   now measures its box and lays out to it (§2.2 Charts).
+- **2026-10-13 — Not sure has a visible control on the phone.** The phone's
+  Prompt reached Not sure only by a swipe, against §1.4's rule that a swipe is
+  a shortcut, never the only way. Of the options put to the operator he chose
+  the recommended one: "Your recommendations." Not sure is a text action
+  centred beneath Yes · No · False low, as Snooze sits beneath Pin; the swipe
+  stays as its shortcut, and desktop keeps its fourth answer (§1.4, §4.2
+  PromptCard).
 
 ### 2.6 Deferred (not cut)
 Not built in the current screens. The engine still serves what each needs, and
@@ -520,12 +527,14 @@ unless noted. Loading is a skeleton of the component's own shape.
       `carbs.carb_entries`.
     - Desktop: wide, with the month grid of DayTiles beside it.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
-    its sparkline, and Yes · No · False low.
+    its sparkline, Yes · No · False low, and on phone Not sure as a text
+    action centred beneath them, as Snooze sits beneath Pin (the swipe is its
+    shortcut).
     - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
       for screen readers only, plus the optional grams field); mid-swipe (Not sure).
     - Fields: `prompts[].anchor_t, key_bg, cgm`; answers posted to
       `/api/prompts/answer`; grams via `PATCH /api/carbs/{id}`.
-    - Desktop: a fourth button, Not sure, instead of the swipe.
+    - Desktop: a fourth button, Not sure, instead of the text action and the swipe.
 19. **LogCarbsEntry**: a grams field sized to 3 digits, Time (a tappable row,
     default now), and Save.
     - States: empty; filled; saving; not saved.

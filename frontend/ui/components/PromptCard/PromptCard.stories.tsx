@@ -5,11 +5,12 @@ import { loggedGrams, lowPrompt } from '../../day-model';
 import { PromptCard } from './PromptCard';
 
 // One story per state (§4.2 PromptCard), each the simulated wearer's first
-// unanswered low prompt: unanswered; Yes recorded, with the optional grams
-// field focused and Next; mid-swipe over Not sure on the phone; and desktop,
-// where Not sure is a fourth answer instead of the swipe. A play function runs
-// the Yes flow: tap Yes, see it recorded and the grams field open, type an
-// amount the wearer logged, and press Next.
+// unanswered low prompt: unanswered, with Not sure as the text action beneath
+// the answers; Yes recorded, with the optional grams field focused and Next;
+// mid-swipe over Not sure on the phone, the swipe being the text action's
+// shortcut; and desktop, where Not sure is a fourth answer. Two plays: the Yes
+// flow (tap Yes, see it recorded and the grams field open, type an amount the
+// wearer logged, and press Next), and the phone's Not sure text action.
 const meta = {
   title: 'PromptCard',
   component: PromptCard,
@@ -40,5 +41,13 @@ export const YesFlow: Story = {
     await userEvent.type(canvas.getByRole('textbox', { name: 'Carbs' }), grams);
     await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
     await expect(args.onNext).toHaveBeenCalledWith(grams);
+  },
+};
+
+export const NotSurePhone: Story = {
+  args: { data: lowPrompt(), onAnswer: fn() },
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Not sure' }));
+    await expect(args.onAnswer).toHaveBeenCalledWith('not-sure');
   },
 };

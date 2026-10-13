@@ -10,12 +10,13 @@
 }
 
 .ui-scard__title {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: var(--ui-type-title);
   font-weight: var(--ui-weight-strong);
   letter-spacing: -.01em;
   font-variant-numeric: tabular-nums;
 }
+.ui-scard__slot { color: var(--wk-ink-meta); }
 
 .ui-scard__figure {
   display: flex;

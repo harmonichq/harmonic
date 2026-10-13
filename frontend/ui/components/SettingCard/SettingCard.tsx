@@ -1,4 +1,5 @@
-// SettingCard (§4.2): the open setting. The time block is its title; current
+// SettingCard (§4.2): the open setting. Its title is one line: the kind word
+// ("Basal") in ink, then its time block in meta ink on the same baseline; current
 // → suggested in figure type; the EvidenceChart; the evidence count and one
 // Range. No button: a setting is changed on the pump, not here. A range the
 // engine serves as one value (lo = hi) shows that value once. Once the slot's
@@ -16,9 +17,9 @@ export function SettingCard({ data, onChanges }: SettingCardProps) {
   const collapsed = data.lo.value === data.hi.value;
   return (
     <section className="ui-scard">
-      <span className="ui-caption">{data.title}</span>
       <h2 className="ui-scard__title">
-        <Num value={data.start} />–<Num value={data.end} />
+        {data.title}{' '}
+        <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
       </h2>
       <div className="ui-scard__figure">
         <span className="ui-scard__current"><Num value={data.current} /></span>

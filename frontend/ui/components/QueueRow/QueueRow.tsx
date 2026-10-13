@@ -1,7 +1,9 @@
 // QueueRow (§4.2): a collapsed recommendation. A 44 px column holds the
 // kind's glyph (decorative); the kind's StatePill carries its word. Then the
-// title, one magnitude ("9 of 71 lows") and the top cause. A setting row shows
-// current → suggested in the magnitude's place, and its time block.
+// title, then one quiet line: the magnitude and the top cause joined by a
+// middle dot ("9 of 71 lows · Carb undercount"), or the magnitude alone when no
+// cause claims it. A setting row's title is its kind word with its time block
+// beside it in meta ink, and current → suggested takes the magnitude's place.
 //
 // Phone: a full-width row under a rule, with a ▾ to expand; mid-swipe slides
 // it aside over the Snooze reveal. Desktop: a list row that selects into the
@@ -34,29 +36,17 @@ function Meta(props: Extract<QueueRowProps, { kind: string }>) {
   if (props.kind === 'setting') {
     const { setting } = props;
     return (
-      <>
-        <span className="ui-qrow__magnitude">
-          <Num value={setting.current} /> → <Num value={setting.suggested} /> {setting.units}
-        </span>
-        <span className="ui-qrow__aside">
-          <Num value={setting.start} />–<Num value={setting.end} />
-        </span>
-      </>
+      <span className="ui-qrow__magnitude">
+        <Num value={setting.current} /> → <Num value={setting.suggested} /> {setting.units}
+      </span>
     );
   }
   const { magnitude, cause } = props;
   return (
-    <>
-      <span className="ui-qrow__magnitude">
-        <Num value={magnitude.count} /> of <Num value={magnitude.denominator} /> {magnitude.noun}
-      </span>
-      {cause && (
-        <span className="ui-qrow__aside">
-          <span className="ui-caption">Cause</span>
-          <span className="ui-qrow__cause">{cause}</span>
-        </span>
-      )}
-    </>
+    <span className="ui-qrow__magnitude">
+      <Num value={magnitude.count} /> of <Num value={magnitude.denominator} /> {magnitude.noun}
+      {cause && <> · {cause}</>}
+    </span>
   );
 }
 
@@ -86,7 +76,12 @@ export function QueueRow(props: QueueRowProps) {
       <span className="ui-qrow__glyph"><Icon name={kind} /></span>
       <span className="ui-qrow__body">
         <span className="ui-qrow__head">
-          <span className="ui-qrow__title">{title}</span>
+          <span className="ui-qrow__title">
+            {title}
+            {kind === 'setting' && <>{' '}<span className="ui-qrow__slot">
+              <Num value={props.setting.start} />–<Num value={props.setting.end} />
+            </span></>}
+          </span>
           <StatePill state={kind} />
           {layout === 'phone' && <span className="ui-qrow__chevron"><Icon name="expand" /></span>}
         </span>

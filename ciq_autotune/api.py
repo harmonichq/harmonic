@@ -34,7 +34,6 @@ from typing import Optional
 from . import credentials
 from .analyze import analyze
 from .analyzers.scenario.levers import Lever
-from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .config import resolve_runtime_configuration
 from .explore_exposures import build_exposures
 from .basal_night_evidence import (
@@ -550,15 +549,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise ValueError("window coordinates must be decimal minutes")
         return WindowQuery.clock(int(start), int(end)), selected_id, lever
 
-    # The report has no route of its own since #417; the finding case files
-    # carry it as their `projection.report`, which is where the desk reads it.
-    def eating_sequence_result(window):
-        return fixed(
-            ("eating-sequences", window), "eating-sequences-v1",
-            lambda store: report_dict(build_eating_sequence_report(store, window_days=window)),
-            serve_stale=False,
-        )
-
     def _prepared_cases(query, selected_id):
         key = ("finding-case-file", query.start_min, query.end_min, selected_id)
         def build(version):
@@ -570,8 +560,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     store, query=query, version=version, analysis=analysis,
                     exposures=exposures, scenarios=scenarios, selected_id=selected_id,
                     analysis_generation=cache.generation_for_version(version),
-                    sequence_report=eating_sequence_result(
-                        findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS).value,
                 )
         def before_commit():
             hook = app.state.finding_case_file_before_commit

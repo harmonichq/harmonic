@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from .analyzers.eating_sequence_config import EatingSequenceConfig
+from .analyzers.eating_sequences import evaluate_sequences
 from .analyzers.scenario.evaluation import evaluate, SEQUENCE_LEVERS
 from .rescue_evidence import eligible_carb_entries
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
@@ -95,6 +97,9 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         return {
             "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
             "exposures": families,
+            "sequence_report": evaluate_sequences(
+                (), (), (), window_start=start, window_end=now,
+                config=EatingSequenceConfig()).report.to_dict(),
         }
 
     false_low_records = false_low_span_records(cgm, store.prompt_responses())
@@ -273,8 +278,12 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                                     if row["scope"] == finding["scope"]],
                 }
         sequence_evidence[lever] = evidence
+    # The aggregate eating-sequence report rides this payload whole (ADR 488): it is
+    # the same evaluation the sequence evidence above was drawn from, so a reader
+    # serving the report beside that evidence never rebuilds it from other inputs.
     return {
         "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
         "exposures": families,
+        "sequence_report": sequence_report,
         **({"sequence_evidence": sequence_evidence} if sequence_evidence else {}),
     }

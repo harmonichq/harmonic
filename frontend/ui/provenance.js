@@ -7,7 +7,9 @@
 // by " × " (multiplied) or " − " (subtracted), applied left to right, and
 // `data-format` names how the result is printed — `round` to the nearest whole
 // number, `fixed1` or `fixed2` to one or two decimals, `clock` as minutes since
-// midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date.
+// midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
+// `date` as the day and month of a served date or time ("19 May"), `time` as
+// the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time.
 // "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n); the
 // 54–69 band prints tbr_lvl1 − tbr_lvl2 as fixed1.
 //
@@ -60,12 +62,16 @@ export function resolveSource(root, source) {
   return value;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export function formatValue(value, format) {
   if (!format) return String(value);
   if (format === 'round') return String(Math.round(value));
   if (format === 'fixed1') return value.toFixed(1);
   if (format === 'fixed2') return value.toFixed(2);
   if (format === 'day') return String(Number(value.slice(8, 10)));
+  if (format === 'date') return `${Number(value.slice(8, 10))} ${MONTHS[Number(value.slice(5, 7)) - 1]}`;
+  if (format === 'time') return value.slice(11, 16);
   if (format === 'clock') {
     const pad = (part) => String(part).padStart(2, '0');
     return `${pad(Math.floor(value / 60))}:${pad(value % 60)}`;

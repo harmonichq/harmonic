@@ -15,7 +15,7 @@
 import { formatValue, resolveSource } from './provenance.js';
 
 // §4.1, one height per role; a list row is a 48 px minimum.
-export const ROLE_HEIGHTS = { primary: 50, secondary: 32, text: 32, icon: 44, segment: 28, nav: 44 };
+export const ROLE_HEIGHTS = { primary: 50, secondary: 32, text: 32, icon: 44, segment: 28, nav: 44, answer: 44 };
 export const ROLE_MIN_HEIGHTS = { row: 48 };
 
 const WORD = /[A-Za-z][A-Za-z'’-]*/g;

@@ -8,7 +8,7 @@ const sources = {
   fixtures: { outcomes: { 14: { window_days: 14 } }, prompts: [{ answer: null }, { answer: 'yes' }],
     pattern: { n: 6, wilson: { lo: 0.1477 } }, span: { start_min: 180 },
     slot: { current: 0.9, nights: [{ rate: 0.171 }, { rate: 0.52 }, { rate: 0.85 }] } },
-  allowed: new Set(['pin', 'queue', 'd', 'snooze']),
+  allowed: new Set(['pin', 'queue', 'd', 'snooze', 'may']),
 };
 const clean = {
   texts: [{ text: 'Pin', source: null }, { text: '14', source: 'outcomes.14.window_days' },
@@ -40,6 +40,7 @@ test('(c) a button off its role height, or with no role, fails', () => {
   assert.match(run({ buttons: [{ role: 'secondary', height: 36, label: 'Pin' }] })[0], /^\(c\) secondary .* 36px, not 32px/);
   assert.match(run({ buttons: [{ role: null, height: 32, label: 'Pin' }] })[0], /^\(c\) .* no known role/);
   assert.match(run({ buttons: [{ role: 'row', height: 40, label: 'Pin' }] })[0], /^\(c\) row .* 40px, under 48px/);
+  assert.match(run({ buttons: [{ role: 'answer', height: 32, label: 'Pin' }] })[0], /^\(c\) answer .* 32px, not 44px/);
 });
 
 test('(d) two primary-filled controls fail', () => {
@@ -68,11 +69,13 @@ test('(e) a scale label may be a plain number, clock, range or bound, and only t
 });
 
 test('(e) a difference, one decimal and a day of the month resolve like any other formula', () => {
-  const fixtures = { m: { tbr_lvl1: 4.8, tbr_lvl2: 3.1, tir: 75 }, day: { iso: '2025-05-04' } };
+  const fixtures = { m: { tbr_lvl1: 4.8, tbr_lvl2: 3.1, tir: 75 }, day: { iso: '2025-05-04', t: '2025-05-04 13:27:00' } };
   const check = (texts) => precheckProblems({ ...clean, texts }, { ...sources, fixtures });
   assert.deepEqual(check([{ text: '1.7', source: 'm.tbr_lvl1 − m.tbr_lvl2', format: 'fixed1' }]), []);
   assert.deepEqual(check([{ text: '75.0', source: 'm.tir', format: 'fixed1' }]), []);
   assert.deepEqual(check([{ text: '4', source: 'day.iso', format: 'day' }]), []);
+  assert.deepEqual(check([{ text: '4 May', source: 'day.iso', format: 'date' }]), []);
+  assert.deepEqual(check([{ text: '13:27', source: 'day.t', format: 'time' }]), []);
   assert.match(check([{ text: '1.7', source: 'm.tbr_lvl2 − m.tbr_lvl1', format: 'fixed1' }])[0],
     /^\(e\) "1.7" is not m\.tbr_lvl2 − m\.tbr_lvl1 as fixed1 \(-1\.7\)/);
 });

@@ -31,6 +31,20 @@ Two committed outputs, one generator, one ``--check``:
   latest month, and ``/api/outcomes`` for each window where the top-level
   ``outcomes`` (the wearer's) does not already hold it.
 
+  ``changes`` holds the Changes components' answers by store (the admission,
+  the active or ended Trial, the Focus records with their served titles):
+  ``wearer`` with its matured Trial and that Trial's retained comparison;
+  ``wearer-ended`` the same store once the person ends that Trial through
+  ``POST /api/verify/trials/{id}/finish``; ``wearer-pinned`` with its Focus;
+  ``wearer-first-days`` with no active change; and ``wearer-trial-maturing``,
+  the wearer's history cut six days after the Trial day, so the Trial is still
+  maturing.
+
+  ``day`` holds ``/api/timeline`` and ``/api/carbs`` for three of the wearer's
+  days, picked by rule: the latest day with readings and no logged carbs, the
+  latest of the days with the most logged carbs, and the first day after the
+  history ends.
+
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
   ``last_error``. The wall clock every write stamps is pinned to one hour after
@@ -59,7 +73,7 @@ import pathlib
 import re
 import sys
 import tempfile
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -100,8 +114,19 @@ STATE_LABELS = ("No data",)
 # §4.2 DayTile: "a weekday and date". The weekday abbreviations are not yet in
 # glossary §1.5.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+# Dates print as "26 Sep" (§1.1 "To 30 Sep", §1.3 "Until <date>"); the month
+# abbreviations are not yet in glossary §1.5.
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+# Labels the Changes and Day components quote from §1.2, §1.3 and §4.2 that are
+# not yet in glossary §1.5: ChangeCard's "Before/After values" and "Days 0 / 14",
+# the Prompt's "Next" text action, Log carbs' "Time" row (default now) and "Save",
+# and the write-failed "Not saved" with "Retry".
+CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
+# A Trial still maturing: the wearer's history cut this many days after the
+# Trial day, short of the engine's fourteen.
+MATURING_DAYS = 6
 # The day navigator's month: the month of the wearer's last day.
 NAVIGATOR_MONTH = (ui_patient.START + timedelta(days=ui_patient.DAYS - 1)).strftime("%Y-%m")
 
@@ -174,6 +199,11 @@ def fixtures() -> dict:
         prompts = _get(client, "/api/prompts")
         guidance = _get(client, "/api/guidance")
         queue = {"wearer": _queue_store(client)}
+        # The matured Trial, then the same Trial once the person ends it; read
+        # before the failed sync below, which leaves the watch to reconcile.
+        changes = {"wearer": _changes_store(client)}
+        _end_active_trial(client)
+        changes["wearer-ended"] = _changes_store(client)
         with Store.open(str(database)) as store:
             store.record_fetch_result(attempted_at=CLOCK.strftime("%Y-%m-%d %H:%M:%S"),
                                       ok=False, error=FAILED_ERROR)
@@ -183,14 +213,21 @@ def fixtures() -> dict:
             "time_of_day": _time_of_day(client),
             "day_navigator": _day_navigator(client),
         }}
+        day = _days(client, overview["wearer"]["day_navigator"])
 
         _, pinned = _wearer(scratch, "wearer-pinned", trial=False)
         _pin(pinned)
         queue["wearer-pinned"] = _queue_store(pinned)
         overview["wearer-pinned"] = {"outcomes": _outcomes(pinned)}
+        changes["wearer-pinned"] = _changes_store(pinned)
 
         _, first_days = _wearer(scratch, "wearer-first-days", trial=False, days=FIRST_DAYS)
         overview["wearer-first-days"] = {"time_of_day": _time_of_day(first_days)}
+        changes["wearer-first-days"] = _changes_store(first_days)
+
+        _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
+                              days=ui_patient.TRIAL_DAY + MATURING_DAYS)
+        changes["wearer-trial-maturing"] = _changes_store(maturing)
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -213,6 +250,8 @@ def fixtures() -> dict:
         },
         "queue": queue,
         "overview": overview,
+        "changes": changes,
+        "day": day,
         "states": states(queue),
     }
 
@@ -249,6 +288,89 @@ def _day_navigator(client: TestClient) -> dict:
         "days": [{field: d[field] for field in ("iso", "has_data", "lows", "highs", "tir", "curve")}
                  for d in answer["days"]],
     }
+
+
+def _outcome_rows(rows: list[dict]) -> list[dict]:
+    """A Trial comparison's outcome rows: Before, After and the per-outcome verdict."""
+    return [{"key": r["key"], "unit": r["unit"], "before": r["before"], "after": r["after"],
+             "assessment": {"state": r["assessment"]["state"]}} for r in rows]
+
+
+def _changes_store(client: TestClient) -> dict:
+    """The Changes components' answers from one store: the admission, the
+    active or ended Trial (a matured active one with its retained comparison),
+    and the Focus records with their served titles."""
+    answer = _get(client, "/api/verify/trials")
+    admission = answer["admission"]
+    trials = []
+    for t in answer["trials"]:
+        ending = t["ending"]
+        if t["watch_disposition"] != "active" and "kind" not in ending:
+            continue
+        row = {field: t[field] for field in
+               ("id", "parameter", "slot", "changed_at", "before", "after", "state", "maturing",
+                "target_metrics")}
+        row["ending"] = ({"kind": ending["kind"], "effective_at": ending["effective_at"],
+                          "assessment": {"outcomes": _outcome_rows(ending["assessment"]["outcomes"])}}
+                         if "kind" in ending else {"state": ending["state"]})
+        if t["watch_disposition"] == "active" and admission["can_finish_trial"]:
+            selected = _get(client, "/api/verify/trials", selected=t["id"], assessment="retained")
+            row["reassessment"] = {"outcomes": _outcome_rows(
+                selected["selected"]["reassessment"]["comparison"]["outcomes"])}
+        trials.append(row)
+    focuses = []
+    for f in answer["focuses"]:
+        detail = _get(client, "/api/verify/trials", kind="focus", selected=str(f["id"]))["selected"]
+        focuses.append({**{field: f[field] for field in ("id", "lever", "pattern_key", "pinned_at", "status")},
+                        "title": detail["title"], "lever_title": detail["lever_title"]})
+    return {
+        "admission": {field: admission[field] for field in
+                      ("state", "active_kind", "active_id", "can_finish_trial", "maturity")},
+        "trials": trials,
+        "focuses": focuses,
+    }
+
+
+def _end_active_trial(client: TestClient) -> None:
+    """The person ends the matured active Trial, as the End action posts it."""
+    answer = _get(client, "/api/verify/trials")
+    active = answer["admission"]["active_id"]
+    _post(client, f"/api/verify/trials/{active}/finish",
+          {"request_id": "ui-fixtures-end", "input_revision": answer["input_revision"]})
+
+
+def _days(client: TestClient, navigator: dict) -> dict:
+    """One day's timeline and logged carbs for each Day story, by rule: the
+    latest day with readings and no logged carbs, the latest of the days with
+    the most logged carbs, and the first day after the history ends."""
+    logged: dict = {}
+    for entry in _get(client, "/api/carbs")["carb_entries"]:
+        logged[entry["t"][:10]] = logged.get(entry["t"][:10], 0) + 1
+    with_data = [d["iso"] for d in navigator["days"] if d["has_data"]]
+    picks = {
+        "default": next(iso for iso in reversed(with_data) if iso not in logged),
+        "with_carbs": max((iso for iso in with_data if iso in logged), key=lambda iso: (logged[iso], iso)),
+        "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
+    }
+    days = {}
+    for iso in sorted(set(picks.values())):
+        start = f"{iso}T00:00:00"
+        end = (datetime.fromisoformat(start) + timedelta(days=1)).isoformat()
+        timeline = _get(client, "/api/timeline", start=start, end=end)
+        carbs = _get(client, "/api/carbs", start=start, end=end)
+        days[iso] = {
+            "timeline": {
+                "cgm": timeline["cgm"],
+                "boluses": [{field: b[field] for field in ("t", "insulin", "carbs")} for b in timeline["boluses"]],
+                "basal": [{field: b[field] for field in ("t", "duration_mins", "basal_rate", "profile_basal_rate")}
+                          for b in timeline["basal"]],
+                "pump_events": timeline["pump_events"],
+                "sleep_windows": timeline["sleep_windows"],
+            },
+            "carbs": {"carb_entries": [{field: e[field] for field in ("id", "t", "grams", "certainty", "source")}
+                                       for e in carbs["carb_entries"]]},
+        }
+    return {"states": picks, "days": days}
 
 
 def _pin(client: TestClient) -> None:
@@ -430,6 +552,10 @@ def allowlist(data: dict) -> dict:
         "connectives §4.2": list(CONNECTIVES),
         "state labels §4.2": list(STATE_LABELS),
         "weekdays §4.2": list(WEEKDAYS),
+        "months §1.1": list(MONTHS),
+        "labels §1.2–§4.2": list(CHANGE_DAY_LABELS),
+        "engine habit titles": [f["lever_title"] for store in data["changes"].values()
+                                for f in store["focuses"] if f["lever_title"]],
         "chart mark fields": [field for field in MARK_FIELDS
                               if all(field in slot for store in stores
                                      for slot in store["analyze"]["basal"])],
@@ -444,8 +570,10 @@ def allowlist(data: dict) -> dict:
                   "glossary, its tab names, the engine titles, nouns and units "
                   "served in ui-fixtures.json, the window unit, the \"of\" "
                   "of a magnitude, the served fields the evidence chart's "
-                  "marks plot, the glucose profile's \"No data\" and the day "
-                  "tile's weekdays."),
+                  "marks plot, the glucose profile's \"No data\", the day "
+                  "tile's weekdays, the month abbreviations of a date, the "
+                  "Changes and Day labels quoted in §1.2–§4.2 and the "
+                  "engine's habit titles."),
         "words": words,
     }
 

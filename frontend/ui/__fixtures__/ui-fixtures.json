@@ -1,6 +1,6094 @@
 {
   "_generated_by": "scripts/gen_ui_fixtures.py",
   "_note": "Synthetic only: a seeded simulated Control-IQ wearer (scripts/ui_patient.py) ingested into scratch stores and served by the public API, in process. status.failed adds one invented failed sync attempt.",
+  "changes": {
+    "wearer": {
+      "admission": {
+        "active_id": "basal_rate-06-30-20250508063000",
+        "active_kind": "trial",
+        "can_finish_trial": true,
+        "maturity": {
+          "days_elapsed": 15,
+          "days_required": 14,
+          "is_maturing": false
+        },
+        "state": "available"
+      },
+      "focuses": [],
+      "trials": [
+        {
+          "after": 0.85,
+          "before": 0.95,
+          "changed_at": "2025-05-08 06:30:00",
+          "ending": {
+            "state": "unavailable"
+          },
+          "id": "basal_rate-06-30-20250508063000",
+          "maturing": {
+            "days_elapsed": 15,
+            "days_required": 14,
+            "gap_count": 0
+          },
+          "parameter": "basal_rate",
+          "reassessment": {
+            "outcomes": [
+              {
+                "after": 100.0,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 100.0,
+                "key": "tir",
+                "unit": "%"
+              },
+              {
+                "after": 0.0,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 0.0,
+                "key": "tbr",
+                "unit": "%"
+              },
+              {
+                "after": 0.0,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 0.0,
+                "key": "tar",
+                "unit": "%"
+              },
+              {
+                "after": 0.0,
+                "assessment": {
+                  "state": "unclear"
+                },
+                "before": 0.0,
+                "key": "nights_with_low",
+                "unit": "%"
+              }
+            ]
+          },
+          "slot": "06:30",
+          "state": "complete",
+          "target_metrics": [
+            "tbr"
+          ]
+        }
+      ]
+    },
+    "wearer-ended": {
+      "admission": {
+        "active_id": null,
+        "active_kind": null,
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [],
+      "trials": [
+        {
+          "after": 0.85,
+          "before": 0.95,
+          "changed_at": "2025-05-08 06:30:00",
+          "ending": {
+            "assessment": {
+              "outcomes": [
+                {
+                  "after": 100.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 100.0,
+                  "key": "tir",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 0.0,
+                  "key": "tbr",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 0.0,
+                  "key": "tar",
+                  "unit": "%"
+                },
+                {
+                  "after": 0.0,
+                  "assessment": {
+                    "state": "unclear"
+                  },
+                  "before": 0.0,
+                  "key": "nights_with_low",
+                  "unit": "%"
+                }
+              ]
+            },
+            "effective_at": "2025-05-26 01:00:00",
+            "kind": "user_finished"
+          },
+          "id": "basal_rate-06-30-20250508063000",
+          "maturing": {
+            "days_elapsed": 15,
+            "days_required": 14,
+            "gap_count": 0
+          },
+          "parameter": "basal_rate",
+          "slot": "06:30",
+          "state": "complete",
+          "target_metrics": [
+            "tbr"
+          ]
+        }
+      ]
+    },
+    "wearer-first-days": {
+      "admission": {
+        "active_id": null,
+        "active_kind": null,
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [],
+      "trials": []
+    },
+    "wearer-pinned": {
+      "admission": {
+        "active_id": 1,
+        "active_kind": "focus",
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [
+        {
+          "id": 1,
+          "lever": "carb_undercount",
+          "lever_title": "Carb undercount",
+          "pattern_key": "highs_after_meals",
+          "pinned_at": "2025-05-26 01:00:00",
+          "status": "active",
+          "title": "Highs after meals"
+        }
+      ],
+      "trials": []
+    },
+    "wearer-trial-maturing": {
+      "admission": {
+        "active_id": "basal_rate-06-30-20250508063000",
+        "active_kind": "trial",
+        "can_finish_trial": false,
+        "maturity": {
+          "days_elapsed": 6,
+          "days_required": 14,
+          "is_maturing": true
+        },
+        "state": "available"
+      },
+      "focuses": [],
+      "trials": [
+        {
+          "after": 0.85,
+          "before": 0.95,
+          "changed_at": "2025-05-08 06:30:00",
+          "ending": {
+            "state": "unavailable"
+          },
+          "id": "basal_rate-06-30-20250508063000",
+          "maturing": {
+            "days_elapsed": 6,
+            "days_required": 14,
+            "gap_count": 0
+          },
+          "parameter": "basal_rate",
+          "slot": "06:30",
+          "state": "maturing",
+          "target_metrics": [
+            "tbr"
+          ]
+        }
+      ]
+    }
+  },
+  "day": {
+    "days": {
+      "2025-05-19": {
+        "carbs": {
+          "carb_entries": [
+            {
+              "certainty": "estimate",
+              "grams": 54.0,
+              "id": 1,
+              "source": "manual",
+              "t": "2025-05-19 12:30:00"
+            },
+            {
+              "certainty": "estimate",
+              "grams": 42.0,
+              "id": 2,
+              "source": "manual",
+              "t": "2025-05-19 17:15:00"
+            },
+            {
+              "certainty": "estimate",
+              "grams": 37.0,
+              "id": 3,
+              "source": "manual",
+              "t": "2025-05-19 19:00:00"
+            }
+          ]
+        },
+        "timeline": {
+          "basal": [
+            {
+              "basal_rate": 1.006,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:00:00"
+            },
+            {
+              "basal_rate": 0.958,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:05:00"
+            },
+            {
+              "basal_rate": 1.027,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:10:00"
+            },
+            {
+              "basal_rate": 1.048,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:15:00"
+            },
+            {
+              "basal_rate": 1.019,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:20:00"
+            },
+            {
+              "basal_rate": 0.905,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:25:00"
+            },
+            {
+              "basal_rate": 0.935,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:30:00"
+            },
+            {
+              "basal_rate": 0.96,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:35:00"
+            },
+            {
+              "basal_rate": 0.974,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:40:00"
+            },
+            {
+              "basal_rate": 0.994,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:45:00"
+            },
+            {
+              "basal_rate": 1.083,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:50:00"
+            },
+            {
+              "basal_rate": 1.022,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 00:55:00"
+            },
+            {
+              "basal_rate": 0.857,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:00:00"
+            },
+            {
+              "basal_rate": 0.806,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:05:00"
+            },
+            {
+              "basal_rate": 0.871,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:10:00"
+            },
+            {
+              "basal_rate": 0.919,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:15:00"
+            },
+            {
+              "basal_rate": 0.828,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:20:00"
+            },
+            {
+              "basal_rate": 0.792,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:25:00"
+            },
+            {
+              "basal_rate": 0.863,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:30:00"
+            },
+            {
+              "basal_rate": 0.912,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:35:00"
+            },
+            {
+              "basal_rate": 0.824,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:40:00"
+            },
+            {
+              "basal_rate": 0.87,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:45:00"
+            },
+            {
+              "basal_rate": 0.921,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:50:00"
+            },
+            {
+              "basal_rate": 0.762,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 01:55:00"
+            },
+            {
+              "basal_rate": 0.73,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:00:00"
+            },
+            {
+              "basal_rate": 0.807,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:05:00"
+            },
+            {
+              "basal_rate": 0.837,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:10:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:15:00"
+            },
+            {
+              "basal_rate": 0.706,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:20:00"
+            },
+            {
+              "basal_rate": 0.667,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:25:00"
+            },
+            {
+              "basal_rate": 0.46,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:30:00"
+            },
+            {
+              "basal_rate": 0.593,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:35:00"
+            },
+            {
+              "basal_rate": 0.767,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:40:00"
+            },
+            {
+              "basal_rate": 0.832,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:45:00"
+            },
+            {
+              "basal_rate": 0.826,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:50:00"
+            },
+            {
+              "basal_rate": 0.723,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-19 02:55:00"
+            },
+            {
+              "basal_rate": 0.882,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:00:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:05:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:10:00"
+            },
+            {
+              "basal_rate": 0.776,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:15:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:20:00"
+            },
+            {
+              "basal_rate": 0.878,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:25:00"
+            },
+            {
+              "basal_rate": 0.95,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:30:00"
+            },
+            {
+              "basal_rate": 0.971,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:35:00"
+            },
+            {
+              "basal_rate": 1.016,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:40:00"
+            },
+            {
+              "basal_rate": 1.037,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:45:00"
+            },
+            {
+              "basal_rate": 0.903,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:50:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 03:55:00"
+            },
+            {
+              "basal_rate": 0.831,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:00:00"
+            },
+            {
+              "basal_rate": 0.865,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:05:00"
+            },
+            {
+              "basal_rate": 0.92,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:10:00"
+            },
+            {
+              "basal_rate": 0.937,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:15:00"
+            },
+            {
+              "basal_rate": 0.914,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:20:00"
+            },
+            {
+              "basal_rate": 0.871,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:25:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:30:00"
+            },
+            {
+              "basal_rate": 0.601,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:35:00"
+            },
+            {
+              "basal_rate": 0.686,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:40:00"
+            },
+            {
+              "basal_rate": 0.627,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:45:00"
+            },
+            {
+              "basal_rate": 0.716,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:50:00"
+            },
+            {
+              "basal_rate": 0.729,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 04:55:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:00:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:05:00"
+            },
+            {
+              "basal_rate": 0.858,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:10:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:15:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:20:00"
+            },
+            {
+              "basal_rate": 0.805,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:25:00"
+            },
+            {
+              "basal_rate": 0.839,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:30:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:35:00"
+            },
+            {
+              "basal_rate": 0.884,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:40:00"
+            },
+            {
+              "basal_rate": 0.784,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:45:00"
+            },
+            {
+              "basal_rate": 0.776,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:50:00"
+            },
+            {
+              "basal_rate": 0.555,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 05:55:00"
+            },
+            {
+              "basal_rate": 0.618,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:00:00"
+            },
+            {
+              "basal_rate": 0.308,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:05:00"
+            },
+            {
+              "basal_rate": 0.555,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:10:00"
+            },
+            {
+              "basal_rate": 0.644,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:15:00"
+            },
+            {
+              "basal_rate": 0.81,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:20:00"
+            },
+            {
+              "basal_rate": 0.674,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:25:00"
+            },
+            {
+              "basal_rate": 0.72,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:30:00"
+            },
+            {
+              "basal_rate": 0.567,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:35:00"
+            },
+            {
+              "basal_rate": 0.674,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:40:00"
+            },
+            {
+              "basal_rate": 0.64,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:45:00"
+            },
+            {
+              "basal_rate": 0.597,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:50:00"
+            },
+            {
+              "basal_rate": 0.567,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 06:55:00"
+            },
+            {
+              "basal_rate": 0.869,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:00:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:05:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:10:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:15:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:20:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:25:00"
+            },
+            {
+              "basal_rate": 0.927,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:30:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:35:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:40:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:45:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:50:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 07:55:00"
+            },
+            {
+              "basal_rate": 1.276,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:00:00"
+            },
+            {
+              "basal_rate": 1.209,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:05:00"
+            },
+            {
+              "basal_rate": 1.211,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:10:00"
+            },
+            {
+              "basal_rate": 1.447,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:15:00"
+            },
+            {
+              "basal_rate": 1.755,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:20:00"
+            },
+            {
+              "basal_rate": 2.014,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:25:00"
+            },
+            {
+              "basal_rate": 2.154,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:30:00"
+            },
+            {
+              "basal_rate": 2.324,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:35:00"
+            },
+            {
+              "basal_rate": 2.359,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:40:00"
+            },
+            {
+              "basal_rate": 2.42,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:45:00"
+            },
+            {
+              "basal_rate": 2.457,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:50:00"
+            },
+            {
+              "basal_rate": 2.646,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 08:55:00"
+            },
+            {
+              "basal_rate": 2.693,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:00:00"
+            },
+            {
+              "basal_rate": 2.686,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:05:00"
+            },
+            {
+              "basal_rate": 2.688,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:10:00"
+            },
+            {
+              "basal_rate": 2.555,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:15:00"
+            },
+            {
+              "basal_rate": 2.536,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:20:00"
+            },
+            {
+              "basal_rate": 2.436,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:25:00"
+            },
+            {
+              "basal_rate": 2.506,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:30:00"
+            },
+            {
+              "basal_rate": 2.448,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:35:00"
+            },
+            {
+              "basal_rate": 2.347,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:40:00"
+            },
+            {
+              "basal_rate": 2.231,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:45:00"
+            },
+            {
+              "basal_rate": 2.119,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:50:00"
+            },
+            {
+              "basal_rate": 1.918,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 09:55:00"
+            },
+            {
+              "basal_rate": 1.78,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:00:00"
+            },
+            {
+              "basal_rate": 1.766,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:05:00"
+            },
+            {
+              "basal_rate": 1.757,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:10:00"
+            },
+            {
+              "basal_rate": 1.598,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:15:00"
+            },
+            {
+              "basal_rate": 1.451,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:20:00"
+            },
+            {
+              "basal_rate": 1.433,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:25:00"
+            },
+            {
+              "basal_rate": 1.3,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:30:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:35:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:40:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:45:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:50:00"
+            },
+            {
+              "basal_rate": 0.858,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-19 10:55:00"
+            },
+            {
+              "basal_rate": 0.521,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:00:00"
+            },
+            {
+              "basal_rate": 0.487,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:05:00"
+            },
+            {
+              "basal_rate": 0.61,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:10:00"
+            },
+            {
+              "basal_rate": 0.423,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:15:00"
+            },
+            {
+              "basal_rate": 0.21,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:20:00"
+            },
+            {
+              "basal_rate": 0.202,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:25:00"
+            },
+            {
+              "basal_rate": 0.206,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:30:00"
+            },
+            {
+              "basal_rate": 0.138,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 11:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:40:00"
+            },
+            {
+              "basal_rate": 0.108,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:45:00"
+            },
+            {
+              "basal_rate": 0.96,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:50:00"
+            },
+            {
+              "basal_rate": 2.178,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 12:55:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:00:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:05:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:10:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:15:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:20:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:25:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:30:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:35:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:40:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:45:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:50:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 13:55:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:00:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:05:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:10:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:15:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:20:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:25:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:30:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:35:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:40:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:45:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:50:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 14:55:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:00:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:05:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:10:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:15:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:20:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:25:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:30:00"
+            },
+            {
+              "basal_rate": 2.261,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:35:00"
+            },
+            {
+              "basal_rate": 2.053,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:40:00"
+            },
+            {
+              "basal_rate": 1.806,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:45:00"
+            },
+            {
+              "basal_rate": 1.526,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:50:00"
+            },
+            {
+              "basal_rate": 1.133,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-19 15:55:00"
+            },
+            {
+              "basal_rate": 1.032,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:00:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:05:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:10:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:15:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:20:00"
+            },
+            {
+              "basal_rate": 0.74,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:25:00"
+            },
+            {
+              "basal_rate": 0.29,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 16:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:35:00"
+            },
+            {
+              "basal_rate": 0.682,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:40:00"
+            },
+            {
+              "basal_rate": 1.066,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:45:00"
+            },
+            {
+              "basal_rate": 1.472,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:50:00"
+            },
+            {
+              "basal_rate": 1.556,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 17:55:00"
+            },
+            {
+              "basal_rate": 1.398,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:00:00"
+            },
+            {
+              "basal_rate": 1.108,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:05:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:10:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:15:00"
+            },
+            {
+              "basal_rate": 0.718,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:20:00"
+            },
+            {
+              "basal_rate": 0.295,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 18:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:10:00"
+            },
+            {
+              "basal_rate": 0.448,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:15:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:20:00"
+            },
+            {
+              "basal_rate": 1.538,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:25:00"
+            },
+            {
+              "basal_rate": 2.29,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:30:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:35:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:40:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:45:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:50:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 19:55:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:00:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:05:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:10:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:15:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:20:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:25:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:30:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:35:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:40:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:45:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:50:00"
+            },
+            {
+              "basal_rate": 2.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-19 20:55:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:00:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:05:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:10:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:15:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:20:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:25:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:30:00"
+            },
+            {
+              "basal_rate": 2.25,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:35:00"
+            },
+            {
+              "basal_rate": 2.15,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:40:00"
+            },
+            {
+              "basal_rate": 1.88,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:45:00"
+            },
+            {
+              "basal_rate": 1.765,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:50:00"
+            },
+            {
+              "basal_rate": 1.665,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 21:55:00"
+            },
+            {
+              "basal_rate": 1.595,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:00:00"
+            },
+            {
+              "basal_rate": 1.45,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:05:00"
+            },
+            {
+              "basal_rate": 1.28,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:10:00"
+            },
+            {
+              "basal_rate": 1.212,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:15:00"
+            },
+            {
+              "basal_rate": 1.02,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:20:00"
+            },
+            {
+              "basal_rate": 0.837,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:25:00"
+            },
+            {
+              "basal_rate": 0.758,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:30:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:35:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:40:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:45:00"
+            },
+            {
+              "basal_rate": 0.669,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:50:00"
+            },
+            {
+              "basal_rate": 0.651,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 22:55:00"
+            },
+            {
+              "basal_rate": 0.549,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-19 23:55:00"
+            }
+          ],
+          "boluses": [
+            {
+              "carbs": null,
+              "insulin": 1.17,
+              "t": "2025-05-19 08:30:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 2.12,
+              "t": "2025-05-19 08:55:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 0.74,
+              "t": "2025-05-19 09:30:00"
+            },
+            {
+              "carbs": 89.0,
+              "insulin": 7.42,
+              "t": "2025-05-19 12:10:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 0.22,
+              "t": "2025-05-19 13:20:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 6.09,
+              "t": "2025-05-19 15:10:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 3.12,
+              "t": "2025-05-19 16:15:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 1.27,
+              "t": "2025-05-19 19:40:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 4.23,
+              "t": "2025-05-19 20:10:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 1.44,
+              "t": "2025-05-19 20:40:00"
+            },
+            {
+              "carbs": 19.0,
+              "insulin": 4.46,
+              "t": "2025-05-19 21:20:00"
+            }
+          ],
+          "cgm": [
+            {
+              "bg": 154.0,
+              "t": "2025-05-19 00:00:00"
+            },
+            {
+              "bg": 152.0,
+              "t": "2025-05-19 00:05:00"
+            },
+            {
+              "bg": 156.0,
+              "t": "2025-05-19 00:10:00"
+            },
+            {
+              "bg": 157.0,
+              "t": "2025-05-19 00:15:00"
+            },
+            {
+              "bg": 155.0,
+              "t": "2025-05-19 00:20:00"
+            },
+            {
+              "bg": 153.0,
+              "t": "2025-05-19 00:25:00"
+            },
+            {
+              "bg": 155.0,
+              "t": "2025-05-19 00:30:00"
+            },
+            {
+              "bg": 154.0,
+              "t": "2025-05-19 00:35:00"
+            },
+            {
+              "bg": 154.0,
+              "t": "2025-05-19 00:40:00"
+            },
+            {
+              "bg": 156.0,
+              "t": "2025-05-19 00:45:00"
+            },
+            {
+              "bg": 159.0,
+              "t": "2025-05-19 00:50:00"
+            },
+            {
+              "bg": 156.0,
+              "t": "2025-05-19 00:55:00"
+            },
+            {
+              "bg": 151.0,
+              "t": "2025-05-19 01:00:00"
+            },
+            {
+              "bg": 151.0,
+              "t": "2025-05-19 01:05:00"
+            },
+            {
+              "bg": 151.0,
+              "t": "2025-05-19 01:10:00"
+            },
+            {
+              "bg": 150.0,
+              "t": "2025-05-19 01:15:00"
+            },
+            {
+              "bg": 146.0,
+              "t": "2025-05-19 01:20:00"
+            },
+            {
+              "bg": 145.0,
+              "t": "2025-05-19 01:25:00"
+            },
+            {
+              "bg": 147.0,
+              "t": "2025-05-19 01:30:00"
+            },
+            {
+              "bg": 146.0,
+              "t": "2025-05-19 01:35:00"
+            },
+            {
+              "bg": 142.0,
+              "t": "2025-05-19 01:40:00"
+            },
+            {
+              "bg": 146.0,
+              "t": "2025-05-19 01:45:00"
+            },
+            {
+              "bg": 146.0,
+              "t": "2025-05-19 01:50:00"
+            },
+            {
+              "bg": 137.0,
+              "t": "2025-05-19 01:55:00"
+            },
+            {
+              "bg": 140.0,
+              "t": "2025-05-19 02:00:00"
+            },
+            {
+              "bg": 141.0,
+              "t": "2025-05-19 02:05:00"
+            },
+            {
+              "bg": 137.0,
+              "t": "2025-05-19 02:10:00"
+            },
+            {
+              "bg": 136.0,
+              "t": "2025-05-19 02:15:00"
+            },
+            {
+              "bg": 134.0,
+              "t": "2025-05-19 02:20:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 02:25:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 02:30:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 02:35:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 02:40:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 02:45:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-19 02:50:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-19 02:55:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-19 03:00:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 03:05:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-19 03:10:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-19 03:15:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-19 03:20:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-19 03:25:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 03:30:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 03:35:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 03:40:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-19 03:45:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 03:50:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 03:55:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-19 04:00:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 04:05:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 04:10:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 04:15:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 04:20:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 04:25:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-19 04:30:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-19 04:35:00"
+            },
+            {
+              "bg": 118.0,
+              "t": "2025-05-19 04:40:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 04:45:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 04:50:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 04:55:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 05:00:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-19 05:05:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-19 05:10:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-19 05:15:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-19 05:20:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 05:25:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-19 05:30:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-19 05:35:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-19 05:40:00"
+            },
+            {
+              "bg": 113.0,
+              "t": "2025-05-19 05:45:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-19 05:50:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-19 05:55:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-19 06:00:00"
+            },
+            {
+              "bg": 105.0,
+              "t": "2025-05-19 06:05:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 06:10:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 06:15:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 06:20:00"
+            },
+            {
+              "bg": 106.0,
+              "t": "2025-05-19 06:25:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 06:30:00"
+            },
+            {
+              "bg": 104.0,
+              "t": "2025-05-19 06:35:00"
+            },
+            {
+              "bg": 106.0,
+              "t": "2025-05-19 06:40:00"
+            },
+            {
+              "bg": 105.0,
+              "t": "2025-05-19 06:45:00"
+            },
+            {
+              "bg": 103.0,
+              "t": "2025-05-19 06:50:00"
+            },
+            {
+              "bg": 104.0,
+              "t": "2025-05-19 06:55:00"
+            },
+            {
+              "bg": 105.0,
+              "t": "2025-05-19 07:00:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 07:05:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-19 07:10:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-19 07:15:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-19 07:20:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-19 07:25:00"
+            },
+            {
+              "bg": 109.0,
+              "t": "2025-05-19 07:30:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 07:35:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-19 07:40:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-19 07:45:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-19 07:50:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-19 07:55:00"
+            },
+            {
+              "bg": 135.0,
+              "t": "2025-05-19 08:00:00"
+            },
+            {
+              "bg": 137.0,
+              "t": "2025-05-19 08:05:00"
+            },
+            {
+              "bg": 142.0,
+              "t": "2025-05-19 08:10:00"
+            },
+            {
+              "bg": 155.0,
+              "t": "2025-05-19 08:15:00"
+            },
+            {
+              "bg": 164.0,
+              "t": "2025-05-19 08:20:00"
+            },
+            {
+              "bg": 176.0,
+              "t": "2025-05-19 08:25:00"
+            },
+            {
+              "bg": 188.0,
+              "t": "2025-05-19 08:30:00"
+            },
+            {
+              "bg": 199.0,
+              "t": "2025-05-19 08:35:00"
+            },
+            {
+              "bg": 208.0,
+              "t": "2025-05-19 08:40:00"
+            },
+            {
+              "bg": 218.0,
+              "t": "2025-05-19 08:45:00"
+            },
+            {
+              "bg": 226.0,
+              "t": "2025-05-19 08:50:00"
+            },
+            {
+              "bg": 238.0,
+              "t": "2025-05-19 08:55:00"
+            },
+            {
+              "bg": 245.0,
+              "t": "2025-05-19 09:00:00"
+            },
+            {
+              "bg": 251.0,
+              "t": "2025-05-19 09:05:00"
+            },
+            {
+              "bg": 259.0,
+              "t": "2025-05-19 09:10:00"
+            },
+            {
+              "bg": 259.0,
+              "t": "2025-05-19 09:15:00"
+            },
+            {
+              "bg": 264.0,
+              "t": "2025-05-19 09:20:00"
+            },
+            {
+              "bg": 265.0,
+              "t": "2025-05-19 09:25:00"
+            },
+            {
+              "bg": 268.0,
+              "t": "2025-05-19 09:30:00"
+            },
+            {
+              "bg": 269.0,
+              "t": "2025-05-19 09:35:00"
+            },
+            {
+              "bg": 267.0,
+              "t": "2025-05-19 09:40:00"
+            },
+            {
+              "bg": 266.0,
+              "t": "2025-05-19 09:45:00"
+            },
+            {
+              "bg": 263.0,
+              "t": "2025-05-19 09:50:00"
+            },
+            {
+              "bg": 256.0,
+              "t": "2025-05-19 09:55:00"
+            },
+            {
+              "bg": 252.0,
+              "t": "2025-05-19 10:00:00"
+            },
+            {
+              "bg": 249.0,
+              "t": "2025-05-19 10:05:00"
+            },
+            {
+              "bg": 244.0,
+              "t": "2025-05-19 10:10:00"
+            },
+            {
+              "bg": 237.0,
+              "t": "2025-05-19 10:15:00"
+            },
+            {
+              "bg": 231.0,
+              "t": "2025-05-19 10:20:00"
+            },
+            {
+              "bg": 227.0,
+              "t": "2025-05-19 10:25:00"
+            },
+            {
+              "bg": 218.0,
+              "t": "2025-05-19 10:30:00"
+            },
+            {
+              "bg": 206.0,
+              "t": "2025-05-19 10:35:00"
+            },
+            {
+              "bg": 198.0,
+              "t": "2025-05-19 10:40:00"
+            },
+            {
+              "bg": 187.0,
+              "t": "2025-05-19 10:45:00"
+            },
+            {
+              "bg": 177.0,
+              "t": "2025-05-19 10:50:00"
+            },
+            {
+              "bg": 167.0,
+              "t": "2025-05-19 10:55:00"
+            },
+            {
+              "bg": 157.0,
+              "t": "2025-05-19 11:00:00"
+            },
+            {
+              "bg": 150.0,
+              "t": "2025-05-19 11:05:00"
+            },
+            {
+              "bg": 145.0,
+              "t": "2025-05-19 11:10:00"
+            },
+            {
+              "bg": 135.0,
+              "t": "2025-05-19 11:15:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 11:20:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 11:25:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-19 11:30:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-19 11:35:00"
+            },
+            {
+              "bg": 105.0,
+              "t": "2025-05-19 11:40:00"
+            },
+            {
+              "bg": 99.0,
+              "t": "2025-05-19 11:45:00"
+            },
+            {
+              "bg": 89.0,
+              "t": "2025-05-19 11:50:00"
+            },
+            {
+              "bg": 85.0,
+              "t": "2025-05-19 11:55:00"
+            },
+            {
+              "bg": 79.0,
+              "t": "2025-05-19 12:00:00"
+            },
+            {
+              "bg": 73.0,
+              "t": "2025-05-19 12:05:00"
+            },
+            {
+              "bg": 64.0,
+              "t": "2025-05-19 12:10:00"
+            },
+            {
+              "bg": 61.0,
+              "t": "2025-05-19 12:15:00"
+            },
+            {
+              "bg": 53.0,
+              "t": "2025-05-19 12:20:00"
+            },
+            {
+              "bg": 48.0,
+              "t": "2025-05-19 12:25:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-19 12:30:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-19 12:35:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-19 12:40:00"
+            },
+            {
+              "bg": 56.0,
+              "t": "2025-05-19 12:45:00"
+            },
+            {
+              "bg": 87.0,
+              "t": "2025-05-19 12:50:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-19 12:55:00"
+            },
+            {
+              "bg": 174.0,
+              "t": "2025-05-19 13:00:00"
+            },
+            {
+              "bg": 218.0,
+              "t": "2025-05-19 13:05:00"
+            },
+            {
+              "bg": 258.0,
+              "t": "2025-05-19 13:10:00"
+            },
+            {
+              "bg": 294.0,
+              "t": "2025-05-19 13:15:00"
+            },
+            {
+              "bg": 326.0,
+              "t": "2025-05-19 13:20:00"
+            },
+            {
+              "bg": 349.0,
+              "t": "2025-05-19 13:25:00"
+            },
+            {
+              "bg": 364.0,
+              "t": "2025-05-19 13:30:00"
+            },
+            {
+              "bg": 381.0,
+              "t": "2025-05-19 13:35:00"
+            },
+            {
+              "bg": 388.0,
+              "t": "2025-05-19 13:40:00"
+            },
+            {
+              "bg": 396.0,
+              "t": "2025-05-19 13:45:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 13:50:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 13:55:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:00:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:05:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:10:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:15:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:20:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:25:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:30:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:35:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:40:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:45:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:50:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 14:55:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 15:00:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 15:05:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 15:10:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 15:15:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 15:20:00"
+            },
+            {
+              "bg": 392.0,
+              "t": "2025-05-19 15:25:00"
+            },
+            {
+              "bg": 381.0,
+              "t": "2025-05-19 15:30:00"
+            },
+            {
+              "bg": 370.0,
+              "t": "2025-05-19 15:35:00"
+            },
+            {
+              "bg": 357.0,
+              "t": "2025-05-19 15:40:00"
+            },
+            {
+              "bg": 341.0,
+              "t": "2025-05-19 15:45:00"
+            },
+            {
+              "bg": 324.0,
+              "t": "2025-05-19 15:50:00"
+            },
+            {
+              "bg": 301.0,
+              "t": "2025-05-19 15:55:00"
+            },
+            {
+              "bg": 286.0,
+              "t": "2025-05-19 16:00:00"
+            },
+            {
+              "bg": 268.0,
+              "t": "2025-05-19 16:05:00"
+            },
+            {
+              "bg": 250.0,
+              "t": "2025-05-19 16:10:00"
+            },
+            {
+              "bg": 235.0,
+              "t": "2025-05-19 16:15:00"
+            },
+            {
+              "bg": 218.0,
+              "t": "2025-05-19 16:20:00"
+            },
+            {
+              "bg": 202.0,
+              "t": "2025-05-19 16:25:00"
+            },
+            {
+              "bg": 185.0,
+              "t": "2025-05-19 16:30:00"
+            },
+            {
+              "bg": 169.0,
+              "t": "2025-05-19 16:35:00"
+            },
+            {
+              "bg": 149.0,
+              "t": "2025-05-19 16:40:00"
+            },
+            {
+              "bg": 134.0,
+              "t": "2025-05-19 16:45:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-19 16:50:00"
+            },
+            {
+              "bg": 100.0,
+              "t": "2025-05-19 16:55:00"
+            },
+            {
+              "bg": 78.0,
+              "t": "2025-05-19 17:00:00"
+            },
+            {
+              "bg": 59.0,
+              "t": "2025-05-19 17:05:00"
+            },
+            {
+              "bg": 47.0,
+              "t": "2025-05-19 17:10:00"
+            },
+            {
+              "bg": 46.0,
+              "t": "2025-05-19 17:15:00"
+            },
+            {
+              "bg": 47.0,
+              "t": "2025-05-19 17:20:00"
+            },
+            {
+              "bg": 41.0,
+              "t": "2025-05-19 17:25:00"
+            },
+            {
+              "bg": 41.0,
+              "t": "2025-05-19 17:30:00"
+            },
+            {
+              "bg": 46.0,
+              "t": "2025-05-19 17:35:00"
+            },
+            {
+              "bg": 62.0,
+              "t": "2025-05-19 17:40:00"
+            },
+            {
+              "bg": 86.0,
+              "t": "2025-05-19 17:45:00"
+            },
+            {
+              "bg": 102.0,
+              "t": "2025-05-19 17:50:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-19 17:55:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-19 18:00:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-19 18:05:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-19 18:10:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-19 18:15:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-19 18:20:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-19 18:25:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-19 18:30:00"
+            },
+            {
+              "bg": 98.0,
+              "t": "2025-05-19 18:35:00"
+            },
+            {
+              "bg": 91.0,
+              "t": "2025-05-19 18:40:00"
+            },
+            {
+              "bg": 83.0,
+              "t": "2025-05-19 18:45:00"
+            },
+            {
+              "bg": 80.0,
+              "t": "2025-05-19 18:50:00"
+            },
+            {
+              "bg": 68.0,
+              "t": "2025-05-19 18:55:00"
+            },
+            {
+              "bg": 67.0,
+              "t": "2025-05-19 19:00:00"
+            },
+            {
+              "bg": 63.0,
+              "t": "2025-05-19 19:05:00"
+            },
+            {
+              "bg": 68.0,
+              "t": "2025-05-19 19:10:00"
+            },
+            {
+              "bg": 75.0,
+              "t": "2025-05-19 19:15:00"
+            },
+            {
+              "bg": 92.0,
+              "t": "2025-05-19 19:20:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-19 19:25:00"
+            },
+            {
+              "bg": 149.0,
+              "t": "2025-05-19 19:30:00"
+            },
+            {
+              "bg": 177.0,
+              "t": "2025-05-19 19:35:00"
+            },
+            {
+              "bg": 206.0,
+              "t": "2025-05-19 19:40:00"
+            },
+            {
+              "bg": 229.0,
+              "t": "2025-05-19 19:45:00"
+            },
+            {
+              "bg": 256.0,
+              "t": "2025-05-19 19:50:00"
+            },
+            {
+              "bg": 275.0,
+              "t": "2025-05-19 19:55:00"
+            },
+            {
+              "bg": 297.0,
+              "t": "2025-05-19 20:00:00"
+            },
+            {
+              "bg": 312.0,
+              "t": "2025-05-19 20:05:00"
+            },
+            {
+              "bg": 329.0,
+              "t": "2025-05-19 20:10:00"
+            },
+            {
+              "bg": 342.0,
+              "t": "2025-05-19 20:15:00"
+            },
+            {
+              "bg": 358.0,
+              "t": "2025-05-19 20:20:00"
+            },
+            {
+              "bg": 369.0,
+              "t": "2025-05-19 20:25:00"
+            },
+            {
+              "bg": 378.0,
+              "t": "2025-05-19 20:30:00"
+            },
+            {
+              "bg": 389.0,
+              "t": "2025-05-19 20:35:00"
+            },
+            {
+              "bg": 397.0,
+              "t": "2025-05-19 20:40:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 20:45:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 20:50:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 20:55:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:00:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:05:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:10:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:15:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:20:00"
+            },
+            {
+              "bg": 400.0,
+              "t": "2025-05-19 21:25:00"
+            },
+            {
+              "bg": 394.0,
+              "t": "2025-05-19 21:30:00"
+            },
+            {
+              "bg": 386.0,
+              "t": "2025-05-19 21:35:00"
+            },
+            {
+              "bg": 376.0,
+              "t": "2025-05-19 21:40:00"
+            },
+            {
+              "bg": 361.0,
+              "t": "2025-05-19 21:45:00"
+            },
+            {
+              "bg": 352.0,
+              "t": "2025-05-19 21:50:00"
+            },
+            {
+              "bg": 340.0,
+              "t": "2025-05-19 21:55:00"
+            },
+            {
+              "bg": 328.0,
+              "t": "2025-05-19 22:00:00"
+            },
+            {
+              "bg": 316.0,
+              "t": "2025-05-19 22:05:00"
+            },
+            {
+              "bg": 301.0,
+              "t": "2025-05-19 22:10:00"
+            },
+            {
+              "bg": 291.0,
+              "t": "2025-05-19 22:15:00"
+            },
+            {
+              "bg": 274.0,
+              "t": "2025-05-19 22:20:00"
+            },
+            {
+              "bg": 258.0,
+              "t": "2025-05-19 22:25:00"
+            },
+            {
+              "bg": 248.0,
+              "t": "2025-05-19 22:30:00"
+            },
+            {
+              "bg": 232.0,
+              "t": "2025-05-19 22:35:00"
+            },
+            {
+              "bg": 218.0,
+              "t": "2025-05-19 22:40:00"
+            },
+            {
+              "bg": 203.0,
+              "t": "2025-05-19 22:45:00"
+            },
+            {
+              "bg": 191.0,
+              "t": "2025-05-19 22:50:00"
+            },
+            {
+              "bg": 181.0,
+              "t": "2025-05-19 22:55:00"
+            },
+            {
+              "bg": 169.0,
+              "t": "2025-05-19 23:00:00"
+            },
+            {
+              "bg": 150.0,
+              "t": "2025-05-19 23:05:00"
+            },
+            {
+              "bg": 138.0,
+              "t": "2025-05-19 23:10:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-19 23:15:00"
+            },
+            {
+              "bg": 113.0,
+              "t": "2025-05-19 23:20:00"
+            },
+            {
+              "bg": 106.0,
+              "t": "2025-05-19 23:25:00"
+            },
+            {
+              "bg": 94.0,
+              "t": "2025-05-19 23:30:00"
+            },
+            {
+              "bg": 85.0,
+              "t": "2025-05-19 23:35:00"
+            },
+            {
+              "bg": 76.0,
+              "t": "2025-05-19 23:40:00"
+            },
+            {
+              "bg": 67.0,
+              "t": "2025-05-19 23:45:00"
+            },
+            {
+              "bg": 58.0,
+              "t": "2025-05-19 23:50:00"
+            },
+            {
+              "bg": 52.0,
+              "t": "2025-05-19 23:55:00"
+            }
+          ],
+          "pump_events": [],
+          "sleep_windows": [
+            {
+              "end": "2025-05-19 07:00:00",
+              "start": "2025-05-19 00:00:00"
+            },
+            {
+              "end": "2025-05-20 00:00:00",
+              "start": "2025-05-19 23:00:00"
+            }
+          ]
+        }
+      },
+      "2025-05-25": {
+        "carbs": {
+          "carb_entries": []
+        },
+        "timeline": {
+          "basal": [
+            {
+              "basal_rate": 0.681,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:00:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:05:00"
+            },
+            {
+              "basal_rate": 0.747,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:10:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:15:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:20:00"
+            },
+            {
+              "basal_rate": 0.796,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:25:00"
+            },
+            {
+              "basal_rate": 0.787,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:30:00"
+            },
+            {
+              "basal_rate": 0.787,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:35:00"
+            },
+            {
+              "basal_rate": 0.723,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:40:00"
+            },
+            {
+              "basal_rate": 0.812,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:45:00"
+            },
+            {
+              "basal_rate": 0.789,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:50:00"
+            },
+            {
+              "basal_rate": 0.789,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 00:55:00"
+            },
+            {
+              "basal_rate": 0.812,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:00:00"
+            },
+            {
+              "basal_rate": 0.782,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:05:00"
+            },
+            {
+              "basal_rate": 0.737,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:10:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:15:00"
+            },
+            {
+              "basal_rate": 0.711,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:20:00"
+            },
+            {
+              "basal_rate": 0.72,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:25:00"
+            },
+            {
+              "basal_rate": 0.768,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:30:00"
+            },
+            {
+              "basal_rate": 0.726,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:35:00"
+            },
+            {
+              "basal_rate": 0.747,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:40:00"
+            },
+            {
+              "basal_rate": 0.786,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:45:00"
+            },
+            {
+              "basal_rate": 0.806,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:50:00"
+            },
+            {
+              "basal_rate": 0.829,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 01:55:00"
+            },
+            {
+              "basal_rate": 0.907,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:00:00"
+            },
+            {
+              "basal_rate": 0.838,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:05:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:10:00"
+            },
+            {
+              "basal_rate": 0.506,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:15:00"
+            },
+            {
+              "basal_rate": 0.7,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:20:00"
+            },
+            {
+              "basal_rate": 0.773,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:25:00"
+            },
+            {
+              "basal_rate": 0.81,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:30:00"
+            },
+            {
+              "basal_rate": 0.798,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:35:00"
+            },
+            {
+              "basal_rate": 0.742,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:40:00"
+            },
+            {
+              "basal_rate": 0.74,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:45:00"
+            },
+            {
+              "basal_rate": 0.775,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:50:00"
+            },
+            {
+              "basal_rate": 0.756,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.7,
+              "t": "2025-05-25 02:55:00"
+            },
+            {
+              "basal_rate": 0.899,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:00:00"
+            },
+            {
+              "basal_rate": 0.861,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:05:00"
+            },
+            {
+              "basal_rate": 0.954,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:10:00"
+            },
+            {
+              "basal_rate": 0.927,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:15:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:20:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:25:00"
+            },
+            {
+              "basal_rate": 0.854,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:30:00"
+            },
+            {
+              "basal_rate": 0.995,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:35:00"
+            },
+            {
+              "basal_rate": 0.967,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:40:00"
+            },
+            {
+              "basal_rate": 0.888,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:45:00"
+            },
+            {
+              "basal_rate": 0.822,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:50:00"
+            },
+            {
+              "basal_rate": 0.905,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 03:55:00"
+            },
+            {
+              "basal_rate": 0.916,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:00:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:05:00"
+            },
+            {
+              "basal_rate": 0.822,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:10:00"
+            },
+            {
+              "basal_rate": 0.867,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:15:00"
+            },
+            {
+              "basal_rate": 0.918,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:20:00"
+            },
+            {
+              "basal_rate": 0.895,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:25:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:30:00"
+            },
+            {
+              "basal_rate": 0.867,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:35:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:40:00"
+            },
+            {
+              "basal_rate": 0.975,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:45:00"
+            },
+            {
+              "basal_rate": 0.912,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:50:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 04:55:00"
+            },
+            {
+              "basal_rate": 0.504,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:00:00"
+            },
+            {
+              "basal_rate": 0.665,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:05:00"
+            },
+            {
+              "basal_rate": 0.856,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:10:00"
+            },
+            {
+              "basal_rate": 0.961,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:15:00"
+            },
+            {
+              "basal_rate": 0.78,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:20:00"
+            },
+            {
+              "basal_rate": 0.682,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:25:00"
+            },
+            {
+              "basal_rate": 0.818,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:30:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:35:00"
+            },
+            {
+              "basal_rate": 0.589,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:40:00"
+            },
+            {
+              "basal_rate": 0.669,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:45:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:50:00"
+            },
+            {
+              "basal_rate": 0.935,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 05:55:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:00:00"
+            },
+            {
+              "basal_rate": 0.686,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:05:00"
+            },
+            {
+              "basal_rate": 0.623,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:10:00"
+            },
+            {
+              "basal_rate": 0.703,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:15:00"
+            },
+            {
+              "basal_rate": 0.875,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:20:00"
+            },
+            {
+              "basal_rate": 0.856,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:25:00"
+            },
+            {
+              "basal_rate": 0.886,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:30:00"
+            },
+            {
+              "basal_rate": 0.712,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:35:00"
+            },
+            {
+              "basal_rate": 0.593,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:40:00"
+            },
+            {
+              "basal_rate": 0.601,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:45:00"
+            },
+            {
+              "basal_rate": 0.886,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:50:00"
+            },
+            {
+              "basal_rate": 0.89,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 06:55:00"
+            },
+            {
+              "basal_rate": 0.979,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:00:00"
+            },
+            {
+              "basal_rate": 0.58,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:05:00"
+            },
+            {
+              "basal_rate": 0.396,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:10:00"
+            },
+            {
+              "basal_rate": 0.36,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:15:00"
+            },
+            {
+              "basal_rate": 0.486,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:20:00"
+            },
+            {
+              "basal_rate": 0.486,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:25:00"
+            },
+            {
+              "basal_rate": 0.606,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:30:00"
+            },
+            {
+              "basal_rate": 0.89,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:35:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:40:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:45:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:50:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 07:55:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:00:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:05:00"
+            },
+            {
+              "basal_rate": 1.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:10:00"
+            },
+            {
+              "basal_rate": 0.99,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:15:00"
+            },
+            {
+              "basal_rate": 0.848,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:20:00"
+            },
+            {
+              "basal_rate": 1.042,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:25:00"
+            },
+            {
+              "basal_rate": 0.995,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:30:00"
+            },
+            {
+              "basal_rate": 0.622,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:35:00"
+            },
+            {
+              "basal_rate": 0.218,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:40:00"
+            },
+            {
+              "basal_rate": 0.139,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:45:00"
+            },
+            {
+              "basal_rate": 0.05,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 08:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 09:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 1.05,
+              "t": "2025-05-25 10:55:00"
+            },
+            {
+              "basal_rate": 2.35,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:00:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:05:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:10:00"
+            },
+            {
+              "basal_rate": 1.405,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:15:00"
+            },
+            {
+              "basal_rate": 1.39,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:20:00"
+            },
+            {
+              "basal_rate": 1.398,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:25:00"
+            },
+            {
+              "basal_rate": 1.279,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:30:00"
+            },
+            {
+              "basal_rate": 1.392,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:35:00"
+            },
+            {
+              "basal_rate": 1.392,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:40:00"
+            },
+            {
+              "basal_rate": 1.385,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:45:00"
+            },
+            {
+              "basal_rate": 1.262,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:50:00"
+            },
+            {
+              "basal_rate": 1.092,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 11:55:00"
+            },
+            {
+              "basal_rate": 1.02,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:00:00"
+            },
+            {
+              "basal_rate": 1.012,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:05:00"
+            },
+            {
+              "basal_rate": 1.056,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:10:00"
+            },
+            {
+              "basal_rate": 1.02,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:15:00"
+            },
+            {
+              "basal_rate": 1.08,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:20:00"
+            },
+            {
+              "basal_rate": 1.105,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:25:00"
+            },
+            {
+              "basal_rate": 1.101,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:30:00"
+            },
+            {
+              "basal_rate": 0.952,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:35:00"
+            },
+            {
+              "basal_rate": 0.999,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:40:00"
+            },
+            {
+              "basal_rate": 1.109,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:45:00"
+            },
+            {
+              "basal_rate": 1.432,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:50:00"
+            },
+            {
+              "basal_rate": 1.702,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 12:55:00"
+            },
+            {
+              "basal_rate": 1.938,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:00:00"
+            },
+            {
+              "basal_rate": 2.155,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:05:00"
+            },
+            {
+              "basal_rate": 2.299,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:10:00"
+            },
+            {
+              "basal_rate": 2.482,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:15:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:20:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:25:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:30:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:35:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:40:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:45:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:50:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 13:55:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:00:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:05:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:10:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:15:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:20:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:25:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:30:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:35:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:40:00"
+            },
+            {
+              "basal_rate": 2.55,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:45:00"
+            },
+            {
+              "basal_rate": 2.433,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:50:00"
+            },
+            {
+              "basal_rate": 2.059,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 14:55:00"
+            },
+            {
+              "basal_rate": 1.64,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:00:00"
+            },
+            {
+              "basal_rate": 1.343,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:05:00"
+            },
+            {
+              "basal_rate": 1.101,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:10:00"
+            },
+            {
+              "basal_rate": 0.973,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:15:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:20:00"
+            },
+            {
+              "basal_rate": 0.85,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:25:00"
+            },
+            {
+              "basal_rate": 0.419,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.85,
+              "t": "2025-05-25 15:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 16:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 17:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:05:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:15:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:20:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 18:55:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:00:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:05:00"
+            },
+            {
+              "basal_rate": 0.286,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:10:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:15:00"
+            },
+            {
+              "basal_rate": 0.043,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:20:00"
+            },
+            {
+              "basal_rate": 0.034,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:25:00"
+            },
+            {
+              "basal_rate": 0.421,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:30:00"
+            },
+            {
+              "basal_rate": 0.727,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:35:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:40:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:45:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:50:00"
+            },
+            {
+              "basal_rate": 0.9,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 19:55:00"
+            },
+            {
+              "basal_rate": 0.906,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:00:00"
+            },
+            {
+              "basal_rate": 1.084,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:05:00"
+            },
+            {
+              "basal_rate": 1.426,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:10:00"
+            },
+            {
+              "basal_rate": 1.546,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:15:00"
+            },
+            {
+              "basal_rate": 1.724,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:20:00"
+            },
+            {
+              "basal_rate": 1.804,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:25:00"
+            },
+            {
+              "basal_rate": 1.724,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:30:00"
+            },
+            {
+              "basal_rate": 1.618,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:35:00"
+            },
+            {
+              "basal_rate": 1.696,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:40:00"
+            },
+            {
+              "basal_rate": 1.882,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:45:00"
+            },
+            {
+              "basal_rate": 1.962,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:50:00"
+            },
+            {
+              "basal_rate": 1.934,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.9,
+              "t": "2025-05-25 20:55:00"
+            },
+            {
+              "basal_rate": 1.485,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:00:00"
+            },
+            {
+              "basal_rate": 1.392,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:05:00"
+            },
+            {
+              "basal_rate": 1.392,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:10:00"
+            },
+            {
+              "basal_rate": 1.498,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:15:00"
+            },
+            {
+              "basal_rate": 1.572,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:20:00"
+            },
+            {
+              "basal_rate": 1.545,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:25:00"
+            },
+            {
+              "basal_rate": 1.502,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:30:00"
+            },
+            {
+              "basal_rate": 1.493,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:35:00"
+            },
+            {
+              "basal_rate": 1.525,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:40:00"
+            },
+            {
+              "basal_rate": 1.472,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:45:00"
+            },
+            {
+              "basal_rate": 1.403,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:50:00"
+            },
+            {
+              "basal_rate": 1.397,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 21:55:00"
+            },
+            {
+              "basal_rate": 1.398,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:00:00"
+            },
+            {
+              "basal_rate": 1.357,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:05:00"
+            },
+            {
+              "basal_rate": 1.15,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:10:00"
+            },
+            {
+              "basal_rate": 0.948,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:15:00"
+            },
+            {
+              "basal_rate": 0.838,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:20:00"
+            },
+            {
+              "basal_rate": 0.828,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:25:00"
+            },
+            {
+              "basal_rate": 0.762,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:30:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:35:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:40:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:45:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:50:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 22:55:00"
+            },
+            {
+              "basal_rate": 0.752,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:00:00"
+            },
+            {
+              "basal_rate": 0.75,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:05:00"
+            },
+            {
+              "basal_rate": 0.594,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:10:00"
+            },
+            {
+              "basal_rate": 0.201,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:15:00"
+            },
+            {
+              "basal_rate": 0.167,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:20:00"
+            },
+            {
+              "basal_rate": 0.013,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:25:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:30:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:35:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:40:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:45:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:50:00"
+            },
+            {
+              "basal_rate": 0.0,
+              "duration_mins": 5.0,
+              "profile_basal_rate": 0.75,
+              "t": "2025-05-25 23:55:00"
+            }
+          ],
+          "boluses": [
+            {
+              "carbs": 57.0,
+              "insulin": 5.75,
+              "t": "2025-05-25 08:20:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 0.46,
+              "t": "2025-05-25 11:05:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 1.16,
+              "t": "2025-05-25 12:50:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 2.04,
+              "t": "2025-05-25 13:10:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 2.03,
+              "t": "2025-05-25 13:50:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 7.03,
+              "t": "2025-05-25 14:20:00"
+            },
+            {
+              "carbs": 55.0,
+              "insulin": 5.5,
+              "t": "2025-05-25 19:00:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 0.12,
+              "t": "2025-05-25 20:50:00"
+            },
+            {
+              "carbs": null,
+              "insulin": 1.87,
+              "t": "2025-05-25 21:35:00"
+            },
+            {
+              "carbs": 10.0,
+              "insulin": 1.52,
+              "t": "2025-05-25 21:55:00"
+            }
+          ],
+          "cgm": [
+            {
+              "bg": 118.0,
+              "t": "2025-05-25 00:00:00"
+            },
+            {
+              "bg": 119.0,
+              "t": "2025-05-25 00:05:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-25 00:10:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-25 00:15:00"
+            },
+            {
+              "bg": 119.0,
+              "t": "2025-05-25 00:20:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 00:25:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-25 00:30:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 00:35:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 00:40:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 00:45:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 00:50:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 00:55:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-25 01:00:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 01:05:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 01:10:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 01:15:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-25 01:20:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-25 01:25:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 01:30:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 01:35:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 01:40:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-25 01:45:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 01:50:00"
+            },
+            {
+              "bg": 130.0,
+              "t": "2025-05-25 01:55:00"
+            },
+            {
+              "bg": 134.0,
+              "t": "2025-05-25 02:00:00"
+            },
+            {
+              "bg": 130.0,
+              "t": "2025-05-25 02:05:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 02:10:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 02:15:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 02:20:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 02:25:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 02:30:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-25 02:35:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 02:40:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 02:45:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-25 02:50:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 02:55:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 03:00:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 03:05:00"
+            },
+            {
+              "bg": 128.0,
+              "t": "2025-05-25 03:10:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 03:15:00"
+            },
+            {
+              "bg": 122.0,
+              "t": "2025-05-25 03:20:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-25 03:25:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 03:30:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 03:35:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 03:40:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 03:45:00"
+            },
+            {
+              "bg": 122.0,
+              "t": "2025-05-25 03:50:00"
+            },
+            {
+              "bg": 127.0,
+              "t": "2025-05-25 03:55:00"
+            },
+            {
+              "bg": 124.0,
+              "t": "2025-05-25 04:00:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-25 04:05:00"
+            },
+            {
+              "bg": 122.0,
+              "t": "2025-05-25 04:10:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 04:15:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 04:20:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 04:25:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-25 04:30:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 04:35:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-25 04:40:00"
+            },
+            {
+              "bg": 126.0,
+              "t": "2025-05-25 04:45:00"
+            },
+            {
+              "bg": 123.0,
+              "t": "2025-05-25 04:50:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-25 04:55:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-25 05:00:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-25 05:05:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-25 05:10:00"
+            },
+            {
+              "bg": 121.0,
+              "t": "2025-05-25 05:15:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 05:20:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-25 05:25:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-25 05:30:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 05:35:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 05:40:00"
+            },
+            {
+              "bg": 113.0,
+              "t": "2025-05-25 05:45:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-25 05:50:00"
+            },
+            {
+              "bg": 117.0,
+              "t": "2025-05-25 05:55:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 06:00:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 06:05:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 06:10:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 06:15:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-25 06:20:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 06:25:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-25 06:30:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 06:35:00"
+            },
+            {
+              "bg": 110.0,
+              "t": "2025-05-25 06:40:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 06:45:00"
+            },
+            {
+              "bg": 116.0,
+              "t": "2025-05-25 06:50:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 06:55:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 07:00:00"
+            },
+            {
+              "bg": 109.0,
+              "t": "2025-05-25 07:05:00"
+            },
+            {
+              "bg": 105.0,
+              "t": "2025-05-25 07:10:00"
+            },
+            {
+              "bg": 103.0,
+              "t": "2025-05-25 07:15:00"
+            },
+            {
+              "bg": 103.0,
+              "t": "2025-05-25 07:20:00"
+            },
+            {
+              "bg": 100.0,
+              "t": "2025-05-25 07:25:00"
+            },
+            {
+              "bg": 101.0,
+              "t": "2025-05-25 07:30:00"
+            },
+            {
+              "bg": 104.0,
+              "t": "2025-05-25 07:35:00"
+            },
+            {
+              "bg": 104.0,
+              "t": "2025-05-25 07:40:00"
+            },
+            {
+              "bg": 108.0,
+              "t": "2025-05-25 07:45:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-25 07:50:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 07:55:00"
+            },
+            {
+              "bg": 113.0,
+              "t": "2025-05-25 08:00:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-25 08:05:00"
+            },
+            {
+              "bg": 115.0,
+              "t": "2025-05-25 08:10:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 08:15:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 08:20:00"
+            },
+            {
+              "bg": 114.0,
+              "t": "2025-05-25 08:25:00"
+            },
+            {
+              "bg": 111.0,
+              "t": "2025-05-25 08:30:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-25 08:35:00"
+            },
+            {
+              "bg": 103.0,
+              "t": "2025-05-25 08:40:00"
+            },
+            {
+              "bg": 100.0,
+              "t": "2025-05-25 08:45:00"
+            },
+            {
+              "bg": 96.0,
+              "t": "2025-05-25 08:50:00"
+            },
+            {
+              "bg": 92.0,
+              "t": "2025-05-25 08:55:00"
+            },
+            {
+              "bg": 179.0,
+              "t": "2025-05-25 11:00:00"
+            },
+            {
+              "bg": 185.0,
+              "t": "2025-05-25 11:05:00"
+            },
+            {
+              "bg": 186.0,
+              "t": "2025-05-25 11:10:00"
+            },
+            {
+              "bg": 193.0,
+              "t": "2025-05-25 11:15:00"
+            },
+            {
+              "bg": 195.0,
+              "t": "2025-05-25 11:20:00"
+            },
+            {
+              "bg": 197.0,
+              "t": "2025-05-25 11:25:00"
+            },
+            {
+              "bg": 197.0,
+              "t": "2025-05-25 11:30:00"
+            },
+            {
+              "bg": 203.0,
+              "t": "2025-05-25 11:35:00"
+            },
+            {
+              "bg": 203.0,
+              "t": "2025-05-25 11:40:00"
+            },
+            {
+              "bg": 204.0,
+              "t": "2025-05-25 11:45:00"
+            },
+            {
+              "bg": 203.0,
+              "t": "2025-05-25 11:50:00"
+            },
+            {
+              "bg": 197.0,
+              "t": "2025-05-25 11:55:00"
+            },
+            {
+              "bg": 196.0,
+              "t": "2025-05-25 12:00:00"
+            },
+            {
+              "bg": 194.0,
+              "t": "2025-05-25 12:05:00"
+            },
+            {
+              "bg": 192.0,
+              "t": "2025-05-25 12:10:00"
+            },
+            {
+              "bg": 190.0,
+              "t": "2025-05-25 12:15:00"
+            },
+            {
+              "bg": 191.0,
+              "t": "2025-05-25 12:20:00"
+            },
+            {
+              "bg": 190.0,
+              "t": "2025-05-25 12:25:00"
+            },
+            {
+              "bg": 189.0,
+              "t": "2025-05-25 12:30:00"
+            },
+            {
+              "bg": 184.0,
+              "t": "2025-05-25 12:35:00"
+            },
+            {
+              "bg": 186.0,
+              "t": "2025-05-25 12:40:00"
+            },
+            {
+              "bg": 188.0,
+              "t": "2025-05-25 12:45:00"
+            },
+            {
+              "bg": 197.0,
+              "t": "2025-05-25 12:50:00"
+            },
+            {
+              "bg": 207.0,
+              "t": "2025-05-25 12:55:00"
+            },
+            {
+              "bg": 217.0,
+              "t": "2025-05-25 13:00:00"
+            },
+            {
+              "bg": 231.0,
+              "t": "2025-05-25 13:05:00"
+            },
+            {
+              "bg": 242.0,
+              "t": "2025-05-25 13:10:00"
+            },
+            {
+              "bg": 256.0,
+              "t": "2025-05-25 13:15:00"
+            },
+            {
+              "bg": 271.0,
+              "t": "2025-05-25 13:20:00"
+            },
+            {
+              "bg": 288.0,
+              "t": "2025-05-25 13:25:00"
+            },
+            {
+              "bg": 305.0,
+              "t": "2025-05-25 13:30:00"
+            },
+            {
+              "bg": 322.0,
+              "t": "2025-05-25 13:35:00"
+            },
+            {
+              "bg": 336.0,
+              "t": "2025-05-25 13:40:00"
+            },
+            {
+              "bg": 345.0,
+              "t": "2025-05-25 13:45:00"
+            },
+            {
+              "bg": 352.0,
+              "t": "2025-05-25 13:50:00"
+            },
+            {
+              "bg": 363.0,
+              "t": "2025-05-25 13:55:00"
+            },
+            {
+              "bg": 374.0,
+              "t": "2025-05-25 14:00:00"
+            },
+            {
+              "bg": 380.0,
+              "t": "2025-05-25 14:05:00"
+            },
+            {
+              "bg": 382.0,
+              "t": "2025-05-25 14:10:00"
+            },
+            {
+              "bg": 392.0,
+              "t": "2025-05-25 14:15:00"
+            },
+            {
+              "bg": 391.0,
+              "t": "2025-05-25 14:20:00"
+            },
+            {
+              "bg": 387.0,
+              "t": "2025-05-25 14:25:00"
+            },
+            {
+              "bg": 384.0,
+              "t": "2025-05-25 14:30:00"
+            },
+            {
+              "bg": 381.0,
+              "t": "2025-05-25 14:35:00"
+            },
+            {
+              "bg": 378.0,
+              "t": "2025-05-25 14:40:00"
+            },
+            {
+              "bg": 373.0,
+              "t": "2025-05-25 14:45:00"
+            },
+            {
+              "bg": 363.0,
+              "t": "2025-05-25 14:50:00"
+            },
+            {
+              "bg": 348.0,
+              "t": "2025-05-25 14:55:00"
+            },
+            {
+              "bg": 330.0,
+              "t": "2025-05-25 15:00:00"
+            },
+            {
+              "bg": 313.0,
+              "t": "2025-05-25 15:05:00"
+            },
+            {
+              "bg": 294.0,
+              "t": "2025-05-25 15:10:00"
+            },
+            {
+              "bg": 278.0,
+              "t": "2025-05-25 15:15:00"
+            },
+            {
+              "bg": 260.0,
+              "t": "2025-05-25 15:20:00"
+            },
+            {
+              "bg": 235.0,
+              "t": "2025-05-25 15:25:00"
+            },
+            {
+              "bg": 217.0,
+              "t": "2025-05-25 15:30:00"
+            },
+            {
+              "bg": 192.0,
+              "t": "2025-05-25 15:35:00"
+            },
+            {
+              "bg": 170.0,
+              "t": "2025-05-25 15:40:00"
+            },
+            {
+              "bg": 148.0,
+              "t": "2025-05-25 15:45:00"
+            },
+            {
+              "bg": 129.0,
+              "t": "2025-05-25 15:50:00"
+            },
+            {
+              "bg": 107.0,
+              "t": "2025-05-25 15:55:00"
+            },
+            {
+              "bg": 88.0,
+              "t": "2025-05-25 16:00:00"
+            },
+            {
+              "bg": 67.0,
+              "t": "2025-05-25 16:05:00"
+            },
+            {
+              "bg": 49.0,
+              "t": "2025-05-25 16:10:00"
+            },
+            {
+              "bg": 49.0,
+              "t": "2025-05-25 16:15:00"
+            },
+            {
+              "bg": 49.0,
+              "t": "2025-05-25 16:20:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 16:25:00"
+            },
+            {
+              "bg": 47.0,
+              "t": "2025-05-25 16:30:00"
+            },
+            {
+              "bg": 46.0,
+              "t": "2025-05-25 16:35:00"
+            },
+            {
+              "bg": 42.0,
+              "t": "2025-05-25 16:40:00"
+            },
+            {
+              "bg": 41.0,
+              "t": "2025-05-25 16:45:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-25 16:50:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 16:55:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 17:00:00"
+            },
+            {
+              "bg": 43.0,
+              "t": "2025-05-25 17:05:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 17:10:00"
+            },
+            {
+              "bg": 46.0,
+              "t": "2025-05-25 17:15:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-25 17:20:00"
+            },
+            {
+              "bg": 43.0,
+              "t": "2025-05-25 17:25:00"
+            },
+            {
+              "bg": 41.0,
+              "t": "2025-05-25 17:30:00"
+            },
+            {
+              "bg": 42.0,
+              "t": "2025-05-25 17:35:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-25 17:40:00"
+            },
+            {
+              "bg": 43.0,
+              "t": "2025-05-25 17:45:00"
+            },
+            {
+              "bg": 44.0,
+              "t": "2025-05-25 17:50:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 17:55:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 18:00:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 18:05:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 18:10:00"
+            },
+            {
+              "bg": 45.0,
+              "t": "2025-05-25 18:15:00"
+            },
+            {
+              "bg": 51.0,
+              "t": "2025-05-25 18:20:00"
+            },
+            {
+              "bg": 51.0,
+              "t": "2025-05-25 18:25:00"
+            },
+            {
+              "bg": 48.0,
+              "t": "2025-05-25 18:30:00"
+            },
+            {
+              "bg": 49.0,
+              "t": "2025-05-25 18:35:00"
+            },
+            {
+              "bg": 53.0,
+              "t": "2025-05-25 18:40:00"
+            },
+            {
+              "bg": 55.0,
+              "t": "2025-05-25 18:45:00"
+            },
+            {
+              "bg": 56.0,
+              "t": "2025-05-25 18:50:00"
+            },
+            {
+              "bg": 55.0,
+              "t": "2025-05-25 18:55:00"
+            },
+            {
+              "bg": 61.0,
+              "t": "2025-05-25 19:00:00"
+            },
+            {
+              "bg": 60.0,
+              "t": "2025-05-25 19:05:00"
+            },
+            {
+              "bg": 66.0,
+              "t": "2025-05-25 19:10:00"
+            },
+            {
+              "bg": 62.0,
+              "t": "2025-05-25 19:15:00"
+            },
+            {
+              "bg": 66.0,
+              "t": "2025-05-25 19:20:00"
+            },
+            {
+              "bg": 68.0,
+              "t": "2025-05-25 19:25:00"
+            },
+            {
+              "bg": 72.0,
+              "t": "2025-05-25 19:30:00"
+            },
+            {
+              "bg": 79.0,
+              "t": "2025-05-25 19:35:00"
+            },
+            {
+              "bg": 86.0,
+              "t": "2025-05-25 19:40:00"
+            },
+            {
+              "bg": 87.0,
+              "t": "2025-05-25 19:45:00"
+            },
+            {
+              "bg": 98.0,
+              "t": "2025-05-25 19:50:00"
+            },
+            {
+              "bg": 104.0,
+              "t": "2025-05-25 19:55:00"
+            },
+            {
+              "bg": 112.0,
+              "t": "2025-05-25 20:00:00"
+            },
+            {
+              "bg": 125.0,
+              "t": "2025-05-25 20:05:00"
+            },
+            {
+              "bg": 140.0,
+              "t": "2025-05-25 20:10:00"
+            },
+            {
+              "bg": 149.0,
+              "t": "2025-05-25 20:15:00"
+            },
+            {
+              "bg": 165.0,
+              "t": "2025-05-25 20:20:00"
+            },
+            {
+              "bg": 176.0,
+              "t": "2025-05-25 20:25:00"
+            },
+            {
+              "bg": 180.0,
+              "t": "2025-05-25 20:30:00"
+            },
+            {
+              "bg": 188.0,
+              "t": "2025-05-25 20:35:00"
+            },
+            {
+              "bg": 197.0,
+              "t": "2025-05-25 20:40:00"
+            },
+            {
+              "bg": 206.0,
+              "t": "2025-05-25 20:45:00"
+            },
+            {
+              "bg": 214.0,
+              "t": "2025-05-25 20:50:00"
+            },
+            {
+              "bg": 219.0,
+              "t": "2025-05-25 20:55:00"
+            },
+            {
+              "bg": 220.0,
+              "t": "2025-05-25 21:00:00"
+            },
+            {
+              "bg": 222.0,
+              "t": "2025-05-25 21:05:00"
+            },
+            {
+              "bg": 225.0,
+              "t": "2025-05-25 21:10:00"
+            },
+            {
+              "bg": 230.0,
+              "t": "2025-05-25 21:15:00"
+            },
+            {
+              "bg": 234.0,
+              "t": "2025-05-25 21:20:00"
+            },
+            {
+              "bg": 235.0,
+              "t": "2025-05-25 21:25:00"
+            },
+            {
+              "bg": 237.0,
+              "t": "2025-05-25 21:30:00"
+            },
+            {
+              "bg": 239.0,
+              "t": "2025-05-25 21:35:00"
+            },
+            {
+              "bg": 241.0,
+              "t": "2025-05-25 21:40:00"
+            },
+            {
+              "bg": 240.0,
+              "t": "2025-05-25 21:45:00"
+            },
+            {
+              "bg": 239.0,
+              "t": "2025-05-25 21:50:00"
+            },
+            {
+              "bg": 240.0,
+              "t": "2025-05-25 21:55:00"
+            },
+            {
+              "bg": 239.0,
+              "t": "2025-05-25 22:00:00"
+            },
+            {
+              "bg": 237.0,
+              "t": "2025-05-25 22:05:00"
+            },
+            {
+              "bg": 229.0,
+              "t": "2025-05-25 22:10:00"
+            },
+            {
+              "bg": 221.0,
+              "t": "2025-05-25 22:15:00"
+            },
+            {
+              "bg": 215.0,
+              "t": "2025-05-25 22:20:00"
+            },
+            {
+              "bg": 209.0,
+              "t": "2025-05-25 22:25:00"
+            },
+            {
+              "bg": 201.0,
+              "t": "2025-05-25 22:30:00"
+            },
+            {
+              "bg": 192.0,
+              "t": "2025-05-25 22:35:00"
+            },
+            {
+              "bg": 186.0,
+              "t": "2025-05-25 22:40:00"
+            },
+            {
+              "bg": 177.0,
+              "t": "2025-05-25 22:45:00"
+            },
+            {
+              "bg": 172.0,
+              "t": "2025-05-25 22:50:00"
+            },
+            {
+              "bg": 166.0,
+              "t": "2025-05-25 22:55:00"
+            },
+            {
+              "bg": 158.0,
+              "t": "2025-05-25 23:00:00"
+            },
+            {
+              "bg": 153.0,
+              "t": "2025-05-25 23:05:00"
+            },
+            {
+              "bg": 145.0,
+              "t": "2025-05-25 23:10:00"
+            },
+            {
+              "bg": 133.0,
+              "t": "2025-05-25 23:15:00"
+            },
+            {
+              "bg": 130.0,
+              "t": "2025-05-25 23:20:00"
+            },
+            {
+              "bg": 120.0,
+              "t": "2025-05-25 23:25:00"
+            },
+            {
+              "bg": 113.0,
+              "t": "2025-05-25 23:30:00"
+            },
+            {
+              "bg": 106.0,
+              "t": "2025-05-25 23:35:00"
+            },
+            {
+              "bg": 99.0,
+              "t": "2025-05-25 23:40:00"
+            },
+            {
+              "bg": 90.0,
+              "t": "2025-05-25 23:45:00"
+            },
+            {
+              "bg": 87.0,
+              "t": "2025-05-25 23:50:00"
+            },
+            {
+              "bg": 84.0,
+              "t": "2025-05-25 23:55:00"
+            }
+          ],
+          "pump_events": [],
+          "sleep_windows": [
+            {
+              "end": "2025-05-25 07:00:00",
+              "start": "2025-05-25 00:00:00"
+            },
+            {
+              "end": "2025-05-26 00:00:00",
+              "start": "2025-05-25 23:00:00"
+            }
+          ]
+        }
+      },
+      "2025-05-26": {
+        "carbs": {
+          "carb_entries": []
+        },
+        "timeline": {
+          "basal": [],
+          "boluses": [],
+          "cgm": [],
+          "pump_events": [],
+          "sleep_windows": [
+            {
+              "end": "2025-05-26 07:00:00",
+              "start": "2025-05-26 00:00:00"
+            },
+            {
+              "end": "2025-05-27 00:00:00",
+              "start": "2025-05-26 23:00:00"
+            }
+          ]
+        }
+      }
+    },
+    "states": {
+      "default": "2025-05-25",
+      "no_data": "2025-05-26",
+      "with_carbs": "2025-05-19"
+    }
+  },
   "guidance": {
     "candidates": [
       {
@@ -13191,7 +19279,7 @@
     "failed": {
       "data_day_count": 84,
       "earliest_data_day": "2025-03-03",
-      "input_revision": 26,
+      "input_revision": 27,
       "last_attempt_at": "2025-05-26 01:00:00",
       "last_error": "synthetic sync failure",
       "last_success_at": null,

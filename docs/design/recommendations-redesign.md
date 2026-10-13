@@ -7,6 +7,10 @@ Status: **exploring** (#481).
 - Component inventory (§4) approved 2026-10-12 (step 2 closed).
 - **Queue screen locked 2026-10-13**: Storybook `Screens/Queue` at commit
   `1bae486d`. The operator: "I'm happy with the queue."
+- **Changes screen locked 2026-10-13**: Storybook `Screens/Changes` at commit
+  `32398383`, with a delta coloured only where the engine judged that row
+  better or worse. The operator: "Yes, that looks good to me. Let's proceed
+  with locking it."
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

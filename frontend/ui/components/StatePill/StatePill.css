@@ -12,9 +12,10 @@
   letter-spacing: var(--ui-track-caps);
   text-transform: uppercase;
   white-space: nowrap;
+  gap: 4px;
 }
 
 .ui-pill--wide { color: var(--wk-ink-body); }
 .ui-pill--maturing { color: var(--warn); }
-.ui-pill--better,
-.ui-pill--worse { color: var(--danger); }
+.ui-pill--better { color: var(--wk-status-favorable); }
+.ui-pill--worse { color: var(--wk-status-adverse); }

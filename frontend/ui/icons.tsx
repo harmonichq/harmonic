@@ -34,16 +34,26 @@ const PATHS = {
       <circle cx="12" cy="13" r="7" /><path d="M12 9.5V13l2.5 1.5" /><path d="M5 4.5L3 6.5" /><path d="M19 4.5l2 2" />
     </>
   ),
+  pattern: (
+    <>
+      <path d="M3 18h18" /><circle cx="6" cy="13" r="1.6" /><circle cx="12" cy="10" r="1.6" /><circle cx="18" cy="7" r="1.6" />
+    </>
+  ),
+  setting: (
+    <>
+      <rect x="4" y="5" width="12" height="15" rx="2.5" /><rect x="7" y="8" width="6" height="4" rx="0.8" /><path d="M16 9h2.5a2 2 0 0 1 2 2v7" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;
 
-export function Icon({ name }: { name: IconName }) {
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
     <svg
       aria-hidden="true"
-      width="20"
-      height="20"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

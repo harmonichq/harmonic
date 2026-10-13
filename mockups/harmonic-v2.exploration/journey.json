@@ -3,6 +3,7 @@
   "_note": "SYNTHETIC. One manufactured May 2024 source history branches through shipped Plan/Trial and Focus producers. Guidance order is illustrative prototype metadata, not a certified ranker or clinical policy. Manual resolution and detected-setting preemption are alternate histories.",
   "focus_branch": {
     "action": {
+      "admission_basis": "lower_bound",
       "confidence": {
         "confidence": 0.8,
         "effect": 0.5499,
@@ -89974,6 +89975,7 @@
             "low_confidence": [],
             "patterns": [
               {
+                "admission_basis": "lower_bound",
                 "confidence": {
                   "confidence": 0.8,
                   "effect": 0.5499,
@@ -91838,7 +91840,7 @@
                 "settled_price": 0,
                 "subject": "pattern:highs_after_meals",
                 "title": "Highs after meals",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.6216,
                   "lo": 0.0
@@ -91964,7 +91966,7 @@
                 "settled_price": 0,
                 "subject": "pattern:lows_after_correcting_highs",
                 "title": "Lows after correcting highs",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.4253,
                   "lo": 0.0513
@@ -92221,7 +92223,7 @@
                 "settled_price": 0,
                 "subject": "pattern:lows_after_meals",
                 "title": "Lows after meals",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.6216,
                   "lo": 0.0
@@ -93051,6 +93053,7 @@
         "low_confidence": [],
         "patterns": [
           {
+            "admission_basis": "lower_bound",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.5499,
@@ -94919,7 +94922,7 @@
             "settled_price": 0,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0
@@ -95045,7 +95048,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.4253,
               "lo": 0.0513
@@ -95302,7 +95305,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0
@@ -104449,6 +104452,7 @@
         "low_confidence": [],
         "patterns": [
           {
+            "admission_basis": "lower_bound",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.5499,
@@ -118076,7 +118080,7 @@
             "settled_price": 0,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0
@@ -118150,7 +118154,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0
@@ -118167,6 +118171,7 @@
             "members": [
               {
                 "action": "habit:over_treated_low",
+                "admission_basis": "lower_bound",
                 "admitted": true,
                 "hi": 0.5906,
                 "k": 2,
@@ -118215,7 +118220,7 @@
             "settled_price": 28,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.5906,
               "lo": 0.1477
@@ -118297,7 +118302,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.4253,
               "lo": 0.0513
@@ -118815,7 +118820,7 @@
               "settled_price": 0,
               "subject": "pattern:highs_after_meals",
               "title": "Highs after meals",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -118941,7 +118946,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_correcting_highs",
               "title": "Lows after correcting highs",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.4253,
                 "lo": 0.0513
@@ -119198,7 +119203,7 @@
               "settled_price": 0,
               "subject": "pattern:lows_after_meals",
               "title": "Lows after meals",
-              "wide": true,
+              "wide": false,
               "wilson": {
                 "hi": 0.6216,
                 "lo": 0.0
@@ -135850,6 +135855,7 @@
         "low_confidence": [],
         "patterns": [
           {
+            "admission_basis": "lower_bound",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.5499,
@@ -143958,6 +143964,7 @@
       },
       "over_treated_low": {
         "action": {
+          "admission_basis": "lower_bound",
           "confidence": {
             "confidence": 0.8,
             "effect": 0.5499,
@@ -180592,7 +180599,7 @@
           "settled_price": 0,
           "subject": "pattern:highs_after_meals",
           "title": "Highs after meals",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -180718,7 +180725,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_correcting_highs",
           "title": "Lows after correcting highs",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.4253,
             "lo": 0.0513
@@ -180975,7 +180982,7 @@
           "settled_price": 0,
           "subject": "pattern:lows_after_meals",
           "title": "Lows after meals",
-          "wide": true,
+          "wide": false,
           "wilson": {
             "hi": 0.6216,
             "lo": 0.0
@@ -205587,6 +205594,7 @@
             "low_confidence": [],
             "patterns": [
               {
+                "admission_basis": "lower_bound",
                 "confidence": {
                   "confidence": 0.8,
                   "effect": 0.5499,
@@ -207253,7 +207261,7 @@
                 "settled_price": 0,
                 "subject": "pattern:highs_after_meals",
                 "title": "Highs after meals",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.6216,
                   "lo": 0.0
@@ -207379,7 +207387,7 @@
                 "settled_price": 0,
                 "subject": "pattern:lows_after_correcting_highs",
                 "title": "Lows after correcting highs",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.4253,
                   "lo": 0.0513
@@ -207636,7 +207644,7 @@
                 "settled_price": 0,
                 "subject": "pattern:lows_after_meals",
                 "title": "Lows after meals",
-                "wide": true,
+                "wide": false,
                 "wilson": {
                   "hi": 0.6216,
                   "lo": 0.0
@@ -208574,6 +208582,7 @@
         "low_confidence": [],
         "patterns": [
           {
+            "admission_basis": "lower_bound",
             "confidence": {
               "confidence": 0.8,
               "effect": 0.5499,
@@ -210244,7 +210253,7 @@
             "settled_price": 0,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0
@@ -210370,7 +210379,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.4253,
               "lo": 0.0513
@@ -210627,7 +210636,7 @@
             "settled_price": 0,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.6216,
               "lo": 0.0

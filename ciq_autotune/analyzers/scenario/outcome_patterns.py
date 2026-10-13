@@ -17,7 +17,7 @@ from hashlib import sha256
 from typing import Iterable
 
 from ...harm import HarmConfig
-from ...uncertainty import wilson, wilson_wide
+from ...uncertainty import wilson
 _GATES = {
     "highs_after_meals": 12,
     "lows_after_meals": 12,
@@ -113,8 +113,26 @@ def _habit_members(scenarios: dict, levers: Iterable[str], *, exposures: dict | 
             "producer": "scenario", "lo": lo, "hi": hi,
             "seriousness": row.get("guidance", {}).get("seriousness"),
             "action": row.get("guidance", {}).get("action_id"),
+            "admission_basis": row["admission_basis"],
         })
     return out
+
+
+def _uncertain(bounds, chosen: dict | None) -> bool:
+    """Whether a Pattern reads Uncertain: in the Queue without its admission holding
+    at the low end of its evidence (ADR 485).
+
+    A missing range is as soft as it gets. Outside the Queue nothing is admitted to be
+    uncertain about, so the range's precision alone never flags it. A setting admits
+    only through its owner's ``asserts_move``, whose support floor already judges the
+    low end. A habit holds only when the scenario engine surfaced it on its Wilson
+    lower-bound score, not through the strong override nor from its low-confidence tier.
+    """
+    if not bounds:
+        return True
+    if chosen is None or chosen["kind"] == "setting":
+        return False
+    return chosen["admission_basis"] != "lower_bound"
 
 
 def _setting_seriousness(
@@ -394,8 +412,7 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
             "rate_levers": [f"habit:{lever}" for lever in rate_levers], "n": n, "k": k,
             "rate": round(k / n, 4) if n and k <= n else None,
             "wilson": ({"lo": round(bounds[1], 4), "hi": round(bounds[2], 4)} if bounds else None),
-            # A missing range (no opportunities, or inconsistent counts) is as soft as it gets.
-            "wide": wilson_wide(k, n) if bounds else True,
+            "wide": _uncertain(bounds, chosen),
             **({"count_status": count_status} if count_status else {}),
             "rate_producer": producer, "readiness": {
                 field: value for field, value in opportunity_readiness(key, analysis, exposures).items()

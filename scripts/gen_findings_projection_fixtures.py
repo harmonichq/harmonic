@@ -704,11 +704,11 @@ def scenarios():
         Pattern(lever=Lever.OVER_TREATED_LOW,
                 confidence=Confidence(n=43, k=8, effect=0.62), rank=1,
                 recommendation=recommendation(Lever.OVER_TREATED_LOW),
-                hero_episode=fired["ep_id"], occurrences=[fired["ep_id"]]),
+                hero_episode=fired["ep_id"], occurrences=[fired["ep_id"]], admission_basis="lower_bound"),
         Pattern(lever=Lever.CARB_UNDERCOUNT,
                 confidence=Confidence(n=60, k=9, effect=0.44), rank=2,
                 recommendation=recommendation(Lever.CARB_UNDERCOUNT),
-                hero_episode="ep2", occurrences=["ep2"]),
+                hero_episode="ep2", occurrences=["ep2"], admission_basis="lower_bound"),
     ]
     return ScenarioReport(
         schema_version=SCENARIO_SCHEMA_VERSION,
@@ -865,7 +865,7 @@ def pattern_family_cases(browser_analysis, browser_exposures, browser_scenarios)
         scenarios["patterns"].append(Pattern(
             lever=extra, confidence=Confidence(n=40, k=5, effect=0.3), rank=5,
             recommendation=recommendation(extra), hero_episode="ep1",
-            occurrences=["ep1"]).to_dict())
+            occurrences=["ep1"], admission_basis="low_confidence").to_dict())
         prepared = prepare_findings_projection(
             analysis=browser_analysis, exposures=browser_exposures, scenarios=scenarios,
         )
@@ -964,15 +964,17 @@ def payload() -> dict:
     # Every browser roster, window and case reads the payload's exposures unaltered.
     browser_exposures = json.loads(json.dumps(browser_payload["exposures"]))
     browser_scenarios = json.loads(json.dumps(prepared._scenarios))
+    # Each hand-built Pattern's admission basis is what the engine's split gives its
+    # own confidence: late bolus scores under the floor without the strong override.
     browser_scenarios["patterns"].extend([
         Pattern(lever=Lever.LATE_BOLUS,
                 confidence=Confidence(n=50, k=7, effect=0.38), rank=3,
                 recommendation=recommendation(Lever.LATE_BOLUS),
-                hero_episode="ep70", occurrences=["ep70"]).to_dict(),
+                hero_episode="ep70", occurrences=["ep70"], admission_basis="low_confidence").to_dict(),
         Pattern(lever=Lever.CORRECTION_ON_IOB,
                 confidence=Confidence(n=45, k=8, effect=0.35), rank=4,
                 recommendation=recommendation(Lever.CORRECTION_ON_IOB),
-                hero_episode="ep90", occurrences=["ep90"]).to_dict(),
+                hero_episode="ep90", occurrences=["ep90"], admission_basis="lower_bound").to_dict(),
     ])
 
     browser_windows, scoped_rosters, scoped_cases = browser_window_answers(

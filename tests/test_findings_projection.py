@@ -1097,8 +1097,9 @@ class PatternProjectionTest(unittest.TestCase):
         self.projection = gen.projection()
         self.result = self.projection.project(WindowQuery.whole_day())
 
-    def test_a_scoped_pattern_serves_the_wide_flag_of_its_own_window_count(self):
-        """#481: the window's k of n decides ``wide``, not the whole-day range."""
+    def test_a_thin_window_does_not_make_a_staged_pattern_uncertain(self):
+        """ADR 485: precision alone never makes a Pattern Uncertain. A Pattern the
+        carb-ratio staging admits holds at its low end even on a one-meal window."""
         def lows_after_meals(query):
             return next(pattern for pattern in self.projection.project(query)["outcome_patterns"]
                         if pattern["key"] == "lows_after_meals")
@@ -1106,7 +1107,8 @@ class PatternProjectionTest(unittest.TestCase):
         whole = lows_after_meals(WindowQuery.whole_day())
         scoped = lows_after_meals(WindowQuery.clock(720, 840))
         self.assertEqual((whole["k"], whole["n"], whole["wide"]), (0, 3, False))
-        self.assertEqual((scoped["k"], scoped["n"], scoped["wide"]), (0, 1, True))
+        self.assertEqual(scoped["admission_route"], "setting_staging")
+        self.assertEqual((scoped["k"], scoped["n"], scoped["wide"]), (0, 1, False))
 
     def test_chartability_reads_admitted_members_and_rate_family_not_claimed_rows(self):
         projection = FindingsProjection(

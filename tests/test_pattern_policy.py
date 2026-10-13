@@ -8,8 +8,8 @@ from ciq_autotune.safety import Status
 from ciq_autotune.uncertainty import Estimate
 
 
-def _scenario(lever, *, price=20, k=2, n=12, lo=.1, hi=.3, action=True):
-    return {"lever": lever, "priority": price,
+def _scenario(lever, *, price=20, k=2, n=12, lo=.1, hi=.3, action=True, basis="lower_bound"):
+    return {"lever": lever, "priority": price, "admission_basis": basis,
             "confidence": {"k": k, "n": n, "lo": lo, "hi": hi},
             "guidance": {"action_id": f"habit:{lever}" if action else None,
                          "seriousness": "high"}}

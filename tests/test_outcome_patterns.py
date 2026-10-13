@@ -145,6 +145,7 @@ class ScopedPatternPopulationTest(unittest.TestCase):
         scenarios = {'patterns': [{
             'lever': 'carb_undercount', 'priority': 40,
             'confidence': {'k': 12, 'n': 20, 'lo': .39, 'hi': .78},
+            'admission_basis': 'lower_bound',
             'guidance': {'action_id': 'carb_undercount', 'seriousness': 'moderate'},
         }], 'low_confidence': []}
 
@@ -205,6 +206,7 @@ class ScopedPatternPopulationTest(unittest.TestCase):
         scenarios = {"patterns": [{
             "lever": "carb_undercount", "priority": 40,
             "confidence": {"k": 12, "n": 20, "lo": 0.39, "hi": 0.78},
+            "admission_basis": "lower_bound",
             "guidance": {"action_id": "carb_undercount", "seriousness": "moderate"},
         }], "low_confidence": []}
 
@@ -254,6 +256,7 @@ class ScopedPatternPopulationTest(unittest.TestCase):
         scenarios = {"patterns": [{
             "lever": "over_treated_low", "priority": 35,
             "confidence": {"k": 12, "n": 20, "lo": 0.39, "hi": 0.78},
+            "admission_basis": "lower_bound",
             "guidance": {"action_id": "over_treated_low", "seriousness": "moderate"},
         }], "low_confidence": []}
 
@@ -408,11 +411,108 @@ class LateBolusOutcomeTest(unittest.TestCase):
         self.assertTrue(all("late_bolus" in o["attributed_levers"] for o in meals))
 
 
-class PatternIntervalWideTest(unittest.TestCase):
-    """Each Pattern flags its own Wilson range as wide by the shared rule (#481)."""
+def write_bad_meals_among_clean(store, *, bad_days, clean):
+    """Write ``bad_days`` days of split meals, then ``clean`` meals that stay flat.
+
+    The split meals are :func:`write_split_meals` at a 35-minute gap, so each day
+    adds two meals and one carb-undercount high. The clean meals are a 45 g / 4.5 U
+    bolus every eight hours from 2024-05-08 on the flat background, which never
+    leaves range.
+    """
+    write_split_meals(store, gap=35, days=bad_days)
+    start = datetime(2024, 5, 8, 7, 0)
+    store.upsert_bolus([{
+        "seq_num": 700_000 + i, "request_time": (start + timedelta(hours=8 * i)).strftime(FMT),
+        "description": "Synthetic meal bolus", "completion": "Completed",
+        "insulin": 4.5, "requested_insulin": 4.5, "carbs": 45.0,
+        "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
+    } for i in range(clean)])
+
+
+def write_over_treated_lows(store, *, count):
+    """Write ``count`` synthetic lows to 48, each treated into a rebound to 260.
+
+    One a day at 13:00 from 2024-05-11 on the behavioral background; every low the
+    lane holds is over-treated, so ``count`` is both the habit's ``k`` and its ``n``.
+    """
+    from scripts.qa_e2e_cases import _materialize_behavioral_background
+
+    first = _materialize_behavioral_background(store, span_days=30)
+    down = [100.0 - 52.0 * i / 4 for i in range(1, 5)]
+    up = [48.0 + 212.0 * i / 8 for i in range(1, 9)]
+    rows = []
+    for day in range(count):
+        start = datetime.combine(first + timedelta(days=10 + day), datetime.min.time())
+        start += timedelta(hours=13)
+        rows.extend({
+            "EventDateTime": (start + timedelta(minutes=5 * i)).strftime(FMT),
+            "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+        } for i, bg in enumerate([100.0] * 5 + down + up))
+    store.upsert_cgm(rows)
+
+
+class PatternUncertainTest(unittest.TestCase):
+    """A Pattern reads Uncertain (``wide``) only when its Queue admission does not
+    hold at the low end of its evidence; precision alone never makes it so (#485)."""
 
     @staticmethod
-    def _highs_after_meals(k, n):
+    def _roster(writer, **shape):
+        import tempfile
+
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.store import Store
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                writer(store, **shape)
+                exposures = build_exposures(store)
+                scenarios = build_scenarios(store).to_dict()
+        return {p["key"]: p for p in build_outcome_patterns({}, exposures, scenarios)}
+
+    @staticmethod
+    def _member(pattern, subject):
+        return next(m for m in pattern["members"] if m["subject"] == subject)
+
+    def test_a_habit_admitted_at_its_lower_bound_is_not_uncertain_however_broad_its_range(self):
+        highs = self._roster(write_bad_meals_among_clean, bad_days=4, clean=20)["highs_after_meals"]
+
+        self.assertEqual((highs["k"], highs["n"]), (4, 28))
+        self.assertEqual(highs["admission_route"], "habit_threshold")
+        self.assertEqual(self._member(highs, "habit:carb_undercount")["admission_basis"],
+                         "lower_bound")
+        # The range is broad: its half-width is more than half its rate.
+        half = (highs["wilson"]["hi"] - highs["wilson"]["lo"]) / 2
+        self.assertGreater(half, 0.5 * highs["rate"])
+        self.assertIs(highs["wide"], False)
+
+    def test_a_habit_admitted_only_by_the_strong_override_is_uncertain(self):
+        highs = self._roster(write_bad_meals_among_clean, bad_days=4, clean=60)["highs_after_meals"]
+
+        self.assertEqual((highs["k"], highs["n"]), (4, 68))
+        self.assertEqual(highs["admission_route"], "habit_threshold")
+        self.assertEqual(self._member(highs, "habit:carb_undercount")["admission_basis"],
+                         "strong_override")
+        self.assertIs(highs["wide"], True)
+
+    def test_a_habit_admitted_on_too_few_cases_is_uncertain(self):
+        treated = self._roster(write_over_treated_lows, count=2)["highs_after_treating_lows"]
+
+        self.assertEqual((treated["k"], treated["n"]), (2, 2))
+        self.assertEqual(treated["admission_route"], "habit_threshold")
+        self.assertEqual(self._member(treated, "habit:over_treated_low")["admission_basis"],
+                         "low_confidence")
+        self.assertIs(treated["wide"], True)
+
+    def test_enough_cases_clear_the_same_habit(self):
+        treated = self._roster(write_over_treated_lows, count=3)["highs_after_treating_lows"]
+
+        self.assertEqual((treated["k"], treated["n"]), (3, 3))
+        self.assertEqual(self._member(treated, "habit:over_treated_low")["admission_basis"],
+                         "lower_bound")
+        self.assertIs(treated["wide"], False)
+
+    @staticmethod
+    def _unadmitted_highs_after_meals(k, n):
         meals = [{
             'ep_id': f'meal-{i}', 't': f'2026-08-01 12:{i:02d}:00', 'kind': 'meal',
             'attributed': i < k, 'attributed_levers': ['carb_undercount'] if i < k else [],
@@ -422,15 +522,15 @@ class PatternIntervalWideTest(unittest.TestCase):
         roster = build_outcome_patterns({}, exposures, {'patterns': [], 'low_confidence': []})
         return next(p for p in roster if p['key'] == 'highs_after_meals')
 
-    def test_a_pattern_range_is_wide_on_thin_or_broad_evidence_and_tight_otherwise(self):
+    def test_a_pattern_outside_the_queue_is_uncertain_only_without_a_range(self):
         cases = (
-            (0, 0, True),     # no opportunities: no range at all
-            (2, 2, True),     # under the three-opportunity floor
-            (5, 50, True),    # Wilson half-width well past a quarter of a 10% rate
-            (40, 50, False),  # half-width ~0.07 on an 80% rate
+            (0, 0, True),    # no opportunities: no range at all
+            (2, 2, False),   # thin, but nothing is admitted to be uncertain about
+            (5, 50, False),  # broad range, same
         )
         for k, n, wide in cases:
             with self.subTest(k=k, n=n):
-                pattern = self._highs_after_meals(k, n)
+                pattern = self._unadmitted_highs_after_meals(k, n)
                 self.assertEqual((pattern['k'], pattern['n']), (k, n))
+                self.assertEqual(pattern['admission_route'], 'none')
                 self.assertIs(pattern['wide'], wide)

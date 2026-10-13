@@ -389,8 +389,11 @@ def assemble(
     # the pattern tentatively. A pattern collapses only when its sample is too thin
     # (n < _MIN_TRUST_N) or it lacks confident rate signal (score < floor) AND is
     # not a substantial, severe recurring shape (the strong override).
-    surfaced_pending: List[Tuple[float, Confidence, Lever, str, List[str]]] = []
-    low_pending: List[Tuple[float, Confidence, Lever, str, List[str]]] = []
+    # The split's own reason rides each Pattern as ``admission_basis`` (#485), so a
+    # consumer asking whether the surfacing held at the Wilson lower bound reads this
+    # decision rather than re-deriving the floors.
+    surfaced_pending: List[Tuple[float, Confidence, Lever, str, List[str], str]] = []
+    low_pending: List[Tuple[float, Confidence, Lever, str, List[str], str]] = []
     for conf, lever, eps in scored:
         # Hero = highest-severity episode; occurrences = all episode ids, hero first.
         ordered = sorted(eps, key=lambda e: e.severity, reverse=True)
@@ -402,9 +405,12 @@ def assemble(
             conf.k >= scenario_config.engine_strong_occurrences
             and conf.effect >= scenario_config.engine_strong_effect
         )
-        is_low_conf = too_thin or (conf.score < scenario_config.engine_score_floor and not strong)
+        clears_floor = conf.score >= scenario_config.engine_score_floor
+        is_low_conf = too_thin or (not clears_floor and not strong)
+        basis = ("low_confidence" if is_low_conf
+                 else "lower_bound" if clears_floor else "strong_override")
         bucket = low_pending if is_low_conf else surfaced_pending
-        bucket.append((total_severity, conf, lever, hero, occ_ids))
+        bucket.append((total_severity, conf, lever, hero, occ_ids, basis))
 
     # Order within each tier by AGGREGATE severity (desc, #77) — total hypo-weighted
     # time-in-danger the behavior cost. The surfaced scores are statistically
@@ -414,7 +420,7 @@ def assemble(
     low_conf: List[Pattern] = []
     for pending, out in ((surfaced_pending, surfaced), (low_pending, low_conf)):
         pending.sort(key=lambda t: t[0], reverse=True)
-        for rank, (_sev, conf, lever, hero, occ_ids) in enumerate(pending, start=1):
+        for rank, (_sev, conf, lever, hero, occ_ids, basis) in enumerate(pending, start=1):
             groups = []
             for occurrence_id in dict.fromkeys(
                 occurrence_ids[episode_id] for episode_id in occ_ids
@@ -436,6 +442,7 @@ def assemble(
                     recommendation=recommendation(lever),
                     hero_episode=hero,
                     occurrences=occ_ids,
+                    admission_basis=basis,
                     occurrence_groups=groups,
                 )
             )

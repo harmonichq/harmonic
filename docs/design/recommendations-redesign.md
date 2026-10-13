@@ -229,7 +229,7 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: none.
    - Desktop: the same, with a visible focus ring.
 5. **StatePill**: a one-word state.
-   - States: Pattern, Setting, Wide, Maturing, Better, Worse, Unclear, Recorded.
+   - States: Pattern, Setting, Wide, Maturing, Better, Worse, Unclear.
    - Fields: `guidance.candidates[].kind`; `support.wide`; the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
@@ -325,8 +325,8 @@ unless noted. Loading is a skeleton of the component's own shape.
     - Desktop: wide, with the month grid of DayTiles beside it.
 18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
     its sparkline, and Yes · No · False low.
-    - States: unanswered; Yes recorded (optional grams field); mid-swipe
-      (Not sure).
+    - States: unanswered; Yes recorded (a checkmark on Yes, labelled "Recorded"
+      for screen readers only, plus the optional grams field); mid-swipe (Not sure).
     - Fields: `prompts[].anchor_t, key_bg, cgm`; answers posted to
       `/api/prompts/answer`; grams via `PATCH /api/carbs/{id}`.
     - Desktop: a fourth button, Not sure, instead of the swipe.

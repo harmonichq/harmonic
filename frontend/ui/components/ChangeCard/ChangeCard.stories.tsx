@@ -8,10 +8,11 @@ import { ChangeCard } from './ChangeCard';
 // Focus, and the wearer's first days, with no active change.
 //
 // The matured result is the engine's verdict on the Trial's own target metric
-// (below 70 for basal). The wearer's changed slot stays in range before and
-// after, so the engine serves Unclear; Better and Worse do not arise from this
-// wearer and have no ChangeCard story. The card prints them on the same
-// StatePill, whose own stories show both.
+// (below 70 for basal). The wearer's 03:00 basal ran its early mornings low,
+// and lowering it ends those lows, so the engine serves Better. Worse does not
+// arise honestly from this wearer: under Control-IQ a raise in the wrong
+// direction mostly turns into more suspension, and the engine's interval keeps
+// zero. The card prints it on the same StatePill, whose own stories show it.
 const meta = {
   title: 'ChangeCard',
   component: ChangeCard,

@@ -229,6 +229,7 @@ def fixtures() -> dict:
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)
         changes["wearer-trial-maturing"] = _changes_store(maturing)
+        _require_result(changes["wearer"], "favorable")
 
         unsynced = scratch / "wearer-unsynced.sqlite"
         with Store.open(str(unsynced)):
@@ -330,6 +331,17 @@ def _changes_store(client: TestClient) -> dict:
         "trials": trials,
         "focuses": focuses,
     }
+
+
+def _require_result(store: dict, state: str) -> None:
+    """Fail unless the store's matured Trial serves ``state`` on its target metric:
+    the ChangeCard's matured story reads it, and a story must never quietly
+    show a result the engine no longer serves."""
+    trial = next(t for t in store["trials"] if t["id"] == store["admission"]["active_id"])
+    served = {row["assessment"]["state"] for row in trial["reassessment"]["outcomes"]
+              if row["key"] in trial["target_metrics"]}
+    if served != {state}:
+        raise SystemExit(f"the simulated Trial {trial['id']} no longer serves {state}: {served}")
 
 
 def _end_active_trial(client: TestClient) -> None:

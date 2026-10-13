@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { change } from '../../changes-model';
 import { ChangeCard } from './ChangeCard';
 
@@ -29,3 +30,13 @@ export const TrialWorse: Story = { args: { data: change('wearer-worse') } };
 export const TrialEnded: Story = { args: { data: change('wearer-ended') } };
 export const FocusActive: Story = { args: { data: change('wearer-pinned') } };
 export const NoActiveChange: Story = { args: { data: change('wearer-first-days') } };
+
+// End (§1.3a): on a matured Trial the play presses End, which the screen
+// answers with its confirm sheet.
+export const EndFlow: Story = {
+  args: { data: change('wearer'), onEnd: fn() },
+  play: async ({ args, canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'End' }));
+    await expect(args.onEnd).toHaveBeenCalledOnce();
+  },
+};

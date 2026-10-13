@@ -12,6 +12,7 @@
 // opens focused beside Next. Mid-swipe,
 // the card slides aside over the Not sure reveal. The "n / N" count belongs to
 // the Prompts screen's header, not to this card.
+import { useState } from 'react';
 import type { PromptData } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
 import { GramsField } from '../../GramsField';
@@ -28,9 +29,18 @@ export type PromptCardProps = {
   swiping?: boolean;
   layout?: 'phone' | 'desktop';
   width?: number;
+  /** An answer was tapped: carbs (Yes), no, false-low or not-sure. */
+  onAnswer?: (answer: Answer) => void;
+  /** Next after Yes, with the grams typed (empty when none). */
+  onNext?: (grams: string) => void;
 };
 
+export type Answer = 'carbs' | 'no' | 'false-low' | 'not-sure';
+
 const ANSWERS = ['Yes', 'No', 'False low', 'Not sure'] as const;
+const POSTED: Record<(typeof ANSWERS)[number], Answer> = {
+  Yes: 'carbs', No: 'no', 'False low': 'false-low', 'Not sure': 'not-sure',
+};
 const HEIGHT = 96;
 const AXIS = 16;
 
@@ -73,7 +83,12 @@ function Sparkline({ data, width }: { data: PromptData; width: number }) {
   );
 }
 
-export function PromptCard({ data, recorded = false, swiping = false, layout = 'phone', width = 326 }: PromptCardProps) {
+export function PromptCard({
+  data, recorded: initiallyRecorded = false, swiping = false, layout = 'phone', width = 326, onAnswer, onNext,
+}: PromptCardProps) {
+  // Yes records at once; the card then holds the grams typed until Next.
+  const [recorded, setRecorded] = useState(initiallyRecorded);
+  const [grams, setGrams] = useState('');
   const tone = data.bg.value < SEVERE_LOW ? 'very-low' : 'low';
   const card = (
     <section className={`ui-prompt ui-prompt--${layout}`}>
@@ -91,7 +106,10 @@ export function PromptCard({ data, recorded = false, swiping = false, layout = '
           const selected = recorded && answer === 'Yes';
           return (
             <button key={answer} type="button" className="ui-prompt__answer" data-role="answer"
-              aria-pressed={selected}>
+              aria-pressed={selected} onClick={() => {
+                if (answer === 'Yes') setRecorded(true);
+                onAnswer?.(POSTED[answer]);
+              }}>
               {selected && <span className="ui-prompt__check" aria-hidden="true">✓</span>}
               {answer}
               {selected && <span className="ui-sr">Recorded</span>}
@@ -101,8 +119,8 @@ export function PromptCard({ data, recorded = false, swiping = false, layout = '
       </div>
       {recorded && (
         <div className="ui-prompt__grams">
-          <GramsField focused />
-          <Button kind="text" label="Next" />
+          <GramsField focused onChange={setGrams} />
+          <Button kind="text" label="Next" onClick={() => onNext?.(grams)} />
         </div>
       )}
     </section>

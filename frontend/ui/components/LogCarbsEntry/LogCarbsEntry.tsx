@@ -24,15 +24,20 @@ export type LogCarbsEntryProps = {
   /** The typed amount; absent while empty. */
   grams?: Sourced<number>;
   layout?: 'phone' | 'desktop';
+  /** The typed digits, on each change. */
+  onGramsChange?: (text: string) => void;
+  /** Save, or Retry after a failed save. */
+  onSave?: () => void;
 };
 
-function Entry({ state, grams }: Omit<LogCarbsEntryProps, 'layout'>) {
+function Entry({ state, grams, onGramsChange, onSave }: Omit<LogCarbsEntryProps, 'layout'>) {
   const failed = state === 'not_saved';
   return (
     <>
       <h2 className="ui-logcarbs__title">Log carbs</h2>
       <div className="ui-logcarbs__field">
-        <GramsField value={state === 'empty' ? null : grams} focused={state !== 'saving'} disabled={state === 'saving'} />
+        <GramsField value={state === 'empty' ? null : grams} focused={state !== 'saving'} disabled={state === 'saving'}
+          onChange={onGramsChange} />
       </div>
       <button type="button" className="ui-logcarbs__time" data-role="row" disabled={state === 'saving'}>
         <span>Time</span>
@@ -40,7 +45,8 @@ function Entry({ state, grams }: Omit<LogCarbsEntryProps, 'layout'>) {
       </button>
       <div className="ui-logcarbs__foot">
         {failed && <p className="ui-logcarbs__failed"><span aria-hidden="true">⚠</span> Not saved</p>}
-        <Button kind="primary" label={failed ? 'Retry' : 'Save'} disabled={state === 'empty'} busy={state === 'saving'} />
+        <Button kind="primary" label={failed ? 'Retry' : 'Save'} disabled={state === 'empty'} busy={state === 'saving'}
+          onClick={onSave} />
       </div>
     </>
   );

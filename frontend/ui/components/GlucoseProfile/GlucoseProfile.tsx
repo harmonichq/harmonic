@@ -1,9 +1,11 @@
 // GlucoseProfile (§4.2): glucose by time of day over the served 30 days.
 //
-// The median is a line; the 10–90% spread is one neutral band, and the part of
-// that band above the high target is tinted, with its own legend entry. The
-// target range's two edges are dashed lines labelled with their served values;
-// 250 is a plain tick. "mg/dL" sits once on the y-axis. Meals are small bars
+// The median is a line; the 10–90% spread is a band coloured by the clinical
+// zone it crosses — below 54, below the low target, in range, above the high
+// target, above 250 — each zone clipped and drawn as that zone
+// (glucose-zones.tsx), as the TimeInRangeBar draws it. Each zone the band reaches gets a legend
+// entry, so no colour stands without its label. The target range's two edges
+// are lines labelled with their served values; 250 is a plain tick. "mg/dL" sits once on the y-axis. Meals are small bars
 // along the bottom, one per served 30-minute bucket, as tall as its count. One
 // callout marks the median's daily maximum.
 //
@@ -14,6 +16,7 @@
 import type { ProfileBin, ProfileData } from '../../overview-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
+import { SEVERE_HIGH, SEVERE_LOW, ZoneHatches, ZoneSwatch, zoneArea, zones as glucoseZones } from '../../glucose-zones';
 import '../../shared.css';
 import './GlucoseProfile.css';
 
@@ -30,7 +33,7 @@ const RULE_Y = 246;
 const MEAL_BASE = 270;
 const MEAL_MAX = 18;
 const TIME_Y = 286;
-const TICK = 250;
+const TICK = SEVERE_HIGH;
 const DAY = 1440;
 const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
 const UNIT_CLEAR = 44;  // the callout starts clear of "mg/dL"
@@ -66,7 +69,22 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const yLow = y(data.low.value);
   const yHigh = y(data.high.value);
   const empty = data.peak === null;
-  const clip = `ui-profile-above-${width}`;
+  const id = `ui-profile-${width}`;
+  // The five zones, top down, each labelled; one enters the legend when the band reaches it.
+  const labels = {
+    'very-high': <span data-axis="">Above {SEVERE_HIGH}</span>,
+    high: <span>Above <Num value={data.high} /></span>,
+    'in-range': <span>In range</span>,
+    low: <span>Below <Num value={data.low} /></span>,
+    'very-low': <span data-axis="">Below {SEVERE_LOW}</span>,
+  };
+  const zones = glucoseZones(data.low.value, data.high.value).reverse().map((zone) => ({
+    ...zone,
+    label: labels[zone.tone],
+    y0: zone.to === Infinity ? 0 : y(zone.to),
+    y1: zone.from === -Infinity ? HEIGHT : y(zone.from),
+    reached: supported.some((bin) => bin.p90 > zone.from && bin.p10 < zone.to),
+  }));
 
   // The callout: a dot on the median's maximum and a stem up to its label,
   // which is centred over the stem and slid along to stay clear of "mg/dL" and
@@ -103,15 +121,8 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             Median
           </span>
           <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10"><rect width="14" height="10" className="ui-profile__band" /></svg>
+            <svg aria-hidden="true" width="14" height="10"><rect x=".5" y=".5" width="13" height="9" className="ui-profile__spread" /></svg>
             <span data-axis="">10–90%</span>
-          </span>
-          <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10">
-              <rect width="14" height="10" className="ui-profile__band" />
-              <rect width="14" height="10" className="ui-profile__above" />
-            </svg>
-            <span>Above <Num value={data.high} /></span>
           </span>
           <span className="ui-profile__key">
             <svg aria-hidden="true" width="14" height="10">
@@ -121,15 +132,29 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             </svg>
             Meals
           </span>
+          {zones.filter((zone) => zone.reached).map((zone) => (
+            <span key={zone.tone} className="ui-profile__key">
+              <ZoneSwatch tone={zone.tone} className="ui-profile__swatch" />
+              {zone.label}
+            </span>
+          ))}
         </div>
       )}
       <svg width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-profile__chart">
         <defs>
-          <clipPath id={clip}><rect x={LEFT} y={0} width={right - LEFT} height={yHigh} /></clipPath>
+          {zones.map((zone) => (
+            <clipPath key={zone.tone} id={`${id}-clip-${zone.tone}`}>
+              <rect x={LEFT} y={zone.y0} width={right - LEFT} height={Math.max(0, zone.y1 - zone.y0)} />
+            </clipPath>
+          ))}
+          <ZoneHatches id={id} />
         </defs>
-        <g aria-hidden="true">
-          {traces.map((run, i) => <path key={`b${i}`} d={band(run)} className="ui-profile__band" />)}
-          {traces.map((run, i) => <path key={`a${i}`} d={band(run)} className="ui-profile__above" clipPath={`url(#${clip})`} />)}
+        <g aria-hidden="true" className="ui-profile__band">
+          {zones.filter((zone) => zone.reached).map((zone) => (
+            <g key={zone.tone} clipPath={`url(#${id}-clip-${zone.tone})`}>
+              {traces.map((run, i) => <path key={i} d={band(run)} {...zoneArea(id, zone)} />)}
+            </g>
+          ))}
         </g>
         <line x1={LEFT} x2={right} y1={yLow} y2={yLow} className="ui-profile__target" />
         <line x1={LEFT} x2={right} y1={yHigh} y2={yHigh} className="ui-profile__target" />
@@ -141,6 +166,9 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
           <text x={0} y={PLOT_TOP + 8} className="ui-profile__scale">mg/dL</text>
         </g>
         <g aria-hidden="true">
+          {traces.map((run, i) => (
+            <polyline key={`h${i}`} points={run.map((bin) => point(bin.minute, bin.median)).join(' ')} className="ui-profile__halo" />
+          ))}
           {traces.map((run, i) => (
             <polyline key={`m${i}`} points={run.map((bin) => point(bin.minute, bin.median)).join(' ')} className="ui-profile__median" />
           ))}

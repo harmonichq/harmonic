@@ -6,6 +6,7 @@
 // colour say the same thing twice (§2.3 ban 4). A change that prints as zero
 // has no arrow and stays in neutral ink. A metric the engine does not serve
 // shows a dash and no change.
+import { ZoneSwatch } from '../../glucose-zones';
 import { change, type MetricData, type MetricKey } from '../../overview-model';
 import { Num } from '../../Num';
 import '../../shared.css';
@@ -30,7 +31,7 @@ export function MetricFigure({ data }: MetricFigureProps) {
   return (
     <div className="ui-metric">
       <span className="ui-caption ui-metric__label">
-        {data.metric === 'tir' && <span className="ui-metric__key" aria-hidden="true" />}
+        {data.metric === 'tir' && <ZoneSwatch tone="in-range" className="ui-metric__key" />}
         {words}
         {threshold && <> <span data-axis="">{threshold}</span></>}
       </span>

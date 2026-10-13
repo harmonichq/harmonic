@@ -1,5 +1,6 @@
 // DayTile (§4.2): one day — its weekday and date, a sparkline of the day's
-// glucose over the 70–180 band, its low and high counts, and its in-range %.
+// glucose over the 70–180 band, the trace coloured by the glucose zone it is
+// in (glucose-zones.tsx), its low and high counts, and its in-range %.
 //
 // ▽N counts the day's lows and △N its highs; a zero count is left out, and a
 // day with neither shows ✓. The tile picks its day, so it is a button at the
@@ -10,6 +11,7 @@ import type { DayData } from '../../overview-model';
 import { isClean } from '../../overview-model';
 import { Num } from '../../Num';
 import { formatValue } from '../../provenance.js';
+import { zones } from '../../glucose-zones';
 import '../../shared.css';
 import './DayTile.css';
 
@@ -25,6 +27,7 @@ export function DayTile({ day, selected = false, width = 145, onSelect }: DayTil
   const y = (bg: number) => HEIGHT * (1 - (Math.min(Math.max(bg, FLOOR), CEILING) - FLOOR) / (CEILING - FLOOR));
   const points = day.curve.map((p) => `${(p.x * width).toFixed(1)},${y(p.bg).toFixed(1)}`).join(' ');
   const clean = isClean(day);
+  const id = `ui-day-${day.date.value}`;
   return (
     <button type="button" className="ui-day" data-role="row" aria-pressed={selected} disabled={!day.hasData}
       onClick={onSelect}>
@@ -35,8 +38,19 @@ export function DayTile({ day, selected = false, width = 145, onSelect }: DayTil
         </span>
       </span>
       <svg aria-hidden="true" width={width} height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`} className="ui-day__spark">
-        <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-day__band" />
-        {day.hasData && <polyline points={points} className="ui-day__trace" />}
+        <defs>
+          {zones(LOW, HIGH).map((zone) => (
+            <clipPath key={zone.tone} id={`${id}-${zone.tone}`}>
+              <rect x={-2} width={width + 4} y={y(zone.to) - (zone.to === Infinity ? 2 : 0)}
+                height={y(zone.from) - y(zone.to) + (zone.from === -Infinity || zone.to === Infinity ? 2 : 0)} />
+            </clipPath>
+          ))}
+        </defs>
+        <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-day__band ui-zone-area ui-zone--in-range" />
+        {day.hasData && zones(LOW, HIGH).map((zone) => (
+          <polyline key={zone.tone} points={points} clipPath={`url(#${id}-${zone.tone})`}
+            className={`ui-day__trace ui-zone-stroke ui-zone--${zone.tone}`} />
+        ))}
       </svg>
       <span className="ui-day__foot">
         {day.hasData && (<>

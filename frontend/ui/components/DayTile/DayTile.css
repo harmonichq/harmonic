@@ -37,8 +37,8 @@
 .ui-day__date { color: var(--wk-ink-body); }
 
 .ui-day__spark { display: block; }
-.ui-day__band { fill: var(--glucose-in-range); fill-opacity: .10; }
-.ui-day__trace { fill: none; stroke: var(--wk-ink-body); stroke-width: 1.5; stroke-linejoin: round; }
+.ui-day__band { fill-opacity: .10; }
+.ui-day__trace { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
 
 .ui-day__foot { display: flex; justify-content: space-between; align-items: baseline; min-height: 1em; }
 .ui-day__counts { display: flex; align-items: baseline; gap: 8px; }

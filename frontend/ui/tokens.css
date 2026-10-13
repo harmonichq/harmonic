@@ -61,6 +61,4 @@
   --ui-estimate: var(--primary);
   --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
 
-  /* A chart's above-range area: --glucose-high, translucent. */
-  --glucose-above-range-tint: color-mix(in srgb, var(--glucose-high) 22%, transparent);
 }

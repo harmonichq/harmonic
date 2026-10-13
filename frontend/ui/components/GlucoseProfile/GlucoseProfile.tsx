@@ -2,8 +2,9 @@
 //
 // The median is a line; the 10–90% spread is a band coloured by the clinical
 // zone it crosses — below 54, below the low target, in range, above the high
-// target, above 250 — each zone clipped and drawn as that zone
-// (glucose-zones.tsx), as the TimeInRangeBar draws it. Each zone the band reaches gets a legend
+// target, above 250. In range stays neutral; each excursion is clipped and
+// drawn in its zone's tone and hatching (glucose-zones.tsx), so colour marks
+// only time out of range. Each zone the band reaches gets a legend
 // entry, so no colour stands without its label. The target range's two edges
 // are lines labelled with their served values; 250 is a plain tick. "mg/dL" sits once on the y-axis. Meals are small bars
 // along the bottom, one per served 30-minute bucket, as tall as its count. One
@@ -121,7 +122,7 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             Median
           </span>
           <span className="ui-profile__key">
-            <svg aria-hidden="true" width="14" height="10"><rect x=".5" y=".5" width="13" height="9" className="ui-profile__spread" /></svg>
+            <svg aria-hidden="true" width="14" height="10"><rect width="14" height="10" className="ui-profile__neutral" /></svg>
             <span data-axis="">10–90%</span>
           </span>
           <span className="ui-profile__key">
@@ -132,7 +133,7 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             </svg>
             Meals
           </span>
-          {zones.filter((zone) => zone.reached).map((zone) => (
+          {zones.filter((zone) => zone.reached && zone.tone !== 'in-range').map((zone) => (
             <span key={zone.tone} className="ui-profile__key">
               <ZoneSwatch tone={zone.tone} className="ui-profile__swatch" />
               {zone.label}
@@ -152,7 +153,10 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
         <g aria-hidden="true" className="ui-profile__band">
           {zones.filter((zone) => zone.reached).map((zone) => (
             <g key={zone.tone} clipPath={`url(#${id}-clip-${zone.tone})`}>
-              {traces.map((run, i) => <path key={i} d={band(run)} {...zoneArea(id, zone)} />)}
+              {traces.map((run, i) => (
+                <path key={i} d={band(run)}
+                  {...(zone.tone === 'in-range' ? { className: 'ui-profile__neutral' } : zoneArea(id, zone))} />
+              ))}
             </g>
           ))}
         </g>

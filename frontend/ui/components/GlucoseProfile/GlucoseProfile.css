@@ -26,10 +26,10 @@
 
 .ui-profile__chart { display: block; overflow: visible; }
 
-.ui-profile__spread { fill: none; stroke: var(--wk-ink-meta); stroke-width: 1; }
-/* The band, by zone, in the zones' own tones; the median rides on it with a
-   halo of the card's surface so it reads over any of them. */
-.ui-profile__band { opacity: .85; }
+/* The band: neutral in range, the excursions in their zone's tone, small enough
+   to mark rather than flood; the median rides on it with a halo. */
+.ui-profile__neutral { fill: var(--wk-ink-body); fill-opacity: .22; }
+.ui-profile__band .ui-zone-area { fill-opacity: .85; }
 .ui-profile__swatch { width: 14px; height: 10px; }
 .ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }
 .ui-profile__halo { fill: none; stroke: var(--wk-surface); stroke-width: 5; stroke-linejoin: round; }

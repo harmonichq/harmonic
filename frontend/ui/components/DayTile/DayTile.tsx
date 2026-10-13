@@ -1,6 +1,6 @@
 // DayTile (§4.2): one day — its weekday and date, a sparkline of the day's
-// glucose over the 70–180 band, the trace coloured by the glucose zone it is
-// in (glucose-zones.tsx), its low and high counts, and its in-range %.
+// glucose over the 70–180 band, the trace neutral in range and in its glucose
+// zone's tone outside it (glucose-zones.tsx), its low and high counts, and its in-range %.
 //
 // ▽N counts the day's lows and △N its highs; a zero count is left out, and a
 // day with neither shows ✓. The tile picks its day, so it is a button at the
@@ -49,7 +49,7 @@ export function DayTile({ day, selected = false, width = 145, onSelect }: DayTil
         <rect x={0} y={y(HIGH)} width={width} height={y(LOW) - y(HIGH)} className="ui-day__band ui-zone-area ui-zone--in-range" />
         {day.hasData && zones(LOW, HIGH).map((zone) => (
           <polyline key={zone.tone} points={points} clipPath={`url(#${id}-${zone.tone})`}
-            className={`ui-day__trace ui-zone-stroke ui-zone--${zone.tone}`} />
+            className={zone.tone === 'in-range' ? 'ui-day__trace ui-day__trace--in-range' : `ui-day__trace ui-zone-stroke ui-zone--${zone.tone}`} />
         ))}
       </svg>
       <span className="ui-day__foot">

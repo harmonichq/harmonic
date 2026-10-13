@@ -318,6 +318,8 @@ def fixtures() -> dict:
                            trial_basal=ui_patient.WORSE_TRIAL_BASAL)
         changes["wearer-worse"] = _changes_store(worse)
         queue["wearer-worse"] = _queue_store(worse)
+        # Its wrong-direction Trial adds lows: the Overview's served worsening.
+        overview["wearer-worse"] = {"outcomes": _outcomes(worse)}
         _require_result(changes["wearer"], "favorable")
         _require_result(changes["wearer-worse"], "concerning")
 

@@ -22,17 +22,23 @@ import { SEVERE_HIGH, ZoneHatches, glucoseDomain, glucoseFraction, zoneArea, zon
 import '../../shared.css';
 import './GlucoseProfile.css';
 
-export type GlucoseProfileProps = { data: ProfileData };
+export type GlucoseProfileProps = {
+  data: ProfileData;
+  /** The glucose plot's height in px; the meal strip and times sit beneath it.
+   *  A screen that must fit without scrolling passes a shorter plot. */
+  plotHeight?: number;
+};
 
-const HEIGHT = 274;
 const LEFT = 34;
 const RIGHT_PAD = 8;
 const PLOT_TOP = 12;
-const PLOT_BOTTOM = 224;
-const RULE_Y = 230;
-const MEAL_BASE = 254;
+const PLOT_HEIGHT = 212;
+// Beneath the plot: the rule, the meal strip and the times, by offset from its bottom.
+const RULE_GAP = 6;
+const MEAL_GAP = 30;
 const MEAL_MAX = 18;
-const TIME_Y = 270;
+const TIME_GAP = 46;
+const FOOT = 50;
 const TICK = SEVERE_HIGH;
 const DAY = 1440;
 
@@ -52,8 +58,13 @@ function runs(bins: ProfileBin[]): ProfileBin[][] {
   return out;
 }
 
-export function GlucoseProfile({ data }: GlucoseProfileProps) {
+export function GlucoseProfile({ data, plotHeight = PLOT_HEIGHT }: GlucoseProfileProps) {
   const [box, width] = useWidth<HTMLDivElement>();
+  const PLOT_BOTTOM = PLOT_TOP + plotHeight;
+  const RULE_Y = PLOT_BOTTOM + RULE_GAP;
+  const MEAL_BASE = PLOT_BOTTOM + MEAL_GAP;
+  const TIME_Y = PLOT_BOTTOM + TIME_GAP;
+  const HEIGHT = PLOT_BOTTOM + FOOT;
   const right = width - RIGHT_PAD;
   const supported = data.bins.filter((bin) => bin.supported);
   const domain = glucoseDomain(supported.flatMap((bin) => [bin.p10, bin.p90]));

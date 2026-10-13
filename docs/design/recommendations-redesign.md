@@ -320,6 +320,16 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   trying to maintain a queue of all past changes in a historical record." The
   most recently ended change is one disclosure row (what changed, when, its
   result) that expands in place into its ended card; there is only ever one.
+- **2026-10-13 — the Overview never scrolls.** The operator: "No scrolling
+  for the overview page." It fits one 390 × 844 phone screen and a 1440 × 900
+  desktop pane: three metrics to a row and a shorter glucose-profile plot on
+  phone. A story fails if its page overflows. This narrows the one-page
+  scrolling amendment above for this screen only.
+- **2026-10-13 — one time-in-ranges bar, and quieter colours.** The operator
+  chose one bar for the selected window over the brief's three ("one bar for
+  the selected window as built"), and "quiet the colors down": on the Overview
+  only Below 70 and Above 180 changes take red or green; every other change
+  keeps a neutral arrow, as the brief had it.
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -730,7 +740,8 @@ automatically) or a **Focus** (a habit pinned by hand). One is active at a time.
 ### Overview
 - Segmented 14 / 30 / 90 d control.
 - Hero: in range 65.9% with ▼12.2 pts vs 90 d.
-- Three five-band time-in-ranges bars with band labels.
+- Three five-band time-in-ranges bars with band labels (superseded 2026-10-13:
+  one bar, for the selected window).
 - A short designed table: Below 70, Above 180, Mean, Pre-meal, Post-meal 2 h.
   Columns are 14 / 30 / 90 plus Δ 14/90 with arrows. The selected window is
   emphasised and the others quieter. Red and green apply only to the below- and

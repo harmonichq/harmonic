@@ -122,10 +122,13 @@ export function change({ metric: key, value, baseline }: MetricData): Change | n
     format);
   if (formatValue(amount.value, format) === formatValue(0, format)) return { direction: null, tone: null, amount };
   const direction = rises ? 'up' : 'down';
-  return { direction, tone: direction === better ? 'favorable' : 'adverse', amount };
+  // Colour only the below- and above-range shares; every other change keeps a
+  // neutral arrow (operator, 2026-10-13: "quiet the colors down").
+  const toned = key === 'tbr_lvl1' || key === 'tar_lvl1';
+  return { direction, tone: toned ? (direction === better ? 'favorable' : 'adverse') : null, amount };
 }
 
-const SCANNED_STORES = ['wearer', 'wearer-pinned', 'wearer-unsynced'] as const;
+const SCANNED_STORES = ['wearer', 'wearer-pinned', 'wearer-worse', 'wearer-unsynced'] as const;
 const SCANNED_WINDOWS: Window[] = ['14', '30'];
 
 /** The first served metric, over the stores and windows above, in each state. */

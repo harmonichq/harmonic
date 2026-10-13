@@ -9,7 +9,9 @@
 // engine's fixed 30 days whatever the window. A store with no readings shows
 // dashes for the metrics and "No data" for the bar and the profile.
 //
-// Phone: one column under the fixed header, above the tab bar. Desktop: the
+// The Overview never scrolls (operator, 2026-10-13: "No scrolling for the
+// overview page"): phone fits one 390 × 844 screen, three metrics to a row and
+// a shorter profile plot. Phone: one column under the fixed header, above the tab bar. Desktop: the
 // rail and one pane, the metrics beside the profile, and the recent days as
 // tiles beneath (§4.2 DayTile).
 import { useState } from 'react';
@@ -42,6 +44,8 @@ const WINDOWS: Window[] = ['14', '30', '90'];
 const OTHER_METRICS: MetricKey[] = ['mean_glucose', 'gmi', 'cv', 'tbr_lvl1', 'tar_lvl1'];
 /** Desktop: the recent days the navigator serves, as tiles. */
 const RECENT_DAYS = 14;
+/** Phone: the profile's plot height that lets the screen fit without scrolling. */
+const PHONE_PLOT = 170;
 const dayCount = sourced<number>('prompts[answer=null].length');
 
 const outcomes = (store: Store) => (store === 'wearer'
@@ -92,7 +96,7 @@ export function OverviewScreen({ layout, store, state = 'ready', window: initial
 
   const glucoseProfile = (
     <section className="ui-overview__profile">
-      {store === 'wearer' ? <GlucoseProfile data={profile('wearer')} /> : <p className="ui-overview__none">No data</p>}
+      {store === 'wearer' ? <GlucoseProfile data={profile('wearer')} plotHeight={layout === 'phone' ? PHONE_PLOT : undefined} /> : <p className="ui-overview__none">No data</p>}
     </section>
   );
 

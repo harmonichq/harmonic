@@ -7,7 +7,8 @@ import { OverviewScreen, type OverviewScreenProps } from './OverviewScreen';
 // - Default: 14 d selected; 30 d and 90 d selected.
 // - No data: the unsynced store, which serves every metric as null.
 // - Loading, and Unavailable.
-// One play per size: choosing 30 d shows that window's metrics.
+// Plays per size: choosing 30 d shows that window's metrics, and the page
+// fits without scrolling.
 const meta: Meta<typeof OverviewScreen> = {
   title: 'Screens/Overview',
   component: OverviewScreen,
@@ -38,6 +39,15 @@ export const LoadingPhone = story('phone', { store: 'wearer', state: 'loading' }
 export const LoadingDesktop = story('desktop', { store: 'wearer', state: 'loading' });
 export const UnavailablePhone = story('phone', { store: 'wearer', state: 'unavailable' });
 export const UnavailableDesktop = story('desktop', { store: 'wearer', state: 'unavailable' });
+
+// The Overview never scrolls: its page holds all of its content at both sizes.
+const fits: Story['play'] = async ({ canvasElement }) => {
+  const page = canvasElement.querySelector<HTMLElement>('[data-scroll="page"]')!;
+  await expect(page.scrollHeight).toBeLessThanOrEqual(page.clientHeight);
+};
+
+export const FitsPhone: Story = { ...story('phone', { store: 'wearer' }), play: fits };
+export const FitsDesktop: Story = { ...story('desktop', { store: 'wearer' }), play: fits };
 
 const choose30: Story['play'] = async ({ canvasElement }) => {
   const canvas = within(canvasElement);

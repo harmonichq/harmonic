@@ -66,17 +66,20 @@ def fixture() -> dict:
 
 # ADR 466: the steady nights either side of a programmed 0.60 (fourteen at 0.45,
 # two at 0.54, fourteen at 0.66), and the served status each slot must reach.
+# ADR 489: their range (0.45-0.66) contains the 0.60, so the lows at 03:00 hold
+# it rather than step it down.
 SPREAD = [0.45] * 14 + [0.54] * 2 + [0.66] * 14
 RECURRING_LOWS_STATUSES = {
     "01:00": "insufficient evidence",
-    "03:00": "lower (recurring lows)",
+    "03:00": "held (recurring-low gate)",
     "05:00": "held (recurring-low gate)",
 }
 
 
 def recurring_lows() -> dict:
-    """Serve the basal rows a recurring-lows lower, its unlowed twin and a
-    within-threshold hold read (ADR 465, ADR 466), through /api/analyze.
+    """Serve the basal rows of a recurring-lows slot whose range contains the
+    setting (ADR 489), its unlowed twin and a within-threshold hold (ADR 465,
+    ADR 466), through /api/analyze.
 
     01:00 and 03:00 deliver the spread nights; 05:00 delivers 0.59. Lows print at
     03:00 and 05:00 on the last two nights.

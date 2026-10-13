@@ -109,14 +109,7 @@ BLOCK_WINDOW_DAYS = 90
 def ic_band_excludes_programmed(row: SegmentEstimate) -> bool:
     """Whether the measured band clearly excludes the programmed ratio (a directional read)."""
     est = row.estimate
-    return (
-        est.value is not None
-        and not est.wide
-        and est.lo is not None
-        and est.hi is not None
-        and row.current is not None
-        and not (est.lo <= row.current <= est.hi)
-    )
+    return est.value is not None and not est.wide and est.excludes(row.current)
 
 
 def ic_asserts_move(block: "IcBlock") -> bool:
@@ -2739,11 +2732,10 @@ def _analyze_ic_blocks_shared(
 
         # --- the four conditions, each stamped so the one predicate can read them and
         # the pane can say which one is holding.
+        # The served band, closed at both ends: the same range rule basal and the
+        # correction factor stage on (#489).
         band_excludes = bool(
-            est.value is not None and not est.wide
-            and est.lo is not None and est.hi is not None
-            and programmed is not None
-            and not (est.lo <= programmed <= est.hi)
+            est.value is not None and not est.wide and est.excludes(programmed)
         )
         eligibility = {
             "runs_floor_met": effective_runs >= _MIN_SUPPORTED_BLOCK_RUNS,

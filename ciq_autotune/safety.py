@@ -34,8 +34,9 @@ _MIN_DIRECTIONAL_DAYS = 3
 # floor only makes the slot eligible for the family-corrected sign test; it does
 # not by itself assert a move. The frontend's `medN < 8` thin marker instead
 # describes all clean nights in the visible estimate, so it is not this support
-# count. `SlotEstimate.asserts_move` remains the single downstream staging,
-# delivery, and priority predicate (#273/#480).
+# count. A supported direction also needs the slot's served range to exclude the
+# programmed rate (`cap()`, #489). `SlotEstimate.asserts_move` remains the single
+# downstream staging, delivery, and priority predicate (#273/#480).
 _MIN_SUPPORTED_NIGHTS = 8
 
 # An I:C **block** needs eight units of effective support — whole closed meal runs
@@ -192,7 +193,10 @@ def cap(current: Optional[float], suggested: Optional[float],
     ``supported_direction`` replaces the bootstrap-interval direction rule when
     supplied: ``-1``/``+1`` must agree with the proposed move, while ``0`` holds
     it. Basal supplies the family-corrected per-night sign verdict; other callers
-    retain the estimate/CI rule by leaving it as ``None``.
+    retain the estimate/CI rule by leaving it as ``None``. A supported direction
+    also needs ``estimate``'s served range to exclude ``current``
+    (:meth:`~ciq_autotune.uncertainty.Estimate.excludes`, closed bounds): a
+    range that still contains the programmed rate holds the slot (#489).
     """
     if suggested is None:
         return None, Status.NO_DATA
@@ -215,7 +219,8 @@ def cap(current: Optional[float], suggested: Optional[float],
 
     direction = 1 if delta > 0 else -1
     if supported_direction is not None:
-        insufficient = supported_direction == 0 or supported_direction != direction
+        insufficient = (supported_direction == 0 or supported_direction != direction
+                        or estimate is None or not estimate.excludes(current))
     else:
         insufficient = _insufficient(current, estimate, min_directional_days)
     if insufficient:
@@ -229,6 +234,7 @@ def cap(current: Optional[float], suggested: Optional[float],
 def apply_harm(current: Optional[float], recommended: Optional[float],
                status: Status, cfg: SafetyConfig, *, nudge: bool,
                median: Optional[float] = None,
+               estimate: Optional[Estimate] = None,
                ) -> "tuple[Optional[float], Status]":
     """Apply the harm layer (ADR 0038, revised by ADR 412) to one basal slot verdict.
 
@@ -259,6 +265,11 @@ def apply_harm(current: Optional[float], recommended: Optional[float],
         ``current * (1 - max_step_frac)``): nothing to defer to, and recurring lows
         still argue "down".
 
+      A median-deferred cut also needs the slot's served range (``estimate``) to
+      exclude ``current`` (#489, closed bounds): a range that still contains the
+      set rate holds the slot at ``current`` as :attr:`Status.HARM_GATED`. A slot
+      with no clean median has no range, so its one full step is unaffected.
+
       Either downward target then passes one threshold check (ADR 465): when the
       clamped target, before rounding, sits less than the noise floor or one full
       step below ``current`` (whichever is smaller), the slot holds at ``current``
@@ -281,6 +292,9 @@ def apply_harm(current: Optional[float], recommended: Optional[float],
         if median is None:
             # No clean median to defer to — the one full step stands.
             target = step_floor
+        elif estimate is not None and not estimate.excludes(current):
+            # #489: the measured range still contains the set rate; hold.
+            return current, Status.HARM_GATED
         else:
             # Median agrees the slot runs hot: clamp to it, floored at one step.
             target = _clamp(max(median, step_floor), cfg.abs_min, cfg.abs_max)

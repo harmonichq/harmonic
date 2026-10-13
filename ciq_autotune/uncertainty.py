@@ -121,6 +121,22 @@ def wilson(k: int, n: int, z: float = _FINDING_Z) -> Tuple[float, float, float]:
     return p, center - hw, center + hw
 
 
+def wilson_wide(k: int, n: int, z: float = _FINDING_Z) -> bool:
+    """Whether the Wilson interval for ``k`` of ``n`` reads as soft.
+
+    Soft when ``n`` is under the floor, or when the interval's half-width exceeds
+    ``_WIDE_REL_HALFWIDTH`` of the point rate. The one rule behind every
+    rate-shaped ``wide`` flag, so a soft finding and a soft Pattern range mean the
+    same thing to a renderer.
+    """
+    if n == 0 or n < _WIDE_MIN_N:
+        return True
+    rate, lo, hi = wilson(k, n, z)
+    half = (hi - lo) / 2.0
+    ref = rate if rate else 1.0
+    return half > _WIDE_REL_HALFWIDTH * ref
+
+
 def finding_severity(score: float) -> str:
     """Map a finding's ``score`` (lower-bound rate × effect) to a severity label."""
     for threshold, label in _SEVERITY_THRESHOLDS:
@@ -172,11 +188,7 @@ class Confidence:
     def wide(self) -> bool:
         """Soft when ``n`` is thin or the Wilson interval is broad — mirrors
         :attr:`Estimate.wide` so the flag means the same thing for findings."""
-        if self.n == 0 or self.n < _WIDE_MIN_N:
-            return True
-        half = (self.hi - self.lo) / 2.0
-        ref = self.rate if self.rate else 1.0
-        return half > _WIDE_REL_HALFWIDTH * ref
+        return wilson_wide(self.k, self.n, _z(self.confidence))
 
     def to_dict(self) -> dict:
         return {

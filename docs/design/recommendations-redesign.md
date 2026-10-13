@@ -215,6 +215,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: `prompts` length (Day count); `status.last_error` and
      `status.last_success_at` (Settings alert).
    - Desktop: the rail, with the same items and badges.
+   - Glyphs: Queue, Changes, Overview, Day, and a gear for Settings. The
+     sliders glyph belongs to the Setting kind.
 2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
    control, or a labelled action).
    - States: default; with date; with action ("+ Log carbs").
@@ -229,7 +231,8 @@ unless noted. Loading is a skeleton of the component's own shape.
    - Fields: none.
    - Desktop: the same, with a visible focus ring.
 5. **StatePill**: a one-word state.
-   - States: Pattern, Setting, Wide, Maturing, Better, Worse, Unclear.
+   - States: Pattern, Setting, Wide, Maturing, Better, Worse, Unclear, Focus.
+   - Words only, at the one pill size; no glyph inside a pill.
    - Fields: `guidance.candidates[].kind`; `support.wide`; the trial and focus lifecycle and result.
    - Desktop: the same.
 6. **TransientBar**: a label plus one text action, shown above the tab bar.
@@ -239,7 +242,8 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 **Queue**
 
-7. **QueueRow**: a collapsed recommendation, with its title, one magnitude
+7. **QueueRow**: a collapsed recommendation, with a leading 20 px kind glyph
+   (Pattern: rising dots; Setting: sliders), its title, one magnitude
    ("9 of 71 lows") and a cause label.
    - States: default; selected (desktop); mid-swipe (snooze reveal);
      no cause (label omitted); setting (current → suggested replaces the

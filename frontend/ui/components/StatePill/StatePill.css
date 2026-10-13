@@ -17,5 +17,4 @@
 .ui-pill--wide { color: var(--wk-ink-body); }
 .ui-pill--maturing { color: var(--warn); }
 .ui-pill--better,
-.ui-pill--recorded { color: var(--in-range); }
 .ui-pill--worse { color: var(--danger); }

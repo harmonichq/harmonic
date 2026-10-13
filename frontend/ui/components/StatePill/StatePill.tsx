@@ -10,7 +10,6 @@ const LABELS = {
   better: 'Better',
   worse: 'Worse',
   unclear: 'Unclear',
-  recorded: 'Recorded',
 } as const;
 
 export type PillState = keyof typeof LABELS;

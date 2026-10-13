@@ -40,23 +40,4 @@
 
 .ui-profile__scale { fill: var(--wk-ink-meta); font-size: var(--ui-type-caption); }
 
-.ui-profile__stem { stroke: var(--wk-ink-meta); stroke-width: 1; }
-.ui-profile__peak { fill: var(--wk-ink); stroke: var(--wk-surface); stroke-width: 2; }
-.ui-profile__callout-text {
-  fill: var(--wk-ink);
-  font-size: var(--ui-type-label);
-  font-weight: var(--ui-weight-strong);
-  /* A halo of the card's surface, so the band never shows through the label. */
-  stroke: var(--wk-surface);
-  stroke-width: 5px;
-  stroke-linejoin: round;
-  paint-order: stroke;
-}
-.ui-profile__callout-word {
-  fill: var(--wk-ink-meta);
-  font-size: var(--ui-type-caption);
-  letter-spacing: .07em;
-  text-transform: uppercase;
-}
-
 .ui-profile__empty { fill: var(--wk-ink-meta); font-size: var(--ui-type-label); }

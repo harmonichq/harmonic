@@ -1,14 +1,13 @@
 // GlucoseProfile (§4.2): glucose by time of day over the served 30 days.
 //
-// The median is a line; the 10–90% spread is a band coloured by the clinical
-// zone it crosses — below 54, below the low target, in range, above the high
-// target, above 250. In range stays quiet (a muted green); each excursion is clipped and
-// drawn in its zone's tone and hatching (glucose-zones.tsx), so colour marks
-// only time out of range. Each zone the band reaches gets a legend
-// entry, so no colour stands without its label. The target range's two edges
-// are lines labelled with their served values; 250 is a plain tick. "mg/dL" sits once on the y-axis. Meals are small bars
-// along the bottom, one per served 30-minute bucket, as tall as its count. One
-// callout marks the median's daily maximum.
+// The median is a line; the 10–90% spread is a band, a quiet green in range.
+// Where the band leaves range it is clipped and drawn in that glucose zone's
+// tone and hatching (glucose-zones.tsx) — below 54, below the low target, above
+// the high target, above 250 — so colour marks time out of range, and each
+// zone the band reaches gets a legend entry beside its label. The target
+// range's two edges are lines labelled with their served values; 250 is a
+// plain tick. "mg/dL" sits once on the y-axis. Meals are small bars along the
+// bottom, one per served 30-minute bucket, as tall as its count.
 //
 // Only supported bins are drawn; a run of unsupported bins breaks the line and
 // the band. When no bin is supported the card says "No data" over an empty
@@ -36,8 +35,6 @@ const MEAL_MAX = 18;
 const TIME_Y = 286;
 const TICK = SEVERE_HIGH;
 const DAY = 1440;
-const LABEL_CHAR = 7.4; // a 13 px Inter character, generously
-const UNIT_CLEAR = 44;  // the callout starts clear of "mg/dL"
 
 /** Consecutive supported bins, each run closed at midnight when it reaches it. */
 function runs(bins: ProfileBin[]): ProfileBin[][] {
@@ -69,7 +66,7 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
   const slot = (right - LEFT) * (30 / DAY);
   const yLow = y(data.low.value);
   const yHigh = y(data.high.value);
-  const empty = data.peak === null;
+  const empty = supported.length === 0;
   const id = `ui-profile-${width}`;
   // The five zones, top down, each labelled; one enters the legend when the band reaches it.
   const labels = {
@@ -86,28 +83,6 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
     y1: zone.from === -Infinity ? HEIGHT : y(zone.from),
     reached: supported.some((bin) => bin.p90 > zone.from && bin.p10 < zone.to),
   }));
-
-  // The callout: a dot on the median's maximum and a stem up to its label,
-  // which is centred over the stem and slid along to stay clear of "mg/dL" and
-  // inside the plot.
-  let callout = null;
-  if (data.peak) {
-    const { median, minute } = data.peak;
-    const cx = x(minute.value);
-    const cy = y(median.value);
-    const span = (6 + 1 + formatValue(median.value, median.format).length + 7 + 5) * LABEL_CHAR;
-    const start = Math.min(Math.max(cx - span / 2, UNIT_CLEAR), right - span);
-    callout = (
-      <g className="ui-profile__callout">
-        <line x1={cx} x2={cx} y1={cy - 6} y2={PLOT_TOP + 14} className="ui-profile__stem" />
-        <circle cx={cx} cy={cy} r={4} className="ui-profile__peak" />
-        <text x={start} y={PLOT_TOP + 8} className="ui-profile__callout-text">
-          <tspan className="ui-profile__callout-word">Median</tspan>
-          <tspan dx={8}><NumSvg value={median} /> mg/dL · <NumSvg value={minute} /></tspan>
-        </text>
-      </g>
-    );
-  }
 
   return (
     <section className="ui-profile">
@@ -177,7 +152,6 @@ export function GlucoseProfile({ data, width = 334 }: GlucoseProfileProps) {
             <polyline key={`m${i}`} points={run.map((bin) => point(bin.minute, bin.median)).join(' ')} className="ui-profile__median" />
           ))}
         </g>
-        {callout}
         {empty && (
           <text x={(LEFT + right) / 2} y={(yLow + yHigh) / 2 + 4} textAnchor="middle" className="ui-profile__empty">No data</text>
         )}

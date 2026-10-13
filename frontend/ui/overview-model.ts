@@ -23,8 +23,6 @@ export type ProfileData = {
   binMinutes: number;
   bins: ProfileBin[];
   meals: { minute: number; count: number }[];
-  /** The median's daily maximum over supported bins; null when no bin is supported. */
-  peak: { median: Sourced<number>; minute: Sourced<number> } | null;
 };
 
 type TimeOfDay = {
@@ -38,9 +36,6 @@ export function profile(store: OverviewStore): ProfileData {
   const answer = (fixtures.overview[store] as { time_of_day?: TimeOfDay }).time_of_day;
   if (!answer) throw new Error(`${store} serves no time of day`);
   const bins = answer.pooled?.bins ?? [];
-  const supported = bins.filter((bin) => bin.supported);
-  const top = supported.reduce<ProfileBin | null>((best, bin) => (!best || bin.median > best.median ? bin : best), null);
-  const bin = top && `${root}.pooled.bins[minute=${top.minute}].0`;
   return {
     days: answer.window ? sourced(`${root}.window.data_days`) : null,
     low: sourced(`${root}.target_range.low`),
@@ -48,7 +43,6 @@ export function profile(store: OverviewStore): ProfileData {
     binMinutes: answer.pooled?.bin_minutes ?? 15,
     bins,
     meals: answer.pooled?.meals ?? [],
-    peak: bin ? { median: sourced(`${bin}.median`, 'round'), minute: sourced(`${bin}.minute`, 'clock') } : null,
   };
 }
 

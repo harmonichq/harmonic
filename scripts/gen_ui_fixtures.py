@@ -36,6 +36,8 @@ Two committed outputs, one generator, one ``--check``:
   ``wearer`` with its matured Trial and that Trial's retained comparison;
   ``wearer-ended`` the same store once the person ends that Trial through
   ``POST /api/verify/trials/{id}/finish``; ``wearer-pinned`` with its Focus;
+  ``wearer-focus``, a Focus pinned on the Trial day with four weeks synced
+  after it, and ``wearer-focus-maturing``, the same cut a day after the pin;
   ``wearer-ended-pinned``, a Focus pinned after that Trial was ended, so the
   ended Trial is the last change beside an active one; ``wearer-first-days``
   with no active change; ``wearer-trial-maturing``,
@@ -180,8 +182,23 @@ _CLOCK_MODULES = ("analyze", "api", "cli", "credentials", "fetch_loop", "pattern
                   "pending_prompts", "store", "sync", "watched_change")
 
 
+# The wall clock's current reading: CLOCK, except inside ``clock_at``.
+_now = [CLOCK]
+
+
 def _clock(after=None):
-    return max(CLOCK, after + timedelta(seconds=1)) if after else CLOCK
+    return max(_now[0], after + timedelta(seconds=1)) if after else _now[0]
+
+
+@contextlib.contextmanager
+def clock_at(moment: datetime):
+    """Read the pinned wall clock as ``moment`` for the writes inside: a person
+    acting earlier in the wearer's history, before the rest of it synced."""
+    _now[0] = moment
+    try:
+        yield
+    finally:
+        _now[0] = CLOCK
 
 
 @contextlib.contextmanager
@@ -284,6 +301,13 @@ def fixtures() -> dict:
         _end_active_trial(ended_pinned)
         _pin(ended_pinned)
         changes["wearer-ended-pinned"] = _changes_store(ended_pinned)
+
+        # A Focus pinned on the Trial day, as the person would pin it then,
+        # with the rest of the history synced after: matured, and cut a day
+        # after the pin, still maturing.
+        changes["wearer-focus"] = _changes_store(_focus_wearer(scratch, "wearer-focus"))
+        changes["wearer-focus-maturing"] = _changes_store(
+            _focus_wearer(scratch, "wearer-focus-maturing", days=ui_patient.TRIAL_DAY + 1))
 
         _, maturing = _wearer(scratch, "wearer-trial-maturing", trial=True,
                               days=ui_patient.TRIAL_DAY + MATURING_DAYS)
@@ -479,12 +503,58 @@ def _changes_store(client: TestClient) -> dict:
     for f in answer["focuses"]:
         detail = _get(client, "/api/verify/trials", kind="focus", selected=str(f["id"]))["selected"]
         focuses.append({**{field: f[field] for field in ("id", "lever", "pattern_key", "pinned_at", "status")},
-                        "title": detail["title"], "lever_title": detail["lever_title"]})
+                        "title": detail["title"], "lever_title": detail["lever_title"],
+                        **({"tracking": _focus_tracking(client, f["id"])} if f["status"] == "active" else {})})
     return {
         "admission": {field: admission[field] for field in
                       ("state", "active_kind", "active_id", "can_finish_trial", "maturity")},
         "trials": trials,
         "focuses": focuses,
+    }
+
+
+def _focus_wearer(scratch: pathlib.Path, name: str, *, days: int = ui_patient.DAYS) -> TestClient:
+    """The wearer synced up to the Trial day, a Focus pinned then through
+    ``POST /api/focus``, and the rest of the history (to ``days``) synced after,
+    so the Focus has its own after period. No profile change: no Trial."""
+    database = scratch / f"{name}.sqlite"
+    with Store.open(str(database)) as store:
+        ui_patient.materialize(store, trial=False, days=ui_patient.TRIAL_DAY)
+        reconcile_ingested_follow_up(store)
+    with clock_at(ui_patient.START + timedelta(days=ui_patient.TRIAL_DAY, hours=1)):
+        _pin(_serve(database))
+    with Store.open(str(database)) as store:
+        ui_patient.materialize(store, trial=False, days=days)
+        reconcile_ingested_follow_up(store)
+    return _serve(database)
+
+
+# The outcome rows a Focus card shows: the glossary metrics, and the peak and
+# nadir a meal Pattern's Focus maps to.
+FOCUS_OUTCOMES = ("tir", "tbr", "tar", "peak", "nadir")
+
+
+def _focus_tracking(client: TestClient, focus_id: int) -> dict:
+    """A Focus's served comparison, trimmed to what its card shows: the after
+    period's readiness (meals counted against the engine's gate), adherence
+    before and after with its verdict, and the outcome rows with their role;
+    or, before any after period exists, the served unavailability."""
+    comparison = _get(client, "/api/verify/trials", kind="focus", selected=str(focus_id),
+                      assessment="retained")["selected"]["reassessment"]["comparison"]
+    if "readiness" not in comparison:
+        # Pinned at the end of the history: no after period to compare yet.
+        return {"availability": comparison["availability"]}
+    after = comparison["readiness"]["after"]
+    adherence = comparison["adherence"]
+    return {
+        "readiness": {field: after[field] for field in ("unit", "count", "required", "criterion_met")},
+        "adherence": {
+            **{arm: {field: adherence[arm][field] for field in ("numerator", "opportunities", "rate")}
+               for arm in ("before", "after")},
+            "assessment": {"state": adherence["assessment"]["state"]},
+        },
+        "outcomes": [{field: row[field] for field in ("key", "unit", "before", "after", "role")}
+                     for row in comparison["outcomes"] if row["key"] in FOCUS_OUTCOMES],
     }
 
 

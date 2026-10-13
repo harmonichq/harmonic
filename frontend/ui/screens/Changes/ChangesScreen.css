@@ -38,3 +38,7 @@
 .ui-change__foot:has(> .ui-changes__confirm) { position: relative; }
 /* Desktop: the popover floats under End, over what follows, not in its flow. */
 .ui-popover.ui-changes__confirm { position: absolute; top: 100%; right: 0; z-index: 1; }
+
+/* The last change as one row: its name over what changed and when. */
+.ui-changes__last-row { display: flex; flex-direction: column; gap: 2px; }
+.ui-changes__last-meta { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-variant-numeric: tabular-nums; }

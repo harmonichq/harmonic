@@ -137,3 +137,6 @@
 
 .ui-change--none { align-items: center; padding: 24px 16px; }
 .ui-change__none { color: var(--wk-ink-meta); font-size: var(--ui-type-body); }
+
+/* A date never breaks across lines. */
+.ui-change__date { white-space: nowrap; }

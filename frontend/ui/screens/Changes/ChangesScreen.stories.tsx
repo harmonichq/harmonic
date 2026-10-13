@@ -9,6 +9,8 @@ import { ChangesScreen, type ChangesScreenProps } from './ChangesScreen';
 //   ended Trial is the last change.
 // - Trial maturing (six days in), Trial matured Better with End offered, and
 //   the second wearer's Trial matured Worse.
+// - Focus maturing (a day after its pin) and matured (four weeks after),
+//   with how often the habit happened and the outcomes it maps to.
 // - Ended: the matured Trial once the person ends it: no active change, the
 //   Trial as the last change.
 // - Empty: the first days, with no change at all.
@@ -40,6 +42,8 @@ const DEFAULT = { store: 'wearer-ended-pinned' } as const;
 const MATURING = { store: 'wearer-trial-maturing' } as const;
 const MATURED = { store: 'wearer', end: { after: 'wearer-ended' } } as const;
 const WORSE = { store: 'wearer-worse' } as const;
+const FOCUS_MATURING = { store: 'wearer-focus-maturing' } as const;
+const FOCUS_MATURED = { store: 'wearer-focus' } as const;
 const ENDED = { store: 'wearer-ended' } as const;
 const EMPTY = { store: 'wearer-first-days' } as const;
 const CONFIRM = { store: 'wearer', end: { after: 'wearer-ended' }, confirming: true } as const;
@@ -54,6 +58,10 @@ export const TrialMaturedPhone = story('phone', MATURED);
 export const TrialMaturedDesktop = story('desktop', MATURED);
 export const TrialWorsePhone = story('phone', WORSE);
 export const TrialWorseDesktop = story('desktop', WORSE);
+export const FocusMaturingPhone = story('phone', FOCUS_MATURING);
+export const FocusMaturingDesktop = story('desktop', FOCUS_MATURING);
+export const FocusMaturedPhone = story('phone', FOCUS_MATURED);
+export const FocusMaturedDesktop = story('desktop', FOCUS_MATURED);
 export const EndedPhone = story('phone', ENDED);
 export const EndedDesktop = story('desktop', ENDED);
 export const EmptyPhone = story('phone', EMPTY);
@@ -88,3 +96,6 @@ export const EndTrialPhone: Story = { ...story('phone', MATURED), play: endPlay 
 export const EndTrialDesktop: Story = { ...story('desktop', MATURED), play: endPlay };
 export const CancelEndPhone: Story = { ...story('phone', DEFAULT), play: cancelPlay };
 export const CancelEndDesktop: Story = { ...story('desktop', DEFAULT), play: cancelPlay };
+
+export const DefaultLastRowPhone = story('phone', { ...DEFAULT, last: 'row' });
+export const DefaultLastRowDesktop = story('desktop', { ...DEFAULT, last: 'row' });

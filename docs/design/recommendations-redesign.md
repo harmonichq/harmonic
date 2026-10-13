@@ -109,8 +109,8 @@ the system's own edge-swipe back is left to the platform, never overridden.
 | **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
 | **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
-| **Peak / Nadir** | noun | The highest (a high Pattern) or lowest (a low Pattern) point of the median glucose trace after a Pattern's own episodes, in mg/dL. |
-| **Typical** | noun | The same point for the comparison episodes: similar events that did not end in the Pattern's outcome. |
+| **Peak / Nadir** | noun | The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL. |
+| **Typical** | noun | The same for the comparison events: similar events that did not end in the Pattern's outcome. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |
 | **Median** | noun | The middle value of the profile at that time of day. |
 | **Prompt** | noun | A question about a low, asking whether carbs were eaten. |
@@ -292,6 +292,13 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   that yellow for the single cause? Like the non-striped, non-banded yellow?"
   Its occurrences now take the solid tone a single cause takes (§4.2
   CauseWaffle); the legend still names only the base cells.
+- **2026-10-13 — a Focus is tracked like a Trial.** The operator, seeing the
+  Focus card carry only its title: "why doesn't focus have any kind of data
+  tracking to go with it?", then "update it, just like the trial." The Focus
+  card now shows how often the habit happened before → after, its meals
+  counted against the engine's gate as ticks, the result the engine serves
+  for the habit, and Before/After for the outcomes its Pattern maps to and
+  the glossary metrics (§4.2 ChangeCard).
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -453,13 +460,19 @@ unless noted. Loading is a skeleton of the component's own shape.
 
 **Changes**
 
-16. **ChangeCard**: the active Trial or Focus. Shows what changed (before →
-    after, or the habit), its days of evidence as ticks, and Before/After
+16. **ChangeCard**: the active Trial or Focus. Shows what changed (the
+    setting before → after, or how often the habit happened before → after),
+    its evidence as ticks (a Trial's days, a Focus's meals), and Before/After
     values once matured, with End.
     - States: Trial maturing; Trial matured with a result (Better / Worse /
-      Unclear); Focus active; ended; none ("No active change").
+      Unclear); Focus with no data yet; Focus maturing; Focus matured with a
+      result (the engine's verdict on the habit); ended; none ("No active
+      change").
     - Fields: `trials.trials[]` (before, after, changed_at, maturing,
-      ending.assessment.outcomes); `focus.focuses[]`; `guidance.admission`.
+      ending.assessment.outcomes); `focus.focuses[]`; a Focus's retained
+      comparison (`readiness.after` count and required, `adherence` before and
+      after rate and assessment, `outcomes` peak, nadir, tir, tbr, tar);
+      `guidance.admission`.
     - Desktop: the same, in the Changes pane.
 
 **Day**

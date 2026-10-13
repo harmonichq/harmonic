@@ -6,7 +6,8 @@
 // A derived number names its formula the same way: the source is fields joined
 // by " − " (subtracted), applied left to right, and
 // `data-format` names how the result is printed — `round` to the nearest whole
-// number, `fixed1` or `fixed2` to one or two decimals, `clock` as minutes since
+// number, `fixed1` or `fixed2` to one or two decimals, `pct1` a served
+// proportion as a percentage to one decimal, `clock` as minutes since
 // midnight in HH:MM, `day` as the day of the month of a YYYY-MM-DD date,
 // `date` as the day and month of a served date or time ("19 May"), `time` as
 // the HH:MM of a served "YYYY-MM-DD HH:MM:SS" time, `until` as the date
@@ -70,6 +71,7 @@ export function formatValue(value, format) {
   if (format === 'round') return String(Math.round(value));
   if (format === 'fixed1') return value.toFixed(1);
   if (format === 'fixed2') return value.toFixed(2);
+  if (format === 'pct1') return (value * 100).toFixed(1);
   if (format === 'day') return String(Number(value.slice(8, 10)));
   if (format === 'date') return `${Number(value.slice(8, 10))} ${MONTHS[Number(value.slice(5, 7)) - 1]}`;
   if (format === 'time') return value.slice(11, 16);

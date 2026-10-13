@@ -22,6 +22,8 @@ import { sourced } from '../../fixtures';
 import { Num } from '../../Num';
 import { Button } from '../../components/Button/Button';
 import { ChangeCard } from '../../components/ChangeCard/ChangeCard';
+import { ListGroup, ListRow } from '../../components/ListRow/ListRow';
+import { StatePill } from '../../components/StatePill/StatePill';
 import { NavBar } from '../../components/NavBar/NavBar';
 import { ScreenHeader } from '../../components/ScreenHeader/ScreenHeader';
 import '../../shared.css';
@@ -37,6 +39,8 @@ export type ChangesScreenProps = {
   end?: { after: ChangesStore };
   /** Start with the End confirmation open. */
   confirming?: boolean;
+  /** How the last change is drawn: its full card, or one row that opens it. */
+  last?: 'card' | 'row';
 };
 
 const dayCount = sourced<number>('prompts[answer=null].length');
@@ -60,7 +64,7 @@ function Confirm({ data, onEnd, onCancel }: { data: ChangeData; onEnd: () => voi
   );
 }
 
-export function ChangesScreen({ layout, store, state = 'ready', end, confirming = false }: ChangesScreenProps) {
+export function ChangesScreen({ layout, store, state = 'ready', end, confirming = false, last: lastAs = 'card' }: ChangesScreenProps) {
   const [ended, setEnded] = useState(false);
   const [asking, setAsking] = useState(confirming);
   const shown = ended && end ? end.after : store;
@@ -92,7 +96,23 @@ export function ChangesScreen({ layout, store, state = 'ready', end, confirming 
     : state === 'ready' && (
       <>
         <ChangeCard data={active} onEnd={() => setAsking(true)} confirm={popover} />
-        {last && (
+        {last && lastAs === 'row' && (
+          <div className="ui-changes__last">
+            <ListGroup caption="Last change">
+              <ListRow
+                label={<span className="ui-changes__last-row">
+                  <span>{last.title} <Num value={last.slot} /></span>
+                  <span className="ui-changes__last-meta">
+                    <Num value={last.before} /> → <Num value={last.after} /> {last.units} · <Num value={last.changedAt} />
+                    {last.endedAt && <> – <Num value={last.endedAt} /></>}
+                  </span>
+                </span>}
+                value={last.result ? <StatePill state={last.result} /> : undefined}
+                onOpen={() => undefined} />
+            </ListGroup>
+          </div>
+        )}
+        {last && lastAs === 'card' && (
           <section className="ui-changes__last" aria-labelledby="ui-changes-last">
             <h2 id="ui-changes-last" className="ui-caption ui-changes__caption">Last change</h2>
             <ChangeCard data={last} />

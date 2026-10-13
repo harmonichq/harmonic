@@ -6,7 +6,9 @@ import { ChangeCard } from './ChangeCard';
 // One story per state (§4.2 ChangeCard), each a store of the simulated
 // wearer: its basal Trial six days in (maturing), the same Trial matured with
 // End offered and its retained comparison, that Trial once ended, a second
-// wearer's matured Trial, a pinned Focus, and the wearer's first days, with no
+// wearer's matured Trial, a Focus pinned at the end of the history (no data
+// yet), one pinned on the Trial day a day in (maturing) and four weeks in
+// (matured), and the wearer's first days, with no
 // active change.
 //
 // The matured result is the engine's verdict on the Trial's own target metric
@@ -28,7 +30,9 @@ export const TrialMaturing: Story = { args: { data: change('wearer-trial-maturin
 export const TrialMatured: Story = { args: { data: change('wearer') } };
 export const TrialWorse: Story = { args: { data: change('wearer-worse') } };
 export const TrialEnded: Story = { args: { data: lastChange('wearer-ended')! } };
-export const FocusActive: Story = { args: { data: change('wearer-pinned') } };
+export const FocusNoDataYet: Story = { args: { data: change('wearer-pinned') } };
+export const FocusMaturing: Story = { args: { data: change('wearer-focus-maturing') } };
+export const FocusMatured: Story = { args: { data: change('wearer-focus') } };
 export const NoActiveChange: Story = { args: { data: change('wearer-first-days') } };
 
 // End (§1.3a): on a matured Trial the play presses End, which the screen

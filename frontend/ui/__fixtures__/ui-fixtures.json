@@ -167,7 +167,13 @@
           "pattern_key": "highs_after_meals",
           "pinned_at": "2025-05-26 01:00:00",
           "status": "active",
-          "title": "Highs after meals"
+          "title": "Highs after meals",
+          "tracking": {
+            "availability": {
+              "reason": "data_not_yet_arrived",
+              "state": "unavailable"
+            }
+          }
         }
       ],
       "trials": [
@@ -245,6 +251,168 @@
       "focuses": [],
       "trials": []
     },
+    "wearer-focus": {
+      "admission": {
+        "active_id": 1,
+        "active_kind": "focus",
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [
+        {
+          "id": 1,
+          "lever": "carb_undercount",
+          "lever_title": "Carb undercount",
+          "pattern_key": "highs_after_meals",
+          "pinned_at": "2025-04-28 01:00:00",
+          "status": "active",
+          "title": "Highs after meals",
+          "tracking": {
+            "adherence": {
+              "after": {
+                "numerator": 30,
+                "opportunities": 129,
+                "rate": 0.23255813953488372
+              },
+              "assessment": {
+                "state": "unclear"
+              },
+              "before": {
+                "numerator": 71,
+                "opportunities": 278,
+                "rate": 0.25539568345323743
+              }
+            },
+            "outcomes": [
+              {
+                "after": 64.6,
+                "before": 65.3,
+                "key": "tir",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 2.4,
+                "before": 2.6,
+                "key": "tbr",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 33.0,
+                "before": 32.1,
+                "key": "tar",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 201.0,
+                "before": 201.0,
+                "key": "peak",
+                "role": "mapped_outcome",
+                "unit": "mg/dL"
+              },
+              {
+                "after": 135.0,
+                "before": 124.0,
+                "key": "nadir",
+                "role": "mapped_outcome",
+                "unit": "mg/dL"
+              }
+            ],
+            "readiness": {
+              "count": 129,
+              "criterion_met": true,
+              "required": 12,
+              "unit": "meals"
+            }
+          }
+        }
+      ],
+      "trials": []
+    },
+    "wearer-focus-maturing": {
+      "admission": {
+        "active_id": 1,
+        "active_kind": "focus",
+        "can_finish_trial": false,
+        "maturity": null,
+        "state": "available"
+      },
+      "focuses": [
+        {
+          "id": 1,
+          "lever": "carb_undercount",
+          "lever_title": "Carb undercount",
+          "pattern_key": "highs_after_meals",
+          "pinned_at": "2025-04-28 01:00:00",
+          "status": "active",
+          "title": "Highs after meals",
+          "tracking": {
+            "adherence": {
+              "after": {
+                "numerator": 1,
+                "opportunities": 2,
+                "rate": 0.5
+              },
+              "assessment": {
+                "state": "unclear"
+              },
+              "before": {
+                "numerator": 71,
+                "opportunities": 278,
+                "rate": 0.25539568345323743
+              }
+            },
+            "outcomes": [
+              {
+                "after": 83.8,
+                "before": 65.3,
+                "key": "tir",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 0.0,
+                "before": 2.6,
+                "key": "tbr",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 16.2,
+                "before": 32.1,
+                "key": "tar",
+                "role": "context",
+                "unit": "%"
+              },
+              {
+                "after": 193.0,
+                "before": 201.0,
+                "key": "peak",
+                "role": "mapped_outcome",
+                "unit": "mg/dL"
+              },
+              {
+                "after": 159.5,
+                "before": 124.0,
+                "key": "nadir",
+                "role": "mapped_outcome",
+                "unit": "mg/dL"
+              }
+            ],
+            "readiness": {
+              "count": 2,
+              "criterion_met": false,
+              "required": 12,
+              "unit": "meals"
+            }
+          }
+        }
+      ],
+      "trials": []
+    },
     "wearer-pinned": {
       "admission": {
         "active_id": 1,
@@ -261,7 +429,13 @@
           "pattern_key": "highs_after_meals",
           "pinned_at": "2025-05-26 01:00:00",
           "status": "active",
-          "title": "Highs after meals"
+          "title": "Highs after meals",
+          "tracking": {
+            "availability": {
+              "reason": "data_not_yet_arrived",
+              "state": "unavailable"
+            }
+          }
         }
       ],
       "trials": []
@@ -6330,7 +6504,7 @@
     },
     {
       "kind": "noun",
-      "meaning": "The highest (a high Pattern) or lowest (a low Pattern) point of the median glucose trace after a Pattern's own episodes, in mg/dL.",
+      "meaning": "The highest or lowest glucose after an event such as a meal, as the median across the events counted, in mg/dL.",
       "term": "Peak / Nadir"
     },
     {
@@ -6400,7 +6574,7 @@
     },
     {
       "kind": "noun",
-      "meaning": "The same point for the comparison episodes: similar events that did not end in the Pattern's outcome.",
+      "meaning": "The same for the comparison events: similar events that did not end in the Pattern's outcome.",
       "term": "Typical"
     },
     {

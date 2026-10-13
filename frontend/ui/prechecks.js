@@ -6,17 +6,19 @@
 //   (b) every visible word and accessible name is in the glossary allowlist
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
-//   (e) every visible number sits in a [data-source] whose fixture field it equals
-import { resolveField } from './provenance.js';
+//   (e) every visible number sits in a [data-source] whose fixture field (or
+//       formula over fields, printed in its data-format) it equals
+import { formatValue, resolveSource } from './provenance.js';
 
-// §4.1, one height per role.
+// §4.1, one height per role; a list row is a 48 px minimum.
 export const ROLE_HEIGHTS = { primary: 50, secondary: 32, text: 32, icon: 44, segment: 28, nav: 44 };
+export const ROLE_MIN_HEIGHTS = { row: 48 };
 
 const WORD = /[A-Za-z][A-Za-z'’-]*/g;
 const SENTENCE = /[A-Za-z][^.!?]*[.!?](\s|$)/;
 
 /**
- * @param {{texts: {text: string, source: string|null}[], names: string[],
+ * @param {{texts: {text: string, source: string|null, format?: string|null}[], names: string[],
  *          buttons: {role: string|null, height: number, label: string}[], primaries: number}} shown
  * @param {{fixtures: object, allowed: Set<string>}} sources
  * @returns {string[]} one line per violation; empty when the story passes
@@ -32,27 +34,31 @@ export function precheckProblems({ texts, names, buttons, primaries }, { fixture
     }
   }
   for (const { role, height, label } of buttons) {
-    if (!Object.hasOwn(ROLE_HEIGHTS, role ?? '')) {
+    if (Object.hasOwn(ROLE_MIN_HEIGHTS, role ?? '')) {
+      if (height + 0.5 < ROLE_MIN_HEIGHTS[role]) {
+        found.push(`(c) ${role} button "${label}" is ${height}px, under ${ROLE_MIN_HEIGHTS[role]}px`);
+      }
+    } else if (!Object.hasOwn(ROLE_HEIGHTS, role ?? '')) {
       found.push(`(c) button "${label}" declares no known role (${role})`);
     } else if (Math.abs(height - ROLE_HEIGHTS[role]) > 0.5) {
       found.push(`(c) ${role} button "${label}" is ${height}px, not ${ROLE_HEIGHTS[role]}px`);
     }
   }
   if (primaries > 1) found.push(`(d) ${primaries} primary-filled controls`);
-  for (const { text, source } of texts) {
+  for (const { text, source, format } of texts) {
     if (!/\d/.test(text)) continue;
     if (!source) {
       found.push(`(e) "${text}" names no fixture field`);
       continue;
     }
-    let value;
+    let shown;
     try {
-      value = resolveField(fixtures, source);
+      shown = formatValue(resolveSource(fixtures, source), format ?? undefined);
     } catch (error) {
       found.push(`(e) "${text}": ${error.message}`);
       continue;
     }
-    if (String(value) !== text) found.push(`(e) "${text}" is not ${source} (${JSON.stringify(value)})`);
+    if (shown !== text) found.push(`(e) "${text}" is not ${source}${format ? ` as ${format}` : ''} (${shown})`);
   }
   return found;
 }

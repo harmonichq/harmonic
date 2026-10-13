@@ -4,6 +4,7 @@
 // failed.
 import { Icon, type IconName } from '../../icons';
 import type { Sourced } from '../../fixtures';
+import { Num } from '../../Num';
 import './NavBar.css';
 
 export type NavItem = 'queue' | 'changes' | 'overview' | 'day' | 'settings';
@@ -42,7 +43,7 @@ export function NavBar({ layout, selected, dayCount, syncFailed = false, onSelec
           <span>{label}</span>
           {id === 'day' && dayCount && dayCount.value > 0 && (
             <span className="ui-badge ui-badge--count">
-              <span data-source={dayCount.source}>{dayCount.value}</span>
+              <Num value={dayCount} />
             </span>
           )}
           {id === 'settings' && syncFailed && (

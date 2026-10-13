@@ -3,6 +3,7 @@
 // disabled; its label is struck through as well as dimmed, so the state never
 // rests on colour alone (§2.3 ban 4).
 import type { Sourced } from '../../fixtures';
+import { Num } from '../../Num';
 import './SegmentedControl.css';
 
 export type WindowOption = {
@@ -36,7 +37,7 @@ export function SegmentedControl({ options, selected, onChange }: SegmentedContr
           disabled={disabled}
           onClick={() => onChange?.(days.value)}
         >
-          <span data-source={days.source}>{days.value}</span>
+          <Num value={days} />
           {' d'}
         </button>
       ))}

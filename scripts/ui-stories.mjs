@@ -85,7 +85,8 @@ function inspect() {
     const text = node.textContent.trim();
     const element = node.parentElement;
     if (!text || !element.checkVisibility({ visibilityProperty: true })) continue;
-    texts.push({ text, source: element.closest('[data-source]')?.dataset.source ?? null });
+    const sourced = element.closest('[data-source]');
+    texts.push({ text, source: sourced?.dataset.source ?? null, format: sourced?.dataset.format ?? null });
   }
   const names = [...shot.querySelectorAll('[aria-label]')].map((element) => element.getAttribute('aria-label'));
   const buttons = [...shot.querySelectorAll('button')].map((button) => ({

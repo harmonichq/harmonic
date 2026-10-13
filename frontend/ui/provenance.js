@@ -3,6 +3,11 @@
 // `<span data-source="outcomes.14.window_days">14</span>`, and the story check
 // resolves that path against the fixtures and compares it with the text.
 //
+// A derived number names its formula the same way: the source is fields joined
+// by " × " (multiplied), and `data-format` names how the result is printed —
+// `round` to the nearest whole number, `clock` as minutes since midnight in
+// HH:MM. "Range 1–4 of 6" prints round(wilson.lo × n) and round(wilson.hi × n).
+//
 // Grammar: dot-separated keys and array indexes; `length` on an array; and one
 // equality filter on an array segment, `prompts[answer=null]`, whose value is
 // read as JSON (null, true, false, a number) or else as a plain string.
@@ -34,4 +39,19 @@ export function resolveField(root, path) {
     }
   }
   return value;
+}
+
+export function resolveSource(root, source) {
+  const values = source.split(' × ').map((path) => resolveField(root, path));
+  return values.length === 1 ? values[0] : values.reduce((product, value) => product * value);
+}
+
+export function formatValue(value, format) {
+  if (!format) return String(value);
+  if (format === 'round') return String(Math.round(value));
+  if (format === 'clock') {
+    const pad = (part) => String(part).padStart(2, '0');
+    return `${pad(Math.floor(value / 60))}:${pad(value % 60)}`;
+  }
+  throw new Error(`unknown format "${format}"`);
 }

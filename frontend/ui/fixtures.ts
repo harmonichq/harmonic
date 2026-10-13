@@ -3,12 +3,14 @@
 // carrying the field path it was read from, so the story check can prove the
 // rendered text equals that field.
 import data from './__fixtures__/ui-fixtures.json';
-import { resolveField } from './provenance.js';
+import { resolveSource } from './provenance.js';
 
-export type Sourced<T> = { readonly value: T; readonly source: string };
+export type Format = 'round' | 'clock';
+export type Sourced<T> = { readonly value: T; readonly source: string; readonly format?: Format };
 
 export const fixtures = data;
 
-export function sourced<T>(path: string): Sourced<T> {
-  return { value: resolveField(data, path) as T, source: path };
+/** One served field, or several joined by " × " for a derived product. */
+export function sourced<T>(source: string, format?: Format): Sourced<T> {
+  return { value: resolveSource(data, source) as T, source, format };
 }

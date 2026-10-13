@@ -49,6 +49,10 @@
   --glucose-in-range: #7ec476;
   --glucose-high: #efcf4c;
   --glucose-very-high: #f08a3c;
+  /* In range where a chart draws a lot of it (the profile band, a day's trace):
+     the in-range green held toward the body ink, so in range reads green
+     without flooding and the excursions keep the colour. */
+  --glucose-in-range-quiet: color-mix(in oklab, var(--glucose-in-range) 50%, var(--wk-ink-body));
   /* The one accent (chosen 2026-10-13 over the app's orange, a cyan and a
      violet): blue. It overrides material.css's orange here, in the library
      only, until the build ticket carries it into the app. It marks what you

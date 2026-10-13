@@ -2,7 +2,7 @@
 //
 // The median is a line; the 10–90% spread is a band coloured by the clinical
 // zone it crosses — below 54, below the low target, in range, above the high
-// target, above 250. In range stays neutral; each excursion is clipped and
+// target, above 250. In range stays quiet (a muted green); each excursion is clipped and
 // drawn in its zone's tone and hatching (glucose-zones.tsx), so colour marks
 // only time out of range. Each zone the band reaches gets a legend
 // entry, so no colour stands without its label. The target range's two edges

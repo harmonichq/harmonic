@@ -26,9 +26,9 @@
 
 .ui-profile__chart { display: block; overflow: visible; }
 
-/* The band: neutral in range, the excursions in their zone's tone, small enough
+/* The band: quiet green in range, the excursions in their zone's tone, small enough
    to mark rather than flood; the median rides on it with a halo. */
-.ui-profile__neutral { fill: var(--wk-ink-body); fill-opacity: .22; }
+.ui-profile__neutral { fill: var(--glucose-in-range); fill-opacity: .24; }
 .ui-profile__band .ui-zone-area { fill-opacity: .85; }
 .ui-profile__swatch { width: 14px; height: 10px; }
 .ui-profile__median { fill: none; stroke: var(--wk-ink); stroke-width: 2; stroke-linejoin: round; }

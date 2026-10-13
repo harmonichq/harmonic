@@ -1,7 +1,7 @@
 // SettingCard (§4.2): the open setting. Its title is one line: the kind word
-// ("Basal") in ink, then its time block in meta ink on the same baseline; current
-// → suggested in figure type; the EvidenceChart; the evidence count and one
-// Range. No button: a setting is changed on the pump, not here. A range the
+// ("Basal") in strong ink, then its time block in regular meta ink on the same
+// baseline; current → suggested in figure type, only the suggestion in strong
+// ink; the EvidenceChart; then Nights and Range as two captioned values. No button: a setting is changed on the pump, not here. A range the
 // engine serves as one value (lo = hi) shows that value once. Once the slot's
 // change has matured into a Trial, the card names it and links to Changes.
 import { Num } from '../../Num';
@@ -31,15 +31,19 @@ export function SettingCard({ data, onChanges }: SettingCardProps) {
         <EvidenceChart nights={data.nights} roster={data.roster} current={data.current} estimate={data.estimate}
           lo={data.lo} hi={data.hi} units={data.units} />
       </div>
-      <div className="ui-scard__facts">
-        <span className="ui-scard__count"><Num value={data.days} /> nights</span>
-        <span className="ui-scard__range">
-          <span className="ui-caption">Range</span>
-          <span>
-            {collapsed ? <Num value={data.lo} /> : <><Num value={data.lo} />–<Num value={data.hi} /></>} {data.units}
-          </span>
-        </span>
-      </div>
+      <dl className="ui-scard__facts">
+        <div>
+          <dt className="ui-caption">Nights</dt>
+          <dd><Num value={data.days} /></dd>
+        </div>
+        <div>
+          <dt className="ui-caption">Range</dt>
+          <dd>
+            {collapsed ? <Num value={data.lo} /> : <><Num value={data.lo} />–<Num value={data.hi} /></>}
+            <span className="ui-scard__unit">{data.units}</span>
+          </dd>
+        </div>
+      </dl>
       {data.trial && (
         <div className="ui-scard__trial">
           <span className="ui-caption">Trial</span>

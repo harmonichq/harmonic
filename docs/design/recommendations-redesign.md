@@ -150,6 +150,8 @@ in §2.
 | Glucose 70–180 (library, clinical AGP) | `--glucose-in-range` | #7ec476 |
 | Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
 | Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
+| Insulin (library; bolus marks, the delivered-basal area at 34%) | `--ui-insulin` | #a78bfa |
+| Carbs (library; logged-carb marks and a meal bolus's grams) | `--ui-carbs` | #3cc8c8 |
 | In range, quiet (library; a day's trace and other large in-range areas) | `--glucose-in-range-quiet` | `--glucose-in-range` mixed 50% with `--wk-ink-body` (oklab) |
 
 - **Glucose bands follow the clinical AGP colours** (the 2019 international

@@ -63,6 +63,15 @@
   --primary: #7aa8e6;
   --on-primary: #0d1522;
   --ring: color-mix(in srgb, var(--primary) 34%, transparent);
+  /* Data families for a day's events (2026-10-13): insulin is violet, carbs
+     teal. Neither reuses a glucose zone hue or the blue accent, so a mark's
+     colour never reads as glucose or as "press here". Both clear 4.5:1 as text
+     against --wk-surface and --wk-canvas (violet 6.08 / 7.13, teal 8.10 /
+     9.50). Device and context events (site change, sleep) stay neutral ink.
+     The delivered-basal area is the violet at low strength. */
+  --ui-insulin: #a78bfa;
+  --ui-insulin-area: color-mix(in srgb, var(--ui-insulin) 34%, transparent);
+  --ui-carbs: #3cc8c8;
   --ui-estimate: var(--primary);
   --ui-estimate-band: color-mix(in srgb, var(--ui-estimate) 16%, transparent);
 

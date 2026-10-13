@@ -1,29 +1,34 @@
-// DayChart (§4.2): one day, full width, three lanes on one time axis under a
-// strip of the day's marks.
+// DayChart (§4.2): one day, full width, on one time axis: a strip of the
+// day's context, the glucose lane, a lane of event marks, and basal.
 //
-// The strip: the pump's sleep schedule as a quiet neutral bar, its hours washed
-// faintly through the lanes beneath, never in a glucose tone; and each site
-// change as an outlined diamond at its time.
+// Each kind of event has one glyph from the library's icons, drawn in its data
+// family's colour wherever it appears (the chart, the legend, the list):
+// insulin violet for a meal bolus (a drop over a plate line) and a correction
+// (a plain drop), so the two differ by shape as well; carbs teal for a logged
+// entry (wheat); device and context neutral ink for a site change (an infusion
+// set) and sleep (a moon). No family reuses a glucose zone hue or the blue
+// accent.
 //
-// Glucose: the trace over the 70–180 band, a quiet green in range and in its
-// glucose zone's tone and hatch outside it (glucose-zones.tsx), clipped per
-// zone as the DayTile draws it, and broken where readings stop. The band's two
-// edges are labelled with their served values, the unit after the upper one, so
-// the zone colours need no legend. Logged carbs are rings on the trace at their
-// time. Insulin: one bar per bolus, as tall as its units against the day's
-// largest; a meal bolus is filled, a correction outlined. Basal: what was
-// delivered as an area, against the pump profile's programmed rate as a dashed
-// step, on a scale labelled at its top. The axis runs flush with the text
-// column, its end labels anchored inward.
+// The strip: the pump's sleep schedule as a quiet neutral bar with its moon,
+// its hours washed faintly through the lanes beneath, and each site change at
+// its time. Glucose: the trace over the 70–180 band, a quiet green in range and
+// in its glucose zone's tone and hatch outside it (glucose-zones.tsx), clipped
+// per zone as the DayTile draws it, and broken where readings stop; the band's
+// two edges carry their served values, the unit after the upper one, so the
+// zone colours need no legend. The marks lane holds boluses and logged carbs at
+// one size, off the trace; marks close in time stack into a second row. Basal:
+// what was delivered as a violet area, against the pump profile's programmed
+// rate as a neutral dashed step, on a scale labelled at its top. The axis runs
+// flush with the text column, its end labels anchored inward.
 //
-// Below, the day's events in time order (site changes among them): the time,
-// the mark, the kind, then
-// grams and units in aligned columns. A day without readings keeps its band
-// and axis, says "No data", and lists nothing.
+// Below, the day's events in time order: the time, the glyph, the kind, then
+// grams (in the carbs colour) and units in aligned columns. A day without
+// readings keeps its band and axis, says "No data", and lists nothing.
 import type { DayChartData, DayEvent } from '../../day-model';
 import { Num, NumSvg } from '../../Num';
 import { formatValue } from '../../provenance.js';
 import { glucoseDomain, glucoseFraction, zones } from '../../glucose-zones';
+import { Icon } from '../../icons';
 import '../../shared.css';
 import './DayChart.css';
 
@@ -32,33 +37,63 @@ export type DayChartProps = { data: DayChartData; width?: number; layout?: 'phon
 const DAY = 1440;
 const GAP = 10; // minutes without a reading that break the trace
 const LANE_GAP = 10;
-const INSULIN_HEIGHT = 30;
 const BASAL_HEIGHT = 30;
 const AXIS_HEIGHT = 18;
-const STRIP = 14; // the sleep bar and site-change diamonds above the glucose lane
+const STRIP = 18; // the sleep bar and site-change marks above the glucose lane
 
-function Mark({ kind, x, y, size = 8 }: { kind: DayEvent['kind']; x: number; y: number; size?: number }) {
-  if (kind === 'carbs') return <circle cx={x} cy={y} r={size / 2} className="ui-daychart__carbs" />;
-  if (kind === 'site') {
-    const r = size / 2;
-    return <path d={`M${x},${y - r}L${x + r},${y}L${x},${y + r}L${x - r},${y}Z`} className="ui-daychart__site" />;
-  }
-  return <rect x={x - size / 4} y={y - size / 2} width={size / 2} height={size}
-    className={kind === 'meal' ? 'ui-daychart__meal' : 'ui-daychart__correction'} />;
+const GLYPH = 14;
+const ROW = 17; // a stacked row in the marks lane
+const ROWS = 2;
+const MARKS_HEIGHT = ROW * ROWS + 2;
+
+type Family = 'insulin' | 'carbs' | 'device';
+const FAMILY: Record<DayEvent['kind'] | 'sleep', Family> = {
+  meal: 'insulin', correction: 'insulin', carbs: 'carbs', site: 'device', sleep: 'device',
+};
+
+/** A day-event glyph from the library's icons, centred on (x, y), in its family's colour. */
+function Glyph({ name, x, y, size = GLYPH }: { name: DayEvent['kind'] | 'sleep'; x: number; y: number; size?: number }) {
+  return (
+    <g transform={`translate(${x - size / 2},${y - size / 2})`} className={`ui-daychart__mark ui-daychart__mark--${FAMILY[name]}`}>
+      <rect width={size} height={size} rx={3} className="ui-daychart__halo" />
+      <Icon name={name} size={size} stroke={1.8} />
+    </g>
+  );
 }
 
-function Key({ kind, label }: { kind: DayEvent['kind'] | 'basal' | 'profile' | 'sleep'; label: string }) {
+function Key({ kind, label }: { kind: DayEvent['kind'] | 'sleep' | 'basal' | 'profile'; label: string }) {
   return (
     <span className="ui-daychart__key">
-      <svg aria-hidden="true" width="14" height="10">
-        {kind === 'sleep' ? <rect y="3" width="14" height="4" rx="2" className="ui-daychart__sleep" />
-          : kind === 'basal' ? <rect y="2" width="14" height="8" className="ui-daychart__basal" />
-          : kind === 'profile' ? <line x1="0" x2="14" y1="5" y2="5" className="ui-daychart__profile" />
-            : <Mark kind={kind} x={7} y={5} />}
-      </svg>
+      {kind === 'basal' || kind === 'profile' ? (
+        <svg aria-hidden="true" width="14" height="10">
+          {kind === 'basal' ? <rect y="2" width="14" height="8" className="ui-daychart__basal" />
+            : <line x1="0" x2="14" y1="5" y2="5" className="ui-daychart__profile" />}
+        </svg>
+      ) : (
+        <span className={`ui-daychart__key-glyph ui-daychart__mark--${FAMILY[kind]}`}><Icon name={kind} size={14} stroke={1.8} /></span>
+      )}
       {label}
     </span>
   );
+}
+
+/** Places for the marks lane: each mark takes the first row where it clears the
+ *  one before it, so marks close in time stack; when every row is taken it goes
+ *  in the row that frees soonest, nudged just clear of its neighbour. */
+function stack<T extends { minute: number }>(marks: T[], x: (minute: number) => number, width: number) {
+  const ends: number[] = [];
+  const clear = GLYPH + 2;
+  return marks.map((mark) => {
+    let at = Math.min(Math.max(x(mark.minute), GLYPH / 2), width - GLYPH / 2);
+    let row = ends.findIndex((end) => at - end >= clear);
+    if (row === -1 && ends.length < ROWS) row = ends.length;
+    if (row === -1) {
+      row = ends.indexOf(Math.min(...ends));
+      at = Math.min(ends[row] + clear, width - GLYPH / 2);
+    }
+    ends[row] = at;
+    return { mark, row, at };
+  });
 }
 
 const LABELS: Record<DayEvent['kind'], string> = {
@@ -80,9 +115,9 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
   const glucoseHeight = layout === 'desktop' ? 260 : 176;
   const glucoseTop = STRIP + 4;
   const glucoseBottom = glucoseTop + glucoseHeight;
-  const insulinTop = glucoseBottom + LANE_GAP;
-  const insulinBottom = insulinTop + INSULIN_HEIGHT;
-  const basalTop = insulinBottom + LANE_GAP;
+  const marksTop = glucoseBottom + LANE_GAP / 2;
+  const marksBottom = marksTop + MARKS_HEIGHT;
+  const basalTop = marksBottom + LANE_GAP;
   const basalBottom = basalTop + BASAL_HEIGHT;
   const height = basalBottom + AXIS_HEIGHT;
   const empty = data.cgm.length === 0;
@@ -91,15 +126,11 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
   const domain = glucoseDomain(data.cgm.map((r) => r.bg));
   const y = (bg: number) => glucoseBottom - glucoseHeight * glucoseFraction(bg, domain);
   const traces = runs(data.cgm).map((run) => run.map((r) => `${x(r.minute).toFixed(1)},${y(r.bg).toFixed(1)}`).join(' '));
-  const bgAt = (minute: number) => data.cgm.reduce((best, r) =>
-    Math.abs(r.minute - minute) < Math.abs(best.minute - minute) ? r : best, data.cgm[0]);
   const id = `ui-daychart-${layout}`;
 
-  const doses = data.events.filter((e): e is Extract<DayEvent, { insulin: unknown }> => 'insulin' in e);
+  const marks = stack(data.events.filter((e) => e.kind !== 'site'), x, width);
   const sites = data.events.filter((e) => e.kind === 'site');
   const sleep = empty ? [] : data.sleep;
-  const most = Math.max(0, ...doses.map((e) => e.insulin.value));
-  const bar = layout === 'desktop' ? 6 : 4;
 
   const rates = data.basal.flatMap((row) => [row.delivered, row.programmed]);
   const basalMax = Math.max(0.5, Math.ceil(Math.max(0, ...rates) * 2) / 2);
@@ -119,8 +150,8 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
     <section className={`ui-daychart ui-daychart--${layout}`}>
       {!empty && (
         <div className="ui-daychart__legend">
-          <Key kind="meal" label="Meal" />
-          <Key kind="correction" label="Correction" />
+          {data.events.some((e) => e.kind === 'meal') && <Key kind="meal" label="Meal" />}
+          {data.events.some((e) => e.kind === 'correction') && <Key kind="correction" label="Correction" />}
           {data.events.some((e) => e.kind === 'carbs') && <Key kind="carbs" label="Carbs" />}
           <Key kind="basal" label="Basal" />
           <Key kind="profile" label="Pump profile" />
@@ -143,10 +174,13 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
             <g key={w.from}>
               <rect x={x(w.from)} y={glucoseTop} width={x(w.to) - x(w.from)} height={basalBottom - glucoseTop}
                 className="ui-daychart__sleep-wash" />
-              <rect x={x(w.from)} y={5} width={x(w.to) - x(w.from)} height={4} rx={2} className="ui-daychart__sleep" />
+              <rect x={x(w.from)} y={7} width={x(w.to) - x(w.from)} height={4} rx={2} className="ui-daychart__sleep" />
+              {x(w.to) - x(w.from) > 3 * GLYPH && (
+                <Glyph name="sleep" x={x(w.from) + GLYPH / 2} y={9} size={12} />
+              )}
             </g>
           ))}
-          {sites.map((e) => <Mark key={`s${e.minute}`} kind="site" x={x(e.minute)} y={7} size={10} />)}
+          {sites.map((e) => <Glyph key={`s${e.minute}`} name="site" x={Math.min(Math.max(x(e.minute), GLYPH / 2), width - GLYPH / 2)} y={9} />)}
           {hours.slice(1, -1).map((minute) => (
             <line key={minute} x1={x(minute)} x2={x(minute)} y1={glucoseTop} y2={basalBottom} className="ui-daychart__grid" />
           ))}
@@ -154,7 +188,7 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
           <line x1={0} x2={width} y1={yLow} y2={yLow} className="ui-daychart__target" />
           <line x1={0} x2={width} y1={yHigh} y2={yHigh} className="ui-daychart__target" />
           <line x1={0} x2={width} y1={glucoseBottom} y2={glucoseBottom} className="ui-daychart__rule" />
-          <line x1={0} x2={width} y1={insulinBottom} y2={insulinBottom} className="ui-daychart__rule" />
+          <line x1={0} x2={width} y1={marksBottom} y2={marksBottom} className="ui-daychart__rule" />
           <line x1={0} x2={width} y1={basalBottom} y2={basalBottom} className="ui-daychart__rule" />
         </g>
         <text x={0} y={yHigh - 5} className="ui-daychart__scale">
@@ -167,14 +201,9 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
               className={zone.tone === 'in-range' ? 'ui-daychart__trace ui-daychart__trace--in-range'
                 : `ui-daychart__trace ui-zone-stroke ui-zone--${zone.tone}`} />
           )))}
-          {!empty && data.events.filter((e) => e.kind === 'carbs').map((e) => (
-            <Mark key={`c${e.minute}`} kind="carbs" x={x(e.minute)} y={y(bgAt(e.minute).bg)} size={10} />
+          {marks.map(({ mark, row, at }, i) => (
+            <Glyph key={i} name={mark.kind} x={at} y={marksTop + ROW / 2 + row * ROW} />
           ))}
-          {doses.map((e, i) => {
-            const h = Math.max(3, (INSULIN_HEIGHT - 2) * (e.insulin.value / most));
-            return <rect key={i} x={x(e.minute) - bar / 2} y={insulinBottom - h} width={bar} height={h}
-              className={e.kind === 'meal' ? 'ui-daychart__meal' : 'ui-daychart__correction'} />;
-          })}
           {delivered && <path d={delivered} className="ui-daychart__basal" />}
           {delivered && <path d={step('programmed')} className="ui-daychart__profile" />}
         </g>
@@ -202,9 +231,9 @@ export function DayChart({ data, width = 358, layout = 'phone' }: DayChartProps)
           {data.events.map((e, i) => (
             <li key={i} className="ui-daychart__event">
               <span className="ui-daychart__time"><Num value={e.time} /></span>
-              <svg aria-hidden="true" width="12" height="12" className="ui-daychart__glyph"><Mark kind={e.kind} x={6} y={6} size={10} /></svg>
+              <span className={`ui-daychart__glyph ui-daychart__mark--${FAMILY[e.kind]}`} aria-hidden="true"><Icon name={e.kind} size={14} stroke={1.8} /></span>
               <span className="ui-daychart__kind">{LABELS[e.kind]}</span>
-              <span className="ui-daychart__grams">
+              <span className="ui-daychart__grams ui-daychart__mark--carbs">
                 {e.kind === 'carbs' ? <><Num value={e.grams} /> g</> : 'carbs' in e && e.carbs && <><Num value={e.carbs} /> g</>}
               </span>
               <span className="ui-daychart__units">{'insulin' in e && <><Num value={e.insulin} /> U</>}</span>

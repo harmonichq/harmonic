@@ -1,7 +1,10 @@
 # Recommendations redesign
 
-Status: **exploring** (#481). The information architecture is approved (2026-10-12).
-The Lock is approved as a draft and becomes binding when a direction is locked.
+Status: **exploring** (#481).
+- Information architecture approved 2026-10-12.
+- Direction approved 2026-10-12 (step 1 closed): round 3 on the design canvas,
+  https://claude.ai/artifact/KHE7tPovxexxNx1ZQS8zfM, row "Current · round 3".
+- Component inventory (§4) proposed and awaiting approval.
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the
@@ -178,6 +181,173 @@ Any term not in this table may not appear in the UI.
 ### 2.4 Approved screen list
 The inventory in §1.3, with phone screens at 390 px and desktop at 1440 px.
 Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
+
+## 4. Component inventory (proposed — awaiting approval)
+
+Twenty components. Screens are composed only from these. Every state listed
+gets a Storybook story in step 3. "Fields" are the only served data a component
+may display; derived values name their formula in the provenance table.
+
+### 4.1 Size per role (one each)
+
+| Role | Size |
+|---|---|
+| Type | 34 figure · 22 title · 17 body · 13 label · 11 caption. Weights 400 and 600 only. Tabular numerals. |
+| Primary button | 50 px, full width, `--primary` fill. One per screen. |
+| Secondary button | 32 px, outlined neutral. |
+| Text button | 32 px hit area, no fill. |
+| Icon button | 44 px target, 20 px glyph. |
+| Segmented control | 28 px. |
+| Answer button (Prompt) | 44 px, outlined neutral, equal widths. |
+| Navigation item | 44 px target. |
+| List row | 48 px minimum. |
+
+### 4.2 Components
+
+Every component's error state is "Unavailable" with Retry at screen level
+unless noted. Loading is a skeleton of the component's own shape.
+
+**Shell**
+
+1. **NavBar**: the phone tab bar and the desktop/tablet rail; five items, an
+   icon above a label.
+   - States: default; item selected; with a count badge; with an alert badge.
+   - Fields: `prompts` length (Day count); `status.last_error` and
+     `status.last_success_at` (Settings alert).
+   - Desktop: the rail, with the same items and badges.
+2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
+   control, or a labelled action).
+   - States: default; with date; with action ("+ Log carbs").
+   - Fields: `outcomes_*.span_end` (date).
+   - Desktop: the same, at the top of each pane.
+3. **SegmentedControl**: 14 / 30 / 90 d.
+   - States: each option selected; disabled (window lacks coverage).
+   - Fields: `outcomes_*.coverage.days`.
+   - Desktop: the same, full width of its group.
+4. **Button**, in the roles from §4.1.
+   - States: default; pressed; focused; disabled; busy.
+   - Fields: none.
+   - Desktop: the same, with a visible focus ring.
+5. **StatePill**: a one-word state.
+   - States: Pattern, Setting, Wide, Maturing, Better, Worse, Unclear, Recorded.
+   - Fields: `guidance.candidates[].kind`; `support.wide`; the trial and focus lifecycle and result.
+   - Desktop: the same.
+6. **TransientBar**: a label plus one text action, shown above the tab bar.
+   - States: "Snoozed · Until <date>" + Undo; "Not saved" + Retry.
+   - Fields: the snooze-until date (now + 14 d).
+   - Desktop: the same, at the bottom of the detail pane; Undo also on ⌘Z.
+
+**Queue**
+
+7. **QueueRow**: a collapsed recommendation, with its title, one magnitude
+   ("9 of 71 lows") and a cause label.
+   - States: default; selected (desktop); mid-swipe (snooze reveal);
+     no cause (label omitted); setting (current → suggested replaces the
+     magnitude); loading.
+   - Fields: `guidance.candidates[].title, kind, priority, admitted,
+     preference`; `findings.outcome_patterns[].k, n` and the noun; the top
+     cause lever from `findings.rows[].fold_sentences`.
+   - Desktop: a list row that selects into the detail pane. Snooze is an icon
+     button in the detail header (shortcut S); there's no swipe.
+8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
+   a Range in the magnitude's units, and Pin.
+   - States: multi-cause; **single cause**; **no attributed cause**; Wide;
+     pinned (Pin replaced by a "Focus" pill); loading.
+   - Fields: `outcome_patterns[].k, n, wilson`; fold sentences (count,
+     denominator, lever title).
+   - Desktop: the detail pane.
+9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
+   by cause, plus a legend.
+   - States: multi-cause; single cause (one legend entry); no cause (a
+     neutral fill, with a "Meals" or "Lows" legend only).
+   - Fields: as PatternCard.
+   - Desktop: larger cells, same rules.
+10. **SettingCard**: the open setting, showing current → suggested in figure
+    type, the time block as its title, a compact EvidenceChart, the evidence
+    count ("30 nights") and one Range. No button.
+    - States: default; range collapsed (lo = hi, single value shown);
+      matured into a Trial (Changes link).
+    - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
+      days`, plus their ISF/carb-ratio equivalents.
+    - Desktop: the detail pane.
+11. **EvidenceChart**: the setting's slot evidence, showing the nights'
+    delivered rate against current and suggested.
+    - States: default; zero variance (a compact strip).
+    - Fields: `analyze.basal[slot].evidence.night_roster`.
+    - Desktop: wider, same marks.
+
+**Overview**
+
+12. **GlucoseProfile**: 24 h, 30 d. Shows the median, the 10–90% spread, the
+    above-180 tint, the 70/180 lines with a 250 tick, meal density, and one
+    Median callout.
+    - States: default; insufficient data ("No data").
+    - Fields: `time_of_day.pooled.bins[]` (median, p10, p90), `pooled.meals`,
+      `target_range`.
+    - Desktop: full pane width.
+13. **TimeInRangeBar**: five AGP bands, each labelled; 70–180 labelled
+    "In range".
+    - States: each window.
+    - Fields: `outcomes_*.metrics.tbr_lvl1, tbr_lvl2, tir, tar_lvl1, tar_lvl2`
+      (bands derived as differences).
+    - Desktop: the same.
+14. **MetricFigure**: a value, its unit, and its change against 90 d (arrow,
+    better/worse colour, units).
+    - States: better; worse; unchanged (neutral); not available.
+    - Fields: `outcomes_*.metrics.tir, mean_glucose, gmi, cv, tbr_lvl1,
+      tar_lvl1`.
+    - Desktop: the same, in a row.
+15. **DayTile**: a weekday and date, sparkline over the 70–180 band, ▽/△
+    counts or ✓, and in-range %.
+    - States: default; selected; clean (✓); no data.
+    - Fields: `day_navigator.days[]`.
+    - Desktop: the Overview's recent-days strip and Day's month grid.
+
+**Changes**
+
+16. **ChangeCard**: the active Trial or Focus. Shows what changed (before →
+    after, or the habit), its days of evidence as ticks, and Before/After
+    values once matured, with End.
+    - States: Trial maturing; Trial matured with a result (Better / Worse /
+      Unclear); Focus active; ended; none ("No active change").
+    - Fields: `trials.trials[]` (before, after, changed_at, maturing,
+      ending.assessment.outcomes); `focus.focuses[]`; `guidance.admission`.
+    - Desktop: the same, in the Changes pane.
+
+**Day**
+
+17. **DayChart**: one day. Shows glucose with the 70–180 band, bolus markers
+    (meal / correction), basal delivered against programmed, logged-carb
+    markers, and an event list below.
+    - States: default; no data; with logged carbs.
+    - Fields: `timeline.cgm, boluses, basal, pump_events, sleep_windows`;
+      `carbs.carb_entries`.
+    - Desktop: wide, with the month grid of DayTiles beside it.
+18. **PromptCard**: one low prompt, showing "Low · <date time> · <mg/dL>",
+    its sparkline, and Yes · No · False low.
+    - States: unanswered; Yes recorded (optional grams field); mid-swipe
+      (Not sure).
+    - Fields: `prompts[].anchor_t, key_bg, cgm`; answers posted to
+      `/api/prompts/answer`; grams via `PATCH /api/carbs/{id}`.
+    - Desktop: a fourth button, Not sure, instead of the swipe.
+19. **LogCarbsEntry**: a grams field sized to 3 digits, Time (a tappable row,
+    default now), and Save.
+    - States: empty; filled; saving; not saved.
+    - Fields: posts `t, grams, certainty` to `/api/carbs`.
+    - Desktop: a popover anchored to "+ Log carbs"; on phone, a bottom sheet
+      on the system keyboard.
+
+**Settings**
+
+20. **ListRow**: label, inline value or state, ›; read-only rows have no ›.
+    - States: navigable; read-only; with alert ("⚠ Failed"); with a secondary
+      button ("Update").
+    - Fields: `status`; `credentials.configured, email` (masked), `region`;
+      `pump_settings.profile.segments[]`.
+    - Desktop: the same.
+
+The Glossary page is ListRow plus `.glossary` definitions. The Pump profile
+segment table is ListRow in a dense variant.
 
 ## 3. Files beside this document
 - `build.py`: the exploration generator. It reads captured API answers, which are not committed.

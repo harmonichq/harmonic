@@ -97,3 +97,11 @@ test('(e) a fixed-precision value and a bounded count resolve like any other fie
   assert.deepEqual(run({ texts: [{ text: '2', source: 'slot.nights[rate<0.6].length' }] }), []);
   assert.deepEqual(run({ texts: [{ text: '1', source: 'slot.nights[rate>0.6].length' }] }), []);
 });
+
+test('a derived difference is taken between the values as printed', async () => {
+  const { resolveSource, formatValue } = await import('./provenance.js');
+  const root = { rate: { before: 0.25539, after: 0.23256 } };
+  const shown = formatValue(resolveSource(root, 'rate.before − rate.after', 'pct1'), 'pct1');
+  // 25.5 − 23.3 as printed, not the 2.3 of the unrounded rates.
+  assert.equal(shown, '2.2');
+});

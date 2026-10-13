@@ -20,12 +20,3 @@
 }
 .ui-metric__unit { color: var(--wk-ink-meta); font-size: var(--ui-type-label); font-weight: var(--ui-weight-regular); }
 
-.ui-metric__change {
-  color: var(--wk-ink-body);
-  font-size: var(--ui-type-label);
-  font-weight: var(--ui-weight-strong);
-  white-space: nowrap;
-}
-.ui-metric__change--favorable { color: var(--wk-status-favorable); }
-.ui-metric__change--adverse { color: var(--wk-status-adverse); }
-.ui-metric__change .ui-metric__unit { color: inherit; }

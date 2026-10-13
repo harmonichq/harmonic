@@ -12,5 +12,5 @@ export const fixtures = data;
 
 /** One served field, or several joined by " − " for a derived value. */
 export function sourced<T>(source: string, format?: Format): Sourced<T> {
-  return { value: resolveSource(data, source) as T, source, format };
+  return { value: resolveSource(data, source, format) as T, source, format };
 }

@@ -95,7 +95,7 @@
   border-top: 1px solid var(--wk-rule);
 }
 .ui-change__table thead th {
-  padding: 12px 0 6px;
+  padding: 12px 0 6px 16px;
   text-align: right;
 }
 .ui-change__row th,
@@ -106,8 +106,9 @@
   font-weight: var(--ui-weight-regular);
   line-height: 20px;
 }
-.ui-change__row th { text-align: left; }
-.ui-change__row td { width: 30%; text-align: right; }
+/* The label takes what the value columns leave; nothing wraps. */
+.ui-change__row th { text-align: left; white-space: nowrap; }
+.ui-change__row td { width: 1%; padding-left: 16px; text-align: right; white-space: nowrap; }
 .ui-change__row--target th,
 .ui-change__row--target td { color: var(--wk-ink); font-weight: var(--ui-weight-strong); }
 .ui-change__unit { margin-left: 1px; color: var(--wk-ink-meta); font-weight: var(--ui-weight-regular); }

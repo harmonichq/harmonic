@@ -553,7 +553,8 @@ def _focus_tracking(client: TestClient, focus_id: int) -> dict:
                for arm in ("before", "after")},
             "assessment": {"state": adherence["assessment"]["state"]},
         },
-        "outcomes": [{field: row[field] for field in ("key", "unit", "before", "after", "role")}
+        "outcomes": [{**{field: row[field] for field in ("key", "unit", "before", "after", "role")},
+                      "assessment": {"state": row["assessment"]["state"]}}
                      for row in comparison["outcomes"] if row["key"] in FOCUS_OUTCOMES],
     }
 

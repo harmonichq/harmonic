@@ -287,6 +287,9 @@
             "outcomes": [
               {
                 "after": 64.6,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 65.3,
                 "key": "tir",
                 "role": "context",
@@ -294,6 +297,9 @@
               },
               {
                 "after": 2.4,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 2.6,
                 "key": "tbr",
                 "role": "context",
@@ -301,6 +307,9 @@
               },
               {
                 "after": 33.0,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 32.1,
                 "key": "tar",
                 "role": "context",
@@ -308,6 +317,9 @@
               },
               {
                 "after": 201.0,
+                "assessment": {
+                  "state": "context"
+                },
                 "before": 201.0,
                 "key": "peak",
                 "role": "mapped_outcome",
@@ -315,6 +327,9 @@
               },
               {
                 "after": 135.0,
+                "assessment": {
+                  "state": "context"
+                },
                 "before": 124.0,
                 "key": "nadir",
                 "role": "mapped_outcome",
@@ -368,6 +383,9 @@
             "outcomes": [
               {
                 "after": 83.8,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 65.3,
                 "key": "tir",
                 "role": "context",
@@ -375,6 +393,9 @@
               },
               {
                 "after": 0.0,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 2.6,
                 "key": "tbr",
                 "role": "context",
@@ -382,6 +403,9 @@
               },
               {
                 "after": 16.2,
+                "assessment": {
+                  "state": "unclear"
+                },
                 "before": 32.1,
                 "key": "tar",
                 "role": "context",
@@ -389,6 +413,9 @@
               },
               {
                 "after": 193.0,
+                "assessment": {
+                  "state": "context"
+                },
                 "before": 201.0,
                 "key": "peak",
                 "role": "mapped_outcome",
@@ -396,6 +423,9 @@
               },
               {
                 "after": 159.5,
+                "assessment": {
+                  "state": "context"
+                },
                 "before": 124.0,
                 "key": "nadir",
                 "role": "mapped_outcome",

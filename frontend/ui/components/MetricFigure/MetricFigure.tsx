@@ -1,13 +1,14 @@
 // MetricFigure (§4.2): one CGM metric over the selected window — its label,
 // value and unit — and below it the change against 90 d.
 //
-// The change carries ▲ or ▼ and the amount in the metric's own unit, coloured
-// favourable or adverse by the metric's good direction, so the arrow and the
-// colour say the same thing twice (§2.3 ban 4). A change that prints as zero
-// has no arrow and stays in neutral ink. A metric the engine does not serve
+// The change is a Delta (the one change element, shared with ChangeCard): ▲ or
+// ▼ and the amount in the metric's own unit, coloured favourable or adverse by
+// the metric's good direction. A change that prints as zero has no arrow and
+// stays in neutral ink. A metric the engine does not serve
 // shows a dash and no change.
 import { ZoneSwatch } from '../../glucose-zones';
 import { change, type MetricData, type MetricKey } from '../../overview-model';
+import { Delta } from '../../Delta';
 import { Num } from '../../Num';
 import '../../shared.css';
 import './MetricFigure.css';
@@ -43,13 +44,7 @@ export function MetricFigure({ data }: MetricFigureProps) {
           <span className="ui-metric__unit">{unit}</span>
         </span>
       )}
-      {shown && (
-        <span className={`ui-metric__change${shown.tone ? ` ui-metric__change--${shown.tone}` : ''}`}>
-          {shown.direction && <span aria-hidden="true">{shown.direction === 'up' ? '▲' : '▼'} </span>}
-          <Num value={shown.amount} />
-          <span className="ui-metric__unit"> {unit}</span>
-        </span>
-      )}
+      {shown && <Delta change={shown} unit={unit} />}
     </div>
   );
 }

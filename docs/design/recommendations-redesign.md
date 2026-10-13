@@ -299,6 +299,15 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   counted against the engine's gate as ticks, the result the engine serves
   for the habit, and Before/After for the outcomes its Pattern maps to and
   the glossary metrics (§4.2 ChangeCard).
+- **2026-10-13 — a resolved change carries its deltas.** The operator:
+  "Resolved trials and focuses both need to carry delta values with color
+  indicators. And up-down arrows. I think we already have that in other
+  elements of the design," and asked that the two be kept in sync. One Delta
+  element (▲/▼, the amount, favourable or adverse colour) now serves both
+  MetricFigure and ChangeCard. On a change, a row is green or red only where
+  the engine judged that row better or worse; an unclear or context row moves
+  in neutral ink. Every derived difference is taken between the values as
+  printed, so a delta always equals the numbers beside it.
 - **2026-10-13 — charts take their container's width.** The operator: "fix
   the chart width to be responsive on desktop." The Setting card's evidence
   chart had stayed at its phone width inside a wide desktop card; every chart
@@ -463,7 +472,7 @@ unless noted. Loading is a skeleton of the component's own shape.
 16. **ChangeCard**: the active Trial or Focus. Shows what changed (the
     setting before → after, or how often the habit happened before → after),
     its evidence as ticks (a Trial's days, a Focus's meals), and Before/After
-    values once matured, with End.
+    values with a Δ (the shared Delta) once matured, with End.
     - States: Trial maturing; Trial matured with a result (Better / Worse /
       Unclear); Focus with no data yet; Focus maturing; Focus matured with a
       result (the engine's verdict on the habit); ended; none ("No active

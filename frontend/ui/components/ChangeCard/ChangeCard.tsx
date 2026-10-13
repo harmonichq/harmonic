@@ -6,7 +6,9 @@
 // the one figure; its days of evidence as ticks, one per required day, filled
 // as they accrue, counted against the days required ("6 / 14"). A matured
 // Trial has every required day, "14 / 14", however long it has run since.
-// Once matured, the engine's Before and After for the glossary metrics, the
+// Once matured, the engine's Before and After for the glossary metrics, each
+// with its Δ (the shared Delta: ▲/▼ and the amount, green or red only where
+// the engine judged that row better or worse, neutral where unclear), the
 // Trial's own target metric in strong ink, since that is the row the result
 // reads. End (§1.3a) is a compact secondary action, offered only
 // when the engine accepts it: a matured active Trial. An ended Trial keeps its
@@ -28,6 +30,7 @@
 import type { ReactNode } from 'react';
 import type { ChangeData, FocusData, OutcomeRow, TrialData } from '../../changes-model';
 import type { Sourced } from '../../fixtures';
+import { Delta } from '../../Delta';
 import { Num } from '../../Num';
 import { Button } from '../Button/Button';
 import { StatePill } from '../StatePill/StatePill';
@@ -70,6 +73,7 @@ function Outcomes({ rows }: { rows: OutcomeRow[] }) {
           <td />
           <th scope="col" className="ui-caption">Before</th>
           <th scope="col" className="ui-caption">After</th>
+          <th scope="col" className="ui-caption">Δ</th>
         </tr>
       </thead>
       <tbody>
@@ -83,6 +87,7 @@ function Outcomes({ rows }: { rows: OutcomeRow[] }) {
               </th>
               <td><Num value={row.before} /><Unit unit={row.unit} /></td>
               <td><Num value={row.after} /><Unit unit={row.unit} /></td>
+              <td><Delta change={row.delta} /></td>
             </tr>
           );
         })}
@@ -153,6 +158,7 @@ function Focus({ data, onEnd, confirm }: { data: FocusData } & Ends) {
           <span className="ui-change__arrow" aria-hidden="true">→</span>
           <span className="ui-change__after"><Num value={data.adherence.after} /></span>
           <span className="ui-change__units">% of {data.adherence.unit}</span>
+          <Delta change={data.adherence.delta} unit="%" />
         </div>
       )}
       {data.counted && (

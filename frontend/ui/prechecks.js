@@ -69,7 +69,7 @@ export function precheckProblems({ texts: shown, names, buttons, primaries, scro
     }
     let shown;
     try {
-      shown = formatValue(resolveSource(fixtures, source), format ?? undefined);
+      shown = formatValue(resolveSource(fixtures, source, format ?? undefined), format ?? undefined);
     } catch (error) {
       found.push(`(e) "${text}": ${error.message}`);
       continue;

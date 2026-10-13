@@ -108,7 +108,8 @@ export function metric(store: OverviewStore, window: Window, key: MetricKey): Me
   };
 }
 
-export type Change = { direction: 'up' | 'down' | null; tone: 'favorable' | 'adverse' | null; amount: Sourced<number> };
+import type { Change } from './Delta';
+export type { Change };
 
 /** The change against 90 d, as printed: an amount that is never negative (the
  *  formula is ordered larger − smaller) and a direction; neither direction nor

@@ -85,3 +85,15 @@
 }
 .ui-popover--end { align-self: flex-end; }
 .ui-popover--end::before { left: auto; right: 24px; }
+
+/* A change (Delta.tsx): ▲/▼ and the amount, favourable or adverse. */
+.ui-delta {
+  color: var(--wk-ink-body);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ui-delta--favorable { color: var(--wk-status-favorable); }
+.ui-delta--adverse { color: var(--wk-status-adverse); }
+.ui-delta__unit { font-weight: var(--ui-weight-regular); }

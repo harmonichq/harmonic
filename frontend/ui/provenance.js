@@ -4,7 +4,8 @@
 // resolves that path against the fixtures and compares it with the text.
 //
 // A derived number names its formula the same way: the source is fields joined
-// by " − " (subtracted), applied left to right, and
+// by " − " (subtracted), applied left to right to each field as its format
+// prints it, and
 // `data-format` names how the result is printed — `round` to the nearest whole
 // number, `fixed1` or `fixed2` to one or two decimals, `pct1` a served
 // proportion as a percentage to one decimal, `clock` as minutes since
@@ -56,10 +57,24 @@ export function resolveField(root, path) {
 
 const OPERATORS = { '−': (a, b) => a - b };
 
-export function resolveSource(root, source) {
+// A number as its format prints it, back in the field's own scale: a formula
+// works on the values the reader sees, so a change printed beside 25.5 and
+// 23.3 is 2.2, never the 2.3 of their unrounded difference.
+const PRINTED = {
+  round: (v) => Math.round(v),
+  fixed1: (v) => Number(v.toFixed(1)),
+  fixed2: (v) => Number(v.toFixed(2)),
+  pct1: (v) => Number((v * 100).toFixed(1)) / 100,
+};
+
+export function resolveSource(root, source, format) {
   const [first, ...rest] = source.split(/ (−) /);
-  let value = resolveField(root, first);
-  for (let i = 0; i < rest.length; i += 2) value = OPERATORS[rest[i]](value, resolveField(root, rest[i + 1]));
+  if (rest.length === 0) return resolveField(root, first);
+  const printed = PRINTED[format] ?? ((v) => v);
+  let value = printed(resolveField(root, first));
+  for (let i = 0; i < rest.length; i += 2) {
+    value = OPERATORS[rest[i]](value, printed(resolveField(root, rest[i + 1])));
+  }
   return value;
 }
 

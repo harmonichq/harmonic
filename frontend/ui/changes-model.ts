@@ -6,7 +6,9 @@
 // A store is one entry of `fixtures.changes`: its admission names the active
 // change, and its trials hold that Trial with its comparison, and any Trial the
 // person has ended (the last change).
+import type { Change } from './Delta';
 import { fixtures, sourced, type Sourced } from './fixtures';
+import { formatValue } from './provenance.js';
 
 export type ChangesStore = keyof typeof fixtures.changes;
 export type Result = 'better' | 'worse' | 'unclear';
@@ -19,6 +21,8 @@ export type OutcomeRow = {
   unit: string;
   /** The Trial's own target metric: the row its result reads. */
   target: boolean;
+  /** After against before, toned by the engine's own verdict on this row. */
+  delta: Change;
 };
 
 export type TrialData = {
@@ -56,7 +60,7 @@ export type FocusData = {
   counted: { count: Sourced<number>; required: Sourced<number>; unit: string } | null;
   /** How often the habit happened, before and after the pin, as a share of the
    *  counted events; null before any after data exists. */
-  adherence: { before: Sourced<number>; after: Sourced<number>; unit: string } | null;
+  adherence: { before: Sourced<number>; after: Sourced<number>; unit: string; delta: Change } | null;
   /** The engine's verdict on adherence; null while the Focus matures. */
   result: Result | null;
   /** The outcomes the Pattern maps to (peak, nadir), then the glossary metrics. */
@@ -70,6 +74,21 @@ export type ChangeData = TrialData | FocusData | { kind: 'none' };
 const OUTCOMES = ['tir', 'tbr', 'tar'] as const;
 // A Focus's rows: the outcomes its Pattern maps to first, then those.
 const FOCUS_OUTCOMES = ['peak', 'nadir', ...OUTCOMES] as const;
+
+/** After against before, as printed: the amount ordered larger − smaller, its
+ *  direction, and the tone of the engine's verdict on the row (favourable,
+ *  concerning). A row the engine judges unclear, or serves only as context,
+ *  stays neutral whichever way it moved: no colour the engine has not served. */
+export function delta(before: Sourced<number>, after: Sourced<number>, state: string | undefined): Change {
+  const rises = after.value >= before.value;
+  const amount = sourced<number>(rises ? `${after.source} − ${before.source}` : `${before.source} − ${after.source}`,
+    after.format);
+  if (formatValue(amount.value, after.format) === formatValue(0, after.format)) {
+    return { direction: null, tone: null, amount };
+  }
+  const tone = state === 'favorable' ? 'favorable' : state === 'concerning' ? 'adverse' : null;
+  return { direction: rises ? 'up' : 'down', tone, amount };
+}
 
 // The engine's assessment states, in the glossary's result words.
 const RESULTS: Record<string, Result> = { favorable: 'better', concerning: 'worse', unclear: 'unclear' };
@@ -100,15 +119,19 @@ function outcomeRows(path: string, rows: readonly Outcome[], targets: readonly s
   return keys.flatMap((key) => {
     const row = rows.find((r) => r.key === key);
     if (!row) return [];
-    return [{
-      key,
-      // Glucose in whole mg/dL; the shares to one decimal.
-      before: sourced<number>(`${path}[key=${key}].0.before`, row.unit === 'mg/dL' ? 'round' : 'fixed1'),
-      after: sourced<number>(`${path}[key=${key}].0.after`, row.unit === 'mg/dL' ? 'round' : 'fixed1'),
-      unit: row.unit,
-      target: targets.includes(key),
-    }];
+    // Glucose in whole mg/dL; the shares to one decimal.
+    const format = row.unit === 'mg/dL' ? 'round' : 'fixed1';
+    const before = sourced<number>(`${path}[key=${key}].0.before`, format);
+    const after = sourced<number>(`${path}[key=${key}].0.after`, format);
+    return [{ key, before, after, unit: row.unit, target: targets.includes(key),
+      delta: delta(before, after, row.assessment?.state) }];
   });
+}
+
+function adherence(path: string, unit: string, state: string): NonNullable<FocusData['adherence']> {
+  const before = sourced<number>(`${path}.tracking.adherence.before.rate`, 'pct1');
+  const after = sourced<number>(`${path}.tracking.adherence.after.rate`, 'pct1');
+  return { before, after, unit, delta: delta(before, after, state) };
 }
 
 /** The active change: its Trial or Focus, or none. */
@@ -133,11 +156,7 @@ export function change(name: ChangesStore): ChangeData {
         required: sourced(`${path}.tracking.readiness.required`),
         unit: tracked.readiness.unit,
       },
-      adherence: tracked && {
-        before: sourced(`${path}.tracking.adherence.before.rate`, 'pct1'),
-        after: sourced(`${path}.tracking.adherence.after.rate`, 'pct1'),
-        unit: tracked.readiness.unit,
-      },
+      adherence: tracked && adherence(path, tracked.readiness.unit, tracked.adherence.assessment.state),
       result: tracked && !maturing ? RESULTS[tracked.adherence.assessment.state] ?? null : null,
       outcomes: tracked ? outcomeRows(`${path}.tracking.outcomes`, tracked.outcomes, [], FOCUS_OUTCOMES) : [],
     };

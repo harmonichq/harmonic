@@ -11,6 +11,10 @@ Status: **exploring** (#481).
   `32398383`, with a delta coloured only where the engine judged that row
   better or worse. The operator: "Yes, that looks good to me. Let's proceed
   with locking it."
+- **Overview screen locked 2026-10-13**: Storybook `Screens/Overview` at commit
+  `0b0b78d8`: one page with no scrolling, one time-in-ranges bar for the
+  selected window, colour only on Below 70 and Above 180. The operator:
+  "locked."
 
 This document is the durable record of the redesign. Sections 1–3 are what the
 build will be checked against once they are approved. The appendix keeps the

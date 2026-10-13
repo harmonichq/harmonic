@@ -16780,7 +16780,7 @@
             "n": 91,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.2565,
               "lo": 0.1499
@@ -16792,7 +16792,7 @@
             "n": 91,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.0942,
               "lo": 0.0315
@@ -16804,7 +16804,7 @@
             "n": 33,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.3158,
               "lo": 0.1357
@@ -16816,7 +16816,7 @@
             "n": 33,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.2478,
               "lo": 0.0882
@@ -16828,7 +16828,7 @@
             "n": 30,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.1503,
               "lo": 0.028
@@ -18627,7 +18627,7 @@
             "n": 90,
             "subject": "pattern:highs_after_meals",
             "title": "Highs after meals",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.2712,
               "lo": 0.1614
@@ -18639,7 +18639,7 @@
             "n": 90,
             "subject": "pattern:lows_after_meals",
             "title": "Lows after meals",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.1087,
               "lo": 0.0401
@@ -18651,7 +18651,7 @@
             "n": 28,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.4046,
               "lo": 0.1906
@@ -18663,7 +18663,7 @@
             "n": 28,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.1603,
               "lo": 0.0301
@@ -18675,7 +18675,7 @@
             "n": 30,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
-            "wide": null,
+            "wide": true,
             "wilson": {
               "hi": 0.1503,
               "lo": 0.028
@@ -19272,7 +19272,10 @@
       "pattern": "lows_after_meals",
       "store": "wearer"
     },
-    "uncertain": null,
+    "uncertain": {
+      "pattern": "highs_after_meals",
+      "store": "wearer"
+    },
     "zero_variance": null
   },
   "status": {

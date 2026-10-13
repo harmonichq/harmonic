@@ -101,7 +101,7 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **Restore** | verb | Bring a snoozed item back. |
 | **Undo** | verb | Reverse the last snooze. |
 | **Range** | noun | The engine's interval for the statistic it sits next to. |
-| **Uncertain** | state | The engine flags it as not yet real enough to act on (its `wide` flag). On a Pattern: in the Queue, but the admission behind it does not hold at the low end of its evidence (ADR 485). On any other statistic: the range beside it is too broad to rely on. |
+| **Uncertain** | state | Not yet clear enough to act on: the evidence behind it is thin. |
 | **Episode** | noun | A dated event the engine cites as evidence. |
 | **Cause** | noun | The habit the engine attributes most of a Pattern's occurrences to. |
 | **Glucose profile** | noun | Glucose by time of day over the last 30 days: the median and the 10th–90th percentile spread. |

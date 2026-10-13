@@ -15438,7 +15438,7 @@
             "n": 40,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.2361,
               "lo": 0.0916
@@ -15450,7 +15450,7 @@
             "n": 40,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.08,
               "lo": 0.0075
@@ -15462,7 +15462,7 @@
             "n": 30,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.1922,
               "lo": 0.0493
@@ -17065,7 +17065,7 @@
             "n": 41,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.2583,
               "lo": 0.1085
@@ -17089,7 +17089,7 @@
             "n": 30,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.3445,
               "lo": 0.1498
@@ -18228,7 +18228,7 @@
             "n": 74,
             "subject": "pattern:highs_after_treating_lows",
             "title": "Highs after treating lows",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.2834,
               "lo": 0.1614
@@ -18240,7 +18240,7 @@
             "n": 74,
             "subject": "pattern:lows_after_correcting_highs",
             "title": "Lows after correcting highs",
-            "wide": true,
+            "wide": false,
             "wilson": {
               "hi": 0.0441,
               "lo": 0.0041

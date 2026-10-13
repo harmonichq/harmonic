@@ -114,8 +114,12 @@ Desktop has no hover-revealed actions, and every action has a visible control.
 | **In range, Below 70, Below 54, Above 180, Above 250, Mean, GMI, CV, Pre-meal, Post-meal 2 h** | metric | The standard CGM metrics. Below 54 and Above 250 are shown as subsets of Below 70 and Above 180, never as separate bands of the same total. |
 | **Tandem Source** | noun | The vendor account the data syncs from. |
 | **Pump profile** | noun | The active pump settings, read-only. |
+| **Sleep** | noun | The pump's sleep schedule, when Control-IQ runs its tighter overnight target. |
+| **Site change** | noun | A new infusion site and cartridge, as the pump logged it. |
 
-Any term not in this table may not appear in the UI.
+Any domain term not in this table may not appear in the UI. Plain interface
+words (labels, verbs, units, dates) are exempt; see the 2026-10-13 amendment
+in §2.
 
 ## 2. Lock (approved draft — binding once a direction is locked)
 
@@ -131,7 +135,7 @@ Any term not in this table may not appear in the UI.
 | Ink, body | `--wk-ink-body` | #cfc8bd |
 | Ink, meta | `--wk-ink-meta` | #a49c90 |
 | Rule | `--wk-rule` | #3f3833 |
-| Primary (the one accent: interaction, selection, the engine's estimate) | `--primary` | #7aa8e6 |
+| Primary (library; the one accent: interaction, selection, the engine's estimate; overrides `material.css`'s orange) | `--primary` | #7aa8e6 |
 | On primary | `--on-primary` | #0d1522 |
 | Focus ring | `--ring` | `--primary` at 34% |
 | In range | `--in-range` | #86ad78 |
@@ -146,7 +150,7 @@ Any term not in this table may not appear in the UI.
 | Glucose 70–180 (library, clinical AGP) | `--glucose-in-range` | #7ec476 |
 | Glucose 181–250 (library, clinical AGP) | `--glucose-high` | #efcf4c |
 | Glucose >250 (library, clinical AGP) | `--glucose-very-high` | #f08a3c |
-| Above-range tint (library) | `--glucose-above-range-tint` | `--glucose-high` at 22% |
+| In range, quiet (library; a day's trace and other large in-range areas) | `--glucose-in-range-quiet` | `--glucose-in-range` mixed 50% with `--wk-ink-body` (oklab) |
 
 - **Glucose bands follow the clinical AGP colours** (the 2019 international
   consensus on time in range, as Dexcom Clarity and LibreView draw them): very
@@ -188,8 +192,9 @@ Any term not in this table may not appear in the UI.
    empty-state prose or tooltip sentence. The Glossary definitions are the only
    exception.
 2. **Predictions** of any kind.
-3. **Invented labels, actions, advice, thresholds or targets.** Every term
-   comes from §1.5.
+3. **Invented labels, actions, advice, thresholds or targets.** Every domain
+   term comes from §1.5; plain interface words are exempt (amendment
+   2026-10-13).
 4. **Colour as the only signal.** Every state carries a glyph, label or position.
 5. **More than one primary action per screen**, or any other accent-filled control.
 6. **Content not in the engine's served data.** Every value traces to an
@@ -198,6 +203,15 @@ Any term not in this table may not appear in the UI.
 ### 2.4 Approved screen list
 The inventory in §1.3, with phone screens at 390 px and desktop at 1440 px.
 Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
+
+### 2.5 Amendments
+- **2026-10-13 — plain interface words are not glossary terms.** The labels
+  Before, After, Days, Next, Time, Now, Save, Not saved and Retry, and the
+  month abbreviations of a date, may appear without a §1.5 entry. The operator:
+  "I don't think those need to be glossary terms, they're just... words."
+  §1.5 now governs domain terms only.
+- **2026-10-13 — Sleep and Site change join the glossary** so the Day chart
+  can draw the timeline's sleep windows and site changes.
 
 ## 4. Component inventory (approved 2026-10-12)
 

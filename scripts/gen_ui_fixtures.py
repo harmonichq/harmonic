@@ -41,9 +41,9 @@ Two committed outputs, one generator, one ``--check``:
   maturing.
 
   ``day`` holds ``/api/timeline`` and ``/api/carbs`` for three of the wearer's
-  days, picked by rule: the latest day with readings and no logged carbs, the
-  latest of the days with the most logged carbs, and the first day after the
-  history ends.
+  days, picked by rule: the latest day with readings, a site change and no
+  logged carbs, the latest of the days with the most logged carbs, and the
+  first day after the history ends.
 
   ``status.failed`` adds one invented failed sync attempt, through
   ``Store.record_fetch_result``, so the Settings alert has a served
@@ -115,12 +115,13 @@ STATE_LABELS = ("No data",)
 # glossary §1.5.
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 # Dates print as "26 Sep" (§1.1 "To 30 Sep", §1.3 "Until <date>"); the month
-# abbreviations are not yet in glossary §1.5.
+# abbreviations are plain interface words (§2.5, 2026-10-13).
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-# Labels the Changes and Day components quote from §1.2, §1.3 and §4.2 that are
-# not yet in glossary §1.5: ChangeCard's "Before/After values" and "Days 0 / 14",
-# the Prompt's "Next" text action, Log carbs' "Time" row (default now) and "Save",
-# and the write-failed "Not saved" with "Retry".
+# Plain interface words the Changes and Day components quote from §1.2, §1.3
+# and §4.2, exempt from glossary §1.5 by the 2026-10-13 amendment (§2.5):
+# ChangeCard's "Before/After values" and "Days 0 / 14", the Prompt's "Next" text
+# action, Log carbs' "Time" row (default now) and "Save", and the write-failed
+# "Not saved" with "Retry".
 CHANGE_DAY_LABELS = ("Before", "After", "Days", "Next", "Time", "Now", "Save", "Not saved", "Retry")
 # The wearer's first days: fewer than the glucose profile's eight supported days.
 FIRST_DAYS = 5
@@ -341,14 +342,21 @@ def _end_active_trial(client: TestClient) -> None:
 
 def _days(client: TestClient, navigator: dict) -> dict:
     """One day's timeline and logged carbs for each Day story, by rule: the
-    latest day with readings and no logged carbs, the latest of the days with
-    the most logged carbs, and the first day after the history ends."""
+    latest day with readings, a site change and no logged carbs, the latest of
+    the days with the most logged carbs, and the first day after the history
+    ends."""
     logged: dict = {}
     for entry in _get(client, "/api/carbs")["carb_entries"]:
         logged[entry["t"][:10]] = logged.get(entry["t"][:10], 0) + 1
     with_data = [d["iso"] for d in navigator["days"] if d["has_data"]]
+
+    def site_change(iso: str) -> bool:
+        start = datetime.fromisoformat(f"{iso}T00:00:00")
+        return bool(_get(client, "/api/timeline", start=start.isoformat(),
+                         end=(start + timedelta(days=1)).isoformat())["pump_events"])
+
     picks = {
-        "default": next(iso for iso in reversed(with_data) if iso not in logged),
+        "default": next(iso for iso in reversed(with_data) if iso not in logged and site_change(iso)),
         "with_carbs": max((iso for iso in with_data if iso in logged), key=lambda iso: (logged[iso], iso)),
         "no_data": next(d["iso"] for d in navigator["days"] if not d["has_data"] and d["iso"] > with_data[-1]),
     }

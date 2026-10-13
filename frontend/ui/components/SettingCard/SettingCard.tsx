@@ -4,6 +4,7 @@
 // ink; the EvidenceChart; then Nights and Range as two captioned values. No button: a setting is changed on the pump, not here. A range the
 // engine serves as one value (lo = hi) shows that value once. Once the slot's
 // change has matured into a Trial, the card names it and links to Changes.
+import type { ReactNode } from 'react';
 import { Num } from '../../Num';
 import type { SettingData } from '../../queue-model';
 import { Button } from '../Button/Button';
@@ -11,16 +12,23 @@ import { EvidenceChart } from '../EvidenceChart/EvidenceChart';
 import '../../shared.css';
 import './SettingCard.css';
 
-export type SettingCardProps = { data: SettingData; onChanges?: () => void };
+export type SettingCardProps = {
+  data: SettingData; onChanges?: () => void;
+  /** An action on the item, in the title row (Snooze). */
+  action?: ReactNode;
+};
 
-export function SettingCard({ data, onChanges }: SettingCardProps) {
+export function SettingCard({ data, onChanges, action }: SettingCardProps) {
   const collapsed = data.lo.value === data.hi.value;
   return (
     <section className="ui-scard">
-      <h2 className="ui-scard__title">
-        {data.title}{' '}
-        <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
-      </h2>
+      <div className="ui-scard__head">
+        <h2 className="ui-scard__title">
+          {data.title}{' '}
+          <span className="ui-scard__slot"><Num value={data.start} />–<Num value={data.end} /></span>
+        </h2>
+        {action}
+      </div>
       <div className="ui-scard__figure">
         <span className="ui-scard__current"><Num value={data.current} /></span>
         <span className="ui-scard__arrow" aria-hidden="true">→</span>

@@ -3,6 +3,11 @@
 // labelled action ("+ Log carbs"). An unavailable engine (§1.2) keeps the title
 // and puts the label "Unavailable" and a compact Retry in the slot. The title is
 // the one dominant line; the slot is quieter, on the same line.
+//
+// A drill-down sub-screen (§2.2 Drill-down) adds a back control on its own row
+// above the title: "‹" and the parent screen's name, a 44 px target in the
+// text-action blue. The title below it keeps the same size and place on every
+// sub-screen.
 import type { ReactNode } from 'react';
 import type { Sourced } from '../../fixtures';
 import { Num } from '../../Num';
@@ -12,6 +17,8 @@ import './ScreenHeader.css';
 export type ScreenHeaderProps = {
   title: string;
   layout?: 'phone' | 'desktop';
+  /** A drill-down sub-screen: back to the parent screen, named. */
+  back?: { label: string; onBack?: () => void };
 } & (
   | { trailing?: undefined }
   | { trailing: 'date'; date: Sourced<string> }
@@ -42,9 +49,16 @@ function Slot(props: ScreenHeaderProps) {
 
 export function ScreenHeader(props: ScreenHeaderProps) {
   return (
-    <header className={`ui-header ui-header--${props.layout ?? 'phone'}`}>
-      <h1 className="ui-header__title">{props.title}</h1>
-      <Slot {...props} />
+    <header className={`ui-header ui-header--${props.layout ?? 'phone'}${props.back ? ' ui-header--child' : ''}`}>
+      {props.back && (
+        <button type="button" className="ui-header__back" data-role="nav" onClick={props.back.onBack}>
+          <span className="ui-header__chevron" aria-hidden="true">‹</span>{props.back.label}
+        </button>
+      )}
+      <div className="ui-header__bar">
+        <h1 className="ui-header__title">{props.title}</h1>
+        <Slot {...props} />
+      </div>
     </header>
   );
 }

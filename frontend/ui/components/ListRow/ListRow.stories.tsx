@@ -4,6 +4,8 @@ import { Num } from '../../Num';
 import {
   glossary, pumpProfile, tandemSource, type AccountState, type SyncState, type When,
 } from '../../settings-model';
+import type { ReactNode } from 'react';
+import { ScreenHeader } from '../ScreenHeader/ScreenHeader';
 import { ListGroup, ListRow, ListRowDense } from './ListRow';
 
 // §4.2 ListRow, first in each of its states (navigable, read-only, with an
@@ -12,7 +14,8 @@ import { ListGroup, ListRow, ListRowDense } from './ListRow';
 // list with sync OK and failed; Tandem Source synced, failed and with no
 // account; the Pump profile with its dense segment table, and with none; the
 // Glossary; and desktop. The account's email is masked by the generator, and
-// every value is the simulated wearer's served answer.
+// every value is the simulated wearer's served answer. Each Settings
+// sub-screen is a drill-down (§2.2): "‹ Settings" above its title.
 const meta: Meta<typeof ListRow> = {
   title: 'ListRow',
   component: ListRow,
@@ -114,15 +117,27 @@ function Glossary() {
   );
 }
 
-export const SettingsRootSynced: Story = { render: () => <SettingsRoot sync="synced" /> };
-export const SettingsRootFailed: Story = { render: () => <SettingsRoot sync="failed" /> };
-export const TandemSourceSynced: Story = { render: () => <TandemSource sync="synced" account="set" /> };
-export const TandemSourceFailed: Story = { render: () => <TandemSource sync="failed" account="set" /> };
-export const TandemSourceNotSet: Story = { render: () => <TandemSource sync={null} account="unset" /> };
-export const PumpProfileSegments: Story = { render: () => <PumpProfile store="wearer" /> };
-export const PumpProfileNone: Story = { render: () => <PumpProfile store="wearer-unsynced" /> };
-export const GlossaryPage: Story = { render: () => <Glossary /> };
+/** A Settings screen: the root under its title, a sub-screen under "‹ Settings". */
+function Screen({ title, child = true, children, layout = 'phone' }: {
+  title: string; child?: boolean; children: ReactNode; layout?: 'phone' | 'desktop';
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <ScreenHeader title={title} layout={layout} back={child ? { label: 'Settings' } : undefined} />
+      <div>{children}</div>
+    </div>
+  );
+}
+
+export const SettingsRootSynced: Story = { render: () => <Screen title="Settings" child={false}><SettingsRoot sync="synced" /></Screen> };
+export const SettingsRootFailed: Story = { render: () => <Screen title="Settings" child={false}><SettingsRoot sync="failed" /></Screen> };
+export const TandemSourceSynced: Story = { render: () => <Screen title="Tandem Source"><TandemSource sync="synced" account="set" /></Screen> };
+export const TandemSourceFailed: Story = { render: () => <Screen title="Tandem Source"><TandemSource sync="failed" account="set" /></Screen> };
+export const TandemSourceNotSet: Story = { render: () => <Screen title="Tandem Source"><TandemSource sync={null} account="unset" /></Screen> };
+export const PumpProfileSegments: Story = { render: () => <Screen title="Pump profile"><PumpProfile store="wearer" /></Screen> };
+export const PumpProfileNone: Story = { render: () => <Screen title="Pump profile"><PumpProfile store="wearer-unsynced" /></Screen> };
+export const GlossaryPage: Story = { render: () => <Screen title="Glossary"><Glossary /></Screen> };
 export const DesktopTandemSource: Story = {
-  render: () => <TandemSource sync="failed" account="set" />,
+  render: () => <Screen title="Tandem Source" layout="desktop"><TandemSource sync="failed" account="set" /></Screen>,
   parameters: { frame: { width: 720, padding: 32 } },
 };

@@ -17,6 +17,7 @@
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
 //   (e) every visible number sits in a [data-source] whose fixture field it equals
+//   (f) nothing scrolls but a screen's page or pane ([data-scroll="page"])
 // The rules themselves are frontend/ui/prechecks.js; this file gathers what
 // they read from each rendered story.
 //
@@ -107,7 +108,15 @@ function inspect() {
   const controls = [...shot.querySelectorAll('button, a, input, select, [role="button"]')];
   const primaries = controls.filter((control) => control.dataset.role === 'primary'
     || getComputedStyle(control).backgroundColor === primary).length;
-  return { texts, names, buttons, primaries };
+  // §2.3 ban 6: only a screen's page or a desktop pane may scroll.
+  const scrolls = [...shot.querySelectorAll('*')]
+    .filter((element) => !element.matches('[data-scroll="page"]'))
+    .filter((element) => {
+      const style = getComputedStyle(element);
+      return /auto|scroll/.test(style.overflowX) || /auto|scroll/.test(style.overflowY);
+    })
+    .map((element) => `${element.tagName.toLowerCase()}${element.className && typeof element.className === 'string' ? `.${element.className.trim().split(/\s+/).join('.')}` : ''}`);
+  return { texts, names, buttons, primaries, scrolls };
 }
 
 for (const [what, path] of [['the built Storybook (npm run build-storybook)', join(STATIC, 'index.json')]]) {

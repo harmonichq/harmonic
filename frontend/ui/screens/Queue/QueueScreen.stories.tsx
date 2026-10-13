@@ -43,6 +43,9 @@ const story = (layout: 'phone' | 'desktop', args: Omit<QueueScreenProps, 'layout
 });
 
 const second = (store: 'wearer') => ranking(store)[1].subject;
+/** The drill-down's own header, which holds its "‹ Queue" (the tab bar has a Queue too). */
+const back = (canvas: ReturnType<typeof within>) =>
+  canvas.getByRole('heading', { level: 1, name: 'Snoozed' }).closest('header') as HTMLElement;
 
 const DEFAULT = { store: 'wearer' } as const;
 const PATTERN_OPEN = { store: 'wearer', open: 'pattern:overnight_lows_no_iob' } as const;
@@ -98,5 +101,53 @@ export const SnoozeUndoDesktop: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await expect(canvas.queryByRole('status')).toBeNull();
     await expect(canvas.getAllByText(title).length).toBeGreaterThan(0);
+  },
+};
+
+// Phone snooze has a visible control as well as the swipe: the play presses
+// the open card's Snooze, sees the bar, and undoes it.
+export const SnoozeUndoPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned', open: fixtures.snooze.subject, snooze },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Snooze' }));
+    await expect(canvas.getByRole('status')).toHaveTextContent(/Snoozed · Until/);
+    await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
+    await expect(canvas.queryByRole('status')).toBeNull();
+  },
+};
+
+// The drill-down (§2.2): the Snoozed row opens the Snoozed list under
+// "‹ Queue", and back returns to the Queue with the same item open.
+export const SnoozedDrillDownPhone: Story = {
+  args: { layout: 'phone', store: 'wearer-pinned-snoozed', open: 'setting:basal_rate' },
+  parameters: { frame: FRAMES.phone },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const open = ranking('wearer-pinned-snoozed').find((i) => i.subject === 'setting:basal_rate')!;
+    await userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Snoozed' })).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
+    await userEvent.click(within(back(canvas)).getByRole('button', { name: 'Queue' }));
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
+  },
+};
+
+// Desktop: the drill-down stays in the list pane, under the same "‹ Queue",
+// while the open item stays in the detail pane.
+export const SnoozedDrillDownDesktop: Story = {
+  args: { layout: 'desktop', store: 'wearer-pinned-snoozed', open: 'setting:basal_rate' },
+  parameters: { frame: FRAMES.desktop },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const open = ranking('wearer-pinned-snoozed').find((i) => i.subject === 'setting:basal_rate')!;
+    await userEvent.click(canvas.getByRole('button', { name: /Snoozed/ }));
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Snoozed' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
+    await userEvent.click(within(back(canvas)).getByRole('button', { name: 'Queue' }));
+    await expect(canvas.getByRole('heading', { level: 1, name: 'Queue' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { level: 2, name: new RegExp(open.data.title) })).toBeInTheDocument();
   },
 };

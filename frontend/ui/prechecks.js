@@ -6,6 +6,9 @@
 //   (b) every visible word and accessible name is in the glossary allowlist
 //   (c) every button declares its role and is that role's §4.1 height
 //   (d) at most one primary-filled control
+//   (f) nothing scrolls on its own but a screen's page or a desktop pane,
+//       marked [data-scroll="page"] (§2.3 ban 6): an element with overflow
+//       auto or scroll anywhere else is a nested scroll area
 //   (e) every visible number sits in a [data-source] whose fixture field (or
 //       formula over fields, printed in its data-format) it equals. A chart's
 //       scale labels are not served values: axis ticks, and the fixed glucose
@@ -28,11 +31,12 @@ const SCALE = /^[<>]?\d+(\.\d+)?([–:]\d+)?%?$/;
 
 /**
  * @param {{texts: {text: string, source: string|null, format?: string|null, axis?: boolean, glossary?: boolean}[], names: string[],
- *          buttons: {role: string|null, height: number, label: string}[], primaries: number}} shown
+ *          buttons: {role: string|null, height: number, label: string}[], primaries: number,
+ *          scrolls?: string[]}} shown
  * @param {{fixtures: object, allowed: Set<string>}} sources
  * @returns {string[]} one line per violation; empty when the story passes
  */
-export function precheckProblems({ texts: shown, names, buttons, primaries }, { fixtures, allowed }) {
+export function precheckProblems({ texts: shown, names, buttons, primaries, scrolls = [] }, { fixtures, allowed }) {
   const found = [];
   const texts = shown.filter((text) => !text.glossary);
   for (const { text } of texts) {
@@ -55,6 +59,7 @@ export function precheckProblems({ texts: shown, names, buttons, primaries }, { 
     }
   }
   if (primaries > 1) found.push(`(d) ${primaries} primary-filled controls`);
+  for (const where of scrolls) found.push(`(f) a nested scroll area: ${where}`);
   for (const { text, source, format, axis } of texts) {
     if (!/\d/.test(text)) continue;
     if (axis && SCALE.test(text)) continue;

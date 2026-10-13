@@ -6,7 +6,8 @@ import { ScreenHeader } from './ScreenHeader';
 // One story per state (§4.2 ScreenHeader): a title alone; with the date its
 // data runs to (the 14-day window's served span end); with the labelled action
 // "+ Log carbs"; with a control (the window choice); and unavailable (§1.2).
-// Desktop is the same header at the top of a wide pane.
+// Desktop is the same header at the top of a wide pane. A drill-down
+// sub-screen adds "‹ Parent" above its title (§2.2 Drill-down).
 const meta = {
   title: 'ScreenHeader',
   component: ScreenHeader,
@@ -33,3 +34,4 @@ export const Desktop: Story = {
   args: { title: 'Overview', trailing: 'date', date: spanEnd, layout: 'desktop' },
   parameters: { frame: { width: 1440 } },
 };
+export const DrillDown: Story = { args: { title: 'Snoozed', back: { label: 'Queue' } } };

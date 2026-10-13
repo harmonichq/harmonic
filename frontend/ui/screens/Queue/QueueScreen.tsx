@@ -1,14 +1,19 @@
 // The Queue screen (§1.1, §1.3, §1.4 and the brief's Queue section), composed
 // only from the library's components.
 //
-// Phone: the header, then the ranked rows; the open item shows its card in the
-// row's place (accordion; the others stay rows). A quiet "Snoozed · N" row
-// ends the list when anything is snoozed, and opens the Snoozed list (each
-// with Until and Restore). After a snooze the TransientBar sits above the tab
-// bar with Undo. Desktop: the rail, the ranked list on the left (the selected
-// row marked), the open item on the right with Snooze as an icon button in its
-// header (shortcut S; ↑/↓ move the selection), and the bar at the foot of the
-// detail pane. No hover-only actions.
+// Phone: the header stays put while the page scrolls under it, above the tab
+// bar; the open item shows its card in the row's place (accordion; the others
+// stay rows), with Snooze as an icon button in the card's header (the swipe is
+// its shortcut). A quiet "Snoozed · N" row ends the list when anything is
+// snoozed, and drills down to the Snoozed list (§2.2 Drill-down: "‹ Queue",
+// each row with Until and Restore); back returns with the same item open.
+// After a snooze the TransientBar sits above the tab bar with Undo. Desktop:
+// the rail, the ranked list on the left (the selected row marked; the Snoozed
+// list drills down inside this pane and the open item stays), and the open
+// item on the right, up to a
+// reading width, with Snooze in its card's header and no collapse chevron
+// (shortcut S; ↑/↓ move the selection), the bar at the foot of that pane.
+// Each pane scrolls as a whole; nothing scrolls inside a card (§2.3).
 //
 // A snooze shows what the engine served after that snooze: the `after` store's
 // Queue, its Snoozed count, and the bar's date (the decision time plus the
@@ -60,8 +65,11 @@ function Row({ item, layout, selected, swiping, onSelect }: {
     cause={item.data.causes[0]?.title} layout={layout} selected={selected} swiping={swiping} onSelect={onSelect} />;
 }
 
-function Card({ item }: { item: QueueItem }) {
-  return item.kind === 'setting' ? <SettingCard data={item.data} /> : <PatternCard data={item.data} />;
+function Card({ item, layout, onSnooze }: { item: QueueItem; layout: Layout; onSnooze: () => void }) {
+  const action = <Button kind="icon" icon="snooze" label="Snooze" onClick={onSnooze} />;
+  return item.kind === 'setting'
+    ? <SettingCard data={item.data} action={action} />
+    : <PatternCard data={item.data} action={action} collapsible={layout === 'phone'} />;
 }
 
 export function QueueScreen({
@@ -99,7 +107,9 @@ export function QueueScreen({
 
   const header = state === 'unavailable'
     ? <ScreenHeader title="Queue" trailing="unavailable" layout={layout} />
-    : <ScreenHeader title={view === 'snoozed' ? 'Snoozed' : 'Queue'} layout={layout} />;
+    : view === 'snoozed'
+      ? <ScreenHeader title="Snoozed" layout={layout} back={{ label: 'Queue', onBack: () => setView('queue') }} />
+      : <ScreenHeader title="Queue" layout={layout} />;
 
   const footer = snoozedTotal.value > 0 && (
     <ListGroup>
@@ -121,7 +131,7 @@ export function QueueScreen({
       : items.length === 0 && state === 'ready'
         ? <p className="ui-queue__empty"><Num value={queuedCount(shown)} /> patterns</p>
         : items.map((item) => (layout === 'phone' && item.subject === current?.subject
-          ? <div key={item.subject} className="ui-queue__open"><Card item={item} /></div>
+          ? <div key={item.subject} className="ui-queue__open"><Card item={item} layout={layout} onSnooze={doSnooze} /></div>
           : <Row key={item.subject} item={item} layout={layout} selected={item.subject === current?.subject}
               swiping={item.subject === swiping} onSelect={() => setSelected(item.subject)} />));
 
@@ -132,8 +142,8 @@ export function QueueScreen({
   if (layout === 'phone') {
     return (
       <div className="ui-queue ui-queue--phone">
-        <main className="ui-queue__main">
-          {header}
+        <div className="ui-queue__head">{header}</div>
+        <main className="ui-queue__main" data-scroll="page">
           <div className="ui-queue__list">
             {state === 'loading' && <PatternCard loading />}
             {list}
@@ -148,22 +158,17 @@ export function QueueScreen({
   return (
     <div className="ui-queue ui-queue--desktop">
       <NavBar layout="rail" selected="queue" dayCount={dayCount} />
-      <section className="ui-queue__pane ui-queue__pane--list">
+      <section className="ui-queue__pane ui-queue__pane--list" data-scroll="page">
         {header}
         <div className="ui-queue__list">
           {list}
           {view === 'queue' && state === 'ready' && footer}
         </div>
       </section>
-      <section className="ui-queue__pane ui-queue__pane--detail">
+      <section className="ui-queue__pane ui-queue__pane--detail" data-scroll="page">
         {state === 'loading' && <div className="ui-queue__detail"><PatternCard loading /></div>}
-        {state === 'ready' && view === 'queue' && current && (
-          <div className="ui-queue__detail">
-            <div className="ui-queue__detail-head">
-              <Button kind="icon" icon="snooze" label="Snooze" onClick={doSnooze} />
-            </div>
-            <Card item={current} />
-          </div>
+        {state === 'ready' && current && (
+          <div className="ui-queue__detail"><Card item={current} layout={layout} onSnooze={doSnooze} /></div>
         )}
         {bar && <div className="ui-queue__bar">{bar}</div>}
       </section>

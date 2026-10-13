@@ -3,6 +3,10 @@
 // n), and Pin — or, once pinned, the Focus pill in Pin's place. A range the
 // engine flags as too broad to rely on carries the Uncertain pill. When the engine serves no count for the pattern,
 // the card shows no magnitude, waffle or range rather than inventing one.
+// Its header row holds the screen's action on the item (the Snooze icon
+// button) beside the collapse chevron, which a screen drops where the card does
+// not collapse (desktop).
+import type { ReactNode } from 'react';
 import { Icon } from '../../icons';
 import { Num } from '../../Num';
 import type { PatternData } from '../../queue-model';
@@ -14,7 +18,13 @@ import './PatternCard.css';
 
 export type PatternCardProps =
   | { loading: true }
-  | { loading?: false; data: PatternData; onPin?: () => void };
+  | {
+      loading?: false; data: PatternData; onPin?: () => void;
+      /** An action on the item, in the header row (Snooze). */
+      action?: ReactNode;
+      /** Shows the collapse chevron; false where the card does not collapse. */
+      collapsible?: boolean;
+    };
 
 export function PatternCard(props: PatternCardProps) {
   if (props.loading) {
@@ -28,13 +38,14 @@ export function PatternCard(props: PatternCardProps) {
       </section>
     );
   }
-  const { data, onPin } = props;
+  const { data, onPin, action, collapsible = true } = props;
   const { magnitude, range } = data;
   return (
     <section className="ui-pcard">
       <div className="ui-pcard__head">
         <h2 className="ui-pcard__title">{data.title}</h2>
-        <span className="ui-pcard__chevron"><Icon name="collapse" /></span>
+        {action}
+        {collapsible && <span className="ui-pcard__chevron"><Icon name="collapse" /></span>}
       </div>
       {magnitude && (
         <>

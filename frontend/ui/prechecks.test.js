@@ -49,6 +49,10 @@ test('the Glossary list may hold a sentence, words and numbers; nothing outside 
   assert.match(run({ texts: [{ ...definition, glossary: false }] })[0], /^\(a\)/);
 });
 
+test('(f) a scroll area anywhere but a screen page or pane fails', () => {
+  assert.deepEqual(run({ scrolls: ['div.ui-row__cell'] }), ['(f) a nested scroll area: div.ui-row__cell']);
+});
+
 test('(d) two primary-filled controls fail', () => {
   assert.deepEqual(run({ primaries: 2 }), ['(d) 2 primary-filled controls']);
 });

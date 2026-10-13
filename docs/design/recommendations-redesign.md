@@ -75,14 +75,19 @@ Each row lists a screen's states. Labels only; no state uses prose.
 | Touch (phone, tablet) | Desktop |
 |---|---|
 | Tap a Queue card to expand it in place | Click or ↑/↓ to select in the list; the detail shows in the right pane |
-| Swipe a Queue card to snooze it | Snooze icon button in the detail header; shortcut S |
+| Swipe a Queue card to snooze it, or the Snooze icon button in the open card's header row | Snooze icon button in the open card's header row; shortcut S |
 | Swipe a Prompt to record Not sure | A fourth button, **Not sure** |
 | Swipe the Day week strip | ‹ › buttons and a month grid that is always visible |
 | Tap the month label to open the Month sheet | Month grid in the left pane |
 | Bottom sheet for Log carbs, on the system keyboard | Popover anchored to "+ Log carbs" |
 | Tap Undo in the snooze bar | Same bar, clickable; ⌘Z |
+| Tap "‹ Parent" in a drill-down's header (the system edge-swipe also goes back) | The same "‹ Parent" control in the pane's header |
 
 Desktop has no hover-revealed actions, and every action has a visible control.
+Every touch gesture has a visible equivalent on the phone as well: a swipe is a
+shortcut, never the only way (Snooze is also an icon button in the open card's
+header). Back from a drill-down is the "‹ Parent" control in the screen header;
+the system's own edge-swipe back is left to the platform, never overridden.
 
 ### 1.5 Glossary (every user-facing noun and verb)
 
@@ -190,6 +195,8 @@ in §2.
 | Sheet | Bottom-attached, 12 px top radius, grabber. |
 | Popover | Anchored to its trigger. |
 | Transient bar | Above the tab bar, label and one text action. |
+| Drill-down (back) | A screen that opens a sub-screen pushes it: the sub-screen's ScreenHeader gains a leading back control, "‹" and the parent screen's name ("‹ Queue"), 44 px target, in the text-action blue, on its own row; the sub-screen's title sits below it at title size, left-aligned (large-title convention, the same on every drill-down). Phone: the sub-screen replaces the screen above the tab bar, which stays; back returns to the parent as it was (the same item open). Desktop: the drill-down happens inside the pane that owns it, with the same back control in that pane's header. |
+| Scrolling | A screen's content scrolls as one page: on phone the content scrolls under the fixed screen header and above the fixed tab bar and transient bar; on desktop each pane scrolls on its own, as a whole pane. |
 
 ### 2.3 Absolute bans
 1. **Microcopy:** any sentence, question, subtitle, caption, explanation,
@@ -201,7 +208,10 @@ in §2.
    2026-10-13).
 4. **Colour as the only signal.** Every state carries a glyph, label or position.
 5. **More than one primary action per screen**, or any other accent-filled control.
-6. **Content not in the engine's served data.** Every value traces to an
+6. **Nested scrolling.** No scroll area inside a card, table, row or cell:
+   content inside a component never scrolls on its own; only a screen's page
+   (or a desktop pane) scrolls. The story check enforces it.
+7. **Content not in the engine's served data.** Every value traces to an
    endpoint field. The checks are `copycheck.py` and the provenance table.
 
 ### 2.4 Approved screen list
@@ -216,6 +226,36 @@ Tablet follows desktop's structure at 1180 px. Approved 2026-10-12.
   §1.5 now governs domain terms only.
 - **2026-10-13 — Sleep and Site change join the glossary** so the Day chart
   can draw the timeline's sleep windows and site changes.
+- **2026-10-13 — screens scroll as one page; nothing scrolls inside a
+  component.** The operator: "It's perfectly fine for a queue to scroll… we
+  don't want tables that have to scroll within the cell that they live in."
+  This replaces the exploration brief's "no scrolling" rule (Appendix §1, rule
+  7) for the built screens; see §2.2 Scrolling and §2.3 ban 6.
+- **2026-10-13 — one drill-down pattern for every sub-screen.** The operator:
+  "we need some kind of standard navigation framework for drill downs, and I'm
+  sure the snoozed list is going to be the same." See §2.2 Drill-down: Queue →
+  Snoozed and Settings → Tandem Source, Pump profile and Glossary use it.
+- **2026-10-13 — episodes and the other brief items are deferred, not cut.**
+  The operator, on an episodes drill-in: it "is potentially something we can
+  consider, but I'm trying to keep this lightweight for now without
+  necessarily cutting what the back end can deliver." See §2.6.
+- **2026-10-13 — Snooze has a visible control on the phone.** The operator
+  decided the phone's open card carries the same Snooze icon button as desktop,
+  in its own header row; the swipe stays as the shortcut (§1.4).
+- **2026-10-13 — the desktop detail pane is filled by its card.** The operator
+  decided the open card fills its pane up to a 720 px reading width, left-aligned
+  with the pane's margin, with Snooze in the card's own header row and no
+  collapse chevron (the card does not collapse on desktop).
+
+### 2.6 Deferred (not cut)
+Not built in the current screens. The engine still serves what each needs, and
+nothing is removed from the engine or the fixtures for them.
+- An episodes drill-in from an open Pattern (dated rows, peak ▲ / nadir ▼ →
+  resolution).
+- A rank number on collapsed Queue rows.
+- Other statistics on their own labelled lines in the open Pattern
+  ("High-carb sequences 9 / 35 less in range · 17–36%").
+- The "(example)" caption on a Setting shown as an example.
 
 ## 4. Component inventory (approved 2026-10-12)
 
@@ -254,9 +294,11 @@ unless noted. Loading is a skeleton of the component's own shape.
      sliders glyph belongs to the Setting kind.
 2. **ScreenHeader**: the screen title plus one trailing slot (a date, a
    control, or a labelled action).
-   - States: default; with date; with action ("+ Log carbs").
+   - States: default; with date; with action ("+ Log carbs"); drill-down
+     ("‹ Parent" back control above the title, §2.2).
    - Fields: `outcomes_*.span_end` (date).
-   - Desktop: the same, at the top of each pane.
+   - Desktop: the same, at the top of each pane; a drill-down's back control
+     sits in the header of the pane that owns it.
 3. **SegmentedControl**: 14 / 30 / 90 d.
    - States: each option selected; disabled (window lacks coverage).
    - Fields: `outcomes_*.coverage.days`.
@@ -287,14 +329,16 @@ unless noted. Loading is a skeleton of the component's own shape.
      preference`; `findings.outcome_patterns[].k, n` and the noun; the top
      cause lever from `findings.rows[].fold_sentences`.
    - Desktop: a list row that selects into the detail pane. Snooze is an icon
-     button in the detail header (shortcut S); there's no swipe.
+     button in the open card's header row (shortcut S); there's no swipe.
 8. **PatternCard**: the open pattern, showing the magnitude, a CauseWaffle,
    a Range in the magnitude's units, and Pin.
    - States: multi-cause; **single cause**; **no attributed cause**; Uncertain;
      pinned (Pin replaced by a "Focus" pill); loading.
+   - Header row: the title, the Snooze icon button, and (phone) the collapse
+     chevron.
    - Fields: `outcome_patterns[].k, n, wilson`; fold sentences (count,
      denominator, lever title).
-   - Desktop: the detail pane.
+   - Desktop: fills the detail pane up to 720 px; no collapse chevron.
 9. **CauseWaffle**: one cell per occurrence in n, with filled cells patterned
    by cause, plus a legend.
    - States: multi-cause; single cause (one legend entry); no cause (a
@@ -306,9 +350,10 @@ unless noted. Loading is a skeleton of the component's own shape.
     count ("30 nights") and one Range. No button.
     - States: default; range collapsed (lo = hi, single value shown);
       matured into a Trial (Changes link).
+    - Header row: the title and the Snooze icon button.
     - Fields: `analyze.basal[slot].current, estimate.value, estimate.lo, hi,
       days`, plus their ISF/carb-ratio equivalents.
-    - Desktop: the detail pane.
+    - Desktop: fills the detail pane up to 720 px.
 11. **EvidenceChart**: the setting's slot evidence, showing the nights'
     delivered rate against current and suggested.
     - States: default; zero variance (a compact strip).

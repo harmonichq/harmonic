@@ -1,0 +1,85 @@
+.ui-logcarbs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--wk-surface);
+  color: var(--wk-ink);
+  font-family: var(--ui-font);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phone: attached to the bottom edge, 12 px top radius and a grabber. */
+.ui-logcarbs--sheet {
+  padding: 8px 16px 24px;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 24px rgb(0 0 0 / .45);
+}
+.ui-logcarbs__grabber {
+  align-self: center;
+  width: 36px;
+  height: 5px;
+  margin-bottom: 12px;
+  border-radius: 3px;
+  background: var(--wk-rule-strong);
+}
+
+/* Desktop: under its trigger, edge-aligned, the arrow on the trigger. */
+.ui-logcarbs-anchor { display: flex; flex-direction: column; align-items: flex-start; }
+.ui-logcarbs--popover {
+  position: relative;
+  width: 320px;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid var(--wk-rule);
+  border-radius: var(--wk-radius);
+  box-shadow: 0 12px 32px rgb(0 0 0 / .5);
+}
+.ui-logcarbs--popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--wk-rule);
+  border-left: 1px solid var(--wk-rule);
+  background: var(--wk-surface);
+  transform: rotate(45deg);
+}
+
+.ui-logcarbs__title {
+  margin: 0;
+  font-size: var(--ui-type-body);
+  font-weight: var(--ui-weight-strong);
+  line-height: 22px;
+}
+.ui-logcarbs__field { display: flex; justify-content: center; margin: 20px 0 16px; }
+
+/* Time: a native-style row, label left, value and chevron right. */
+.ui-logcarbs__time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--wk-rule);
+  border-bottom: 1px solid var(--wk-rule);
+  background: none;
+  color: var(--wk-ink);
+  font: var(--ui-weight-regular) var(--ui-type-body) / 1 var(--ui-font);
+  cursor: pointer;
+}
+.ui-logcarbs__time:disabled { color: var(--wk-ink-meta); cursor: default; }
+.ui-logcarbs__value { display: flex; align-items: center; gap: 8px; color: var(--wk-ink-body); }
+.ui-logcarbs__chevron { color: var(--wk-ink-meta); font-size: var(--ui-type-title); line-height: 1; }
+
+/* Save sits apart from the row above it. */
+.ui-logcarbs__foot { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+.ui-logcarbs__failed {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--ui-type-label);
+  font-weight: var(--ui-weight-strong);
+}

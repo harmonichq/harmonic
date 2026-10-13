@@ -84,6 +84,62 @@ strong override or the low-confidence tier.
 - The roster admits low-confidence habits to the Queue. This decision does not
   change that. It makes them read Uncertain.
 
+## ADR 488 — The case files serve the eating-sequence report from the exposures' own evaluation, and withhold one inconsistent case rather than fail the store
+
+**Context.** Preparing the Finding case files failed with a server error for a whole
+store whenever the high-carb sequence case could not reconcile its two inputs. The
+case serves the aggregate eating-sequence report beside the sequence evidence the
+Queue counted, and the two were built separately. The sequence evidence comes from
+the scenario evaluation behind the exposures payload. That evaluation reads only the
+Carb log entries already recorded at the window end (the #467 eligibility rule), and
+CGM with false-low spans dropped. The report was rebuilt from the store with every
+Carb log entry and the raw CGM. A person who logs carbs by hand after the last
+synced reading therefore saw two counts. In the redesign library's synthetic wearer,
+eight entries logged an hour after the last reading excluded two highest-carb
+sequences from the report only: 15 against the evidence's 17. The case-file guard
+refused the pair, as it should, and the preparation turned that one refusal into a
+failure for every case in the store.
+
+**Decision.**
+
+1. *One evaluation.* The exposures payload carries the whole eating-sequence report
+   of the evaluation its sequence evidence came from (`sequence_report`). Preparation
+   serves that report, and the separate store-built report
+   (`build_eating_sequence_report` and its cache entry) is deleted. The eating-
+   sequences specification already required the report and the sequence evidence to
+   come from one evaluation; the served path now does. The eligibility rule decides
+   which Carb log entries count, so the evaluation that applies it is the right one.
+   A carb entry logged after the window end no longer contaminates any sequence until
+   a fetch moves the window end past it. The report's window end is unchanged: the
+   latest basal or CGM reading.
+2. *Keep the guard.* The case still refuses a report and evidence that disagree.
+   It caught a real disagreement, and is now the backstop for one that this change
+   did not foresee.
+3. *Isolate the refusal.* When one case's projection is inconsistent, preparation
+   withholds that Finding by name, under the code `inconsistent_projection`, and
+   serves every other case. The withheld row leaves the rendered rows, exactly as an
+   uninspectable attribution does, and requesting its case still answers the same
+   error. A Pattern row is withheld whole, not rendered without its case header,
+   because a chart-bearing Pattern without a header fails the desk's check of the
+   entire preparation.
+
+**Why isolate rather than fail.** The guard's job is to keep inconsistent dosing-
+adjacent evidence from being served, and withholding the one case does that
+completely: neither count reaches the reader, and nothing falls back to a number the
+guard rejected. Failing the whole store protected nothing further. It hid every
+other case's evidence, including the matched and comparison cohorts each open
+Pattern needs, behind one unrelated disagreement. The withheld state is explicit in
+the served preparation, so the case does not silently disappear.
+
+**Consequences.**
+- The exposures payload is larger by one report. The findings-projection fixture,
+  which freezes exposures payloads, gains that key and nothing else.
+- A store with no readings still serves an empty report, from an evaluation of no
+  events over the same window.
+- A preparation can now succeed while naming a withheld Finding with
+  `inconsistent_projection`. A reader that sees one is looking at a producer
+  disagreement to investigate, not at missing data.
+
 ## ADR 489 — A setting is recommended only when its own range rules out its current value
 
 **Decision.** A setting whose served range includes the value programmed now is a

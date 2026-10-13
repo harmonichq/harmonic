@@ -427,7 +427,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
     monkeypatch.setattr(finding_case_file, "_population", fake_population)
     prepared = finding_case_file.prepare(
         Store(), query=WindowQuery.whole_day(), version=0,
-        analysis={}, exposures={}, scenarios={},
+        analysis={}, exposures={"sequence_report": None}, scenarios={},
     )
 
     assert observed == [("queue", 17), ("population", 17)]
@@ -479,7 +479,7 @@ def test_preparation_reads_one_sqlite_generation_across_constituent_reads():
 
             prepared = finding_case_file.prepare(
                 InterleavedStore(), query=WindowQuery.whole_day(), version=0,
-                analysis={}, exposures={}, scenarios={},
+                analysis={}, exposures={"sequence_report": None}, scenarios={},
             )
 
         assert writer_errors == []
@@ -939,7 +939,7 @@ def test_circular_pattern_projection_and_case_share_explicit_population():
         "levers": ["carb_undercount", "late_bolus"],
         "by_cause": {"Carb Undercount": 2, "Late Bolus": 1},
         "occurrences": occurrences,
-    }}}
+    }}, "sequence_report": None}
     scenarios = {"patterns": [
         {
             "lever": lever, "priority": priority, "admission_basis": "lower_bound",
@@ -1228,7 +1228,6 @@ def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, cove
     from tests.test_findings_projection import sequence_products, seed_sequence_store
     from ciq_autotune.analyzers.scenario import build_scenarios
     from ciq_autotune.explore_exposures import build_exposures
-    from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report, report_dict
     projection, (bolus, cgm, _, _) = sequence_products(lever, covered=covered)
     with Store.open(":memory:") as store:
         seed_sequence_store(store, bolus, cgm)
@@ -1238,7 +1237,7 @@ def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, cove
             store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
             exposures=exposures, scenarios=scenarios, analysis_generation="sequence:0",
         )
-        report = report_dict(build_eating_sequence_report(store, window_days=30))
+    report = exposures["sequence_report"]
     body = wrap(prepared)
     assert not any(r["finding_id"] == f"finding:{lever}" for r in body["withheld_findings"])
     cause = prepared.case(f"finding:{lever}", "event", None)
@@ -1348,7 +1347,6 @@ def test_high_carb_response_rejects_missing_or_incoherent_retained_metadata():
 
 
 def test_high_carb_response_rejects_a_report_from_another_manufactured_generation():
-    from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report, report_dict
     from tests.test_findings_projection import sequence_products, seed_sequence_store
     from ciq_autotune.analyzers.scenario import build_scenarios
     from ciq_autotune.explore_exposures import build_exposures
@@ -1357,15 +1355,107 @@ def test_high_carb_response_rejects_a_report_from_another_manufactured_generatio
         "high_carb_sequence", covered=True)
     with Store.open(":memory:") as later_store:
         seed_sequence_store(later_store, later_bolus, later_cgm, later_log)
-        later_report = report_dict(build_eating_sequence_report(later_store, window_days=30))
+        later_report = build_exposures(later_store, window_days=30)["sequence_report"]
     with Store.open(":memory:") as store:
         seed_sequence_store(store, bolus, cgm)
         prepared = finding_case_file.prepare(
             store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
             exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
-            analysis_generation="sequence:later", sequence_report=later_report,
+            analysis_generation="sequence:later",
+        )
+    assert later_report != prepared.sequence_report
+    prepared.sequence_report = later_report
+
+    with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
+        prepared.case("finding:high_carb_sequence", "event", None)
+
+
+def _late_logged_high_carb_store(store):
+    """The high-carb sequence stream with a carb entry logged after the window end.
+
+    The entry's carbs fall inside a candidate sequence's selected period, but it was
+    recorded an hour after the last reading, as a person logging by hand before the
+    next sync does (#488). Returns the stream's projection.
+    """
+    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
+    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    evaluation = evaluate_sequences(bolus, cgm, (), window_start=cgm[0].t,
+                                    window_end=cgm[-1].t, config=EatingSequenceConfig())
+    candidate = next(row for row in evaluation.populations["high_carb_sequence"]
+                     if row.candidate)
+    seed_sequence_store(store, bolus, cgm, [CarbEntry(
+        candidate.start + timedelta(minutes=10), 15.0, "estimate", "manual",
+        created_at=cgm[-1].t + timedelta(hours=1),
+    )])
+    return projection
+
+
+def test_a_carb_entry_logged_after_the_window_end_counts_once_in_the_high_carb_case():
+    """#488: the served report and the case's sequence evidence are one evaluation.
+
+    A Carb log entry recorded after the window end did not exist when the window
+    closed, so it may not exclude a sequence. The report the case file served was
+    once rebuilt with it, which left seven highest-carb sequences in the six-hour
+    period and no finding, beside sequence evidence serving 8 vs 32; that
+    disagreement failed the whole preparation.
+    """
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    with Store.open(":memory:") as store:
+        projection = _late_logged_high_carb_store(store)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store, window_days=30),
+            scenarios=build_scenarios(store, window_days=30).to_dict(),
         )
 
+    body = wrap(prepared)
+
+    assert body["withheld_findings"] == []
+    case = prepared.case("finding:high_carb_sequence", "event", None)
+    response = case["projection"]["response"]
+    finding = case["projection"]["report"]["high_carb_sequence"]["finding"]
+    assert response["summary"] == finding["summary"]
+    assert "n = 8 vs 32" in finding["summary"]
+    assert [(cohort["key"], cohort["routed_count"]) for cohort in response["cohorts"]] == [
+        ("matched", 8), ("comparison", 32),
+    ]
+    assert body["eating_sequence_report"] == case["projection"]["report"]
+
+
+def test_preparation_withholds_an_inconsistent_case_by_name_and_keeps_the_rest():
+    """ADR 488: one case whose producers disagree is withheld, never served or fatal."""
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+        )
+    consistent = wrap(prepared)
+    comparisons = prepared.sequence_report["high_carb_sequence"]["comparisons"]
+    for comparison in comparisons:
+        if comparison["high_n"]:
+            comparison["high_n"] -= 1
+
+    body = wrap(prepared)
+
+    assert body["withheld_findings"] == [{
+        "finding_id": "finding:high_carb_sequence",
+        "code": "inconsistent_projection",
+        "message": "Case population is inconsistent.",
+    }]
+    assert "finding:high_carb_sequence" not in [row["id"] for row in body["rendered_rows"]]
+    assert "finding:high_carb_sequence" not in body["behavioral_case_headers"]
+    assert [row["id"] for row in body["rendered_rows"]] == [
+        row["id"] for row in consistent["rendered_rows"]
+        if row["id"] != "finding:high_carb_sequence"
+    ]
     with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
         prepared.case("finding:high_carb_sequence", "event", None)
 

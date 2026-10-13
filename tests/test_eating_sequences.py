@@ -674,24 +674,25 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         self.assertIsNotNone(finding)
         self.assertIn("in range against", finding.summary)
 
-    def test_store_wrapper_uses_basal_as_a_bound_only_and_slices_events(self):
+    def test_served_report_window_ends_at_the_latest_basal_or_cgm_reading(self):
+        """The served report is the exposures evaluation's, over Diagnose's window (ADR 488)."""
         from datetime import timedelta
-        from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report
+        from ciq_autotune.explore_exposures import build_exposures
+        from ciq_autotune.store import Store
+        from tests.test_findings_projection import seed_sequence_store
 
-        boluses, cgm, carb_log, basal = high_carb_stream(count=1)
+        boluses, cgm, _, _ = high_carb_stream(count=1)
         end = cgm[-1].t + timedelta(hours=2)
-        basal = [basal[0].__class__(end, "Profile")]
-
-        class Store:
-            def basal_events(self): return basal
-            def cgm_readings(self): return cgm
-            def bolus_events(self): return boluses
-            def carb_entries(self): return carb_log
-
-        report = build_eating_sequence_report(Store())
-        self.assertEqual(report.window.end, end.isoformat())
-        self.assertEqual(report.window.start, (end - timedelta(days=30)).isoformat())
-        self.assertEqual(report.high_carb_sequence.pooled.rows[0].sequence_n, 1)
+        with Store.open(":memory:") as store:
+            seed_sequence_store(store, boluses, cgm)
+            store.upsert_basal([{
+                "seq_num": 1, "time": end.strftime("%Y-%m-%d %H:%M:%S"),
+                "delivery_type": "profile", "basal_rate": 1.0, "profile_basal_rate": 1.0,
+            }])
+            report = build_exposures(store, window_days=30)["sequence_report"]
+        self.assertEqual(report["window"]["end"], end.isoformat())
+        self.assertEqual(report["window"]["start"], (end - timedelta(days=30)).isoformat())
+        self.assertEqual(report["high_carb_sequence"]["scopes"]["pooled"]["rows"][0]["sequence_n"], 1)
 
 
 class EligibleSequenceIdentityTest(unittest.TestCase):
